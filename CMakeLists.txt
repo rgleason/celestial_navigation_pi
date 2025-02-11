@@ -128,6 +128,9 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include("PluginSetup")
 
+# Option to enable/disable testing
+option(OCPN_BUILD_TEST "Build plugin tests" OFF)
+
 ##========================================================
 ## ----- Above sets up standard variables required by CMAKE - Do not remove -----##
 ## ----- Modify section below if there are special requirements for the plugin --##
@@ -290,3 +293,10 @@ get_property(
 foreach (dir ${dirs})
   message(STATUS "${CMLOC}dir='${dir}'")
 endforeach ()
+
+# Add the test directory if testing is enabled
+if(OCPN_BUILD_TEST)
+  message(STATUS "Building with tests enabled")
+  enable_testing()
+  add_subdirectory(test)
+endif(OCPN_BUILD_TEST)
