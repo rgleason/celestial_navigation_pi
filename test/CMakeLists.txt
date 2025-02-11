@@ -18,7 +18,7 @@ endif()
 
 # Find required packages
 find_package(GTest REQUIRED)
-find_package(wxWidgets COMPONENTS core base net REQUIRED)
+find_package(wxWidgets COMPONENTS core base net html REQUIRED)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml ${CMAKE_CURRENT_BINARY_DIR}/tinyxml)
 
