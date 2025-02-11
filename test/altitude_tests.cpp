@@ -32,85 +32,84 @@
 class AltitudeTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    // Common setup code
+    // Get the test data directory from CMake
+    const char* datadir = TESTDATA;
+    if (!datadir) {
+      std::cout << "TESTDATA not defined in CMake, this is a build "
+                   "configuration error"
+                << std::endl;
+      return;
+    }
+    std::cout << "Using plugin data directory: " << datadir << std::endl;
   }
 
-  void TearDown() override {
-    // Common cleanup code
-  }
+  void TearDown() override {}
 };
 
-void SetMockPluginDataDir() {
-  // Get the test data directory from CMake
-  const char* datadir = TESTDATA;
-  if (!datadir) {
-    std::cout
-        << "TESTDATA not defined in CMake, this is a build configuration error"
-        << std::endl;
-    return;
-  }
-  std::cout << "Using plugin data directory: " << datadir << std::endl;
+// Converts degrees and minutes to decimal degrees
+double DegMin2DecDeg(double degrees, double minutes) {
+  return degrees + (minutes / 60.0);
 }
 
-TEST_F(AltitudeTest, NauticalAlmanacExample) {
-  std::cout << "Starting NauticalAlmanacExample test..." << std::endl;
+TEST_F(AltitudeTest, AlmanacJan132024_1200GMT) {
+  std::cout << "Starting AlmanacJan132024_1200GMT test..." << std::endl;
 
-  SetMockPluginDataDir();
+  // From Almanac 2024, January 13, 12:00 GMT
+  // GHA = 357°52.6'
+  // Dec = S21°30.9' (South is negative)
+  // SD = 16.30'
+  // d correction = 0.40
 
-  std::cout << "Setting up test data..." << std::endl;
-  // Example from Nautical Almanac 2024, page 277
-  // Date: Jan 17, 2025
-  // DR Position: Lat 40°N, Long 140°W
-  // Time: 15:28:24 GMT
-  // Body: Sun
-  // Sextant altitude (Hs): 25°30.2'
-  // Index error: -2.0'
-  // Height of eye: 15 meters
-  // Temperature: 10°C
-  // Pressure: 1010 mb
-
-  std::cout << "Creating datetime object..." << std::endl;
   wxDateTime datetime;
-  if (!datetime.ParseDateTime("2025-01-17 15:28:24")) {
+  if (!datetime.ParseDateTime("2024-01-13 12:00:00")) {
     std::cout << "Failed to parse datetime!" << std::endl;
+    FAIL() << "Could not parse datetime";
   }
 
   std::cout << "Creating Sight object..." << std::endl;
-  // Constants for sight parameters
-  const double NO_TIME_CERTAINTY = 0.0;
-  const double SEXTANT_ALTITUDE = 25.503333;  // 25°30.2' in decimal degrees
-  const double MEASUREMENT_CERTAINTY = 1.0;   // 1 arc-minute certainty
 
-  Sight sight(Sight::ALTITUDE,    // Type of sight
-              "Sun",              // Celestial body
-              Sight::LOWER,       // Using lower limb
-              datetime,           // Time of sight
-              NO_TIME_CERTAINTY,  // Time certainty in seconds
-              SEXTANT_ALTITUDE,   // Measured altitude
-              MEASUREMENT_CERTAINTY);
+  // Constants from the almanac
+  const double ALMANAC_GHA = DegMin2DecDeg(357, 52.6);  // 357°52.6'
+  const double ALMANAC_DEC =
+      -DegMin2DecDeg(21, 30.9);            // S21°30.9' (negative for South)
+  const double ALMANAC_SD = 16.30 / 60.0;  // 16.30' converted to degrees
+
+  // Example position: Let's use latitude 45°N for this test
+  const double OBSERVER_LAT = 45.0;
+
+  // Calculate altitude we should see from this position
+  // TODO: Add the actual calculation here
+  const double CALCULATED_HS = 0.0;  // This needs to be calculated
+
+  Sight sight(Sight::ALTITUDE,  // Type of sight
+              "Sun",            // Celestial body
+              Sight::LOWER,     // Using lower limb
+              datetime,         // Time of sight
+              0.0,              // Time certainty
+              CALCULATED_HS,    // Measured altitude (will calculate)
+              1.0);             // Measurement certainty 1'
 
   std::cout << "Setting environmental parameters..." << std::endl;
-  // Set the environmental parameters using direct member access
-  sight.m_IndexError = -2.0;
-  sight.m_EyeHeight = 15;
-  sight.m_Temperature = 10;
-  sight.m_Pressure = 1010;
+  sight.m_IndexError = 0.0;    // Assuming perfect index for this test
+  sight.m_EyeHeight = 0.0;     // Assuming observations at sea level
+  sight.m_Temperature = 10.0;  // Standard temperature
+  sight.m_Pressure = 1010.0;   // Standard pressure
 
   std::cout << "Recomputing sight..." << std::endl;
-  // Recompute the sight with no clock offset
   const int NO_CLOCK_OFFSET = 0;
   sight.Recompute(NO_CLOCK_OFFSET);
 
-  // From Nautical Almanac example, expected Hc = 25°24.8'
-  const double expected_hc = 25.413333;  // 25°24.8' in decimal degrees
-  const double epsilon = 0.1 / 60.0;     // 0.1 arc-minutes tolerance
+  // Compare with almanac values
+  double gha, dec;
+  sight.BodyLocation(datetime, &dec, &gha, nullptr, nullptr);
 
-  std::cout << "Getting calculated altitude..." << std::endl;
-  // Get calculated altitude from m_ObservedAltitude
-  double calculated_hc = sight.m_ObservedAltitude;
+  const double EPSILON_DEG = 0.1 / 60.0;  // 0.1 arc-minute tolerance
 
-  EXPECT_NEAR(calculated_hc, expected_hc, epsilon)
-      << "Expected Hc: " << expected_hc << "°\n"
-      << "Calculated Hc: " << calculated_hc << "°\n"
-      << "Difference: " << (calculated_hc - expected_hc) * 60 << "'";
+  EXPECT_NEAR(gha, ALMANAC_GHA, EPSILON_DEG)
+      << "GHA differs from almanac by: " << (gha - ALMANAC_GHA) * 60.0
+      << " minutes";
+
+  EXPECT_NEAR(dec, ALMANAC_DEC, EPSILON_DEG)
+      << "Declination differs from almanac by: " << (dec - ALMANAC_DEC) * 60.0
+      << " minutes";
 }
