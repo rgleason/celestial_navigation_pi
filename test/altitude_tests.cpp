@@ -46,9 +46,32 @@ protected:
   void TearDown() override {}
 };
 
+// Converts angles in degrees to radians
+double Deg2Rad(double deg) { return deg * M_PI / 180.0; }
+
+// Converts angles in radians to degrees
+double Rad2Deg(double rad) { return rad * 180.0 / M_PI; }
+
 // Converts degrees and minutes to decimal degrees
 double DegMin2DecDeg(double degrees, double minutes) {
   return degrees + (minutes / 60.0);
+}
+
+// Calculate theoretical altitude given observer position and body GHA/Dec
+double CalcTheoriticalAltitude(double observerLat, double observerLon,
+                               double bodyGHA, double bodyDec) {
+  // Convert everything to radians for trig functions
+  double lat = Deg2Rad(observerLat);
+  double dec = Deg2Rad(bodyDec);
+
+  // Calculate Local Hour Angle
+  double lha = Deg2Rad(bodyGHA + observerLon);
+
+  // Main formula: sin(h) = sin(φ)sin(δ) + cos(φ)cos(δ)cos(LHA)
+  double sinh = sin(lat) * sin(dec) + cos(lat) * cos(dec) * cos(lha);
+
+  // Convert back to degrees
+  return Rad2Deg(asin(sinh));
 }
 
 TEST_F(AltitudeTest, AlmanacJan132024_1200GMT) {
@@ -74,19 +97,22 @@ TEST_F(AltitudeTest, AlmanacJan132024_1200GMT) {
       -DegMin2DecDeg(21, 30.9);            // S21°30.9' (negative for South)
   const double ALMANAC_SD = 16.30 / 60.0;  // 16.30' converted to degrees
 
-  // Example position: Let's use latitude 45°N for this test
+  // Example position: Let's use latitude 45°N, longitude 0° for this test
   const double OBSERVER_LAT = 45.0;
+  const double OBSERVER_LON = 0.0;
 
-  // Calculate altitude we should see from this position
-  // TODO: Add the actual calculation here
-  const double CALCULATED_HS = 0.0;  // This needs to be calculated
+  // Calculate theoretical altitude for this position
+  const double CALCULATED_HS = CalcTheoriticalAltitude(
+      OBSERVER_LAT, OBSERVER_LON, ALMANAC_GHA, ALMANAC_DEC);
+  std::cout << "Calculated theoretical altitude (Hs): " << CALCULATED_HS << "°"
+            << std::endl;
 
   Sight sight(Sight::ALTITUDE,  // Type of sight
               "Sun",            // Celestial body
               Sight::LOWER,     // Using lower limb
               datetime,         // Time of sight
               0.0,              // Time certainty
-              CALCULATED_HS,    // Measured altitude (will calculate)
+              CALCULATED_HS,    // Measured altitude
               1.0);             // Measurement certainty 1'
 
   std::cout << "Setting environmental parameters..." << std::endl;
@@ -112,4 +138,9 @@ TEST_F(AltitudeTest, AlmanacJan132024_1200GMT) {
   EXPECT_NEAR(dec, ALMANAC_DEC, EPSILON_DEG)
       << "Declination differs from almanac by: " << (dec - ALMANAC_DEC) * 60.0
       << " minutes";
+
+  // Compare calculated altitude
+  EXPECT_NEAR(sight.m_ObservedAltitude, CALCULATED_HS, EPSILON_DEG)
+      << "Calculated altitude differs by: "
+      << (sight.m_ObservedAltitude - CALCULATED_HS) * 60.0 << " minutes";
 }
