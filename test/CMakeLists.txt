@@ -20,10 +20,30 @@ endif()
 find_package(GTest REQUIRED)
 find_package(wxWidgets COMPONENTS core base net REQUIRED)
 
+add_subdirectory(${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml ${CMAKE_CURRENT_BINARY_DIR}/tinyxml)
+
 set(SRC
     altitude_tests.cpp
     mock_plugin_api.cpp
+    mock_plugin_impl.cpp
     ${CMAKE_SOURCE_DIR}/src/Sight.cpp
+    ${CMAKE_SOURCE_DIR}/src/celestial_navigation_pi.cpp
+    ${CMAKE_SOURCE_DIR}/src/astrolabe/calendar.cpp
+    ${CMAKE_SOURCE_DIR}/src/astrolabe/dicts.cpp
+    ${CMAKE_SOURCE_DIR}/src/astrolabe/dynamical.cpp
+    ${CMAKE_SOURCE_DIR}/src/astrolabe/globals.cpp
+    ${CMAKE_SOURCE_DIR}/src/astrolabe/nutation.cpp
+    ${CMAKE_SOURCE_DIR}/src/astrolabe/sun.cpp
+    ${CMAKE_SOURCE_DIR}/src/astrolabe/util.cpp
+    ${CMAKE_SOURCE_DIR}/src/astrolabe/vsop87d.cpp
+    ${CMAKE_SOURCE_DIR}/src/transform_star.cpp
+    ${CMAKE_SOURCE_DIR}/src/CelestialNavigationDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ClockCorrectionDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/CelestialNavigationUI.cpp
+    ${CMAKE_SOURCE_DIR}/src/SightDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/FindBodyDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/epv00.cpp
+    ${CMAKE_SOURCE_DIR}/src/astrolabe/elp2000.cpp
     ${CMAKE_SOURCE_DIR}/src/celestial_navigation_pi.cpp
 )
 
@@ -35,13 +55,15 @@ target_compile_definitions(celestial_tests
         CMAKE_BINARY_DIR="${CMAKE_BINARY_DIR}"
         TESTDATA="${CMAKE_CURRENT_LIST_DIR}/testdata"
         UNIT_TESTS
+        TIXML_USE_STL
 )
 
 # Include directories
 target_include_directories(celestial_tests
     PRIVATE
-        ${CMAKE_SOURCE_DIR}/src         # This allows direct includes without ../src/
+        ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/opencpn-libs/${PKG_API_LIB}/include
+        ${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml/include
         ${GTEST_INCLUDE_DIRS}
         ${wxWidgets_INCLUDE_DIRS}
 )
@@ -53,6 +75,7 @@ target_link_libraries(celestial_tests
         GTest::Main
         ${wxWidgets_LIBRARIES}
         ocpn::api
+        ocpn::tinyxml
 )
 
 # Set optimization level for debug builds
