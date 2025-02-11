@@ -44,7 +44,19 @@ DECL_EXP int GetChartbarHeight(void) { return 1; }
 void SendPluginMessage(wxString message_id, wxString message_body) {}
 bool AddLocaleCatalog(wxString catalog) { return true; }
 bool GetGlobalColor(wxString colorName, wxColour* pcolour) { return true; }
-wxFileConfig* GetOCPNConfigObject(void) { return 0; }
+static wxFileConfig* s_config = NULL;
+wxFileConfig* GetOCPNConfigObject(void) {
+  if (!s_config) {
+    s_config = new wxFileConfig();
+    // Add test defaults
+    s_config->Write(_T("/PlugIns/CelestialNavigation/DefaultEyeHeight"), 2.0);
+    s_config->Write(_T("/PlugIns/CelestialNavigation/DefaultTemperature"),
+                    10.0);
+    s_config->Write(_T("/PlugIns/CelestialNavigation/DefaultPressure"), 1010.0);
+    s_config->Write(_T("/PlugIns/CelestialNavigation/DefaultIndexError"), 0.0);
+  }
+  return s_config;
+}
 wxAuiManager* GetFrameAuiManager(void) { return 0; }
 wxWindow* GetOCPNCanvasWindow() { return 0; }
 

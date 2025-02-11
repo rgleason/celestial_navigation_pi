@@ -40,7 +40,24 @@ protected:
   }
 };
 
+void SetMockPluginDataDir() {
+  // Get the test data directory from CMake
+  const char* datadir = TESTDATA;
+  if (!datadir) {
+    std::cout
+        << "TESTDATA not defined in CMake, this is a build configuration error"
+        << std::endl;
+    return;
+  }
+  std::cout << "Using plugin data directory: " << datadir << std::endl;
+}
+
 TEST_F(AltitudeTest, NauticalAlmanacExample) {
+  std::cout << "Starting NauticalAlmanacExample test..." << std::endl;
+
+  SetMockPluginDataDir();
+
+  std::cout << "Setting up test data..." << std::endl;
   // Example from Nautical Almanac 2024, page 277
   // Date: Jan 17, 2025
   // DR Position: Lat 40°N, Long 140°W
@@ -52,20 +69,26 @@ TEST_F(AltitudeTest, NauticalAlmanacExample) {
   // Temperature: 10°C
   // Pressure: 1010 mb
 
+  std::cout << "Creating datetime object..." << std::endl;
   wxDateTime datetime;
-  datetime.ParseDateTime("2025-01-17 15:28:24");
+  if (!datetime.ParseDateTime("2025-01-17 15:28:24")) {
+    std::cout << "Failed to parse datetime!" << std::endl;
+  }
 
+  std::cout << "Creating Sight object..." << std::endl;
   Sight sight(Sight::ALTITUDE, "Sun", Sight::LOWER, datetime,
               0,          // time certainty
               25.503333,  // 25°30.2' in decimal degrees
               1.0);       // measurement certainty 1'
 
+  std::cout << "Setting environmental parameters..." << std::endl;
   // Set the environmental parameters using direct member access
   sight.m_IndexError = -2.0;
   sight.m_EyeHeight = 15;
   sight.m_Temperature = 10;
   sight.m_Pressure = 1010;
 
+  std::cout << "Recomputing sight..." << std::endl;
   // Recompute the sight
   sight.Recompute(0);
 
@@ -73,6 +96,7 @@ TEST_F(AltitudeTest, NauticalAlmanacExample) {
   const double expected_hc = 25.413333;  // 25°24.8' in decimal degrees
   const double epsilon = 0.1 / 60.0;     // 0.1 arc-minutes tolerance
 
+  std::cout << "Getting calculated altitude..." << std::endl;
   // Get calculated altitude from m_ObservedAltitude
   double calculated_hc = sight.m_ObservedAltitude;
 
