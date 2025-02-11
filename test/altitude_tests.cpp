@@ -76,10 +76,18 @@ TEST_F(AltitudeTest, NauticalAlmanacExample) {
   }
 
   std::cout << "Creating Sight object..." << std::endl;
-  Sight sight(Sight::ALTITUDE, "Sun", Sight::LOWER, datetime,
-              0,          // time certainty
-              25.503333,  // 25°30.2' in decimal degrees
-              1.0);       // measurement certainty 1'
+  // Constants for sight parameters
+  const double NO_TIME_CERTAINTY = 0.0;
+  const double SEXTANT_ALTITUDE = 25.503333;  // 25°30.2' in decimal degrees
+  const double MEASUREMENT_CERTAINTY = 1.0;   // 1 arc-minute certainty
+
+  Sight sight(Sight::ALTITUDE,    // Type of sight
+              "Sun",              // Celestial body
+              Sight::LOWER,       // Using lower limb
+              datetime,           // Time of sight
+              NO_TIME_CERTAINTY,  // Time certainty in seconds
+              SEXTANT_ALTITUDE,   // Measured altitude
+              MEASUREMENT_CERTAINTY);
 
   std::cout << "Setting environmental parameters..." << std::endl;
   // Set the environmental parameters using direct member access
@@ -89,8 +97,9 @@ TEST_F(AltitudeTest, NauticalAlmanacExample) {
   sight.m_Pressure = 1010;
 
   std::cout << "Recomputing sight..." << std::endl;
-  // Recompute the sight
-  sight.Recompute(0);
+  // Recompute the sight with no clock offset
+  const int NO_CLOCK_OFFSET = 0;
+  sight.Recompute(NO_CLOCK_OFFSET);
 
   // From Nautical Almanac example, expected Hc = 25°24.8'
   const double expected_hc = 25.413333;  // 25°24.8' in decimal degrees
