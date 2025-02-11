@@ -31,6 +31,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/astrolabe/calendar.cpp
     ${CMAKE_SOURCE_DIR}/src/astrolabe/dicts.cpp
     ${CMAKE_SOURCE_DIR}/src/astrolabe/dynamical.cpp
+    ${CMAKE_SOURCE_DIR}/src/astrolabe/elp2000.cpp
     ${CMAKE_SOURCE_DIR}/src/astrolabe/globals.cpp
     ${CMAKE_SOURCE_DIR}/src/astrolabe/nutation.cpp
     ${CMAKE_SOURCE_DIR}/src/astrolabe/sun.cpp
@@ -40,11 +41,13 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/CelestialNavigationDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/ClockCorrectionDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/CelestialNavigationUI.cpp
-    ${CMAKE_SOURCE_DIR}/src/SightDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/FindBodyDialog.cpp
-    ${CMAKE_SOURCE_DIR}/src/epv00.cpp
-    ${CMAKE_SOURCE_DIR}/src/astrolabe/elp2000.cpp
     ${CMAKE_SOURCE_DIR}/src/celestial_navigation_pi.cpp
+    ${CMAKE_SOURCE_DIR}/src/epv00.cpp
+    ${CMAKE_SOURCE_DIR}/src/FixDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/SightDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/geodesic.c
+    ${CMAKE_SOURCE_DIR}/src/geomag/geomag.c
 )
 
 add_executable(celestial_tests ${SRC})
