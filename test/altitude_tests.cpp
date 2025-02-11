@@ -71,11 +71,13 @@ TEST_F(AltitudeTest, SunLowerLimbExample) {
   sight.m_Temperature = 15.0;  // Temperature: 15°C
   sight.m_Pressure = 1013.0;   // Pressure: 1013 mb
 
+  sight.Recompute(0);  // 0 = no clock offset
+
   // Expected values from Nautical Almanac (NA)
-  const double NA_MAIN_CORRECTION = DegMin2DecDeg(0, 11.6);  // 11.6'
-  const double NA_HO = DegMin2DecDeg(11, 30.6);              // Ho: 11°30.6'
-  const double NA_GHA = DegMin2DecDeg(128, 20.5);            // GHA: 128°20.5'
-  const double NA_DEC = -DegMin2DecDeg(18, 15.2);            // Dec: S18°15.2'
+  const double ALMANAC_MAIN_CORRECTION = DegMin2DecDeg(0, 11.6);  // 11.6'
+  const double ALMANAC_HO = DegMin2DecDeg(11, 30.6);    // Ho: 11°30.6'
+  const double ALMANAC_GHA = DegMin2DecDeg(128, 20.5);  // GHA: 128°20.5'
+  const double ALMANAC_DEC = -DegMin2DecDeg(18, 15.2);  // Dec: S18°15.2'
 
   // Tolerances
   const double EPSILON_MIN = 0.1 / 60.0;  // 0.1 arc-minute tolerance
@@ -87,40 +89,41 @@ TEST_F(AltitudeTest, SunLowerLimbExample) {
   // 1. Test Main Correction (difference between Ho and Hs)
   double actualCorrection = sight.m_ObservedAltitude - SIGHT_HS;
   std::cout << "Main Correction Analysis:" << std::endl;
-  std::cout << "  Almanac: " << (NA_MAIN_CORRECTION * 60.0) << "'" << std::endl;
+  std::cout << "  Almanac: " << (ALMANAC_MAIN_CORRECTION * 60.0) << "'"
+            << std::endl;
   std::cout << "  Actual : " << (actualCorrection * 60.0) << "'" << std::endl;
 
-  EXPECT_NEAR(actualCorrection, NA_MAIN_CORRECTION, EPSILON_MIN)
+  EXPECT_NEAR(actualCorrection, ALMANAC_MAIN_CORRECTION, EPSILON_MIN)
       << "Main correction differs from NA by "
-      << ((actualCorrection - NA_MAIN_CORRECTION) * 60.0) << " minutes";
+      << ((actualCorrection - ALMANAC_MAIN_CORRECTION) * 60.0) << " minutes";
 
   // 2. Test Ho (Observed Altitude)
   std::cout << "\nHo Analysis:" << std::endl;
-  std::cout << "  Almanac: " << DecDegToDegMin(NA_HO) << std::endl;
+  std::cout << "  Almanac: " << DecDegToDegMin(ALMANAC_HO) << std::endl;
   std::cout << "  Actual : " << DecDegToDegMin(sight.m_ObservedAltitude)
             << std::endl;
 
-  EXPECT_NEAR(sight.m_ObservedAltitude, NA_HO, EPSILON_MIN)
-      << "Ho differs from NA by " << ((sight.m_ObservedAltitude - NA_HO) * 60.0)
-      << " minutes";
+  EXPECT_NEAR(sight.m_ObservedAltitude, ALMANAC_HO, EPSILON_MIN)
+      << "Ho differs from NA by "
+      << ((sight.m_ObservedAltitude - ALMANAC_HO) * 60.0) << " minutes";
 
   // 3. Test Body Position (GHA, Dec)
   double gha, dec;
   sight.BodyLocation(datetime, &dec, &gha, nullptr, nullptr);
 
   std::cout << "\nBody Position Analysis:" << std::endl;
-  std::cout << "  Almanac GHA: " << DecDegToDegMin(NA_GHA)
-            << ", Dec: " << DecDegToDegMin(std::abs(NA_DEC)) << " S"
+  std::cout << "  Almanac GHA: " << DecDegToDegMin(ALMANAC_GHA)
+            << ", Dec: " << DecDegToDegMin(std::abs(ALMANAC_DEC)) << " S"
             << std::endl;
   std::cout << "  Actual GHA : " << DecDegToDegMin(gha)
             << ", Dec: " << DecDegToDegMin(std::abs(dec))
             << (dec < 0 ? " S" : " N") << std::endl;
 
-  EXPECT_NEAR(gha, NA_GHA, EPSILON_MIN)
-      << "GHA differs from Almanac by " << ((gha - NA_GHA) * 60.0)
+  EXPECT_NEAR(gha, ALMANAC_GHA, EPSILON_MIN)
+      << "GHA differs from Almanac by " << ((gha - ALMANAC_GHA) * 60.0)
       << " minutes";
-  EXPECT_NEAR(dec, NA_DEC, EPSILON_MIN)
-      << "Declination differs from Almanac by " << ((dec - NA_DEC) * 60.0)
+  EXPECT_NEAR(dec, ALMANAC_DEC, EPSILON_MIN)
+      << "Declination differs from Almanac by " << ((dec - ALMANAC_DEC) * 60.0)
       << " minutes";
 
   // Print calculation string
