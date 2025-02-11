@@ -153,9 +153,3 @@ bool wxAuiPaneInfo::IsValid() const { return true; }
 void DimeWindow(wxWindow* win) {}
 void GetCanvasPixLL(PlugIn_ViewPort* vp, wxPoint* pp, double lat, double lon) {}
 void RequestRefresh(wxWindow* window) {}
-void initialize_images(void) {}
-
-// SVG symbol mocks - define them at global scope
-wxString __svg_celestial_navigation("<svg></svg>");
-wxString __svg_celestial_navigation_rollover("<svg></svg>");
-wxString __svg_celestial_navigation_toggled("<svg></svg>");

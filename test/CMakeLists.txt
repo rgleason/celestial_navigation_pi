@@ -48,6 +48,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/SightDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/geodesic.c
     ${CMAKE_SOURCE_DIR}/src/geomag/geomag.c
+    ${CMAKE_SOURCE_DIR}/src/icons.cpp
 )
 
 add_executable(celestial_tests ${SRC})
