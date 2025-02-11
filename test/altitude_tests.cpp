@@ -5,16 +5,6 @@
  *   it under the terms of the GNU General Public License as published by  *
  *   the Free Software Foundation; either version 2 of the License, or     *
  *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  **************************************************************************/
 
 #include "wx/wxprec.h"
@@ -28,56 +18,115 @@
 #include "ocpn_plugin.h"
 #include "Sight.h"
 #include <cmath>
+#include <iomanip>
+#include <sstream>
 
 class AltitudeTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    // Common setup code
-  }
-
-  void TearDown() override {
-    // Common cleanup code
+    const char* datadir = TESTDATA;
+    if (!datadir) {
+      std::cout << "TESTDATA not defined in CMake" << std::endl;
+      return;
+    }
+    std::cout << "Using plugin data directory: " << datadir << std::endl;
   }
 };
 
-TEST_F(AltitudeTest, NauticalAlmanacExample) {
-  // Example from Nautical Almanac 2024, page 277
-  // Date: Jan 17, 2025
-  // DR Position: Lat 40°N, Long 140°W
-  // Time: 15:28:24 GMT
-  // Body: Sun
-  // Sextant altitude (Hs): 25°30.2'
-  // Index error: -2.0'
-  // Height of eye: 15 meters
-  // Temperature: 10°C
-  // Pressure: 1010 mb
+// Helper functions
+double DegMin2DecDeg(double degrees, double minutes) {
+  return degrees + (minutes / 60.0);
+}
 
+std::string DecDegToDegMin(double decimal_degrees) {
+  int degrees = static_cast<int>(decimal_degrees);
+  double minutes = (decimal_degrees - degrees) * 60.0;
+  std::stringstream ss;
+  ss << degrees << "° " << std::fixed << std::setprecision(1) << minutes << "'";
+  return ss.str();
+}
+
+TEST_F(AltitudeTest, SunLowerLimbExample) {
+  // Test data from Example 1: Sun LL, Nov 13, 2024 at UT 20-17-45
   wxDateTime datetime;
-  datetime.ParseDateTime("2025-01-17 15:28:24");
+  ASSERT_TRUE(datetime.ParseDateTime("2024-11-13 20:17:45"))
+      << "Failed to parse datetime";
 
-  Sight sight(Sight::ALTITUDE, "Sun", Sight::LOWER, datetime,
-              0,          // time certainty
-              25.503333,  // 25°30.2' in decimal degrees
-              1.0);       // measurement certainty 1'
+  // Input parameters
+  const double SIGHT_HS = DegMin2DecDeg(11, 25.0);  // Hs (sight): 11°25.0'
 
-  // Set the environmental parameters using direct member access
-  sight.m_IndexError = -2.0;
-  sight.m_EyeHeight = 15;
-  sight.m_Temperature = 10;
-  sight.m_Pressure = 1010;
+  // Create sight object with known coordinates
+  Sight sight(Sight::ALTITUDE,  // Type
+              "Sun",            // Body
+              Sight::LOWER,     // Using lower limb
+              datetime,         // Time of sight
+              0.0,              // Time certainty
+              SIGHT_HS,         // Measured altitude
+              1.0               // Measurement certainty
+  );
 
-  // Recompute the sight
-  sight.Recompute(0);
+  // Set environmental parameters
+  sight.m_IndexError = 3.2;    // IE: +3.2'
+  sight.m_EyeHeight = 2.4;     // Height of Eye: 2.4 meters
+  sight.m_Temperature = 15.0;  // Temperature: 15°C
+  sight.m_Pressure = 1013.0;   // Pressure: 1013 mb
 
-  // From Nautical Almanac example, expected Hc = 25°24.8'
-  const double expected_hc = 25.413333;  // 25°24.8' in decimal degrees
-  const double epsilon = 0.1 / 60.0;     // 0.1 arc-minutes tolerance
+  sight.Recompute(0);  // 0 = no clock offset
 
-  // Get calculated altitude from m_ObservedAltitude
-  double calculated_hc = sight.m_ObservedAltitude;
+  // Expected values from Nautical Almanac (NA)
+  const double ALMANAC_MAIN_CORRECTION = DegMin2DecDeg(0, 11.6);  // 11.6'
+  const double ALMANAC_HO = DegMin2DecDeg(11, 30.6);    // Ho: 11°30.6'
+  const double ALMANAC_GHA = DegMin2DecDeg(128, 20.5);  // GHA: 128°20.5'
+  const double ALMANAC_DEC = -DegMin2DecDeg(18, 15.2);  // Dec: S18°15.2'
 
-  EXPECT_NEAR(calculated_hc, expected_hc, epsilon)
-      << "Expected Hc: " << expected_hc << "°\n"
-      << "Calculated Hc: " << calculated_hc << "°\n"
-      << "Difference: " << (calculated_hc - expected_hc) * 60 << "'";
+  // Tolerances
+  const double EPSILON_MIN = 0.1 / 60.0;  // 0.1 arc-minute tolerance
+  const double EPSILON_DEG = 0.1;         // 0.1 degree tolerance
+
+  // Test expectations
+  std::cout << "\n=== Sun Lower Limb Example (Nov 13, 2024) ===" << std::endl;
+
+  // 1. Test Main Correction (difference between Ho and Hs)
+  double actualCorrection = sight.m_ObservedAltitude - SIGHT_HS;
+  std::cout << "Main Correction Analysis:" << std::endl;
+  std::cout << "  Almanac: " << (ALMANAC_MAIN_CORRECTION * 60.0) << "'"
+            << std::endl;
+  std::cout << "  Actual : " << (actualCorrection * 60.0) << "'" << std::endl;
+
+  EXPECT_NEAR(actualCorrection, ALMANAC_MAIN_CORRECTION, EPSILON_MIN)
+      << "Main correction differs from NA by "
+      << ((actualCorrection - ALMANAC_MAIN_CORRECTION) * 60.0) << " minutes";
+
+  // 2. Test Ho (Observed Altitude)
+  std::cout << "\nHo Analysis:" << std::endl;
+  std::cout << "  Almanac: " << DecDegToDegMin(ALMANAC_HO) << std::endl;
+  std::cout << "  Actual : " << DecDegToDegMin(sight.m_ObservedAltitude)
+            << std::endl;
+
+  EXPECT_NEAR(sight.m_ObservedAltitude, ALMANAC_HO, EPSILON_MIN)
+      << "Ho differs from NA by "
+      << ((sight.m_ObservedAltitude - ALMANAC_HO) * 60.0) << " minutes";
+
+  // 3. Test Body Position (GHA, Dec)
+  double gha, dec;
+  sight.BodyLocation(datetime, &dec, &gha, nullptr, nullptr);
+
+  std::cout << "\nBody Position Analysis:" << std::endl;
+  std::cout << "  Almanac GHA: " << DecDegToDegMin(ALMANAC_GHA)
+            << ", Dec: " << DecDegToDegMin(std::abs(ALMANAC_DEC)) << " S"
+            << std::endl;
+  std::cout << "  Actual GHA : " << DecDegToDegMin(gha)
+            << ", Dec: " << DecDegToDegMin(std::abs(dec))
+            << (dec < 0 ? " S" : " N") << std::endl;
+
+  EXPECT_NEAR(gha, ALMANAC_GHA, EPSILON_MIN)
+      << "GHA differs from Almanac by " << ((gha - ALMANAC_GHA) * 60.0)
+      << " minutes";
+  EXPECT_NEAR(dec, ALMANAC_DEC, EPSILON_MIN)
+      << "Declination differs from Almanac by " << ((dec - ALMANAC_DEC) * 60.0)
+      << " minutes";
+
+  // Print calculation string
+  std::cout << "\nDetailed Calculation String:" << std::endl;
+  std::cout << sight.m_CalcStr << std::endl;
 }
