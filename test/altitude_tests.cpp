@@ -26,7 +26,8 @@
 #include "wx/tokenzr.h"
 
 #include <gtest/gtest.h>
-#include "../src/Sight.h"
+#include "ocpn_plugin.h"
+#include "Sight.h"
 #include <cmath>
 
 class AltitudeTest : public ::testing::Test {

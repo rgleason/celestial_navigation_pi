@@ -1,3 +1,4 @@
+# test/CMakeLists.txt
 cmake_minimum_required(VERSION 3.14)
 project(celestial_navigation_pi_tests)
 set(CMAKE_CXX_STANDARD 17)
@@ -39,7 +40,7 @@ target_compile_definitions(celestial_tests
 # Include directories
 target_include_directories(celestial_tests
     PRIVATE
-        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/src         # This allows direct includes without ../src/
         ${CMAKE_SOURCE_DIR}/opencpn-libs/${PKG_API_LIB}/include
         ${GTEST_INCLUDE_DIRS}
         ${wxWidgets_INCLUDE_DIRS}
