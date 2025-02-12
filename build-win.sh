@@ -43,7 +43,7 @@ if [ "$1" == "c" ]; then
 fi
 
 if [ "$1" == "t" ]; then
-    cmake -T v143 -A Win32  cmake -DOCPN_BUILD_TEST=ON ..   -DOCPN_TARGET=MSVC ..
+    cmake -T v143 -A Win32 -DOCPN_TARGET=MSVC ..  -DOCPN_BUILD_TEST=ON .. 
     cmake --build . --target package --config relwithdebinfo >output.txt
 	vtest -V
 fi
