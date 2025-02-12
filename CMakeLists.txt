@@ -18,7 +18,7 @@
 ## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,                                       *
 ## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                       *
 #-----------------------------------------------------------------------------
-# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.326.0 18/01/2025 DD/MM/YYYY
+# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.328.0 05/02/2025 DD/MM/YYYY
 # buildCI:yes useODAPI:no validateJSON:no
 # ---------------------------------------------------------------------------
 ## -- When changing this file do NOT change the order of the sections.    -- ##
@@ -45,22 +45,24 @@ if(COMMAND cmake_policy)
 endif (COMMAND cmake_policy)
 
 
-
-
 # define plugin name, owner and versions
 set(VERBOSE_NAME Celestial_Navigation)
 set(COMMON_NAME "Celestial Navigation")  
 set(TITLE_NAME "CELESTIALNAVIGATION")
 set(PACKAGE_CONTACT  "Sean D'Epagnier ")
 set(PACKAGE "celestial_navigation")
-set(SHORT_DESCRIPTION "Celestial Navigation Plugin for OpenCPN")
-set(LONG_DESCRIPTION "Nautical almanac: sun, moon, planets and navigational stars. Compute position fix from celestial measurements.")
+set(SHORT_DESCRIPTION
+	"Celestial Navigation Plugin for OpenCPN"
+)
+set(LONG_DESCRIPTION
+	"Nautical almanac: sun, moon, planets and navigational stars. Compute position fix from celestial measurements."
+)
 
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "4")
 set(VERSION_PATCH "43")
-set(VERSION_TWEAK "0")
-set(VERSION_DATE  "21/01/2025" )# DD/MM/YYYY format
+set(VERSION_TWEAK "1")
+set(VERSION_DATE  "11/02/2025" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "ov58")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -85,7 +87,7 @@ set (CLOUDSMITH_BASE_REPOSITORY "celestial-navigation")  # without the pi
 
 # Set the following to use OpenCPN cloudsmith repositories instead of own repositories
 set(CLOUDSMITH_USER "opencpn")
-# set(CLOUDSMITH_USER "rick-gleason")
+# set (CLOUDSMITH_USER "rick-gleason")
 
 set(XML_INFO_URL
 	"https://opencpn.org/OpenCPN/plugins/celestialnav.html"
@@ -100,7 +102,10 @@ option(PLUGIN_USE_SVG "Use SVG graphics" ON)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(OpenGL_GL_PREFERENCE "LEGACY")   #not operational
+
+
+
+set(OpenGL_GL_PREFERENCE "LEGACY") # not operational
 
 option(USE_GL "Enable OpenGL support" ON)
 message(STATUS "${CMLOC}USE_GL: ${USE_GL}")
