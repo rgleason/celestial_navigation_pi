@@ -74,7 +74,7 @@ FindBodyDialog::~FindBodyDialog( )
     double lat, lon;
     if(m_tLatitude->GetValue().ToDouble(&lat))
         pConf->Write( _T("Lat"), lat );
-    if(m_tLatitude->GetValue().ToDouble(&lon))
+    if(m_tLongitude->GetValue().ToDouble(&lon))
         pConf->Write( _T("Lon"), lon );
 }
 
