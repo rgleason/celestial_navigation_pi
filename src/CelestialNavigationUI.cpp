@@ -188,21 +188,21 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	fgSizer4->SetFlexibleDirection( wxBOTH );
 	fgSizer4->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
-	m_tMeasurement = new wxTextCtrl( sbSizer1->GetStaticBox(), wxID_ANY, _("0"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+	m_tMeasurement = new wxTextCtrl( sbSizer1->GetStaticBox(), wxID_ANY, _("00"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
 	fgSizer4->Add( m_tMeasurement, 0, wxALL, 5 );
 	
 	m_staticText6 = new wxStaticText( sbSizer1->GetStaticBox(), wxID_ANY, _("Degrees"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText6->Wrap( -1 );
 	fgSizer4->Add( m_staticText6, 0, wxALL, 5 );
 	
-	m_tMeasurementMinutes = new wxTextCtrl( sbSizer1->GetStaticBox(), wxID_ANY, _("0"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+	m_tMeasurementMinutes = new wxTextCtrl( sbSizer1->GetStaticBox(), wxID_ANY, _("00.0"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
 	fgSizer4->Add( m_tMeasurementMinutes, 0, wxALL, 5 );
 	
 	m_staticText7 = new wxStaticText( sbSizer1->GetStaticBox(), wxID_ANY, _("Minutes"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText7->Wrap( -1 );
 	fgSizer4->Add( m_staticText7, 0, wxALL, 5 );
 	
-	m_tMeasurementCertainty = new wxTextCtrl( sbSizer1->GetStaticBox(), wxID_ANY, _("10"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+	m_tMeasurementCertainty = new wxTextCtrl( sbSizer1->GetStaticBox(), wxID_ANY, _("00.00"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
 	fgSizer4->Add( m_tMeasurementCertainty, 0, wxALL, 5 );
 	
 	m_staticText8 = new wxStaticText( sbSizer1->GetStaticBox(), wxID_ANY, _("Minutes Certainty"), wxDefaultPosition, wxDefaultSize, 0 );
