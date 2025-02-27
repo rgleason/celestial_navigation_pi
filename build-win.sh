@@ -37,15 +37,26 @@ BUILD_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/build"
 cd "$BUILD_DIR"
 
 
+
+# Check if the first argument is provided
+if [ -z "$1" ]; then
+  echo "No argument supplied"
+  exit 1
+fi
+
+# Perform actions based on the first argument
 if [ "$1" == "c" ]; then
     cmake -T v143 -A Win32 -DOCPN_TARGET=MSVC ..
     cmake --build . --target package --config relwithdebinfo >output.txt
-fi
-
-if [ "$1" == "t" ]; then
-    cmake -T v143 -A Win32 -DOCPN_TARGET=MSVC ..  -DOCPN_BUILD_TEST=ON .. 
+	
+elif [ "$1" == "t" ]; then
+  echo "Running tests..."
+    cmake -T v143 -A Win32 -DOCPN_BUILD_TEST=ON ..  -DOCPN_TARGET=MSVC ..
     cmake --build . --target package --config relwithdebinfo >output.txt
-	vtest -V
+	ctest -V
+else
+  echo "Invalid argument. Use 'c' for cmake or 't' for testing."
+  exit 1
 fi
 
 # Alternative lines do the same thing.
