@@ -113,6 +113,8 @@ DECL_EXP void JumpToPosition(double lat, double lon, double scale) {}
 
 wxString* GetpPrivateApplicationDataLocation(void) { return nullptr; }
 
+wxString *GetpSharedDataLocation(void) { return nullptr; }
+
 class ObservableListener {
 public:
   ObservableListener(int /* unused */, wxEvtHandler* handler, wxEventType type)

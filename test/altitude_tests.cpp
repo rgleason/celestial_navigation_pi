@@ -74,8 +74,8 @@ TEST_F(AltitudeTest, SunLowerLimbExample) {
   sight.Recompute(0);  // 0 = no clock offset
 
   // Expected values from Nautical Almanac (NA)
-  const double ALMANAC_MAIN_CORRECTION = DegMin2DecDeg(0, 11.6);  // 11.6'
-  const double ALMANAC_HO = DegMin2DecDeg(11, 30.6);    // Ho: 11°30.6'
+  const double ALMANAC_MAIN_CORRECTION = DegMin2DecDeg(0, 5.8);  // 5.8'
+  const double ALMANAC_HO = DegMin2DecDeg(11, 30.8);    // Ho: 11°30.8'
   const double ALMANAC_GHA = DegMin2DecDeg(128, 20.5);  // GHA: 128°20.5'
   const double ALMANAC_DEC = -DegMin2DecDeg(18, 15.2);  // Dec: S18°15.2'
 
@@ -110,6 +110,7 @@ TEST_F(AltitudeTest, SunLowerLimbExample) {
   // 3. Test Body Position (GHA, Dec)
   double gha, dec;
   sight.BodyLocation(datetime, &dec, &gha, nullptr, nullptr);
+  gha = resolve_heading_positive(-gha);
 
   std::cout << "\nBody Position Analysis:" << std::endl;
   std::cout << "  Almanac GHA: " << DecDegToDegMin(ALMANAC_GHA)

@@ -80,6 +80,7 @@ target_link_libraries(celestial_tests
         ${wxWidgets_LIBRARIES}
         ocpn::api
         ocpn::tinyxml
+        ${OPENGL_LIBRARIES}
 )
 
 # Set optimization level for debug builds
