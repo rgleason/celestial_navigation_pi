@@ -965,6 +965,35 @@ wxRealPoint Sight::DistancePoint( double altitude, double trace, double lat, dou
     return wxRealPoint(rlat, rlon);
  }
 
+/* Calculate Hc and Zn from from one position to another */
+void Sight::AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
+                            double *hc, double *zn)
+{
+	double lat1_r = d_to_r(lat1);
+	double lon1_r = d_to_r(lon1);
+	double lat2_r = d_to_r(lat2);
+	double lon2_r = d_to_r(lon2);
+
+	double lha = lon1 - lon2;
+	lha = resolve_heading_positive(lha);
+	double lha_r = d_to_r(lha);
+
+	double hc_r = asin( sin(lat1_r)*sin(lat2_r) + cos(lat1_r) * cos(lat2_r) * cos(lha_r) );
+	double zn_r = acos( (sin(lat2_r) - sin(lat1_r) * sin(hc_r)) / (cos(lat1_r) * cos(hc_r)) );
+
+	*hc = r_to_d(hc_r);
+	*zn = r_to_d(zn_r);
+	if (lat1 > 0) {
+		if (lha < 180)
+			*zn = 360 - *zn;
+	} else {
+		if (lha > 180)
+			*zn = 180 - *zn;
+		else
+			*zn = 180 + *zn;
+	}
+}
+
 void Sight::BuildAltitudeLineOfPosition(double tracestep,
                                         double altitudemin, double altitudemax, double altitudestep,
                                         double timemin, double timemax, double timestep)

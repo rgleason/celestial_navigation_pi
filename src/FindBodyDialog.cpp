@@ -94,25 +94,22 @@ void FindBodyDialog::OnDone( wxCommandEvent& event )
 void FindBodyDialog::Update()
 {
     /* NOTE: we do not peform any altitude corrections here */
-    double lat1, lon1, lat2, lon2, bearing, dist;
+    double lat1, lon1, lat2, lon2, hc, zn;
     m_tLatitude->GetValue().ToDouble(&lat1);
     m_tLongitude->GetValue().ToDouble(&lon1);
-    
+
     m_Sight.BodyLocation(m_Sight.m_DateTime, &lat2, &lon2, 0, 0);
-
-    ll_gc_ll_reverse(lat1, lon1, lat2, lon2, &bearing, &dist);
-
-    dist = 90 - dist/60;
+    m_Sight.AltitudeAzimuth(lat1, lon1, lat2, lon2, &hc, &zn);
 
     if(m_cbMagneticAzimuth->GetValue()) {
         double results[14];
-          
+
         geomag_calc(lat1, lon1, m_Sight.m_EyeHeight,
                     m_Sight.m_DateTime.GetDay(), m_Sight.m_DateTime.GetMonth(),
                     m_Sight.m_DateTime.GetYear(), results);
-        bearing -= results[0];
+        zn -= results[0];
     }
-    
-    m_tAltitude->SetValue(wxString::Format(_T("%f"), dist));
-    m_tAzimuth->SetValue(wxString::Format(_T("%f"), bearing));
+
+    m_tAltitude->SetValue(wxString::Format(_T("%f"), hc));
+    m_tAzimuth->SetValue(wxString::Format(_T("%f"), zn));
 }
