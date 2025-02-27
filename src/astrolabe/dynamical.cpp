@@ -281,16 +281,19 @@ namespace {
         {cal_to_jd(2012), 66.6},
         {cal_to_jd(2014), 67.3},
         {cal_to_jd(2016), 68.1},
+        {cal_to_jd(2018), 69.0},
+
+        {cal_to_jd(2020), 69.4},
+        {cal_to_jd(2022), 69.3},
+        {cal_to_jd(2024), 69.2},
 
         // estimated
 
-        {cal_to_jd(2018), 69.0},
-        {cal_to_jd(2020), 69.9},
-        {cal_to_jd(2022), 70.0},
-        {cal_to_jd(2024), 71.0},
-        {cal_to_jd(2026), 72.0}
+        {cal_to_jd(2026), 69.0},
+        {cal_to_jd(2028), 69.3},
+        {cal_to_jd(2030), 70.0},
+        {cal_to_jd(2032), 70.1},
 
-     
         };
     const VECTOR(tbl, Years);
     };    
