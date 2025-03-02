@@ -159,32 +159,33 @@ add_definitions(-DUSE_S57)
 ## ---- Section Below - Add your project SET(SRCS and SET(HDRS  etc..
 
 SET(SRCS
-          src/astrolabe/astrolabe.hpp
-          src/astrolabe/calendar.cpp
-          src/astrolabe/dicts.cpp
-          src/astrolabe/dynamical.cpp
-          src/astrolabe/elp2000.cpp
-          src/astrolabe/equinox.cpp
-          src/astrolabe/globals.cpp
-          src/astrolabe/nutation.cpp
-          src/astrolabe/riseset.cpp
-          src/astrolabe/sun.cpp
-          src/astrolabe/util.cpp
-          src/astrolabe/vsop87d.cpp
-          src/geomag/geomag.c
-    	  src/CelestialNavigationDialog.cpp
-    	  src/CelestialNavigationUI.cpp
-          src/SightDialog.cpp
-          src/Sight.cpp
-          src/icons.cpp
-          src/FindBodyDialog.cpp
-          src/FixDialog.cpp
-          src/ClockCorrectionDialog.cpp
-          src/geodesic.c
-          src/transform_star.cpp
-          src/epv00.cpp
-          src/celestial_navigation_pi.cpp
-	)
+        src/astrolabe/astrolabe.hpp
+        src/astrolabe/calendar.cpp
+        src/astrolabe/dicts.cpp
+        src/astrolabe/dynamical.cpp
+        src/astrolabe/elp2000.cpp
+        src/astrolabe/equinox.cpp
+        src/astrolabe/globals.cpp
+        src/astrolabe/nutation.cpp
+        src/astrolabe/riseset.cpp
+        src/astrolabe/sun.cpp
+        src/astrolabe/util.cpp
+        src/astrolabe/vsop87d.cpp
+        src/geomag/geomag.c
+        src/CelestialNavigationDialog.cpp
+        src/CelestialNavigationUI.cpp
+        src/SightDialog.cpp
+        src/Sight.cpp
+        src/icons.cpp
+        src/FindBodyDialog.cpp
+        src/FixDialog.cpp
+        src/ClockCorrectionDialog.cpp
+        src/geodesic.c
+        src/transform_star.cpp
+        src/epv00.cpp
+        src/celestial_navigation_pi.cpp
+        src/moon.cpp
+        )
 
 SET(HDRS
         src/celestial_navigation_pi.h
@@ -192,12 +193,13 @@ SET(HDRS
         src/CelestialNavigationUI.h
         src/ClockCorrectionDialog.h
         src/FindBodyDialog.h
-		src/FixDialog.h
-		src/geodesic.h
-		src/icons.h
-		src/Sight.h
-		src/SightDialog.h
-  	)
+        src/FixDialog.h
+        src/geodesic.h
+        src/icons.h
+        src/Sight.h
+        src/SightDialog.h
+        src/moon.h
+        )
 
 add_definitions(-DPLUGIN_USE_SVG)
 

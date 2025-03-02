@@ -49,6 +49,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/geodesic.c
     ${CMAKE_SOURCE_DIR}/src/geomag/geomag.c
     ${CMAKE_SOURCE_DIR}/src/icons.cpp
+    ${CMAKE_SOURCE_DIR}/src/moon.cpp
 )
 
 add_executable(celestial_tests ${SRC})

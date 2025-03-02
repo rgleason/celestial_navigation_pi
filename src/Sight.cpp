@@ -51,6 +51,7 @@
 #include "celestial_navigation_pi.h"
 #include "Sight.h"
 #include "transform_star.hpp"
+#include "moon.h"
 
 WX_DEFINE_LIST ( wxRealPointList );
 
@@ -561,12 +562,12 @@ wxString Sight::Alminac(double lat, double lon, double ghaast, double rad, doubl
    return _("Almanac Data For ") + m_Body +
 wxString::Format(_("\n\
 Geographical Position (lat, lon) = %.4f %.4f\n\
-GHAAST = %.0f %.1f'\n\
-SHA = %.0f %.1f'\n\
-GHA = %.0f %.1f'\n\
-Dec = %c %.0f %.1f'\n\
-SD = %.1f'\n\
-HP = %.1f'\n\n"), lat, lon,
+GHAAST = %.0f %.4f'\n\
+SHA = %.0f %.4f'\n\
+GHA = %.0f %.4f'\n\
+Dec = %c %.0f %.4f'\n\
+SD = %.4f'\n\
+HP = %.4f'\n\n"), lat, lon,
                  ghaast, ghaast_minutes, sha, sha_minutes,
                  gha, gha_minutes, dec_sign, dec, dec_minutes,
                  SD*60, HP*60);
@@ -620,6 +621,7 @@ RefractionCorrection = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrection
 #endif
 
     double SD = 0;
+    double HP = 0;
     double lc = 0;
 
     if( !m_Body.Cmp(_T("Sun"))) {
@@ -632,11 +634,12 @@ RefractionCorrection = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrection
 ra = %.4f, lc = 0.266564/ra = %.4f\n"), rad, lc);
     }
 
-    /* moon radius: 1738 km
-       distance to moon: 384400 km
-    NOTE: could replace with a routine that finds the distance based on time */
     if(!m_Body.Cmp(_T("Moon"))){
-        SD = r_to_d(1738/384400.0);
+        double jdu = m_CorrectedDateTime.GetJulianDayNumber();
+        double jdd = ut_to_dt(jdu);
+        double moon_dist = moon_distance(jdd);
+        HP = asin(EARTH_RADIUS/moon_dist) * 180/M_PI;
+        SD = asin(K_MOON*sin((HP)*(M_PI/180))) * 180/M_PI;
         lc = r_to_d(asin(d_to_r(SD)));
         m_CalcStr+=wxString::Format(_("\nMoon selected, Limb Correction\n\
 SD = %.4f\n\
@@ -666,7 +669,6 @@ CorrectedAltitude = %.4f\n"), ApparentAltitude,
 
     /* correct for limb shot */
     double ParallaxCorrection = 0;
-    double HP = 0;
     if( !m_Body.Cmp(_T("Sun"))) {
         double rad;
         BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad);
@@ -675,12 +677,9 @@ CorrectedAltitude = %.4f\n"), ApparentAltitude,
         m_CalcStr+=wxString::Format(_("\nSun selected, parallax correction\n\
 rad = %.4f, HP = 0.002442/rad = %.4f\n"), rad, HP);
     }
-      
-    /* earth radius: 6357 km
-       distance to moon: 384400 km
-       NOTE: could replace with a routine that finds the distance based on time */
+
     if(!m_Body.Cmp(_T("Moon"))){
-        HP = r_to_d(6357/384400.0);
+        // HP calculated earlier
         m_CalcStr+=wxString::Format(_("\nMoon selected, parallax correction\n\
 HP = %.4f\n"), HP);
     }
@@ -749,10 +748,11 @@ RefractionCorrectionMoon = .267 * Pressure / (x*(Temperature + 273.15)) / 60.0\n
 RefractionCorrectionMoon = .267 * %.4f / (x*(%.4f + 273.15)) / 60.0\n\
 RefractionCorrectionMoon = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrectionMoon);
 
-    /* moon radius: 1738 km
-       distance to moon: 384400 km
-    NOTE: could replace with a routine that finds the distance based on time */
-    double lunar_SD = r_to_d(1738/384400.0);
+    double jdu = m_CorrectedDateTime.GetJulianDayNumber();
+    double jdd = ut_to_dt(jdu);
+    double moon_dist = moon_distance(jdd);
+    double lunar_HP = asin(EARTH_RADIUS/moon_dist) * 180/M_PI;
+    double lunar_SD = asin(K_MOON*sin((lunar_HP)*(M_PI/180))) * 180/M_PI;
     double lunar_lc = r_to_d(asin(d_to_r(lunar_SD)));
     m_CalcStr+=wxString::Format(_("\nMoon selected, Limb Correction\n\
 SD = %.4f\n\
@@ -780,12 +780,8 @@ CorrectedAltitudeMoon = ApparentAltitudeMoon - RefractionCorrectionMoon - LimbCo
 CorrectedAltitudeMoon = %.4f - %.4f - %.4f\n\
 CorrectedAltitudeMoon = %.4f\n"), ApparentAltitudeMoon, RefractionCorrectionMoon,
                                 LimbCorrectionMoon, CorrectedAltitudeMoon);
-    
-    /* earth radius: 6357 km
-       distance to moon: 384400 km
-       NOTE: could replace with a routine that finds the distance based on time */
+
     double ParallaxCorrectionMoon;
-    double lunar_HP = r_to_d(6357/384400.0);
     m_CalcStr+=wxString::Format(_("\nMoon selected, parallax correction\n\
 HP = %.4f\n"), lunar_HP);
 
