@@ -569,7 +569,7 @@ int safegets(char *buffer,int n){
   char *ptr;                    /** ptr used for finding '\n' **/
   
   buffer[0] = '\0';
-  fgets(buffer,n,stdin);        /** Get n chars **/
+  (void)fgets(buffer,n,stdin);        /** Get n chars **/
   buffer[n+1]='\0';             /** Set last char to null **/
   ptr=strchr(buffer,'\n');      /** If string contains '\n' **/
   if (ptr!=NULL){                /** If string contains '\n' **/
@@ -730,13 +730,13 @@ int       gh;
             {
               if (iflag == 1)
                 {
-                  fgets(inbuff, MAXREAD, stream);
+                  (void)fgets(inbuff, MAXREAD, stream);
                   sscanf(inbuff, "%d%d%lg%lg%lg%lg%s%d",
                          &n, &m, &g, &hh, &trash, &trash, irat, &line_num);
                 }
               else
                 {
-                  fgets(inbuff, MAXREAD, stream);
+                  (void)fgets(inbuff, MAXREAD, stream);
                   sscanf(inbuff, "%d%d%lg%lg%lg%lg%s%d",
                          &n, &m, &trash, &trash, &g, &hh, irat, &line_num);
                 }
@@ -1084,8 +1084,8 @@ int shval3(igdgc, flat, flon, elev, nmax, gh, iext, ext1, ext2, ext3)
   double r;
   double a2;
   double b2;
-  double rr;
-  double fm,fn;
+  double rr = 0;
+  double fm,fn = 0;
   double sl[14];
   double cl[14];
   double p[119];

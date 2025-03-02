@@ -167,7 +167,7 @@ void Sight::BodyLocation(wxDateTime time, double *lat, double *lon, double *ghaa
     try {
         Sun sun;
         sun.dimension3(jdd, l, b, r);
-    } catch (Error e) {
+    } catch (Error const& e) {
         static bool showonce = false;
         if(!showonce) {
             wxString err;
