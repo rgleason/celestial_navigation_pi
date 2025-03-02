@@ -39,7 +39,7 @@ using astrolabe::util::polynomial;
 struct Years {
     double jd;
     double secs;
-    };
+};
 
 namespace {
     const Years _tbl[] = {
@@ -76,7 +76,7 @@ namespace {
         {cal_to_jd(1670), 24.0},
         {cal_to_jd(1672), 22.0},
         {cal_to_jd(1674), 20.0},
-        {cal_to_jd(1676), 28.0},
+        {cal_to_jd(1676), 18.0},
         {cal_to_jd(1678), 16.0},
 
         {cal_to_jd(1680), 14.0},
@@ -294,24 +294,24 @@ namespace {
         {cal_to_jd(2030), 70.0},
         {cal_to_jd(2032), 70.1},
 
-        };
+    };
     const VECTOR(tbl, Years);
-    };    
-    
+};
+
 double astrolabe::dynamical::deltaT_seconds(double jd) {
-    /* Return deltaT as seconds of time. 
-    
+    /* Return deltaT as seconds of time.
+
     For a historical range from 1620 to a recent year, we interpolate from a
     table of observed values. Outside that range we use formulae.
-    
+
     Parameters:
         jd : Julian Day number
     Returns:
         deltaT in seconds
-    
+
     */
     const int _tbl_start = 1620;
-    const int _tbl_end = 2018;
+    const int _tbl_end = 2032;
     int yr;
     int mo;
     double day;
@@ -319,32 +319,37 @@ double astrolabe::dynamical::deltaT_seconds(double jd) {
     //
     // 1620 - 20xx
     //
-    if (_tbl_start < yr && yr < _tbl_end) {
+    if (_tbl_start <= yr && yr <= _tbl_end) {
         static const double _jdstart = cal_to_jd(_tbl_start);
         static const double _jdend = cal_to_jd(_tbl_end);
         double jd0 = _jdstart;
         double jd1 = _jdend;
-        double secs0 = 0.0;
-        double secs1 = 0.0;
+        double secs0 = _tbl[0].secs;
+        double secs1 = _tbl[(sizeof(_tbl)/sizeof(_tbl[0]))-1].secs;
         //
         // linear search to find the entries that bracket our target date. We could
         // improve this with a binary search or some sort of index
         //
-        for (std::vector<Years>::const_iterator p = tbl.begin(); p != tbl.end(); ++p)
+        for (std::vector<Years>::const_iterator p = tbl.begin(); p != tbl.end(); ++p) {
             if (jd >= p->jd && p->jd > jd0) {
                 jd0 = p->jd;
                 secs0 = p->secs;
-                }
+            }
             else if (jd <= p->jd && p->jd < jd1) {
                 jd1 = p->jd;
                 secs1 = p->secs;
-                }
+            }
+        }
+        if (jd0 == jd1) {
+            return secs0;
+        }
+
         // simple linear interpolation between two values
         return ((jd - jd0) * (secs1 - secs0) / (jd1 - jd0)) + secs0;
-        }
-    
-    const double t = (yr - 2000) / 100.0;
-    
+    }
+
+    double t = (yr - 2000) / 100.0;
+
     //
     // before 948 [Meeus-1998: equation 10.1]
     //
@@ -352,27 +357,37 @@ double astrolabe::dynamical::deltaT_seconds(double jd) {
         static const double _ktbl[] = {2177, 497, 44.1};
         static const VECTOR(ktbl, double);
         return polynomial(ktbl, t);
-        }
+    }
 
     //
-    // 948 - 1620 and after 2000 [Meeus-1998: equation 10.2)
+    // 948 - 1620 [Meeus-1998: equation 10.2)
     //
-    static const double _ktbl[] = {102, 102, 25.3};
-    static const VECTOR(ktbl, double);
-    double result = polynomial(ktbl, t);
-    
-    //
-    // correction for 2000-2100 [Meeus-1998: pg 78]
-    //   
-    if (_tbl_end < yr && yr < 2100) 
-        result = 68.1;
-        result += 0.37 * (yr - 2100);
-    return result;
+    if (yr < 1620) {
+        static const double _ktbl[] = {102, 102, 25.3};
+        static const VECTOR(ktbl, double);
+        return polynomial(ktbl, t);
     }
+
+    // after 2000, Meeus equations do not work anymore
+    // use https://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html instead
+    if (yr < 2050) {
+        t = yr - 2000;
+        static const double _ktbl[] = {62.92, 0.32217, 0.005589};
+        static const VECTOR(ktbl, double);
+        return polynomial(ktbl, t);
+    }
+
+    if (yr < 2150) {
+        return -20.0 + 32.0 * ((yr-1820.0)/100.0)*((yr-1820.0)/100.0) - 0.5628 * (2150.0 - yr);
+    }
+
+    t = (yr-1820)/100;
+    return -20.0 + 32.0 * t * t;
+}
 
 double astrolabe::dynamical::dt_to_ut(double jd) {
     /* Convert Julian Day from dynamical to universal time.
-    
+
     Parameters:
         jd : Julian Day number (dynamical time)
     Returns:
@@ -384,13 +399,11 @@ double astrolabe::dynamical::dt_to_ut(double jd) {
     double jdt = dt/seconds_per_day;
     jd = jd - jdt;
     return jd;
-//    return jd - deltaT_seconds(jd) / seconds_per_day;
-    }
-	
-	
+}
+
 double astrolabe::dynamical::ut_to_dt(double jd) {
     /* Convert Julian Day from universal to dynamical time.
-    
+
     Parameters:
         jd : Julian Day number (dynamical time)
     Returns:
@@ -402,6 +415,4 @@ double astrolabe::dynamical::ut_to_dt(double jd) {
     double jdt = dt/seconds_per_day;
     jd = jd + jdt;
     return jd;
-//    return jd + deltaT_seconds(jd) / seconds_per_day;
-    }
-
+}
