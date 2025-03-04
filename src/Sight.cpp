@@ -965,6 +965,8 @@ wxRealPoint Sight::DistancePoint( double altitude, double trace, double lat, dou
 void Sight::AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
                             double *hc, double *zn)
 {
+	lat1 = resolve_heading_positive(lat1);
+	lat2 = resolve_heading_positive(lat2);
 	double lat1_r = d_to_r(lat1);
 	double lon1_r = d_to_r(lon1);
 	double lat2_r = d_to_r(lat2);
