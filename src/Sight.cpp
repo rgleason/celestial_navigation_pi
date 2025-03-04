@@ -405,8 +405,8 @@ wxRealPointList *Sight::ReduceToConvexPolygon(wxRealPointList *points)
    return polygon;
 }
 
-/* Draw a polygon (specified in lat/lon coords) to dc given a list of points */
-void Sight::DrawPolygon(PlugIn_ViewPort &VP, wxRealPointList &area)
+/* Draw a polygon or polyline (specified in lat/lon coords) to dc given a list of points */
+void Sight::DrawPolygon(PlugIn_ViewPort &VP, wxRealPointList &area, bool poly)
 {
    int n = area.size();
    wxPoint *ppoints = new wxPoint[n];
@@ -443,10 +443,16 @@ void Sight::DrawPolygon(PlugIn_ViewPort &VP, wxRealPointList &area)
    }
 
    if(!(rear1 && rear2)) {
-       if(m_dc)
-           m_dc->DrawPolygon(n, ppoints);
-       else {
-         glBegin(GL_POLYGON);
+       if(m_dc) {
+           if (poly) {
+               m_dc->DrawPolygon(n, ppoints);
+           } else
+               m_dc->DrawLines(n, ppoints);
+       } else {
+         if (poly) {
+             glBegin(GL_POLYGON);
+         } else
+             glBegin(GL_LINE_STRIP);
          for(int i=n-1; i>=0; i--)
              glVertex2i(ppoints[i].x, ppoints[i].y);
          glEnd();
@@ -476,18 +482,26 @@ void Sight::Render( wxDC *dc, PlugIn_ViewPort &VP )
     } else {
         glColor4ub(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(), m_Colour.Alpha());
         glPushAttrib(GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT);      //Save state
-        
+        glLineWidth(1);
         glEnable(GL_POLYGON_SMOOTH);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
-    
+
     std::list<wxRealPointList*>::iterator it = polygons.begin();
     while(it != polygons.end()) {
-        DrawPolygon(VP, **it);
+        DrawPolygon(VP, **it, true);
         ++it;
     }
-    
+
+    if (dc) {
+        dc->SetPen ( wxPen(m_Colour, 3) );
+    } else {
+        glLineWidth(3);
+        glEnable(GL_LINE_SMOOTH);
+    }
+    DrawPolygon(VP, lines, false);
+
     if(!m_dc)
         glPopAttrib();            // restore state
 }
@@ -919,6 +933,7 @@ CorrectedMeasurement = %.4f\n"), m_Measurement, Corrections, IndexCorrection,
 void Sight::RebuildPolygonsAltitude()
 {
       polygons.clear();
+      lines.clear();
 
       double altitudemin, altitudemax, altitudestep;
       altitudemin = m_ObservedAltitude - m_MeasurementCertainty/60;
@@ -1002,12 +1017,21 @@ void Sight::BuildAltitudeLineOfPosition(double tracestep,
    wxRealPointList *p, *l = new wxRealPointList;
    for(double trace=-180; trace<=180; trace+=tracestep) {
       p = new wxRealPointList;
+      double mx = 0;
+      double my = 0;
+      int mc = 0;
       for(double altitude=altitudemin; altitude<=altitudemax
               && fabs(altitude) <= 90; altitude+=altitudestep) {
-            p->Append(new wxRealPoint(DistancePoint( altitude, trace, lat, lon)));
+            wxRealPoint *point = new wxRealPoint(DistancePoint( altitude, trace, lat, lon));
+            p->Append(point);
+            mx += point->x;
+            my += point->y;
+            mc++;
             if(altitudestep == 0)
                 break;
       }
+      if (mc > 0)
+          lines.Append(new wxRealPoint(mx/mc, my/mc));
       wxRealPointList *m = MergePoints(l, p);
       wxRealPointList *n = ReduceToConvexPolygon(m);
       polygons.push_back(n);
@@ -1025,6 +1049,7 @@ void Sight::BuildAltitudeLineOfPosition(double tracestep,
 void Sight::RebuildPolygonsAzimuth()
 {
     polygons.clear();
+    lines.clear();
 
     double azimuthmin, azimuthmax, azimuthstep;
     azimuthmin = m_Measurement - m_MeasurementCertainty/60;
@@ -1158,8 +1183,11 @@ void Sight::BuildBearingLineOfPosition(double altitudestep,
         if(m_bMagneticNorth && (int)altitude%10==0)
             progressdialog.Update(200-altitude);
 
-        int index = 0;
         p = new wxRealPointList;
+        int index = 0;
+        double mx = 0;
+        double my = 0;
+        int mc = 0;
         double lat, lon, llat, llon;
         for(double azimuth=azimuthmin; azimuth<=azimuthmax; azimuth+=azimuthstep)
         {
@@ -1174,7 +1202,11 @@ void Sight::BuildBearingLineOfPosition(double altitudestep,
                     lat = -90.0;
 
                 {
-                    p->Append(new wxRealPoint(lat, lon)); 
+                    wxRealPoint *point = new wxRealPoint(lat, lon);
+                    mx += point->x;
+                    my += point->y;
+                    mc++;
+                    p->Append(point);
                     lasttrace[index] = trace;
 
                     lastlat[index] = lat;
@@ -1183,6 +1215,8 @@ void Sight::BuildBearingLineOfPosition(double altitudestep,
             }
             index += 1;
         }
+        if (mc > 0)
+            lines.Append(new wxRealPoint(mx/mc, my/mc));
         wxRealPointList *m = MergePoints(l, p);
         wxRealPointList *n = ReduceToConvexPolygon(m);
         polygons.push_back(n);      

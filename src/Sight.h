@@ -125,6 +125,7 @@ protected:
     wxRealPointList *ReduceToConvexPolygon(wxRealPointList *points);
 
     std::list<wxRealPointList*> polygons;
+    wxRealPointList lines;
 
 private:
     wxRealPoint DistancePoint( double altitude, double trace, double lat, double lon);
@@ -137,7 +138,7 @@ private:
                                     double azimuthmin, double azimuthmax, double azimuthstep,
                                     double timemin, double timemax, double timestep);
 
-    void DrawPolygon(PlugIn_ViewPort &VP, wxRealPointList &area);
+    void DrawPolygon(PlugIn_ViewPort &VP, wxRealPointList &area, bool poly);
 
     wxDC *m_dc;
 

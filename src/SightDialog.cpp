@@ -177,14 +177,6 @@ SightDialog::SightDialog( wxWindow* parent, Sight &s, int clock_offset)
 
 SightDialog::~SightDialog( )
 {
-   if(m_Sight.m_MeasurementCertainty < .6) {
-       wxMessageDialog w
-           ( m_parent,
-             _("Measurement certainty likely set to small, sight may not appear "),
-             _("Warning"), wxOK | wxICON_WARNING );
-       w.ShowModal();
-   }
-
     wxFileConfig *pConf = GetOCPNConfigObject();
     pConf->SetPath( _T("/PlugIns/CelestialNavigation") );
 
