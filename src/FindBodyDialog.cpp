@@ -112,4 +112,13 @@ void FindBodyDialog::Update()
 
     m_tAltitude->SetValue(wxString::Format(_T("%f"), hc));
     m_tAzimuth->SetValue(wxString::Format(_T("%f"), zn));
+    m_tIntercept->SetValue(wxString::Format(_T("%f"), fabs(hc - m_Sight.m_ObservedAltitude)*60));
+    if (hc >= m_Sight.m_ObservedAltitude) {
+        m_cbAway->SetValue(true);
+        m_cbTowards->SetValue(false);
+    } else {
+        m_cbTowards->SetValue(true);
+        m_cbAway->SetValue(false);
+    }
+
 }
