@@ -108,6 +108,7 @@ void FindBodyDialog::Update()
                     m_Sight.m_DateTime.GetDay(), m_Sight.m_DateTime.GetMonth(),
                     m_Sight.m_DateTime.GetYear(), results);
         zn -= results[0];
+        zn = resolve_heading_positive(zn);
     }
 
     m_tAltitude->SetValue(wxString::Format(_T("%f"), hc));
