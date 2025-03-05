@@ -29,11 +29,19 @@
 #include <list>
 
 #ifdef __MSVC__
+#define _USE_MATH_DEFINES
 #include <float.h>
 #include <iostream>
 #include <limits>
+#include <cmath>
+
+#ifndef NAN
 #define NAN std::numeric_limits<double>::quiet_NaN ()
+#endif
+
+#ifndef INFINITY
 #define INFINITY std::numeric_limits<double>::infinity ()
+#endif
 
 #define isnan _isnan
 #define isinf(x) (!_finite(x) && !_isnan(x))

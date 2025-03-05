@@ -566,14 +566,15 @@ int geomag_calc(double latitude, double longitude, double alt,
 /****************************************************************************/
 
 int safegets(char *buffer,int n){
-  char *ptr;                    /** ptr used for finding '\n' **/
+  char *ptr;                          /** ptr used for finding '\n' **/
   
   buffer[0] = '\0';
-  (void)fgets(buffer,n,stdin);        /** Get n chars **/
-  buffer[n+1]='\0';             /** Set last char to null **/
-  ptr=strchr(buffer,'\n');      /** If string contains '\n' **/
-  if (ptr!=NULL){                /** If string contains '\n' **/
-    ptr[0]='\0';               /** Change char to '\0' **/
+  if (fgets(buffer,n,stdin) == NULL)  /** Get n chars **/
+    return 0;
+  buffer[n+1]='\0';                   /** Set last char to null **/
+  ptr=strchr(buffer,'\n');            /** If string contains '\n' **/
+  if (ptr!=NULL){                     /** If string contains '\n' **/
+    ptr[0]='\0';                      /** Change char to '\0' **/
     if (buffer[0] == '\0') printf("\n ... no entry ...\n");
   }
   
@@ -730,13 +731,19 @@ int       gh;
             {
               if (iflag == 1)
                 {
-                  (void)fgets(inbuff, MAXREAD, stream);
+                  if (fgets(inbuff, MAXREAD, stream) == NULL) {
+                    printf("\nError reading file %s", file);
+                    return 0;
+                  }
                   sscanf(inbuff, "%d%d%lg%lg%lg%lg%s%d",
                          &n, &m, &g, &hh, &trash, &trash, irat, &line_num);
                 }
               else
                 {
-                  (void)fgets(inbuff, MAXREAD, stream);
+                  if (fgets(inbuff, MAXREAD, stream) == NULL) {
+                    printf("\nError reading file %s", file);
+                    return 0;
+                  }
                   sscanf(inbuff, "%d%d%lg%lg%lg%lg%s%d",
                          &n, &m, &trash, &trash, &g, &hh, irat, &line_num);
                 }

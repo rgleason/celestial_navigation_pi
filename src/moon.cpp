@@ -4,9 +4,12 @@
 //    for OpenCPN Celestial Plug-in
 //  Created by Robert Bossert on 2/9/25.
 
+#include <wx/wx.h>
 #include <iostream>
 #include <cmath>
 #include <iomanip>
+#include "ocpn_plugin.h"
+#include "Sight.h"
 
 double modulo_360(double big_degrees) {
     //
