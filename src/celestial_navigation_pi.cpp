@@ -42,6 +42,9 @@
 #include "Sight.h"
 #include "celestial_navigation_pi.h"
 #include "icons.h"
+#include <wx/jsonreader.h>
+#include <wx/jsonwriter.h>
+#include <wx/jsonval.h>
 
 using namespace std;
 
@@ -104,7 +107,6 @@ celestial_navigation_pi::~celestial_navigation_pi(void){}
 //
 //---------------------------------------------------------------------------------------------------------
 
-extern "C" int geomag_load(const char *mdfile);
 
 int celestial_navigation_pi::Init(void)
 {
@@ -134,6 +136,7 @@ int celestial_navigation_pi::Init(void)
             WANTS_NMEA_EVENTS         |
 //            WANTS_CURSOR_LATLON       |
             WANTS_TOOLBAR_CALLBACK    |
+            WANTS_PLUGIN_MESSAGING    |
             INSTALLS_TOOLBAR_TOOL
         );
 }
@@ -322,4 +325,46 @@ void celestial_navigation_pi_BoatPos(double &lat, double &lon)
 {
     lat = s_boat_lat;
     lon = s_boat_lon;
+}
+
+double gQueryVar = 0;
+
+void celestial_navigation_pi::SetPluginMessage(wxString &message_id, wxString &message_body)
+{
+    if (message_id == _T("WMM_VARIATION")) {
+        wxJSONValue root;
+        wxJSONReader reader;
+        if (reader.Parse(message_body, &root) > 0)
+            return;
+
+        wxString decl = root[_T("Decl")].AsString();
+        double decl_val;
+        decl.ToDouble(&decl_val);
+
+        gQueryVar = decl_val;
+    }
+}
+
+double celestial_navigation_pi_GetWMM(double lat, double lon, double altitude, wxDateTime date)
+{
+    wxJSONValue v;
+    v[_T("Lat")] = lat;
+    v[_T("Lon")] = lon;
+    v[_T("Year")] = date.GetYear();
+    v[_T("Month")] = date.GetMonth();
+    v[_T("Day")] = date.GetDay();
+
+    wxJSONWriter w;
+    wxString out;
+    w.Write(v, out);
+
+    gQueryVar = 360;
+    SendPluginMessage(wxString(_T("WMM_VARIATION_REQUEST")), out);
+    if (gQueryVar == 360) {
+        double results[14];
+        geomag_calc(lat, lon, altitude / 1000, date.GetDay(), date.GetMonth(), date.GetYear(), results);
+        return results[0];
+    }
+
+    return gQueryVar;
 }
