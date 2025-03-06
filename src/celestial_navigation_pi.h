@@ -79,6 +79,7 @@ public:
       static wxString StandardPath();
       void SetPositionFixEx(PlugIn_Position_Fix_Ex &pfix);
       void SetCursorLatLon(double lat, double lon);
+      void SetPluginMessage(wxString &message_id, wxString &message_body);
 	  
 
 private:
@@ -89,5 +90,10 @@ private:
 };
 
 extern void celestial_navigation_pi_BoatPos(double &lat, double &lon);
+extern double celestial_navigation_pi_GetWMM(double lat, double lon, double altitude, wxDateTime date);
+
+extern "C" int geomag_load(const char *mdfile);
+extern "C" int geomag_calc(double latitude, double longitude, double alt,
+                           int day, int month, double year, double results[14]);
 
 #endif

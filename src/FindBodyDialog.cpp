@@ -78,9 +78,6 @@ FindBodyDialog::~FindBodyDialog( )
         pConf->Write( _T("Lon"), lon );
 }
 
-extern "C" int geomag_calc(double latitude, double longitude, double alt,
-                           int day, int month, double year, double results[14]);
-
 void FindBodyDialog::OnUpdate( wxCommandEvent& event )
 {
     Update();
@@ -102,12 +99,7 @@ void FindBodyDialog::Update()
     m_Sight.AltitudeAzimuth(lat1, lon1, lat2, lon2, &hc, &zn);
 
     if(m_cbMagneticAzimuth->GetValue()) {
-        double results[14];
-
-        geomag_calc(lat1, lon1, m_Sight.m_EyeHeight,
-                    m_Sight.m_DateTime.GetDay(), m_Sight.m_DateTime.GetMonth(),
-                    m_Sight.m_DateTime.GetYear(), results);
-        zn -= results[0];
+        zn -= celestial_navigation_pi_GetWMM(lat1, lon1, m_Sight.m_EyeHeight, m_Sight.m_DateTime);
         zn = resolve_heading_positive(zn);
     }
 

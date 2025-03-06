@@ -161,10 +161,6 @@ double rad2deg(double radians)
   return 180.0 * radians / M_PI;
 }
 
-extern "C" int geomag_calc(double latitude, double longitude, double alt,
-                           int day, int month, double year,
-                           double results[14]);
-
 void FixDialog::Update(int clock_offset, bool warnings)
 {
     std::list<std::vector<double> > J;

@@ -326,10 +326,6 @@ std::list<wxRealPoint> Sight::GetPoints()
     return points;
 }
 
-extern "C" int geomag_calc(double latitude, double longitude, double alt,
-                           int day, int month, double year,
-                           double results[14]);
-
 /* Combine two lists of points by appending p2 to p1 */
 wxRealPointList *Sight::MergePoints(wxRealPointList *p1, wxRealPointList *p2)
 {
@@ -539,12 +535,8 @@ void Sight::RebuildPolygons()
 
             double localbearing = m_ShiftBearing;
             if(m_bMagneticShiftBearing) {
-                double results[14];
                 lon = resolve_heading(lon);
-                geomag_calc(lat, lon, m_EyeHeight,
-                            m_CorrectedDateTime.GetDay(), m_CorrectedDateTime.GetMonth(), m_CorrectedDateTime.GetYear(),
-                            results);
-                localbearing += results[0];
+                localbearing += celestial_navigation_pi_GetWMM(lat, lon, m_EyeHeight, m_CorrectedDateTime);
             }
             double localaltitude = 90-m_ShiftNm/60;
             *p = DistancePoint(localaltitude, localbearing, lat, lon);
@@ -1087,11 +1079,7 @@ bool Sight::BearingPoint( double altitude, double bearing,
             
         /* apply magnetic correction to bearing */
         if(m_bMagneticNorth) {
-            double results[14];
-            geomag_calc(lat, lon, m_EyeHeight,
-                        m_CorrectedDateTime.GetDay(), m_CorrectedDateTime.GetMonth(), m_CorrectedDateTime.GetYear(),
-                        results);
-            localbearing += results[0];
+            localbearing += celestial_navigation_pi_GetWMM(lat, lon, m_EyeHeight, m_CorrectedDateTime);
         }
         trace = localbearing + 180;
     }
@@ -1134,11 +1122,7 @@ bool Sight::BearingPoint( double altitude, double bearing,
 	
         /* apply magnetic correction to bearing */
         if(m_bMagneticNorth) {
-            double results[14];
-            geomag_calc(rlat, rlon, m_EyeHeight,
-                        m_CorrectedDateTime.GetDay(), m_CorrectedDateTime.GetMonth(), m_CorrectedDateTime.GetYear(),
-                        results);
-            b -= results[0];
+            b -= celestial_navigation_pi_GetWMM(rlat, rlon, m_EyeHeight, m_CorrectedDateTime);
         }
 
         mdb = bearing - b;
