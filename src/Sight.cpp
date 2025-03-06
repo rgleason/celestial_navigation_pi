@@ -152,7 +152,6 @@ void Sight::BodyLocation(wxDateTime time, double *lat, double *lon, double *ghaa
     astrolabe::globals::vsop87d_text_path.append("/data/");
     astrolabe::globals::vsop87d_text_path.append("vsop87d.txt");
 
-    time.MakeFromUTC();
     double jdu = time.GetJulianDayNumber();
     // julian day dynamic
     double jdd = ut_to_dt(jdu);              
