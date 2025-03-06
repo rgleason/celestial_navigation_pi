@@ -152,6 +152,7 @@ void Sight::BodyLocation(wxDateTime time, double *lat, double *lon, double *ghaa
     astrolabe::globals::vsop87d_text_path.append("/data/");
     astrolabe::globals::vsop87d_text_path.append("vsop87d.txt");
 
+    time.MakeFromUTC();
     double jdu = time.GetJulianDayNumber();
     // julian day dynamic
     double jdd = ut_to_dt(jdu);              
@@ -509,7 +510,7 @@ void Sight::Recompute(int clock_offset)
         m_CalcStr+=wxString::Format(_("Applying clock correction of %d seconds\n\n"), clock_offset);
 
     m_CorrectedDateTime = m_DateTime + wxTimeSpan::Seconds(clock_offset);
-    
+
     switch(m_Type) {
     case ALTITUDE: RecomputeAltitude(); break;
     case AZIMUTH: RecomputeAzimuth(); break;
@@ -640,7 +641,9 @@ ra = %.4f, lc = 0.266564/ra = %.4f\n"), rad, lc);
     }
 
     if(!m_Body.Cmp(_T("Moon"))){
-        double jdu = m_CorrectedDateTime.GetJulianDayNumber();
+        wxDateTime time = m_CorrectedDateTime;
+        time.MakeFromUTC();
+        double jdu = time.GetJulianDayNumber();
         double jdd = ut_to_dt(jdu);
         double moon_dist = moon_distance(jdd);
         HP = asin(EARTH_RADIUS/moon_dist) * 180/M_PI;
@@ -753,7 +756,9 @@ RefractionCorrectionMoon = .267 * Pressure / (x*(Temperature + 273.15)) / 60.0\n
 RefractionCorrectionMoon = .267 * %.4f / (x*(%.4f + 273.15)) / 60.0\n\
 RefractionCorrectionMoon = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrectionMoon);
 
-    double jdu = m_CorrectedDateTime.GetJulianDayNumber();
+    wxDateTime time = m_CorrectedDateTime;
+    time.MakeFromUTC();
+    double jdu = time.GetJulianDayNumber();
     double jdd = ut_to_dt(jdu);
     double moon_dist = moon_distance(jdd);
     double lunar_HP = asin(EARTH_RADIUS/moon_dist) * 180/M_PI;
