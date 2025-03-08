@@ -74,12 +74,9 @@ FindBodyDialog::~FindBodyDialog( )
     double lat, lon;
     if(m_tLatitude->GetValue().ToDouble(&lat))
         pConf->Write( _T("Lat"), lat );
-    if(m_tLatitude->GetValue().ToDouble(&lon))
+    if(m_tLongitude->GetValue().ToDouble(&lon))
         pConf->Write( _T("Lon"), lon );
 }
-
-extern "C" int geomag_calc(double latitude, double longitude, double alt,
-                           int day, int month, double year, double results[14]);
 
 void FindBodyDialog::OnUpdate( wxCommandEvent& event )
 {
@@ -94,25 +91,27 @@ void FindBodyDialog::OnDone( wxCommandEvent& event )
 void FindBodyDialog::Update()
 {
     /* NOTE: we do not peform any altitude corrections here */
-    double lat1, lon1, lat2, lon2, bearing, dist;
+    double lat1, lon1, lat2, lon2, hc, zn;
     m_tLatitude->GetValue().ToDouble(&lat1);
     m_tLongitude->GetValue().ToDouble(&lon1);
-    
+
     m_Sight.BodyLocation(m_Sight.m_DateTime, &lat2, &lon2, 0, 0);
-
-    ll_gc_ll_reverse(lat1, lon1, lat2, lon2, &bearing, &dist);
-
-    dist = 90 - dist/60;
+    m_Sight.AltitudeAzimuth(lat1, lon1, lat2, lon2, &hc, &zn);
 
     if(m_cbMagneticAzimuth->GetValue()) {
-        double results[14];
-          
-        geomag_calc(lat1, lon1, m_Sight.m_EyeHeight,
-                    m_Sight.m_DateTime.GetDay(), m_Sight.m_DateTime.GetMonth(),
-                    m_Sight.m_DateTime.GetYear(), results);
-        bearing -= results[0];
+        zn -= celestial_navigation_pi_GetWMM(lat1, lon1, m_Sight.m_EyeHeight, m_Sight.m_DateTime);
+        zn = resolve_heading_positive(zn);
     }
-    
-    m_tAltitude->SetValue(wxString::Format(_T("%f"), dist));
-    m_tAzimuth->SetValue(wxString::Format(_T("%f"), bearing));
+
+    m_tAltitude->SetValue(wxString::Format(_T("%f"), hc));
+    m_tAzimuth->SetValue(wxString::Format(_T("%f"), zn));
+    m_tIntercept->SetValue(wxString::Format(_T("%f"), fabs(hc - m_Sight.m_ObservedAltitude)*60));
+    if (hc >= m_Sight.m_ObservedAltitude) {
+        m_cbAway->SetValue(true);
+        m_cbTowards->SetValue(false);
+    } else {
+        m_cbTowards->SetValue(true);
+        m_cbAway->SetValue(false);
+    }
+
 }

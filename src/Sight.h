@@ -29,11 +29,19 @@
 #include <list>
 
 #ifdef __MSVC__
+#define _USE_MATH_DEFINES
 #include <float.h>
 #include <iostream>
 #include <limits>
+#include <cmath>
+
+#ifndef NAN
 #define NAN std::numeric_limits<double>::quiet_NaN ()
+#endif
+
+#ifndef INFINITY
 #define INFINITY std::numeric_limits<double>::infinity ()
+#endif
 
 #define isnan _isnan
 #define isinf(x) (!_finite(x) && !_isnan(x))
@@ -102,6 +110,8 @@ public:
     virtual void Render(wxDC *dc, PlugIn_ViewPort &pVP);
 
     void BodyLocation(wxDateTime time, double *lat, double *lon, double *ghaash, double *rad);
+    void AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
+                         double *hc, double *zn);
     std::list<wxRealPoint> GetPoints();
 
     wxString m_CalcStr;
@@ -123,6 +133,7 @@ protected:
     wxRealPointList *ReduceToConvexPolygon(wxRealPointList *points);
 
     std::list<wxRealPointList*> polygons;
+    wxRealPointList lines;
 
 private:
     wxRealPoint DistancePoint( double altitude, double trace, double lat, double lon);
@@ -135,7 +146,7 @@ private:
                                     double azimuthmin, double azimuthmax, double azimuthstep,
                                     double timemin, double timemax, double timestep);
 
-    void DrawPolygon(PlugIn_ViewPort &VP, wxRealPointList &area);
+    void DrawPolygon(PlugIn_ViewPort &VP, wxRealPointList &area, bool poly);
 
     wxDC *m_dc;
 

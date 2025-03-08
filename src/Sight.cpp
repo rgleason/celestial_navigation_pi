@@ -51,6 +51,7 @@
 #include "celestial_navigation_pi.h"
 #include "Sight.h"
 #include "transform_star.hpp"
+#include "moon.h"
 
 WX_DEFINE_LIST ( wxRealPointList );
 
@@ -167,7 +168,7 @@ void Sight::BodyLocation(wxDateTime time, double *lat, double *lon, double *ghaa
     try {
         Sun sun;
         sun.dimension3(jdd, l, b, r);
-    } catch (Error e) {
+    } catch (Error const& e) {
         static bool showonce = false;
         if(!showonce) {
             wxString err;
@@ -325,10 +326,6 @@ std::list<wxRealPoint> Sight::GetPoints()
     return points;
 }
 
-extern "C" int geomag_calc(double latitude, double longitude, double alt,
-                           int day, int month, double year,
-                           double results[14]);
-
 /* Combine two lists of points by appending p2 to p1 */
 wxRealPointList *Sight::MergePoints(wxRealPointList *p1, wxRealPointList *p2)
 {
@@ -404,8 +401,8 @@ wxRealPointList *Sight::ReduceToConvexPolygon(wxRealPointList *points)
    return polygon;
 }
 
-/* Draw a polygon (specified in lat/lon coords) to dc given a list of points */
-void Sight::DrawPolygon(PlugIn_ViewPort &VP, wxRealPointList &area)
+/* Draw a polygon or polyline (specified in lat/lon coords) to dc given a list of points */
+void Sight::DrawPolygon(PlugIn_ViewPort &VP, wxRealPointList &area, bool poly)
 {
    int n = area.size();
    wxPoint *ppoints = new wxPoint[n];
@@ -442,10 +439,16 @@ void Sight::DrawPolygon(PlugIn_ViewPort &VP, wxRealPointList &area)
    }
 
    if(!(rear1 && rear2)) {
-       if(m_dc)
-           m_dc->DrawPolygon(n, ppoints);
-       else {
-         glBegin(GL_POLYGON);
+       if(m_dc) {
+           if (poly) {
+               m_dc->DrawPolygon(n, ppoints);
+           } else
+               m_dc->DrawLines(n, ppoints);
+       } else {
+         if (poly) {
+             glBegin(GL_POLYGON);
+         } else
+             glBegin(GL_LINE_STRIP);
          for(int i=n-1; i>=0; i--)
              glVertex2i(ppoints[i].x, ppoints[i].y);
          glEnd();
@@ -475,18 +478,26 @@ void Sight::Render( wxDC *dc, PlugIn_ViewPort &VP )
     } else {
         glColor4ub(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(), m_Colour.Alpha());
         glPushAttrib(GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT);      //Save state
-        
+        glLineWidth(1);
         glEnable(GL_POLYGON_SMOOTH);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
-    
+
     std::list<wxRealPointList*>::iterator it = polygons.begin();
     while(it != polygons.end()) {
-        DrawPolygon(VP, **it);
+        DrawPolygon(VP, **it, true);
         ++it;
     }
-    
+
+    if (dc) {
+        dc->SetPen ( wxPen(m_Colour, 3) );
+    } else {
+        glLineWidth(3);
+        glEnable(GL_LINE_SMOOTH);
+    }
+    DrawPolygon(VP, lines, false);
+
     if(!m_dc)
         glPopAttrib();            // restore state
 }
@@ -499,7 +510,7 @@ void Sight::Recompute(int clock_offset)
         m_CalcStr+=wxString::Format(_("Applying clock correction of %d seconds\n\n"), clock_offset);
 
     m_CorrectedDateTime = m_DateTime + wxTimeSpan::Seconds(clock_offset);
-    
+
     switch(m_Type) {
     case ALTITUDE: RecomputeAltitude(); break;
     case AZIMUTH: RecomputeAzimuth(); break;
@@ -524,12 +535,8 @@ void Sight::RebuildPolygons()
 
             double localbearing = m_ShiftBearing;
             if(m_bMagneticShiftBearing) {
-                double results[14];
                 lon = resolve_heading(lon);
-                geomag_calc(lat, lon, m_EyeHeight,
-                            m_CorrectedDateTime.GetDay(), m_CorrectedDateTime.GetMonth(), m_CorrectedDateTime.GetYear(),
-                            results);
-                localbearing += results[0];
+                localbearing += celestial_navigation_pi_GetWMM(lat, lon, m_EyeHeight, m_CorrectedDateTime);
             }
             double localaltitude = 90-m_ShiftNm/60;
             *p = DistancePoint(localaltitude, localbearing, lat, lon);
@@ -561,12 +568,12 @@ wxString Sight::Alminac(double lat, double lon, double ghaast, double rad, doubl
    return _("Almanac Data For ") + m_Body +
 wxString::Format(_("\n\
 Geographical Position (lat, lon) = %.4f %.4f\n\
-GHAAST = %.0f %.1f'\n\
-SHA = %.0f %.1f'\n\
-GHA = %.0f %.1f'\n\
-Dec = %c %.0f %.1f'\n\
-SD = %.1f'\n\
-HP = %.1f'\n\n"), lat, lon,
+GHAAST = %.0f %.4f'\n\
+SHA = %.0f %.4f'\n\
+GHA = %.0f %.4f'\n\
+Dec = %c %.0f %.4f'\n\
+SD = %.4f'\n\
+HP = %.4f'\n\n"), lat, lon,
                  ghaast, ghaast_minutes, sha, sha_minutes,
                  gha, gha_minutes, dec_sign, dec, dec_minutes,
                  SD*60, HP*60);
@@ -620,6 +627,7 @@ RefractionCorrection = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrection
 #endif
 
     double SD = 0;
+    double HP = 0;
     double lc = 0;
 
     if( !m_Body.Cmp(_T("Sun"))) {
@@ -632,11 +640,14 @@ RefractionCorrection = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrection
 ra = %.4f, lc = 0.266564/ra = %.4f\n"), rad, lc);
     }
 
-    /* moon radius: 1738 km
-       distance to moon: 384400 km
-    NOTE: could replace with a routine that finds the distance based on time */
     if(!m_Body.Cmp(_T("Moon"))){
-        SD = r_to_d(1738/384400.0);
+        wxDateTime time = m_CorrectedDateTime;
+        time.MakeFromUTC();
+        double jdu = time.GetJulianDayNumber();
+        double jdd = ut_to_dt(jdu);
+        double moon_dist = moon_distance(jdd);
+        HP = asin(EARTH_RADIUS/moon_dist) * 180/M_PI;
+        SD = asin(K_MOON*sin((HP)*(M_PI/180))) * 180/M_PI;
         lc = r_to_d(asin(d_to_r(SD)));
         m_CalcStr+=wxString::Format(_("\nMoon selected, Limb Correction\n\
 SD = %.4f\n\
@@ -666,7 +677,6 @@ CorrectedAltitude = %.4f\n"), ApparentAltitude,
 
     /* correct for limb shot */
     double ParallaxCorrection = 0;
-    double HP = 0;
     if( !m_Body.Cmp(_T("Sun"))) {
         double rad;
         BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad);
@@ -675,12 +685,9 @@ CorrectedAltitude = %.4f\n"), ApparentAltitude,
         m_CalcStr+=wxString::Format(_("\nSun selected, parallax correction\n\
 rad = %.4f, HP = 0.002442/rad = %.4f\n"), rad, HP);
     }
-      
-    /* earth radius: 6357 km
-       distance to moon: 384400 km
-       NOTE: could replace with a routine that finds the distance based on time */
+
     if(!m_Body.Cmp(_T("Moon"))){
-        HP = r_to_d(6357/384400.0);
+        // HP calculated earlier
         m_CalcStr+=wxString::Format(_("\nMoon selected, parallax correction\n\
 HP = %.4f\n"), HP);
     }
@@ -749,10 +756,13 @@ RefractionCorrectionMoon = .267 * Pressure / (x*(Temperature + 273.15)) / 60.0\n
 RefractionCorrectionMoon = .267 * %.4f / (x*(%.4f + 273.15)) / 60.0\n\
 RefractionCorrectionMoon = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrectionMoon);
 
-    /* moon radius: 1738 km
-       distance to moon: 384400 km
-    NOTE: could replace with a routine that finds the distance based on time */
-    double lunar_SD = r_to_d(1738/384400.0);
+    wxDateTime time = m_CorrectedDateTime;
+    time.MakeFromUTC();
+    double jdu = time.GetJulianDayNumber();
+    double jdd = ut_to_dt(jdu);
+    double moon_dist = moon_distance(jdd);
+    double lunar_HP = asin(EARTH_RADIUS/moon_dist) * 180/M_PI;
+    double lunar_SD = asin(K_MOON*sin((lunar_HP)*(M_PI/180))) * 180/M_PI;
     double lunar_lc = r_to_d(asin(d_to_r(lunar_SD)));
     m_CalcStr+=wxString::Format(_("\nMoon selected, Limb Correction\n\
 SD = %.4f\n\
@@ -780,12 +790,8 @@ CorrectedAltitudeMoon = ApparentAltitudeMoon - RefractionCorrectionMoon - LimbCo
 CorrectedAltitudeMoon = %.4f - %.4f - %.4f\n\
 CorrectedAltitudeMoon = %.4f\n"), ApparentAltitudeMoon, RefractionCorrectionMoon,
                                 LimbCorrectionMoon, CorrectedAltitudeMoon);
-    
-    /* earth radius: 6357 km
-       distance to moon: 384400 km
-       NOTE: could replace with a routine that finds the distance based on time */
+
     double ParallaxCorrectionMoon;
-    double lunar_HP = r_to_d(6357/384400.0);
     m_CalcStr+=wxString::Format(_("\nMoon selected, parallax correction\n\
 HP = %.4f\n"), lunar_HP);
 
@@ -923,6 +929,7 @@ CorrectedMeasurement = %.4f\n"), m_Measurement, Corrections, IndexCorrection,
 void Sight::RebuildPolygonsAltitude()
 {
       polygons.clear();
+      lines.clear();
 
       double altitudemin, altitudemax, altitudestep;
       altitudemin = m_ObservedAltitude - m_MeasurementCertainty/60;
@@ -965,6 +972,37 @@ wxRealPoint Sight::DistancePoint( double altitude, double trace, double lat, dou
     return wxRealPoint(rlat, rlon);
  }
 
+/* Calculate Hc and Zn from from one position to another */
+void Sight::AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
+                            double *hc, double *zn)
+{
+	lat1 = resolve_heading_positive(lat1);
+	lat2 = resolve_heading_positive(lat2);
+	double lat1_r = d_to_r(lat1);
+	double lon1_r = d_to_r(lon1);
+	double lat2_r = d_to_r(lat2);
+	double lon2_r = d_to_r(lon2);
+
+	double lha = lon1 - lon2;
+	lha = resolve_heading_positive(lha);
+	double lha_r = d_to_r(lha);
+
+	double hc_r = asin( sin(lat1_r)*sin(lat2_r) + cos(lat1_r) * cos(lat2_r) * cos(lha_r) );
+	double zn_r = acos( (sin(lat2_r) - sin(lat1_r) * sin(hc_r)) / (cos(lat1_r) * cos(hc_r)) );
+
+	*hc = r_to_d(hc_r);
+	*zn = r_to_d(zn_r);
+	if (lat1 > 0) {
+		if (lha < 180)
+			*zn = 360 - *zn;
+	} else {
+		if (lha > 180)
+			*zn = 180 - *zn;
+		else
+			*zn = 180 + *zn;
+	}
+}
+
 void Sight::BuildAltitudeLineOfPosition(double tracestep,
                                         double altitudemin, double altitudemax, double altitudestep,
                                         double timemin, double timemax, double timestep)
@@ -975,12 +1013,21 @@ void Sight::BuildAltitudeLineOfPosition(double tracestep,
    wxRealPointList *p, *l = new wxRealPointList;
    for(double trace=-180; trace<=180; trace+=tracestep) {
       p = new wxRealPointList;
+      double mx = 0;
+      double my = 0;
+      int mc = 0;
       for(double altitude=altitudemin; altitude<=altitudemax
               && fabs(altitude) <= 90; altitude+=altitudestep) {
-            p->Append(new wxRealPoint(DistancePoint( altitude, trace, lat, lon)));
+            wxRealPoint *point = new wxRealPoint(DistancePoint( altitude, trace, lat, lon));
+            p->Append(point);
+            mx += point->x;
+            my += point->y;
+            mc++;
             if(altitudestep == 0)
                 break;
       }
+      if (mc > 0)
+          lines.Append(new wxRealPoint(mx/mc, my/mc));
       wxRealPointList *m = MergePoints(l, p);
       wxRealPointList *n = ReduceToConvexPolygon(m);
       polygons.push_back(n);
@@ -998,6 +1045,7 @@ void Sight::BuildAltitudeLineOfPosition(double tracestep,
 void Sight::RebuildPolygonsAzimuth()
 {
     polygons.clear();
+    lines.clear();
 
     double azimuthmin, azimuthmax, azimuthstep;
     azimuthmin = m_Measurement - m_MeasurementCertainty/60;
@@ -1035,11 +1083,7 @@ bool Sight::BearingPoint( double altitude, double bearing,
             
         /* apply magnetic correction to bearing */
         if(m_bMagneticNorth) {
-            double results[14];
-            geomag_calc(lat, lon, m_EyeHeight,
-                        m_CorrectedDateTime.GetDay(), m_CorrectedDateTime.GetMonth(), m_CorrectedDateTime.GetYear(),
-                        results);
-            localbearing += results[0];
+            localbearing += celestial_navigation_pi_GetWMM(lat, lon, m_EyeHeight, m_CorrectedDateTime);
         }
         trace = localbearing + 180;
     }
@@ -1082,11 +1126,7 @@ bool Sight::BearingPoint( double altitude, double bearing,
 	
         /* apply magnetic correction to bearing */
         if(m_bMagneticNorth) {
-            double results[14];
-            geomag_calc(rlat, rlon, m_EyeHeight,
-                        m_CorrectedDateTime.GetDay(), m_CorrectedDateTime.GetMonth(), m_CorrectedDateTime.GetYear(),
-                        results);
-            b -= results[0];
+            b -= celestial_navigation_pi_GetWMM(rlat, rlon, m_EyeHeight, m_CorrectedDateTime);
         }
 
         mdb = bearing - b;
@@ -1131,8 +1171,11 @@ void Sight::BuildBearingLineOfPosition(double altitudestep,
         if(m_bMagneticNorth && (int)altitude%10==0)
             progressdialog.Update(200-altitude);
 
-        int index = 0;
         p = new wxRealPointList;
+        int index = 0;
+        double mx = 0;
+        double my = 0;
+        int mc = 0;
         double lat, lon, llat, llon;
         for(double azimuth=azimuthmin; azimuth<=azimuthmax; azimuth+=azimuthstep)
         {
@@ -1147,7 +1190,11 @@ void Sight::BuildBearingLineOfPosition(double altitudestep,
                     lat = -90.0;
 
                 {
-                    p->Append(new wxRealPoint(lat, lon)); 
+                    wxRealPoint *point = new wxRealPoint(lat, lon);
+                    mx += point->x;
+                    my += point->y;
+                    mc++;
+                    p->Append(point);
                     lasttrace[index] = trace;
 
                     lastlat[index] = lat;
@@ -1156,6 +1203,8 @@ void Sight::BuildBearingLineOfPosition(double altitudestep,
             }
             index += 1;
         }
+        if (mc > 0)
+            lines.Append(new wxRealPoint(mx/mc, my/mc));
         wxRealPointList *m = MergePoints(l, p);
         wxRealPointList *n = ReduceToConvexPolygon(m);
         polygons.push_back(n);      
