@@ -142,8 +142,6 @@ std::vector<uint8_t> DECL_EXP GetN2000Payload(NMEA2000Id /* id */,
 
 wxString DECL_EXP GetPluginDataDir(const char* plugin_name) {
   const char* testdata = TESTDATA;
-  std::cout << "Plugin data directory requested for " << plugin_name
-            << ", returning: " << testdata << std::endl;
   return wxString(testdata);
 }
 

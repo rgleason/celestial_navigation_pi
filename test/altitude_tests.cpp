@@ -23,111 +23,876 @@
 
 class AltitudeTest : public ::testing::Test {
 protected:
-  void SetUp() override {
-    const char* datadir = TESTDATA;
-    if (!datadir) {
-      std::cout << "TESTDATA not defined in CMake" << std::endl;
-      return;
+    void SetUp() override {
+        const char* datadir = TESTDATA;
+        if (!datadir) {
+            std::cout << "TESTDATA not defined in CMake" << std::endl;
+            return;
+        }
+        std::cout << "Using plugin data directory: " << datadir << std::endl;
     }
-    std::cout << "Using plugin data directory: " << datadir << std::endl;
-  }
 };
 
 // Helper functions
 double DegMin2DecDeg(double degrees, double minutes) {
-  return degrees + (minutes / 60.0);
+    double result = std::abs(degrees) + (std::abs(minutes) / 60.0);
+    return (degrees < 0 || minutes < 0) ? -result : result;
 }
 
 std::string DecDegToDegMin(double decimal_degrees) {
-  int degrees = static_cast<int>(decimal_degrees);
-  double minutes = (decimal_degrees - degrees) * 60.0;
-  std::stringstream ss;
-  ss << degrees << "° " << std::fixed << std::setprecision(1) << minutes << "'";
-  return ss.str();
+    int degrees = static_cast<int>(decimal_degrees);
+    double minutes = (decimal_degrees - degrees) * 60.0;
+    std::stringstream ss;
+    ss << degrees << "° " << std::fixed << std::setprecision(2) << minutes << "'";
+    return ss.str();
 }
 
-TEST_F(AltitudeTest, SunLowerLimbExample) {
-  // Test data from Example 1: Sun LL, Nov 13, 2024 at UT 20-17-45
-  wxDateTime datetime;
-  ASSERT_TRUE(datetime.ParseDateTime("2024-11-13 20:17:45"))
-      << "Failed to parse datetime";
+struct degmin {
+    double deg;
+    double min;
+};
 
-  // Input parameters
-  const double SIGHT_HS = DegMin2DecDeg(11, 25.0);  // Hs (sight): 11°25.0'
+static double error_ho;
+static double error_intercept;
+static double error_azimuth;
+static double error_gha;
+static double error_dec;
 
-  // Create sight object with known coordinates
-  Sight sight(Sight::ALTITUDE,  // Type
-              "Sun",            // Body
-              Sight::LOWER,     // Using lower limb
-              datetime,         // Time of sight
-              0.0,              // Time certainty
-              SIGHT_HS,         // Measured altitude
-              1.0               // Measurement certainty
-  );
+static void commontest(Sight &sight, wxDateTime &datetime,
+                       const char *body, int line, const char *date,
+                       double expected_ho,
+                       double expected_intercept, double expected_azimuth, bool expected_towards,
+                       double dr_lat, double dr_lon,
+                       double expected_gha, double expected_dec, double epsilon) {
 
-  // Set environmental parameters
-  sight.m_IndexError = 3.2;    // IE: +3.2'
-  sight.m_EyeHeight = 2.4;     // Height of Eye: 2.4 meters
-  sight.m_Temperature = 15.0;  // Temperature: 15°C
-  sight.m_Pressure = 1013.0;   // Pressure: 1013 mb
+    sight.Recompute(0);  // 0 = no clock offset
 
-  sight.Recompute(0);  // 0 = no clock offset
+    std::cout << "=== " << body << " (line " << line << ", date " << date << ") ==="
+              << std::endl << std::endl;
 
-  // Expected values from Nautical Almanac (NA)
-  const double ALMANAC_MAIN_CORRECTION = DegMin2DecDeg(0, 5.8);  // 5.8'
-  const double ALMANAC_HO = DegMin2DecDeg(11, 30.8);    // Ho: 11°30.8'
-  const double ALMANAC_GHA = DegMin2DecDeg(128, 20.5);  // GHA: 128°20.5'
-  const double ALMANAC_DEC = -DegMin2DecDeg(18, 15.2);  // Dec: S18°15.2'
+    // Test Ho (Observed Altitude)
+    if (expected_ho != 0) {
+        std::cout << "Ho Analysis:" << std::endl;
+        std::cout << "  Expected: " << DecDegToDegMin(expected_ho) << std::endl;
+        std::cout << "  Actual : " << DecDegToDegMin(sight.m_ObservedAltitude)
+            << std::endl << std::endl;
 
-  // Tolerances
-  const double EPSILON_MIN = 0.1 / 60.0;  // 0.1 arc-minute tolerance
-  const double EPSILON_DEG = 0.1;         // 0.1 degree tolerance
+        error_ho = sight.m_ObservedAltitude - expected_ho;
+        EXPECT_NEAR(sight.m_ObservedAltitude, expected_ho, epsilon)
+            << "Ho differs from NA by "
+            << (error_ho * 60.0) << " minutes" << std::endl;
+    }
 
-  // Test expectations
-  std::cout << "\n=== Sun Lower Limb Example (Nov 13, 2024) ===" << std::endl;
+    // Test Body Position (GHA, Dec)
+    double gha, dec, lon;
+    sight.BodyLocation(datetime, &dec, &lon, nullptr, nullptr);
+    gha = resolve_heading_positive(-lon);
 
-  // 1. Test Main Correction (difference between Ho and Hs)
-  double actualCorrection = sight.m_ObservedAltitude - SIGHT_HS;
-  std::cout << "Main Correction Analysis:" << std::endl;
-  std::cout << "  Almanac: " << (ALMANAC_MAIN_CORRECTION * 60.0) << "'"
-            << std::endl;
-  std::cout << "  Actual : " << (actualCorrection * 60.0) << "'" << std::endl;
+    if (expected_gha != 0 && expected_dec != 0) {
+        std::cout << "Body Position Analysis:" << std::endl;
+        std::cout << "  Almanac GHA: " << DecDegToDegMin(expected_gha)
+                  << ", Dec: " << DecDegToDegMin(std::abs(expected_dec))
+                  << (expected_dec < 0 ? " S" : " N") << std::endl;
+        std::cout << "  Actual GHA : " << DecDegToDegMin(gha)
+                  << ", Dec: " << DecDegToDegMin(std::abs(dec))
+                  << (dec < 0 ? " S" : " N") << std::endl << std::endl;
 
-  EXPECT_NEAR(actualCorrection, ALMANAC_MAIN_CORRECTION, EPSILON_MIN)
-      << "Main correction differs from NA by "
-      << ((actualCorrection - ALMANAC_MAIN_CORRECTION) * 60.0) << " minutes";
+        error_gha = gha - expected_gha;
+        error_dec = dec - expected_dec;
+        EXPECT_NEAR(gha, expected_gha, epsilon)
+            << "GHA differs from Almanac by " << (error_gha * 60.0)
+            << " minutes";
+        EXPECT_NEAR(dec, expected_dec, epsilon)
+            << "Declination differs from Almanac by " << (error_dec * 60.0)
+            << " minutes" << std::endl;
+    }
 
-  // 2. Test Ho (Observed Altitude)
-  std::cout << "\nHo Analysis:" << std::endl;
-  std::cout << "  Almanac: " << DecDegToDegMin(ALMANAC_HO) << std::endl;
-  std::cout << "  Actual : " << DecDegToDegMin(sight.m_ObservedAltitude)
-            << std::endl;
+    if (expected_intercept != 0 && expected_azimuth != 0) {
+        double hc, zn;
+        sight.AltitudeAzimuth(dr_lat, dr_lon, dec, lon, &hc, &zn);
+        double intercept = fabs(hc - sight.m_ObservedAltitude) * 60.0;
 
-  EXPECT_NEAR(sight.m_ObservedAltitude, ALMANAC_HO, EPSILON_MIN)
-      << "Ho differs from NA by "
-      << ((sight.m_ObservedAltitude - ALMANAC_HO) * 60.0) << " minutes";
+        std::cout << "LOP Analysis:" << std::endl;
+        std::cout << "  Reference Intercept: " << expected_intercept
+                  << ", Zn: " << expected_azimuth
+                  << (expected_towards ? " towards" : " away") << std::endl;
+        std::cout << "  Actual Intercept: " << intercept
+                  << ", Zn: " << zn
+                  << ((hc < sight.m_ObservedAltitude) ? " towards" : " away")
+                  << std::endl << std::endl;
 
-  // 3. Test Body Position (GHA, Dec)
-  double gha, dec;
-  sight.BodyLocation(datetime, &dec, &gha, nullptr, nullptr);
-  gha = resolve_heading_positive(-gha);
+        error_intercept = expected_intercept - intercept;
+        error_azimuth = expected_azimuth - zn;
+        if (error_azimuth > 180)
+		zn += 360;
+	else if (error_azimuth < -180)
+		zn -= 360;
+        error_azimuth = expected_azimuth - zn;
+        EXPECT_NEAR(expected_intercept, intercept, epsilon * 60)
+            << "Intercept differs from reference by " << error_intercept
+            << " minutes";
+        EXPECT_NEAR(expected_azimuth, zn, epsilon)
+            << "Zn differs from reference by " << (error_azimuth * 60.0)
+            << " minutes" << std::endl;
+        EXPECT_EQ(expected_towards, hc < sight.m_ObservedAltitude);
+    }
 
-  std::cout << "\nBody Position Analysis:" << std::endl;
-  std::cout << "  Almanac GHA: " << DecDegToDegMin(ALMANAC_GHA)
-            << ", Dec: " << DecDegToDegMin(std::abs(ALMANAC_DEC)) << " S"
-            << std::endl;
-  std::cout << "  Actual GHA : " << DecDegToDegMin(gha)
-            << ", Dec: " << DecDegToDegMin(std::abs(dec))
-            << (dec < 0 ? " S" : " N") << std::endl;
-
-  EXPECT_NEAR(gha, ALMANAC_GHA, EPSILON_MIN)
-      << "GHA differs from Almanac by " << ((gha - ALMANAC_GHA) * 60.0)
-      << " minutes";
-  EXPECT_NEAR(dec, ALMANAC_DEC, EPSILON_MIN)
-      << "Declination differs from Almanac by " << ((dec - ALMANAC_DEC) * 60.0)
-      << " minutes";
-
-  // Print calculation string
-  std::cout << "\nDetailed Calculation String:" << std::endl;
-  std::cout << sight.m_CalcStr << std::endl;
+    // Print calculation string
+    std::cout << "Detailed Calculation String:" << std::endl;
+    std::cout << sight.m_CalcStr << std::endl;
 }
+
+struct interceptsightdata {
+    const char *date;
+    const char *body;
+    Sight::BodyLimb limb;
+    double temp;
+    double pres;
+    double ie;
+    double eye;
+    struct degmin hs;
+    double expected_ho;
+    double expected_gha;
+    double expected_dec;
+    double dr_lat;
+    double dr_lon;
+    double expected_hc;
+    double expected_azimuth;
+    double expected_intercept;
+    bool expected_towards;
+};
+
+struct interceptsightdata INTERCEPT_SIGHTS[] = {
+    // from "Open CPN testing Intercept Calculation 03-04-2025 1000 am and 01256 pm"
+    { "2025-07-20 12:47:00", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 0.0 }, 30.1571, 10.1467683333333, 20.548655, 43.2366916666667, -77.533415, 30.1818316468372, 89.39818, 1.483898810232, false },
+    { "2025-07-20 12:47:00", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 0.0 }, 30.1571, 10.1466666666667, 20.5483333333333, 43.26248, -77.4501933333333, 30.2424238292358, 89.47009, 5.119429754148, false },
+    { "2025-07-20 17:16:33", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 67, 1.0 }, 67.1934, 77.5317933333333, 20.51284, 43.2366916666667, -77.533415, 67.2761482927961, 179.99607, 4.964897567766, false },
+    { "2025-07-20 18:17:21", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 75, 0.0 }, 75.1789, 92.7312466666667, 20.5047333333333, 5.70799666666667, -92.728115, 75.2032630210069, 0.01149, 1.461781260414, false },
+    { "2025-07-20 18:17:21", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 75, 0.0 }, 75.1789, 92.7312466666667, 20.5047333333333, 5.69126666666667, -93.6566716666667, 75.1593142306419, 3.38599, 1.175146161486, true },
+    { "2025-07-20 18:17:21", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 75, 0.0 }, 75.1789, 92.7312466666667, 20.5047333333333, 5.69393333333333, -91.8499266666667, 75.1645072189802, 3.22556, 0.863566861188, true },
+    { "2025-07-20 21:18:20", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 35, 5.0 }, 35.2452, 137.975475, 20.4805416666667, 43.2366916666667, -77.533415, 35.194154591663, 265.67311, 3.06272450022, true },
+    { "2025-07-20 15:43:35", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 0.0 }, 30.1571, 54.2909716666667, 20.525215, -18.7725, -100.4382, 30.0978570449878, 51.31473, 3.554577300732, true },
+    { "2025-07-20 15:43:35", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 0.0 }, 30.1571, 54.2909716666667, 20.525215, -18.7763083333333, -100.650466666667, 29.9384504425203, 51.45379, 13.118973448782, true },
+    { "2025-07-20 21:52:25", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 0.0 }, 30.1571, 146.496666666667, 20.4766666666667, -18.7725, -100.4382, 30.1932814494816, 308.70006, 2.170886968896, false },
+    { "2025-07-20 21:52:25", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 0.0 }, 30.1571, 146.496666666667, 20.4766666666667, -18.7763083333333, -100.650466666667, 30.3475842229105, 308.84356, 11.42905337463, false },
+    { "2025-07-21 00:58:15", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 0.0 }, 30.1571, 192.95274, 20.4510233333333, -16.7800133333333, 119.565001666667, 30.3570510336179, 53.16303, 11.997062017074, false },
+    { "2025-07-21 00:58:15", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 0.0 }, 30.1571, 192.95274, 20.4510233333333, -16.78333, 119.375, 30.2093634393057, 53.27993, 3.135806358342, false },
+    { "2025-07-21 07:19:50", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 0.0 }, 30.1571, 288.345401666667, 20.3994883333333, -16.7800133333333, 119.565001666667, 30.0578471405624, 306.52195, 5.955171566256, true },
+    { "2025-07-21 07:19:50", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 0.0 }, 30.1571, 288.345, 20.4, -16.78333, 119.375, 30.2019612005018, 306.64201, 2.691672030108, false },
+    { "2025-07-20 20:37:00", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 0.0 }, 30.1571, 127.642505, 20.486075, 45.416655, 165.033333333333, 30.183423719401, 90.76473, 1.57942316406, false },
+    { "2025-07-21 05:35:45", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 0.0 }, 30.1571, 262.325416666667, 20.413585, 45.416655, 165.033333333333, 30.1107326132737, 269.19679, 2.782043203578, true },
+    { "2025-07-21 05:35:45", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 0.0 }, 30.1571, 262.325416666667, 20.413585, 45.3583333333333, 165.186666666667, 30.0037985258249, 269.34048, 9.198088450506, true },
+    { "2025-03-12 15:23:04", "Sun", Sight::UPPER, 10, 1010, 1.5, 3.5, { 37, 7.3 }, 36.7546, 48.365, -3.055, 43.2366666666667, -77.5333333333333, 36.7793564087733, 142.58122, 1.485384526398, false },
+    { "2025-03-12 17:19:43", "Sun", Sight::UPPER, 10, 1010, 1.5, 3.5, { 44, 5.0 }, 43.7207, 77.5328583333333, -3.02301333333333, 43.2366666666667, -77.5333333333333, 43.7403199980173, 179.99934, 1.177199881038, false },
+    { "2025-03-12 15:23:04", "Sun", Sight::UPPER, 10, 1010, 1.5, 3.5, { 37, 7.3 }, 36.7546, 48.365, -3.055, -18.7725, -100.4382, 36.7468611586804, 79.42442, 0.464330479176, true },
+    { "2025-03-12 15:23:04", "Sun", Sight::UPPER, 10, 1010, 1.5, 3.5, { 37, 7.3 }, 36.7546, 48.365, -3.055, -18.7763083333333, -100.650466666667, 36.548576587727, 79.51727, 12.36140473638, true },
+    { "2025-03-12 18:51:19", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 74, 1.5 }, 74.2095, 100.43718, -2.99796333333333, -18.7725, -100.4382, 74.2254633017558, 0.00375, 0.957798105348, false },
+    { "2025-03-12 20:08:18", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 7.3 }, 30.2848, 119.686666666667, -2.97666666666667, 43.2366666666667, -77.5333333333333, 30.251467971996, 230.88371, 1.99992168024, true },
+    { "2025-03-12 20:08:18", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 7.3 }, 30.2882, 119.686666666667, -2.97666666666667, 43.2590783333333, -77.6031983333333, 30.2767787964989, 230.80695, 0.685272210066, true },
+    { "2025-03-12 23:32:37", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 20, 7.5 }, 20.2725, 170.775, -2.92166666666667, -18.8283, -101.17, 20.2345276777631, 273.91606, 2.278339334214, true },
+    { "2025-03-12 23:32:37", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 20, 7.5 }, 20.2725, 170.775, -2.92166666666667, -18.74811, -102.7498, 21.7320125098451, 274.43599, 87.570750590706, false },
+    { "2025-03-12 23:32:37", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 20, 7.5 }, 20.2725, 170.775481666667, -2.92166666666667, -16.78, 119.565, 20.308825169231, 86.85699, 2.17951015386, false },
+    { "2025-03-12 23:32:37", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 20, 7.5 }, 20.2725, 170.775, -2.92166666666667, -16.7833333333333, 119.375, 20.1265439962865, 86.91441, 8.75736022281, true },
+    { "2025-03-13 08:49:55", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 20, 7.5 }, 20.2725, 310.126965, -2.76854, -16.78, 119.565, 20.2334354128716, 273.28924, 2.343875227704, true },
+    { "2025-03-13 23:32:37", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 20, 7.5 }, 20.2725, 310.126666666667, -2.76833333333333, -16.7833333333333, 119.375, 20.4150696544859, 273.34953, 8.554179269154, false },
+    { "2025-03-12 22:34:05", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 30.0 }, 30.6636, 156.139376666667, -2.93666666666667, 45.4166666666667, 165.033333333333, 30.6396120955852, 133.30163, 1.439274264888, true },
+    { "2025-03-12 22:34:05", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 30, 30.0 }, 30.6636, 156.139376666667, -2.93666666666667, 45.3583333333333, 165.186666666667, 30.7579539946217, 133.4295, 5.661239677302, false },
+    { "2025-03-13 04:54:45", "Sun", Sight::LOWER, 10, 1010, 1.5, 3.5, { 20, 30.0 }, 20.6483, 251.324101666667, -2.832895, 45.4166666666667, 165.033333333333, 20.6837317607836, 242.72026, 2.125905647016, false },
+
+    // from "Open CPN Moon HP and Semi-Diameter inaccuracies examples"
+    { "2024-11-13 21:57:10", "Moon", Sight::LOWER, 15, 1013, 3.2, 3.81, { 16, 15.0 }, 17.21, 0, 0, 0, 0, 0, 0, 0, false },
+    { "2025-08-09 10:00:00", "Moon", Sight::LOWER, -3, 982, 0, 5.4, { 33, 27.6 }, 34.43, 0, 0, 0, 0, 0, 0, 0, false },
+    { "2025-08-09 10:00:00", "Moon", Sight::UPPER, -3, 982, 0, 5.4, { 26, 6.7 }, 26.61, 0, 0, 0, 0, 0, 0, 0, false },
+    { "2025-08-09 10:00:00", "Sun", Sight::LOWER, -3, 982, 0, 5.4, { 21, 19.7 }, 21.485, 0, 0, 0, 0, 0, 0, 0, false },
+    { "2025-08-09 10:00:00", "Sun", Sight::UPPER, -3, 982, 0, 5.4, { 3, 20.2 }, 2.77, 0, 0, 0, 0, 0, 0, 0, false },
+    { "2025-08-09 10:00:00", "Venus", Sight::CENTER, -3, 982, 0, 5.4, { 4, 32.6 }, 4.28833333, 0, 0, 0, 0, 0, 0, 0, false },
+};
+
+TEST_F(AltitudeTest, Intercept) {
+
+    double max_error_ho = 0;
+    double max_error_intercept = 0;
+    double max_error_azimuth = 0;
+    double max_error_gha = 0;
+    double max_error_dec = 0;
+    double avg_error_ho = 0;
+    double avg_error_intercept = 0;
+    double avg_error_azimuth = 0;
+    double avg_error_gha = 0;
+    double avg_error_dec = 0;
+
+    int count = (int)(sizeof(INTERCEPT_SIGHTS) / sizeof(INTERCEPT_SIGHTS[0]));
+    for (int i = 0; i < count; i++) {
+        struct interceptsightdata data = INTERCEPT_SIGHTS[i];
+
+        wxDateTime datetime;
+        ASSERT_TRUE(datetime.ParseDateTime(data.date)) << "Failed to parse datetime";
+
+        Sight sight(Sight::ALTITUDE, data.body, data.limb, datetime, 0,
+                    DegMin2DecDeg(data.hs.deg, data.hs.min), 1);
+        sight.m_IndexError = data.ie;
+        sight.m_EyeHeight = data.eye;
+        sight.m_Temperature = 10;
+        sight.m_Pressure = 1010;
+
+        error_ho = 0;
+        error_intercept = 0;
+        error_azimuth = 0;
+        error_gha = 0;
+        error_dec = 0;
+
+        const double EPSILON = 0.1 / 60.0;  // 0.1 arc-minute tolerance
+        commontest(sight, datetime, data.body, i, data.date,
+                   data.expected_ho,
+                   data.expected_intercept, data.expected_azimuth, data.expected_towards,
+                   data.dr_lat, data.dr_lon,
+                   data.expected_gha, data.expected_dec, EPSILON);
+
+        error_ho = std::abs(error_ho);
+        avg_error_ho += error_ho;
+        if (error_ho > max_error_ho) max_error_ho = error_ho;
+        error_intercept = std::abs(error_intercept);
+        avg_error_intercept += error_intercept;
+        if (error_intercept > max_error_intercept) max_error_intercept = error_intercept;
+        error_azimuth = std::abs(error_azimuth);
+        avg_error_azimuth += error_azimuth;
+        if (error_azimuth > max_error_azimuth) max_error_azimuth = error_azimuth;
+        error_gha = std::abs(error_gha);
+        avg_error_gha += error_gha;
+        if (error_gha > max_error_gha) max_error_gha = error_gha;
+        error_dec = std::abs(error_dec);
+        avg_error_dec += error_dec;
+        if (error_dec > max_error_dec) max_error_dec = error_dec;
+    }
+
+    std::cout << "============================================================================="
+              << std::endl;
+    std::cout << "Ho error: max " << (max_error_ho * 60) << " minutes, mean "
+              << ((avg_error_ho * 60) / count) << " minutes" << std::endl;
+    std::cout << "Intercept error: max " << max_error_intercept << " minutes, mean "
+              << (avg_error_intercept / count) << " minutes" << std::endl;
+    std::cout << "Azimuth error: max " << (max_error_azimuth * 60) << " minutes, mean "
+              << ((avg_error_azimuth * 60) / count) << " minutes" << std::endl;
+    std::cout << "GHA error: max " << (max_error_gha * 60) << " minutes, mean "
+              << ((avg_error_gha * 60) / count) << " minutes" << std::endl;
+    std::cout << "DEC error: max " << (max_error_dec * 60) << " minutes, mean "
+              << ((avg_error_dec * 60) / count) << " minutes" << std::endl;
+    std::cout << "============================================================================="
+              << std::endl;
+}
+
+struct sunmoonsightdata {
+    const char *date;
+    struct degmin expected_sun_gha;
+    struct degmin expected_sun_dec;
+    double expected_sun_sd;
+    struct degmin expected_moon_gha;
+    struct degmin expected_moon_dec;
+    double expected_moon_hp;
+    double expected_moon_sd;
+};
+
+struct sunmoonsightdata SUNMOON_SIGHTS[] = {
+    // from "Nautical Almanac vs OpenCPN Data with Moon SD&HP change SUN and MOON"
+    { "2025-01-04 05:00", { 253, 45.9 }, { -22,  41.6 }, 16.3, { 198, 46.2 }, { -10,  24.6 }, 58.7, 16.1 },
+    { "2025-01-09 03:00", { 223, 14.0 }, { -22,   4.7 }, 16.3, { 110, 30.8 }, { +20,  25.4 }, 59.2, 16.1 },
+    { "2025-01-13 00:00", { 177, 51.2 }, { -21,  28.2 }, 16.3, {   9, 59.6 }, { +27,  52.7 },   58, 15.7 },
+    { "2025-01-19 23:00", { 162, 16.3 }, { -20,   7.4 }, 16.3, { 276,  5.1 }, { -04,  41.1 }, 54.4, 14.8 },
+    { "2025-01-27 09:00", { 311, 48.8 }, { -18,  21.1 }, 16.3, { 339, 58.3 }, { -28,   0.1 }, 57.1, 15.6 },
+    { "2025-02-06 09:00", { 311, 29.3 }, { -15,  29.4 }, 16.2, { 213, 35.8 }, { +24,  56.5 }, 58.7,   16 },
+    { "2025-02-17 05:00", { 251, 30.7 }, { -11,  54.0 }, 16.2, {  24, 17.1 }, {  -9,  53.7 }, 54.2, 14.8 },
+    { "2025-02-19 23:00", { 161, 34.5 }, { -10,  55.4 }, 16.2, { 265, 40.1 }, { -22,  42.8 }, 54.5, 14.8 },
+    { "2025-02-26 01:00", { 191, 46.9 }, {  -8,  41.4 }, 16.2, { 216, 24.7 }, { -21,   5.1 }, 58.8, 16.1 },
+    { "2025-03-05 20:00", { 117, 10.2 }, {  -5,  43.0 }, 16.1, {  42, 21.8 }, { +25,  48.1 },   59, 16.1 },
+    { "2025-03-11 12:00", { 357, 31.4 }, {  -3,  30.2 }, 16.1, { 206, 16.8 }, { +18,   0.3 }, 55.7, 15.2 },
+    { "2025-03-15 08:00", { 297, 47.2 }, {  -1,  59.6 }, 16.1, { 107, 32.8 }, {  -3,  21.1 }, 54.3, 14.8 },
+    { "2025-03-25 19:00", { 103, 33.5 }, {  +2,   8.1 }, 16.1, { 149, 18.0 }, { -19,  31.3 }, 58.6, 15.9 },
+    { "2025-04-01 23:00", { 164,  5.6 }, {  +4,  55.4 }, 16.0, { 117,  9.1 }, { +25,   7.4 }, 60.2, 16.5 },
+    { "2025-04-06 23:00", { 164, 27.2 }, {  +6,  49.6 }, 16.0, {  47,  3.4 }, { +21,  31.1 }, 56.2, 15.4 },
+    { "2025-04-23 20:00", { 120, 27.3 }, { +12,  49.2 }, 15.9, { 171, 11.4 }, {  -9,  49.4 }, 59.3, 16.1 },
+    { "2025-04-28 09:00", { 315, 38.2 }, { +14,  16.9 }, 15.9, { 308, 54.3 }, { +20,  29.6 }, 61.3, 16.7 },
+    { "2025-05-04 13:00", {  15, 48.8 }, { +16,   8.0 }, 15.9, { 280, 14.8 }, { +19,  59.4 }, 56.5, 15.4 },
+    { "2025-05-11 09:00", { 315, 54.6 }, { +17,  59.2 }, 15.9, { 151, 26.7 }, { -16,  46.2 },   54, 14.7 },
+    { "2025-05-16 15:00", {  45, 54.6 }, { +19,  15.1 }, 15.8, { 178, 30.1 }, { -27,  58.2 }, 55.3, 15.1 },
+    { "2025-05-19 10:00", { 330, 52.9 }, { +19,  51.9 }, 15.8, {  68, 29.6 }, { -19,  20.0 },   57, 15.6 },
+    { "2025-05-28 18:00", {  90, 39.8 }, { +21,  35.1 }, 15.8, {  66, 12.9 }, { +28,  26.5 },   60, 16.4 },
+    { "2025-06-02 08:00", { 300, 29.7 }, { +22,  14.1 }, 15.8, { 215, 46.6 }, { +12,  15.3 },   56, 15.2 },
+    { "2025-06-12 14:00", {  30,  0.9 }, { +23,  11.3 }, 15.8, { 194,  3.8 }, { -28,   8.7 }, 55.4, 15.1 },
+    { "2025-06-21 22:00", { 149, 30.7 }, { +23,  26.2 }, 15.8, { 201, 49.5 }, { +19,  10.2 }, 60.2, 16.4 },
+    { "2025-06-29 04:00", { 239,  7.6 }, { +23,  12.9 }, 15.8, { 188, 40.4 }, { +14,  56.9 },   57, 15.4 },
+    { "2025-07-04 12:00", { 358, 52.4 }, { +22,  49.5 }, 15.8, { 254, 51.8 }, { -14,  57.6 }, 54.2, 14.8 },
+    { "2025-07-08 11:00", { 343, 42.7 }, { +22,  24.8 }, 15.8, { 194, 26.6 }, { -27,  59.0 },   55,   15 },
+    { "2025-07-13 16:00", {  58, 32.4 }, { +21,  43.1 }, 15.8, { 203,  7.9 }, { -14,  55.6 }, 57.6, 15.7 },
+    { "2025-07-16 19:00", { 103, 27.7 }, { +21,  13.3 }, 15.8, { 212, 50.2 }, {  +4,  49.0 }, 58.8,   16 },
+    { "2025-07-23 05:00", { 253, 22.1 }, { +20,   1.1 }, 15.8, { 275,  5.2 }, { +27,  51.2 }, 59.1, 16.1 },
+    { "2025-07-29 04:00", { 238, 22.2 }, { +18,  41.6 }, 15.8, { 188, 14.2 }, {   0, -29.0 }, 55.4,   15 },
+    { "2025-08-05 10:00", { 328, 29.8 }, { +16,  50.5 }, 15.8, { 198, 21.8 }, { -28,  31.3 }, 55.3, 15.1 },
+    { "2025-08-17 06:00", { 268, 58.8 }, { +13,  19.3 }, 15.8, { 350, 16.9 }, { +26,  46.0 }, 59.1, 16.1 },
+    { "2025-08-24 05:00", { 254, 24.1 }, { +11,   0.7 }, 15.8, { 243, 31.2 }, {  +7,  17.3 }, 56.1, 15.2 },
+    { "2025-08-27 16:00", {  59, 38.7 }, {  +9,  48.5 }, 15.9, {  13, 53.7 }, { -12,  44.1 }, 54.5, 14.9 },
+    { "2025-09-01 01:00", { 194, 58.7 }, {  +8,  14.6 }, 15.9, {  99, 40.7 }, { -28,   5.8 }, 54.7,   15 },
+    { "2025-09-05 13:00", {  15, 20.9 }, {  +6,  35.5 }, 15.9, { 221, 52.1 }, { -19,  14.6 }, 57.7, 15.7 },
+    { "2025-09-09 07:00", { 285, 40.3 }, {  +5,  11.2 }, 15.9, {  87, 24.5 }, {  +4,  33.7 },   60, 16.3 },
+    { "2025-09-19 15:00", {  46, 35.3 }, {  +1,  13.2 }, 16.0, {  69, 47.3 }, { +12,  25.3 }, 56.2, 15.3 },
+    { "2025-09-28 07:00", { 287, 20.4 }, {  -2,   9.2 }, 16.0, { 217, 32.9 }, { -27,  58.9 }, 54.3, 14.8 },
+    { "2025-10-05 18:00", {  92, 56.0 }, {  -5,   2.3 }, 16.0, { 290, 51.5 }, { -02,   9.6 }, 59.9, 16.3 },
+    { "2025-10-10 04:00", { 243, 14.8 }, {  -6,  43.2 }, 16.0, {  23,  8.8 }, { +24,  48.2 }, 60.6, 16.5 },
+    { "2025-10-20 05:00", { 258, 48.0 }, { -10,  25.6 }, 16.1, { 273,  8.4 }, {  -6,  59.1 }, 54.6, 14.8 },
+    { "2025-10-26 13:00", {  19,  0.8 }, { -12,  38.3 }, 16.1, { 322, 21.2 }, { -28,  27.5 }, 54.3, 14.8 },
+    { "2025-11-02 02:00", { 214,  6.4 }, { -14,  47.0 }, 16.1, {  79, 13.7 }, {  -2,  49.2 }, 59.3, 16.3 },
+    { "2025-11-18 17:00", {  78, 41.1 }, { -19,  23.8 }, 16.2, {  97, 12.9 }, { -18,  30.2 },   54, 14.7 },
+    { "2025-11-22 00:00", { 183, 29.1 }, { -20,   8.1 }, 16.2, { 164,  6.2 }, { -27,  55.4 }, 54.1, 14.8 },
+    { "2025-11-28 22:00", { 152, 57.2 }, { -21,  28.0 }, 16.2, {  52, 15.0 }, {  -6,   2.7 }, 57.8, 15.6 },
+    { "2025-12-01 12:00", {   2, 43.2 }, { -21,  52.9 }, 16.2, { 232, 38.2 }, { +10,  50.4 }, 60.1, 16.6 },
+    { "2025-12-09 01:00", { 196, 56.6 }, { -22,  49.3 }, 16.3, { 316, 50.2 }, { +19,  20.6 }, 58.5, 16.3 },
+    { "2025-12-13 13:00", {  16, 25.5 }, { -23,  11.0 }, 16.3, {  88, 37.3 }, {  -6,  21.2 }, 54.9,   15 },
+    { "2025-12-15 14:00", {  31, 10.8 }, { -23,  17.7 }, 16.3, {  83,  8.0 }, { -16,  55.5 }, 54.1, 14.8 },
+    { "2025-12-29 03:00", { 224, 30.5 }, { -23,  13.1 }, 16.3, { 121, 15.6 }, { +12,  49.0 }, 59.2, 16.2 },
+    { "2001-01-04 05:00", { 253, 46.3 }, { -22,  42.8 }, 16.3, { 150,  8.3 }, {  +6,  16.1 },   57, 15.6 },
+    { "2001-01-09 03:00", { 223, 14.3 }, { -22,   6.2 }, 16.3, {  54, 19.8 }, { +22,  31.3 }, 61.1, 16.7 },
+    { "2001-01-13 00:00", { 177, 51.4 }, { -21,  30.1 }, 16.3, { 312,  6.5 }, { +12,  44.8 }, 60.3, 16.3 },
+    { "2001-01-19 23:00", { 162, 16.2 }, { -20,   9.7 }, 16.3, { 215, 37.5 }, { -18,  53.3 },   55,   15 },
+    { "2001-01-27 09:00", { 311, 48.5 }, { -18,  23.8 }, 16.3, { 280, 20.6 }, { -12,  23.9 }, 54.2, 14.8 },
+    { "2001-02-06 09:00", { 311, 28.8 }, { -15,  32.7 }, 16.2, { 159, 28.9 }, { +22,  21.5 },   61, 16.6 },
+    { "2001-02-17 05:00", { 251, 29.9 }, { -11,  57.8 }, 16.2, { 320, 48.5 }, { -21,  11.6 }, 54.8, 14.9 },
+    { "2001-02-19 23:00", { 161, 33.5 }, { -10,  59.3 }, 16.2, { 198, 11.9 }, { -22,   4.0 },   54, 14.7 },
+    { "2001-02-26 01:00", { 191, 45.8 }, {  -8,  45.5 }, 16.2, { 162,  2.5 }, {  -1,  39.9 }, 55.1, 15.1 },
+    { "2001-03-05 20:00", { 117,  9.1 }, {  -5,  47.3 }, 16.1, { 350, 37.9 }, { +22,  26.3 }, 60.1, 16.3 },
+    { "2001-03-11 12:00", { 357, 30.3 }, {  -3,  34.6 }, 16.1, { 153,  6.9 }, {  -1,  23.8 }, 56.9, 15.5 },
+    { "2001-03-15 08:00", { 297, 46.1 }, {  -2,   4.0 }, 16.1, {  46, 58.3 }, { -18,  38.9 }, 56.2, 15.3 },
+    { "2001-03-25 19:00", { 103, 32.2 }, {  +2,   3.7 }, 16.1, {  93, 47.3 }, {   0,  47.1 }, 55.5, 15.1 },
+    { "2003-01-04 05:00", { 253, 49.7 }, { -22,  45.9 }, 16.3, { 234, 37.7 }, { -24,   1.8 }, 57.5, 15.6 },
+    { "2003-01-09 03:00", { 223, 17.3 }, { -22,  10.4 }, 16.3, { 148, 43.8 }, {  -3,   9.6 }, 54.5, 14.8 },
+    { "2003-01-13 00:00", { 177, 54.0 }, { -21,  35.0 }, 16.3, {  65,  8.3 }, { +15,  49.3 }, 54.6, 14.9 },
+    { "2003-01-19 23:00", { 162, 18.3 }, { -20,  15.9 }, 16.3, { 321, 17.0 }, { +19,  49.8 }, 58.4, 15.9 },
+    { "2003-01-27 09:00", { 311, 50.1 }, { -18,  31.4 }, 16.3, {  19, 57.7 }, { -20,  28.8 }, 58.8,   16 },
+    { "2003-02-06 09:00", { 311, 29.1 }, { -15,  41.7 }, 16.2, { 256, 56.9 }, {  +1,  44.0 }, 54.4, 14.8 },
+    { "2003-02-17 05:00", { 251, 29.2 }, { -12,   7.9 }, 16.2, {  66, 54.4 }, { +15,  47.4 }, 59.4, 16.2 },
+    { "2003-02-19 23:00", { 161, 32.7 }, { -11,   9.7 }, 16.2, { 302, 41.4 }, {   0, -41.9 },   16, 16.4 },
+    { "2003-02-26 01:00", { 191, 44.6 }, {  -8,  56.3 }, 16.2, { 253,  6.6 }, { -25,  59.0 }, 57.7, 15.6 },
+    { "2003-03-05 20:00", { 117,  7.3 }, {  -5,  58.5 }, 16.1, {  87, 36.2 }, {  +2,  37.7 }, 54.3, 14.8 },
+    { "2003-03-11 12:00", { 357, 28.1 }, {  -3,  45.9 }, 16.1, { 266, 46.6 }, { +25,   0.4 }, 55.2,   15 },
+    { "2003-03-15 08:00", { 297, 43.7 }, {  -2,  15.3 }, 16.1, { 156, 11.7 }, { +21,  38.4 }, 58.4,   16 },
+    { "2003-03-25 19:00", { 103, 29.9 }, {  +1,  52.4 }, 16.1, { 182, 38.1 }, { -26,  10.3 }, 57.6, 15.8 },
+    { "2006-01-04 05:00", { 253, 47.7 }, { -22,  44.2 }, 16.3, { 196, 18.5 }, { -10,   4.7 },   60, 16.3 },
+    { "2006-01-09 03:00", { 223, 15.5 }, { -22,   8.1 }, 16.3, { 109, 21.5 }, { +20,   8.3 },   57, 15.5 },
+    { "2006-01-13 00:00", { 177, 52.5 }, { -21,  32.3 }, 16.3, {  14, 37.5 }, { +28,  15.9 }, 55.1,   15 },
+    { "2006-01-19 23:00", { 162, 17.1 }, { -20,  12.5 }, 16.3, { 283, 52.8 }, {   0,  29.5 }, 54.3, 14.8 },
+    { "2006-01-27 09:00", { 311, 49.2 }, { -18,  27.2 }, 16.3, { 344, 19.7 }, { -28,  21.7 },   60, 16.4 },
+    { "2006-02-06 09:00", { 311, 28.9 }, { -15,  36.7 }, 16.2, { 213, 40.8 }, { +24,  26.6 }, 56.6, 15.4 },
+    { "2006-02-17 05:00", { 251, 29.6 }, { -12,   2.2 }, 16.2, {  31, 25.4 }, {  -5,  16.1 }, 56.9, 15.5 },
+    { "2006-02-19 23:00", { 161, 33.2 }, { -11,   3.8 }, 16.2, { 272, 55.2 }, { -19,  41.4 }, 55.8,   15 },
+    { "2006-02-26 01:00", { 191, 45.4 }, {  -8,  50.2 }, 16.2, { 217, 53.8 }, { -22,   6.4 }, 60.9, 16.7 },
+    { "2006-03-05 20:00", { 117,  8.3 }, {  -5,  52.1 }, 16.1, {  43, 27.7 }, { +25,   9.4 }, 57.2, 15.7 },
+    { "2006-03-11 12:00", { 357, 29.3 }, {  -3,  39.5 }, 16.1, { 212, 14.6 }, { +20,  50.8 }, 54.1, 14.7 },
+    { "2006-03-15 08:00", { 297, 45.0 }, {  -2,   8.9 }, 16.1, { 114,  1.8 }, {  +1,   8.0 }, 54.2, 14.8 },
+    { "2006-03-25 19:00", { 103, 31.3 }, {  +1,  58.8 }, 16.1, { 150,  6.2 }, { -20,  26.3 }, 60.2, 16.3 },
+    { "2011-01-04 05:00", { 253, 49.8 }, { -22,  45.3 }, 16.3, { 256,  2.8 }, { -22,   8.6 }, 56.2, 15.3 },
+    { "2011-01-09 03:00", { 223, 17.4 }, { -22,   9.7 }, 16.3, { 171, 47.5 }, {  -2,  30.5 }, 54.2, 14.8 },
+    { "2011-01-13 00:00", { 177, 54.1 }, { -21,  34.2 }, 16.2, {  87, 42.8 }, { +15,  15.0 }, 54.8,   15 },
+    { "2011-01-19 23:00", { 162, 18.5 }, { -20,  15.0 }, 16.3, { 341, 53.7 }, { +17,  40.0 }, 59.9, 16.3 },
+    { "2011-01-27 09:00", { 311, 50.3 }, { -18,  30.3 }, 16.2, {  37,  9.9 }, { -20,  37.0 }, 58.1, 15.8 },
+    { "2011-02-06 09:00", { 311, 29.5 }, { -15,  40.4 }, 16.2, { 279, 24.2 }, {  +1,  57.3 },   54, 14.7 },
+    { "2011-02-17 05:00", { 251, 29.6 }, { -12,   6.5 }, 16.2, {  88, 14.8 }, { +13,  58.1 }, 60.5, 16.5 },
+    { "2011-02-19 23:00", { 161, 33.0 }, { -11,   8.2 }, 16.2, { 322, 20.5 }, {  -2,   6.3 }, 61.1, 16.7 },
+    { "2011-02-26 01:00", { 191, 45.0 }, {  -8,  54.8 }, 16.1, { 271, 26.0 }, { -23,  58.6 }, 56.9, 15.4 },
+    { "2011-03-05 20:00", { 117,  7.8 }, {  -5,  56.9 }, 16.1, { 109, 23.3 }, {  +2,  46.0 }, 53.9, 14.7 },
+    { "2011-03-11 12:00", { 357, 28.5 }, {  -3,  44.3 }, 16.1, { 287, 57.3 }, { +22,  56.1 }, 55.5, 15.1 },
+    { "2011-03-15 08:00", { 297, 44.0 }, {  -2,  13.7 }, 16.1, { 177, 50.9 }, { +19,  21.4 }, 58.7,   16 },
+    { "2011-03-25 19:00", { 103, 30.3 }, {  +1,  54.0 }, 16.0, { 202,  1.8 }, { -23,  29.2 }, 57.3, 15.7 },
+    { "2016-01-04 05:00", { 253, 51.4 }, { -22,  46.5 }, 16.3, { 324, 44.8 }, { -10,   0.7 }, 54.5, 14.9 },
+    { "2016-01-09 03:00", { 223, 18.9 }, { -22,  11.3 }, 16.3, { 236, 11.9 }, { -18,  20.9 }, 57.2, 15.7 },
+    { "2016-01-13 00:00", { 177, 55.4 }, { -21,  36.2 }, 16.3, { 140, 29.5 }, {  -9,  32.7 }, 59.1, 16.1 },
+    { "2016-01-19 23:00", { 162, 19.4 }, { -20,  17.6 }, 16.3, {  36, 44.6 }, { +16,  46.4 }, 58.4,   16 },
+    { "2016-01-27 09:00", { 311, 51.0 }, { -18,  33.5 }, 16.2, {  95, 11.4 }, {  +5,  17.5 }, 54.9, 14.9 },
+    { "2016-02-06 09:00", { 311, 29.9 }, { -15,  44.3 }, 16.2, { 342,  8.6 }, { -17,  35.4 }, 57.9, 15.8 },
+    { "2016-02-17 05:00", { 251, 29.3 }, { -12,  10.9 }, 16.2, { 140,  3.9 }, { +17,  57.3 }, 57.7, 15.7 },
+    { "2016-02-19 23:00", { 161, 32.7 }, { -11,  12.7 }, 16.2, {  14, 52.7 }, { +16,  21.8 }, 56.3, 15.4 },
+    { "2016-02-26 01:00", { 191, 44.5 }, {  -8,  59.6 }, 16.2, { 337, 34.7 }, {  -3,  22.7 }, 54.2, 14.7 },
+    { "2016-03-05 20:00", { 117, 10.6 }, {  -5,  38.7 }, 16.1, { 160, 35.5 }, { -15,  44.9 }, 58.4, 15.8 },
+    { "2016-03-11 12:00", { 357, 31.6 }, {  -3,  25.8 }, 16.1, { 325,  8.8 }, {  +7,   1.6 }, 60.8, 16.6 },
+    { "2016-03-15 08:00", { 297, 47.4 }, {  -1,  55.1 }, 16.1, { 213, 24.5 }, { +17,  48.2 }, 58.3, 15.8 },
+    { "2016-03-25 19:00", { 103, 33.8 }, {  +2,  12.4 }, 16.0, { 259, 11.1 }, {  -8,  31.5 },   54, 14.7 },
+    { "2021-01-04 05:00", { 253, 46.3 }, { -22,  41.8 }, 16.3, {  10,  3.9 }, { +10,  25.2 }, 58.1, 15.8 },
+    { "2021-01-09 03:00", { 223, 14.3 }, { -22,   4.9 }, 16.3, { 280, 36.3 }, { -16,  54.5 }, 59.6, 16.2 },
+    { "2021-01-13 00:00", { 177, 51.2 }, { -21,  28.5 }, 16.3, { 180, 17.1 }, { -24,  31.6 }, 58.7,   16 },
+    { "2021-01-19 23:00", { 162, 16.0 }, { -20,   7.7 }, 16.3, {  84, 17.8 }, {  +3,  44.8 }, 54.4, 14.9 },
+    { "2021-01-27 09:00", { 311, 48.6 }, { -18,  21.5 }, 16.2, { 149, 33.0 }, { +24,  32.6 }, 56.5, 15.3 },
+    { "2021-02-06 09:00", { 311, 29.2 }, { -15,  30.0 }, 16.2, {  24,  5.6 }, { -21,   2.1 }, 58.9, 16.1 },
+    { "2021-02-17 05:00", { 251, 30.2 }, { -11,  54.5 }, 16.2, { 192, 20.8 }, {  +8,  22.5 }, 54.3, 14.8 },
+    { "2021-02-19 23:00", { 161, 33.8 }, { -10,  55.9 }, 16.2, {  73, 28.0 }, { +19,  41.4 }, 54.3, 14.8 },
+    { "2021-02-26 01:00", { 191, 46.4 }, {  -8,  42.0 }, 16.1, {  26, 33.9 }, { +18,  53.6 }, 58.2, 15.9 },
+    { "2021-03-05 20:00", { 117,  9.8 }, {  -5,  43.8 }, 16.1, { 212, 43.3 }, { -22,   2.5 },   59, 16.2 },
+    { "2021-03-11 12:00", { 357, 30.9 }, {  -3,  30.9 }, 16.1, {  16, 56.8 }, { -16,  28.8 }, 56.9, 15.4 },
+    { "2021-03-15 08:00", { 297, 46.5 }, {  -2,   0.2 }, 16.1, { 276, 19.7 }, {  +2,  34.1 }, 54.6, 14.9 },
+    { "2021-03-19 14:00", {  28,  4.8 }, {   0, -19.4 }, 16.1, { 322,  4.3 }, { +20,  53.6 }, 54.2, 14.7 },
+    { "2021-03-25 19:00", { 103, 32.7 }, {  +2,   7.5 }, 16.0, { 319, 22.2 }, { +17,  39.8 }, 58.3, 15.7 },
+    { "2024-01-04 05:00", { 253, 51.2 }, { -22,  46.4 }, 16.3, { 345, 11.9 }, {  -4,  57.2 }, 54.7, 14.9 },
+    { "2024-01-09 03:00", { 223, 18.8 }, { -22,  11.1 }, 16.3, { 257, 55.8 }, { -26,  55.8 }, 58.4,   16 },
+    { "2024-01-13 00:00", { 177, 55.4 }, { -21,  35.9 }, 16.3, { 155,  7.8 }, { -21,  19.7 }, 60.5, 16.5 },
+    { "2024-01-19 23:00", { 162, 19.4 }, { -20,  17.0 }, 16.3, {  55, 13.7 }, { +20,  48.3 }, 57.4, 15.7 },
+    { "2024-01-27 09:00", { 311, 51.0 }, { -18,  32.8 }, 16.3, { 112, 31.5 }, { +17,   0.5 }, 54.3, 14.8 },
+    { "2024-02-06 09:00", { 311, 30.1 }, { -15,  43.5 }, 16.2, {   3,  4.1 }, { -28,  12.9 }, 58.6,   16 },
+    { "2024-02-17 05:00", { 251, 29.7 }, { -12,   9.8 }, 16.2, { 159, 14.0 }, { +24,  55.7 }, 57.1, 15.5 },
+    { "2024-02-19 23:00", { 161, 33.1 }, { -11,  11.6 }, 16.2, {  32, 50.8 }, { +28,   7.8 }, 55.3, 15.1 },
+    { "2024-02-26 01:00", { 191, 45.0 }, {  -8,  58.4 }, 16.2, { 355, 41.2 }, {  +4,  28.1 },   54, 14.7 },
+    { "2024-03-05 20:00", { 117, 11.1 }, {  -5,  37.5 }, 16.2, { 179, 20.4 }, { -27,  59.4 }, 58.7, 15.9 },
+    { "2024-03-11 12:00", { 357, 32.2 }, {  -3,  24.5 }, 16.1, { 342, 34.0 }, {  +2,  13.6 }, 61.2, 16.7 },
+    { "2024-03-15 08:00", { 297, 48.0 }, {  -1,  53.8 }, 16.1, { 233, 36.3 }, { +24,  28.4 }, 58.2, 16.3 },
+    { "2024-03-25 19:00", { 103, 34.4 }, {   2,  13.8 }, 16.1, { 278, 24.2 }, {  -3,  59.3 }, 54.2, 14.7 },
+};
+
+TEST_F(AltitudeTest, SunMoon) {
+
+    double max_error_sun_gha = 0;
+    double max_error_sun_dec = 0;
+    double max_error_moon_gha = 0;
+    double max_error_moon_dec = 0;
+    double avg_error_sun_gha = 0;
+    double avg_error_sun_dec = 0;
+    double avg_error_moon_gha = 0;
+    double avg_error_moon_dec = 0;
+
+    int count = (int)(sizeof(SUNMOON_SIGHTS) / sizeof(SUNMOON_SIGHTS[0]));
+    for (int i = 0; i < count; i++) {
+        struct sunmoonsightdata data = SUNMOON_SIGHTS[i];
+
+        wxDateTime datetime;
+        ASSERT_TRUE(datetime.ParseDateTime(data.date)) << "Failed to parse datetime";
+
+        Sight sight1(Sight::ALTITUDE, "Sun", Sight::CENTER, datetime, 0, DegMin2DecDeg(42, 42), 1);
+        sight1.m_IndexError = 0;
+        sight1.m_EyeHeight = 0;
+        sight1.m_Temperature = 20;
+        sight1.m_Pressure = 1023;
+
+        double EPSILON = 0.2 / 60.0;  // 0.2 arc-minute tolerance
+        commontest(sight1, datetime, "Sun", i, data.date, 0,
+                   0, 0, false, 0, 0,
+                   DegMin2DecDeg(data.expected_sun_gha.deg, data.expected_sun_gha.min),
+                   DegMin2DecDeg(data.expected_sun_dec.deg, data.expected_sun_dec.min), EPSILON);
+
+        error_gha = std::abs(error_gha);
+        avg_error_sun_gha += error_gha;
+        if (error_gha > max_error_sun_gha) max_error_sun_gha = error_gha;
+        error_dec = std::abs(error_dec);
+        avg_error_sun_dec += error_dec;
+        if (error_dec > max_error_sun_dec) max_error_sun_dec = error_dec;
+
+        EPSILON = 0.35 / 60.0;  // 0.35 arc-minute tolerance
+
+        Sight sight2(Sight::ALTITUDE, "Moon", Sight::CENTER, datetime, 0, DegMin2DecDeg(42, 42), 1);
+        sight2.m_IndexError = 0;
+        sight2.m_EyeHeight = 0;
+        sight2.m_Temperature = 20;
+        sight2.m_Pressure = 1023;
+
+        commontest(sight2, datetime, "Moon", i, data.date, 0,
+                   0, 0, false, 0, 0,
+                   DegMin2DecDeg(data.expected_moon_gha.deg, data.expected_moon_gha.min),
+                   DegMin2DecDeg(data.expected_moon_dec.deg, data.expected_moon_dec.min), EPSILON);
+
+        error_gha = std::abs(error_gha);
+        avg_error_moon_gha += error_gha;
+        if (error_gha > max_error_moon_gha) max_error_moon_gha = error_gha;
+        error_dec = std::abs(error_dec);
+        avg_error_moon_dec += error_dec;
+        if (error_dec > max_error_moon_dec) max_error_moon_dec = error_dec;
+    }
+
+    std::cout << "============================================================================="
+              << std::endl;
+    std::cout << "Sun GHA error: max " << (max_error_sun_gha * 60) << " minutes, mean "
+              << ((avg_error_sun_gha * 60) / count) << " minutes" << std::endl;
+    std::cout << "Sun DEC error: max " << (max_error_sun_dec * 60) << " minutes, mean "
+              << ((avg_error_sun_dec * 60) / count) << " minutes" << std::endl;
+    std::cout << "Moon GHA error: max " << (max_error_moon_gha * 60) << " minutes, mean "
+              << ((avg_error_moon_gha * 60) / count) << " minutes" << std::endl;
+    std::cout << "Moon DEC error: max " << (max_error_moon_dec * 60)  << " minutes, mean "
+              << ((avg_error_moon_dec * 60) / count) << " minutes"  << std::endl;
+    std::cout << "============================================================================="
+              << std::endl;
+}
+
+struct planetsightdata {
+    const char *date;
+    struct degmin expected_venus_gha;
+    struct degmin expected_venus_dec;
+    struct degmin expected_mars_gha;
+    struct degmin expected_mars_dec;
+    struct degmin expected_jupiter_gha;
+    struct degmin expected_jupiter_dec;
+    struct degmin expected_saturn_gha;
+    struct degmin expected_saturn_dec;
+};
+
+struct planetsightdata PLANET_SIGHTS[] = {
+    // from "Nautical Almanac vs OpenCPN Data with Moon SD&HP change PLANETS"
+    { "2025-01-04 05:00", { 205,  28.2 }, { -12,  10.0 }, {  55,   4.6 }, { +23,  53.9 }, { 107,  32.0 }, { +21,  45.4 }, { 192,  19.0 }, {  -7,  48.8 } },
+    { "2025-01-09 03:00", { 175,  36.1 }, {  -9,  55.5 }, {  31,  51.0 }, { +24,  25.9 }, {  82,  51.9 }, { +21,  43.0 }, { 166,  47.2 }, {  -7,  38.8 } },
+    { "2025-01-13 00:00", { 130,  52.3 }, {  -8,   7.1 }, { 352,  17.4 }, { +24,  49.6 }, {  42,   0.9 }, { +21,  41.4 }, { 125,  17.5 }, {  -7,  30.4 } },
+    { "2025-01-19 23:00", { 116,  44.5 }, {  -4,  50.0 }, { 347,   7.5 }, { +25,  26.1 }, {  34,  20.8 }, { +21,  39.3 }, { 116,  32.8 }, {  -7,  14.5 } },
+    { "2025-01-27 09:00", { 268,  15.9 }, {  -1,  21.1 }, { 147,  25.5 }, { +25,  54.1 }, { 191,  58.6 }, { +21,  38.5 }, { 273,   9.8 }, {  -6,  56.3 } },
+    { "2025-02-05 13:00", { 331,  10.3 }, {  +2,  45.8 }, { 219,  26.7 }, { +26,  11.6 }, { 261,   7.9 }, { +21,  39.6 }, { 341,  17.0 }, {  -6,  32.5 } },
+    { "2025-02-06 09:00", { 271,  30.2 }, {  +3,   7.2 }, { 160,  29.1 }, { +26,  12.3 }, { 201,  56.9 }, { +21,  39.8 }, { 282,   1.1 }, {  -6,  30.2 } },
+    { "2025-02-17 05:00", { 217,   6.3 }, {  +7,  19.1 }, { 113,   6.5 }, { +26,  10.7 }, { 152,  20.7 }, { +21,  44.2 }, { 231,  32.5 }, {  -6,   0.4 } },
+    { "2025-02-19 23:00", { 128,  58.8 }, {  +8,  12.8 }, {  26,   2.6 }, { +26,   7.5 }, {  64,  55.2 }, { +21,  45.8 }, { 143,  57.0 }, {  -5,  52.7 } },
+    { "2025-02-20 19:00", {  69,  35.4 }, {  +8,  28.1 }, { 326,  54.7 }, { +26,   6.4 }, {   5,  41.7 }, { +21,  46.3 }, {  84,  40.8 }, {  -5,  50.3 } },
+    { "2025-02-26 01:00", { 163,  55.9 }, {  +9,  51.2 }, {  62,   9.4 }, { +25,  57.4 }, { 100,  31.4 }, { +21,  50.0 }, { 179,  16.2 }, {  -5,  35.3 } },
+    { "2025-03-05 13:00", { 351,  46.5 }, { +11,   1.3 }, { 249,   1.3 }, { +25,  39.9 }, { 287,  16.1 }, { +21,  56.2 }, {   5,  48.9 }, {  -5,  13.7 } },
+    { "2025-03-11 12:00", { 344,  26.5 }, { +11,   4.5 }, { 239,   0.0 }, { +25,  22.5 }, { 277,  30.2 }, { +22,   1.7 }, { 356,   0.6 }, {  -4,  56.4 } },
+    { "2025-03-14 03:00", { 213,  10.4 }, { +10,  49.1 }, { 106,   4.6 }, { +25,  13.9 }, { 144,  46.7 }, { +22,   4.3 }, { 223,  17.9 }, {  -4,  48.8 } },
+    { "2025-03-15 08:00", { 289,  56.9 }, { +10,  38.6 }, { 182,   0.5 }, { +25,   9.7 }, { 220,  49.2 }, { +22,   5.6 }, { 299,  21.1 }, {  -4,  45.3 } },
+    { "2025-03-25 19:00", { 110,  53.3 }, {  +7,  51.3 }, { 354,  33.3 }, { +24,  28.8 }, {  34,  40.2 }, { +22,  16.8 }, { 113,  28.4 }, {  -4,  15.4 } },
+    { "2025-04-01 23:00", { 181,   1.1 }, {  +5,  18.9 }, {  59,  15.3 }, { +23,  55.3 }, { 100,  35.1 }, { +22,  24.8 }, { 179,  44.1 }, {  -3,  55.3 } },
+    { "2025-04-02 21:00", { 152,  12.2 }, {  +5,   0.0 }, {  29,  49.9 }, { +23,  50.7 }, {  71,  19.9 }, { +22,  25.8 }, { 150,  32.3 }, {  -3,  52.8 } },
+    { "2025-04-06 23:00", { 187,   6.4 }, {  +3,  41.0 }, {  62,  20.8 }, { +23,  29.1 }, { 104,  38.7 }, { +22,  30.4 }, { 184,   6.9 }, {  -3,  41.7 } },
+    { "2025-04-23 20:00", { 156,   1.3 }, {  +0,  53.7 }, {  26,  55.7 }, { +21,  42.6 }, {  73,   0.7 }, { +22,  48.4 }, { 153,  59.1 }, {  -2,  58.3 } },
+    { "2025-04-28 09:00", { 353,  20.0 }, {  +0,  55.4 }, { 224,  20.0 }, { +21,   8.9 }, { 271,  31.9 }, { +22,  52.8 }, { 353,   1.1 }, {  -2,  47.5 } },
+    { "2025-05-04 13:00", {  55,  47.7 }, {  +1,  24.2 }, { 287,  30.5 }, { +20,  19.5 }, { 336,  16.1 }, { +22,  58.3 }, {  58,  31.1 }, {  -2,  33.6 } },
+    { "2025-05-11 09:00", { 357,  48.5 }, {  +2,  26.1 }, { 230,  55.6 }, { +19,  20.1 }, { 281,  28.0 }, { +23,   3.7 }, {   4,  39.0 }, {  -2,  19.4 } },
+    { "2025-05-16 15:00", {  88,  57.3 }, {  +3,  31.0 }, { 323,  29.8 }, { +18,  31.1 }, {  15,  25.7 }, { +23,   7.3 }, {  99,  23.5 }, {  -2,   9.2 } },
+    { "2025-05-19 10:00", {  14,  26.8 }, {  +4,  10.4 }, { 249,  50.8 }, { +18,   3.9 }, { 302,  31.6 }, { +23,   9.0 }, {  26,  55.5 }, {  -2,   4.2 } },
+    { "2025-05-19 08:00", { 344,  25.9 }, {  +4,   9.2 }, { 219,  48.4 }, { +18,   4.7 }, { 272,  27.8 }, { +23,   9.0 }, { 356,  51.0 }, {  -2,   4.3 } },
+    { "2025-05-28 18:00", { 135,  35.8 }, {  +6,  41.5 }, {  14,  17.0 }, { +16,  27.0 }, {  69,  29.7 }, { +23,  13.5 }, { 155,  27.3 }, {  -1,  49.0 } },
+    { "2025-06-02 08:00", { 345,  55.5 }, {  +8,   3.1 }, { 226,  25.5 }, { +15,  36.2 }, { 282,  53.9 }, { +23,  15.1 }, {   9,  40.8 }, {  -1,  42.6 } },
+    { "2025-06-12 14:00", {  76,   9.8 }, { +11,  13.8 }, { 321,   9.3 }, { +13,  35.4 }, {  20,  28.8 }, { +23,  16.7 }, { 109,  13.7 }, {  -1,  30.9 } },
+    { "2025-06-21 22:00", { 195,  48.9 }, { +14,   6.4 }, {  85,  23.9 }, { +11,  37.4 }, { 147,  21.8 }, { +23,  16.0 }, { 238,   2.9 }, {  -1,  23.7 } },
+    { "2025-06-29 04:00", { 285,  11.1 }, { +16,  12.1 }, { 178,  39.4 }, { +10,   0.8 }, { 242,  42.5 }, { +23,  14.0 }, { 334,  59.1 }, {  -1,  20.4 } },
+    { "2025-07-04 12:00", {  44,  31.7 }, { +17,  36.7 }, { 301,   2.0 }, {  +8,  47.3 }, {   6,  38.7 }, { +23,  11.7 }, { 100,   8.4 }, {  -1,  19.3 } },
+    { "2025-07-08 11:00", {  28,  56.2 }, { +18,  33.8 }, { 287,  47.3 }, {  +7,  51.5 }, { 354,  34.2 }, { +23,   9.6 }, {  88,  59.6 }, {  -1,  19.3 } },
+    { "2025-07-13 16:00", { 103,   1.5 }, { +19,  40.3 }, {   5,   5.0 }, {  +6,  36.7 }, {  73,  25.8 }, { +23,   6.4 }, { 169,   6.0 }, {  -1,  20.1 } },
+    { "2025-07-16 19:00", { 147,  24.7 }, { +20,  14.9 }, {  51,  27.1 }, {  +5,  51.0 }, { 120,  45.1 }, { +23,   4.1 }, { 217,  11.1 }, {  -1,  21.2 } },
+    { "2025-07-23 05:00", { 296,   0.2 }, { +21,  11.7 }, { 204,  14.4 }, {  +4,  15.7 }, { 275,  32.0 }, { +22,  58.9 }, {  13,  34.0 }, {  -1,  24.5 } },
+    { "2025-07-29 04:00", { 279,  32.9 }, { +21,  45.8 }, { 191,  48.0 }, {  +2,  45.5 }, { 264,  59.9 }, { +22,  53.3 }, {   4,  32.8 }, {  -1,  29.0 } },
+    { "2025-08-05 10:00", {   7,  38.2 }, { +22,   0.6 }, { 284,  52.6 }, {  +0,  54.0 }, {   0,  28.4 }, { +22,  45.7 }, { 101,  53.7 }, {  -1,  36.2 } },
+    { "2025-08-17 06:00", { 304,  21.6 }, { +21,  18.3 }, { 229,  47.1 }, {  -2,  10.5 }, { 309,  31.3 }, { +22,  31.8 }, {  54,   2.5 }, {  -1,  51.6 } },
+    { "2025-08-24 05:00", { 287,  27.0 }, { +20,  14.4 }, { 217,  35.6 }, {  -3,  59.7 }, { 299,  55.3 }, { +22,  23.0 }, {  46,  15.7 }, {  -2,   2.5 } },
+    { "2025-08-27 16:00", {  91,  31.7 }, { +19,  32.3 }, {  23,  57.9 }, {  -4,  54.0 }, { 107,  37.9 }, { +22,  18.5 }, { 214,  52.2 }, {  -2,   8.3 } },
+    { "2025-09-01 01:00", { 225,  24.1 }, { +18,  29.4 }, { 160,  40.4 }, {  -6,   2.5 }, { 246,   5.2 }, { +22,  12.7 }, { 354,  26.9 }, {  -2,  16.0 } },
+    { "2025-09-05 13:00", {  44,  17.8 }, { +17,  14.3 }, { 342,  24.0 }, {  -7,  12.5 }, {  69,  40.4 }, { +22,   6.8 }, { 179,  10.4 }, {  -2,  24.1 } },
+    { "2025-09-09 07:00", { 313,  25.3 }, { +16,   4.1 }, { 253,  48.8 }, {  -8,  10.4 }, { 342,  41.4 }, { +22,   1.8 }, {  93,   7.2 }, {  -2,  31.1 } },
+    { "2025-09-19 15:00", {  71,  13.7 }, { +12,  18.7 }, {  17,  34.3 }, { -10,  47.3 }, { 111,   8.5 }, { +21,  48.5 }, { 224,   1.5 }, {  -2,  50.7 } },
+    { "2025-09-20 14:00", {  56,   2.4 }, { +11,  55.6 }, {   2,  54.6 }, { -11,   1.6 }, {  96,  56.2 }, { +21,  47.4 }, { 210,   2.2 }, {  -2,  52.5 } },
+    { "2025-09-28 07:00", { 309,  37.4 }, {  +8,  39.9 }, { 260,  33.3 }, { -12,  54.4 }, { 358,  24.7 }, { +21,  38.2 }, { 113,  10.8 }, {  -3,   6.8 } },
+    { "2025-10-05 18:00", { 113,  22.4 }, {  +5,  16.0 }, {  67,  59.2 }, { -14,  39.2 }, { 169,  48.9 }, { +21,  30.3 }, { 286,   2.8 }, {  -3,  20.1 } },
+    { "2025-10-10 04:00", { 262,  40.2 }, {  +3,  10.4 }, { 219,  21.9 }, { -15,  38.8 }, { 323,  40.5 }, { +21,  26.1 }, {  80,  41.6 }, {  -3,  27.4 } },
+    { "2025-10-20 05:00", { 276,   5.7 }, {  -1,  42.3 }, { 237,  18.9 }, { -17,  46.3 }, { 347,  39.7 }, { +21,  18.4 }, { 106,  12.2 }, {  -3,  42.4 } },
+    { "2025-10-26 13:00", {  35,   3.8 }, {  -4,  47.6 }, { 359,   2.3 }, { -19,   0.0 }, { 113,  29.3 }, { +21,  15.1 }, { 232,  47.0 }, {  -3,  50.3 } },
+    { "2025-11-02 02:00", { 228,  55.1 }, {  -7,  55.4 }, { 195,  42.5 }, { -20,   9.7 }, { 314,  38.7 }, { +21,  13.0 }, {  74,  31.7 }, {  -3,  56.9 } },
+    { "2025-11-18 17:00", {  90,  21.9 }, { -15,  12.3 }, {  64,  27.2 }, { -22,  32.2 }, { 195,  57.1 }, { +21,  14.6 }, { 316,  24.3 }, {  -4,   6.3 } },
+    { "2025-11-22 00:00", { 194,  31.0 }, { -16,  28.1 }, { 170,   6.9 }, { -22,  53.7 }, { 304,  17.7 }, { +21,  16.1 }, {  64,  41.7 }, {  -4,   6.8 } },
+    { "2025-11-28 22:00", { 162,  33.6 }, { -18,  51.6 }, { 141,  25.8 }, { -23,  31.0 }, { 281,  26.5 }, { +21,  20.6 }, {  41,  33.2 }, {  -4,   6.3 } },
+    { "2025-12-01 12:00", {  11,  46.1 }, { -19,  39.1 }, { 351,  53.8 }, { -23,  42.1 }, { 134,   9.1 }, { +21,  22.6 }, { 254,   5.7 }, {  -4,   5.5 } },
+    { "2025-12-03 01:00", { 206,  16.9 }, { -20,   5.6 }, { 187,  10.2 }, { -23,  47.9 }, { 330,  46.8 }, { +21,  24.0 }, {  90,  36.3 }, {  -4,   4.9 } },
+    { "2025-12-09 01:00", { 204,  16.6 }, { -21,  35.8 }, { 188,  11.8 }, { -24,   4.9 }, { 337,  11.2 }, { +21,  29.8 }, {  96,  27.0 }, {  -4,   1.7 } },
+    { "2025-12-13 13:00", {  22,  40.5 }, { -22,  28.7 }, {   8,  56.0 }, { -24,  11.7 }, { 162,   3.6 }, { +21,  34.8 }, { 280,  47.7 }, {  -3,  58.3 } },
+    { "2025-12-14 14:00", {  37,  17.6 }, { -22,  39.0 }, {  24,   6.0 }, { -24,  12.5 }, { 178,  11.8 }, { +21,  36.0 }, { 296,  47.8 }, {  -3,  57.4 } },
+    { "2025-12-29 03:00", { 226,  43.4 }, { -23,  43.0 }, { 221,  20.8 }, { -23,  53.6 }, {  29,  18.6 }, { +21,  54.8 }, { 145,  35.5 }, {  -3,  40.2 } },
+};
+
+TEST_F(AltitudeTest, Planet) {
+
+    double max_error_venus_gha = 0;
+    double max_error_venus_dec = 0;
+    double max_error_mars_gha = 0;
+    double max_error_mars_dec = 0;
+    double max_error_jupiter_gha = 0;
+    double max_error_jupiter_dec = 0;
+    double max_error_saturn_gha = 0;
+    double max_error_saturn_dec = 0;
+    double avg_error_venus_gha = 0;
+    double avg_error_venus_dec = 0;
+    double avg_error_mars_gha = 0;
+    double avg_error_mars_dec = 0;
+    double avg_error_jupiter_gha = 0;
+    double avg_error_jupiter_dec = 0;
+    double avg_error_saturn_gha = 0;
+    double avg_error_saturn_dec = 0;
+
+    int count = (int)(sizeof(PLANET_SIGHTS) / sizeof(PLANET_SIGHTS[0]));
+    for (int i = 0; i < count; i++) {
+        struct planetsightdata data = PLANET_SIGHTS[i];
+
+        wxDateTime datetime;
+        ASSERT_TRUE(datetime.ParseDateTime(data.date)) << "Failed to parse datetime";
+
+        Sight sight1(Sight::ALTITUDE, "Venus", Sight::CENTER, datetime, 0,
+                     DegMin2DecDeg(42, 42), 1);
+        sight1.m_IndexError = 0;
+        sight1.m_EyeHeight = 0;
+        sight1.m_Temperature = 20;
+        sight1.m_Pressure = 1023;
+
+        double EPSILON = 0.45 / 60.0;  // 0.45 arc-minute tolerance
+        commontest(sight1, datetime, "Venus", i, data.date, 0,
+                   0, 0, false, 0, 0,
+                   DegMin2DecDeg(data.expected_venus_gha.deg, data.expected_venus_gha.min),
+                   DegMin2DecDeg(data.expected_venus_dec.deg, data.expected_venus_dec.min),
+                   EPSILON);
+
+        error_gha = std::abs(error_gha);
+        avg_error_venus_gha += error_gha;
+        if (error_gha > max_error_venus_gha) max_error_venus_gha = error_gha;
+        error_dec = std::abs(error_dec);
+        avg_error_venus_dec += error_dec;
+        if (error_dec > max_error_venus_dec) max_error_venus_dec = error_dec;
+
+        Sight sight2(Sight::ALTITUDE, "Mars", Sight::CENTER, datetime, 0, DegMin2DecDeg(42, 42), 1);
+        sight2.m_IndexError = 0;
+        sight2.m_EyeHeight = 0;
+        sight2.m_Temperature = 20;
+        sight2.m_Pressure = 1023;
+
+        EPSILON = 0.2 / 60.0;  // 0.2 arc-minute tolerance
+        commontest(sight2, datetime, "Mars", i, data.date, 0,
+                   0, 0, false, 0, 0,
+                   DegMin2DecDeg(data.expected_mars_gha.deg, data.expected_mars_gha.min),
+                   DegMin2DecDeg(data.expected_mars_dec.deg, data.expected_mars_dec.min), EPSILON);
+
+        error_gha = std::abs(error_gha);
+        avg_error_mars_gha += error_gha;
+        if (error_gha > max_error_mars_gha) max_error_mars_gha = error_gha;
+        error_dec = std::abs(error_dec);
+        avg_error_mars_dec += error_dec;
+        if (error_dec > max_error_mars_dec) max_error_mars_dec = error_dec;
+
+        Sight sight3(Sight::ALTITUDE, "Jupiter", Sight::CENTER, datetime, 0,
+                     DegMin2DecDeg(42, 42), 1);
+        sight3.m_IndexError = 0;
+        sight3.m_EyeHeight = 0;
+        sight3.m_Temperature = 20;
+        sight3.m_Pressure = 1023;
+
+        commontest(sight3, datetime, "Jupiter", i, data.date, 0,
+                   0, 0, false, 0, 0,
+                   DegMin2DecDeg(data.expected_jupiter_gha.deg, data.expected_jupiter_gha.min),
+                   DegMin2DecDeg(data.expected_jupiter_dec.deg, data.expected_jupiter_dec.min),
+                   EPSILON);
+
+        error_gha = std::abs(error_gha);
+        avg_error_jupiter_gha += error_gha;
+        if (error_gha > max_error_jupiter_gha) max_error_jupiter_gha = error_gha;
+        error_dec = std::abs(error_dec);
+        avg_error_jupiter_dec += error_dec;
+        if (error_dec > max_error_jupiter_dec) max_error_jupiter_dec = error_dec;
+
+        Sight sight4(Sight::ALTITUDE, "Saturn", Sight::CENTER, datetime, 0,
+                     DegMin2DecDeg(42, 42), 1);
+        sight4.m_IndexError = 0;
+        sight4.m_EyeHeight = 0;
+        sight4.m_Temperature = 20;
+        sight4.m_Pressure = 1023;
+
+        commontest(sight4, datetime, "Saturn", i, data.date, 0,
+                   0, 0, false, 0, 0,
+                   DegMin2DecDeg(data.expected_saturn_gha.deg, data.expected_saturn_gha.min),
+                   DegMin2DecDeg(data.expected_saturn_dec.deg, data.expected_saturn_dec.min),
+                   EPSILON);
+
+        error_gha = std::abs(error_gha);
+        avg_error_saturn_gha += error_gha;
+        if (error_gha > max_error_saturn_gha) max_error_saturn_gha = error_gha;
+        error_dec = std::abs(error_dec);
+        avg_error_saturn_dec += error_dec;
+        if (error_dec > max_error_saturn_dec) max_error_saturn_dec = error_dec;
+    }
+
+    std::cout << "============================================================================="
+              << std::endl;
+    std::cout << "Venus GHA error: max " << (max_error_venus_gha * 60) << " minutes, mean "
+              << ((avg_error_venus_gha * 60) / count) << " minutes" << std::endl;
+    std::cout << "Venus DEC error max " << (max_error_venus_dec * 60) << " minutes, mean "
+              << ((avg_error_venus_dec * 60) / count) << " minutes" << std::endl;
+    std::cout << "Mars GHA error: max " << (max_error_mars_gha * 60) << " minutes, mean "
+              << ((avg_error_mars_gha * 60) / count) << " minutes" << std::endl;
+    std::cout << "Mars DEC error: max " << (max_error_mars_dec * 60) << " minutes, mean "
+              << ((avg_error_mars_dec * 60) / count) << " minutes" << std::endl;
+    std::cout << "Jupiter GHA error: max " << (max_error_jupiter_gha * 60) << " minutes, mean "
+              << ((avg_error_jupiter_gha * 60) / count) << " minutes" << std::endl;
+    std::cout << "Jupiter DEC error: max " << (max_error_jupiter_dec * 60) << " minutes, mean "
+              << ((avg_error_jupiter_dec * 60) / count) << " minutes" << std::endl;
+    std::cout << "Saturn GHA error: max " << (max_error_saturn_gha * 60) << " minutes, mean "
+              << ((avg_error_saturn_gha * 60) / count) << " minutes" << std::endl;
+    std::cout << "Saturn DEC error: max " << (max_error_saturn_dec * 60) << " minutes, mean "
+              << ((avg_error_saturn_dec * 60) / count) << " minutes" << std::endl;
+    std::cout << "============================================================================="
+              << std::endl;
+}
+
+struct starsightdata {
+    const char *date;
+    const char* body;
+    double expected_gha;
+    struct degmin expected_dec;
+};
+
+struct starsightdata STAR_SIGHTS[] = {
+    // from "Nautical Almanac vs OpenCPN Data with Moon SD&HP change STARS ONLY"
+    { "2025-01-04 05:00", "Canopus",     82.925000, { -52, 42.5 }, },
+    { "2025-01-09 03:00", "Betelgeuse",  64.771667, {  +7, 24.7 }, },
+    { "2025-01-13 00:00", "Sirius",      11.160000, { -16, 45.1 }, },
+    { "2025-01-19 23:00", "Kochab",     241.920000, { +74, 02.7 }, },
+    { "2025-01-27 09:00", "Atria",        9.071667, { -69, 04.1 }, },
+    { "2025-02-05 13:00", "Procyon",    215.771667, {  +5, 09.6 }, },
+    { "2025-02-06 09:00", "Achernar",   247.091667, { -57, 06.8 }, },
+    { "2025-02-17 05:00", "Dubhe",       56.100000, { +61, 36.8 }, },
+    { "2025-02-19 23:00", "Altair",     197.143333, {  +8, 55.9 }, },
+    { "2025-02-20 19:00", "Capella",    356.323333, { +46, 01.5 }, },
+    { "2025-02-26 01:00", "Vega",       251.693333, { +38, 48.1 }, },
+    { "2025-03-11 12:00", "Deneb",       38.836667, { +45, 21.9 }, },
+    { "2025-03-14 03:00", "Spica",       15.355000, { -11, 17.7 }, },
+    { "2025-03-15 08:00", "Arcturus",    78.971667, { +19, 02.8 }, },
+    { "2025-03-25 19:00", "Atria",      215.645000, { -69, 04.1 }, },
+    { "2025-04-01 23:00", "Rigel",       96.615000, {  -8, 10.5 }, },
+    { "2025-04-02 21:00", "Regulus",    354.023333, { +11, 50.6 }, },
+    { "2025-04-06 23:00", "Altair",     242.478333, {  +8, 55.9 }, },
+    { "2025-04-23 20:00", "Schedar",    141.636667, { +56, 40.4 }, },
+    { "2025-04-28 09:00", "Achernar",   326.933333, { -57, 06.4 }, },
+    { "2025-05-04 13:00", "Kochab",     194.978333, { +74, 03.0 }, },
+    { "2025-05-11 09:00", "Rigel",      285.468333, {  -8, 10.4 }, },
+    { "2025-05-16 15:00", "Dubhe",      293.251667, { +61, 37.1 }, },
+    { "2025-05-19 10:00", "Canopus",    291.208333, { -52, 42.7 }, },
+    { "2025-05-19 08:00", "Deneb",       46.673333, { +45, 21.9 }, },
+    { "2025-05-28 18:00", "Spica",      314.893333, { -11, 17.7 }, },
+    { "2025-06-02 08:00", "Capella",    291.411667, { +46, 01.4 }, },
+    { "2025-06-12 14:00", "Sirius",       9.588333, { -16, 45.1 }, },
+    { "2025-06-21 22:00", "Betelgeuse", 151.216667, {  +7, 24.7 }, },
+    { "2025-06-29 04:00", "Vega",        58.036667, { +38, 48.4 }, },
+    { "2025-07-04 12:00", "Achernar",    78.085000, { -57, 06.1 }, },
+    { "2025-07-13 16:00", "Arcturus",   317.578333, { +19, 03.1 }, },
+    { "2025-07-16 19:00", "Regulus",     67.438333, { +11, 50.6 }, },
+    { "2025-07-23 05:00", "Procyon",    261.036667, {  +5, 09.6 }, },
+    { "2025-08-05 10:00", "Schedar",     93.715000, { +56, 40.5 }, },
+    { "2025-08-17 06:00", "Canopus",    319.750000, { -52, 42.2 }, },
+    { "2025-08-24 05:00", "Atria",      154.878333, { -69, 04.7 }, },
+    { "2025-08-27 16:00", "Vega",       296.685000, { +38, 48.6 }, },
+    { "2025-09-01 01:00", "Altair",      57.440000, {  +8, 56.3 }, },
+    { "2025-09-05 13:00", "Achernar",   155.211667, { -57, 06.1 }, },
+    { "2025-09-09 07:00", "Kochab",     230.925000, { +74, 03.2 }, },
+    { "2025-09-19 15:00", "Rigel",      144.825000, {  -8, 10.1 }, },
+    { "2025-09-20 14:00", "Arcturus",   355.508333, { +19, 03.0 }, },
+    { "2025-10-10 04:00", "Procyon",    323.853333, {  +5, 09.6 }, },
+    { "2025-10-20 05:00", "Capella",     24.260000, { +46, 01.3 }, },
+    { "2025-10-26 13:00", "Vega",       310.706667, { +38, 48.7 }, },
+    { "2025-11-02 02:00", "Dubhe",      265.281667, { +61, 36.5 }, },
+    { "2025-11-18 17:00", "Deneb",        2.416667, { +45, 22.6 }, },
+    { "2025-11-22 00:00", "Achernar",    36.555000, { -57, 06.4 }, },
+    { "2025-11-28 22:00", "Spica",      196.416667, { -11, 17.7 }, },
+    { "2025-12-01 12:00", "Sirius",     149.021667, { -16, 45.0 }, },
+    { "2025-12-03 01:00", "Regulus",    294.678333, { +11, 50.4 }, },
+    { "2025-12-13 13:00", "Betelgeuse", 188.316667, {  +7, 24.7 }, },
+    { "2025-12-14 14:00", "Schedar",    282.995000, { +56, 41.1 }, },
+    { "2025-01-15 03:00", "Vega",       240.381667, { +38, 48.3 }, },
+    { "2025-01-15 12:00", "Achernar",   270.526667, { -57, 06.9 }, },
+    { "2025-03-15 12:00", "Achernar",   328.686667, { -57, 06.7 }, },
+    { "2025-05-15 12:00", "Achernar",    28.811667, { -57, 06.4 }, },
+    { "2025-06-15 12:00", "Achernar",    59.361667, { -57, 06.2 }, },
+    { "2025-08-15 12:00", "Achernar",   119.475000, { -57, 06.1 }, },
+    { "2025-10-15 12:00", "Achernar",   179.591667, { -57, 06.2 }, },
+    { "2025-12-15 12:00", "Achernar",   239.720000, { -57, 06.5 }, },
+    { "2025-01-15 12:00", "Rigel",      216.251667, {  -8, 10.4 }, },
+    { "2025-02-15 12:00", "Rigel",      246.806667, {  -8, 10.5 }, },
+    { "2025-03-15 12:00", "Rigel",      274.408333, {  -8, 10.5 }, },
+    { "2025-06-15 12:00", "Rigel",        5.090000, {  -8, 10.3 }, },
+    { "2025-07-15 12:00", "Rigel",       34.656667, {  -8, 10.2 }, },
+    { "2025-08-15 12:00", "Rigel",       65.208333, {  -8, 10.1 }, },
+    { "2025-10-15 12:00", "Rigel",      125.325000, {  -8, 10.1 }, },
+    { "2025-11-15 12:00", "Rigel",      155.876667, {  -8, 10.2 }, },
+    { "2025-12-15 12:00", "Rigel",      185.445000, {  -8, 10.3 }, },
+    { "2025-03-15 12:00", "Vega",        73.898333, { +38, 48.1 }, },
+    { "2025-04-15 12:00", "Vega",       104.450000, { +38, 48.1 }, },
+    { "2025-05-15 12:00", "Vega",       134.015000, { +38, 48.2 }, },
+    { "2025-07-15 12:00", "Vega",       194.136667, { +38, 48.5 }, },
+    { "2025-09-15 12:00", "Vega",       255.250000, { +38, 48.7 }, },
+    { "2025-11-15 12:00", "Vega",       315.380000, { +38, 48.6 }, },
+    { "2025-12-15 12:00", "Vega",       344.950000, { +38, 48.5 }, },
+    { "2025-01-15 12:00", "Pollux",     178.473333, { +27, 57.9 }, },
+    { "2025-02-15 12:00", "Pollux",     209.028333, { +27, 57.9 }, },
+    { "2025-03-15 12:00", "Pollux",     236.626667, { +27, 57.9 }, },
+    { "2025-04-15 12:00", "Pollux",     267.185000, { +27, 58.0 }, },
+    { "2025-05-15 12:00", "Pollux",     296.756667, { +27, 58.0 }, },
+    { "2025-06-15 12:00", "Pollux",     327.311667, { +27, 57.9 }, },
+    { "2025-07-15 12:00", "Pollux",     356.880000, { +27, 57.9 }, },
+    { "2025-08-15 12:00", "Pollux",      27.433333, { +27, 57.9 }, },
+    { "2025-09-15 12:00", "Pollux",      57.985000, { +27, 57.8 }, },
+    { "2025-10-15 12:00", "Pollux",      87.550000, { +27, 57.8 }, },
+    { "2025-11-15 12:00", "Pollux",     118.100000, { +27, 57.7 }, },
+    { "2025-12-15 12:00", "Pollux",     147.665000, { +27, 57.7 }, },
+    { "2025-01-05 20:00", "Polaris",    359.501667, { +89, 22.5 }, },
+    { "2025-03-05 20:00", "Polaris",     58.068333, { +89, 22.5 }, },
+    { "2025-05-05 20:00", "Polaris",    118.311667, { +89, 22.2 }, },
+    { "2025-06-05 20:00", "Polaris",    148.730000, { +89, 22.1 }, },
+    { "2025-07-05 20:00", "Polaris",    178.073333, { +89, 22.0 }, },
+    { "2025-09-05 20:00", "Polaris",    238.655000, { +89, 22.1 }, },
+    { "2025-11-05 20:00", "Polaris",    298.496667, { +89, 22.4 }, },
+    { "2025-12-21 20:00", "Polaris",    344.883333, { +89, 22.6 }, },
+};
+
+TEST_F(AltitudeTest, Stars) {
+    double max_error_stars_gha = 0;
+    double max_error_stars_dec = 0;
+    double max_error_polaris_gha = 0;
+    double max_error_polaris_dec = 0;
+    double avg_error_stars_gha = 0;
+    double avg_error_stars_dec = 0;
+    double avg_error_polaris_gha = 0;
+    double avg_error_polaris_dec = 0;
+    int stars_count = 0;
+    int polaris_count = 0;
+
+    for (int i = 0; i < (int)(sizeof(STAR_SIGHTS) / sizeof(STAR_SIGHTS[0])); i++) {
+        struct starsightdata data = STAR_SIGHTS[i];
+
+        wxDateTime datetime;
+        ASSERT_TRUE(datetime.ParseDateTime(data.date)) << "Failed to parse datetime";
+
+        Sight sight(Sight::ALTITUDE, data.body, Sight::CENTER, datetime, 0,
+                    DegMin2DecDeg(42, 42), 1);
+        sight.m_IndexError = 0;
+        sight.m_EyeHeight = 0;
+        sight.m_Temperature = 20;
+        sight.m_Pressure = 1023;
+
+        // Tolerances
+        double EPSILON = 0.1;  // 0.1 degree tolerance
+        if (!strcmp(data.body, "Polaris")) {
+            EPSILON = 0.65;
+        }
+        commontest(sight, datetime, data.body, i, data.date, 0,
+                   0, 0, false, 0, 0,
+                   data.expected_gha,
+                   DegMin2DecDeg(data.expected_dec.deg, data.expected_dec.min), EPSILON);
+
+        if (!strcmp(data.body, "Polaris")) {
+            error_gha = std::abs(error_gha);
+            avg_error_polaris_gha += error_gha;
+            if (error_gha > max_error_polaris_gha) max_error_polaris_gha = error_gha;
+            error_dec = std::abs(error_dec);
+            avg_error_polaris_dec += error_dec;
+            if (error_dec > max_error_polaris_dec) max_error_polaris_dec = error_dec;
+            ++polaris_count;
+        } else {
+            error_gha = std::abs(error_gha);
+            avg_error_stars_gha += error_gha;
+            if (error_gha > max_error_stars_gha) max_error_stars_gha = error_gha;
+            error_dec = std::abs(error_dec);
+            avg_error_stars_dec += error_dec;
+            if (error_dec > max_error_stars_dec) max_error_stars_dec = error_dec;
+            ++stars_count;
+        }
+    }
+
+    std::cout << "============================================================================="
+              << std::endl;
+    std::cout << "Polaris GHA error: max " << (max_error_polaris_gha * 60) << " minutes, mean "
+              << ((avg_error_polaris_gha * 60) / polaris_count) << " minutes" << std::endl;
+    std::cout << "Polaris DEC error: max " << (max_error_polaris_dec * 60) << " minutes, mean "
+              << ((avg_error_polaris_dec * 60) / polaris_count) << " minutes" << std::endl;
+    std::cout << "Stars GHA error: max " << (max_error_stars_gha * 60) << " minutes, mean "
+              << ((avg_error_stars_gha * 60) / stars_count) << " minutes" << std::endl;
+    std::cout << "Stars DEC error: max " << (max_error_stars_dec * 60) << " minutes, mean "
+              << ((avg_error_stars_dec * 60) / stars_count) << " minutes" << std::endl;
+    std::cout << "============================================================================="
+              << std::endl;
+};
