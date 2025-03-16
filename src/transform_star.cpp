@@ -185,15 +185,18 @@ dec = atan2(x[2],sqrt(x[0]*x[0] + x[1]*x[1]));
 
 }
 
-int iauEpv00_wrapper(double date, double* pob);
+int iauEpv00_wrapper(double date, double* pob, double* vob, double* poh);
+void iauAb(double pnat[3], double v[3], double s, double bm1, double ppr[3]);
 
 void proper_motion_parallax (double jdd, double &ra, double &dec, double dra, double ddec, double radvel, double parallax) {
 
 /* based on function pmpx from the sofa library - http://www.iausofa.org */
 
 double pob[3];
+double vob[3];
+double poh[3];
 
-double r[3], pm[3];
+double r[3], pm[3], rab[3];
 int i;
 
 // eq. 5.1 from Circular 179:
@@ -206,7 +209,7 @@ dra = atan2 ( dra * mas_to_rad , cos(dec) ); // convert from milli-arcsec * cos(
 ddec = ddec * mas_to_rad; // convert from milli-arcsec to radians per year
 parallax = parallax * mas_to_rad; // convert from milli-arcsec to radians
 
-iauEpv00_wrapper(jdd, &pob[0]); //get barycentric Earth position
+iauEpv00_wrapper(jdd, &pob[0], &vob[0], &poh[0]); //get barycentric Earth position
 
 //std::cout << "POB vector: " << pob[0] << ", " << pob[1] << ", " << pob[2] << endl;
 
@@ -224,11 +227,54 @@ for(i=0;i<3;++i) {
 }
 // note: at this stage r is no longer a unit vector - but this doesn't matter
 
+// compute aberration, courtesy of SOFA
+#define DAU (149597870.7e3)
+#define CMPS 299792458.0
+#define DAYSEC (86400.0)
+#define AULT (DAU/CMPS)
+const double CR = AULT/DAYSEC;
+
+double em = sqrt(poh[0]*poh[0] + poh[1]*poh[1] + poh[2]*poh[2]);
+double v2 = 0.0;
+double av[3];
+for (i = 0; i < 3; i++) {
+   double w = vob[i] * CR;
+   av[i] = w;
+   v2 += w*w;
+}
+double bm1 = sqrt(1.0 - v2);
+iauAb(r, av, em, bm1, rab);
+
 // eq. 5.2 from Circular 179:
 
-ra = atan2(r[1], r[0]);
-dec = atan2(r[2],sqrt(r[0]*r[0] + r[1]*r[1]));
+ra = atan2(rab[1], rab[0]);
+dec = atan2(rab[2],sqrt(rab[0]*rab[0] + rab[1]*rab[1]));
 
 }
 
 
+/* from SOFA library */
+
+/* Schwarzschild radius of the Sun (au) */
+/* = 2 * 1.32712440041e20 / (2.99792458e8)^2 / 1.49597870700e11 */
+#define SRS 1.97412574336e-8
+
+void iauAb(double pnat[3], double v[3], double s, double bm1, double ppr[3])
+{
+   int i;
+   double pdv, w1, w2, r2, w, p[3], r;
+
+   pdv = pnat[0] * v[0] + pnat[1] * v[1] + pnat[2] * v[2];
+   w1 = 1.0 + pdv/(1.0 + bm1);
+   w2 = SRS/s;
+   r2 = 0.0;
+   for (i = 0; i < 3; i++) {
+      w = pnat[i]*bm1 + w1*v[i] + w2*(v[i] - pdv*pnat[i]);
+      p[i] = w;
+      r2 = r2 + w*w;
+   }
+   r = sqrt(r2);
+   for (i = 0; i < 3; i++) {
+      ppr[i] = p[i]/r;
+   }
+}

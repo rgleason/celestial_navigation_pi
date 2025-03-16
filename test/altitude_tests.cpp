@@ -818,7 +818,7 @@ struct starsightdata STAR_SIGHTS[] = {
     { "2025-07-05 20:00", "Polaris",    178.073333, { +89, 22.0 }, },
     { "2025-09-05 20:00", "Polaris",    238.655000, { +89, 22.1 }, },
     { "2025-11-05 20:00", "Polaris",    298.496667, { +89, 22.4 }, },
-    { "2025-12-21 20:00", "Polaris",    344.883333, { +89, 22.6 }, },
+    { "2025-12-21 20:00", "Polaris",    343.883333, { +89, 22.6 }, },
 };
 
 TEST_F(AltitudeTest, Stars) {
@@ -847,9 +847,9 @@ TEST_F(AltitudeTest, Stars) {
         sight.m_Pressure = 1023;
 
         // Tolerances
-        double EPSILON = 0.02;  // 0.02 degree tolerance
+        double EPSILON = 0.1 / 60.0;  // 0.1 arc-minute tolerance
         if (!strcmp(data.body, "Polaris")) {
-            EPSILON = 0.65;
+            EPSILON = 6 / 60.0;     // 6 arc-minute tolerance
         }
         commontest(sight, datetime, data.body, i, data.date, 0,
                    0, 0, false, 0, 0,
