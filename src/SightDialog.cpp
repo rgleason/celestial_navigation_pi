@@ -319,7 +319,7 @@ double SightDialog::BodyAltitude(wxString body)
     Sight lunar(Sight::ALTITUDE, body, Sight::CENTER, wxDateTime::Now(), 0, 0, 0);
     double lat1, lat2, lon1, lon2;
     celestial_navigation_pi_BoatPos(lat1, lon1);
-    lunar.BodyLocation(lunar.m_DateTime, &lat2, &lon2, 0, 0);
+    lunar.BodyLocation(lunar.m_DateTime, &lat2, &lon2, 0, 0, 0);
     double bearing, dist;
     ll_gc_ll_reverse(lat1, lon1, lat2, lon2, &bearing, &dist);
     return 90 - dist/60;

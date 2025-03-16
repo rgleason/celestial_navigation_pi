@@ -95,7 +95,7 @@ void FindBodyDialog::Update()
     m_tLatitude->GetValue().ToDouble(&lat1);
     m_tLongitude->GetValue().ToDouble(&lon1);
 
-    m_Sight.BodyLocation(m_Sight.m_DateTime, &lat2, &lon2, 0, 0);
+    m_Sight.BodyLocation(m_Sight.m_DateTime, &lat2, &lon2, 0, 0, 0);
     m_Sight.AltitudeAzimuth(lat1, lon1, lat2, lon2, &hc, &zn);
 
     if(m_cbMagneticAzimuth->GetValue()) {

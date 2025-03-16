@@ -201,7 +201,7 @@ void astrolabe::vsop87d::vsop_to_fk5(double jd, double &L, double &B) {
     B += deltaB;
     }
 
-void astrolabe::vsop87d::geocentric_planet(double jd, vPlanets planet, double deltaPsi, double epsilon, double delta, double &ra, double &dec) {
+void astrolabe::vsop87d::geocentric_planet(double jd, vPlanets planet, double deltaPsi, double epsilon, double delta, double &ra, double &dec, double &dist) {
     /* Calculate the equatorial coordinates of a planet
     
     The results will be geocentric, corrected for light-time and
@@ -252,7 +252,7 @@ void astrolabe::vsop87d::geocentric_planet(double jd, vPlanets planet, double de
         b = atan2(z, sqrt(x2 + y2));
 
         // distance to planet in AU
-        const double dist = sqrt(x2 + y2 + z*z);
+        dist = sqrt(x2 + y2 + z*z);
 
         // light time in days
         const double tau = 0.0057755183 * dist;
@@ -278,6 +278,9 @@ void astrolabe::vsop87d::geocentric_planet(double jd, vPlanets planet, double de
 
     // equatorial coordinates
     ecl_to_equ(l, b, epsilon, ra, dec);
+
+    // AU to km
+    dist = dist * 149597870.691;
     }
     
 void astrolabe::vsop87d::load_vsop87d_text_db() {
