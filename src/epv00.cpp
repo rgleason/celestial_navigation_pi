@@ -7,12 +7,19 @@
 int iauEpv00(double date1, double date2,
              double pvh[2][3], double pvb[2][3]);
 
-int iauEpv00_wrapper(double date, double* pob) {
+int iauEpv00_wrapper(double date, double* pob, double* vob, double *poh) {
+  double pvh[2][3];
   double pvb[2][3];
-  int temp_result = iauEpv00(date,0.,pvb,pvb);
+  int temp_result = iauEpv00(date,0.,pvh,pvb);
   pob[0]=pvb[0][0];
   pob[1]=pvb[0][1];
   pob[2]=pvb[0][2];
+  vob[0]=pvb[1][0];
+  vob[1]=pvb[1][1];
+  vob[2]=pvb[1][2];
+  poh[0]=pvh[0][0];
+  poh[1]=pvh[0][1];
+  poh[2]=pvh[0][2];
   return temp_result;
 }
 
