@@ -194,7 +194,7 @@ determine fix visually instead.\n"), wxString(_("Fix Position"), wxID_OK | wxICO
         }
 
         double lat, lon;
-        s->BodyLocation(s->m_DateTime + wxTimeSpan::Seconds(clock_offset), &lat, &lon, 0, 0);
+        s->BodyLocation(s->m_DateTime + wxTimeSpan::Seconds(clock_offset), &lat, &lon, 0, 0, 0);
 
         /* take vector from body location of length equal to
            normalized measurement (so the plane this vector

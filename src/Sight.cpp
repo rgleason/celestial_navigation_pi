@@ -144,7 +144,7 @@ using namespace astrolabe::util;
 using namespace astrolabe::vsop87d;
 
 /* calculate what position the body for this sight is directly over at a given time */ 
-void Sight::BodyLocation(wxDateTime time, double *lat, double *lon, double *ghaast, double *rad)
+void Sight::BodyLocation(wxDateTime time, double *lat, double *lon, double *ghaast, double *rad, double *dist)
 {
 //    astrolabe::globals::vsop87d_text_path = (const char *)GetPluginDataDir(celestial_navigation_pi)->mb_str();
     astrolabe::globals::vsop87d_text_path = GetPluginDataDir("celestial_navigation_pi");
@@ -195,11 +195,16 @@ void Sight::BodyLocation(wxDateTime time, double *lat, double *lon, double *ghaa
     l += aberration_low(r);
 
     if(!m_Body.Cmp(_T("Sun"))) {
+       m_IsStar = false;
+       m_IsPlanet = false;
+
        // equatorial coordinates
        ecl_to_equ(l, b, eps, ra, dec);
 
     } else
     if(!m_Body.Cmp(_T("Moon"))) {
+          m_IsStar = false;
+          m_IsPlanet = false;
           ELP2000 moon;
           moon.dimension3(jdd, l, b, r);
 
@@ -210,6 +215,8 @@ void Sight::BodyLocation(wxDateTime time, double *lat, double *lon, double *ghaa
           ecl_to_equ(l, b, eps, ra, dec);
        }
     else {
+       m_IsStar = false;
+       m_IsPlanet = true;
        vPlanets planet;
        vPlanets *planetPtr = &planet;
        if(!m_Body.Cmp(_T("Mercury")))
@@ -223,6 +230,8 @@ void Sight::BodyLocation(wxDateTime time, double *lat, double *lon, double *ghaa
        else if(!m_Body.Cmp(_T("Saturn")))
           planet = vSaturn;
        else { /* star maybe */
+          m_IsStar = true;
+          m_IsPlanet = false;
           planetPtr = NULL;
 /* Numbers from http://simbad.u-strasbg.fr */
 #define IFDEC_STAR(name,rahh,ramm,rass,drax,decdd,decmm,decss,ddecx,radvelx,parallaxx) if(!m_Body.Cmp(_T(name))) ra = (rahh+(ramm+rass/60.)/60.)/12.*pi, dra = drax, dec = (decdd>0?1.:-1.)*(abs(decdd)+(decmm+decss/60.)/60.)/180.*pi, ddec = ddecx, radvel = radvelx, parallax = parallaxx;
@@ -295,8 +304,13 @@ void Sight::BodyLocation(wxDateTime time, double *lat, double *lon, double *ghaa
           precess(jdd,ra,dec);
           nutate(jdd,ra,dec);
        }
-       if (planetPtr != NULL)
-          geocentric_planet(jdd, planet, deltaPsi, eps, days_per_second, ra, dec);
+       if (planetPtr != NULL) {
+          double d;
+          geocentric_planet(jdd, planet, deltaPsi, eps, days_per_second, ra, dec, d);
+          if (dist) {
+              *dist = d;
+          }
+       }
     }
 
     // account for earth's hour angle
@@ -580,7 +594,11 @@ HP = %.4f'\n\n"), lat, lon,
 }
 
 void Sight::RecomputeAltitude()
-{      
+{
+    double rad;
+    double planet_dist;
+    BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad, &planet_dist);
+
     m_CalcStr+=_("Formulas used to calculate sight\n\n");
 
     /* correct for index error */
@@ -631,8 +649,6 @@ RefractionCorrection = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrection
     double lc = 0;
 
     if( !m_Body.Cmp(_T("Sun"))) {
-        double rad;
-        BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad);
         lc = 0.266564/rad;
         SD = r_to_d(sin(d_to_r(lc)));
 
@@ -675,11 +691,9 @@ CorrectedAltitude = %.4f - %.4f - %.4f\n\
 CorrectedAltitude = %.4f\n"), ApparentAltitude,
                                 RefractionCorrection, LimbCorrection, CorrectedAltitude);
 
-    /* correct for limb shot */
+    /* correct for parallax shot */
     double ParallaxCorrection = 0;
     if( !m_Body.Cmp(_T("Sun"))) {
-        double rad;
-        BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad);
         HP = 0.002442/rad;
 
         m_CalcStr+=wxString::Format(_("\nSun selected, parallax correction\n\
@@ -689,6 +703,12 @@ rad = %.4f, HP = 0.002442/rad = %.4f\n"), rad, HP);
     if(!m_Body.Cmp(_T("Moon"))){
         // HP calculated earlier
         m_CalcStr+=wxString::Format(_("\nMoon selected, parallax correction\n\
+HP = %.4f\n"), HP);
+    }
+
+    if (m_IsPlanet) {
+        HP = asin(EARTH_RADIUS/planet_dist) * 180/M_PI;
+        m_CalcStr+=wxString::Format(_("\nPlanet selected, parallax correction\n\
 HP = %.4f\n"), HP);
     }
 
@@ -706,8 +726,8 @@ ObservedAltitude = CorrectedAltitude - ParallaxCorrection\n\
 ObservedAltitude = %.4f - %.4f\n\
 ObservedAltitude = %.4f\n"), CorrectedAltitude, ParallaxCorrection, m_ObservedAltitude);
 
-   double lat, lon, ghaast, rad;
-   BodyLocation(m_CorrectedDateTime, &lat, &lon, &ghaast, &rad);
+   double lat, lon, ghaast;
+   BodyLocation(m_CorrectedDateTime, &lat, &lon, &ghaast, &rad, 0);
 
    m_CalcStr = Alminac(lat, lon, ghaast, rad, SD, HP) + m_CalcStr;
 }
@@ -718,7 +738,11 @@ void Sight::RecomputeAzimuth()
 }
 
 void Sight::RecomputeLunar()
-{      
+{
+    double rad;
+    double planet_dist;
+    BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad, &planet_dist);
+
     m_CalcStr+=_("Formulas used to calculate sight\n\n");
 
     /* correct for index error */
@@ -831,8 +855,6 @@ RefractionCorrection = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrection
     double lc = 0;
 
     if( !m_Body.Cmp(_T("Sun"))) {
-        double rad;
-        BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad);
         lc = 0.266564/rad;
         SD = r_to_d(sin(d_to_r(lc)));
 
@@ -860,16 +882,20 @@ CorrectedAltitude = %.4f - %.4f - %.4f\n\
 CorrectedAltitude = %.4f\n"), ApparentAltitude, RefractionCorrection,
                                 LimbCorrection, CorrectedAltitude);
 
-    /* correct for limb shot */
+    /* correct for parallax */
     double ParallaxCorrection = 0;
     double HP = 0;
     if( !m_Body.Cmp(_T("Sun"))) {
-        double rad;
-        BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad);
         HP = 0.002442/rad;
 
         m_CalcStr+=wxString::Format(_("\nSun selected, parallax correction\n\
 rad = %.4f, HP = 0.002442/rad = %.4f\n"), rad, HP);
+    }
+
+    if (m_IsPlanet) {
+        HP = asin(EARTH_RADIUS/planet_dist) * 180/M_PI;
+        m_CalcStr+=wxString::Format(_("\nStar selected, parallax correction\n\
+HP = %.4f\n"), HP);
     }
 
     if(HP) {
@@ -897,15 +923,15 @@ CorrectedMeasurement = %.4f - %.4f - %.4f\n\
 CorrectedMeasurement = %.4f\n"), m_Measurement, Corrections, IndexCorrection,
                                 CorrectedMeasurement);
 
-   double lat, lon, ghaast, rad;
-   BodyLocation(m_CorrectedDateTime, &lat, &lon, &ghaast, &rad);
+   double lat, lon, ghaast;
+   BodyLocation(m_CorrectedDateTime, &lat, &lon, &ghaast, &rad, 0);
 
    m_CalcStr = Alminac(lat, lon, ghaast, rad, SD, HP) + m_CalcStr;
    
    double lunar_lat, lunar_lon, lunar_ghaast, lunar_rad;
    wxString body = m_Body;
    m_Body = _T("Moon");
-   BodyLocation(m_CorrectedDateTime, &lunar_lat, &lunar_lon, &lunar_ghaast, &lunar_rad);
+   BodyLocation(m_CorrectedDateTime, &lunar_lat, &lunar_lon, &lunar_ghaast, &lunar_rad, 0);
 
    m_CalcStr = Alminac(lunar_lat, lunar_lon, lunar_ghaast, lunar_rad, lunar_SD, lunar_HP) + m_CalcStr;
    m_Body = body;
@@ -1009,7 +1035,7 @@ void Sight::BuildAltitudeLineOfPosition(double tracestep,
 {
     for(double time=timemin; time<=timemax; time+=timestep) {
    double lat, lon;
-   BodyLocation(m_CorrectedDateTime+wxTimeSpan::Seconds(time), &lat, &lon, 0, 0);
+   BodyLocation(m_CorrectedDateTime+wxTimeSpan::Seconds(time), &lat, &lon, 0, 0, 0);
    wxRealPointList *p, *l = new wxRealPointList;
    for(double trace=-180; trace<=180; trace+=tracestep) {
       p = new wxRealPointList;
@@ -1155,7 +1181,7 @@ void Sight::BuildBearingLineOfPosition(double altitudestep,
     
     double blat, blon;
     
-    BodyLocation(m_CorrectedDateTime+wxTimeSpan::Seconds(time), &blat, &blon, 0, 0);
+    BodyLocation(m_CorrectedDateTime+wxTimeSpan::Seconds(time), &blat, &blon, 0, 0, 0);
 
     blon = resolve_heading(blon);
 

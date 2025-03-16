@@ -85,7 +85,7 @@ static void commontest(Sight &sight, wxDateTime &datetime,
 
     // Test Body Position (GHA, Dec)
     double gha, dec, lon;
-    sight.BodyLocation(datetime, &dec, &lon, nullptr, nullptr);
+    sight.BodyLocation(datetime, &dec, &lon, nullptr, nullptr, nullptr);
     gha = resolve_heading_positive(-lon);
 
     if (expected_gha != 0 && expected_dec != 0) {

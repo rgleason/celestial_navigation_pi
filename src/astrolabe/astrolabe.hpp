@@ -274,7 +274,8 @@ namespace astrolabe {
             };
 
         void vsop_to_fk5(double jd, double &L, double &B);
-        void geocentric_planet(double jd, vPlanets planet, double deltaPsi, double epsilon, double delta, double &ra, double &dec);
+        void geocentric_planet(double jd, vPlanets planet, double deltaPsi, double epsilon, double delta,
+                               double &ra, double &dec, double &dist);
         void load_vsop87d_text_db();
         };
 
