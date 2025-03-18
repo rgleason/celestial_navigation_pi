@@ -36,6 +36,7 @@ using std::getline;
 using std::string;
 
 using astrolabe::calendar::jd_to_jcent;
+using astrolabe::constants::pi;
 using astrolabe::constants::pi2;
 using astrolabe::Coords;
 using astrolabe::dicts::stringToCoord;
@@ -201,6 +202,109 @@ void astrolabe::vsop87d::vsop_to_fk5(double jd, double &L, double &B) {
     B += deltaB;
     }
 
+void astrolabe::vsop87d::apply_phase_correction(double &p_l, double &p_b, double p_r,
+                                                double s_l, double s_b, double s_r) {
+    /* Apply planet phase correction
+
+    Results will be geocentric, equatorial coordinates of the planet
+    corrected for phase.
+
+    Thanks to Robert Bernecky: https://navlist.net/imgx/PHASE-CORRECTION-FOR-VENUS.pdf
+
+    Parameters:
+        p_l: planet Right Ascension in radians
+        p_b: planet Dec in radians
+        p_r: planet Radius in au
+        s_l: sun Right Ascension in radians
+        s_b: sun Dec in radians
+        s_r: sun Radius in au
+
+    Returns:
+        p_l, p_b phase corrected
+    */
+    VSOP87d vsop;
+
+    // Earth carthesian coordinates
+    double e_xyz[3] = { 0, 0, 0 };
+
+    // Sun carthesian coordinates
+    double s_xyz[3];
+    s_xyz[0] = s_r * cos(s_b) * cos(s_l);
+    s_xyz[1] = s_r * cos(s_b) * sin(s_l);
+    s_xyz[2] = s_r * sin(s_b);
+
+    // Planet carthesian coordinates
+    double p_xyz[3];
+    p_xyz[0] = p_r * cos(p_b) * cos(p_l);
+    p_xyz[1] = p_r * cos(p_b) * sin(p_l);
+    p_xyz[2] = p_r * sin(p_b);
+
+    // Sun->Planet vector
+    double sp_xyz[3];
+    sp_xyz[0] = p_xyz[0] - s_xyz[0];
+    sp_xyz[1] = p_xyz[1] - s_xyz[1];
+    sp_xyz[2] = p_xyz[2] - s_xyz[2];
+    double sp_d = sqrt(sp_xyz[0] * sp_xyz[0] + sp_xyz[1] * sp_xyz[1] + sp_xyz[2] * sp_xyz[2]);
+
+    // Sun->Planet unit vector
+    double usp_xyz[3];
+    usp_xyz[0] = sp_xyz[0] / sp_d;
+    usp_xyz[1] = sp_xyz[1] / sp_d;
+    usp_xyz[2] = sp_xyz[2] / sp_d;
+
+    // Earth->Planet unit vector
+    double uep_xyz[3];
+    uep_xyz[0] = p_xyz[0] / p_r;
+    uep_xyz[1] = p_xyz[1] / p_r;
+    uep_xyz[2] = p_xyz[2] / p_r;
+
+    // compute uep . usp
+    double uep_dot_usp;
+    uep_dot_usp = usp_xyz[0] * uep_xyz[0] + usp_xyz[1] * uep_xyz[1] + usp_xyz[2] * uep_xyz[2];
+
+    // compute (uep . usp) * uep
+    double c[3];
+    c[0] = uep_xyz[0] * uep_dot_usp;
+    c[1] = uep_xyz[1] * uep_dot_usp;
+    c[2] = uep_xyz[2] * uep_dot_usp;
+
+    // compute (r . p)p - r
+    c[0] -= usp_xyz[0];
+    c[1] -= usp_xyz[1];
+    c[2] -= usp_xyz[2];
+
+    // normalize
+    double csize = sqrt(c[0] * c[0] + c[1] * c[1] + c[2] * c[2]);
+    c[0] /= csize;
+    c[1] /= csize;
+    c[2] /= csize;
+
+    // compute K
+    double k = (sp_d + p_r) * (sp_d + p_r) - s_r * s_r;
+    k = k / (4 * sp_d * p_r);
+
+    // compute s
+    double s = (8.41 * pi) / (p_r * 180 * 3600);
+
+    // compute coef
+    double coef = (8 * s) * (1 - k) / (3 * pi);
+
+    // final c compute
+    c[0] *= coef;
+    c[1] *= coef;
+    c[2] *= coef;
+
+    // apply correction
+    p_xyz[0] = (uep_xyz[0] + c[0] ) * p_r;
+    p_xyz[1] = (uep_xyz[1] + c[1] ) * p_r;
+    p_xyz[2] = (uep_xyz[2] + c[2] ) * p_r;
+
+    p_l = atan2(p_xyz[1], p_xyz[0]);
+    if (p_l < 0) p_l += 2 * pi;
+    p_b = atan2(p_xyz[2], sqrt(p_xyz[0] * p_xyz[0] + p_xyz[1] * p_xyz[1]));
+    p_r = sqrt(p_xyz[0] * p_xyz[0] + p_xyz[1] * p_xyz[1] + p_xyz[2] * p_xyz[2]);
+}
+
 void astrolabe::vsop87d::geocentric_planet(double jd, vPlanets planet, double deltaPsi, double epsilon, double delta, double &ra, double &dec, double &dist) {
     /* Calculate the equatorial coordinates of a planet
     
@@ -223,11 +327,13 @@ void astrolabe::vsop87d::geocentric_planet(double jd, vPlanets planet, double de
     VSOP87d vsop;
     double t = jd;
     double l0 = -100.0; // impossible value
+
     // We need to iterate to correct for light-time and aberration.
     // At most three passes through the loop always nails it.
     // Note that we move both the Earth and the other planet during
     //    the iteration.
-    double l, b;
+    double p_l, p_b, p_r;
+    double s_l, s_b, s_r;
     bool ok = false;
     for (int bailout = 0; bailout < 20; bailout++) {
         // heliocentric geometric ecliptic coordinates of the Earth
@@ -248,41 +354,49 @@ void astrolabe::vsop87d::geocentric_planet(double jd, vPlanets planet, double de
         // geocentric geometric ecliptic coordinates of the planet
         const double x2 = x*x;
         const double y2 = y*y;
-        l = atan2(y, x);
-        b = atan2(z, sqrt(x2 + y2));
+        p_l = atan2(y, x);
+        p_b = atan2(z, sqrt(x2 + y2));
+        p_r = sqrt(x2 + y2 + z*z);
 
-        // distance to planet in AU
-        dist = sqrt(x2 + y2 + z*z);
+        // geocentric geometric ecliptic coordinates of the sun
+        s_l = L0 + pi;
+        if (s_l > 2 * pi) s_l -= 2 * pi;
+        s_b = -B0;
+        s_r = R0;
 
         // light time in days
-        const double tau = 0.0057755183 * dist;
+        const double tau = 0.0057755183 * p_r;
 
-        if (fabs(diff_angle(l, l0)) < pi2 * delta) {
+        if (fabs(diff_angle(p_l, l0)) < pi2 * delta) {
             ok = true;
             break;
             }
 
         // adjust for light travel time and try again
-        l0 = l;
+        l0 = p_l;
         t = jd - tau;
-        }
+    }
 
     if (!ok)
         throw Error("astrolabe::vsop87d::geocentric_planet: bailout");
-        
+
+    // apply phase correction to Venus
+    if (planet == vVenus)
+        apply_phase_correction(p_l, p_b, p_r, s_l, s_b, s_r);
+
     // transform to FK5 ecliptic and equinox
-    vsop_to_fk5(jd, l, b);
+    vsop_to_fk5(jd, p_l, p_b);
 
     // nutation in longitude
-    l += deltaPsi;
+    p_l += deltaPsi;
 
     // equatorial coordinates
-    ecl_to_equ(l, b, epsilon, ra, dec);
+    ecl_to_equ(p_l, p_b, epsilon, ra, dec);
 
     // AU to km
-    dist = dist * 149597870.691;
-    }
-    
+    dist = p_r * 149597870.691;
+}
+
 void astrolabe::vsop87d::load_vsop87d_text_db() {
     /* Load the text version of the VSOP87d database into memory.
     

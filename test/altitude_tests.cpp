@@ -616,7 +616,7 @@ TEST_F(AltitudeTest, Planet) {
         sight1.m_Temperature = 20;
         sight1.m_Pressure = 1023;
 
-        double EPSILON = 0.45 / 60.0;  // 0.45 arc-minute tolerance
+        double EPSILON = 0.1 / 60.0;  // 0.1 arc-minute tolerance
         commontest(sight1, datetime, "Venus", i, data.date, 0,
                    0, 0, false, 0, 0,
                    DegMin2DecDeg(data.expected_venus_gha.deg, data.expected_venus_gha.min),
