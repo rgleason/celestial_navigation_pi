@@ -405,7 +405,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_staticText15->Wrap( -1 );
 	fgSizer13->Add( m_staticText15, 0, wxALL, 5 );
 
-	m_tEyeHeight = new wxTextCtrl( m_panel8, wxID_ANY, _("2"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_tEyeHeight = new wxTextCtrl( m_panel8, wxID_ANY, _("00.0"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer13->Add( m_tEyeHeight, 0, wxALL, 5 );
 
 	m_staticText16 = new wxStaticText( m_panel8, wxID_ANY, _("Meters"), wxDefaultPosition, wxDefaultSize, 0 );
