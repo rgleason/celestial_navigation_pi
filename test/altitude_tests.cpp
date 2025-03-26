@@ -39,12 +39,16 @@ double DegMin2DecDeg(double degrees, double minutes) {
     return (degrees < 0 || minutes < 0) ? -result : result;
 }
 
-std::string DecDegToDegMin(double decimal_degrees) {
-    int degrees = static_cast<int>(decimal_degrees);
-    double minutes = (decimal_degrees - degrees) * 60.0;
+std::string TenthsMinutestoStr(int tenths_minutes) {
+    int degrees = tenths_minutes / 600;
+    double minutes = ((double)(tenths_minutes - degrees * 600)) / 10;
     std::stringstream ss;
-    ss << degrees << "° " << std::fixed << std::setprecision(2) << minutes << "'";
+    ss << degrees << "° " << std::fixed << std::setprecision(1) << minutes << "'";
     return ss.str();
+}
+
+int DecDegToTenthsMinutes(double decimal_degrees) {
+    return round(decimal_degrees * 60 * 10);
 }
 
 struct degmin {
@@ -52,88 +56,93 @@ struct degmin {
     double min;
 };
 
-static double error_ho;
-static double error_intercept;
-static double error_azimuth;
-static double error_gha;
-static double error_dec;
+static int error_ho;
+static int error_intercept;
+static int error_azimuth;
+static int error_gha;
+static int error_dec;
 
 static void commontest(Sight &sight, wxDateTime &datetime,
                        const char *body, int line, const char *date,
-                       double expected_ho,
-                       double expected_intercept, double expected_azimuth, bool expected_towards,
+                       int expected_ho,
+                       int expected_intercept, int expected_azimuth, bool expected_towards,
                        double dr_lat, double dr_lon,
-                       double expected_gha, double expected_dec, double epsilon) {
+                       int expected_gha, int expected_dec, int epsilon) {
 
     sight.Recompute(0);  // 0 = no clock offset
 
     std::cout << "=== " << body << " (line " << line << ", date " << date << ") ==="
               << std::endl << std::endl;
 
+    // All values are rounded to the nearest .1' or .1 nm, since this is the resolution of NA
+    int ho = DecDegToTenthsMinutes(sight.m_ObservedAltitude);
+
     // Test Ho (Observed Altitude)
     if (expected_ho != 0) {
         std::cout << "Ho Analysis:" << std::endl;
-        std::cout << "  Expected: " << DecDegToDegMin(expected_ho) << std::endl;
-        std::cout << "  Actual : " << DecDegToDegMin(sight.m_ObservedAltitude)
-            << std::endl << std::endl;
+        std::cout << "  Expected: " << TenthsMinutestoStr(expected_ho) << std::endl;
+        std::cout << "  Actual : " << TenthsMinutestoStr(ho) << std::endl << std::endl;
 
-        error_ho = sight.m_ObservedAltitude - expected_ho;
-        EXPECT_NEAR(sight.m_ObservedAltitude, expected_ho, epsilon)
+        error_ho = ho - expected_ho;
+        EXPECT_NEAR(ho, expected_ho, epsilon)
             << "Ho differs from NA by "
-            << (error_ho * 60.0) << " minutes" << std::endl;
+            << TenthsMinutestoStr(error_ho) << std::endl;
     }
 
     // Test Body Position (GHA, Dec)
     double gha, dec, lon;
     sight.BodyLocation(datetime, &dec, &lon, nullptr, nullptr, nullptr);
     gha = resolve_heading_positive(-lon);
+    int igha = DecDegToTenthsMinutes(gha);
+    int idec = DecDegToTenthsMinutes(dec);
 
     if (expected_gha != 0 && expected_dec != 0) {
         std::cout << "Body Position Analysis:" << std::endl;
-        std::cout << "  Almanac GHA: " << DecDegToDegMin(expected_gha)
-                  << ", Dec: " << DecDegToDegMin(std::abs(expected_dec))
+        std::cout << "  Almanac GHA: " << TenthsMinutestoStr(expected_gha)
+                  << ", Dec: " << TenthsMinutestoStr(std::abs(expected_dec))
                   << (expected_dec < 0 ? " S" : " N") << std::endl;
-        std::cout << "  Actual GHA : " << DecDegToDegMin(gha)
-                  << ", Dec: " << DecDegToDegMin(std::abs(dec))
+        std::cout << "  Actual GHA : " << TenthsMinutestoStr(igha)
+                  << ", Dec: " << TenthsMinutestoStr(std::abs(idec))
                   << (dec < 0 ? " S" : " N") << std::endl << std::endl;
 
-        error_gha = gha - expected_gha;
-        error_dec = dec - expected_dec;
-        EXPECT_NEAR(gha, expected_gha, epsilon)
-            << "GHA differs from Almanac by " << (error_gha * 60.0)
-            << " minutes";
-        EXPECT_NEAR(dec, expected_dec, epsilon)
-            << "Declination differs from Almanac by " << (error_dec * 60.0)
-            << " minutes" << std::endl;
+        error_gha = igha - expected_gha;
+        error_dec = idec - expected_dec;
+        EXPECT_NEAR(igha, expected_gha, epsilon)
+            << "GHA differs from Almanac by " << TenthsMinutestoStr(error_gha);
+        EXPECT_NEAR(idec, expected_dec, epsilon)
+            << "Declination differs from Almanac by " << TenthsMinutestoStr(error_dec)
+            << std::endl;
     }
 
     if (expected_intercept != 0 && expected_azimuth != 0) {
         double hc, zn;
         sight.AltitudeAzimuth(dr_lat, dr_lon, dec, lon, &hc, &zn);
-        double intercept = fabs(hc - sight.m_ObservedAltitude) * 60.0;
+        int intercept = round(fabs(hc - sight.m_ObservedAltitude) * 600.0);
+        int izn = round(zn * 10);
 
         std::cout << "LOP Analysis:" << std::endl;
-        std::cout << "  Reference Intercept: " << expected_intercept
-                  << ", Zn: " << expected_azimuth
+        std::cout << "  Reference Intercept: "
+                  << ((double)expected_intercept / 10.0) << " nm, Zn: "
+                  << ((double)expected_azimuth / 10.0)
                   << (expected_towards ? " towards" : " away") << std::endl;
-        std::cout << "  Actual Intercept: " << intercept
-                  << ", Zn: " << zn
+        std::cout << "  Actual Intercept: "
+                  << ((double)intercept / 10.0) << " nm, Zn: "
+                  << ((double)izn / 10.0)
                   << ((hc < sight.m_ObservedAltitude) ? " towards" : " away")
                   << std::endl << std::endl;
 
         error_intercept = expected_intercept - intercept;
-        error_azimuth = expected_azimuth - zn;
-        if (error_azimuth > 180)
-		zn += 360;
-	else if (error_azimuth < -180)
-		zn -= 360;
-        error_azimuth = expected_azimuth - zn;
-        EXPECT_NEAR(expected_intercept, intercept, epsilon * 60)
-            << "Intercept differs from reference by " << error_intercept
-            << " minutes";
-        EXPECT_NEAR(expected_azimuth, zn, epsilon)
-            << "Zn differs from reference by " << (error_azimuth * 60.0)
-            << " minutes" << std::endl;
+        error_azimuth = expected_azimuth - izn;
+        if (error_azimuth > 1800)
+            izn += 3600;
+        else if (error_azimuth < -1800)
+            izn -= 3600;
+        error_azimuth = expected_azimuth - izn;
+        EXPECT_NEAR(expected_intercept, intercept, epsilon)
+            << "Intercept differs from reference by " << TenthsMinutestoStr(error_intercept);
+        EXPECT_NEAR(expected_azimuth, izn, epsilon)
+            << "Zn differs from reference by " << TenthsMinutestoStr(error_azimuth)
+            << std::endl;
         EXPECT_EQ(expected_towards, hc < sight.m_ObservedAltitude);
     }
 
@@ -141,6 +150,55 @@ static void commontest(Sight &sight, wxDateTime &datetime,
     std::cout << "Detailed Calculation String:" << std::endl;
     std::cout << sight.m_CalcStr << std::endl;
 }
+
+void report(const char *name, const char *type, std::vector<int> &vec) {
+
+    double mean = 0;
+    for (int i = 0; i < (int) vec.size(); i++) {
+        mean += vec[i];
+    }
+    mean /= vec.size() * 10;
+
+    double deviation = 0;
+    for (int i = 0; i < (int) vec.size(); i++) {
+        deviation += (((double)vec[i]) / 10.0  - mean) * (((double)vec[i] / 10.0) - mean);
+    }
+    deviation /= (vec.size() - 1);
+    deviation = sqrt(deviation);
+
+    double min = DBL_MAX;
+    double max = 0;
+    int exact = 0;
+    int overone = 0;
+    int underone = 0;
+    for (int i = 0; i < (int) vec.size(); i++) {
+        if (vec[i] == 0)
+            ++exact;
+        if (vec[i] < -1)
+            ++underone;
+        if (vec[i] > 1)
+            ++overone;
+        double value = (double)vec[i] / 10.0;
+        if (value < min)
+            min = value;
+        if (value > max)
+            max = value;
+    }
+
+    std::cout << name << " " << type << ":" << std::endl;
+    std::cout << "    number of values: " << vec.size() << std::endl;
+    std::cout << "    min difference: " << min << std::endl;
+    std::cout << "    max difference: " << max << std::endl;
+    std::cout << "    mean difference: " << mean << std::endl;
+    std::cout << "    standard deviation: " << deviation << std::endl;
+    std::cout << "    exact matches: " << exact
+              << " (" << ((exact * 100) / vec.size())<< "%)" << std::endl;
+    std::cout << "    under -0.1' matches: " << underone
+              << " (" << ((underone * 100) / vec.size()) << "%)" << std::endl;
+    std::cout << "    over 0.1' matches: " << overone
+              << " (" << ((overone * 100) / vec.size()) << "%)" << std::endl;
+}
+
 
 struct interceptsightdata {
     const char *date;
@@ -201,17 +259,11 @@ struct interceptsightdata INTERCEPT_SIGHTS[] = {
 };
 
 TEST_F(AltitudeTest, Intercept) {
-
-    double max_error_ho = 0;
-    double max_error_intercept = 0;
-    double max_error_azimuth = 0;
-    double max_error_gha = 0;
-    double max_error_dec = 0;
-    double avg_error_ho = 0;
-    double avg_error_intercept = 0;
-    double avg_error_azimuth = 0;
-    double avg_error_gha = 0;
-    double avg_error_dec = 0;
+    std::vector<int> sun_gha;
+    std::vector<int> sun_dec;
+    std::vector<int> sun_ho;
+    std::vector<int> sun_intercept;
+    std::vector<int> sun_azimuth;
 
     int count = (int)(sizeof(INTERCEPT_SIGHTS) / sizeof(INTERCEPT_SIGHTS[0]));
     for (int i = 0; i < count; i++) {
@@ -227,48 +279,28 @@ TEST_F(AltitudeTest, Intercept) {
         sight.m_Temperature = 10;
         sight.m_Pressure = 1010;
 
-        error_ho = 0;
-        error_intercept = 0;
-        error_azimuth = 0;
-        error_gha = 0;
-        error_dec = 0;
-
-        const double EPSILON = 0.06 / 60.0;  // 0.05 arc-minute tolerance
+        const int EPSILON = 1;  // 0.1 arc-minute tolerance
         commontest(sight, datetime, data.body, i, data.date,
-                   data.expected_ho,
-                   data.expected_intercept, data.expected_azimuth, data.expected_towards,
+                   DecDegToTenthsMinutes(data.expected_ho),
+                   data.expected_intercept * 10, data.expected_azimuth * 10, data.expected_towards,
                    data.dr_lat, data.dr_lon,
-                   data.expected_gha, data.expected_dec, EPSILON);
+                   DecDegToTenthsMinutes(data.expected_gha),
+                   DecDegToTenthsMinutes(data.expected_dec), EPSILON);
 
-        error_ho = std::abs(error_ho);
-        avg_error_ho += error_ho;
-        if (error_ho > max_error_ho) max_error_ho = error_ho;
-        error_intercept = std::abs(error_intercept);
-        avg_error_intercept += error_intercept;
-        if (error_intercept > max_error_intercept) max_error_intercept = error_intercept;
-        error_azimuth = std::abs(error_azimuth);
-        avg_error_azimuth += error_azimuth;
-        if (error_azimuth > max_error_azimuth) max_error_azimuth = error_azimuth;
-        error_gha = std::abs(error_gha);
-        avg_error_gha += error_gha;
-        if (error_gha > max_error_gha) max_error_gha = error_gha;
-        error_dec = std::abs(error_dec);
-        avg_error_dec += error_dec;
-        if (error_dec > max_error_dec) max_error_dec = error_dec;
+        sun_gha.push_back(error_gha);
+        sun_dec.push_back(error_dec);
+        sun_ho.push_back(error_ho);
+        sun_intercept.push_back(error_intercept);
+        sun_azimuth.push_back(error_azimuth);
     }
 
     std::cout << "============================================================================="
               << std::endl;
-    std::cout << "Ho error: max " << (max_error_ho * 60) << " minutes, mean "
-              << ((avg_error_ho * 60) / count) << " minutes" << std::endl;
-    std::cout << "Intercept error: max " << max_error_intercept << " minutes, mean "
-              << (avg_error_intercept / count) << " minutes" << std::endl;
-    std::cout << "Azimuth error: max " << (max_error_azimuth * 60) << " minutes, mean "
-              << ((avg_error_azimuth * 60) / count) << " minutes" << std::endl;
-    std::cout << "GHA error: max " << (max_error_gha * 60) << " minutes, mean "
-              << ((avg_error_gha * 60) / count) << " minutes" << std::endl;
-    std::cout << "DEC error: max " << (max_error_dec * 60) << " minutes, mean "
-              << ((avg_error_dec * 60) / count) << " minutes" << std::endl;
+    report("Sun", "GHA", sun_gha);
+    report("Sun", "DEC", sun_dec);
+    report("Sun", "Ho", sun_ho);
+    report("Sun", "Intercept", sun_intercept);
+    report("Sun", "Azimuth", sun_azimuth);
     std::cout << "============================================================================="
               << std::endl;
 }
@@ -435,15 +467,10 @@ struct sunmoonsightdata SUNMOON_SIGHTS[] = {
 };
 
 TEST_F(AltitudeTest, SunMoon) {
-
-    double max_error_sun_gha = 0;
-    double max_error_sun_dec = 0;
-    double max_error_moon_gha = 0;
-    double max_error_moon_dec = 0;
-    double avg_error_sun_gha = 0;
-    double avg_error_sun_dec = 0;
-    double avg_error_moon_gha = 0;
-    double avg_error_moon_dec = 0;
+    std::vector<int> sun_gha;
+    std::vector<int> sun_dec;
+    std::vector<int> moon_gha;
+    std::vector<int> moon_dec;
 
     int count = (int)(sizeof(SUNMOON_SIGHTS) / sizeof(SUNMOON_SIGHTS[0]));
     for (int i = 0; i < count; i++) {
@@ -458,20 +485,18 @@ TEST_F(AltitudeTest, SunMoon) {
         sight1.m_Temperature = 20;
         sight1.m_Pressure = 1023;
 
-        double EPSILON = 0.2 / 60.0;  // 0.2 arc-minute tolerance
+        int EPSILON = 2;  // 0.2 arc-minute tolerance
         commontest(sight1, datetime, "Sun", i, data.date, 0,
                    0, 0, false, 0, 0,
-                   DegMin2DecDeg(data.expected_sun_gha.deg, data.expected_sun_gha.min),
-                   DegMin2DecDeg(data.expected_sun_dec.deg, data.expected_sun_dec.min), EPSILON);
+                   DecDegToTenthsMinutes(DegMin2DecDeg(data.expected_sun_gha.deg,
+                                                       data.expected_sun_gha.min)),
+                   DecDegToTenthsMinutes(DegMin2DecDeg(data.expected_sun_dec.deg,
+                                                       data.expected_sun_dec.min)), EPSILON);
 
-        error_gha = std::abs(error_gha);
-        avg_error_sun_gha += error_gha;
-        if (error_gha > max_error_sun_gha) max_error_sun_gha = error_gha;
-        error_dec = std::abs(error_dec);
-        avg_error_sun_dec += error_dec;
-        if (error_dec > max_error_sun_dec) max_error_sun_dec = error_dec;
+        sun_gha.push_back(error_gha);
+        sun_dec.push_back(error_dec);
 
-        EPSILON = 0.35 / 60.0;  // 0.35 arc-minute tolerance
+        EPSILON = 3;  // 0.3 arc-minute tolerance
 
         Sight sight2(Sight::ALTITUDE, "Moon", Sight::CENTER, datetime, 0, DegMin2DecDeg(42, 42), 1);
         sight2.m_IndexError = 0;
@@ -481,27 +506,21 @@ TEST_F(AltitudeTest, SunMoon) {
 
         commontest(sight2, datetime, "Moon", i, data.date, 0,
                    0, 0, false, 0, 0,
-                   DegMin2DecDeg(data.expected_moon_gha.deg, data.expected_moon_gha.min),
-                   DegMin2DecDeg(data.expected_moon_dec.deg, data.expected_moon_dec.min), EPSILON);
+                   DecDegToTenthsMinutes(DegMin2DecDeg(data.expected_moon_gha.deg,
+                                                       data.expected_moon_gha.min)),
+                   DecDegToTenthsMinutes(DegMin2DecDeg(data.expected_moon_dec.deg,
+                                                       data.expected_moon_dec.min)), EPSILON);
 
-        error_gha = std::abs(error_gha);
-        avg_error_moon_gha += error_gha;
-        if (error_gha > max_error_moon_gha) max_error_moon_gha = error_gha;
-        error_dec = std::abs(error_dec);
-        avg_error_moon_dec += error_dec;
-        if (error_dec > max_error_moon_dec) max_error_moon_dec = error_dec;
+        moon_gha.push_back(error_gha);
+        moon_dec.push_back(error_dec);
     }
 
     std::cout << "============================================================================="
               << std::endl;
-    std::cout << "Sun GHA error: max " << (max_error_sun_gha * 60) << " minutes, mean "
-              << ((avg_error_sun_gha * 60) / count) << " minutes" << std::endl;
-    std::cout << "Sun DEC error: max " << (max_error_sun_dec * 60) << " minutes, mean "
-              << ((avg_error_sun_dec * 60) / count) << " minutes" << std::endl;
-    std::cout << "Moon GHA error: max " << (max_error_moon_gha * 60) << " minutes, mean "
-              << ((avg_error_moon_gha * 60) / count) << " minutes" << std::endl;
-    std::cout << "Moon DEC error: max " << (max_error_moon_dec * 60)  << " minutes, mean "
-              << ((avg_error_moon_dec * 60) / count) << " minutes"  << std::endl;
+    report("Sun", "GHA", sun_gha);
+    report("Sun", "DEC", sun_dec);
+    report("Moon", "GHA", moon_gha);
+    report("Moon", "DEC", moon_dec);
     std::cout << "============================================================================="
               << std::endl;
 }
@@ -584,23 +603,14 @@ struct planetsightdata PLANET_SIGHTS[] = {
 };
 
 TEST_F(AltitudeTest, Planet) {
-
-    double max_error_venus_gha = 0;
-    double max_error_venus_dec = 0;
-    double max_error_mars_gha = 0;
-    double max_error_mars_dec = 0;
-    double max_error_jupiter_gha = 0;
-    double max_error_jupiter_dec = 0;
-    double max_error_saturn_gha = 0;
-    double max_error_saturn_dec = 0;
-    double avg_error_venus_gha = 0;
-    double avg_error_venus_dec = 0;
-    double avg_error_mars_gha = 0;
-    double avg_error_mars_dec = 0;
-    double avg_error_jupiter_gha = 0;
-    double avg_error_jupiter_dec = 0;
-    double avg_error_saturn_gha = 0;
-    double avg_error_saturn_dec = 0;
+    std::vector<int> venus_gha;
+    std::vector<int> venus_dec;
+    std::vector<int> mars_gha;
+    std::vector<int> mars_dec;
+    std::vector<int> jupiter_gha;
+    std::vector<int> jupiter_dec;
+    std::vector<int> saturn_gha;
+    std::vector<int> saturn_dec;
 
     int count = (int)(sizeof(PLANET_SIGHTS) / sizeof(PLANET_SIGHTS[0]));
     for (int i = 0; i < count; i++) {
@@ -616,19 +626,17 @@ TEST_F(AltitudeTest, Planet) {
         sight1.m_Temperature = 20;
         sight1.m_Pressure = 1023;
 
-        double EPSILON = 0.1 / 60.0;  // 0.1 arc-minute tolerance
+        const int EPSILON = 1;  // 0.1 arc-minute tolerance
         commontest(sight1, datetime, "Venus", i, data.date, 0,
                    0, 0, false, 0, 0,
-                   DegMin2DecDeg(data.expected_venus_gha.deg, data.expected_venus_gha.min),
-                   DegMin2DecDeg(data.expected_venus_dec.deg, data.expected_venus_dec.min),
+                   DecDegToTenthsMinutes(DegMin2DecDeg(data.expected_venus_gha.deg,
+                                                       data.expected_venus_gha.min)),
+                   DecDegToTenthsMinutes(DegMin2DecDeg(data.expected_venus_dec.deg,
+                                                       data.expected_venus_dec.min)),
                    EPSILON);
 
-        error_gha = std::abs(error_gha);
-        avg_error_venus_gha += error_gha;
-        if (error_gha > max_error_venus_gha) max_error_venus_gha = error_gha;
-        error_dec = std::abs(error_dec);
-        avg_error_venus_dec += error_dec;
-        if (error_dec > max_error_venus_dec) max_error_venus_dec = error_dec;
+        venus_gha.push_back(error_gha);
+        venus_dec.push_back(error_dec);
 
         Sight sight2(Sight::ALTITUDE, "Mars", Sight::CENTER, datetime, 0, DegMin2DecDeg(42, 42), 1);
         sight2.m_IndexError = 0;
@@ -636,18 +644,16 @@ TEST_F(AltitudeTest, Planet) {
         sight2.m_Temperature = 20;
         sight2.m_Pressure = 1023;
 
-        EPSILON = 0.06 / 60.0;  // 0.06 arc-minute tolerance
         commontest(sight2, datetime, "Mars", i, data.date, 0,
                    0, 0, false, 0, 0,
-                   DegMin2DecDeg(data.expected_mars_gha.deg, data.expected_mars_gha.min),
-                   DegMin2DecDeg(data.expected_mars_dec.deg, data.expected_mars_dec.min), EPSILON);
+                   DecDegToTenthsMinutes(DegMin2DecDeg(data.expected_mars_gha.deg,
+                                                       data.expected_mars_gha.min)),
+                   DecDegToTenthsMinutes(DegMin2DecDeg(data.expected_mars_dec.deg,
+                                                       data.expected_mars_dec.min)),
+                   EPSILON);
 
-        error_gha = std::abs(error_gha);
-        avg_error_mars_gha += error_gha;
-        if (error_gha > max_error_mars_gha) max_error_mars_gha = error_gha;
-        error_dec = std::abs(error_dec);
-        avg_error_mars_dec += error_dec;
-        if (error_dec > max_error_mars_dec) max_error_mars_dec = error_dec;
+        mars_gha.push_back(error_gha);
+        mars_dec.push_back(error_dec);
 
         Sight sight3(Sight::ALTITUDE, "Jupiter", Sight::CENTER, datetime, 0,
                      DegMin2DecDeg(42, 42), 1);
@@ -658,16 +664,14 @@ TEST_F(AltitudeTest, Planet) {
 
         commontest(sight3, datetime, "Jupiter", i, data.date, 0,
                    0, 0, false, 0, 0,
-                   DegMin2DecDeg(data.expected_jupiter_gha.deg, data.expected_jupiter_gha.min),
-                   DegMin2DecDeg(data.expected_jupiter_dec.deg, data.expected_jupiter_dec.min),
+                   DecDegToTenthsMinutes(DegMin2DecDeg(data.expected_jupiter_gha.deg,
+                                                       data.expected_jupiter_gha.min)),
+                   DecDegToTenthsMinutes(DegMin2DecDeg(data.expected_jupiter_dec.deg,
+                                                       data.expected_jupiter_dec.min)),
                    EPSILON);
 
-        error_gha = std::abs(error_gha);
-        avg_error_jupiter_gha += error_gha;
-        if (error_gha > max_error_jupiter_gha) max_error_jupiter_gha = error_gha;
-        error_dec = std::abs(error_dec);
-        avg_error_jupiter_dec += error_dec;
-        if (error_dec > max_error_jupiter_dec) max_error_jupiter_dec = error_dec;
+        jupiter_gha.push_back(error_gha);
+        jupiter_dec.push_back(error_dec);
 
         Sight sight4(Sight::ALTITUDE, "Saturn", Sight::CENTER, datetime, 0,
                      DegMin2DecDeg(42, 42), 1);
@@ -678,36 +682,26 @@ TEST_F(AltitudeTest, Planet) {
 
         commontest(sight4, datetime, "Saturn", i, data.date, 0,
                    0, 0, false, 0, 0,
-                   DegMin2DecDeg(data.expected_saturn_gha.deg, data.expected_saturn_gha.min),
-                   DegMin2DecDeg(data.expected_saturn_dec.deg, data.expected_saturn_dec.min),
+                   DecDegToTenthsMinutes(DegMin2DecDeg(data.expected_saturn_gha.deg,
+                                                       data.expected_saturn_gha.min)),
+                   DecDegToTenthsMinutes(DegMin2DecDeg(data.expected_saturn_dec.deg,
+                                                       data.expected_saturn_dec.min)),
                    EPSILON);
 
-        error_gha = std::abs(error_gha);
-        avg_error_saturn_gha += error_gha;
-        if (error_gha > max_error_saturn_gha) max_error_saturn_gha = error_gha;
-        error_dec = std::abs(error_dec);
-        avg_error_saturn_dec += error_dec;
-        if (error_dec > max_error_saturn_dec) max_error_saturn_dec = error_dec;
+        saturn_gha.push_back(error_gha);
+        saturn_dec.push_back(error_dec);
     }
 
     std::cout << "============================================================================="
               << std::endl;
-    std::cout << "Venus GHA error: max " << (max_error_venus_gha * 60) << " minutes, mean "
-              << ((avg_error_venus_gha * 60) / count) << " minutes" << std::endl;
-    std::cout << "Venus DEC error max " << (max_error_venus_dec * 60) << " minutes, mean "
-              << ((avg_error_venus_dec * 60) / count) << " minutes" << std::endl;
-    std::cout << "Mars GHA error: max " << (max_error_mars_gha * 60) << " minutes, mean "
-              << ((avg_error_mars_gha * 60) / count) << " minutes" << std::endl;
-    std::cout << "Mars DEC error: max " << (max_error_mars_dec * 60) << " minutes, mean "
-              << ((avg_error_mars_dec * 60) / count) << " minutes" << std::endl;
-    std::cout << "Jupiter GHA error: max " << (max_error_jupiter_gha * 60) << " minutes, mean "
-              << ((avg_error_jupiter_gha * 60) / count) << " minutes" << std::endl;
-    std::cout << "Jupiter DEC error: max " << (max_error_jupiter_dec * 60) << " minutes, mean "
-              << ((avg_error_jupiter_dec * 60) / count) << " minutes" << std::endl;
-    std::cout << "Saturn GHA error: max " << (max_error_saturn_gha * 60) << " minutes, mean "
-              << ((avg_error_saturn_gha * 60) / count) << " minutes" << std::endl;
-    std::cout << "Saturn DEC error: max " << (max_error_saturn_dec * 60) << " minutes, mean "
-              << ((avg_error_saturn_dec * 60) / count) << " minutes" << std::endl;
+    report("Venus", "GHA", venus_gha);
+    report("Venus", "DEC", venus_dec);
+    report("Mars", "GHA", mars_gha);
+    report("Mars", "DEC", mars_dec);
+    report("Jupiter", "GHA", jupiter_gha);
+    report("Jupiter", "DEC", jupiter_dec);
+    report("Saturn", "GHA", saturn_gha);
+    report("Saturn", "DEC", saturn_dec);
     std::cout << "============================================================================="
               << std::endl;
 }
@@ -822,16 +816,10 @@ struct starsightdata STAR_SIGHTS[] = {
 };
 
 TEST_F(AltitudeTest, Stars) {
-    double max_error_stars_gha = 0;
-    double max_error_stars_dec = 0;
-    double max_error_polaris_gha = 0;
-    double max_error_polaris_dec = 0;
-    double avg_error_stars_gha = 0;
-    double avg_error_stars_dec = 0;
-    double avg_error_polaris_gha = 0;
-    double avg_error_polaris_dec = 0;
-    int stars_count = 0;
-    int polaris_count = 0;
+    std::vector<int> stars_gha;
+    std::vector<int> stars_dec;
+    std::vector<int> polaris_gha;
+    std::vector<int> polaris_dec;
 
     for (int i = 0; i < (int)(sizeof(STAR_SIGHTS) / sizeof(STAR_SIGHTS[0])); i++) {
         struct starsightdata data = STAR_SIGHTS[i];
@@ -847,44 +835,31 @@ TEST_F(AltitudeTest, Stars) {
         sight.m_Pressure = 1023;
 
         // Tolerances
-        double EPSILON = 0.1 / 60.0;  // 0.1 arc-minute tolerance
+        int EPSILON = 1;  // 0.1 arc-minute tolerance
         if (!strcmp(data.body, "Polaris")) {
-            EPSILON = 6 / 60.0;     // 6 arc-minute tolerance
+            EPSILON = 60;     // 6 arc-minute tolerance
         }
         commontest(sight, datetime, data.body, i, data.date, 0,
                    0, 0, false, 0, 0,
-                   data.expected_gha,
-                   DegMin2DecDeg(data.expected_dec.deg, data.expected_dec.min), EPSILON);
+                   DecDegToTenthsMinutes(data.expected_gha),
+                   DecDegToTenthsMinutes(DegMin2DecDeg(data.expected_dec.deg,
+                                                       data.expected_dec.min)), EPSILON);
 
         if (!strcmp(data.body, "Polaris")) {
-            error_gha = std::abs(error_gha);
-            avg_error_polaris_gha += error_gha;
-            if (error_gha > max_error_polaris_gha) max_error_polaris_gha = error_gha;
-            error_dec = std::abs(error_dec);
-            avg_error_polaris_dec += error_dec;
-            if (error_dec > max_error_polaris_dec) max_error_polaris_dec = error_dec;
-            ++polaris_count;
+            polaris_gha.push_back(error_gha);
+            polaris_dec.push_back(error_dec);
         } else {
-            error_gha = std::abs(error_gha);
-            avg_error_stars_gha += error_gha;
-            if (error_gha > max_error_stars_gha) max_error_stars_gha = error_gha;
-            error_dec = std::abs(error_dec);
-            avg_error_stars_dec += error_dec;
-            if (error_dec > max_error_stars_dec) max_error_stars_dec = error_dec;
-            ++stars_count;
+            stars_gha.push_back(error_gha);
+            stars_dec.push_back(error_dec);
         }
     }
 
     std::cout << "============================================================================="
               << std::endl;
-    std::cout << "Polaris GHA error: max " << (max_error_polaris_gha * 60) << " minutes, mean "
-              << ((avg_error_polaris_gha * 60) / polaris_count) << " minutes" << std::endl;
-    std::cout << "Polaris DEC error: max " << (max_error_polaris_dec * 60) << " minutes, mean "
-              << ((avg_error_polaris_dec * 60) / polaris_count) << " minutes" << std::endl;
-    std::cout << "Stars GHA error: max " << (max_error_stars_gha * 60) << " minutes, mean "
-              << ((avg_error_stars_gha * 60) / stars_count) << " minutes" << std::endl;
-    std::cout << "Stars DEC error: max " << (max_error_stars_dec * 60) << " minutes, mean "
-              << ((avg_error_stars_dec * 60) / stars_count) << " minutes" << std::endl;
+    report("Polaris", "GHA", polaris_gha);
+    report("Polaris", "DEC", polaris_dec);
+    report("Stars", "GHA", stars_gha);
+    report("Stars", "DEC", stars_dec);
     std::cout << "============================================================================="
               << std::endl;
 };
