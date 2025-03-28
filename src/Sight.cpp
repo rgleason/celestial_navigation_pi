@@ -664,6 +664,8 @@ ra = %.4f, lc = 0.266564/ra = %.4f\n"), rad, lc);
         double moon_dist = moon_distance(jdd);
         HP = asin(EARTH_RADIUS/moon_dist) * 180/M_PI;
         SD = asin(K_MOON*sin((HP)*(M_PI/180))) * 180/M_PI;
+        // convert to topocentric SD, see Meeus (chapter 55)
+        SD = SD * (1 + sin(d_to_r(ApparentAltitude)) * sin(d_to_r(HP)));
         lc = r_to_d(asin(d_to_r(SD)));
         m_CalcStr+=wxString::Format(_("\nMoon selected, Limb Correction\n\
 SD = %.4f\n\
@@ -787,6 +789,8 @@ RefractionCorrectionMoon = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrec
     double moon_dist = moon_distance(jdd);
     double lunar_HP = asin(EARTH_RADIUS/moon_dist) * 180/M_PI;
     double lunar_SD = asin(K_MOON*sin((lunar_HP)*(M_PI/180))) * 180/M_PI;
+    // convert to topocentric SD, see Meeus (chapter 55)
+    lunar_SD = lunar_SD * (1 + sin(d_to_r(ApparentAltitudeMoon)) * sin(d_to_r(lunar_HP)));
     double lunar_lc = r_to_d(asin(d_to_r(lunar_SD)));
     m_CalcStr+=wxString::Format(_("\nMoon selected, Limb Correction\n\
 SD = %.4f\n\
