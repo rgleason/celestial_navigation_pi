@@ -18,7 +18,7 @@
 ## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,                                       *
 ## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                       *
 #-----------------------------------------------------------------------------
-# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.328.0 05/02/2025 DD/MM/YYYY
+# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.329.0 29/03/2025 DD/MM/YYYY
 # buildCI:yes useODAPI:no validateJSON:no
 # ---------------------------------------------------------------------------
 ## -- When changing this file do NOT change the order of the sections.    -- ##
@@ -60,9 +60,9 @@ set(LONG_DESCRIPTION
 
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "4")
-set(VERSION_PATCH "46")
+set(VERSION_PATCH "47")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "20/03/2025" )# DD/MM/YYYY format
+set(VERSION_DATE  "29/03/2025" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "ov58")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -232,8 +232,6 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/geomag)
 
 target_sources(${PACKAGE_NAME} PUBLIC ${SRC} )
 
-## Change target_sources to match your project needs.
-##==============================================================
 
 if (NOT OCPN_FLATPAK_CONFIG)
   # Build environment not available when flatpak is being configured so
