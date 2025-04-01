@@ -74,7 +74,7 @@ public:
     void Recompute(int clock_offset);
     void RebuildPolygons();
 
-    wxString Alminac(double lat, double lon, double ghaast, double rad, double SD, double HP);
+    wxString Alminac(wxDateTime time, double lat, double lon, double ghaast, double rad, double SD, double HP);
     void RecomputeAltitude();
     void RecomputeAzimuth();
     void RecomputeLunar();
