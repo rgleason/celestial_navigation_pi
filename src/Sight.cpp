@@ -558,7 +558,7 @@ void Sight::RebuildPolygons()
     }
 }
 
-wxString Sight::Alminac(double lat, double lon, double ghaast, double rad, double SD, double HP)
+wxString Sight::Alminac(wxDateTime time, double lat, double lon, double ghaast, double rad, double SD, double HP)
 {
    double sha = 360 - lon - ghaast;
    sha = resolve_heading_positive(sha);
@@ -579,15 +579,27 @@ wxString Sight::Alminac(double lat, double lon, double ghaast, double rad, doubl
    double dec_minutes = (dec - floor(dec))*60;
    dec = floor(dec);
 
+   time.MakeFromUTC();
+   double jdu = time.GetJulianDayNumber();
+   double jdd = ut_to_dt(jdu);
+   double deltaT = deltaT_seconds(jdu);
+
    return _("Almanac Data For ") + m_Body +
 wxString::Format(_("\n\
+Date = %s\n\
+JD = %.6f\n\
+DeltaT = %.4f\n\
+TT = %.6f\n\
 Geographical Position (lat, lon) = %.4f %.4f\n\
 GHAAST = %.0f %.4f'\n\
 SHA = %.0f %.4f'\n\
 GHA = %.0f %.4f'\n\
 Dec = %c %.0f %.4f'\n\
 SD = %.4f'\n\
-HP = %.4f'\n\n"), lat, lon,
+HP = %.4f'\n\n"),
+		 time.Format("%Y-%m-%d %H:%M:%S"),
+		 jdu, deltaT, jdd,
+		 lat, lon,
                  ghaast, ghaast_minutes, sha, sha_minutes,
                  gha, gha_minutes, dec_sign, dec, dec_minutes,
                  SD*60, HP*60);
@@ -644,13 +656,14 @@ RefractionCorrection = .267 * %.4f / (x*(%.4f + 273.15)) / 60.0\n\
 RefractionCorrection = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrection);
 #endif
 
-    double SD = 0;
+    double SD = 0, topoSD = 0;
     double HP = 0;
     double lc = 0;
 
     if( !m_Body.Cmp(_T("Sun"))) {
         lc = 0.266564/rad;
         SD = r_to_d(sin(d_to_r(lc)));
+        topoSD = SD;
 
         m_CalcStr+=wxString::Format(_("\nSun selected, Limb Correction\n\
 ra = %.4f, lc = 0.266564/ra = %.4f\n"), rad, lc);
@@ -665,12 +678,14 @@ ra = %.4f, lc = 0.266564/ra = %.4f\n"), rad, lc);
         HP = asin(EARTH_RADIUS/moon_dist) * 180/M_PI;
         SD = asin(K_MOON*sin((HP)*(M_PI/180))) * 180/M_PI;
         // convert to topocentric SD, see Meeus (chapter 55)
-        SD = SD * (1 + sin(d_to_r(ApparentAltitude)) * sin(d_to_r(HP)));
-        lc = r_to_d(asin(d_to_r(SD)));
+        topoSD = SD * (1 + sin(d_to_r(ApparentAltitude)) * sin(d_to_r(HP)));
+        lc = r_to_d(asin(d_to_r(topoSD)));
         m_CalcStr+=wxString::Format(_("\nMoon selected, Limb Correction\n\
 SD = %.4f\n\
-lc = 180/Pi * asin(Pi/180*SD)\n\
-lc = %.4f\n"), SD, lc);
+topoSD = SD * (1 + sin(ApparentAltitude) * sin(HP))\n\
+topoSD = %.4f\n\
+lc = 180/Pi * asin(Pi/180*topoSD)\n\
+lc = %.4f\n"), SD, topoSD, lc);
     }
 
     double LimbCorrection = 0;
@@ -731,7 +746,7 @@ ObservedAltitude = %.4f\n"), CorrectedAltitude, ParallaxCorrection, m_ObservedAl
    double lat, lon, ghaast;
    BodyLocation(m_CorrectedDateTime, &lat, &lon, &ghaast, &rad, 0);
 
-   m_CalcStr = Alminac(lat, lon, ghaast, rad, SD, HP) + m_CalcStr;
+   m_CalcStr = Alminac(m_CorrectedDateTime, lat, lon, ghaast, rad, SD, HP) + m_CalcStr;
 }
 
 void Sight::RecomputeAzimuth()
@@ -790,12 +805,14 @@ RefractionCorrectionMoon = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrec
     double lunar_HP = asin(EARTH_RADIUS/moon_dist) * 180/M_PI;
     double lunar_SD = asin(K_MOON*sin((lunar_HP)*(M_PI/180))) * 180/M_PI;
     // convert to topocentric SD, see Meeus (chapter 55)
-    lunar_SD = lunar_SD * (1 + sin(d_to_r(ApparentAltitudeMoon)) * sin(d_to_r(lunar_HP)));
-    double lunar_lc = r_to_d(asin(d_to_r(lunar_SD)));
+    double lunar_topoSD = lunar_SD * (1 + sin(d_to_r(ApparentAltitudeMoon)) * sin(d_to_r(lunar_HP)));
+    double lunar_lc = r_to_d(asin(d_to_r(lunar_topoSD)));
     m_CalcStr+=wxString::Format(_("\nMoon selected, Limb Correction\n\
 SD = %.4f\n\
-lc = 180/Pi * asin(Pi/180*SD)\n\
-lc = %.4f\n"), lunar_SD, lunar_lc);
+topoSD = SD * (1 + sin(ApparentAltitudeMoon) * sin(lunarHP))\n\
+topoSD = %.4f\n\
+lc = 180/Pi * asin(Pi/180*topoSD)\n\
+lc = %.4f\n"), lunar_SD, lunar_topoSD, lunar_lc);
 
     double LimbCorrectionMoon = 0;
     if(lunar_lc) {
@@ -930,14 +947,14 @@ CorrectedMeasurement = %.4f\n"), m_Measurement, Corrections, IndexCorrection,
    double lat, lon, ghaast;
    BodyLocation(m_CorrectedDateTime, &lat, &lon, &ghaast, &rad, 0);
 
-   m_CalcStr = Alminac(lat, lon, ghaast, rad, SD, HP) + m_CalcStr;
+   m_CalcStr = Alminac(m_CorrectedDateTime, lat, lon, ghaast, rad, SD, HP) + m_CalcStr;
    
    double lunar_lat, lunar_lon, lunar_ghaast, lunar_rad;
    wxString body = m_Body;
    m_Body = _T("Moon");
    BodyLocation(m_CorrectedDateTime, &lunar_lat, &lunar_lon, &lunar_ghaast, &lunar_rad, 0);
 
-   m_CalcStr = Alminac(lunar_lat, lunar_lon, lunar_ghaast, lunar_rad, lunar_SD, lunar_HP) + m_CalcStr;
+   m_CalcStr = Alminac(m_CorrectedDateTime, lunar_lat, lunar_lon, lunar_ghaast, lunar_rad, lunar_SD, lunar_HP) + m_CalcStr;
    m_Body = body;
 
    // Compute angle between moon and body
