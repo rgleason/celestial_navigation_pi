@@ -597,7 +597,7 @@ GHA = %.0f %.4f'\n\
 Dec = %c %.0f %.4f'\n\
 SD = %.4f'\n\
 HP = %.4f'\n\n"),
-		 time.Format("%Y-%m-%d %H:%M:%S"),
+		 time.Format("%Y-%m-%d %H:%M:%S", time.UTC),
 		 jdu, deltaT, jdd,
 		 lat, lon,
                  ghaast, ghaast_minutes, sha, sha_minutes,
