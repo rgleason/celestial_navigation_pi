@@ -43,6 +43,7 @@ public:
     void UpdateSights();
 
     FixDialog m_FixDialog;
+    double m_pix_per_mm;
 
 private:
 

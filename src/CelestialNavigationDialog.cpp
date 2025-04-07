@@ -161,6 +161,12 @@ CelestialNavigationDialog::CelestialNavigationDialog(wxWindow *parent)
         }
     }
 
+    // calculate scaler for minimum line width
+    double mmx = PlugInGetDisplaySizeMM();
+    int sx, sy;
+    wxDisplaySize( &sx, &sy );
+    m_pix_per_mm = ( (double) sx ) / ( mmx );
+
 //
 #if 0       // TODO  (DSR) This Android GUI interface needs work
 #ifdef __OCPN__ANDROID__

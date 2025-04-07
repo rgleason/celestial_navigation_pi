@@ -479,7 +479,7 @@ double Sight::ComputeStepSize(double certainty, double stepsize, double min, dou
 }
 
 /* render the area of position for this sight */
-void Sight::Render( wxDC *dc, PlugIn_ViewPort &VP )
+void Sight::Render( wxDC *dc, PlugIn_ViewPort &VP, double pix_per_mm )
 {
     if ( !m_bVisible )
         return;
@@ -505,9 +505,9 @@ void Sight::Render( wxDC *dc, PlugIn_ViewPort &VP )
     }
 
     if (dc) {
-        dc->SetPen ( wxPen(m_Colour, 3) );
+        dc->SetPen ( wxPen(m_Colour, (int)(0.5 * pix_per_mm)) );
     } else {
-        glLineWidth(3);
+        glLineWidth( (int)(0.5 * pix_per_mm) );
         glEnable(GL_LINE_SMOOTH);
     }
     DrawPolygon(VP, lines, false);
