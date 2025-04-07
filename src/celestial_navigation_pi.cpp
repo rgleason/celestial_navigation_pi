@@ -270,7 +270,7 @@ bool celestial_navigation_pi::RenderOverlayAll(wxDC *dc, PlugIn_ViewPort *vp)
     wxListCtrl *lSights = m_pCelestialNavigationDialog->m_lSights;
     for(int i = 0; i<lSights->GetItemCount(); i++) {
         Sight *s = (Sight*)wxUIntToPtr(lSights->GetItemData(i));
-        s->Render ( dc, *vp );
+        s->Render ( dc, *vp, m_pCelestialNavigationDialog->m_pix_per_mm );
     }
 
    /* now render fix */

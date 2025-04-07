@@ -145,6 +145,10 @@ wxString DECL_EXP GetPluginDataDir(const char* plugin_name) {
   return wxString(testdata);
 }
 
+double DECL_EXP PlugInGetDisplaySizeMM() {
+  return 300;
+}
+
 // Define the wxAuiManager methods
 bool wxAuiManager::DetachPane(wxWindow* window) {
   return true;  // Mock implementation always succeeds

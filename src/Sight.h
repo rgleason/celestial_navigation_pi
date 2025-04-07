@@ -109,7 +109,7 @@ public:
     wxString   m_ColourName;
     wxColour   m_Colour;     // Color of the sight
 
-    virtual void Render(wxDC *dc, PlugIn_ViewPort &pVP);
+    virtual void Render(wxDC *dc, PlugIn_ViewPort &pVP, double pix_per_mm);
 
     void BodyLocation(wxDateTime time, double *lat, double *lon, double *ghaash, double *rad, double *dist);
     void AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
