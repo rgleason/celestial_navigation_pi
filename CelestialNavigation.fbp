@@ -5695,11 +5695,11 @@
             </object>
           </object>
         </object>
-        <object class="sizeritem" expanded="false">
+        <object class="sizeritem" expanded="true">
           <property name="border">5</property>
           <property name="flag">wxEXPAND</property>
           <property name="proportion">1</property>
-          <object class="wxStaticBoxSizer" expanded="false">
+          <object class="wxStaticBoxSizer" expanded="true">
             <property name="id">wxID_ANY</property>
             <property name="label">Altitude (Hc)</property>
             <property name="minimum_size"></property>
@@ -5774,11 +5774,11 @@
             </object>
           </object>
         </object>
-        <object class="sizeritem" expanded="false">
+        <object class="sizeritem" expanded="true">
           <property name="border">5</property>
           <property name="flag">wxEXPAND</property>
           <property name="proportion">1</property>
-          <object class="wxStaticBoxSizer" expanded="false">
+          <object class="wxStaticBoxSizer" expanded="true">
             <property name="id">wxID_ANY</property>
             <property name="label">Azimuth (Zn)</property>
             <property name="minimum_size"></property>
