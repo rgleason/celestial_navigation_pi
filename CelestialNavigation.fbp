@@ -1590,7 +1590,7 @@
                         <property name="proportion">1</property>
                         <object class="wxStaticBoxSizer" expanded="false">
                           <property name="id">wxID_ANY</property>
-                          <property name="label">Measurement</property>
+                          <property name="label">Sight measurement (Hs)</property>
                           <property name="minimum_size"></property>
                           <property name="name">sbSizer1</property>
                           <property name="orient">wxVERTICAL</property>

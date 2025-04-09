@@ -607,6 +607,8 @@ void Sight::RecomputeAltitude()
 
     m_CalcStr+=_("Formulas used to calculate sight\n\n");
 
+    m_CalcStr+=wxString::Format(_("Altitude measurement (Hs) is %.4f\n\n"), m_Measurement);
+
     /* correct for index error */
     double IndexCorrection = m_IndexError / 60.0;
     m_CalcStr+=wxString::Format(_("Index Error is %.4f degrees\n\n"), IndexCorrection);
@@ -622,7 +624,7 @@ Height Correction Degrees = %.4f\n"),
     /* Apparent Altitude Ha */
     double ApparentAltitude = m_Measurement - IndexCorrection - EyeHeightCorrection;
     m_CalcStr+=wxString::Format(_("\nApparent Altitude (Ha)\n\
-ApparentAltitude = Measurement - IndexCorrection - EyeHeightCorrection\n\
+ApparentAltitude = Hs - IndexCorrection - EyeHeightCorrection\n\
 ApparentAltitude = %.4f - %.4f - %.4f\n\
 ApparentAltitude = %.4f\n"), m_Measurement, IndexCorrection,
                                 EyeHeightCorrection, ApparentAltitude);
@@ -756,6 +758,8 @@ void Sight::RecomputeLunar()
 
     m_CalcStr+=_("Formulas used to calculate sight\n\n");
 
+    m_CalcStr+=wxString::Format(_("Moon altitude measurement (Hs) is %.4f\n\n"), m_LunarMoonAltitude);
+
     /* correct for index error */
     double IndexCorrection = m_IndexError / 60.0;
     m_CalcStr+=wxString::Format(_("Index Error is %.4f degrees\n\n"), IndexCorrection);
@@ -771,7 +775,7 @@ Height Correction Degrees = %.4f\n"),
     /* Apparent Altitude Ha */
     double ApparentAltitudeMoon = m_LunarMoonAltitude - IndexCorrection - EyeHeightCorrection;
     m_CalcStr+=wxString::Format(_("\nApparent Moon Altitude (Ha)\n\
-ApparentAltitudeMoon = MeasurementMoon - IndexCorrection - EyeHeightCorrection\n\
+ApparentAltitudeMoon = Hs - IndexCorrection - EyeHeightCorrection\n\
 ApparentAltitudeMoon = %.4f - %.4f - %.4f\n\
 ApparentAltitudeMoon = %.4f\n"), m_LunarMoonAltitude, IndexCorrection,
                                 EyeHeightCorrection, ApparentAltitudeMoon);
@@ -843,10 +847,12 @@ ParallaxCorrectionMoon = %.4f\n"), lunar_HP, CorrectedAltitudeMoon, ParallaxCorr
 
     // body
 
+    m_CalcStr+=wxString::Format(_("%s altitude measurement (Hs) is %.4f\n\n"), m_Body, m_LunarBodyAltitude);
+
     /* Apparent Altitude Ha */
     double ApparentAltitude = m_LunarBodyAltitude - IndexCorrection - EyeHeightCorrection;
     m_CalcStr+=wxString::Format(_("\nApparent Altitude (Ha)\n\
-ApparentAltitude = Measurement - IndexCorrection - EyeHeightCorrection\n\
+ApparentAltitude = Hs - IndexCorrection - EyeHeightCorrection\n\
 ApparentAltitude = %.4f - %.4f - %.4f\n\
 ApparentAltitude = %.4f\n"), m_LunarBodyAltitude, IndexCorrection,
                                 EyeHeightCorrection, ApparentAltitude);
