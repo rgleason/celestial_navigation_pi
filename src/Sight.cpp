@@ -57,20 +57,14 @@ WX_DEFINE_LIST ( wxRealPointList );
 
 double resolve_heading(double heading)
 {
-   while(heading < -180)
-      heading += 360;
-   while(heading >= 180)
-      heading -= 360;
-   return heading;
+   heading = std::fmod(heading + 180, 360);
+   return heading >= 0 ? heading - 180 : heading + 180;
 }
 
 double resolve_heading_positive(double heading)
 {
-   while(heading < 0)
-      heading += 360;
-   while(heading >= 360)
-      heading -= 360;
-   return heading;
+   heading = std::fmod(heading, 360);
+   return heading >= 0 ? heading : 360 + heading;
 }
 
 //-----------------------------------------------------------------------------
