@@ -320,9 +320,9 @@ determine fix visually instead.\n"), wxString(_("Fix Position"), wxID_OK | wxICO
         m_fixerror = sqrt(m_fixerror);
     
         double lat = trunc(m_fixlat);
-        double latmin = 60*(m_fixlat - lat);
+        double latmin = fabs(60*(m_fixlat - lat));
         double lon = trunc(m_fixlon);
-        double lonmin = 60*(m_fixlon - lon);
+        double lonmin = fabs(60*(m_fixlon - lon));
     
         m_stLatitude->SetLabel(wxString::Format(_T("%.0f %.1f'"), lat, latmin));
         m_stLongitude->SetLabel(wxString::Format(_T("%.0f %.1f'"), lon, lonmin));
