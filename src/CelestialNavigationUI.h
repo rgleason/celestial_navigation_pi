@@ -266,11 +266,11 @@ class FixDialogBase : public wxDialog
 
 	protected:
 		wxStaticText* m_staticText26;
-		wxStaticText* m_stLatitude;
+		wxTextCtrl* m_stLatitude;
 		wxStaticText* m_staticText28;
-		wxStaticText* m_stLongitude;
+		wxTextCtrl* m_stLongitude;
 		wxStaticText* m_staticText32;
-		wxStaticText* m_stFixError;
+		wxTextCtrl* m_stFixError;
 		wxStaticText* m_staticText34;
 		wxSpinCtrl* m_sInitialLatitude;
 		wxStaticText* m_staticText35;
