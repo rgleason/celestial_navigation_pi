@@ -31,6 +31,7 @@
 
 #include "ocpn_plugin.h"
 #include "Sight.h"
+#include "celestial_navigation_pi.h"
 
 #include <vector>
 
@@ -43,6 +44,10 @@ FixDialog::FixDialog(wxWindow *parent) :
     m_fixlon(NAN),
     m_fixerror(NAN)
 {
+    double lat, lon;
+    celestial_navigation_pi_BoatPos(lat, lon);
+    m_sInitialLatitude->SetValue(lat);
+    m_sInitialLongitude->SetValue(lon);
 }
 
 double dist(wxRealPoint a, wxRealPoint b)
