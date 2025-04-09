@@ -1,37 +1,44 @@
 #!/bin/bash
 
 # FE2 Testplugin
-
-# Use ${bold}"./build-win.sh c"${normal} to run cmake.
-# Use "./build.sh c pi" to run cmake and copy a DLL for testing.
+# REKWITHDEBINFO VERSION
+# Use "./build-win.sh" to run cmake.
 # Adjust this command for your setup and Plugin.
 # Requires wxWidgets setup
-# - /home/fcgle/source/wxWidgets-3.1.2
-# - /home/fcgle/source/wxWidgets-3.2.2
-# - /home/fcgle/source/ is where all the plugins and OpenCPN repos are kept.
-# Visual Studio 15 2017 installed
-# Visual Studio 17 2022 installed
+# - /home/fcgle/source/ocpn-wxWidgets
+# - /home/fcgle/source/ where all the plugins and OpenCPN repos are kept.
 # --------------------------------------
-# For Opencpn 5.8 and wxWidgets-3.2.2 using Visual Studio 15 2017
+# For Opencpn using MS Visual Studio 2022
 # --------------------------------------
 # Used for local builds and testing.
 # Create an empty "[plugin]/build" directory
-# Use a terminal from the [plugin] root directory: "./bld.sh"
-# Find the errors in the build/output.txt file
-# Then use bash prompt to run cloudsmith-upload.sh command: "bash ./bld.sh"
-# This adds the metadata file to the tarball gz file.
-# Set local environment to find and use wxWidgets-3.2.2
+# Use Bash Prompt from the [plugin] root directory: "bash ./bldwin-rdeb.sh"
+# Find any errors in the build/output.txt file
+# Then use bash prompt to run cloudsmith-upload.sh command: "bash ./bldwin-rdeb.sh"
+# Which adds the metadata file to the tarball gz file.
+# Set local environment to find and use wxWidgets
 
 # Enable command tracing
 
 set -x 
+
+# Confirm build exists and empty it and if no build directory create it.
+
+if [ -d "build" ]; then
+    echo "The 'build' directory exists, remove all build dir files."
+    rm rf build/*
+	
+else
+    echo "The 'build' directory does not exist. Create the build directory"
+	mkdir build
+fi
 
 # wxWidgets settings 
 
 wxDIR=$WXWIN
 wxWidgets_ROOT_DIR=$WXWIN
 wxWidgets_LIB_DIR="$WXWIN/lib/vc14x_dll"
-WXWIN="/home/fcgle/source/ocpn-wxWidgets"
+WXWIN="/home/fcgle/source/wxWidgets-3.2.2"
 
 # build the plugin with cmake
 
