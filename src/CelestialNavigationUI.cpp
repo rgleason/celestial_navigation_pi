@@ -814,7 +814,7 @@ FixDialogBase::FixDialogBase( wxWindow* parent, wxWindowID id, const wxString& t
 	fgSizer16->Add( m_staticText26, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_stLatitude = new wxTextCtrl( sbSizer7->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
-	fgSizer16->Add( m_stLatitude, 0, wxALL, 5 );
+	fgSizer16->Add( m_stLatitude, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText28 = new wxStaticText( sbSizer7->GetStaticBox(), wxID_ANY, _("Longitude"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText28->Wrap( -1 );
@@ -837,32 +837,32 @@ FixDialogBase::FixDialogBase( wxWindow* parent, wxWindowID id, const wxString& t
 	m_staticText34->Wrap( -1 );
 	fgSizer16->Add( m_staticText34, 0, wxALIGN_CENTER|wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_sInitialLatitude = new wxSpinCtrl( sbSizer7->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 80,-1 ), wxSP_ARROW_KEYS, -90, 90, 0 );
-	fgSizer16->Add( m_sInitialLatitude, 0, wxALL, 5 );
+	m_sInitialLatitude = new wxSpinCtrl( sbSizer7->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), wxSP_ARROW_KEYS, -90, 90, 0 );
+	fgSizer16->Add( m_sInitialLatitude, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText35 = new wxStaticText( sbSizer7->GetStaticBox(), wxID_ANY, _("DR Longitude"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText35->Wrap( -1 );
 	fgSizer16->Add( m_staticText35, 0, wxALIGN_CENTER|wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_sInitialLongitude = new wxSpinCtrl( sbSizer7->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 80,-1 ), wxSP_ARROW_KEYS, -180, 180, 0 );
-	fgSizer16->Add( m_sInitialLongitude, 0, wxALL, 5 );
+	m_sInitialLongitude = new wxSpinCtrl( sbSizer7->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), wxSP_ARROW_KEYS, -180, 180, 0 );
+	fgSizer16->Add( m_sInitialLongitude, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText36 = new wxStaticText( sbSizer7->GetStaticBox(), wxID_ANY, _("Algorithm"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText36->Wrap( -1 );
 	fgSizer16->Add( m_staticText36, 0, wxALIGN_CENTER|wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_cbFixAlgorithm = new wxComboBox( sbSizer7->GetStaticBox(), wxID_ANY, _("Sphere"), wxDefaultPosition, wxSize( 90,-1 ), 0, NULL, 0 );
+	m_cbFixAlgorithm = new wxComboBox( sbSizer7->GetStaticBox(), wxID_ANY, _("Sphere"), wxDefaultPosition, wxSize( -1,-1 ), 0, NULL, 0 );
 	m_cbFixAlgorithm->Append( _("Plane") );
 	m_cbFixAlgorithm->Append( _("Sphere") );
 	m_cbFixAlgorithm->Append( _("Cone") );
 	m_cbFixAlgorithm->Append( _("Cone 2") );
 	m_cbFixAlgorithm->SetSelection( 1 );
-	fgSizer16->Add( m_cbFixAlgorithm, 0, wxALL, 5 );
+	fgSizer16->Add( m_cbFixAlgorithm, 0, wxALL|wxEXPAND, 5 );
 
 	m_bGo = new wxButton( sbSizer7->GetStaticBox(), wxID_ANY, _("Go"), wxDefaultPosition, wxSize( -1,-1 ), wxBU_EXACTFIT );
 	m_bGo->Enable( false );
 
-	fgSizer16->Add( m_bGo, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	fgSizer16->Add( m_bGo, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
 
 	sbSizer7->Add( fgSizer16, 1, wxEXPAND, 5 );

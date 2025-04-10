@@ -6473,7 +6473,7 @@
             </object>
             <object class="sizeritem" expanded="true">
               <property name="border">5</property>
-              <property name="flag">wxALL</property>
+              <property name="flag">wxALL|wxEXPAND</property>
               <property name="proportion">0</property>
               <object class="wxTextCtrl" expanded="true">
                 <property name="BottomDockable">1</property>
@@ -6864,7 +6864,7 @@
             </object>
             <object class="sizeritem" expanded="false">
               <property name="border">5</property>
-              <property name="flag">wxALL</property>
+              <property name="flag">wxALL|wxEXPAND</property>
               <property name="proportion">0</property>
               <object class="wxSpinCtrl" expanded="false">
                 <property name="BottomDockable">1</property>
@@ -6914,7 +6914,7 @@
                 <property name="pos"></property>
                 <property name="resize">Resizable</property>
                 <property name="show">1</property>
-                <property name="size">80,-1</property>
+                <property name="size">-1,-1</property>
                 <property name="style">wxSP_ARROW_KEYS</property>
                 <property name="subclass"></property>
                 <property name="toolbar_pane">0</property>
@@ -6990,7 +6990,7 @@
             </object>
             <object class="sizeritem" expanded="false">
               <property name="border">5</property>
-              <property name="flag">wxALL</property>
+              <property name="flag">wxALL|wxEXPAND</property>
               <property name="proportion">0</property>
               <object class="wxSpinCtrl" expanded="false">
                 <property name="BottomDockable">1</property>
@@ -7040,7 +7040,7 @@
                 <property name="pos"></property>
                 <property name="resize">Resizable</property>
                 <property name="show">1</property>
-                <property name="size">80,-1</property>
+                <property name="size">-1,-1</property>
                 <property name="style">wxSP_ARROW_KEYS</property>
                 <property name="subclass"></property>
                 <property name="toolbar_pane">0</property>
@@ -7116,7 +7116,7 @@
             </object>
             <object class="sizeritem" expanded="false">
               <property name="border">5</property>
-              <property name="flag">wxALL</property>
+              <property name="flag">wxALL|wxEXPAND</property>
               <property name="proportion">0</property>
               <object class="wxComboBox" expanded="false">
                 <property name="BottomDockable">1</property>
@@ -7165,7 +7165,7 @@
                 <property name="resize">Resizable</property>
                 <property name="selection">1</property>
                 <property name="show">1</property>
-                <property name="size">90,-1</property>
+                <property name="size">-1,-1</property>
                 <property name="style"></property>
                 <property name="subclass"></property>
                 <property name="toolbar_pane">0</property>
@@ -7183,7 +7183,7 @@
             </object>
             <object class="sizeritem" expanded="false">
               <property name="border">5</property>
-              <property name="flag">wxALIGN_CENTER_VERTICAL|wxALL</property>
+              <property name="flag">wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</property>
               <property name="proportion">0</property>
               <object class="wxButton" expanded="false">
                 <property name="BottomDockable">1</property>
