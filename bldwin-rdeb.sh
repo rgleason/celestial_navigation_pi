@@ -26,7 +26,7 @@ set -x
 
 if [ -d "build" ]; then
     echo "The 'build' directory exists, remove all build dir files."
-    rm rf build/*
+    rm -rf build/*
 	
 else
     echo "The 'build' directory does not exist. Create the build directory"
@@ -34,11 +34,17 @@ else
 fi
 
 # wxWidgets settings 
+set "wxDIR=C:\Users\fcgle\source\opencpn\..\ocpn_wxWidgets" 
+set "wxWIN=C:\Users\fcgle\source\opencpn\..\ocpn_wxWidgets" 
+set "wxWidgets_ROOT_DIR=C:\Users\fcgle\source\opencpn\..\ocpn_wxWidgets" 
+set "wxWidgets_LIB_DIR=C:\Users\fcgle\source\opencpn\..\ocpn_wxWidgets\lib\vc_dll" 
+set "VCver=17" 
+set "VCstr=Visual Studio 17" 
 
-wxDIR=$WXWIN
-wxWidgets_ROOT_DIR=$WXWIN
-wxWidgets_LIB_DIR="$WXWIN/lib/vc14x_dll"
-WXWIN="/home/fcgle/source/wxWidgets-3.2.2"
+# wxDIR=$WXWIN
+# wxWidgets_ROOT_DIR=$WXWIN
+# wxWidgets_LIB_DIR="$WXWIN/lib/vc14x_dll"
+# WXWIN="/home/fcgle/source/wxWidgets-3.2.2"
 
 # build the plugin with cmake
 
