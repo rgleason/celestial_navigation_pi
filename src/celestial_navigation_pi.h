@@ -96,4 +96,16 @@ extern "C" int geomag_load(const char *mdfile);
 extern "C" int geomag_calc(double latitude, double longitude, double alt,
                            int day, int month, double year, double results[14]);
 
+static inline double d_to_r(double d)
+{
+    static const double _DtoR = M_PI / 180.0;
+    return d * _DtoR;
+}
+
+static inline double r_to_d(double r)
+{
+    static const double _RtoD = 180.0 / M_PI;
+    return r * _RtoD;
+}
+
 #endif

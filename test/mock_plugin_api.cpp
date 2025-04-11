@@ -149,6 +149,68 @@ double DECL_EXP PlugInGetDisplaySizeMM() {
   return 300;
 }
 
+wxString DECL_EXP toSDMM_PlugIn(int NEflag, double a, bool hi_precision) {
+  wxString s;
+  double mpy;
+  short neg = 0;
+  int d;
+  long m;
+  double ang = a;
+  char c = 'N';
+
+  if (a < 0.0) {
+    a = -a;
+    neg = 1;
+  }
+  d = (int)a;
+  if (neg) d = -d;
+  if (NEflag) {
+    if (NEflag == 1) {
+      c = 'N';
+
+      if (neg) {
+        d = -d;
+        c = 'S';
+      }
+    } else if (NEflag == 2) {
+      c = 'E';
+
+      if (neg) {
+        d = -d;
+        c = 'W';
+      }
+    }
+  }
+
+  mpy = 600.0;
+  if (hi_precision) mpy = mpy * 1000;
+
+  m = (long)wxRound((a - (double)d) * mpy);
+
+  if (!NEflag || NEflag < 1 || NEflag > 2)  // Does it EVER happen?
+  {
+    if (hi_precision)
+      s.Printf(_T ( "%d%c %02ld.%04ld'" ), d, 0x00B0, m / 10000, m % 10000);
+    else
+      s.Printf(_T ( "%d%c %02ld.%01ld'" ), d, 0x00B0, m / 10, m % 10);
+  } else {
+    if (hi_precision)
+      if (NEflag == 1)
+        s.Printf(_T ( "%02d%c %02ld.%04ld' %c" ), d, 0x00B0, m / 10000,
+                 (m % 10000), c);
+      else
+        s.Printf(_T ( "%03d%c %02ld.%04ld' %c" ), d, 0x00B0, m / 10000,
+                 (m % 10000), c);
+    else if (NEflag == 1)
+      s.Printf(_T ( "%02d%c %02ld.%01ld' %c" ), d, 0x00B0, m / 10, (m % 10),
+               c);
+    else
+      s.Printf(_T ( "%03d%c %02ld.%01ld' %c" ), d, 0x00B0, m / 10, (m % 10),
+               c);
+  }
+  return s;
+}
+
 // Define the wxAuiManager methods
 bool wxAuiManager::DetachPane(wxWindow* window) {
   return true;  // Mock implementation always succeeds

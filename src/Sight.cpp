@@ -134,8 +134,8 @@ using namespace astrolabe::dynamical;
 using namespace astrolabe::elp2000;
 using namespace astrolabe::nutation;
 using namespace astrolabe::sun;
-using namespace astrolabe::util;
 using namespace astrolabe::vsop87d;
+using astrolabe::util::ecl_to_equ;
 
 /* calculate what position the body for this sight is directly over at a given time */ 
 void Sight::BodyLocation(wxDateTime time, double *lat, double *lon, double *ghaast, double *rad, double *dist)
@@ -556,22 +556,11 @@ wxString Sight::Alminac(wxDateTime time, double lat, double lon, double ghaast, 
 {
    double sha = 360 - lon - ghaast;
    sha = resolve_heading_positive(sha);
-   double sha_minutes = (sha - floor(sha))*60;
-   sha = floor(sha);
-
-   double ghaast_minutes = (ghaast - floor(ghaast))*60;
-   ghaast = floor(ghaast);
 
    double gha = -lon;
    gha = resolve_heading_positive(gha);
-   double gha_minutes = (gha - floor(gha))*60;
-   gha = floor(gha);
 
    double dec = lat;
-   char dec_sign = dec > 0 ? 'N' : 'S';
-   dec = fabs(dec);
-   double dec_minutes = (dec - floor(dec))*60;
-   dec = floor(dec);
 
    time.MakeFromUTC();
    double jdu = time.GetJulianDayNumber();
@@ -584,18 +573,20 @@ Date = %s\n\
 JD = %.6f\n\
 DeltaT = %.4f\n\
 TT = %.6f\n\
-Geographical Position (lat, lon) = %.4f %.4f\n\
-GHAAST = %.0f %.4f'\n\
-SHA = %.0f %.4f'\n\
-GHA = %.0f %.4f'\n\
-Dec = %c %.0f %.4f'\n\
+Geographical Position (lat, lon) = %.4f%c %.4f%c = %s %s\n\
+GHAAST = %.4f%c = %s\n\
+SHA = %.4f%c = %s\n\
+GHA = %.4f%c = %s\n\
+Dec = %.4f%c = %s\n\
 SD = %.4f'\n\
 HP = %.4f'\n\n"),
-		 time.Format("%Y-%m-%d %H:%M:%S", time.UTC),
-		 jdu, deltaT, jdd,
-		 lat, lon,
-                 ghaast, ghaast_minutes, sha, sha_minutes,
-                 gha, gha_minutes, dec_sign, dec, dec_minutes,
+                 time.Format("%Y-%m-%d %H:%M:%S", time.UTC),
+                 jdu, deltaT, jdd,
+                 lat, 0x00B0, lon, 0x00B0, toSDMM_PlugIn(1, lat, true), toSDMM_PlugIn(2, lon, true),
+                 ghaast, 0x00B0, toSDMM_PlugIn(0, ghaast, true),
+                 sha, 0x00B0, toSDMM_PlugIn(0, sha, true),
+                 gha, 0x00B0, toSDMM_PlugIn(0, gha, true),
+                 dec, 0x00B0, toSDMM_PlugIn(1, dec, true),
                  SD*60, HP*60);
 }
 
@@ -607,27 +598,29 @@ void Sight::RecomputeAltitude()
 
     m_CalcStr+=_("Formulas used to calculate sight\n\n");
 
-    m_CalcStr+=wxString::Format(_("Altitude measurement (Hs) is %.4f\n\n"), m_Measurement);
+    m_CalcStr+=wxString::Format(_("Altitude measurement (Hs) = %.4f%c = %s\n\n"),
+        m_Measurement, 0x00B0, toSDMM_PlugIn(0, m_Measurement, true));
 
     /* correct for index error */
     double IndexCorrection = m_IndexError / 60.0;
-    m_CalcStr+=wxString::Format(_("Index Error is %.4f degrees\n\n"), IndexCorrection);
+    m_CalcStr+=wxString::Format(_("Index Error = %.4f%c = %s\n\n"),
+        IndexCorrection, 0x00B0, toSDMM_PlugIn(0, IndexCorrection, true));
 
     /* correct for height of observer
        The dip of the sea horizon in minutes = 1.758*sqrt(height) */
-    double EyeHeightCorrection = 1.758*sqrt(m_EyeHeight) / 60.0;
-    m_CalcStr+=wxString::Format(_("Eye Height is %.4f meters\n\
-Height Correction Degrees = 1.758*sqrt(%.4f) / 60.0\n\
-Height Correction Degrees = %.4f\n"),
-                                m_EyeHeight, m_EyeHeight, EyeHeightCorrection);
+    double EyeHeightCorrection = 1.758 * sqrt(m_EyeHeight) / 60.0;
+    m_CalcStr+=wxString::Format(_("Eye Height = %.4f m\n\
+Height Correction = 1.758%c * sqrt(%.4f) / 60.0\n\
+Height Correction = %.4f%c = %s\n"),
+        m_EyeHeight, 0x00B0, m_EyeHeight, EyeHeightCorrection, 0x00B0, toSDMM_PlugIn(0, EyeHeightCorrection, true));
 
     /* Apparent Altitude Ha */
     double ApparentAltitude = m_Measurement - IndexCorrection - EyeHeightCorrection;
     m_CalcStr+=wxString::Format(_("\nApparent Altitude (Ha)\n\
 ApparentAltitude = Hs - IndexCorrection - EyeHeightCorrection\n\
-ApparentAltitude = %.4f - %.4f - %.4f\n\
-ApparentAltitude = %.4f\n"), m_Measurement, IndexCorrection,
-                                EyeHeightCorrection, ApparentAltitude);
+ApparentAltitude = %.4f%c - %.4f%c - %.4f%c\n\
+ApparentAltitude = %.4f%c = %s\n"), m_Measurement, 0x00B0, IndexCorrection, 0x00B0,
+        EyeHeightCorrection, 0x00B0, ApparentAltitude, 0x00B0, toSDMM_PlugIn(0, ApparentAltitude, true));
     
     /* compensate for refraction */
     double RefractionCorrection;
@@ -639,17 +632,19 @@ ApparentAltitude = %.4f\n"), m_Measurement, IndexCorrection,
 
     RefractionCorrection = RefImp * .00467 * m_Pressure / (273.15 + m_Temperature);
 #else
-    double x = tan(M_PI/180 * ApparentAltitude + 4.848e-2*(M_PI/180)
-                   / (tan(M_PI/180 * ApparentAltitude) + .028));
+    double x = tan(d_to_r(ApparentAltitude) + d_to_r(4.848e-2)
+                   / (tan(d_to_r(ApparentAltitude)) + .028));
     m_CalcStr+=wxString::Format(_("\nRefraction Correction\n\
-x = tan(Pi/180*ApparentAltitude + 4.848e-2*(Pi/180) / (tan(Pi/180*ApparentAltitude) + .028))\n\
-x = tan(Pi/180*%.4f + 4.848e-2*(Pi/180) / (tan(Pi/180*%.4f) + .028))\n\
-x = %.4f\n"), ApparentAltitude, ApparentAltitude, x);
+x = tan(ApparentAltitude + 4.848e-2 / (tan(ApparentAltitude) + .028))\n\
+x = tan((%.4f + 4.848e-2) / (tan(%.4f) + .028))\n\
+x = %.4f\n"),
+        ApparentAltitude, ApparentAltitude, x);
     RefractionCorrection = .267 * m_Pressure / (x*(m_Temperature + 273.15)) / 60.0;
     m_CalcStr+=wxString::Format(_("\
-RefractionCorrection = .267 * Pressure / (x*(Temperature + 273.15)) / 60.0\n\
-RefractionCorrection = .267 * %.4f / (x*(%.4f + 273.15)) / 60.0\n\
-RefractionCorrection = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrection);
+RefractionCorrection = .267%c * Pressure / (x * (Temperature + 273.15)) / 60.0\n\
+RefractionCorrection = .267%c * %.4f / (x * (%.4f + 273.15)) / 60.0\n\
+RefractionCorrection = %.4f%c = %s\n"),
+        0x00B0, 0x00B0, m_Pressure, m_Temperature, RefractionCorrection, 0x00B0, toSDMM_PlugIn(0, RefractionCorrection, true));
 #endif
 
     double SD = 0, topoSD = 0;
@@ -662,7 +657,7 @@ RefractionCorrection = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrection
         topoSD = SD;
 
         m_CalcStr+=wxString::Format(_("\nSun selected, Limb Correction\n\
-ra = %.4f, lc = 0.266564/ra = %.4f\n"), rad, lc);
+ra = %.4f, lc = 0.266564/ra = %.4f%c = %s\n"), rad, lc, 0x00B0, toSDMM_PlugIn(0, lc, true));
     }
 
     if(!m_Body.Cmp(_T("Moon"))){
@@ -671,17 +666,17 @@ ra = %.4f, lc = 0.266564/ra = %.4f\n"), rad, lc);
         double jdu = time.GetJulianDayNumber();
         double jdd = ut_to_dt(jdu);
         double moon_dist = moon_distance(jdd);
-        HP = asin(EARTH_RADIUS/moon_dist) * 180/M_PI;
-        SD = asin(K_MOON*sin((HP)*(M_PI/180))) * 180/M_PI;
+        HP = r_to_d(asin(EARTH_RADIUS/moon_dist));
+        SD = r_to_d(asin(K_MOON*sin(d_to_r(HP))));
         // convert to topocentric SD, see Meeus (chapter 55)
         topoSD = SD * (1 + sin(d_to_r(ApparentAltitude)) * sin(d_to_r(HP)));
         lc = r_to_d(asin(d_to_r(topoSD)));
         m_CalcStr+=wxString::Format(_("\nMoon selected, Limb Correction\n\
-SD = %.4f\n\
+SD = %.4f%c = %s\n\
 topoSD = SD * (1 + sin(ApparentAltitude) * sin(HP))\n\
 topoSD = %.4f\n\
-lc = 180/Pi * asin(Pi/180*topoSD)\n\
-lc = %.4f\n"), SD, topoSD, lc);
+lc = asin(topoSD)\n\
+lc = %.4f%c = %s\n"), SD, 0x00B0, toSDMM_PlugIn(0, SD, true), topoSD, lc, 0x00B0, toSDMM_PlugIn(0, lc, true));
     }
 
     double LimbCorrection = 0;
@@ -694,15 +689,17 @@ lc = %.4f\n"), SD, topoSD, lc);
             m_CalcStr+=wxString::Format(_("Lower Limb"));
         }
 
-        m_CalcStr+=wxString::Format(_("\nLimbCorrection = %.4f\n"), LimbCorrection);
+        m_CalcStr+=wxString::Format(_("\nLimbCorrection = %.4f%c = %s\n"),
+            LimbCorrection, 0x00B0, toSDMM_PlugIn(0, LimbCorrection, true));
     }
 
     double CorrectedAltitude = ApparentAltitude - RefractionCorrection - LimbCorrection;
-    m_CalcStr+=wxString::Format(_("\nCorrected Altitude\n\
+    m_CalcStr+=wxString::Format(_("\nCorrected Altitude (Hc)\n\
 CorrectedAltitude = ApparentAltitude - RefractionCorrection - LimbCorrection\n\
-CorrectedAltitude = %.4f - %.4f - %.4f\n\
-CorrectedAltitude = %.4f\n"), ApparentAltitude,
-                                RefractionCorrection, LimbCorrection, CorrectedAltitude);
+CorrectedAltitude = %.4f%c - %.4f%c - %.4f%c\n\
+CorrectedAltitude = %.4f%c = %s\n"),
+        ApparentAltitude, 0x00B0, RefractionCorrection, 0x00B0, LimbCorrection, 0x00B0,
+        CorrectedAltitude, 0x00B0, toSDMM_PlugIn(0, CorrectedAltitude, true));
 
     /* correct for parallax shot */
     double ParallaxCorrection = 0;
@@ -710,34 +707,38 @@ CorrectedAltitude = %.4f\n"), ApparentAltitude,
         HP = 0.002442/rad;
 
         m_CalcStr+=wxString::Format(_("\nSun selected, parallax correction\n\
-rad = %.4f, HP = 0.002442/rad = %.4f\n"), rad, HP);
+rad = %.4f, HP = 0.002442/rad = %.4f%c = %s\n"),
+            rad, HP, 0x00B0, toSDMM_PlugIn(0, HP, true));
     }
 
     if(!m_Body.Cmp(_T("Moon"))){
         // HP calculated earlier
         m_CalcStr+=wxString::Format(_("\nMoon selected, parallax correction\n\
-HP = %.4f\n"), HP);
+HP = %.4f%c = %s\n"), HP, 0x00B0, toSDMM_PlugIn(0, HP, true));
     }
 
     if (m_IsPlanet) {
-        HP = asin(EARTH_RADIUS/planet_dist) * 180/M_PI;
+        HP = r_to_d(asin(EARTH_RADIUS/planet_dist));
         m_CalcStr+=wxString::Format(_("\nPlanet selected, parallax correction\n\
-HP = %.4f\n"), HP);
+HP = %.4f%c = %s\n"), HP, 0x00B0, toSDMM_PlugIn(0, HP, true));
     }
 
     if(HP) {
         ParallaxCorrection = -r_to_d(asin(sin(d_to_r(HP))*cos(d_to_r(CorrectedAltitude))));
         m_CalcStr+=wxString::Format(_("\
-ParallaxCorrection = -180/Pi * asin( sin(Pi/180 * HP ) * cos(Pi/180 * CorrectedAltitude))\n\
-ParallaxCorrection = -180/Pi * asin( sin(Pi/180 * %.4f ) * cos(Pi/180 * %.4f))\n\
-ParallaxCorrection = %.4f\n"), HP, CorrectedAltitude, ParallaxCorrection);
+ParallaxCorrection = -asin(sin(HP) * cos(CorrectedAltitude))\n\
+ParallaxCorrection = -asin(sin(%.4f) * cos(%.4f))\n\
+ParallaxCorrection = %.4f%c = %s\n"),
+            HP, CorrectedAltitude, ParallaxCorrection, 0x00B0, toSDMM_PlugIn(0, ParallaxCorrection, true));
     }
 
     m_ObservedAltitude = CorrectedAltitude - ParallaxCorrection;
     m_CalcStr+=wxString::Format(_("\nObserved Altitude (Ho)\n\
 ObservedAltitude = CorrectedAltitude - ParallaxCorrection\n\
-ObservedAltitude = %.4f - %.4f\n\
-ObservedAltitude = %.4f\n"), CorrectedAltitude, ParallaxCorrection, m_ObservedAltitude);
+ObservedAltitude = %.4f%c - %.4f%c\n\
+ObservedAltitude = %.4f%c = %s\n"),
+        CorrectedAltitude, 0x00B0, ParallaxCorrection, 0x00B0,
+        m_ObservedAltitude, 0x00B0, toSDMM_PlugIn(0, m_ObservedAltitude, true));
 
    double lat, lon, ghaast;
    BodyLocation(m_CorrectedDateTime, &lat, &lon, &ghaast, &rad, 0);
@@ -758,59 +759,64 @@ void Sight::RecomputeLunar()
 
     m_CalcStr+=_("Formulas used to calculate sight\n\n");
 
-    m_CalcStr+=wxString::Format(_("Moon altitude measurement (Hs) is %.4f\n\n"), m_LunarMoonAltitude);
+    m_CalcStr+=wxString::Format(_("Moon altitude measurement (Hs) = %.4f%c = %s\n\n"),
+        m_LunarMoonAltitude, 0x00B0, toSDMM_PlugIn(0, m_LunarMoonAltitude, true));
 
     /* correct for index error */
     double IndexCorrection = m_IndexError / 60.0;
-    m_CalcStr+=wxString::Format(_("Index Error is %.4f degrees\n\n"), IndexCorrection);
+    m_CalcStr+=wxString::Format(_("Index Error = %.4f%c = %s\n\n"),
+        IndexCorrection, 0x00B0, toSDMM_PlugIn(0, IndexCorrection, true));
 
     /* correct for height of observer
        The dip of the sea horizon in minutes = 1.758*sqrt(height) */
-    double EyeHeightCorrection = 1.758*sqrt(m_EyeHeight) / 60.0;
-    m_CalcStr+=wxString::Format(_("Eye Height is %.4f meters\n\
-Height Correction Degrees = 1.758*sqrt(%.4f) / 60.0\n\
-Height Correction Degrees = %.4f\n"),
-                                m_EyeHeight, m_EyeHeight, EyeHeightCorrection);
+    double EyeHeightCorrection = 1.758 * sqrt(m_EyeHeight) / 60.0;
+    m_CalcStr+=wxString::Format(_("Eye Height = %.4f m\n\
+Height Correction = 1.758%c * sqrt(%.4f) / 60.0\n\
+Height Correction = %.4f%c = %s\n"),
+        m_EyeHeight, 0x00B0, m_EyeHeight, EyeHeightCorrection, 0x00B0, toSDMM_PlugIn(0, EyeHeightCorrection, true));
 
     /* Apparent Altitude Ha */
     double ApparentAltitudeMoon = m_LunarMoonAltitude - IndexCorrection - EyeHeightCorrection;
     m_CalcStr+=wxString::Format(_("\nApparent Moon Altitude (Ha)\n\
 ApparentAltitudeMoon = Hs - IndexCorrection - EyeHeightCorrection\n\
-ApparentAltitudeMoon = %.4f - %.4f - %.4f\n\
-ApparentAltitudeMoon = %.4f\n"), m_LunarMoonAltitude, IndexCorrection,
-                                EyeHeightCorrection, ApparentAltitudeMoon);
-    
+ApparentAltitudeMoon = %.4f%c - %.4f%c - %.4f%c\n\
+ApparentAltitudeMoon = %.4f%c = %s\n"), m_LunarMoonAltitude, 0x00B0, IndexCorrection, 0x00B0,
+        EyeHeightCorrection, 0x00B0, ApparentAltitudeMoon, 0x00B0, toSDMM_PlugIn(0, ApparentAltitudeMoon, true));
+
     /* compensate for refraction */
     double RefractionCorrectionMoon;
 
-    double x = tan(M_PI/180 * ApparentAltitudeMoon + 4.848e-2*(M_PI/180)
-                   / (tan(M_PI/180 * ApparentAltitudeMoon) + .028));
+    double x = tan(d_to_r(ApparentAltitudeMoon) + d_to_r(4.848e-2)
+                   / (tan(d_to_r(ApparentAltitudeMoon)) + .028));
     m_CalcStr+=wxString::Format(_("\nRefraction Correction\n\
-x = tan(Pi/180*ApparentAltitudeMoon + 4.848e-2*(Pi/180) / (tan(Pi/180*ApparentAltitudeMoon) + .028))\n\
-x = tan(Pi/180*%.4f + 4.848e-2*(Pi/180) / (tan(Pi/180*%.4f) + .028))\n\
+x = tan(ApparentAltitudeMoon + 4.848e-2 / (tan(ApparentAltitudeMoon) + .028))\n\
+x = tan(%.4f + 4.848e-2 / (tan(%.4f) + .028))\n\
 x = %.4f\n"), ApparentAltitudeMoon, ApparentAltitudeMoon, x);
     RefractionCorrectionMoon = .267 * m_Pressure / (x*(m_Temperature + 273.15)) / 60.0;
     m_CalcStr+=wxString::Format(_("\
-RefractionCorrectionMoon = .267 * Pressure / (x*(Temperature + 273.15)) / 60.0\n\
-RefractionCorrectionMoon = .267 * %.4f / (x*(%.4f + 273.15)) / 60.0\n\
-RefractionCorrectionMoon = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrectionMoon);
+RefractionCorrectionMoon = .267%c * Pressure / (x * (Temperature + 273.15)) / 60.0\n\
+RefractionCorrectionMoon = .267%c * %.4f / (x * (%.4f + 273.15)) / 60.0\n\
+RefractionCorrectionMoon = %.4f%c = %s\n"),
+        0x00B0, 0x00B0, m_Pressure, m_Temperature, RefractionCorrectionMoon, 0x00B0,
+        toSDMM_PlugIn(0, RefractionCorrectionMoon, true));
 
     wxDateTime time = m_CorrectedDateTime;
     time.MakeFromUTC();
     double jdu = time.GetJulianDayNumber();
     double jdd = ut_to_dt(jdu);
     double moon_dist = moon_distance(jdd);
-    double lunar_HP = asin(EARTH_RADIUS/moon_dist) * 180/M_PI;
-    double lunar_SD = asin(K_MOON*sin((lunar_HP)*(M_PI/180))) * 180/M_PI;
+    double lunar_HP = r_to_d(asin(EARTH_RADIUS/moon_dist));
+    double lunar_SD = r_to_d(asin(K_MOON*sin(d_to_r(lunar_HP))));
     // convert to topocentric SD, see Meeus (chapter 55)
     double lunar_topoSD = lunar_SD * (1 + sin(d_to_r(ApparentAltitudeMoon)) * sin(d_to_r(lunar_HP)));
     double lunar_lc = r_to_d(asin(d_to_r(lunar_topoSD)));
     m_CalcStr+=wxString::Format(_("\nMoon selected, Limb Correction\n\
-SD = %.4f\n\
+SD = %.4f%c = %s\n\
 topoSD = SD * (1 + sin(ApparentAltitudeMoon) * sin(lunarHP))\n\
 topoSD = %.4f\n\
-lc = 180/Pi * asin(Pi/180*topoSD)\n\
-lc = %.4f\n"), lunar_SD, lunar_topoSD, lunar_lc);
+lc = asin(topoSD)\n\
+lc = %.4f%c = %s\n"), lunar_SD, 0x00B0, toSDMM_PlugIn(0, lunar_SD, true), lunar_topoSD, lunar_lc,
+        0x00B0, toSDMM_PlugIn(0, lunar_lc, true));
 
     double LimbCorrectionMoon = 0;
     if(lunar_lc) {
@@ -822,55 +828,58 @@ lc = %.4f\n"), lunar_SD, lunar_topoSD, lunar_lc);
             m_CalcStr+=wxString::Format(_("Lower Limb"));
         }
 
-        m_CalcStr+=wxString::Format(_("\nLimbCorrectionMoon = %.4f\n"), LimbCorrectionMoon);
+        m_CalcStr+=wxString::Format(_("\nLimbCorrectionMoon = %.4f%c = %s\n"),
+            LimbCorrectionMoon, 0x00B0, toSDMM_PlugIn(0, LimbCorrectionMoon, true));
     }
 
-    m_CalcStr+=wxString::Format(_("\nLimbCorrectionMoon = %.4f\n"), LimbCorrectionMoon);
-
     double CorrectedAltitudeMoon = ApparentAltitudeMoon - RefractionCorrectionMoon - LimbCorrectionMoon;
-    m_CalcStr+=wxString::Format(_("\nCorrected Altitude\n\
+    m_CalcStr+=wxString::Format(_("\nCorrected Altitude (Hc)\n\
 CorrectedAltitudeMoon = ApparentAltitudeMoon - RefractionCorrectionMoon - LimbCorrectionMoon\n\
-CorrectedAltitudeMoon = %.4f - %.4f - %.4f\n\
-CorrectedAltitudeMoon = %.4f\n"), ApparentAltitudeMoon, RefractionCorrectionMoon,
-                                LimbCorrectionMoon, CorrectedAltitudeMoon);
+CorrectedAltitudeMoon = %.4f%c - %.4f%c - %.4f%c\n\
+CorrectedAltitudeMoon = %.4f%c = %s\n"),
+        ApparentAltitudeMoon, 0x00B0, RefractionCorrectionMoon, 0x00B0, LimbCorrectionMoon, 0x00B0,
+        CorrectedAltitudeMoon, 0x00B0, toSDMM_PlugIn(0, CorrectedAltitudeMoon, true));
 
     double ParallaxCorrectionMoon;
     m_CalcStr+=wxString::Format(_("\nMoon selected, parallax correction\n\
-HP = %.4f\n"), lunar_HP);
+HP = %.4f%c = %s\n"), lunar_HP, 0x00B0, toSDMM_PlugIn(0, lunar_HP, true));
 
     ParallaxCorrectionMoon = -r_to_d(asin(sin(d_to_r(lunar_HP))*cos(d_to_r(CorrectedAltitudeMoon))));
     m_CalcStr+=wxString::Format(_("\
-ParallaxCorrectionMoon = -180/Pi * asin( sin(Pi/180 * HP ) * cos(Pi/180 * CorrectedAltitude))\n\
-ParallaxCorrectionMoon = -180/Pi * asin( sin(Pi/180 * %.4f ) * cos(Pi/180 * %.4f))\n\
-ParallaxCorrectionMoon = %.4f\n"), lunar_HP, CorrectedAltitudeMoon, ParallaxCorrectionMoon);
-
+ParallaxCorrectionMoon = -asin(sin(HP) * cos(CorrectedAltitude))\n\
+ParallaxCorrectionMoon = -asin(sin(%.4f) * cos(%.4f))\n\
+ParallaxCorrectionMoon = %.4f%c = %s\n"),
+        lunar_HP, CorrectedAltitudeMoon, ParallaxCorrectionMoon, 0x00B0, toSDMM_PlugIn(0, ParallaxCorrectionMoon, true));
 
     // body
 
-    m_CalcStr+=wxString::Format(_("%s altitude measurement (Hs) is %.4f\n\n"), m_Body, m_LunarBodyAltitude);
+    m_CalcStr+=wxString::Format(_("%s altitude measurement (Hs) = %.4f%c = %s\n\n"), m_Body,
+        m_LunarBodyAltitude, 0x00B0, toSDMM_PlugIn(0, m_LunarBodyAltitude, true));
 
     /* Apparent Altitude Ha */
     double ApparentAltitude = m_LunarBodyAltitude - IndexCorrection - EyeHeightCorrection;
     m_CalcStr+=wxString::Format(_("\nApparent Altitude (Ha)\n\
 ApparentAltitude = Hs - IndexCorrection - EyeHeightCorrection\n\
-ApparentAltitude = %.4f - %.4f - %.4f\n\
-ApparentAltitude = %.4f\n"), m_LunarBodyAltitude, IndexCorrection,
-                                EyeHeightCorrection, ApparentAltitude);
+ApparentAltitude = %.4f%c - %.4f%c - %.4f%c\n\
+ApparentAltitude = %.4f%c = %s\n"),
+        m_LunarBodyAltitude, 0x00B0, IndexCorrection, 0x00B0, EyeHeightCorrection, 0x00B0,
+        ApparentAltitude, 0x00B0, toSDMM_PlugIn(0, ApparentAltitude, true));
     
     /* compensate for refraction */
     double RefractionCorrection;
 
-    x = tan(M_PI/180 * ApparentAltitude + 4.848e-2*(M_PI/180)
-            / (tan(M_PI/180 * ApparentAltitude) + .028));
+    x = tan(d_to_r(ApparentAltitude) + d_to_r(4.848e-2)
+            / (tan(d_to_r(ApparentAltitude)) + .028));
     m_CalcStr+=wxString::Format(_("\nRefraction Correction\n\
-x = tan(Pi/180*ApparentAltitude + 4.848e-2*(Pi/180) / (tan(Pi/180*ApparentAltitude) + .028))\n\
-x = tan(Pi/180*%.4f + 4.848e-2*(Pi/180) / (tan(Pi/180*%.4f) + .028))\n\
+x = tan(ApparentAltitude + 4.848e-2 / (tan(ApparentAltitude) + .028))\n\
+x = tan(%.4f + 4.848e-2 / (tan(%.4f) + .028))\n\
 x = %.4f\n"), ApparentAltitude, ApparentAltitude, x);
     RefractionCorrection = .267 * m_Pressure / (x*(m_Temperature + 273.15)) / 60.0;
     m_CalcStr+=wxString::Format(_("\
-RefractionCorrection = .267 * Pressure / (x*(Temperature + 273.15)) / 60.0\n\
-RefractionCorrection = .267 * %.4f / (x*(%.4f + 273.15)) / 60.0\n\
-RefractionCorrection = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrection);
+RefractionCorrection = .267%c * Pressure / (x * (Temperature + 273.15)) / 60.0\n\
+RefractionCorrection = .267%c * %.4f / (x * (%.4f + 273.15)) / 60.0\n\
+RefractionCorrection = %.4f%c = %s\n"),
+        0x00B0, 0x00B0, m_Pressure, m_Temperature, RefractionCorrection, 0x00B0, toSDMM_PlugIn(0, RefractionCorrection, true));
 
     double SD = 0;
     double lc = 0;
@@ -880,7 +889,7 @@ RefractionCorrection = %.4f\n"), m_Pressure, m_Temperature, RefractionCorrection
         SD = r_to_d(sin(d_to_r(lc)));
 
         m_CalcStr+=wxString::Format(_("\nSun selected, Limb Correction\n\
-ra = %.4f, lc = 0.266564/ra = %.4f\n"), rad, lc);
+ra = %.4f, lc = 0.266564/ra = %.4f%c = %s\n"), rad, lc, 0x00B0, toSDMM_PlugIn(0, lc, true));
     }
 
     double LimbCorrection = 0;
@@ -893,15 +902,17 @@ ra = %.4f, lc = 0.266564/ra = %.4f\n"), rad, lc);
             m_CalcStr+=wxString::Format(_("Lower Limb"));
         }
 
-        m_CalcStr+=wxString::Format(_("\nLimbCorrection = %.4f\n"), LimbCorrection);
+        m_CalcStr+=wxString::Format(_("\nLimbCorrection = %.4f%c = %s\n"),
+            LimbCorrection, 0x00B0, toSDMM_PlugIn(0, LimbCorrection, true));
     }
 
     double CorrectedAltitude = ApparentAltitude - RefractionCorrection - LimbCorrection;
     m_CalcStr+=wxString::Format(_("\nCorrected Altitude\n\
 CorrectedAltitude = ApparentAltitude - RefractionCorrection - LimbCorrection\n\
-CorrectedAltitude = %.4f - %.4f - %.4f\n\
-CorrectedAltitude = %.4f\n"), ApparentAltitude, RefractionCorrection,
-                                LimbCorrection, CorrectedAltitude);
+CorrectedAltitude = %.4f%c - %.4f%c - %.4f%c\n\
+CorrectedAltitude = %.4f%c = %s\n"),
+        ApparentAltitude, 0x00B0, RefractionCorrection, 0x00B0, LimbCorrection, 0x00B0,
+        CorrectedAltitude, 0x00B0, toSDMM_PlugIn(0, CorrectedAltitude, true));
 
     /* correct for parallax */
     double ParallaxCorrection = 0;
@@ -910,39 +921,43 @@ CorrectedAltitude = %.4f\n"), ApparentAltitude, RefractionCorrection,
         HP = 0.002442/rad;
 
         m_CalcStr+=wxString::Format(_("\nSun selected, parallax correction\n\
-rad = %.4f, HP = 0.002442/rad = %.4f\n"), rad, HP);
+rad = %.4f, HP = 0.002442/rad = %.4f%c = %s\n"),
+            rad, HP, 0x00B0, toSDMM_PlugIn(0, HP, true));
     }
 
     if (m_IsPlanet) {
-        HP = asin(EARTH_RADIUS/planet_dist) * 180/M_PI;
+        HP = r_to_d(asin(EARTH_RADIUS/planet_dist));
         m_CalcStr+=wxString::Format(_("\nStar selected, parallax correction\n\
-HP = %.4f\n"), HP);
+HP = %.4f%c\n"), HP, 0x00B0, toSDMM_PlugIn(0, HP, true));
     }
 
     if(HP) {
         ParallaxCorrection = -r_to_d(asin(sin(d_to_r(HP))*cos(d_to_r(CorrectedAltitude))));
         m_CalcStr+=wxString::Format(_("\
-ParallaxCorrection = -180/Pi * asin( sin(Pi/180 * HP ) * cos(Pi/180 * CorrectedAltitude))\n\
-ParallaxCorrection = -180/Pi * asin( sin(Pi/180 * %.4f ) * cos(Pi/180 * %.4f))\n\
-ParallaxCorrection = %.4f\n"), HP, CorrectedAltitude, ParallaxCorrection);
+ParallaxCorrection = -asin(sin(HP) * cos(CorrectedAltitude))\n\
+ParallaxCorrection = -asin(sin(%.4f) * cos(%.4f))\n\
+ParallaxCorrection = %.4f%c = %s\n"),
+            HP, CorrectedAltitude, ParallaxCorrection, 0x00B0, toSDMM_PlugIn(0, ParallaxCorrection, true));
     }
-
 
     double CorrectionsMoon = RefractionCorrectionMoon + LimbCorrectionMoon + ParallaxCorrectionMoon;
     double CorrectionsBody = RefractionCorrection + LimbCorrection + ParallaxCorrection;
     double Corrections = fabs(CorrectionsMoon - CorrectionsBody);
 
     m_CalcStr+=wxString::Format(_("\
-CorrectionsMoon = %.4f\n\
-CorrectionsBody = %.4f\n\
-Corrections = abs(CorrectionsMoon - CorrectionsBody) = %.4f\n"), CorrectionsMoon, CorrectionsBody, Corrections);
+CorrectionsMoon = %.4f%c\n\
+CorrectionsBody = %.4f%c\n\
+Corrections = abs(CorrectionsMoon - CorrectionsBody) = %.4f%c = %s\n"),
+        CorrectionsMoon, 0x00B0, CorrectionsBody, 0x00B0,
+        Corrections, 0x00B0, toSDMM_PlugIn(0, Corrections, true));
 
     double CorrectedMeasurement = m_Measurement - Corrections - IndexCorrection;
     m_CalcStr+=wxString::Format(_("\
 CorrectedMeasurement = Measurement - Corrections - IndexCorrection\n\
-CorrectedMeasurement = %.4f - %.4f - %.4f\n\
-CorrectedMeasurement = %.4f\n"), m_Measurement, Corrections, IndexCorrection,
-                                CorrectedMeasurement);
+CorrectedMeasurement = %.4f%c - %.4f%c - %.4f%c\n\
+CorrectedMeasurement = %.4f%c = %s\n"),
+        m_Measurement, 0x00B0, Corrections, 0x00B0, IndexCorrection, 0x00B0,
+        CorrectedMeasurement, 0x00B0, toSDMM_PlugIn(0, CorrectedMeasurement, true));
 
    double lat, lon, ghaast;
    BodyLocation(m_CorrectedDateTime, &lat, &lon, &ghaast, &rad, 0);
@@ -960,12 +975,12 @@ CorrectedMeasurement = %.4f\n"), m_Measurement, Corrections, IndexCorrection,
    // Compute angle between moon and body
    double x1 = cos(lunar_lat)*cos(lunar_lon),   y1 = cos(lunar_lat)*sin(lunar_lon),   z1 = sin(lunar_lat);
    double x2 = cos(lat)*cos(lon),               y2 = cos(lat)*sin(lon),               z2 = sin(lat);
-   double ang = acos(x1*x2 + y1*y2 + z1*z2) * 180 / M_PI;
+   double ang = r_to_d(acos(x1*x2 + y1*y2 + z1*z2));
 
 //   double CorrectedMeasurement = m_Measurement - IndexCorrection - LimbCorrection;
-   m_CalcStr+=wxString::Format(_("\nCalculated angle between Moon and ") + m_Body + _T(" %.4f"), ang);
+   m_CalcStr+=wxString::Format(_("\nCalculated angle between Moon and ") + m_Body + _T(" %.4f%c"), ang, 0x00B0);
    double error = CorrectedMeasurement - ang;
-   m_CalcStr+=wxString::Format(_("\nError from measurement: %.4f"), error);
+   m_CalcStr+=wxString::Format(_("\nError from measurement: %.4f%c"), error, 0x00B0);
 
    m_TimeCorrection = error * 6720;
 

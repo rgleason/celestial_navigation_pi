@@ -156,16 +156,6 @@ int matrix_invert3(double a[3][3])
    return 1;
 }
 
-double deg2rad(double degrees)
-{
-  return M_PI * degrees / 180.0;
-}
-
-double rad2deg(double radians)
-{
-  return 180.0 * radians / M_PI;
-}
-
 void FixDialog::Update(int clock_offset, bool warnings)
 {
     std::list<std::vector<double> > J;
@@ -174,9 +164,9 @@ void FixDialog::Update(int clock_offset, bool warnings)
     double X[3]; /* result */
 
     double initiallat = m_sInitialLatitude->GetValue(), initiallon = m_sInitialLongitude->GetValue();
-    X[0] = cos(deg2rad(initiallat))*cos(deg2rad(initiallon));
-    X[1] = cos(deg2rad(initiallat))*sin(deg2rad(initiallon));
-    X[2] = sin(deg2rad(initiallat));
+    X[0] = cos(d_to_r(initiallat))*cos(d_to_r(initiallon));
+    X[1] = cos(d_to_r(initiallat))*sin(d_to_r(initiallon));
+    X[2] = sin(d_to_r(initiallat));
 
     m_clock_offset = clock_offset;
     int iterations = 0;
@@ -206,12 +196,12 @@ determine fix visually instead.\n"), wxString(_("Fix Position"), wxID_OK | wxICO
            describes intersects the unit sphere along the positions
            the sight is valid) */
         std::vector<double> v;
-        double x = cos(deg2rad(lat))*cos(deg2rad(lon));
-        double y = cos(deg2rad(lat))*sin(deg2rad(lon));
-        double z = sin(deg2rad(lat));
+        double x = cos(d_to_r(lat))*cos(d_to_r(lon));
+        double y = cos(d_to_r(lat))*sin(d_to_r(lon));
+        double z = sin(d_to_r(lat));
 
-        double sm = sin(deg2rad(s->m_ObservedAltitude));
-        double cm = cos(deg2rad(s->m_ObservedAltitude));
+        double sm = sin(d_to_r(s->m_ObservedAltitude));
+        double cm = cos(d_to_r(s->m_ObservedAltitude));
 
         double d = NAN;
 
@@ -315,8 +305,8 @@ determine fix visually instead.\n"), wxString(_("Fix Position"), wxID_OK | wxICO
     /* normalize */
     X[0] /= d, X[1] /= d, X[2] /= d;
     
-    m_fixlat = rad2deg(asin(X[2]));
-    m_fixlon = rad2deg(atan2(X[1], X[0]));
+    m_fixlat = r_to_d(asin(X[2]));
+    m_fixlon = r_to_d(atan2(X[1], X[0]));
     
     if(err <= .1) {   
         m_fixerror = 0;

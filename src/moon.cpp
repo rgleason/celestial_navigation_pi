@@ -10,6 +10,9 @@
 #include <iomanip>
 #include "ocpn_plugin.h"
 #include "Sight.h"
+#include "astrolabe/astrolabe.hpp"
+
+using namespace astrolabe::util;
 
 double modulo_360(double big_degrees) {
     //
@@ -145,8 +148,8 @@ double moon_distance(double JD) {
         if (M[i] == 2 || M[i] == -2) {
             e_mult = e*e;
         }
-        r = R_AMP[i] * cos( ( (D[i] * md) + (e_mult * M[i] * mm) +
-                     (M_PRIME[i] * mm_prime) + (F[i] * mf)) * M_PI/180 ) ;
+        r = R_AMP[i] * cos( d_to_r( (D[i] * md) + (e_mult * M[i] * mm) +
+                     (M_PRIME[i] * mm_prime) + (F[i] * mf)) ) ;
         sigma_r = sigma_r + r;
         //std::cout << "Table 45.A  " <<i <<", " <<D[i] <<", " <<M[i] <<", " <<M_PRIME[i] <<", " <<F[i] <<", " <<e_mult <<", " <<R_AMP[i] <<", r:" <<r <<", Accum r: " <<sigma_r << std::endl;
 
@@ -203,9 +206,9 @@ int main() {
     //
     moon_semidiameter = 5974556.667/moon_dist;
                // in arc-minutes (same units as Nautical Almanac.
-    moon_parallax = 60 * asin(EARTH_RADIUS/moon_dist) * 180/M_PI;
+    moon_parallax = 60 * r_to_d(asin(EARTH_RADIUS/moon_dist));
                // in arc-minutes (same units as Nautical Almanac.
-    alt_moon_semidiameter=60 * asin(K*sin((moon_parallax/60)*(M_PI/180))) * 180/M_PI;    // in arc minutes
+    alt_moon_semidiameter=60 * r_to_d(asin(K*sin(d_to_r(moon_parallax/60))));    // in arc minutes
     std::cout << "Moon Distance (km):    " << moon_dist << std::endl;
     std::cout << "Moon Diameter (km):    " << EARTH_RADIUS << std::endl;
     std::cout << "MoonParallax (min)     " << moon_parallax << std::endl;
