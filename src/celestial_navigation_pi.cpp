@@ -371,3 +371,4 @@ double celestial_navigation_pi_GetWMM(double lat, double lon, double altitude, w
 
     return gQueryVar;
 }
+
