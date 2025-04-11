@@ -34,13 +34,13 @@
 
 class Sight;
 
-class ClockCorrectionDialog : public ClockCorrectionDialogBase
-{
+class ClockCorrectionDialog : public ClockCorrectionDialogBase {
 public:
-    ClockCorrectionDialog(wxWindow *parent) : ClockCorrectionDialogBase(parent) {}
+  ClockCorrectionDialog(wxWindow* parent) : ClockCorrectionDialogBase(parent) {}
+
 private:
-    void OnUpdate( wxSpinEvent& event );
+  void OnUpdate(wxSpinEvent& event);
 };
 
 #endif
-    // _FIXDIALOG_H_
+// _FIXDIALOG_H_

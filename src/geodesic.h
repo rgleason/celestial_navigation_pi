@@ -1,6 +1,7 @@
 /*
       Geodesic Forward and Reverse calculation functions
-      Abstracted and adapted from PROJ-4.5.0 by David S.Register (bdbcat@yahoo.com)
+      Abstracted and adapted from PROJ-4.5.0 by David S.Register
+ (bdbcat@yahoo.com)
 
       Original source code contains the following license:
 
@@ -25,6 +26,7 @@
  DEALINGS IN THE SOFTWARE.
 */
 
-extern "C" void ll_gc_ll(double lat, double lon, double crs, double dist, double *dlat, double *dlon);
-extern "C" void ll_gc_ll_reverse(double lat1, double lon1, double lat2, double lon2,
-                                double *bearing, double *dist);
+extern "C" void ll_gc_ll(double lat, double lon, double crs, double dist,
+                         double* dlat, double* dlon);
+extern "C" void ll_gc_ll_reverse(double lat1, double lon1, double lat2,
+                                 double lon2, double* bearing, double* dist);

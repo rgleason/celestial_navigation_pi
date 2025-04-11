@@ -41,71 +41,69 @@
 //    The PlugIn Class Definition
 //----------------------------------------------------------------------------------------------------------
 
-#define CELESTIAL_NAVIGATION_TOOL_POSITION    -1  // Request default positioning of toolbar tool
+#define CELESTIAL_NAVIGATION_TOOL_POSITION \
+  -1  // Request default positioning of toolbar tool
 
-class celestial_navigation_pi : public wxEvtHandler, opencpn_plugin_118
-{
+class celestial_navigation_pi : public wxEvtHandler, opencpn_plugin_118 {
 public:
-      celestial_navigation_pi(void *ppimgr);
-      ~celestial_navigation_pi(void);
+  celestial_navigation_pi(void* ppimgr);
+  ~celestial_navigation_pi(void);
 
-//    The required PlugIn Methods
-      int Init(void);
-      bool DeInit(void);
+  //    The required PlugIn Methods
+  int Init(void);
+  bool DeInit(void);
 
-      int GetAPIVersionMajor();
-      int GetAPIVersionMinor();
-      int GetPlugInVersionMajor();
-      int GetPlugInVersionMinor();
-      int GetPlugInVersionPatch();
-      int GetPlugInVersionPost();
-	  
-      wxBitmap *GetPlugInBitmap();
-      wxString GetCommonName();
-      wxString GetShortDescription();
-      wxString GetLongDescription();
-	  //Shipdriver Panel Icon definition
-	  wxBitmap m_panelBitmap; 
+  int GetAPIVersionMajor();
+  int GetAPIVersionMinor();
+  int GetPlugInVersionMajor();
+  int GetPlugInVersionMinor();
+  int GetPlugInVersionPatch();
+  int GetPlugInVersionPost();
 
-      void OnToolbarToolCallback(int id);
+  wxBitmap* GetPlugInBitmap();
+  wxString GetCommonName();
+  wxString GetShortDescription();
+  wxString GetLongDescription();
+  // Shipdriver Panel Icon definition
+  wxBitmap m_panelBitmap;
 
-      int GetToolbarToolCount(void);
-      void SetColorScheme(PI_ColorScheme cs);
+  void OnToolbarToolCallback(int id);
 
-      bool RenderOverlay( wxDC &dc, PlugIn_ViewPort *vp );
-      bool RenderGLOverlay( wxGLContext *pcontext, PlugIn_ViewPort *vp );
-      bool RenderOverlayAll(wxDC *dc, PlugIn_ViewPort *vp);
+  int GetToolbarToolCount(void);
+  void SetColorScheme(PI_ColorScheme cs);
 
-      static wxString StandardPath();
-      void SetPositionFixEx(PlugIn_Position_Fix_Ex &pfix);
-      void SetCursorLatLon(double lat, double lon);
-      void SetPluginMessage(wxString &message_id, wxString &message_body);
-	  
+  bool RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp);
+  bool RenderGLOverlay(wxGLContext* pcontext, PlugIn_ViewPort* vp);
+  bool RenderOverlayAll(wxDC* dc, PlugIn_ViewPort* vp);
+
+  static wxString StandardPath();
+  void SetPositionFixEx(PlugIn_Position_Fix_Ex& pfix);
+  void SetCursorLatLon(double lat, double lon);
+  void SetPluginMessage(wxString& message_id, wxString& message_body);
 
 private:
-      wxWindow         *m_parent_window;
-      int               m_leftclick_tool_id;
+  wxWindow* m_parent_window;
+  int m_leftclick_tool_id;
 
-      CelestialNavigationDialog       *m_pCelestialNavigationDialog;
+  CelestialNavigationDialog* m_pCelestialNavigationDialog;
 };
 
-extern void celestial_navigation_pi_BoatPos(double &lat, double &lon);
-extern double celestial_navigation_pi_GetWMM(double lat, double lon, double altitude, wxDateTime date);
+extern void celestial_navigation_pi_BoatPos(double& lat, double& lon);
+extern double celestial_navigation_pi_GetWMM(double lat, double lon,
+                                             double altitude, wxDateTime date);
 
-extern "C" int geomag_load(const char *mdfile);
+extern "C" int geomag_load(const char* mdfile);
 extern "C" int geomag_calc(double latitude, double longitude, double alt,
                            int day, int month, double year, double results[14]);
 
-static inline double d_to_r(double d)
-{
-    static const double _DtoR = M_PI / 180.0;
-    return d * _DtoR;
+static inline double d_to_r(double d) {
+  static const double _DtoR = M_PI / 180.0;
+  return d * _DtoR;
 }
 
-static inline double r_to_d(double r)
-{
-    static const double _RtoD = 180.0 / M_PI;
-    return r * _RtoD;
+static inline double r_to_d(double r) {
+  static const double _RtoD = 180.0 / M_PI;
+  return r * _RtoD;
 }
 
 #endif

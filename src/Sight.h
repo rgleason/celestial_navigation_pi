@@ -25,7 +25,6 @@
  *
  */
 
-
 #include <list>
 
 #ifdef __MSVC__
@@ -36,17 +35,17 @@
 #include <cmath>
 
 #ifndef NAN
-#define NAN std::numeric_limits<double>::quiet_NaN ()
+#define NAN std::numeric_limits<double>::quiet_NaN()
 #endif
 
 #ifndef INFINITY
-#define INFINITY std::numeric_limits<double>::infinity ()
+#define INFINITY std::numeric_limits<double>::infinity()
 #endif
 
 #define isnan _isnan
 #define isinf(x) (!_finite(x) && !_isnan(x))
 
-#define trunc(d) ( ((d)>0) ? floor(d) : ceil(d) )
+#define trunc(d) (((d) > 0) ? floor(d) : ceil(d))
 #endif
 
 WX_DECLARE_LIST(wxRealPoint, wxRealPointList);
@@ -56,107 +55,113 @@ WX_DECLARE_LIST(wxRealPoint, wxRealPointList);
 
 const wxString SightType[] = {_("Altitude"), _("Azimuth"), _("Lunar")};
 
-class Sight : public wxObject
-{
+class Sight : public wxObject {
 public:
-    enum Type {ALTITUDE, AZIMUTH, LUNAR};
-    enum BodyLimb {LOWER, CENTER, UPPER};
+  enum Type { ALTITUDE, AZIMUTH, LUNAR };
+  enum BodyLimb { LOWER, CENTER, UPPER };
 
-    Sight() { s_lastsightcolor++; }
-    Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
-          double timecertainty, double measurement, double measurementcertainty);
+  Sight() { s_lastsightcolor++; }
+  Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
+        double timecertainty, double measurement, double measurementcertainty);
 
-    ~Sight();
+  ~Sight();
 
-    void SetVisible(bool visible = true); ///< set visibility and make points selectable accordingly
-    bool IsVisible() { return m_bVisible; }
+  void SetVisible(bool visible = true);  ///< set visibility and make points
+                                         ///< selectable accordingly
+  bool IsVisible() { return m_bVisible; }
 
-    void Recompute(int clock_offset);
-    void RebuildPolygons();
+  void Recompute(int clock_offset);
+  void RebuildPolygons();
 
-    wxString Alminac(wxDateTime time, double lat, double lon, double ghaast, double rad, double SD, double HP);
-    void RecomputeAltitude();
-    void RecomputeAzimuth();
-    void RecomputeLunar();
+  wxString Alminac(wxDateTime time, double lat, double lon, double ghaast,
+                   double rad, double SD, double HP);
+  void RecomputeAltitude();
+  void RecomputeAzimuth();
+  void RecomputeLunar();
 
-    void RebuildPolygonsAltitude();
-    void RebuildPolygonsAzimuth();
+  void RebuildPolygonsAltitude();
+  void RebuildPolygonsAzimuth();
 
-    bool       m_bVisible;  // should this sight be drawn?
+  bool m_bVisible;  // should this sight be drawn?
 
-    Type       m_Type;
-    wxString   m_Body;
-    bool       m_IsStar;    // for stars, except the Sun
-    bool       m_IsPlanet;
-    BodyLimb   m_BodyLimb;
+  Type m_Type;
+  wxString m_Body;
+  bool m_IsStar;  // for stars, except the Sun
+  bool m_IsPlanet;
+  BodyLimb m_BodyLimb;
 
-    wxDateTime  m_DateTime;      // Time for the sight
-    double      m_TimeCertainty;
+  wxDateTime m_DateTime;  // Time for the sight
+  double m_TimeCertainty;
 
-    double      m_Measurement; // Measurement angle in degrees (NaN is valid for all)
-    double      m_MeasurementCertainty;
-    double      m_LunarMoonAltitude, m_LunarBodyAltitude;
+  double m_Measurement;  // Measurement angle in degrees (NaN is valid for all)
+  double m_MeasurementCertainty;
+  double m_LunarMoonAltitude, m_LunarBodyAltitude;
 
-    double      m_EyeHeight; // Height above sea in meters
-    double      m_Temperature; // Temperature in degrees celcius
-    double      m_Pressure; // Pressure in millibars
-    double      m_IndexError; // Error of measurement in degrees
+  double m_EyeHeight;    // Height above sea in meters
+  double m_Temperature;  // Temperature in degrees celcius
+  double m_Pressure;     // Pressure in millibars
+  double m_IndexError;   // Error of measurement in degrees
 
-    double      m_ShiftNm;               // direction to move points
-    double      m_ShiftBearing;          // direction to move points
-    bool        m_bMagneticShiftBearing; // use magnetic or true for shift
-      
-    wxString   m_ColourName;
-    wxColour   m_Colour;     // Color of the sight
+  double m_ShiftNm;              // direction to move points
+  double m_ShiftBearing;         // direction to move points
+  bool m_bMagneticShiftBearing;  // use magnetic or true for shift
 
-    virtual void Render(wxDC *dc, PlugIn_ViewPort &pVP, double pix_per_mm);
+  wxString m_ColourName;
+  wxColour m_Colour;  // Color of the sight
 
-    void BodyLocation(wxDateTime time, double *lat, double *lon, double *ghaash, double *rad, double *dist);
-    void AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
-                         double *hc, double *zn);
-    std::list<wxRealPoint> GetPoints();
+  virtual void Render(wxDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm);
 
-    wxString m_CalcStr;
+  void BodyLocation(wxDateTime time, double* lat, double* lon, double* ghaash,
+                    double* rad, double* dist);
+  void AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
+                       double* hc, double* zn);
+  std::list<wxRealPoint> GetPoints();
 
-    /* for altitude */
-    double      m_ObservedAltitude; /* after all corrections are applied */
+  wxString m_CalcStr;
 
-    /* for azimuth */
-    bool       m_bMagneticNorth; // if azimuth angle is in magnetic coordinates
+  /* for altitude */
+  double m_ObservedAltitude; /* after all corrections are applied */
 
-    /* for lunar */
-    double m_TimeCorrection;
+  /* for azimuth */
+  bool m_bMagneticNorth;  // if azimuth angle is in magnetic coordinates
+
+  /* for lunar */
+  double m_TimeCorrection;
 
 protected:
-    double CalcAngle(wxRealPoint p1, wxRealPoint p2);
-    double ComputeStepSize(double certainty, double stepsize, double min, double max);
+  double CalcAngle(wxRealPoint p1, wxRealPoint p2);
+  double ComputeStepSize(double certainty, double stepsize, double min,
+                         double max);
 
-    wxRealPointList *MergePoints(wxRealPointList *p1, wxRealPointList *p2);
-    wxRealPointList *ReduceToConvexPolygon(wxRealPointList *points);
+  wxRealPointList* MergePoints(wxRealPointList* p1, wxRealPointList* p2);
+  wxRealPointList* ReduceToConvexPolygon(wxRealPointList* points);
 
-    std::list<wxRealPointList*> polygons;
-    wxRealPointList lines;
+  std::list<wxRealPointList*> polygons;
+  wxRealPointList lines;
 
 private:
-    wxRealPoint DistancePoint( double altitude, double trace, double lat, double lon);
-    void BuildAltitudeLineOfPosition(double altitudemin, double altitudemax, double altitudestep,
-                                     double tracestep, double timemin, double timemax, double timestep);
-    bool BearingPoint(double altitude, double trace,
-                      double &rlat, double &rlon, double &lasttrace, double &llat, double &llon,
-                      double lat, double lon);
-    void BuildBearingLineOfPosition(double altitudestep,
-                                    double azimuthmin, double azimuthmax, double azimuthstep,
-                                    double timemin, double timemax, double timestep);
+  wxRealPoint DistancePoint(double altitude, double trace, double lat,
+                            double lon);
+  void BuildAltitudeLineOfPosition(double altitudemin, double altitudemax,
+                                   double altitudestep, double tracestep,
+                                   double timemin, double timemax,
+                                   double timestep);
+  bool BearingPoint(double altitude, double trace, double& rlat, double& rlon,
+                    double& lasttrace, double& llat, double& llon, double lat,
+                    double lon);
+  void BuildBearingLineOfPosition(double altitudestep, double azimuthmin,
+                                  double azimuthmax, double azimuthstep,
+                                  double timemin, double timemax,
+                                  double timestep);
 
-    void DrawPolygon(PlugIn_ViewPort &VP, wxRealPointList &area, bool poly);
+  void DrawPolygon(PlugIn_ViewPort& VP, wxRealPointList& area, bool poly);
 
-    wxDC *m_dc;
+  wxDC* m_dc;
 
-    wxDateTime m_CorrectedDateTime;
+  wxDateTime m_CorrectedDateTime;
 
-    static int s_lastsightcolor;
+  static int s_lastsightcolor;
 };
 
 double resolve_heading(double heading);
 double resolve_heading_positive(double heading);
-

@@ -32,16 +32,15 @@
 #include "ocpn_plugin.h"
 #include "Sight.h"
 
-void ClockCorrectionDialog::OnUpdate( wxSpinEvent& event )
-{
-    CelestialNavigationDialog *parent((CelestialNavigationDialog*)GetParent());
-    wxListCtrl *lSights = parent->m_lSights;
-    for(int i = 0; i<lSights->GetItemCount(); i++) {
-        Sight *s = (Sight*)wxUIntToPtr(lSights->GetItemData(i));
-        s->Recompute(m_sClockCorrection->GetValue());
-        s->RebuildPolygons();
-    }
+void ClockCorrectionDialog::OnUpdate(wxSpinEvent& event) {
+  CelestialNavigationDialog* parent((CelestialNavigationDialog*)GetParent());
+  wxListCtrl* lSights = parent->m_lSights;
+  for (int i = 0; i < lSights->GetItemCount(); i++) {
+    Sight* s = (Sight*)wxUIntToPtr(lSights->GetItemData(i));
+    s->Recompute(m_sClockCorrection->GetValue());
+    s->RebuildPolygons();
+  }
 
-    parent->UpdateSights();
-    RequestRefresh( parent->GetParent() );
+  parent->UpdateSights();
+  RequestRefresh(parent->GetParent());
 }

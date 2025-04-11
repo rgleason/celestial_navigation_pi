@@ -35,52 +35,51 @@
 #include "FixDialog.h"
 #include "ClockCorrectionDialog.h"
 
-class CelestialNavigationDialog : public CelestialNavigationDialogBase
-{
+class CelestialNavigationDialog : public CelestialNavigationDialogBase {
 public:
-    CelestialNavigationDialog(wxWindow *parent);
-    ~CelestialNavigationDialog();
-    void UpdateSights();
+  CelestialNavigationDialog(wxWindow* parent);
+  ~CelestialNavigationDialog();
+  void UpdateSights();
 
-    FixDialog m_FixDialog;
-    double m_pix_per_mm;
+  FixDialog m_FixDialog;
+  double m_pix_per_mm;
 
 private:
+  bool OpenXML(wxString filename, bool reportfailure);
+  void SaveXML(wxString filename);
 
-    bool OpenXML(wxString filename, bool reportfailure);
-    void SaveXML(wxString filename);
+  void UpdateButtons();  // Correct button state
+  void UpdateFix(bool warnings = true);
 
-    void UpdateButtons();           // Correct button state
-    void UpdateFix(bool warnings=true);
+  // event handlers
+  void OnNew(wxCommandEvent& event);
+  void OnDuplicate(wxCommandEvent& event);
+  void OnEdit();
+  void OnEditMouse(wxMouseEvent& event) { OnEdit(); }
+  void OnEdit(wxCommandEvent& event) { OnEdit(); }
+  void OnDelete(wxCommandEvent& event);
+  void OnDeleteAll(wxCommandEvent& event);
+  void OnFix(wxCommandEvent& event);
+  void OnDRShift(wxCommandEvent& event);
+  void OnClockOffset(wxCommandEvent& event);
+  void OnInformation(wxCommandEvent& event);
+  void OnHide(wxCommandEvent& event);
 
-    // event handlers
-    void OnNew(wxCommandEvent &event);
-    void OnDuplicate(wxCommandEvent &event);
-    void OnEdit( );
-    void OnEditMouse( wxMouseEvent& event ) { OnEdit(); }
-    void OnEdit(wxCommandEvent &event) { OnEdit(); }
-    void OnDelete(wxCommandEvent &event);
-    void OnDeleteAll(wxCommandEvent &event);
-    void OnFix( wxCommandEvent& event );
-    void OnDRShift( wxCommandEvent& event );
-    void OnClockOffset( wxCommandEvent& event );
-    void OnInformation( wxCommandEvent& event );
-    void OnHide( wxCommandEvent& event );
+  void OnClockCorrection(wxSpinEvent& event);
+  void OnSightListLeftDown(wxMouseEvent& event);
+  void OnBtnLeftDown(
+      wxMouseEvent& event);  // record control key state for some action buttons
+  void OnSightSelected(wxListEvent& event);
 
-    void OnClockCorrection( wxSpinEvent& event );
-    void OnSightListLeftDown(wxMouseEvent &event);
-    void OnBtnLeftDown(wxMouseEvent &event); // record control key state for some action buttons
-    void OnSightSelected(wxListEvent &event);
+  void InsertSight(Sight* s, bool warnings = true);
+  void UpdateSight(int idx, bool warnings = true);
 
-    void InsertSight(Sight *s, bool warnings=true);
-    void UpdateSight(int idx, bool warnings=true);
+  wxString m_sights_path;
+  int clock_correction;
 
-    wxString m_sights_path;
-    int clock_correction;
-
-    ClockCorrectionDialog m_ClockCorrectionDialog;
-    wxPoint m_startPos;
-    wxPoint m_startMouse;
+  ClockCorrectionDialog m_ClockCorrectionDialog;
+  wxPoint m_startPos;
+  wxPoint m_startMouse;
 };
 
-#endif // _CelestialNavigationDialog_h_
+#endif  // _CelestialNavigationDialog_h_

@@ -33,43 +33,41 @@
 
 #include "CelestialNavigationUI.h"
 
-
 class Sight;
 
-class SightDialog: public SightDialogBase
-{
-
+class SightDialog : public SightDialogBase {
 public:
-    enum {ALTITUDE, AZIMUTH, LUNAR};
+  enum { ALTITUDE, AZIMUTH, LUNAR };
 
-    SightDialog(wxWindow* parent, Sight &sight, int clock_offset);
-    ~SightDialog( );
+  SightDialog(wxWindow* parent, Sight& sight, int clock_offset);
+  ~SightDialog();
 
-//    void SetColorScheme(ColorScheme cs);
+  //    void SetColorScheme(ColorScheme cs);
 
-    void OnSetDefaults( wxCommandEvent& event );
-    void MeasurementEntered( wxCommandEvent& event ) { EndModal(wxID_OK); }
-    void Recompute( wxCommandEvent& event ) { Recompute(); }
-    void RecomputeCalendar( wxCalendarEvent& event ) { Recompute(); }
-    void RecomputeSpin( wxSpinEvent& event ) { Recompute(); }
-//    void RecomputeScroll( wxScrollEvent& event ) { Recompute(); }
-    void RecomputeColor( wxColourPickerEvent& event ) { Recompute(); }
-    void NewBody();
-    void NewBody( wxCommandEvent& event ) { NewBody(); Recompute(); }
-    void OnFindBody( wxCommandEvent& event );
+  void OnSetDefaults(wxCommandEvent& event);
+  void MeasurementEntered(wxCommandEvent& event) { EndModal(wxID_OK); }
+  void Recompute(wxCommandEvent& event) { Recompute(); }
+  void RecomputeCalendar(wxCalendarEvent& event) { Recompute(); }
+  void RecomputeSpin(wxSpinEvent& event) { Recompute(); }
+  //    void RecomputeScroll( wxScrollEvent& event ) { Recompute(); }
+  void RecomputeColor(wxColourPickerEvent& event) { Recompute(); }
+  void NewBody();
+  void NewBody(wxCommandEvent& event) {
+    NewBody();
+    Recompute();
+  }
+  void OnFindBody(wxCommandEvent& event);
 
-    wxDateTime DateTime();
-    void Recompute();
+  wxDateTime DateTime();
+  void Recompute();
 
 private:
-    double BodyAltitude(wxString body);
+  double BodyAltitude(wxString body);
 
-    Sight &m_Sight;
-    int m_clock_offset;
-    bool m_breadytorecompute;
+  Sight& m_Sight;
+  int m_clock_offset;
+  bool m_breadytorecompute;
 };
 
-
-
 #endif
-    // _SIGHTDIALOG_H_
+// _SIGHTDIALOG_H_

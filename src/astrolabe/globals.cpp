@@ -29,7 +29,7 @@ which will assign them based on values in a parameter text file.
 using std::string;
 
 /*
-Abbreviation for standard timezone (e.g., "CST" for North American 
+Abbreviation for standard timezone (e.g., "CST" for North American
 Central Standard Time)
 */
 string astrolabe::globals::standard_timezone_name = "UT";
@@ -38,20 +38,21 @@ string astrolabe::globals::standard_timezone_name = "UT";
 Time in fractional days to be subtracted from UT to calculate the standard
 time zone offset. Locations east of Greenwich should use negative values.
 */
-double astrolabe::globals::standard_timezone_offset = 0.0;   
+double astrolabe::globals::standard_timezone_offset = 0.0;
 
 /*
-Abbreviation for daylight savings timezone (e.g., "CDT" for North American 
+Abbreviation for daylight savings timezone (e.g., "CDT" for North American
 Central Daylight Time)
 
-This is optional. If set to None, no daylight savings conversions 
+This is optional. If set to None, no daylight savings conversions
 will be performed.
 */
-string astrolabe::globals::daylight_timezone_name;         
+string astrolabe::globals::daylight_timezone_name;
 
 /*
-Time in fractional days to be subtracted from UT to calculate the daylight savings
-time zone offset. Locations east of Greenwich should use negative values.
+Time in fractional days to be subtracted from UT to calculate the daylight
+savings time zone offset. Locations east of Greenwich should use negative
+values.
 
 This value is not used unless "daylight_timezone_name" has an value other
 than None.
@@ -59,13 +60,13 @@ than None.
 double astrolabe::globals::daylight_timezone_offset = 0.0;
 
 /*
-Observer's longitude in radians, measured positive west of Greenwich, 
+Observer's longitude in radians, measured positive west of Greenwich,
 negative to the east. Should be between -pi...pi.
 */
 double astrolabe::globals::longitude = 0.0;
 
 /*
-Observer's latitude in radians, measured positive north of the equator, 
+Observer's latitude in radians, measured positive north of the equator,
 negative to the south. Should be between -pi/2...pi/2.
 */
 double astrolabe::globals::latitude = 0.0;
@@ -85,8 +86,7 @@ The full path name of the VSOP87D binary data file, eg:
    /home/wmcclain/astrolabe/data/vsop87d.dat
 
 This value is not required unless the vsop87d module is used. If the value
-is not defined or the file is not readable, the VSOP87d() class init method 
+is not defined or the file is not readable, the VSOP87d() class init method
 will use vsop87d_text_path instead.
 */
 string astrolabe::globals::vsop87d_binary_path;
-
