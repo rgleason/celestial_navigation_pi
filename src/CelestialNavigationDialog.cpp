@@ -544,6 +544,7 @@ void CelestialNavigationDialog::OnDeleteAll(wxCommandEvent &event)
 void CelestialNavigationDialog::OnFix( wxCommandEvent& event )
 {
     m_FixDialog.Show();
+    RequestRefresh( GetParent() );
 }
 
 void CelestialNavigationDialog::OnDRShift( wxCommandEvent& event )

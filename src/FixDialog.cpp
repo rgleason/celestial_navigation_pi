@@ -356,3 +356,9 @@ void FixDialog::OnGo( wxCommandEvent& event )
 
     JumpToPosition(m_fixlat, m_fixlon, scale);
 }
+
+void FixDialog::OnClose( wxCloseEvent& event )
+{
+    event.Skip();
+    RequestRefresh( GetParent()->GetParent() );
+}

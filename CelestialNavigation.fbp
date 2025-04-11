@@ -6385,6 +6385,7 @@
       <property name="window_extra_style"></property>
       <property name="window_name"></property>
       <property name="window_style"></property>
+      <event name="OnClose">OnClose</event>
       <object class="wxStaticBoxSizer" expanded="true">
         <property name="id">wxID_ANY</property>
         <property name="label">Fix From Visible Sights</property>

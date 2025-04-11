@@ -273,6 +273,9 @@ bool celestial_navigation_pi::RenderOverlayAll(wxDC *dc, PlugIn_ViewPort *vp)
         s->Render ( dc, *vp, m_pCelestialNavigationDialog->m_pix_per_mm );
     }
 
+   if(!m_pCelestialNavigationDialog->m_FixDialog.IsShown())
+       return true;
+
    /* now render fix */
    double lat = m_pCelestialNavigationDialog->m_FixDialog.m_fixlat;
    double lon = m_pCelestialNavigationDialog->m_FixDialog.m_fixlon;

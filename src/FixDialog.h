@@ -44,6 +44,7 @@ public:
     double m_fixlat, m_fixlon, m_fixerror;
 private:
     void OnGo( wxCommandEvent& event );
+    void OnClose( wxCloseEvent& event );
     void OnUpdate( wxCommandEvent& event ) { Update(m_clock_offset, false); }
     void OnUpdateSpin( wxSpinEvent& event ) { Update(m_clock_offset, false); }
 };

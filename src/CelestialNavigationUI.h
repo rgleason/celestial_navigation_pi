@@ -280,6 +280,7 @@ class FixDialogBase : public wxDialog
 		wxButton* m_bGo;
 
 		// Virtual event handlers, override them in your derived class
+		virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
 		virtual void OnUpdateSpin( wxSpinEvent& event ) { event.Skip(); }
 		virtual void OnUpdate( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnGo( wxCommandEvent& event ) { event.Skip(); }
