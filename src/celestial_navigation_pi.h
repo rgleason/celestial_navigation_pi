@@ -106,4 +106,6 @@ static inline double r_to_d(double r) {
   return r * _RtoD;
 }
 
+extern wxString celestial_navigation_pi_DataDir();
+
 #endif

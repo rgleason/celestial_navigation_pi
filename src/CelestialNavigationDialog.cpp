@@ -41,19 +41,6 @@
 #include "CelestialNavigationDialog.h"
 #include "celestial_navigation_pi.h"
 
-#include "astrolabe/astrolabe.hpp"
-static wxString DataDirectory() {
-  wxString s = wxFileName::GetPathSeparator();
-  return *GetpSharedDataLocation() + "plugins" + s + "celestial_navigation_pi" +
-         s + "data" + s;
-}
-
-static wxString UserDataDirectory() {
-  wxString s = wxFileName::GetPathSeparator();
-  return *GetpPrivateApplicationDataLocation() + s + "plugins" + s +
-         "celestial_navigation" + s;
-}
-
 /* XPM */
 static const char* eye[] = {"20 20 7 1",
                             ". c none",
@@ -568,16 +555,8 @@ void CelestialNavigationDialog::OnClockOffset(wxCommandEvent& event) {
   m_ClockCorrectionDialog.Show();
 }
 
-// void CelestialNavigationDialog::OnInformation( wxCommandEvent& event )
-//{
-//     wxString infolocation = *GetpSharedDataLocation()
-//         + _T("plugins/celestial_navigation_pi/data/")
-//         + _("Celestial_Navigation_Information.html");
-//     wxLaunchDefaultBrowser(_T("file://") + infolocation);
-// }
-
 void CelestialNavigationDialog::OnInformation(wxCommandEvent& event) {
-  wxString infolocation = GetPluginDataDir("celestial_navigation_pi") +
+  wxString infolocation = celestial_navigation_pi_DataDir() +
                           _T("/data/") +
                           _("Celestial_Navigation_Information.html");
   wxLaunchDefaultBrowser(_T("file://") + infolocation);

@@ -16,6 +16,8 @@ wxString _svg_celestial_navigation_rollover;
 wxString _svg_celestial_navigation_toggled;
 #endif
 
+#include "celestial_navigation_pi.h"
+
 void initialize_images(void) {
   {
     wxMemoryInputStream sm(
@@ -158,19 +160,9 @@ void initialize_images(void) {
     _img_celestial_navigation = new wxBitmap(wxImage(sm));
   }
 
-  // #ifdef PLUGIN_USE_SVG
-  //     wxFileName fn;
-  //     fn.SetPath(*GetpSharedDataLocation());
-  //     fn.AppendDir(_T("plugins"));
-  //     fn.AppendDir(_T("celestial_navigation_pi"));
-  //     fn.AppendDir(_T("data"));
-  //     fn.SetFullName(_T("celestial_navigation_pi.svg"));
-  //     _svg_watchdog = fn.GetFullPath();
-  // #endif
-
 #ifdef PLUGIN_USE_SVG
   wxFileName fn;
-  fn.SetPath(GetPluginDataDir("celestial_navigation_pi"));
+  fn.SetPath(celestial_navigation_pi_DataDir());
   fn.AppendDir(_T("data"));
   fn.SetFullName(_T("celestial_navigation.svg"));
   _svg_celestial_navigation = fn.GetFullPath();

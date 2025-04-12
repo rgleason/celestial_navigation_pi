@@ -168,11 +168,7 @@ using astrolabe::util::ecl_to_equ;
  * time */
 void Sight::BodyLocation(wxDateTime time, double* lat, double* lon,
                          double* ghaast, double* rad, double* dist) {
-  //    astrolabe::globals::vsop87d_text_path = (const char
-  //    *)GetPluginDataDir(celestial_navigation_pi)->mb_str();
-  astrolabe::globals::vsop87d_text_path =
-      GetPluginDataDir("celestial_navigation_pi");
-  //    astrolabe::globals::vsop87d_text_path.append("plugins/celestial_navigation_pi/data/");
+  astrolabe::globals::vsop87d_text_path = celestial_navigation_pi_DataDir();
   astrolabe::globals::vsop87d_text_path.append("/data/");
   astrolabe::globals::vsop87d_text_path.append("vsop87d.txt");
 

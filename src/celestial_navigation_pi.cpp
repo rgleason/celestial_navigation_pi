@@ -70,7 +70,7 @@ celestial_navigation_pi::celestial_navigation_pi(void* ppimgr)
   // Create the PlugIn icons  -from shipdriver
   // loads png file for the listing panel icon
   wxFileName fn;
-  auto path = GetPluginDataDir("celestial_navigation_pi");
+  auto path = celestial_navigation_pi_DataDir();
   fn.SetPath(path);
   fn.AppendDir("data");
   fn.SetFullName("celestial_navigation_panel.png");
@@ -192,8 +192,7 @@ void celestial_navigation_pi::OnToolbarToolCallback(int id) {
   int ret;
   if (!m_pCelestialNavigationDialog) {
     /* load the geographical magnetic table */
-    wxString geomag_text_path = GetPluginDataDir("celestial_navigation_pi");
-    //        geomag_text_path.Append(_T("plugins/celestial_navigation_pi/data/IGRF11.COF"));
+    wxString geomag_text_path = celestial_navigation_pi_DataDir();
     geomag_text_path.Append(_T("/data/IGRF11.COF"));
     if ((ret = geomag_load(geomag_text_path.mb_str())) < 0) {
       wxString message = _("Failed to load file: ") + geomag_text_path + "\n";
@@ -342,3 +341,13 @@ double celestial_navigation_pi_GetWMM(double lat, double lon, double altitude,
 
   return gQueryVar;
 }
+
+wxString celestial_navigation_pi_DataDir() {
+  static wxString dataDir;
+  if (dataDir.Len() == 0) {
+printf("First invocation!!!!\n\n");
+    dataDir = GetPluginDataDir("celestial_navigation_pi");
+  }
+  return dataDir;
+}
+
