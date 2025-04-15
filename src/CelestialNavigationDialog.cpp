@@ -558,8 +558,10 @@ void CelestialNavigationDialog::OnClockOffset(wxCommandEvent& event) {
 void CelestialNavigationDialog::OnInformation(wxCommandEvent& event) {
   wxString infolocation = celestial_navigation_pi_DataDir() +
                           _T("/data/") +
-                          _("Celestial_Navigation_Information.html");
-  wxLaunchDefaultBrowser(_T("file://") + infolocation);
+                          _T("Celestial_Navigation_Information.html");
+  infolocation.Prepend(_T("file://"));
+  infolocation.Replace(_T(" "), _T("%20"));
+  LaunchDefaultBrowser_Plugin(infolocation);
 }
 
 void CelestialNavigationDialog::OnHide(wxCommandEvent& event) {

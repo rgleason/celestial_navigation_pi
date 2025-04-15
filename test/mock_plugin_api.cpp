@@ -145,6 +145,10 @@ wxString DECL_EXP GetPluginDataDir(const char* plugin_name) {
   return wxString(testdata);
 }
 
+bool LaunchDefaultBrowser_Plugin(wxString url) {
+  return true;
+}
+
 double DECL_EXP PlugInGetDisplaySizeMM() {
   return 300;
 }
