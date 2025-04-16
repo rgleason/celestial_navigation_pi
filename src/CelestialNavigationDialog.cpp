@@ -561,7 +561,7 @@ void CelestialNavigationDialog::OnInformation(wxCommandEvent& event) {
                           _T("Celestial_Navigation_Information.html");
   infolocation.Prepend(_T("file://"));
   infolocation.Replace(_T(" "), _T("%20"));
-  LaunchDefaultBrowser_Plugin(infolocation);
+  wxLaunchDefaultBrowser(infolocation);
 }
 
 void CelestialNavigationDialog::OnHide(wxCommandEvent& event) {
