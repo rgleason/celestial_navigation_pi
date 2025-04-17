@@ -17,12 +17,9 @@ parameters:
 std-filters: &std-filters
     filters:
         branches:
-            only:
-              -master
-              -improve
             ignore:
-              - devel
-              - tmp
+            - devel
+            - tmp
         tags:
             only: /.*/
 
