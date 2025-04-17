@@ -45,8 +45,8 @@ public:
   double m_pix_per_mm;
 
 private:
-  bool OpenXML(wxString filename, bool reportfailure);
-  void SaveXML(wxString filename);
+  bool OpenXML(bool reportfailure);
+  void SaveXML();
 
   void UpdateButtons();  // Correct button state
   void UpdateFix(bool warnings = true);

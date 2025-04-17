@@ -141,7 +141,7 @@ CelestialNavigationDialog::CelestialNavigationDialog(wxWindow* parent)
 
   m_sights_path = celestial_navigation_pi::StandardPath() + _T("Sights.xml");
 
-  if (!OpenXML(m_sights_path, false)) {
+  if (!OpenXML(false)) {
     /* create directory for plugin files if it doesn't already exist */
     wxFileName fn(m_sights_path);
     wxFileName fn2 = fn.GetPath();
@@ -215,7 +215,7 @@ CelestialNavigationDialog::~CelestialNavigationDialog() {
   pConf->Write(_T ( "DialogWidth" ), s.x);
   pConf->Write(_T ( "DialogHeight" ), s.y);
 
-  SaveXML(m_sights_path);
+  SaveXML();
 }
 
 #define FAIL(X)  \
@@ -245,14 +245,14 @@ bool AttributeBool(TiXmlElement* e, const char* name, bool def) {
   return AttributeInt(e, name, def) != 0;
 }
 
-bool CelestialNavigationDialog::OpenXML(wxString filename, bool reportfailure) {
+bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
   TiXmlDocument doc;
   wxString error;
 
-  wxFileName fn(filename);
+  wxFileName fn(m_sights_path);
 
-  if (!doc.LoadFile(filename.mb_str()))
-    FAIL(_("Failed to load file: ") + filename);
+  if (!doc.LoadFile(m_sights_path.mb_str()))
+    FAIL(_("Failed to load file: ") + m_sights_path);
   else {
     TiXmlHandle root(doc.RootElement());
 
@@ -328,7 +328,8 @@ failed:
   return false;
 }
 
-void CelestialNavigationDialog::SaveXML(wxString filename) {
+void CelestialNavigationDialog::SaveXML() {
+
   TiXmlDocument doc;
   TiXmlDeclaration* decl = new TiXmlDeclaration("1.0", "utf-8", "");
   doc.LinkEndChild(decl);
@@ -380,8 +381,8 @@ void CelestialNavigationDialog::SaveXML(wxString filename) {
     root->LinkEndChild(c);
   }
 
-  if (!doc.SaveFile(filename.mb_str())) {
-    wxMessageDialog mdlg(this, _("Failed to save xml file: ") + filename,
+  if (!doc.SaveFile(m_sights_path.mb_str())) {
+    wxMessageDialog mdlg(this, _("Failed to save xml file: ") + m_sights_path,
                          _("Celestial Navigation"), wxOK | wxICON_ERROR);
     mdlg.ShowModal();
   }
@@ -433,6 +434,7 @@ void CelestialNavigationDialog::UpdateSight(int idx, bool warnings) {
 
   UpdateButtons();
   UpdateFix(warnings);
+  SaveXML();
 }
 
 void CelestialNavigationDialog::UpdateSights() {
@@ -514,6 +516,7 @@ void CelestialNavigationDialog::OnDelete(wxCommandEvent& event) {
   if (selected_index < 0) return;
 
   m_lSights->DeleteItem(selected_index);
+  SaveXML();
   RequestRefresh(GetParent());
 }
 
@@ -522,6 +525,7 @@ void CelestialNavigationDialog::OnDeleteAll(wxCommandEvent& event) {
                        _("Celestial Navigation"), wxYES_NO);
   if (mdlg.ShowModal() == wxID_YES) {
     m_lSights->DeleteAllItems();
+    SaveXML();
     RequestRefresh(GetParent());
   }
 }
@@ -582,6 +586,7 @@ void CelestialNavigationDialog::OnSightListLeftDown(wxMouseEvent& event) {
     m_lSights->SetItemImage(clicked_index, sight->IsVisible() ? 0 : -1);
 
     UpdateFix();
+    SaveXML();
     RequestRefresh(GetParent());
   }
 
