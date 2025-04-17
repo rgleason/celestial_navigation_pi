@@ -345,7 +345,6 @@ double celestial_navigation_pi_GetWMM(double lat, double lon, double altitude,
 wxString celestial_navigation_pi_DataDir() {
   static wxString dataDir;
   if (dataDir.Len() == 0) {
-printf("First invocation!!!!\n\n");
     dataDir = GetPluginDataDir("celestial_navigation_pi");
   }
   return dataDir;
