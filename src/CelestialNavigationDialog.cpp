@@ -460,7 +460,7 @@ void CelestialNavigationDialog::OnNew(wxCommandEvent& event) {
   wxDateTime now = wxDateTime::Now().ToUTC();
 
   Sight s(Sight::ALTITUDE, _("Sun"), Sight::LOWER, now, 0, 0, 10);
-  SightDialog dialog(GetParent(), s,
+  SightDialog dialog(this, s,
                      m_ClockCorrectionDialog.m_sClockCorrection->GetValue());
 
   if (dialog.ShowModal() == wxID_OK) {
@@ -494,7 +494,7 @@ void CelestialNavigationDialog::OnEdit() {
   Sight* psight = (Sight*)wxUIntToPtr(m_lSights->GetItemData(selected_index));
   Sight originalsight = *psight; /* in case of cancel */
 
-  SightDialog dialog(GetParent(), *psight,
+  SightDialog dialog(this, *psight,
                      m_ClockCorrectionDialog.m_sClockCorrection->GetValue());
 
   if (dialog.ShowModal() == wxID_OK) {

@@ -216,7 +216,7 @@ void SightDialog::NewBody() {
 }
 
 void SightDialog::OnFindBody(wxCommandEvent& event) {
-  FindBodyDialog findbody_dialog(GetParent(), m_Sight);
+  FindBodyDialog findbody_dialog(this, m_Sight);
   findbody_dialog.ShowModal();
 }
 
