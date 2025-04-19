@@ -60,7 +60,7 @@ public:
   enum Type { ALTITUDE, AZIMUTH, LUNAR };
   enum BodyLimb { LOWER, CENTER, UPPER };
 
-  Sight() { s_lastsightcolor++; }
+  Sight() { }
   Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
         double timecertainty, double measurement, double measurementcertainty);
 
