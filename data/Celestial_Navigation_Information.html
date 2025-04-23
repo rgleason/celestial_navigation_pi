@@ -1,614 +1,363 @@
 <!DOCTYPE html>
-<html>
-<head>
-	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-	<title></title>
-	<meta name="generator" content="LibreOffice 24.8.1.2 (Linux)"/>
-	<meta name="created" content="2025-04-22T17:56:00"/>
-	<meta name="changedby" content="Frederick Gleason"/>
-	<meta name="changed" content="2025-04-23T12:53:00"/>
-	<meta name="AppVersion" content="16.0000"/>
-	<style type="text/css">
-		@page { size: 8.5in 11in; margin-left: 1in; margin-right: 1in }
-		p { font-size: 12pt; line-height: 115%; text-align: left; orphans: 2; widows: 2; margin-bottom: 0.1in; border: none; padding: 0in; direction: ltr; background: transparent }
-		a:link { text-decoration: underline }
-	</style>
-</head>
-<body lang="en-US" vlink="#800000" dir="ltr">
-<div title="header"><p style="line-height: 100%; margin-bottom: 0.71in">
-	<br/>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <title>Celestial Navigation Basics</title>
+  </head>
+  <body>
+<h1><u>Celestial Navigation Plugin for OpenCPN</u></h1>
+<hr>
 
-	</p>
-</div><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><font size="5" style="font-size: 20pt">Celestial
-Navigation Plugin for OpenCPN </font></font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font color="#0f4761"><font face="Aptos, sans-serif"><font size="5" style="font-size: 18pt"><span lang="fr-FR">Introduction</span></font></font></font><font color="#0f4761"><font face="Aptos, sans-serif"><font size="6" style="font-size: 21pt">
-</font></font></font></font></font>
-</p>
-<p style="line-height: 100%; margin-top: 0.08in; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">The
-plugin facilitates finding the position of boats using Celestial
-Navigation (no GPS), and a Marine Sextant.  It expands on the concept
+<h2><u>Introduction</u></h2>
+
+<p>The plugin facilitates finding the position of boats using Celestial
+Navigation (no GPS), and a Marine Sextant. It expands on the concept
 of Line of Position (LOP) by incorporating measurement error and
-displays true positions, typically as circles (COP).  Notably, it
-allows sights based on bearing as well as altitude. </font></font></font>
-</p>
+displays true positions, typically as circles (COP). Notably, it
+allows sights based on bearing as well as altitude. 
+
 <ul>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font color="#467886"><font face="Aptos, sans-serif">
-        <a href="https://github.com/rgleason/celestial_navigation_pi/issues/131" target="_blank">Accuracy, Goals, Precision and Testing</a></font></font><font face="Aptos, sans-serif">
-		Also see the statements below at the bottom.  </font></font></font>
-	</p></li>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font color="#467886"><font face="Aptos, sans-serif">Abbreviations,
-	Definitions and Measurements </font></font><font face="Aptos, sans-serif">  <a href="file:///C:/Users/fcgle/AppData/Local/opencpn/plugins/celestial_navigation_pi/data/Celestial_Navigation_Definitions.html" target="_blank">Celestial Navigation Definitions</a> </font><font face="Aptos, sans-serif"><br/>
-</font><font face="Aptos, sans-serif">page)
-	For terms and definitions used below. </font></font></font>
-	</p></li>
+<li><a href="https://github.com/rgleason/celestial_navigation_pi/issues/131">
+Accuracy, Goals, Precision and Testing</a>
+Also see the statements below at the bottom.</li>
+
+<li>Abbreviations, Definitions and Measurements
+<a href="Celestial_Navigation_Definitions.html">Celestial Navigation Definitions</a> 
+page) For terms and definitions used below.</li>
 </ul>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
 
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font color="#0f4761"><font face="Aptos, sans-serif"><font size="5" style="font-size: 18pt">Sights
-Dialog </font></font></font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
 
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">When
-the plugin is opened the first dialog shows your sights which have
-been entered.  Select </font><font face="Aptos, sans-serif"><i>New</i></font><font face="Aptos, sans-serif">
-to enter a new sight. </font><font face="Aptos, sans-serif"><i>Duplicate</i></font><font face="Aptos, sans-serif">
-an existing sight. </font><font face="Aptos, sans-serif"><i>Edit</i></font><font face="Aptos, sans-serif">
-to view and make changes to an existing sight. </font><font face="Aptos, sans-serif"><i>Delete</i></font><font face="Aptos, sans-serif">
-a sight or </font><font face="Aptos, sans-serif"><i>Delete All
-sights</i></font><font face="Aptos, sans-serif">. To show a sight’s
-Circle of Position (COP) on the charts, select/unselect the </font><font face="Aptos, sans-serif"><span lang="ar-SA">“</span></font><font face="Aptos, sans-serif">E</font><font face="Aptos, sans-serif"><i>ye</i></font><font face="Aptos, sans-serif">”
-</font><font face="Aptos, sans-serif"><span lang="it-IT">icon. </span></font><font face="Aptos, sans-serif">
-There is no limit to the number of sights.  But the more sights, the
-slower it takes to open the plugin. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-top: 0.08in; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Sight
-Tab</b></font><font face="Aptos, sans-serif"> Sight Measurement (Hs)
-is an angular measurement of an astronomical body using a sextant. It
-can be one of these types: </font></font></font>
-</p>
+<h2>Sights Dialog</h2>
+
+<p>When the plugin is opened the first dialog shows your sights which have been
+entered.  Select <i>New</i> to enter a new sight. <i>Duplicate</i> an existing
+sight. <i>Edit</i> to view and make changes to an existing sight. <i>Delete</i>
+a sight or <i>Delete All sights</i>. To show a sight’s Circle of Position (COP)
+ on the charts, select/unselect the “E<i>ye</i>” icon. There is no limit to the
+number of sights.  But the more sights, the slower it takes to open the plugin. 
+
+<h3>Sight Tab</h3>
+
+Sight Measurement (Hs) is an angular measurement of an astronomical body using a
+sextant. It can be one of these types: 
+
 <ul>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><span lang="fr-FR">Altitude
-	: </span></font><font face="Aptos, sans-serif">Angle of the body
-	above the horizon (most common method)</font></font></font></p></li>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Azimuth:
-	angle to north; non-standard due to measurement difficulty use the
-	angle to north.  Azimuth sights are not regularly taken, because it
-	is difficult to measure more accurately than 1 degree which normally
-	results in errors above 100 nautical miles. </font></font></font>
-	</p></li>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Lunar:
-	angle from the moon to another body for clock correction </font><font face="Aptos, sans-serif"><br/>
-</font></font></font><br/>
-
-	</p></li>
+<li>Altitude: Angle of the body above the horizon (most common method)</li>
+<li>Azimuth: angle to north; non-standard due to measurement difficulty use the
+angle to north.  Azimuth sights are not regularly taken, because it
+is difficult to measure more accurately than 1 degree which normally
+results in errors above 100 nautical miles. </li>
+<li>Lunar: angle from the moon to another body for clock correction</li>
 </ul>
-<p style="line-height: 100%; margin-left: 0.25in; margin-bottom: 0in">
-<font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Celestial
-Body</b></font><font face="Aptos, sans-serif">: You can select the
-Sun, Moon, Venus, Mars, Jupiter, Saturn, Mercury, and 57 Navigation
-Stars plus Polaris that are visible in either the Northern or
-Southern Hemisphere</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
 
-</p>
-<p style="line-height: 100%; margin-left: 0.25in; margin-bottom: 0in">
-<font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><span lang="nl-NL"><b>Limb</b></span></font><font face="Aptos, sans-serif">:
-For altitude or lunar shots of the Sun and Moon, choose lower limb
-unless obscured; then use upper limb. For lunar sights with the sun,
-select upper for outer limbs, lower for inner limbs, center if both
-are upper or lower. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
+<p><b>Celestial Body</b>: You can select the Sun, Moon, Venus, Mars, Jupiter,
+Saturn, Mercury, and 57 Navigation Stars plus Polaris that are visible in either
+the Northern or Southern Hemisphere
 
-</p>
-<p style="line-height: 100%; margin-left: 0.25in; margin-bottom: 0in">
-<font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Sight
-Measurement (Hs)</b></font><font face="Aptos, sans-serif">: Enter
-your sextant reading. Integer degrees in the degrees field, and
-decimal minutes in the minutes field. Your sextant can only measure
-0.1 minutes of arc. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
+<p> <b>Limb</b>: For altitude or lunar shots of the Sun and Moon, choose lower
+limb unless obscured; then use upper limb. For lunar sights with the sun,
+select upper for outer limbs, lower for inner limbs, center if both are upper
+or lower. 
 
-</p>
-<p style="line-height: 100%; margin-left: 0.25in; margin-bottom: 0in">
-<font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Minutes
-of uncertainty</b></font><font face="Aptos, sans-serif"> determine
-the width of the plotted circle or line of position COP/LOP.  Too
-small and it won’t be easily seen on the chart.  0.1 Minutes of
-uncertainty is visible, zooming into a chart scale 1:600,000.  10 or
-larger is visible when zooming out into a chart scale 1:50,000,000.</font></font></font></p>
-<p style="line-height: 100%; margin-left: 0.25in; margin-bottom: 0in">
-<br/>
+<p><b>Sight Measurement (Hs)</b>: Enter your sextant reading. Integer degrees
+in the degrees field, and decimal minutes in the minutes field. Your sextant can
+only measure 0.1 minutes of arc. 
 
-</p>
-<p style="line-height: 100%; margin-left: 0.25in; margin-bottom: 0in">
-<font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>FIND</b></font><font face="Aptos, sans-serif">.
- When you press this button, the sight you input is reduced using the
-Law of Cosines. Law of Cosines is used to compute Altitude (Hc), the
-altitude you would have measured with your sextant if you were truly
-at your DR position.  It also calculates Azimuth (Zn) which is the
-Bearing to the body from your DR position.  Intercept is the distance
-in nautical miles your DR is towards or away from the body.  Azimuth
-(Zn) defaults to True North.  Magnetic can be selected.  The DR
-position defaults to Your Boat’s Latitude and Longitude.  You can
-change that location to the DR position when you take your sight. 
-The Lat/Lon is in decimal degrees where North is positive, South is
-negative, the East is positive and West is negative.  </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
+<p><b>Minutes of uncertainty</b> determine the width of the plotted circle or
+line of position COP/LOP. Too small and it won’t be easily seen on the chart.
+0.1 Minutes of uncertainty is visible, zooming into a chart scale 1:600,000.
+10 or larger is visible when zooming out into a chart scale 1:50,000,000.
 
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Time
-(UTC) Tab</b></font><font face="Aptos, sans-serif">: Must be the
-exact moment of your sight measurement at UTC.  Know the time zone
-where you are taking your sights.</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
+<p><b>FIND</b>. When you press this button, the sight you input is reduced
+using the Law of Cosines. Law of Cosines is used to compute Altitude (Hc), the
+altitude you would have measured with your sextant if you were truly at your
+DR position.  It also calculates Azimuth (Zn) which is the Bearing to the body
+from your DR position.  Intercept is the distance in nautical miles your DR is
+towards or away from the body.  Azimuth (Zn) defaults to True North. Magnetic
+can be selected.  The DR position defaults to Your Boat’s Latitude and
+Longitude. You can change that location to the DR position when you take your
+sight. The Lat/Lon is in decimal degrees where North is positive, South is
+negative, the East is positive and West is negative.  
 
-</p>
+<h3>Time (UTC) Tab</h3>
+
+Must be the exact moment of your sight measurement at UTC. Know the time zone
+where you are taking your sights.
+
+<p><b>Date</b>defaults to the system clock when a new sight is selected.
+Date needs to be the UTC date, not the local or system clock time. A twilight
+sight is taken at 20:25:35 April 22 at UTC-4, also known as ZD+4.
+The UTC is 00:25:35 April 23.  The next day!
+
+<p><b>Time (Hours, Minutes, Seconds)</b> defaults to the system clock when a
+new sight is selected. Time needs to be UTC, not local or system clock time.
+A digital watch or quartz watch with UTC and local time is best. Be sure to
+manually adjust Time to correspond with the exact UTC moment the sight was
+taken, see Watch Error below. 
+
+<p><b>Recording</b>: In preparation, set the stopwatch and record UTC time.
+When the sight is taken, say “Mark”, so the assistant can record stopwatch
+time and the sight body and altitude, or if you are solo, try using a recording
+timer app on your cell phone with a wired microphone.
+
+<p><b>Time Certainty</b> default is 0 seconds which shows a signal darker line
+in the COP. A time Certainty of &gt; 0 shows two darker lines, equivalent to
+that many seconds apart. 
+
+<h3>DR Shift Tab</h3>
+
+If one of your sights was taken earlier and your position changed for a
+subsequent sight, do not change the date and time values. Use the DR Shift Tab
+for your earlier sight. Enter DR Distance traveled and DR Track (Bearing) you
+made for the later sight.  You’ll see the earlier COP shifted or advanced.
+Shifted sights are not used by the <b>Fix Button.</b>  You can determine your
+Fix visually on your chart.  Drop and label a Mark to represent your Fix, a
+Running Fix.
+
+<h3>Clock Offset Tab</h3>
+
+Clock Offset or Correction adjusts and redraws all stored sights (shown or
+not). It can be used to set DeltaT, although the plugin calculates celestial
+objects value using current DeltaT formulas. Many traditional navigators prefer
+to leave Clock Offset to &quot;0&quot; because they included compensating for
+watch error in individual sights when entering UTC. Sean suggests adjusting
+the global &quot;Clock Offset&quot; until COP converge to determine local
+clock accuracy. No matter how Watch Error is adjusted, do it consistently to
+ensure precise navigational calculations based on celestial observations. 
+
+<h3>Config Tab</h3>
+
+Changing color and transparency appearance does not affect the results. 
+
+<h3>Parameters Tab</h3>
+
+This is where Index Error, Height of Eye, Temp/Pressure of the sight is
+entered.  Generally, the same values for the sights at a given date and time. 
+Change settings to change the default for new sights, settings will be
+ remembered for the next new sight. 
+
+<h3>Calculations Tab</h3>
+
+Shows altitude sight calculations for user verification and program
+collaboration. 
+
+<h2>Fix Button (computing a fix)</h2>
+
+<p>The fix is determined from the sights with COPs made visible. Need two or
+more sights with COPs shown.  Initially, the algorithm seeks a Fix nearest
+Your Boat.  If it doesn’t find it, enter the closest dead reckoning latitude
+and longitude, and try again.  When a Fix is found, a large red X is displayed
+on the chart. When the Fix button is closed, the X disappears from the chart.
+
+<p>The Fix algorithm uses the least squares regression to find a position at
+sea level for altitude type of sights.  It is not implemented for shifted
+sights, sights taken above sea level altitudes, and true north azimuth type
+of sights.
+
+<h2>Hide/Show Button</h2>
+
+<p>Hide makes the Celestial Navigation Sights form smaller. You can use your
+pointer to expand or contract the form’s size.  You can move the Celestial
+Navigation Sights form out of the way.
+
+<h2>Common Problems</h2>
+
+<p>Circle of Position or sight is not appearing. If you do not see a COP on
+the chart, ensure the visible (eye) icon appears in the Sight List, then zoom
+out and pan the earth to find it. If you are looking for a COP of a body, use
+a Star Finder to determine Altitude at your desired time and location or try
+Hs of 75 degrees. Hs of 90 degrees is almost a point and is the Latitude and
+Longitude of the GP of the body. <b>Calculations tab </b>will give the Body’s
+Latitude, Longitude and Ho Altitude. 
+
+<p>If the <b>Find button</b>’s Altitude (Hc) and Azimuth (Zn) is way off from
+what you expected. The default Hc and Zn is calculated using your Boat
+position. Did you Move your boat to the DR location of the sight? Is your DR
+mark correctly shown on your OpenCPN chart?
+
+<h2>Reduce Errors:</h2>
+
+<p><b>Adjustable errors</b>. Prior to sight taking, adjust your sextant to
+ remove errors.  
+
+<p><b>Index Error.</b> Reverify your index error using the horizon. IE is part
+of your sight measurement.
+
+<p><b>Height of Eye.</b> Measure your height of eye above sea-level.
+This is part of your sight measurements. Natural Horizon sights are supported.
+Dip Short is not yet supported.
+
+<p><b>Run of Sights</b>: For each body, take a run of 3 to 6 sights, a minute
+or so between sights. Input the entire run into the Celestial Navigation Sights
+form. Look at the Circle of Positions for these sights. Throw out the sights
+that look like errors. If they all look good, consider calculating an average
+sight and use that for your Estimated Position, Running Fix, or Fix.
+
+<p><b>Multi-Body Sights</b>: To get the best possible location, try to take a
+3-body sight within 20-minute timeframe. The Sun, Moon, and Venus sometimes
+make a good 3 body during the day. Ensure the celestial bodies are adequately
+spaced apart. Two bodies should be 45 to 135 degrees apart. For three bodies,
+the 3rd outer bodies should be over 30 and less than 120 degrees from the other
+two bodies. Input the sights into the Celestial Navigation Sights form and make
+visible the best of each body’s COP. The three body COPs will make a triangle.
+The fix would be in the center of the triangle. If your vessel was in motion,
+use DR Shift tab to advance the Line of Position (LOP) of the first and second
+sights to the third sight. When the sights are taken within 20 minutes, it is
+considered a fix. Otherwise, a running fix.
+
+<p><b>Running Fix: </b> If the bodies were taken hours apart and are 45 to 135
+degrees apart, it could be considered a Running Fix, the next best thing to a
+Fix. The quality of the running fix is dependent on maintaining a careful DR
+plot.  The morning Sun and afternoon Sun make a good Running Fix. Evaluate set
+and drift (current) to determine your DR track.  Use the DR Shift tab.
+
+<p><b>Correct Time</b>: Celestial navigation uses the positions of stars, the
+sun, and the moon relative to the observer's position on Earth. Because the
+Earth rotates, these positions change every moment.  Navigators use the precise
+time of observation synchronized to UTC to calculate their location.  
+
+<p><b>Watch Error</b>: Monitor the quartz watch against Marine Radio
+frequencies to determine its accuracy for the day. The navigator records and
+tracks their watch's error trend to estimate the day’s watch error.  
+
+<p><b>Practice</b>: The more sights you take and input into Celestial
+Navigation Plugin, the more accurate your sights will become. Many beginners
+start off with 5 nm accuracy and improve to 3 nm accuracy. Experts are accurate
+to within 1 nm.  
+
+<p><b>Personal Bias Error</b>: To determine their average personal bias error,
+some navigators track their sight history (hundreds of sights) to determine
+average personal bias error. An ex-US Navy colleague continuously practices,
+knows his average error, and adjusts his sights accordingly. 
+
+<h2>Navigation in principle</h2>
+
+<p>Of course, if you already know where you are, there is no point in trying
+to determine it from the formulas above. But when you actually navigate, the
+odds are you don't know quite where you are, so how do we use the above
+formulas? 
+
+<p>We draw what is called a position line or Sumner line. Although the modern
+position line is not quite a real Sumner line, but it is close enough. 
+
+<p>Like all good inventions, Sumner lines were discovered by chance by a fellow
+called, you guessed right, &quot;Sumner&quot;, Thomas H. Sumner to be precise
+(maybe related to the late professor Julius Sumner-Miller). Sumner was a ship
+captain on his way from Charleston (South Carolina) to Greenock (Scotland). And
+he was worried because he had been sailing for several days in bad weather, the
+wind was blowing from the Southeast making Ireland a lee shore, and he had not
+been able to see the sun or any stars, the coast was getting near, and he did
+not know exactly where he was. Suddenly there was a break in the clouds, so he
+grabbed his sextant and snatched a quick sun sight, before the clouds covered
+the sky again. 
+
+<p>Now he was wondering what to do with this information, so he played a
+&quot;what if&quot; game. He did not use the bearing formula above, because
+nobody had worked it out in quite that form yet, but he knew the altitude
+formula and he said, &quot;what if my latitude is... &quot; and calculated the
+corresponding longitude and he plotted it on the chart, then he tried it again
+with another latitude, got another point on the chart. After doing that three
+or four times he suddenly realized that all the points he was marking on the
+chart seemed to fall on a straight line. Without thinking about it anymore, he
+saw that the line needed pushing north by a few odd miles to lead straight over
+Small's light, so he turned north for those few miles, then turned to starboard
+until he was sailing parallel to that very first &quot;Sumner line&quot;. His
+crew were a bit perplexed at that, wondering if the captain had gone mad, but
+when suddenly they arrived right at the very light, they thought he was a
+flaming genius. And so did the rest of the sailing community. 
+
+<p>So why did the points fall on a straight line? They did not really but
+Sumner did not realize it at the time. The points Sumner was plotting were the
+points on earth from which anyone would have seen, at the same moment as he
+did, the sun with exactly the same altitude. All those points are on a circle
+centered at the point on earth directly below the sun. Because this circle is
+usually huge, a small part of it appears straight on a Mercator projection
+chart. 
+
+<p>So this is how we proceed in practice: 
+
+<ol>
+<li>We assume we know where we are, we call this DR (for Dead Reckoning).</li>
+<li>We calculate, based on the latitude and longitude of the DR, what the
+bearing and the altitude of the celestial object would be at the time of
+observation.</li>
+<li>We draw the bearing line passing through DR.</li>
+<li>We compare the actual measured altitude with what it would have been
+had we been at DR, the difference, in minutes of arc, is equal to the number of
+nautical miles that we have to move along the bearing line to find our position
+line. ie if the angle measured is greater than the calculated one by say 13' of
+arc, then we move towards the celestial object by 13 nautical miles, and if say
+the measured angle was less by 7' of arc than the calculated one, we would move
+away from the celestial object by 7 nautical miles.</li>
+<li>Finally, draw a line at the right angle to the bearing line, passing by the
+point we have just found. This line is our position line and all we can tell is
+we are somewhere on this line.</li>
+</ol>
+
+<p>Note the difference between our position line and Sumner's original one: our
+line is the tangent to the circle at the point nearest to DR, Sumner's was the
+circle. Sumner's line is in theory more accurate, but the circle is usually so
+large that the loss of accuracy is insignificant. Note also that in the tropics
+the circles can be extremely small, I remember reading about a P&amp;O captain
+who used to obtain all his fixes without any calculation, he would take several
+observations when the sun was nearly dead overhead (say over a 15 minute
+period) for each time observation, he would plot the coordinates (GHA,DEC) of
+the Sun on his map then draw a circle of radius equal to (90 degrees - measured
+altitude). Since over the 15-minute period he would probably have collected 4
+or 5 observations, he would draw 4 or 5 circles which would all intersect at
+one point. Simple but effective, especially as in the tropics, position lines
+usually end up running almost North-South giving good longitude information but
+lousy intercepts and large errors in latitude. The noon sight is damn important
+ then.
+
+<p>If you wait a few hours, the sun will change position, and you will be able
+to repeat the operation and determine a 2nd position line which will intersect
+the first. Provided you haven't moved in the interval, you are at the
+intersection. 
+
+<p>If you have moved (and the odds, are you would because it can be pretty
+boring sitting around doing nothing on a boat that's just bobbing up and down
+in the middle of the ocean), then all you need do is translate the original
+position line in the same direction, and the same distance as you have
+travelled. Your position will be at the intercept of the new line and the
+translated one. Sailors call this the SUN RUN SUN method. 
+
+<p>The above information was edited from Eric De Man
+<u><a href="http://siranah.de/">siranah.de</a></u>
+
+<h2>Accuracy Testing Procedures</h2>
+
+<ol>
+<li>Periodic report of Celestial Navigation Plugin accuracy and precision
+against the Commercial Edition of the Nautical Almanac. To be done during
+upgrades or as part of an annual or every other year review.</li>
+<li>Calculation (NA versus Plugin) using 3 statistics (see below)</li>
+<li>Results are summarized on the Celestial Navigation Plugin webpage. </li>
+<li>Users will know the accuracy and precision to expect from the plugin.</li>
+</ol>
+
+<h2>Established Accuracy Goal</h2>
+
+<ol>
+<li>Mean and Standard Deviation of the Differences. Our target standard
+deviation is 0.1 nm or 0.1 minutes.</li>
+<li>Percent of observations with 0 difference. Nautical Almanac data is no
+finer than 0.1 minutes. Celestial Navigation data will normalize to the
+same precision for purpose of apples-to-apples comparison. </li>
+<li>Percent of observations greater than 0.1 minute or less than 0.1 minutes.
+Due to rounding at .1, these observation differences would be .2 minutes or
+larger.</li>
+<li>0.1 minutes, which is equivalent to 0.1 nautical miles is 600 feet, 185
+meters</li>
+</ol>
+
+<h2>Celestial Navigation Team</h2>
+
 <ul>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Date
-	</b></font><font face="Aptos, sans-serif">defaults to the system
-	clock when a new sight is selected.  Date needs to be the UTC date,
-	not the local or system clock time.  A twilight sight is taken at
-	20:25:35 April 22 at UTC-4, also known as ZD+4.  The UTC is 00:25:35
-	April 23.  The next day!</font></font></font></p></li>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Time
-	(Hours, Minutes, Seconds)</b></font><font face="Aptos, sans-serif">
-	defaults to the system clock when a new sight is selected.  Time
-	needs to be UTC, not local or system clock time.  A digital watch or
-	quartz watch with UTC and local time is best.  Be sure to manually
-	adjust Time to correspond with the exact UTC moment the sight was
-	taken, see Watch Error below. </font></font></font>
-	</p></li>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Recording</b></font><font face="Aptos, sans-serif">:
-	In preparation, set the stopwatch and record UTC time. When the
-	sight is taken, say </font><font face="Aptos, sans-serif"><span lang="ar-SA">“</span></font><font face="Aptos, sans-serif">Mark”,
-	so the assistant can record stopwatch time and the sight body and
-	altitude, or if you are solo, try using a recording timer app on
-	your cell phone with a wired microphone.</font></font></font></p></li>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Time
-	Certainty</b></font><font face="Aptos, sans-serif"> default is 0
-	seconds which shows a signal darker line in the COP. A time
-	Certainty of &gt; 0 shows two darker lines, equivalent to that many
-	seconds apart. </font><font face="Aptos, sans-serif"><br/>
-</font></font></font><br/>
-
-	</p></li>
+<li>Rick Gleason</li>
+<li>Stelian Pop</li>
+<li>Robert Bossert</li>
+<li>Sean D’Epagnier</li>
 </ul>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>DR
-Shift Tab</b></font><font face="Aptos, sans-serif">: If one of your
-sights was taken earlier and your position changed for a subsequent
-sight, do not change the date and time values. Use the DR Shift Tab
-for your earlier sight.  Enter DR Distance traveled and DR Track
-(Bearing) you made for the later sight.  You’ll see the earlier COP
-shifted or advanced.  Shifted sights are not used by the </font><font face="Aptos, sans-serif"><b>Fix
-Button.</b></font><font face="Aptos, sans-serif">  You can determine
-your Fix visually on your chart.  Drop and label a Mark to represent
-your Fix, a Running Fix.</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
 
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Clock
-Offset Tab</b></font><font face="Aptos, sans-serif">: Clock Offset or
-Correction adjusts and redraws all stored sights (shown or not). It
-can be used to set DeltaT, although the plugin calculates celestial
-objects value using current DeltaT formulas.  Many traditional
-navigators prefer to leave Clock Offset to &quot;0&quot; because they
-included compensating for watch error in individual sights when
-entering UTC.  Sean suggests adjusting the global &quot;Clock Offset&quot;
-until COP converge to determine local clock accuracy. No matter how
-Watch Error is adjusted, do it consistently to ensure precise
-navigational calculations based on celestial observations. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Config
-Tab</b></font><font face="Aptos, sans-serif">: Changing color and
-transparency appearance does not affect the results. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><span lang="nl-NL"><b>Parameters
-Tab</b></span></font><font face="Aptos, sans-serif">: This is where
-Index Error, Height of Eye, Temp/Pressure of the sight is entered. 
-Generally, the same values for the sights at a given date and time. 
-Change settings to change the default for new sights, settings will
-be remembered for the next new sight. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><span lang="fr-FR"><b>Calculations
-Tab</b></span></font><font face="Aptos, sans-serif">: Shows altitude
-sight calculations for user verification and program collaboration. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font color="#0f4761"><font face="Aptos, sans-serif"><font size="5" style="font-size: 18pt">Fix
-Button (computing a fix)</font></font></font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">The
-fix is determined from the sights with COPs made visible.  Need two
-or more sights with COPs shown.  Initially, the algorithm seeks a Fix
-nearest Your Boat.  If it doesn’t find it, enter the closest dead
-reckoning latitude and longitude, and try again.  When a Fix is
-found, a large red X is displayed on the chart. When the Fix button
-is closed, the X disappears from the chart.</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">The
-Fix algorithm uses the least squares regression to find a position at
-sea level for altitude type of sights.  It is not implemented for
-shifted sights, sights taken above sea level altitudes, and true
-north azimuth type of sights.</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font color="#0f4761"><font face="Aptos, sans-serif"><font size="5" style="font-size: 18pt">Hide/Show
-Button</font></font></font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Hide
-makes the Celestial Navigation Sights form smaller.  You can use your
-pointer to expand or contract the form’s size.  You can move the
-Celestial Navigation Sights form out of the way.</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font color="#0f4761"><font face="Aptos, sans-serif"><font size="5" style="font-size: 18pt">Common
-Problems</font></font></font></font></font></p>
-<p style="line-height: 100%; margin-left: 0.25in; margin-bottom: 0in">
-<br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Circle
-of Position or sight is not appearing.   If you do not see a COP on
-the chart, ensure the visible (eye) icon appears in the Sight List,
-then zoom out and pan the earth to find it.   If you are looking for
-a COP of a body, use a Star Finder to determine Altitude at your
-desired time and location or try Hs of 75 degrees.  Hs of 90 degrees
-is almost a point and is the Latitude and Longitude of the GP of the
-body.  </font><font face="Aptos, sans-serif"><b>Calculations tab </b></font><font face="Aptos, sans-serif">will
-give the Body’s Latitude, Longitude and Ho Altitude. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">If
-the </font><font face="Aptos, sans-serif"><b>Find button</b></font><font face="Aptos, sans-serif">’s
-Altitude (Hc) and Azimuth (Zn) is way off from what you expected. 
-The default Hc and Zn is calculated using your Boat position.  Did
-you Move your boat to the DR location of the sight?  Is your DR mark
-correctly shown on your OpenCPN chart?</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font color="#0f4761"><font face="Aptos, sans-serif"><font size="5" style="font-size: 18pt">Reduce
-Errors</font></font></font><font face="Aptos, sans-serif"><font size="5" style="font-size: 18pt">:</font></font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Adjustable
-errors</b></font><font face="Aptos, sans-serif">.   Prior to sight
-taking, adjust your sextant to remove errors.  </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Index
-Error.   </b></font><font face="Aptos, sans-serif">Reverify your
-index error using the horizon. IE is part of your sight measurement.</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Height
-of Eye.   </b></font><font face="Aptos, sans-serif">Measure your
-height of eye above sea-level.  This is part of your sight
-measurements.  Natural Horizon sights are supported.  Dip Short is
-not yet supported.</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Run
-of Sights</b></font><font face="Aptos, sans-serif">: For each body,
-take a run of 3 to 6 sights, a minute or so between sights.  Input
-the entire run into the Celestial Navigation Sights form.  Look at
-the Circle of Positions for these sights.  Throw out the sights that
-look like errors.  If they all look good, consider calculating an
-average sight and use that for your Estimated Position, Running Fix,
-or Fix.</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Multi-Body
-Sights</b></font><font face="Aptos, sans-serif">: To get the best
-possible location, try to take a 3-body sight within 20-minute
-timeframe.  The Sun, Moon, and Venus sometimes make a good 3 body
-during the day.   Ensure the celestial bodies are adequately spaced
-apart.   Two bodies should be 45 to 135 degrees apart.  For three
-bodies, the 3rd outer bodies should be over 30 and less than 120
-degrees from the other two bodies.  Input the sights into the
-Celestial Navigation Sights form and make visible the best of each
-body’s COP.  The three body COPs will make a triangle.  The fix
-would be in the center of the triangle.  If your vessel was in
-motion, use DR Shift tab to advance the Line of Position (LOP) of the
-first and second sights to the third sight.   When the sights are
-taken within 20 minutes, it is considered a fix.  Otherwise, a
-running fix.</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Running
-Fix: </b></font><font face="Aptos, sans-serif"> If the bodies were
-taken hours apart and are 45 to 135 degrees apart, it could be
-considered a Running Fix, the next best thing to a Fix.  The quality
-of the running fix is dependent on maintaining a careful DR plot. 
-The morning Sun and afternoon Sun make a good Running Fix.  Evaluate
-set and drift (current) to determine your DR track.  Use the DR Shift
-tab.</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Correct
-Time</b></font><font face="Aptos, sans-serif">: Celestial navigation
-uses the positions of stars, the sun, and the moon relative to the
-observer's position on Earth. Because the Earth rotates, these
-positions change every moment.  Navigators use the precise time of
-observation synchronized to UTC to calculate their location.  </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Watch
-Error</b></font><font face="Aptos, sans-serif">: Monitor the quartz
-watch against Marine Radio frequencies to determine its accuracy for
-the day. The navigator records and tracks their watch's error trend
-to estimate the day’s watch error.  </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Practice</b></font><font face="Aptos, sans-serif">:
-The more sights you take and input into Celestial Navigation Plugin,
-the more accurate your sights will become.  Many beginners start off
-with 5 nm accuracy and improve to 3 nm accuracy.  Experts are
-accurate to within 1 nm.  </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><b>Personal
-Bias Error</b></font><font face="Aptos, sans-serif">: To determine
-their average personal bias error, some navigators track their sight
-history (hundreds of sights) to determine average personal bias
-error.  An ex-US Navy colleague continuously practices, knows his
-average error, and adjusts his sights accordingly. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font color="#0f4761"><font face="Aptos, sans-serif"><font size="5" style="font-size: 18pt">Navigation
-in principle</font></font></font><font color="#0f4761"><font face="Aptos, sans-serif"><font size="6" style="font-size: 26pt">
-</font></font></font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Of
-course, if you already know where you are, there is no point in
-trying to determine it from the formulas above. But when you actually
-navigate, the odds are you don't know quite where you are, so how do
-we use the above formulas? </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">We
-draw what is called a position line or Sumner line. Although the
-modern position line is not quite a real Sumner line, but it is close
-enough. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Like
-all good inventions, Sumner lines were discovered by chance by a
-fellow called, you guessed right, &quot;Sumner&quot;, Thomas H.
-Sumner to be precise (maybe related to the late professor Julius
-Sumner-Miller). Sumner was a ship captain on his way from Charleston
-(South Carolina) to Greenock (Scotland). And he was worried because
-he had been sailing for several days in bad weather, the wind was
-blowing from the Southeast making Ireland a lee shore, and he had not
-been able to see the sun or any stars, the coast was getting near,
-and he did not know exactly where he was. Suddenly there was a break
-in the clouds, so he grabbed his sextant and snatched a quick sun
-sight, before the clouds covered the sky again. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Now
-he was wondering what to do with this information, so he played a
-&quot;what if&quot; game. He did not use the bearing formula above,
-because nobody had worked it out in quite that form yet, but he knew
-the altitude formula and he said, &quot;what if my latitude is... &quot;
-and calculated the corresponding longitude and he plotted it on the
-chart, then he tried it again with another latitude, got another
-point on the chart. After doing that three or four times he suddenly
-realized that all the points he was marking on the chart seemed to
-fall on a straight line. Without thinking about it anymore, he saw
-that the line needed pushing north by a few odd miles to lead
-straight over Small's light, so he turned north for those few miles,
-then turned to starboard until he was sailing parallel to that very
-first &quot;Sumner line&quot;. His crew were a bit perplexed at that,
-wondering if the captain had gone mad, but when suddenly they arrived
-right at the very light, they thought he was a flaming genius. And so
-did the rest of the sailing community. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">So
-why did the points fall on a straight line? They did not really but
-Sumner did not realize it at the time. The points Sumner was plotting
-were the points on earth from which anyone would have seen, at the
-same moment as he did, the sun with exactly the same altitude. All
-those points are on a circle centered at the point on earth directly
-below the sun. Because this circle is usually huge, a small part of
-it appears straight on a Mercator projection chart. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">So
-this is how we proceed in practice: </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<ol>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">We
-	assume we know where we are , we call this DR (for Dead Reckoning). </font></font></font>
-	</p></li>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">We
-	calculate, based on the latitude and longitude of the DR, what the
-	bearing and the altitude of the celestial object would be at the
-	time of observation. </font></font></font>
-	</p></li>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">We
-	draw the bearing line passing through DR. </font></font></font>
-	</p></li>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">We
-	compare the actual measured altitude with what it would have been
-	had we been at DR, the difference, in minutes of arc, is equal to
-	the number of nautical miles that we have to move along the bearing
-	line to find our position line. ie if the angle measured is greater
-	than the calculated one by say 13' of arc, then we move towards the
-	celestial object by 13 nautical miles, and if say the measured angle
-	was less by 7' of arc than the calculated one, we would move away
-	from the celestial object by 7 nautical miles. </font></font></font>
-	</p></li>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Finally,
-	draw a line at the right angle to the bearing line, passing by the
-	point we have just found. This line is our position line and all we
-	can tell is we are somewhere on this line. </font><font face="Aptos, sans-serif"><br/>
-</font></font></font><br/>
-
-	</p></li>
-</ol>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Note
-the difference between our position line and Sumner's original one:
-our line is the tangent to the circle at the point nearest to DR,
-Sumner's was the circle. Sumner's line is in theory more accurate,
-but the circle is usually so large that the loss of accuracy is
-insignificant. Note also that in the tropics the circles can be
-extremely small, I remember reading about a P&amp;O captain who used
-to obtain all his fixes without any calculation, he would take
-several observations when the sun was nearly dead overhead (say over
-a 15 minute period) for each time observation, he would plot the
-coordinates (GHA,DEC) of the Sun on his map then draw a circle of
-radius equal to (90 degrees - measured altitude). Since over the
-15-minute period he would probably have collected 4 or 5
-observations, he would draw 4 or 5 circles which would all intersect
-at one point. Simple but effective, especially as in the tropics,
-position lines usually end up running almost North-South giving good
-longitude information but lousy intercepts and large errors in
-latitude. The noon sight is damn important then.</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">If
-you wait a few hours, the sun will change position, and you will be
-able to repeat the operation and determine a 2nd position line which
-will intersect the first. Provided you haven't moved in the interval,
-you are at the intersection. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">If
-you have moved (and the odds, are you would because it can be pretty
-boring sitting around doing nothing on a boat that's just bobbing up
-and down in the middle of the ocean), then all you need do is
-translate the original position line in the same direction, and the
-same distance as you have travelled. Your position will be at the
-intercept of the new line and the translated one. Sailors call this
-the SUN RUN SUN method. </font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">The
-above information was edited from Eric De Man </font><u><a href="http://siranah.de/"><font face="Aptos, sans-serif">siranah.de</font></a></u></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font color="#0f4761"><font face="Aptos, sans-serif"><font size="5" style="font-size: 18pt">Accuracy
-Testing Procedures </font></font></font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<ol>
-	<li value="1"><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Periodic
-	report of Celestial Navigation Plugin accuracy and precision against
-	the Commercial Edition of the Nautical Almanac.  To be done during
-	upgrades or as part of an annual or every other year review. </font></font></font>
-	</p></li>
-</ol>
-<ol start="2">
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Calculation
-	(NA versus Plugin) using 3 statistics (see below) </font></font></font>
-	</p></li>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Results
-	are summarized on the Celestial Navigation Plugin</font><font face="Aptos, sans-serif"><span lang="it-IT">
-	webpage. </span></font></font></font>
-	</p></li>
-</ol>
-<ol>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Users
-	will know the accuracy and precision to expect from the plugin. </font><font face="Aptos, sans-serif"><font size="4" style="font-size: 14pt"><br/>
-</font></font></font></font><br/>
-
-	</p></li>
-</ol>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font color="#0f4761"><font face="Aptos, sans-serif"><font size="5" style="font-size: 18pt">Established
-Accuracy Goal </font></font></font></font></font>
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<ol>
-	<li value="1"><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Mean
-	and Standard Deviation of the Differences.  Our target standard
-	deviation is 0.1 nm or 0</font><font face="Aptos, sans-serif"><span lang="pt-PT">.1
-	minutes. </span></font></font></font>
-	</p></li>
-</ol>
-<ol start="2">
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Percent
-	of observations with 0 difference.  Nautical Almanac data is no
-	finer than 0</font><font face="Aptos, sans-serif"><span lang="pt-PT">.1
-	minutes.</span></font><font face="Aptos, sans-serif">  Celestial
-	Navigation</font><font face="Aptos, sans-serif"><span lang="it-IT">
-	data </span></font><font face="Aptos, sans-serif">will normalize to
-	the same precision for purpose of apples-to-apples comparison. </font></font></font>
-	</p></li>
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Percent
-	of observations greater than 0.1 minute or less than 0</font><font face="Aptos, sans-serif"><span lang="pt-PT">.1
-	minutes. </span></font><font face="Aptos, sans-serif"> Due to
-	rounding at .1, these observation differences would be .2 minutes or
-	larger.   </font></font></font>
-	</p></li>
-</ol>
-<ol start="4">
-	<li><p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">0.1
-	minutes, which is equivalent to 0.1 nautical miles is 600 feet, 185
-	meters</font></font></font></p></li>
-</ol>
-<p style="line-height: 100%; margin-bottom: 0in"><br/>
-
-</p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font color="#467886"><font face="Aptos, sans-serif"><font size="4" style="font-size: 13pt">Celestial
-Navigation Team</font></font></font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Rick
-Gleason</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Stelian
-Pop</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Robert
-Bossert</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif">Sean
-D’Epagnier</font></font></font></p>
-<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="Helvetica Neue, serif"><font face="Aptos, sans-serif"><font size="4" style="font-size: 14pt"><br/>
-</font></font></font></font><br/>
-
-</p>
-<div title="footer"><p style="line-height: 100%; margin-top: 0.71in; margin-bottom: 0in">
-	<br/>
-
-	</p>
-</div>
 </body>
 </html>
