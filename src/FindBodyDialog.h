@@ -32,19 +32,17 @@
 
 class Sight;
 
-class FindBodyDialog: public FindBodyDialogBase
-{
+class FindBodyDialog : public FindBodyDialogBase {
 public:
+  FindBodyDialog(wxWindow* parent, Sight& sight);
+  ~FindBodyDialog();
 
-    FindBodyDialog(wxWindow* parent, Sight &sight);
-    ~FindBodyDialog( );
+  void OnUpdate(wxCommandEvent& event);
+  void OnDone(wxCommandEvent& event);
+  void Update();
 
-    void OnUpdate( wxCommandEvent& event );
-    void OnDone( wxCommandEvent& event );
-    void Update();
-
-    Sight& m_Sight;
+  Sight& m_Sight;
 };
 
 #endif
-    // _FINDBODYDIALOG_H_
+// _FINDBODYDIALOG_H_

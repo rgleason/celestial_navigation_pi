@@ -34,19 +34,20 @@
 
 class Sight;
 
-class FixDialog : public FixDialogBase
-{
+class FixDialog : public FixDialogBase {
 public:
-    FixDialog(wxWindow *parent);
-    void Update(int clock_offset, bool warnings);
+  FixDialog(wxWindow* parent);
+  void Update(int clock_offset, bool warnings);
 
-    int m_clock_offset;
-    double m_fixlat, m_fixlon, m_fixerror;
+  int m_clock_offset;
+  double m_fixlat, m_fixlon, m_fixerror;
+
 private:
-    void OnGo( wxCommandEvent& event );
-    void OnUpdate( wxCommandEvent& event ) { Update(m_clock_offset, false); }
-    void OnUpdateSpin( wxSpinEvent& event ) { Update(m_clock_offset, false); }
+  void OnGo(wxCommandEvent& event);
+  void OnClose(wxCloseEvent& event);
+  void OnUpdate(wxCommandEvent& event) { Update(m_clock_offset, false); }
+  void OnUpdateSpin(wxSpinEvent& event) { Update(m_clock_offset, false); }
 };
 
 #endif
-    // _FIXDIALOG_H_
+// _FIXDIALOG_H_

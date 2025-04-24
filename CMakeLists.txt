@@ -18,7 +18,7 @@
 ## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,                                       *
 ## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                       *
 #-----------------------------------------------------------------------------
-# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.328.0 05/02/2025 DD/MM/YYYY
+# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.331.0 06/04/2025 DD/MM/YYYY
 # buildCI:yes useODAPI:no validateJSON:no
 # ---------------------------------------------------------------------------
 ## -- When changing this file do NOT change the order of the sections.    -- ##
@@ -30,20 +30,31 @@
 set(CMLOC "CMakeLists: ")
 
 # define minimum cmake version
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.10)
 if(COMMAND cmake_policy)
   if (POLICY CMP0043)
     cmake_policy(SET CMP0043 NEW)
   endif (POLICY CMP0043)
   cmake_policy(SET CMP0048 NEW)
+  if (POLICY CMP0068)
+    cmake_policy(SET CMP0068 NEW)
+  endif (POLICY CMP0068)
   if (POLICY CMP0076)
     cmake_policy(SET CMP0076 NEW)
   endif (POLICY CMP0076)
   if (POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
   endif (POLICY CMP0077)
+  if (POLICY CMP0175)
+    cmake_policy(SET CMP0175 NEW)
+  endif (POLICY CMP0175)
+  if (POLICY CMP0177)
+    cmake_policy(SET CMP0177 NEW)
+  endif (POLICY CMP0177)
 endif (COMMAND cmake_policy)
 
+# set for vscode/vscodium
+set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
 # define plugin name, owner and versions
 set(VERBOSE_NAME Celestial_Navigation)
@@ -60,9 +71,9 @@ set(LONG_DESCRIPTION
 
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "4")
-set(VERSION_PATCH "44")
+set(VERSION_PATCH "60")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "08/03/2025" )# DD/MM/YYYY format
+set(VERSION_DATE  "23/04/2025" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "ov58")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -102,9 +113,9 @@ option(PLUGIN_USE_SVG "Use SVG graphics" ON)
 
 set(CMAKE_CXX_STANDARD 11)
 
-
-
-
+# Use local version of GLU library requires libs/glu directory
+set(USE_LOCAL_GLU FALSE)
+# Prefer libGL.so to libOpenGL.so, see CMP0072
 set(OpenGL_GL_PREFERENCE "LEGACY") # not operational
 
 option(USE_GL "Enable OpenGL support" ON)
@@ -232,8 +243,6 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/geomag)
 
 target_sources(${PACKAGE_NAME} PUBLIC ${SRC} )
 
-## Change target_sources to match your project needs.
-##==============================================================
 
 if (NOT OCPN_FLATPAK_CONFIG)
   # Build environment not available when flatpak is being configured so
