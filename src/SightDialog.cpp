@@ -323,3 +323,12 @@ double SightDialog::BodyAltitude(wxString body) {
   ll_gc_ll_reverse(lat1, lon1, lat2, lon2, &bearing, &dist);
   return 90 - dist / 60;
 }
+
+void SightDialog::OnShowDefinitions(wxCommandEvent& event) {
+  wxString infolocation = celestial_navigation_pi_DataDir() +
+                          _T("/data/") +
+                          _T("Celestial_Navigation_Definitions.html");
+  infolocation.Prepend(_T("file://"));
+  infolocation.Replace(_T(" "), _T("%20"));
+  wxLaunchDefaultBrowser(infolocation);
+}
