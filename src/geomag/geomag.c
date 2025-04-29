@@ -176,14 +176,14 @@ void print_result_file(FILE* outf, double d, double i, double h, double x,
                        double y, double z, double f, double ddot, double idot,
                        double hdot, double xdot, double ydot, double zdot,
                        double fdot);
-double degrees_to_decimal();
-double julday();
-int interpsh();
-int extrapsh();
-int shval3();
-int dihf();
+double degrees_to_decimal(int, int, int);
+double julday(int, int, int);
+int interpsh(double, double, int, double, int, int);
+int extrapsh(double, double, int, int, int);
+int shval3(int, double, double, double, int, int, int, double, double, double);
+int dihf(int);
 int safegets(char* buffer, int n);
-int getshc();
+int getshc(const char*, int, long int, int, int);
 
 /****************************************************************************/
 /*                                                                          */
@@ -686,7 +686,7 @@ int year;
 /****************************************************************************/
 
 int getshc(file, iflag, strec, nmax_of_gh, gh)
-char file[PATH];
+const char *file;
 int iflag;
 long int strec;
 int nmax_of_gh;

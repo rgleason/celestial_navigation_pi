@@ -467,6 +467,9 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_tCalculations = new wxTextCtrl( m_panel81, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxHSCROLL|wxTE_MULTILINE|wxTE_READONLY );
 	fgSizer211->Add( m_tCalculations, 0, wxALL|wxEXPAND, 5 );
 
+	m_bShowDefinitions = new wxButton( m_panel81, wxID_ANY, _("Abbreviations, Definitions"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer211->Add( m_bShowDefinitions, 0, wxALIGN_RIGHT|wxALL, 5 );
+
 
 	m_panel81->SetSizer( fgSizer211 );
 	m_panel81->Layout();
@@ -525,6 +528,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_sPressure->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( SightDialogBase::RecomputeSpin ), NULL, this );
 	m_tIndexError->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_bSetDefaults->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( SightDialogBase::OnSetDefaults ), NULL, this );
+	m_bShowDefinitions->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( SightDialogBase::OnShowDefinitions ), NULL, this );
 }
 
 SightDialogBase::~SightDialogBase()
@@ -563,6 +567,7 @@ SightDialogBase::~SightDialogBase()
 	m_sPressure->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( SightDialogBase::RecomputeSpin ), NULL, this );
 	m_tIndexError->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_bSetDefaults->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( SightDialogBase::OnSetDefaults ), NULL, this );
+	m_bShowDefinitions->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( SightDialogBase::OnShowDefinitions ), NULL, this );
 
 }
 

@@ -149,6 +149,7 @@ class SightDialogBase : public wxDialog
 		wxButton* m_bSetDefaults;
 		wxPanel* m_panel81;
 		wxTextCtrl* m_tCalculations;
+		wxButton* m_bShowDefinitions;
 		wxStdDialogButtonSizer* m_sdbSizer1;
 		wxButton* m_sdbSizer1OK;
 		wxButton* m_sdbSizer1Cancel;
@@ -163,6 +164,7 @@ class SightDialogBase : public wxDialog
 		virtual void RecomputeScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void RecomputeColor( wxColourPickerEvent& event ) { event.Skip(); }
 		virtual void OnSetDefaults( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnShowDefinitions( wxCommandEvent& event ) { event.Skip(); }
 
 
 	public:

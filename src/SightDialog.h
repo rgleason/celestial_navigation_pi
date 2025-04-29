@@ -57,6 +57,7 @@ public:
     Recompute();
   }
   void OnFindBody(wxCommandEvent& event);
+  void OnShowDefinitions(wxCommandEvent& event);
 
   wxDateTime DateTime();
   void Recompute();
