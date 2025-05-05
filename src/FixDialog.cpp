@@ -102,10 +102,10 @@ double MinCirclePoints(double& mincx, double& mincy,
   }
   points.pop_back();
   all_points.push_front(cpoints);
-
+  
   if (isinf(mind)) return NAN;
   return mind;
-}
+  }
 
 /* this algorithm works for any size, but c++ is sadly not supporting
    pointers to variable size arrays like gcc does for c */
