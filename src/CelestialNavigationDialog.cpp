@@ -40,6 +40,7 @@
 #include "SightDialog.h"
 #include "CelestialNavigationDialog.h"
 #include "celestial_navigation_pi.h"
+#include <functional>
 
 /* XPM */
 static const char* eye[] = {"20 20 7 1",
