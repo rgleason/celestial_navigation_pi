@@ -40,6 +40,7 @@
 #include "SightDialog.h"
 #include "CelestialNavigationDialog.h"
 #include "celestial_navigation_pi.h"
+#include <algorithm>
 #include <functional>
 
 /* XPM */
