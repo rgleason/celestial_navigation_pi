@@ -35,6 +35,8 @@
 #include "FixDialog.h"
 #include "ClockCorrectionDialog.h"
 
+#include <vector>
+
 class CelestialNavigationDialog : public CelestialNavigationDialogBase {
 public:
   CelestialNavigationDialog(wxWindow* parent);
