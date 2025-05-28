@@ -151,13 +151,13 @@ void FixDialog::Update(int clock_offset, bool warnings) {
 
   m_clock_offset = clock_offset;
   int iterations = 0;
-  wxListCtrl* lSights = ((CelestialNavigationDialog*)GetParent())->m_lSights;
+  std::vector<Sight> lSights =
+      ((CelestialNavigationDialog*)GetParent())->m_Sights;
 again:
-  for (int i = 0; i < lSights->GetItemCount(); i++) {
-    Sight* s = (Sight*)wxUIntToPtr(lSights->GetItemData(i));
-    if (!s->IsVisible() || s->m_Type != Sight::ALTITUDE) continue;
+  for (Sight& s : lSights) {
+    if (!s.IsVisible() || s.m_Type != Sight::ALTITUDE) continue;
 
-    if (s->m_ShiftNm) {
+    if (s.m_ShiftNm) {
       static bool seenwarning = false;
       if (!seenwarning && warnings) {
         wxMessageDialog mdlg(
@@ -171,8 +171,8 @@ determine fix visually instead.\n"),
     }
 
     double lat, lon;
-    s->BodyLocation(s->m_DateTime + wxTimeSpan::Seconds(clock_offset), &lat,
-                    &lon, 0, 0, 0);
+    s.BodyLocation(s.m_DateTime + wxTimeSpan::Seconds(clock_offset), &lat, &lon,
+                   0, 0, 0);
 
     /* take vector from body location of length equal to
        normalized measurement (so the plane this vector
@@ -183,8 +183,8 @@ determine fix visually instead.\n"),
     double y = cos(d_to_r(lat)) * sin(d_to_r(lon));
     double z = sin(d_to_r(lat));
 
-    double sm = sin(d_to_r(s->m_ObservedAltitude));
-    double cm = cos(d_to_r(s->m_ObservedAltitude));
+    double sm = sin(d_to_r(s.m_ObservedAltitude));
+    double cm = cos(d_to_r(s.m_ObservedAltitude));
 
     double d = NAN;
 

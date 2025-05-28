@@ -243,10 +243,9 @@ bool celestial_navigation_pi::RenderOverlayAll(wxDC* dc, PlugIn_ViewPort* vp) {
     return false;
 
   /* draw sights */
-  wxListCtrl* lSights = m_pCelestialNavigationDialog->m_lSights;
-  for (int i = 0; i < lSights->GetItemCount(); i++) {
-    Sight* s = (Sight*)wxUIntToPtr(lSights->GetItemData(i));
-    s->Render(dc, *vp, m_pCelestialNavigationDialog->m_pix_per_mm);
+  std::vector<Sight> lSights = m_pCelestialNavigationDialog->m_Sights;
+  for (Sight& s : lSights) {
+    s.Render(dc, *vp, m_pCelestialNavigationDialog->m_pix_per_mm);
   }
 
   if (!m_pCelestialNavigationDialog->m_FixDialog.IsShown()) return true;
@@ -349,4 +348,3 @@ wxString celestial_navigation_pi_DataDir() {
   }
   return dataDir;
 }
-

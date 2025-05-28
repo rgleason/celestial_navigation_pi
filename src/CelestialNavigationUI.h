@@ -49,6 +49,7 @@ class CelestialNavigationDialogBase : public wxDialog
 	private:
 
 	protected:
+		wxListCtrl* m_lSights;
 		wxButton* m_bNewSight;
 		wxButton* m_bFix;
 		wxButton* m_bDuplicateSight;
@@ -62,6 +63,8 @@ class CelestialNavigationDialogBase : public wxDialog
 		// Virtual event handlers, override them in your derived class
 		virtual void OnEditMouse( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnSightListLeftDown( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnColumnHeaderClick( wxListEvent& event ) { event.Skip(); }
+		virtual void OnEdit( wxListEvent& event ) { event.Skip(); }
 		virtual void OnSightSelected( wxListEvent& event ) { event.Skip(); }
 		virtual void OnNew( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnFix( wxCommandEvent& event ) { event.Skip(); }
@@ -75,7 +78,6 @@ class CelestialNavigationDialogBase : public wxDialog
 
 
 	public:
-		wxListCtrl* m_lSights;
 
 		CelestialNavigationDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Celestial Navigation Sights"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,294 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 

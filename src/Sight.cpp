@@ -145,11 +145,14 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
   if (++s_lastsightcolor ==
       (sizeof sightcolornames) / (sizeof *sightcolornames))
     s_lastsightcolor = 0;
+  m_bCalculated = false;
+  m_bSelected = false;
 }
 
 Sight::~Sight() {}
 
 void Sight::SetVisible(bool visible) { m_bVisible = visible; }
+void Sight::SetSelected(bool selected) { m_bSelected = selected; }
 
 #include "astrolabe/astrolabe.hpp"
 
@@ -581,6 +584,8 @@ void Sight::RebuildPolygons() {
       *p = DistancePoint(localaltitude, localbearing, lat, lon);
     }
   }
+
+  m_bCalculated = true;
 }
 
 wxString Sight::Alminac(wxDateTime time, double lat, double lon, double ghaast,

@@ -79,6 +79,8 @@ CelestialNavigationDialogBase::CelestialNavigationDialogBase( wxWindow* parent, 
 	// Connect Events
 	m_lSights->Connect( wxEVT_LEFT_DCLICK, wxMouseEventHandler( CelestialNavigationDialogBase::OnEditMouse ), NULL, this );
 	m_lSights->Connect( wxEVT_LEFT_DOWN, wxMouseEventHandler( CelestialNavigationDialogBase::OnSightListLeftDown ), NULL, this );
+	m_lSights->Connect( wxEVT_COMMAND_LIST_COL_CLICK, wxListEventHandler( CelestialNavigationDialogBase::OnColumnHeaderClick ), NULL, this );
+	m_lSights->Connect( wxEVT_COMMAND_LIST_ITEM_ACTIVATED, wxListEventHandler( CelestialNavigationDialogBase::OnEdit ), NULL, this );
 	m_lSights->Connect( wxEVT_COMMAND_LIST_ITEM_DESELECTED, wxListEventHandler( CelestialNavigationDialogBase::OnSightSelected ), NULL, this );
 	m_lSights->Connect( wxEVT_COMMAND_LIST_ITEM_SELECTED, wxListEventHandler( CelestialNavigationDialogBase::OnSightSelected ), NULL, this );
 	m_bNewSight->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CelestialNavigationDialogBase::OnNew ), NULL, this );
@@ -97,6 +99,8 @@ CelestialNavigationDialogBase::~CelestialNavigationDialogBase()
 	// Disconnect Events
 	m_lSights->Disconnect( wxEVT_LEFT_DCLICK, wxMouseEventHandler( CelestialNavigationDialogBase::OnEditMouse ), NULL, this );
 	m_lSights->Disconnect( wxEVT_LEFT_DOWN, wxMouseEventHandler( CelestialNavigationDialogBase::OnSightListLeftDown ), NULL, this );
+	m_lSights->Disconnect( wxEVT_COMMAND_LIST_COL_CLICK, wxListEventHandler( CelestialNavigationDialogBase::OnColumnHeaderClick ), NULL, this );
+	m_lSights->Disconnect( wxEVT_COMMAND_LIST_ITEM_ACTIVATED, wxListEventHandler( CelestialNavigationDialogBase::OnEdit ), NULL, this );
 	m_lSights->Disconnect( wxEVT_COMMAND_LIST_ITEM_DESELECTED, wxListEventHandler( CelestialNavigationDialogBase::OnSightSelected ), NULL, this );
 	m_lSights->Disconnect( wxEVT_COMMAND_LIST_ITEM_SELECTED, wxListEventHandler( CelestialNavigationDialogBase::OnSightSelected ), NULL, this );
 	m_bNewSight->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CelestialNavigationDialogBase::OnNew ), NULL, this );

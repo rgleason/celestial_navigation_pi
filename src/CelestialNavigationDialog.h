@@ -43,11 +43,13 @@ public:
 
   FixDialog m_FixDialog;
   double m_pix_per_mm;
+  std::vector<Sight> m_Sights;
 
 private:
   bool OpenXML(bool reportfailure);
   void SaveXML();
 
+  void RebuildList();
   void UpdateButtons();  // Correct button state
   void UpdateFix(bool warnings = true);
 
@@ -69,6 +71,8 @@ private:
   void OnSightListLeftDown(wxMouseEvent& event);
   void OnBtnLeftDown(
       wxMouseEvent& event);  // record control key state for some action buttons
+  void OnEdit(wxListEvent& event) { OnEdit(); }
+  void OnColumnHeaderClick(wxListEvent& event);
   void OnSightSelected(wxListEvent& event);
 
   void InsertSight(Sight* s, bool warnings = true);
@@ -80,6 +84,9 @@ private:
   ClockCorrectionDialog m_ClockCorrectionDialog;
   wxPoint m_startPos;
   wxPoint m_startMouse;
+  wxSize m_fullSize;
+  int m_sortCol;
+  bool m_bSortAsc;
 };
 
 #endif  // _CelestialNavigationDialog_h_
