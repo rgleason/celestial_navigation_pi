@@ -60,7 +60,7 @@ public:
   enum Type { ALTITUDE, AZIMUTH, LUNAR };
   enum BodyLimb { LOWER, CENTER, UPPER };
 
-  Sight() { }
+  Sight() {}
   Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
         double timecertainty, double measurement, double measurementcertainty);
 
@@ -68,7 +68,10 @@ public:
 
   void SetVisible(bool visible = true);  ///< set visibility and make points
                                          ///< selectable accordingly
+  void SetSelected(bool selected = true);
   bool IsVisible() { return m_bVisible; }
+  bool IsCalculated() { return m_bCalculated; }
+  bool IsSelected() { return m_bSelected; }
 
   void Recompute(int clock_offset);
   void RebuildPolygons();
@@ -83,6 +86,8 @@ public:
   void RebuildPolygonsAzimuth();
 
   bool m_bVisible;  // should this sight be drawn?
+  bool m_bCalculated;
+  bool m_bSelected;
 
   Type m_Type;
   wxString m_Body;

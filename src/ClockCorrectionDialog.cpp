@@ -34,11 +34,12 @@
 
 void ClockCorrectionDialog::OnUpdate(wxSpinEvent& event) {
   CelestialNavigationDialog* parent((CelestialNavigationDialog*)GetParent());
-  wxListCtrl* lSights = parent->m_lSights;
-  for (int i = 0; i < lSights->GetItemCount(); i++) {
-    Sight* s = (Sight*)wxUIntToPtr(lSights->GetItemData(i));
-    s->Recompute(m_sClockCorrection->GetValue());
-    s->RebuildPolygons();
+  std::vector<Sight> lSights = parent->m_Sights;
+  for (Sight& s : lSights) {
+    if (s.m_bVisible) {
+      s.Recompute(m_sClockCorrection->GetValue());
+      s.RebuildPolygons();
+    }
   }
 
   parent->UpdateSights();

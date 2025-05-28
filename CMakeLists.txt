@@ -153,7 +153,7 @@ option(OCPN_BUILD_TEST "Build plugin tests" OFF)
 
 set(CMAKE_VERBOSE_MAKEFILE "Activate verbose mode for make files" ON)
 
-option(Plugin_CXX11 "Use c++11" OFF)
+option(Plugin_CXX11 "Use c++11" ON)
 
 ## ----- Modify section above if there are special requirements for the plugin --##
 ## ----- Do not change next section - needed to configure build process ---------##
