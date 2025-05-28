@@ -421,8 +421,8 @@ bool compareSight(Sight a, Sight b, int sortCol, bool sortAsc) {
 
 void CelestialNavigationDialog::RebuildList() {
   using namespace std::placeholders;
-  std::stable_sort(m_Sights.begin(), m_Sights.end(),
-                   std::bind(compareSight, _1, _2, m_sortCol, m_bSortAsc));
+  std::sort(m_Sights.begin(), m_Sights.end(),
+            std::bind(compareSight, _1, _2, m_sortCol, m_bSortAsc));
 
   wxListItem item;
   item.SetMask(wxLIST_MASK_TEXT);
