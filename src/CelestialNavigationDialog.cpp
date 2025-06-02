@@ -378,7 +378,7 @@ void CelestialNavigationDialog::SaveXML() {
   }
 }
 
-bool compareSightAsc(Sight a, Sight b, int sortCol) {
+bool compareSightAsc(const Sight &a, const Sight &b, int sortCol) {
   switch (sortCol) {
     case rmVISIBLE:
       if (a.m_bVisible != b.m_bVisible) return a.m_bVisible < b.m_bVisible;
@@ -415,7 +415,7 @@ bool compareSightAsc(Sight a, Sight b, int sortCol) {
   return true;
 }
 
-bool compareSight(Sight a, Sight b, int sortCol, bool sortAsc) {
+bool compareSight(const Sight &a, const Sight &b, int sortCol, bool sortAsc) {
   return sortAsc ? compareSightAsc(a, b, sortCol)
                  : !compareSightAsc(a, b, sortCol);
 }
