@@ -27,7 +27,7 @@ CelestialNavigationDialogBase::CelestialNavigationDialogBase( wxWindow* parent, 
 	fgSizer17->SetFlexibleDirection( wxBOTH );
 	fgSizer17->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
-	m_lSights = new wxListCtrl( this, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), wxLC_HRULES|wxLC_REPORT|wxLC_SINGLE_SEL|wxLC_SORT_ASCENDING );
+	m_lSights = new wxListCtrl( this, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), wxLC_HRULES|wxLC_REPORT|wxLC_SINGLE_SEL );
 	m_lSights->SetMinSize( wxSize( 0,-1 ) );
 
 	fgSizer17->Add( m_lSights, 0, wxALL|wxEXPAND, 5 );
