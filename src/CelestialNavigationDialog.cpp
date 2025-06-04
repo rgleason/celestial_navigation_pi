@@ -293,6 +293,7 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_Colour.Set(s.m_Colour.Red(), s.m_Colour.Green(), s.m_Colour.Blue(),
                        AttributeInt(e, "Transparency", 150));
         s.m_bCalculated = false;
+        s.m_bSelected = false;
 
         if (s.m_bVisible) {
           s.Recompute(m_ClockCorrectionDialog.m_sClockCorrection->GetValue());
@@ -425,16 +426,7 @@ void CelestialNavigationDialog::RebuildList() {
   std::sort(m_Sights.begin(), m_Sights.end(),
             std::bind(compareSight, _1, _2, m_sortCol, m_bSortAsc));
 
-  wxListItem item;
-  item.SetMask(wxLIST_MASK_TEXT);
-  for (int i = 0; i < rmMAX; i++) {
-    m_lSights->GetColumn(i, item);
-    item.SetText(columns[i]);
-    m_lSights->SetColumn(i, item);
-  }
-  m_lSights->GetColumn(m_sortCol, item);
-  item.SetText(columns[m_sortCol] + (m_bSortAsc ? _T(" ↓") : _T(" ↑")));
-  m_lSights->SetColumn(m_sortCol, item);
+  m_lSights->ShowSortIndicator(m_sortCol, m_bSortAsc);
 
   m_lSights->DeleteAllItems();
   for (Sight& s : m_Sights) {
