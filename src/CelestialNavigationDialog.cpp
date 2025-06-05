@@ -116,11 +116,8 @@ CelestialNavigationDialog::CelestialNavigationDialog(wxWindow* parent)
   m_lSights->AssignImageList(imglist, wxIMAGE_LIST_SMALL);
 
   m_lSights->InsertColumn(rmVISIBLE, wxT(""));
-  m_lSights->SetColumnWidth(0, 28);
-
   for (int i = 1; i < rmMAX; i++) {
     m_lSights->InsertColumn(i, columns[i]);
-    m_lSights->SetColumnWidth(i, wxLIST_AUTOSIZE_USEHEADER);
   }
 
   m_sights_path = celestial_navigation_pi::StandardPath() + _T("Sights.xml");
@@ -306,6 +303,10 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
   }
 
   RebuildList();
+  m_lSights->SetColumnWidth(0, 28);
+  for (int i = 1; i < rmMAX; i++) {
+    m_lSights->SetColumnWidth(i, wxLIST_AUTOSIZE_USEHEADER);
+  }
   if (m_lSights->GetItemCount() > 0) {
     m_Sights[0].SetSelected(true);
     m_lSights->SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
