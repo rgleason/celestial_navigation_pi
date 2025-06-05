@@ -463,9 +463,11 @@ void CelestialNavigationDialog::RebuildList() {
     else
       m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName);
 
-    if (s.IsSelected())
+    if (s.IsSelected()) {
       m_lSights->SetItemState(idx, wxLIST_STATE_SELECTED,
                               wxLIST_STATE_SELECTED);
+      m_lSights->EnsureVisible(idx);
+    }
   }
 
   UpdateButtons();
