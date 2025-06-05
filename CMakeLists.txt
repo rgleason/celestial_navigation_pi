@@ -18,7 +18,7 @@
 ## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,                                       *
 ## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                       *
 #-----------------------------------------------------------------------------
-# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.331.0 06/04/2025 DD/MM/YYYY
+# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.341.0 30/04/2025 DD/MM/YYYY
 # buildCI:yes useODAPI:no validateJSON:no
 # ---------------------------------------------------------------------------
 ## -- When changing this file do NOT change the order of the sections.    -- ##
@@ -45,6 +45,9 @@ if(COMMAND cmake_policy)
   if (POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
   endif (POLICY CMP0077)
+  if (POLICY CMP0079)
+    cmake_policy(SET CMP0079 NEW)
+  endif (POLICY CMP0079)
   if (POLICY CMP0175)
     cmake_policy(SET CMP0175 NEW)
   endif (POLICY CMP0175)
@@ -71,9 +74,9 @@ set(LONG_DESCRIPTION
 
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "4")
-set(VERSION_PATCH "64")
+set(VERSION_PATCH "65")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "04/06/2025" )# DD/MM/YYYY format
+set(VERSION_DATE  "05/06/2025" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "ov58")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -92,8 +95,8 @@ set(BETA "beta")   #Standard Repos
 set(ALPHA "alpha") #Standard Repos
 
 # Set if  Cloudsmith Base Repository name does not match your Git Repository name.
-#set(CLOUDSMITH_BASE_REPOSITORY "${GIT_REPOSITORY_NAME}")
-#set(CLOUDSMITH_BASE_REPOSITORY "opencpn-plugins")  #Ricks's customization
+#set (CLOUDSMITH_BASE_REPOSITORY "${GIT_REPOSITORY_NAME}")
+#set (CLOUDSMITH_BASE_REPOSITORY "opencpn-plugins")  #Ricks's customization
 set (CLOUDSMITH_BASE_REPOSITORY "celestial-navigation")  # without the pi 
 
 # Set the following to use OpenCPN cloudsmith repositories instead of own repositories
