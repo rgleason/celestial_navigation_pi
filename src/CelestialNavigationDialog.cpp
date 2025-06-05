@@ -691,6 +691,8 @@ void CelestialNavigationDialog::OnSightListLeftDown(wxMouseEvent& event) {
 void CelestialNavigationDialog::OnSightSelected(wxListEvent& event) {
   long selectedIndex =
       m_lSights->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+  if (selectedIndex < 0) return;
+
   for (Sight& s : m_Sights) s.SetSelected(false);
   m_Sights[selectedIndex].SetSelected(true);
   UpdateButtons();
