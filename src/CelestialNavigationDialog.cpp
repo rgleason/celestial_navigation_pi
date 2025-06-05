@@ -116,11 +116,8 @@ CelestialNavigationDialog::CelestialNavigationDialog(wxWindow* parent)
   m_lSights->AssignImageList(imglist, wxIMAGE_LIST_SMALL);
 
   m_lSights->InsertColumn(rmVISIBLE, wxT(""));
-  m_lSights->SetColumnWidth(0, 28);
-
   for (int i = 1; i < rmMAX; i++) {
     m_lSights->InsertColumn(i, columns[i]);
-    m_lSights->SetColumnWidth(i, wxLIST_AUTOSIZE_USEHEADER);
   }
 
   m_sights_path = celestial_navigation_pi::StandardPath() + _T("Sights.xml");
@@ -293,6 +290,7 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_Colour.Set(s.m_Colour.Red(), s.m_Colour.Green(), s.m_Colour.Blue(),
                        AttributeInt(e, "Transparency", 150));
         s.m_bCalculated = false;
+        s.m_bSelected = false;
 
         if (s.m_bVisible) {
           s.Recompute(m_ClockCorrectionDialog.m_sClockCorrection->GetValue());
@@ -305,6 +303,10 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
   }
 
   RebuildList();
+  m_lSights->SetColumnWidth(0, 28);
+  for (int i = 1; i < rmMAX; i++) {
+    m_lSights->SetColumnWidth(i, wxLIST_AUTOSIZE_USEHEADER);
+  }
   if (m_lSights->GetItemCount() > 0) {
     m_Sights[0].SetSelected(true);
     m_lSights->SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
@@ -378,7 +380,7 @@ void CelestialNavigationDialog::SaveXML() {
   }
 }
 
-bool compareSightAsc(Sight a, Sight b, int sortCol) {
+bool compareSightAsc(const Sight &a, const Sight &b, int sortCol) {
   switch (sortCol) {
     case rmVISIBLE:
       if (a.m_bVisible != b.m_bVisible) return a.m_bVisible < b.m_bVisible;
@@ -415,7 +417,7 @@ bool compareSightAsc(Sight a, Sight b, int sortCol) {
   return true;
 }
 
-bool compareSight(Sight a, Sight b, int sortCol, bool sortAsc) {
+bool compareSight(const Sight &a, const Sight &b, int sortCol, bool sortAsc) {
   return sortAsc ? compareSightAsc(a, b, sortCol)
                  : !compareSightAsc(a, b, sortCol);
 }
@@ -425,6 +427,9 @@ void CelestialNavigationDialog::RebuildList() {
   std::sort(m_Sights.begin(), m_Sights.end(),
             std::bind(compareSight, _1, _2, m_sortCol, m_bSortAsc));
 
+#if wxCHECK_VERSION(3, 1, 6)
+  m_lSights->ShowSortIndicator(m_sortCol, m_bSortAsc);
+#else
   wxListItem item;
   item.SetMask(wxLIST_MASK_TEXT);
   for (int i = 0; i < rmMAX; i++) {
@@ -433,8 +438,9 @@ void CelestialNavigationDialog::RebuildList() {
     m_lSights->SetColumn(i, item);
   }
   m_lSights->GetColumn(m_sortCol, item);
-  item.SetText(columns[m_sortCol] + (m_bSortAsc ? _T(" ↓") : _T(" ↑")));
+  item.SetText(columns[m_sortCol] + (m_bSortAsc ? _T(" ^") : _T(" v")));
   m_lSights->SetColumn(m_sortCol, item);
+#endif
 
   m_lSights->DeleteAllItems();
   for (Sight& s : m_Sights) {
@@ -458,9 +464,11 @@ void CelestialNavigationDialog::RebuildList() {
     else
       m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName);
 
-    if (s.IsSelected())
+    if (s.IsSelected()) {
       m_lSights->SetItemState(idx, wxLIST_STATE_SELECTED,
                               wxLIST_STATE_SELECTED);
+      m_lSights->EnsureVisible(idx);
+    }
   }
 
   UpdateButtons();
@@ -686,6 +694,8 @@ void CelestialNavigationDialog::OnSightListLeftDown(wxMouseEvent& event) {
 void CelestialNavigationDialog::OnSightSelected(wxListEvent& event) {
   long selectedIndex =
       m_lSights->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+  if (selectedIndex < 0) return;
+
   for (Sight& s : m_Sights) s.SetSelected(false);
   m_Sights[selectedIndex].SetSelected(true);
   UpdateButtons();
