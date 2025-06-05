@@ -426,7 +426,20 @@ void CelestialNavigationDialog::RebuildList() {
   std::sort(m_Sights.begin(), m_Sights.end(),
             std::bind(compareSight, _1, _2, m_sortCol, m_bSortAsc));
 
+#if wxCHECK_VERSION(3, 1, 6)
   m_lSights->ShowSortIndicator(m_sortCol, m_bSortAsc);
+#else
+  wxListItem item;
+  item.SetMask(wxLIST_MASK_TEXT);
+  for (int i = 0; i < rmMAX; i++) {
+    m_lSights->GetColumn(i, item);
+    item.SetText(columns[i]);
+    m_lSights->SetColumn(i, item);
+  }
+  m_lSights->GetColumn(m_sortCol, item);
+  item.SetText(columns[m_sortCol] + (m_bSortAsc ? _T(" ^") : _T(" v")));
+  m_lSights->SetColumn(m_sortCol, item);
+#endif
 
   m_lSights->DeleteAllItems();
   for (Sight& s : m_Sights) {
