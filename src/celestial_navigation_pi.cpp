@@ -266,6 +266,7 @@ bool celestial_navigation_pi::RenderOverlayAll(wxDC* dc, PlugIn_ViewPort* vp) {
       dc->DrawLine(r1.x, r2.y, r2.x, r1.y);
     } else {
       glColor3d(1, 0, 0);
+      glLineWidth((int)(0.5 * m_pCelestialNavigationDialog->m_pix_per_mm));
       glBegin(GL_LINES);
       glVertex2i(r1.x, r1.y);
       glVertex2i(r2.x, r2.y);
