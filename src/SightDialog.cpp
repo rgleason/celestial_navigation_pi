@@ -168,14 +168,12 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   m_cbMagneticAzimuth->SetValue(m_Sight.m_bMagneticNorth);
   m_ColourPicker->SetColour(m_Sight.m_Colour);
 
-  // calculate approximate lunar altitude
-  if (isnan(m_Sight.m_LunarMoonAltitude))
-    m_Sight.m_LunarMoonAltitude = BodyAltitude(_T("Moon"));
   m_tLunarMoonAltitude->SetValue(
-      wxString::Format(_T("%.2f"), m_Sight.m_LunarMoonAltitude));
+      wxString::Format(_T("%.4f"), m_Sight.m_LunarMoonAltitude));
+  m_cLunarMoonLimb->SetSelection((int)m_Sight.m_LunarMoonLimb);
   m_tLunarBodyAltitude->SetValue(
-      wxString::Format(_T("%.2f"), m_Sight.m_LunarBodyAltitude));
-  NewBody();
+      wxString::Format(_T("%.4f"), m_Sight.m_LunarBodyAltitude));
+  m_cLunarBodyLimb->SetSelection((int)m_Sight.m_LunarBodyLimb);
 
   m_breadytorecompute = true;
   Recompute();
@@ -209,11 +207,6 @@ void SightDialog::SetColorScheme(ColorScheme cs)
       m_OKButton->SetForegroundColour(text_color);
 }
 #endif
-
-void SightDialog::NewBody() {
-  m_tLunarBodyAltitude->SetValue(
-      wxString::Format(_T("%f"), BodyAltitude(m_cBody->GetStringSelection())));
-}
 
 void SightDialog::OnFindBody(wxCommandEvent& event) {
   FindBodyDialog findbody_dialog(this, m_Sight);
@@ -305,7 +298,9 @@ void SightDialog::Recompute() {
   m_Sight.m_MeasurementCertainty = measurementcertainty;
 
   m_tLunarMoonAltitude->GetValue().ToDouble(&m_Sight.m_LunarMoonAltitude);
+  m_Sight.m_LunarMoonLimb = (Sight::BodyLimb)m_cLunarMoonLimb->GetSelection();
   m_tLunarBodyAltitude->GetValue().ToDouble(&m_Sight.m_LunarBodyAltitude);
+  m_Sight.m_LunarBodyLimb = (Sight::BodyLimb)m_cLunarBodyLimb->GetSelection();
 
   m_tEyeHeight->GetValue().ToDouble(&m_Sight.m_EyeHeight);
   m_Sight.m_Temperature = m_sTemperature->GetValue();

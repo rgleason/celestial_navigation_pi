@@ -101,6 +101,7 @@ public:
   double m_Measurement;  // Measurement angle in degrees (NaN is valid for all)
   double m_MeasurementCertainty;
   double m_LunarMoonAltitude, m_LunarBodyAltitude;
+  BodyLimb m_LunarMoonLimb, m_LunarBodyLimb;
 
   double m_EyeHeight;    // Height above sea in meters
   double m_Temperature;  // Temperature in degrees celcius

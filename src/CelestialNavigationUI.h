@@ -165,7 +165,6 @@ class SightDialogBase : public wxDialog
 
 		// Virtual event handlers, override them in your derived class
 		virtual void Recompute( wxCommandEvent& event ) { event.Skip(); }
-		virtual void NewBody( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnFindBody( wxCommandEvent& event ) { event.Skip(); }
 		virtual void MeasurementEntered( wxCommandEvent& event ) { event.Skip(); }
 		virtual void RecomputeCalendar( wxCalendarEvent& event ) { event.Skip(); }

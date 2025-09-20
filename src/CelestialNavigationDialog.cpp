@@ -257,6 +257,10 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_Type = (Sight::Type)AttributeInt(e, "Type", 0);
         s.m_Body = wxString::FromUTF8(e->Attribute("Body"));
         s.m_BodyLimb = (Sight::BodyLimb)AttributeInt(e, "BodyLimb", 0);
+        s.m_LunarMoonAltitude = AttributeDouble(e, "LunarMoonAltitude", 0);
+        s.m_LunarMoonLimb = (Sight::BodyLimb)AttributeInt(e, "LunarMoonLimb", 0);
+        s.m_LunarBodyAltitude = AttributeDouble(e, "LunarBodyAltitude", 0);
+        s.m_LunarBodyLimb = (Sight::BodyLimb)AttributeInt(e, "LunarBodyLimb", 0);
 
         s.m_DateTime.ParseISODate(wxString::FromUTF8(e->Attribute("Date")));
 
@@ -348,6 +352,10 @@ void CelestialNavigationDialog::SaveXML() {
     c->SetAttribute("Type", s.m_Type);
     c->SetAttribute("Body", s.m_Body.mb_str());
     c->SetAttribute("BodyLimb", s.m_BodyLimb);
+    c->SetDoubleAttribute("LunarMoonAltitude", s.m_LunarMoonAltitude);
+    c->SetAttribute("LunarMoonLimb", s.m_LunarMoonLimb);
+    c->SetDoubleAttribute("LunarBodyAltitude", s.m_LunarBodyAltitude);
+    c->SetAttribute("LunarBodyLimb", s.m_LunarBodyLimb);
 
     c->SetAttribute("Date", s.m_DateTime.FormatISODate().mb_str());
     c->SetAttribute("Time", s.m_DateTime.FormatISOTime().mb_str());
