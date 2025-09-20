@@ -103,6 +103,7 @@ class SightDialogBase : public wxDialog
 		wxButton* m_bFindBody;
 		wxStaticText* m_staticText3;
 		wxChoice* m_cLimb;
+		wxStaticBoxSizer* m_sbSizerSight;
 		wxTextCtrl* m_tMeasurement;
 		wxStaticText* m_staticText6;
 		wxTextCtrl* m_tMeasurementMinutes;
@@ -110,8 +111,14 @@ class SightDialogBase : public wxDialog
 		wxTextCtrl* m_tMeasurementCertainty;
 		wxStaticText* m_staticText8;
 		wxBoxSizer* m_fgSizerLunar;
+		wxStaticText* m_staticText12;
 		wxTextCtrl* m_tLunarMoonAltitude;
+		wxStaticText* m_staticText121;
+		wxChoice* m_cLunarMoonLimb;
+		wxStaticText* m_staticText122;
 		wxTextCtrl* m_tLunarBodyAltitude;
+		wxStaticText* m_staticText1211;
+		wxChoice* m_cLunarBodyLimb;
 		wxPanel* m_panel2;
 		wxCalendarCtrl* m_Calendar;
 		wxSpinCtrl* m_sHours;

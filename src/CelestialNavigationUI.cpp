@@ -140,20 +140,20 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 
 	m_staticText1 = new wxStaticText( m_panel1, wxID_ANY, _("Type"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText1->Wrap( -1 );
-	fgSizer3->Add( m_staticText1, 0, wxALL, 5 );
+	fgSizer3->Add( m_staticText1, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	wxString m_cTypeChoices[] = { _("Altitude"), _("Azimuth"), _("Lunar") };
 	int m_cTypeNChoices = sizeof( m_cTypeChoices ) / sizeof( wxString );
 	m_cType = new wxChoice( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_cTypeNChoices, m_cTypeChoices, 0 );
-	m_cType->SetSelection( 0 );
+	m_cType->SetSelection( 2 );
 	fgSizer3->Add( m_cType, 0, wxALL, 5 );
 
 	m_cbMagneticAzimuth = new wxCheckBox( m_panel1, wxID_ANY, _("Magnetic Azimuth"), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizer3->Add( m_cbMagneticAzimuth, 0, wxALL, 5 );
+	fgSizer3->Add( m_cbMagneticAzimuth, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_staticText2 = new wxStaticText( m_panel1, wxID_ANY, _("Celestial Body"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText2->Wrap( -1 );
-	fgSizer3->Add( m_staticText2, 0, wxALL, 5 );
+	fgSizer3->Add( m_staticText2, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	wxArrayString m_cBodyChoices;
 	m_cBody = new wxChoice( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_cBodyChoices, 0 );
@@ -165,7 +165,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 
 	m_staticText3 = new wxStaticText( m_panel1, wxID_ANY, _("Limb"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText3->Wrap( -1 );
-	fgSizer3->Add( m_staticText3, 0, wxALL, 5 );
+	fgSizer3->Add( m_staticText3, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	wxString m_cLimbChoices[] = { _("Lower"), _("Center"), _("Upper") };
 	int m_cLimbNChoices = sizeof( m_cLimbChoices ) / sizeof( wxString );
@@ -184,57 +184,100 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	fgSizer22->SetFlexibleDirection( wxBOTH );
 	fgSizer22->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
-	wxStaticBoxSizer* sbSizer1;
-	sbSizer1 = new wxStaticBoxSizer( new wxStaticBox( m_panel1, wxID_ANY, _("Sight measurement (Hs)") ), wxVERTICAL );
+	m_sbSizerSight = new wxStaticBoxSizer( new wxStaticBox( m_panel1, wxID_ANY, _("Sight measurement (Hs)") ), wxVERTICAL );
 
-	wxFlexGridSizer* fgSizer4;
-	fgSizer4 = new wxFlexGridSizer( 0, 2, 0, 0 );
-	fgSizer4->SetFlexibleDirection( wxBOTH );
-	fgSizer4->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+	wxFlexGridSizer* fgSizer31;
+	fgSizer31 = new wxFlexGridSizer( 0, 2, 0, 0 );
+	fgSizer31->SetFlexibleDirection( wxBOTH );
+	fgSizer31->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
-	m_tMeasurement = new wxTextCtrl( sbSizer1->GetStaticBox(), wxID_ANY, _("00"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
-	fgSizer4->Add( m_tMeasurement, 0, wxALL, 5 );
+	m_tMeasurement = new wxTextCtrl( m_sbSizerSight->GetStaticBox(), wxID_ANY, _("00"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+	fgSizer31->Add( m_tMeasurement, 0, wxALL, 5 );
 
-	m_staticText6 = new wxStaticText( sbSizer1->GetStaticBox(), wxID_ANY, _("Degrees"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText6 = new wxStaticText( m_sbSizerSight->GetStaticBox(), wxID_ANY, _("Degrees"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText6->Wrap( -1 );
-	fgSizer4->Add( m_staticText6, 0, wxALL, 5 );
+	fgSizer31->Add( m_staticText6, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_tMeasurementMinutes = new wxTextCtrl( sbSizer1->GetStaticBox(), wxID_ANY, _("00.0"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
-	fgSizer4->Add( m_tMeasurementMinutes, 0, wxALL, 5 );
+	m_tMeasurementMinutes = new wxTextCtrl( m_sbSizerSight->GetStaticBox(), wxID_ANY, _("00.0"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+	fgSizer31->Add( m_tMeasurementMinutes, 0, wxALL, 5 );
 
-	m_staticText7 = new wxStaticText( sbSizer1->GetStaticBox(), wxID_ANY, _("Minutes"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText7 = new wxStaticText( m_sbSizerSight->GetStaticBox(), wxID_ANY, _("Minutes"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText7->Wrap( -1 );
-	fgSizer4->Add( m_staticText7, 0, wxALL, 5 );
+	fgSizer31->Add( m_staticText7, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_tMeasurementCertainty = new wxTextCtrl( sbSizer1->GetStaticBox(), wxID_ANY, _("00.00"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
-	fgSizer4->Add( m_tMeasurementCertainty, 0, wxALL, 5 );
+	m_tMeasurementCertainty = new wxTextCtrl( m_sbSizerSight->GetStaticBox(), wxID_ANY, _("00.00"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+	fgSizer31->Add( m_tMeasurementCertainty, 0, wxALL, 5 );
 
-	m_staticText8 = new wxStaticText( sbSizer1->GetStaticBox(), wxID_ANY, _("Minutes Certainty"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText8 = new wxStaticText( m_sbSizerSight->GetStaticBox(), wxID_ANY, _("Minutes Certainty"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText8->Wrap( -1 );
-	fgSizer4->Add( m_staticText8, 0, wxALL, 5 );
+	fgSizer31->Add( m_staticText8, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 
-	sbSizer1->Add( fgSizer4, 1, wxEXPAND, 5 );
+	m_sbSizerSight->Add( fgSizer31, 1, wxEXPAND, 5 );
 
 
-	fgSizer22->Add( sbSizer1, 1, wxEXPAND, 5 );
+	fgSizer22->Add( m_sbSizerSight, 1, wxEXPAND, 5 );
 
 	m_fgSizerLunar = new wxBoxSizer( wxVERTICAL );
 
 	wxStaticBoxSizer* sbSizer10;
-	sbSizer10 = new wxStaticBoxSizer( new wxStaticBox( m_panel1, wxID_ANY, _("Moon Altitude") ), wxVERTICAL );
+	sbSizer10 = new wxStaticBoxSizer( new wxStaticBox( m_panel1, wxID_ANY, _("Moon") ), wxVERTICAL );
+
+	wxFlexGridSizer* fgSizer25;
+	fgSizer25 = new wxFlexGridSizer( 0, 2, 0, 0 );
+	fgSizer25->SetFlexibleDirection( wxBOTH );
+	fgSizer25->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+
+	m_staticText12 = new wxStaticText( sbSizer10->GetStaticBox(), wxID_ANY, _("Altitude"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText12->Wrap( -1 );
+	fgSizer25->Add( m_staticText12, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_tLunarMoonAltitude = new wxTextCtrl( sbSizer10->GetStaticBox(), wxID_ANY, _("0"), wxDefaultPosition, wxDefaultSize, 0 );
-	sbSizer10->Add( m_tLunarMoonAltitude, 0, wxALL, 5 );
+	fgSizer25->Add( m_tLunarMoonAltitude, 0, wxALL, 5 );
+
+	m_staticText121 = new wxStaticText( sbSizer10->GetStaticBox(), wxID_ANY, _("Limb"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText121->Wrap( -1 );
+	fgSizer25->Add( m_staticText121, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+
+	wxString m_cLunarMoonLimbChoices[] = { _("Lower"), _("Center"), _("Upper") };
+	int m_cLunarMoonLimbNChoices = sizeof( m_cLunarMoonLimbChoices ) / sizeof( wxString );
+	m_cLunarMoonLimb = new wxChoice( sbSizer10->GetStaticBox(), wxID_ANY, wxDefaultPosition, wxDefaultSize, m_cLunarMoonLimbNChoices, m_cLunarMoonLimbChoices, 0 );
+	m_cLunarMoonLimb->SetSelection( 0 );
+	fgSizer25->Add( m_cLunarMoonLimb, 0, wxALL, 5 );
+
+
+	sbSizer10->Add( fgSizer25, 1, wxEXPAND, 5 );
 
 
 	m_fgSizerLunar->Add( sbSizer10, 1, wxEXPAND, 5 );
 
 	wxStaticBoxSizer* sbSizer11;
-	sbSizer11 = new wxStaticBoxSizer( new wxStaticBox( m_panel1, wxID_ANY, _("Body Altitude") ), wxVERTICAL );
+	sbSizer11 = new wxStaticBoxSizer( new wxStaticBox( m_panel1, wxID_ANY, _("Body") ), wxVERTICAL );
+
+	wxFlexGridSizer* fgSizer29;
+	fgSizer29 = new wxFlexGridSizer( 0, 2, 0, 0 );
+	fgSizer29->SetFlexibleDirection( wxBOTH );
+	fgSizer29->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+
+	m_staticText122 = new wxStaticText( sbSizer11->GetStaticBox(), wxID_ANY, _("Altitude"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText122->Wrap( -1 );
+	fgSizer29->Add( m_staticText122, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_tLunarBodyAltitude = new wxTextCtrl( sbSizer11->GetStaticBox(), wxID_ANY, _("0"), wxDefaultPosition, wxDefaultSize, 0 );
-	sbSizer11->Add( m_tLunarBodyAltitude, 0, wxALL, 5 );
+	fgSizer29->Add( m_tLunarBodyAltitude, 0, wxALL, 5 );
+
+	m_staticText1211 = new wxStaticText( sbSizer11->GetStaticBox(), wxID_ANY, _("Limb"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText1211->Wrap( -1 );
+	fgSizer29->Add( m_staticText1211, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+
+	wxString m_cLunarBodyLimbChoices[] = { _("Lower"), _("Center"), _("Upper") };
+	int m_cLunarBodyLimbNChoices = sizeof( m_cLunarBodyLimbChoices ) / sizeof( wxString );
+	m_cLunarBodyLimb = new wxChoice( sbSizer11->GetStaticBox(), wxID_ANY, wxDefaultPosition, wxDefaultSize, m_cLunarBodyLimbNChoices, m_cLunarBodyLimbChoices, 0 );
+	m_cLunarBodyLimb->SetSelection( 0 );
+	fgSizer29->Add( m_cLunarBodyLimb, 0, wxALL, 5 );
+
+
+	sbSizer11->Add( fgSizer29, 1, wxEXPAND, 5 );
 
 
 	m_fgSizerLunar->Add( sbSizer11, 1, wxEXPAND, 5 );
@@ -509,6 +552,8 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_tMeasurementMinutes->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_tMeasurementMinutes->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( SightDialogBase::MeasurementEntered ), NULL, this );
 	m_tMeasurementCertainty->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
+	m_cLunarMoonLimb->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
+	m_cLunarBodyLimb->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_Calendar->Connect( wxEVT_CALENDAR_SEL_CHANGED, wxCalendarEventHandler( SightDialogBase::RecomputeCalendar ), NULL, this );
 	m_sHours->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( SightDialogBase::RecomputeSpin ), NULL, this );
 	m_sMinutes->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( SightDialogBase::RecomputeSpin ), NULL, this );
@@ -548,6 +593,8 @@ SightDialogBase::~SightDialogBase()
 	m_tMeasurementMinutes->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_tMeasurementMinutes->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( SightDialogBase::MeasurementEntered ), NULL, this );
 	m_tMeasurementCertainty->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
+	m_cLunarMoonLimb->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
+	m_cLunarBodyLimb->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_Calendar->Disconnect( wxEVT_CALENDAR_SEL_CHANGED, wxCalendarEventHandler( SightDialogBase::RecomputeCalendar ), NULL, this );
 	m_sHours->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( SightDialogBase::RecomputeSpin ), NULL, this );
 	m_sMinutes->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( SightDialogBase::RecomputeSpin ), NULL, this );

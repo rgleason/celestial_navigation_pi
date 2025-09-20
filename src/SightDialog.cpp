@@ -256,6 +256,26 @@ void SightDialog::Recompute() {
   m_cLimb->Enable(m_cType->GetSelection() != AZIMUTH);
 
   m_fgSizerLunar->Show(m_cType->GetSelection() == LUNAR);
+  if (m_cType->GetSelection() == LUNAR) {
+    m_sbSizerSight->GetStaticBox()->SetLabel(_T("Lunar distance (LDOpc)"));
+    m_sbSizerSight->Layout();
+    m_Sight.m_BodyLimb = (Sight::BodyLimb)m_cLimb->GetSelection();
+    m_cLimb->Clear();
+    m_cLimb->Append(_T("Near"));
+    m_cLimb->Append(_T("Far"));
+    m_cLimb->Layout();
+    m_cLimb->SetSelection((int)m_Sight.m_BodyLimb);
+  } else {
+    m_sbSizerSight->GetStaticBox()->SetLabel(_T("Sight measurement (Hs)"));
+    m_sbSizerSight->Layout();
+    m_Sight.m_BodyLimb = (Sight::BodyLimb)m_cLimb->GetSelection();
+    m_cLimb->Clear();
+    m_cLimb->Append(_T("Lower"));
+    m_cLimb->Append(_T("Center"));
+    m_cLimb->Append(_T("Upper"));
+    m_cLimb->Layout();
+    m_cLimb->SetSelection((int)m_Sight.m_BodyLimb);
+  }
 
   if (!m_breadytorecompute) return;
 
