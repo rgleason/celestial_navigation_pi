@@ -783,20 +783,20 @@ HP = %.4f%c = %s\n"),
 
   if (HP) {
     ParallaxCorrection =
-        -r_to_d(asin(sin(d_to_r(HP)) * cos(d_to_r(CorrectedAltitude))));
+        r_to_d(asin(sin(d_to_r(HP)) * cos(d_to_r(CorrectedAltitude))));
     m_CalcStr +=
         wxString::Format(_("\
-ParallaxCorrection = -asin(sin(HP) * cos(CorrectedAltitude))\n\
-ParallaxCorrection = -asin(sin(%.4f) * cos(%.4f))\n\
+ParallaxCorrection = asin(sin(HP) * cos(CorrectedAltitude))\n\
+ParallaxCorrection = asin(sin(%.4f) * cos(%.4f))\n\
 ParallaxCorrection = %.4f%c = %s\n"),
                          HP, CorrectedAltitude, ParallaxCorrection, 0x00B0,
                          toSDMM_PlugIn(0, ParallaxCorrection, true));
   }
 
-  m_ObservedAltitude = CorrectedAltitude - ParallaxCorrection;
+  m_ObservedAltitude = CorrectedAltitude + ParallaxCorrection;
   m_CalcStr += wxString::Format(_("\nObserved Altitude (Ho)\n\
-ObservedAltitude = CorrectedAltitude - ParallaxCorrection\n\
-ObservedAltitude = %.4f%c - %.4f%c\n\
+ObservedAltitude = CorrectedAltitude + ParallaxCorrection\n\
+ObservedAltitude = %.4f%c + %.4f%c\n\
 ObservedAltitude = %.4f%c = %s\n"),
                                 CorrectedAltitude, 0x00B0, ParallaxCorrection,
                                 0x00B0, m_ObservedAltitude, 0x00B0,
@@ -926,20 +926,20 @@ HP = %.4f%c = %s\n"),
                        lunar_HP, 0x00B0, toSDMM_PlugIn(0, lunar_HP, true));
 
   ParallaxCorrectionMoon =
-      -r_to_d(asin(sin(d_to_r(lunar_HP)) * cos(d_to_r(CorrectedAltitudeMoon))));
+      r_to_d(asin(sin(d_to_r(lunar_HP)) * cos(d_to_r(CorrectedAltitudeMoon))));
   m_CalcStr +=
       wxString::Format(_("\
-ParallaxCorrectionMoon = -asin(sin(HP) * cos(CorrectedAltitude))\n\
-ParallaxCorrectionMoon = -asin(sin(%.4f) * cos(%.4f))\n\
+ParallaxCorrectionMoon = asin(sin(HP) * cos(CorrectedAltitude))\n\
+ParallaxCorrectionMoon = asin(sin(%.4f) * cos(%.4f))\n\
 ParallaxCorrectionMoon = %.4f%c = %s\n"),
                        lunar_HP, CorrectedAltitudeMoon, ParallaxCorrectionMoon,
                        0x00B0, toSDMM_PlugIn(0, ParallaxCorrectionMoon, true));
 
-  double ObservedAltitudeMoon = CorrectedAltitudeMoon - ParallaxCorrectionMoon;
+  double ObservedAltitudeMoon = CorrectedAltitudeMoon + ParallaxCorrectionMoon;
   m_CalcStr +=
       wxString::Format(_("\nObserved Altitude (Ho)\n\
-ObservedAltitudeMoon = CorrectedAltitudeMoon - ParallaxCorrectionMoon\n\
-ObservedAltitudeMoon = %.4f%c - %.4f%c\n\
+ObservedAltitudeMoon = CorrectedAltitudeMoon + ParallaxCorrectionMoon\n\
+ObservedAltitudeMoon = %.4f%c + %.4f%c\n\
 ObservedAltitudeMoon = %.4f%c = %s\n"),
                        CorrectedAltitudeMoon, 0x00B0, ParallaxCorrectionMoon,
                        0x00B0, ObservedAltitudeMoon, 0x00B0,
@@ -1041,20 +1041,20 @@ HP = %.4f%c\n"),
 
   if (HP) {
     ParallaxCorrection =
-        -r_to_d(asin(sin(d_to_r(HP)) * cos(d_to_r(CorrectedAltitude))));
+        r_to_d(asin(sin(d_to_r(HP)) * cos(d_to_r(CorrectedAltitude))));
     m_CalcStr +=
         wxString::Format(_("\
-ParallaxCorrection = -asin(sin(HP) * cos(CorrectedAltitude))\n\
-ParallaxCorrection = -asin(sin(%.4f) * cos(%.4f))\n\
+ParallaxCorrection = asin(sin(HP) * cos(CorrectedAltitude))\n\
+ParallaxCorrection = asin(sin(%.4f) * cos(%.4f))\n\
 ParallaxCorrection = %.4f%c = %s\n"),
                          HP, CorrectedAltitude, ParallaxCorrection, 0x00B0,
                          toSDMM_PlugIn(0, ParallaxCorrection, true));
   }
 
-  double ObservedAltitude = CorrectedAltitude - ParallaxCorrection;
+  double ObservedAltitude = CorrectedAltitude + ParallaxCorrection;
   m_CalcStr += wxString::Format(_("\nObserved Altitude (Ho)\n\
-ObservedAltitude = CorrectedAltitude - ParallaxCorrection\n\
-ObservedAltitude = %.4f%c - %.4f%c\n\
+ObservedAltitude = CorrectedAltitude + ParallaxCorrection\n\
+ObservedAltitude = %.4f%c + %.4f%c\n\
 ObservedAltitude = %.4f%c = %s\n"),
                                 CorrectedAltitude, 0x00B0, ParallaxCorrection,
                                 0x00B0, ObservedAltitude, 0x00B0,
@@ -1120,17 +1120,17 @@ cos(∆Z) = %.4f\n\
                                 ApparentLunarDistance, ham, hab, ham, hab,
                                 cosdz, dz, 0x00B0, toSDMM_PlugIn(0, dz, true));
 
-  double hom = ham - ParallaxCorrectionMoon - RefractionCorrectionMoon;
-  double hob = hab - ParallaxCorrection - RefractionCorrection;
+  double hom = ham + ParallaxCorrectionMoon - RefractionCorrectionMoon;
+  double hob = hab + ParallaxCorrection - RefractionCorrection;
   double cosldc = sin(d_to_r(hom)) * sin(d_to_r(hob)) +
                   cos(d_to_r(hom)) * cos(d_to_r(hob)) * cosdz;
   double ldc = r_to_d(acos(cosldc));
   m_CalcStr += wxString::Format(
       _("\nLunar Distance Cleared (LDc)\n\
-ho.m = ha.m - ParallaxCorrectionMoon - RefractionCorrectionMoon\n\
-ho.m = %.4f - %.4f - %.4f = %.4f\n\
-ho.b = ha.b - ParallaxCorrection - RefractionCorrection\n\
-ho.b = %.4f - %.4f - %.4f = %.4f\n\
+ho.m = ha.m + ParallaxCorrectionMoon - RefractionCorrectionMoon\n\
+ho.m = %.4f + %.4f - %.4f = %.4f\n\
+ho.b = ha.b + ParallaxCorrection - RefractionCorrection\n\
+ho.b = %.4f + %.4f - %.4f = %.4f\n\
 cos(LDc) = sin(ho.m) * sin(ho.b) + cos(ho.m) * cos(ho.b) * cos(∆Z)\n\
 cos(LDc) = sin(%.4f) * sin(%.4f) + cos(%.4f) * cos(%.4f) * cos(%.4f)\n\
 cos(LDc) = %.4f\n\
