@@ -258,9 +258,11 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_Body = wxString::FromUTF8(e->Attribute("Body"));
         s.m_BodyLimb = (Sight::BodyLimb)AttributeInt(e, "BodyLimb", 0);
         s.m_LunarMoonAltitude = AttributeDouble(e, "LunarMoonAltitude", 0);
-        s.m_LunarMoonLimb = (Sight::BodyLimb)AttributeInt(e, "LunarMoonLimb", 0);
+        s.m_LunarMoonLimb =
+            (Sight::BodyLimb)AttributeInt(e, "LunarMoonLimb", 0);
         s.m_LunarBodyAltitude = AttributeDouble(e, "LunarBodyAltitude", 0);
-        s.m_LunarBodyLimb = (Sight::BodyLimb)AttributeInt(e, "LunarBodyLimb", 0);
+        s.m_LunarBodyLimb =
+            (Sight::BodyLimb)AttributeInt(e, "LunarBodyLimb", 0);
 
         s.m_DateTime.ParseISODate(wxString::FromUTF8(e->Attribute("Date")));
 
@@ -388,7 +390,7 @@ void CelestialNavigationDialog::SaveXML() {
   }
 }
 
-bool compareSightAsc(const Sight &a, const Sight &b, int sortCol) {
+bool compareSightAsc(const Sight& a, const Sight& b, int sortCol) {
   switch (sortCol) {
     case rmVISIBLE:
       if (a.m_bVisible != b.m_bVisible) return a.m_bVisible < b.m_bVisible;
@@ -425,7 +427,7 @@ bool compareSightAsc(const Sight &a, const Sight &b, int sortCol) {
   return true;
 }
 
-bool compareSight(const Sight &a, const Sight &b, int sortCol, bool sortAsc) {
+bool compareSight(const Sight& a, const Sight& b, int sortCol, bool sortAsc) {
   return sortAsc ? compareSightAsc(a, b, sortCol)
                  : !compareSightAsc(a, b, sortCol);
 }
@@ -468,7 +470,7 @@ void CelestialNavigationDialog::RebuildList() {
       m_lSights->SetItem(
           idx, rmCOLOR,
           _("Time Correction") +
-              wxString::Format(_T(": %.4f"), s.m_TimeCorrection));
+              wxString::Format(_T(": %ld s"), s.m_TimeCorrection));
     else
       m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName);
 
@@ -498,7 +500,7 @@ void CelestialNavigationDialog::UpdateSight(int idx, bool warnings) {
   if (s.m_Type == Sight::LUNAR)
     m_lSights->SetItem(idx, rmCOLOR,
                        _("Time Correction") +
-                           wxString::Format(_T(": %.4f"), s.m_TimeCorrection));
+                           wxString::Format(_T(": %ld s"), s.m_TimeCorrection));
   else
     m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName);
 

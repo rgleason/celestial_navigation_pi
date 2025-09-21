@@ -895,10 +895,10 @@ lc = %.4f%c = %s\n"),
 
   double LimbCorrectionMoon = 0;
   if (lunar_lc) {
-    if (m_BodyLimb == UPPER) {
+    if (m_LunarMoonLimb == UPPER) {
       LimbCorrectionMoon = lunar_lc;
       m_CalcStr += wxString::Format(_("Upper Limb"));
-    } else if (m_BodyLimb == LOWER) {
+    } else if (m_LunarMoonLimb == LOWER) {
       LimbCorrectionMoon = -lunar_lc;
       m_CalcStr += wxString::Format(_("Lower Limb"));
     }
@@ -935,10 +935,20 @@ ParallaxCorrectionMoon = %.4f%c = %s\n"),
                        lunar_HP, CorrectedAltitudeMoon, ParallaxCorrectionMoon,
                        0x00B0, toSDMM_PlugIn(0, ParallaxCorrectionMoon, true));
 
+  double ObservedAltitudeMoon = CorrectedAltitudeMoon - ParallaxCorrectionMoon;
+  m_CalcStr +=
+      wxString::Format(_("\nObserved Altitude (Ho)\n\
+ObservedAltitudeMoon = CorrectedAltitudeMoon - ParallaxCorrectionMoon\n\
+ObservedAltitudeMoon = %.4f%c - %.4f%c\n\
+ObservedAltitudeMoon = %.4f%c = %s\n"),
+                       CorrectedAltitudeMoon, 0x00B0, ParallaxCorrectionMoon,
+                       0x00B0, ObservedAltitudeMoon, 0x00B0,
+                       toSDMM_PlugIn(0, ObservedAltitudeMoon, true));
+
   // body
 
   m_CalcStr += wxString::Format(
-      _("%s altitude measurement (Hs) = %.4f%c = %s\n\n"), m_Body,
+      _("\n\n%s altitude measurement (Hs) = %.4f%c = %s\n"), m_Body,
       m_LunarBodyAltitude, 0x00B0, toSDMM_PlugIn(0, m_LunarBodyAltitude, true));
 
   /* Apparent Altitude Ha */
@@ -987,10 +997,10 @@ ra = %.4f, lc = 0.266564/ra = %.4f%c = %s\n"),
 
   double LimbCorrection = 0;
   if (lc) {
-    if (m_BodyLimb == UPPER) {
+    if (m_LunarBodyLimb == UPPER) {
       LimbCorrection = lc;
       m_CalcStr += wxString::Format(_("Upper Limb"));
-    } else if (m_BodyLimb == LOWER) {
+    } else if (m_LunarBodyLimb == LOWER) {
       LimbCorrection = -lc;
       m_CalcStr += wxString::Format(_("Lower Limb"));
     }
@@ -1041,29 +1051,181 @@ ParallaxCorrection = %.4f%c = %s\n"),
                          toSDMM_PlugIn(0, ParallaxCorrection, true));
   }
 
-  double CorrectionsMoon =
-      RefractionCorrectionMoon + LimbCorrectionMoon + ParallaxCorrectionMoon;
-  double CorrectionsBody =
-      RefractionCorrection + LimbCorrection + ParallaxCorrection;
-  double Corrections = fabs(CorrectionsMoon - CorrectionsBody);
+  double ObservedAltitude = CorrectedAltitude - ParallaxCorrection;
+  m_CalcStr += wxString::Format(_("\nObserved Altitude (Ho)\n\
+ObservedAltitude = CorrectedAltitude - ParallaxCorrection\n\
+ObservedAltitude = %.4f%c - %.4f%c\n\
+ObservedAltitude = %.4f%c = %s\n"),
+                                CorrectedAltitude, 0x00B0, ParallaxCorrection,
+                                0x00B0, ObservedAltitude, 0x00B0,
+                                toSDMM_PlugIn(0, ObservedAltitude, true));
 
-  m_CalcStr += wxString::Format(_("\
-CorrectionsMoon = %.4f%c\n\
-CorrectionsBody = %.4f%c\n\
-Corrections = abs(CorrectionsMoon - CorrectionsBody) = %.4f%c = %s\n"),
-                                CorrectionsMoon, 0x00B0, CorrectionsBody,
-                                0x00B0, Corrections, 0x00B0,
-                                toSDMM_PlugIn(0, Corrections, true));
+  double ApparentLunarDistance;
+  m_CalcStr += _("\n\nApparent Lunar Distance (LDo)\n");
+  if (!m_Body.Cmp(_T("Sun"))) {
+    ApparentLunarDistance = m_Measurement - IndexCorrection + lunar_topoSD + SD,
+    m_CalcStr += wxString::Format(
+        _("\
+LDo = LDO.pc - IndexCorrection + LunarTopoSD + SunSD\n\
+LDo = %.4f%c - %.4f%c + %.4f%c + %.4f%c\n\
+LDo = %.4f%c = %s\n"),
+        m_Measurement, 0x00B0, IndexCorrection, 0x00B0, lunar_topoSD, 0x00B0,
+        SD, 0x00B0, ApparentLunarDistance, 0x00B0,
+        toSDMM_PlugIn(0, ApparentLunarDistance, true));
+  } else {
+    if (m_BodyLimb == NEAR) {
+      ApparentLunarDistance = m_Measurement - IndexCorrection + lunar_topoSD,
+      m_CalcStr +=
+          wxString::Format(_("\
+LDo is NEAR\n\
+LDo = LDO.pc - IndexCorrection + LunarTopoSD\n\
+LDo = %.4f%c - %.4f%c + %.4f%c\n\
+LDo = %.4f%c = %s\n"),
+                           m_Measurement, 0x00B0, IndexCorrection, 0x00B0,
+                           lunar_topoSD, 0x00B0, ApparentLunarDistance, 0x00B0,
+                           toSDMM_PlugIn(0, ApparentLunarDistance, true));
+    } else {
+      ApparentLunarDistance = m_Measurement - IndexCorrection - lunar_topoSD,
+      m_CalcStr +=
+          wxString::Format(_("\
+LDo is FAR\n\
+LDo = LDO.pc - IndexCorrection - LunarTopoSD\n\
+LDo = %.4f%c - %.4f%c - %.4f%c\n\
+LDo = %.4f%c = %s\n"),
+                           m_Measurement, 0x00B0, IndexCorrection, 0x00B0,
+                           lunar_topoSD, 0x00B0, ApparentLunarDistance, 0x00B0,
+                           toSDMM_PlugIn(0, ApparentLunarDistance, true));
+    }
+  }
 
-  double CorrectedMeasurement = m_Measurement - Corrections - IndexCorrection;
+  double ham = ApparentAltitudeMoon - LimbCorrectionMoon;
+  double hab = ApparentAltitude - LimbCorrection;
+  double cosdz =
+      cos(d_to_r(ApparentLunarDistance)) / cos(d_to_r(ham)) / cos(d_to_r(hab)) -
+      tan(d_to_r(ham)) * tan(d_to_r(hab));
+  double dz = r_to_d(acos(cosdz));
+  m_CalcStr += wxString::Format(_("\n∆Z Angle\n\
+ha.m = ApparentAltitudeMoon - LimbCorrectionMoon\n\
+ha.m = %.4f - %.4f = %.4f\n\
+ha.b = ApparentAltitude - LimbCorrection\n\
+ha.b = %.4f - %.4f = %.4f\n\
+cos(LDo) = sin(ha.m) * sin(ha.b) + cos(ha.m) * cos(ha.b) * cos(∆Z)\n\
+cos(∆Z) = cos(LDo) / cos(ha.m) / cos(ha.b) - tan(ha.m) * tan(ha.b)\n\
+cos(∆Z) = cos(LDo) / cos(ha.m) / cos(ha.b) - tan(ha.m) * tan(ha.b)\n\
+cos(∆Z) = cos(%.4f) / cos(%.4f) / cos(%.4f) - tan(%.4f) * tan(%.4f)\n\
+cos(∆Z) = %.4f\n\
+∆Z = %.4f%c = %s\n"),
+                                ApparentAltitudeMoon, LimbCorrectionMoon, ham,
+                                ApparentAltitude, LimbCorrection, hab,
+                                ApparentLunarDistance, ham, hab, ham, hab,
+                                cosdz, dz, 0x00B0, toSDMM_PlugIn(0, dz, true));
+
+  double hom = ham - ParallaxCorrectionMoon - RefractionCorrectionMoon;
+  double hob = hab - ParallaxCorrection - RefractionCorrection;
+  double cosldc = sin(d_to_r(hom)) * sin(d_to_r(hob)) +
+                  cos(d_to_r(hom)) * cos(d_to_r(hob)) * cosdz;
+  double ldc = r_to_d(acos(cosldc));
+  m_CalcStr += wxString::Format(
+      _("\nLunar Distance Cleared (LDc)\n\
+ho.m = ha.m - ParallaxCorrectionMoon - RefractionCorrectionMoon\n\
+ho.m = %.4f - %.4f - %.4f = %.4f\n\
+ho.b = ha.b - ParallaxCorrection - RefractionCorrection\n\
+ho.b = %.4f - %.4f - %.4f = %.4f\n\
+cos(LDc) = sin(ho.m) * sin(ho.b) + cos(ho.m) * cos(ho.b) * cos(∆Z)\n\
+cos(LDc) = sin(%.4f) * sin(%.4f) + cos(%.4f) * cos(%.4f) * cos(%.4f)\n\
+cos(LDc) = %.4f\n\
+LDc = %.4f%c = %s\n\n"),
+      ham, ParallaxCorrectionMoon, RefractionCorrectionMoon, hom, hab,
+      ParallaxCorrection, RefractionCorrection, hob, hom, hob, hom, hob, dz,
+      cosldc, ldc, 0x00B0, toSDMM_PlugIn(0, ldc, true));
+
+  wxDateTime startTime =
+      m_CorrectedDateTime - wxTimeSpan::Seconds(m_TimeCertainty / 2);
+  wxDateTime endTime =
+      m_CorrectedDateTime + wxTimeSpan::Seconds(m_TimeCertainty / 2);
+
+  double startBodyLat, startBodyLon, startBodyGhaast, startBodyRad;
+  BodyLocation(startTime, &startBodyLat, &startBodyLon, &startBodyGhaast,
+               &startBodyRad, 0);
+
+  m_CalcStr += Alminac(startTime, startBodyLat, startBodyLon, startBodyGhaast,
+                       startBodyRad, SD, HP);
+  startBodyLon = resolve_heading_positive(-startBodyLon);
+
+  double endBodyLat, endBodyLon, endBodyGhaast, endBodyRad;
+  BodyLocation(endTime, &endBodyLat, &endBodyLon, &endBodyGhaast, &endBodyRad,
+               0);
+
+  m_CalcStr += Alminac(endTime, endBodyLat, endBodyLon, endBodyGhaast,
+                       endBodyRad, SD, HP);
+  endBodyLon = resolve_heading_positive(-endBodyLon);
+
+  wxString body = m_Body;
+  m_Body = _T("Moon");
+  double startMoonLat, startMoonLon, startMoonGhaast, startMoonRad;
+  BodyLocation(startTime, &startMoonLat, &startMoonLon, &startMoonGhaast,
+               &startMoonRad, 0);
+
+  m_CalcStr += Alminac(startTime, startMoonLat, startMoonLon, startMoonGhaast,
+                       startMoonRad, lunar_SD, lunar_HP);
+  startMoonLon = resolve_heading_positive(-startMoonLon);
+
+  double endMoonLat, endMoonLon, endMoonGhaast, endMoonRad;
+  BodyLocation(endTime, &endMoonLat, &endMoonLon, &endMoonGhaast, &endMoonRad,
+               0);
+
+  m_CalcStr += Alminac(endTime, endMoonLat, endMoonLon, endMoonGhaast,
+                       endMoonRad, lunar_SD, lunar_HP);
+  endMoonLon = resolve_heading_positive(-endMoonLon);
+  m_Body = body;
+
+  double dgha = fabs(startMoonLon - startBodyLon);
+  cosldc =
+      sin(d_to_r(startMoonLat)) * sin(d_to_r(startBodyLat)) +
+      cos(d_to_r(startMoonLat)) * cos(d_to_r(startBodyLat)) * cos(d_to_r(dgha));
+  double startLdc = r_to_d(acos(cosldc));
   m_CalcStr +=
-      wxString::Format(_("\
-CorrectedMeasurement = Measurement - Corrections - IndexCorrection\n\
-CorrectedMeasurement = %.4f%c - %.4f%c - %.4f%c\n\
-CorrectedMeasurement = %.4f%c = %s\n"),
-                       m_Measurement, 0x00B0, Corrections, 0x00B0,
-                       IndexCorrection, 0x00B0, CorrectedMeasurement, 0x00B0,
-                       toSDMM_PlugIn(0, CorrectedMeasurement, true));
+      wxString::Format(_("Lunar Distance Cleared (LDc) prediction for %s\n\
+cos(LDc) = sin(dec.m) * sin(dec.b) + cos(dec.m) * cos(dec.b) * cos(∆gha)\n\
+cos(LDc) = sin(%.4f) * sin(%.4f) + cos(%.4f) * cos(%.4f) * cos(%.4f)\n\
+cos(LDc) = %.4f\n\
+LDc = %.4f%c = %s\n"),
+                       startTime.Format("%Y-%m-%d %H:%M:%S"), startMoonLat,
+                       startBodyLat, startMoonLat, startBodyLat, dgha, cosldc,
+                       startLdc, 0x00B0, toSDMM_PlugIn(0, startLdc, true));
+
+  dgha = fabs(endMoonLon - endBodyLon);
+  cosldc =
+      sin(d_to_r(endMoonLat)) * sin(d_to_r(endBodyLat)) +
+      cos(d_to_r(endMoonLat)) * cos(d_to_r(endBodyLat)) * cos(d_to_r(dgha));
+  double endLdc = r_to_d(acos(cosldc));
+  m_CalcStr += wxString::Format(
+      _("\nLunar Distance Cleared (LDc) prediction for %s\n\
+cos(LDc) = sin(dec.m) * sin(dec.b) + cos(dec.m) * cos(dec.b) * cos(∆gha)\n\
+cos(LDc) = sin(%.4f) * sin(%.4f) + cos(%.4f) * cos(%.4f) * cos(%.4f)\n\
+cos(LDc) = %.4f\n\
+LDc = %.4f%c = %s\n"),
+      endTime.Format("%Y-%m-%d %H:%M:%S"), endMoonLat, endBodyLat, endMoonLat,
+      endBodyLat, dgha, cosldc, endLdc, 0x00B0, toSDMM_PlugIn(0, endLdc, true));
+
+  wxDateTime interpolatedTime =
+      startTime +
+      wxTimeSpan(0, 0,
+                 (ldc - startLdc) * m_TimeCertainty / (endLdc - startLdc));
+  m_CalcStr += wxString::Format(
+      _("\nInterpolating Lunar Distance Cleared to find out UTC\n\
+UTC = time.start + (LDc - LDc.start) * (time.end - time.start) / (LDc.end - LDc.start)\n\
+UTC = %s + (%.4f - %.4f) * (%s - %s) / (%.4f - %.4f)\n\
+UTC = %s\n"),
+      startTime.Format("%Y-%m-%d %H:%M:%S"), ldc, startLdc,
+      endTime.Format("%Y-%m-%d %H:%M:%S"),
+      startTime.Format("%Y-%m-%d %H:%M:%S"), endLdc, startLdc,
+      interpolatedTime.Format("%Y-%m-%d %H:%M:%S"));
+
+  m_TimeCorrection =
+      (interpolatedTime - m_CorrectedDateTime).GetSeconds().ToLong();
+  m_CalcStr +=
+      wxString::Format(_("\nTime correction %ld seconds"), m_TimeCorrection);
 
   double lat, lon, ghaast;
   BodyLocation(m_CorrectedDateTime, &lat, &lon, &ghaast, &rad, 0);
@@ -1072,7 +1234,7 @@ CorrectedMeasurement = %.4f%c = %s\n"),
       Alminac(m_CorrectedDateTime, lat, lon, ghaast, rad, SD, HP) + m_CalcStr;
 
   double lunar_lat, lunar_lon, lunar_ghaast, lunar_rad;
-  wxString body = m_Body;
+  body = m_Body;
   m_Body = _T("Moon");
   BodyLocation(m_CorrectedDateTime, &lunar_lat, &lunar_lon, &lunar_ghaast,
                &lunar_rad, 0);
@@ -1081,28 +1243,6 @@ CorrectedMeasurement = %.4f%c = %s\n"),
                       lunar_rad, lunar_SD, lunar_HP) +
               m_CalcStr;
   m_Body = body;
-
-  // Compute angle between moon and body
-  double x1 = cos(lunar_lat) * cos(lunar_lon),
-         y1 = cos(lunar_lat) * sin(lunar_lon), z1 = sin(lunar_lat);
-  double x2 = cos(lat) * cos(lon), y2 = cos(lat) * sin(lon), z2 = sin(lat);
-  double ang = r_to_d(acos(x1 * x2 + y1 * y2 + z1 * z2));
-
-  //   double CorrectedMeasurement = m_Measurement - IndexCorrection -
-  //   LimbCorrection;
-  m_CalcStr += wxString::Format(
-      _("\nCalculated angle between Moon and ") + m_Body + _T(" %.4f%c"), ang,
-      0x00B0);
-  double error = CorrectedMeasurement - ang;
-  m_CalcStr +=
-      wxString::Format(_("\nError from measurement: %.4f%c"), error, 0x00B0);
-
-  m_TimeCorrection = error * 6720;
-
-  m_CalcStr += _(
-      "\nMoon takes 28 days to orbit, one degree of error takes 6720 seconds");
-  m_CalcStr +=
-      wxString::Format(_("\nTime correction %.4f seconds"), m_TimeCorrection);
 }
 
 void Sight::RebuildPolygonsAltitude() {
