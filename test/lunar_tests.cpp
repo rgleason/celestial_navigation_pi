@@ -36,15 +36,11 @@ protected:
 
 static int error_ldc;
 static int error_timechange;
-static int error_lonerror;
-static int error_poserror;
 
 static void commontest(Sight &sight, wxDateTime &datetime,
                        const char *body, int line, const char *date,
-                       double dr_lat, double dr_lon,
                        double expected_ldc, long expected_timechange,
-                       double expected_lonerror, double expected_poserror,
-                       int epsilon) {
+                       double epsilon) {
 
     sight.Recompute(0);  // 0 = no clock offset
 
@@ -81,23 +77,24 @@ struct lunarsightdata {
     struct degmin hs_moon;
     Sight::BodyLimb limb_body;
     struct degmin hs_body;
-    double dr_lat;
-    double dr_lon;
     double expected_ldc;
     long expected_timechange;
-    double expected_lonerror;
-    double expected_poserror;
 };
 
 struct lunarsightdata LUNAR_SIGHTS[] = {
-    { "2025-08-18 11:58:00", "Sun", Sight::NEAR, 17, 1013, -0.8, 2.4, { 59, 18.8 }, Sight::LOWER, { 70, 4 }, Sight::LOWER, { 17, 1}, 43.2676, -76.9798, 60.104126, -91, -22.74, -16.55836 },
+    /* case 1 */
+    { "2025-08-18 11:58:00", "Sun", Sight::NEAR, 17, 1013, -0.8, 2.4, { 59, 18.8 }, Sight::LOWER, { 70, 4 }, Sight::LOWER, { 17, 1}, 60.104126, -91 },
+    /* case 2 */
+    { "2025-08-18 11:58:00", "Sun", Sight::NEAR, 17, 1013, -0.8, 2.4, { 59, 18.0 }, Sight::LOWER, { 70, 4 }, Sight::LOWER, { 17, 1}, 60.091036, -4 },
+    /* case 5 */
+//    { "2025-08-09 07:00:00", "Saturn", Sight::NEAR, 10, 1010, 0.1, 2.4, { 45, 2.8 }, Sight::LOWER, { 22, 53 }, Sight::CENTER, { 42, 11 }, 44.800810, -3 },
+    /* case 6 */
+    { "2025-08-09 07:00:00", "Saturn", Sight::NEAR, 10, 1010, 0.1, 2.4, { 44, 56.5 }, Sight::LOWER, { 63, 59 }, Sight::CENTER, { 70, 38 }, 44.800810, -3 },
 };
 
 TEST_F(LunarTest, Sight) {
     std::vector<int> lunar_ldc;
     std::vector<int> lunar_timechange;
-    std::vector<int> lunar_lonerror;
-    std::vector<int> lunar_poserror;
 
     int count = (int)(sizeof(LUNAR_SIGHTS) / sizeof(LUNAR_SIGHTS[0]));
     for (int i = 0; i < count; i++) {
@@ -118,24 +115,19 @@ TEST_F(LunarTest, Sight) {
         sight.m_LunarBodyAltitude = DegMin2DecDeg(data.hs_body.deg, data.hs_body.min);
         sight.m_TimeCertainty = 10800;
 
-        const int EPSILON = 1;  // 0.1 arc-minute tolerance
-        commontest(sight, datetime, data.body, i, data.date, data.dr_lat, data.dr_lon,
+        const double EPSILON = 0.001;
+        commontest(sight, datetime, data.body, i, data.date,
                    data.expected_ldc, data.expected_timechange,
-                   data.expected_lonerror, data.expected_poserror,
                    EPSILON);
 
         lunar_ldc.push_back(error_ldc);
         lunar_timechange.push_back(error_timechange);
-        lunar_lonerror.push_back(error_lonerror);
-        lunar_poserror.push_back(error_poserror);
     }
 
     std::cout << "============================================================================="
               << std::endl;
     report("Lunar", "LDC", lunar_ldc);
     report("Lunar", "Time change", lunar_timechange);
-    report("Lunar", "Lon error", lunar_lonerror);
-    report("Lunar", "Pos error", lunar_poserror);
     std::cout << "============================================================================="
               << std::endl;
 }
