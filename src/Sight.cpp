@@ -1104,17 +1104,17 @@ LDo = %.4f%c = %s\n"),
       cos(d_to_r(ApparentLunarDistance)) / cos(d_to_r(ham)) / cos(d_to_r(hab)) -
       tan(d_to_r(ham)) * tan(d_to_r(hab));
   double dz = r_to_d(acos(cosdz));
-  m_CalcStr += wxString::Format(_("\n∆Z Angle\n\
+  m_CalcStr += wxString::Format(_("\nDZ Angle\n\
 ha.m = ApparentAltitudeMoon - LimbCorrectionMoon\n\
 ha.m = %.4f - %.4f = %.4f\n\
 ha.b = ApparentAltitude - LimbCorrection\n\
 ha.b = %.4f - %.4f = %.4f\n\
-cos(LDo) = sin(ha.m) * sin(ha.b) + cos(ha.m) * cos(ha.b) * cos(∆Z)\n\
-cos(∆Z) = cos(LDo) / cos(ha.m) / cos(ha.b) - tan(ha.m) * tan(ha.b)\n\
-cos(∆Z) = cos(LDo) / cos(ha.m) / cos(ha.b) - tan(ha.m) * tan(ha.b)\n\
-cos(∆Z) = cos(%.4f) / cos(%.4f) / cos(%.4f) - tan(%.4f) * tan(%.4f)\n\
-cos(∆Z) = %.4f\n\
-∆Z = %.4f%c = %s\n"),
+cos(LDo) = sin(ha.m) * sin(ha.b) + cos(ha.m) * cos(ha.b) * cos(DZ)\n\
+cos(DZ) = cos(LDo) / cos(ha.m) / cos(ha.b) - tan(ha.m) * tan(ha.b)\n\
+cos(DZ) = cos(LDo) / cos(ha.m) / cos(ha.b) - tan(ha.m) * tan(ha.b)\n\
+cos(DZ) = cos(%.4f) / cos(%.4f) / cos(%.4f) - tan(%.4f) * tan(%.4f)\n\
+cos(DZ) = %.4f\n\
+DZ = %.4f%c = %s\n"),
                                 ApparentAltitudeMoon, LimbCorrectionMoon, ham,
                                 ApparentAltitude, LimbCorrection, hab,
                                 ApparentLunarDistance, ham, hab, ham, hab,
@@ -1131,7 +1131,7 @@ ho.m = ha.m + ParallaxCorrectionMoon - RefractionCorrectionMoon\n\
 ho.m = %.4f + %.4f - %.4f = %.4f\n\
 ho.b = ha.b + ParallaxCorrection - RefractionCorrection\n\
 ho.b = %.4f + %.4f - %.4f = %.4f\n\
-cos(LDc) = sin(ho.m) * sin(ho.b) + cos(ho.m) * cos(ho.b) * cos(∆Z)\n\
+cos(LDc) = sin(ho.m) * sin(ho.b) + cos(ho.m) * cos(ho.b) * cos(DZ)\n\
 cos(LDc) = sin(%.4f) * sin(%.4f) + cos(%.4f) * cos(%.4f) * cos(%.4f)\n\
 cos(LDc) = %.4f\n\
 LDc = %.4f%c = %s\n\n"),
@@ -1186,7 +1186,7 @@ LDc = %.4f%c = %s\n\n"),
   double startLdc = r_to_d(acos(cosldc));
   m_CalcStr +=
       wxString::Format(_("Lunar Distance Cleared (LDc) prediction for %s\n\
-cos(LDc) = sin(dec.m) * sin(dec.b) + cos(dec.m) * cos(dec.b) * cos(∆gha)\n\
+cos(LDc) = sin(dec.m) * sin(dec.b) + cos(dec.m) * cos(dec.b) * cos(Dgha)\n\
 cos(LDc) = sin(%.4f) * sin(%.4f) + cos(%.4f) * cos(%.4f) * cos(%.4f)\n\
 cos(LDc) = %.4f\n\
 LDc = %.4f%c = %s\n"),
@@ -1201,7 +1201,7 @@ LDc = %.4f%c = %s\n"),
   double endLdc = r_to_d(acos(cosldc));
   m_CalcStr += wxString::Format(
       _("\nLunar Distance Cleared (LDc) prediction for %s\n\
-cos(LDc) = sin(dec.m) * sin(dec.b) + cos(dec.m) * cos(dec.b) * cos(∆gha)\n\
+cos(LDc) = sin(dec.m) * sin(dec.b) + cos(dec.m) * cos(dec.b) * cos(Dgha)\n\
 cos(LDc) = sin(%.4f) * sin(%.4f) + cos(%.4f) * cos(%.4f) * cos(%.4f)\n\
 cos(LDc) = %.4f\n\
 LDc = %.4f%c = %s\n"),
