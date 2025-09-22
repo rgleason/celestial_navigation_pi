@@ -125,6 +125,8 @@ public:
 
   wxString m_CalcStr;
 
+  wxDateTime m_CorrectedDateTime;
+
   /* for altitude */
   double m_ObservedAltitude; /* after all corrections are applied */
 
@@ -133,6 +135,13 @@ public:
 
   /* for lunar */
   long m_TimeCorrection;
+  double m_LDC;
+
+  /* DR info */
+  double m_DRLat;
+  double m_DRLon;
+  bool m_DRBoatPosition;
+  bool m_DRMagneticAzimuth;
 
 protected:
   double CalcAngle(wxRealPoint p1, wxRealPoint p2);
@@ -163,8 +172,6 @@ private:
   void DrawPolygon(PlugIn_ViewPort& VP, wxRealPointList& area, bool poly);
 
   wxDC* m_dc;
-
-  wxDateTime m_CorrectedDateTime;
 
   static int s_lastsightcolor;
 };

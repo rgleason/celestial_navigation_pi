@@ -51,6 +51,12 @@ static void commontest(Sight &sight, wxDateTime &datetime,
     std::cout << "=== " << body << " (line " << line << ", date " << date << ") ==="
               << std::endl << std::endl;
 
+    // Test LDC
+    error_ldc = sight.m_LDC - expected_ldc;
+    EXPECT_NEAR(sight.m_LDC, expected_ldc, epsilon)
+        << "LDC differs from test sample by "
+        << error_ldc << std::endl;
+
     // Test timechange
     error_timechange = sight.m_TimeCorrection - expected_timechange;
     EXPECT_NEAR(sight.m_TimeCorrection, expected_timechange, epsilon)

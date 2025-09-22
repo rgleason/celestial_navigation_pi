@@ -38,8 +38,10 @@ public:
   ~FindBodyDialog();
 
   void OnUpdate(wxCommandEvent& event);
+  void OnUpdateBoatPosition(wxCommandEvent& event);
   void OnDone(wxCommandEvent& event);
   void Update();
+  void UpdateBoatPosition();
 
   Sight& m_Sight;
 };

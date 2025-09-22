@@ -295,6 +295,12 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_Colour = wxColour(wxString::FromUTF8(e->Attribute("Colour")));
         s.m_Colour.Set(s.m_Colour.Red(), s.m_Colour.Green(), s.m_Colour.Blue(),
                        AttributeInt(e, "Transparency", 150));
+
+        s.m_DRLat = AttributeDouble(e, "DRLat", 0);
+        s.m_DRLon = AttributeDouble(e, "DRLon", 0);
+        s.m_DRBoatPosition = AttributeBool(e, "DRBoatPosition", false);
+        s.m_DRMagneticAzimuth = AttributeBool(e, "DRMagneticAzimuth", false);
+
         s.m_bCalculated = false;
         s.m_bSelected = false;
 
@@ -379,6 +385,11 @@ void CelestialNavigationDialog::SaveXML() {
     c->SetAttribute("ColourName", s.m_ColourName.mb_str());
     c->SetAttribute("Colour", s.m_Colour.GetAsString().mb_str());
     c->SetAttribute("Transparency", s.m_Colour.Alpha());
+
+    c->SetDoubleAttribute("DRLat", s.m_DRLat);
+    c->SetDoubleAttribute("DRLon", s.m_DRLon);
+    c->SetAttribute("DRBoatPosition", s.m_DRBoatPosition);
+    c->SetAttribute("DRMagneticAzimuth", s.m_DRMagneticAzimuth);
 
     root->LinkEndChild(c);
   }

@@ -704,9 +704,14 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 
 	wxFlexGridSizer* fgSizer24;
-	fgSizer24 = new wxFlexGridSizer( 0, 3, 0, 0 );
+	fgSizer24 = new wxFlexGridSizer( 0, 1, 0, 0 );
 	fgSizer24->SetFlexibleDirection( wxBOTH );
 	fgSizer24->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+
+	wxFlexGridSizer* fgSizer28;
+	fgSizer28 = new wxFlexGridSizer( 0, 3, 0, 0 );
+	fgSizer28->SetFlexibleDirection( wxBOTH );
+	fgSizer28->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
 	wxStaticBoxSizer* sbSizer6;
 	sbSizer6 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Latitude") ), wxVERTICAL );
@@ -715,7 +720,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	sbSizer6->Add( m_tLatitude, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer24->Add( sbSizer6, 1, wxALL|wxEXPAND, 5 );
+	fgSizer28->Add( sbSizer6, 1, wxALL|wxEXPAND, 5 );
 
 	wxStaticBoxSizer* sbSizer7;
 	sbSizer7 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Longitude") ), wxVERTICAL );
@@ -724,7 +729,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	sbSizer7->Add( m_tLongitude, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer24->Add( sbSizer7, 1, wxALL|wxEXPAND, 5 );
+	fgSizer28->Add( sbSizer7, 1, wxALL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer( wxVERTICAL );
@@ -734,7 +739,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	bSizer5->Add( m_cbBoatPosition, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer24->Add( bSizer5, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	fgSizer28->Add( bSizer5, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
 	wxStaticBoxSizer* sbSizer8;
 	sbSizer8 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Altitude (Hc)") ), wxVERTICAL );
@@ -743,7 +748,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	sbSizer8->Add( m_tAltitude, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer24->Add( sbSizer8, 1, wxALL|wxEXPAND, 5 );
+	fgSizer28->Add( sbSizer8, 1, wxALL|wxEXPAND, 5 );
 
 	wxStaticBoxSizer* sbSizer9;
 	sbSizer9 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Azimuth (Zn)") ), wxVERTICAL );
@@ -752,7 +757,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	sbSizer9->Add( m_tAzimuth, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer24->Add( sbSizer9, 1, wxALL|wxEXPAND, 5 );
+	fgSizer28->Add( sbSizer9, 1, wxALL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer( wxVERTICAL );
@@ -761,7 +766,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	bSizer2->Add( m_cbMagneticAzimuth, 0, wxALL|wxFIXED_MINSIZE, 5 );
 
 
-	fgSizer24->Add( bSizer2, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	fgSizer28->Add( bSizer2, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
 	wxStaticBoxSizer* sbSizer10;
 	sbSizer10 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Intercept (in Nm)") ), wxVERTICAL );
@@ -770,7 +775,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	sbSizer10->Add( m_tIntercept, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer24->Add( sbSizer10, 1, wxALL|wxEXPAND, 5 );
+	fgSizer28->Add( sbSizer10, 1, wxALL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer4;
 	bSizer4 = new wxBoxSizer( wxVERTICAL );
@@ -781,7 +786,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	bSizer4->Add( m_cbTowards, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
 
-	fgSizer24->Add( bSizer4, 1, wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+	fgSizer28->Add( bSizer4, 1, wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer41;
 	bSizer41 = new wxBoxSizer( wxVERTICAL );
@@ -792,7 +797,80 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	bSizer41->Add( m_cbAway, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
 
-	fgSizer24->Add( bSizer41, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	fgSizer28->Add( bSizer41, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+
+
+	fgSizer24->Add( fgSizer28, 1, wxEXPAND, 5 );
+
+	m_Lunar = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Lunar") ), wxVERTICAL );
+
+	wxFlexGridSizer* fgSizer29;
+	fgSizer29 = new wxFlexGridSizer( 0, 3, 0, 0 );
+	fgSizer29->AddGrowableCol( 0 );
+	fgSizer29->AddGrowableCol( 1 );
+	fgSizer29->AddGrowableCol( 2 );
+	fgSizer29->SetFlexibleDirection( wxBOTH );
+	fgSizer29->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+
+	wxStaticBoxSizer* sbSizer13;
+	sbSizer13 = new wxStaticBoxSizer( new wxStaticBox( m_Lunar->GetStaticBox(), wxID_ANY, _("LD cleared") ), wxVERTICAL );
+
+	m_tLDC = new wxTextCtrl( sbSizer13->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	sbSizer13->Add( m_tLDC, 0, wxALL|wxEXPAND, 5 );
+
+
+	fgSizer29->Add( sbSizer13, 1, wxEXPAND, 5 );
+
+	wxStaticBoxSizer* sbSizer14;
+	sbSizer14 = new wxStaticBoxSizer( new wxStaticBox( m_Lunar->GetStaticBox(), wxID_ANY, _("UTC revised") ), wxVERTICAL );
+
+	m_tDateTimeRevised = new wxTextCtrl( sbSizer14->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	sbSizer14->Add( m_tDateTimeRevised, 0, wxALL|wxEXPAND, 5 );
+
+
+	fgSizer29->Add( sbSizer14, 2, wxEXPAND, 5 );
+
+	wxStaticBoxSizer* sbSizer15;
+	sbSizer15 = new wxStaticBoxSizer( new wxStaticBox( m_Lunar->GetStaticBox(), wxID_ANY, _("UTC change (s)") ), wxVERTICAL );
+
+	m_tDateTimeChange = new wxTextCtrl( sbSizer15->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	sbSizer15->Add( m_tDateTimeChange, 0, wxALL|wxEXPAND, 5 );
+
+
+	fgSizer29->Add( sbSizer15, 1, wxEXPAND, 5 );
+
+	wxStaticBoxSizer* sbSizer151;
+	sbSizer151 = new wxStaticBoxSizer( new wxStaticBox( m_Lunar->GetStaticBox(), wxID_ANY, _("Lon revised") ), wxVERTICAL );
+
+	m_tLonRevised = new wxTextCtrl( sbSizer151->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	sbSizer151->Add( m_tLonRevised, 0, wxALL|wxEXPAND, 5 );
+
+
+	fgSizer29->Add( sbSizer151, 1, wxEXPAND, 5 );
+
+	wxStaticBoxSizer* sbSizer152;
+	sbSizer152 = new wxStaticBoxSizer( new wxStaticBox( m_Lunar->GetStaticBox(), wxID_ANY, _("Lon error (')") ), wxVERTICAL );
+
+	m_tLonError = new wxTextCtrl( sbSizer152->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	sbSizer152->Add( m_tLonError, 0, wxALL|wxEXPAND, 5 );
+
+
+	fgSizer29->Add( sbSizer152, 2, wxEXPAND, 5 );
+
+	wxStaticBoxSizer* sbSizer153;
+	sbSizer153 = new wxStaticBoxSizer( new wxStaticBox( m_Lunar->GetStaticBox(), wxID_ANY, _("Pos error (nm)") ), wxVERTICAL );
+
+	m_tPosError = new wxTextCtrl( sbSizer153->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	sbSizer153->Add( m_tPosError, 0, wxALL|wxEXPAND, 5 );
+
+
+	fgSizer29->Add( sbSizer153, 1, wxEXPAND, 5 );
+
+
+	m_Lunar->Add( fgSizer29, 1, wxEXPAND, 5 );
+
+
+	fgSizer24->Add( m_Lunar, 1, wxEXPAND, 5 );
 
 	m_bDone = new wxButton( this, wxID_ANY, _("Done"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer24->Add( m_bDone, 0, wxALL, 5 );
@@ -807,6 +885,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	// Connect Events
 	m_tLatitude->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
 	m_tLongitude->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
+	m_cbBoatPosition->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdateBoatPosition ), NULL, this );
 	m_cbMagneticAzimuth->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
 	m_bDone->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnDone ), NULL, this );
 }
@@ -816,6 +895,7 @@ FindBodyDialogBase::~FindBodyDialogBase()
 	// Disconnect Events
 	m_tLatitude->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
 	m_tLongitude->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
+	m_cbBoatPosition->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdateBoatPosition ), NULL, this );
 	m_cbMagneticAzimuth->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
 	m_bDone->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnDone ), NULL, this );
 

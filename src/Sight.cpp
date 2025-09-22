@@ -89,7 +89,11 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
       m_ShiftNm(0),
       m_ShiftBearing(0),
       m_bMagneticShiftBearing(true),
-      m_bMagneticNorth(true) {
+      m_bMagneticNorth(true),
+      m_DRLat(0),
+      m_DRLon(0),
+      m_DRBoatPosition(true),
+      m_DRMagneticAzimuth(false) {
   wxFileConfig* pConf = GetOCPNConfigObject();
   pConf->SetPath(_T("/PlugIns/CelestialNavigation"));
 
@@ -1124,7 +1128,7 @@ DZ = %.4f%c = %s\n"),
   double hob = hab + ParallaxCorrection - RefractionCorrection;
   double cosldc = sin(d_to_r(hom)) * sin(d_to_r(hob)) +
                   cos(d_to_r(hom)) * cos(d_to_r(hob)) * cosdz;
-  double ldc = r_to_d(acos(cosldc));
+  m_LDC = r_to_d(acos(cosldc));
   m_CalcStr += wxString::Format(
       _("\nLunar Distance Cleared (LDc)\n\
 ho.m = ha.m + ParallaxCorrectionMoon - RefractionCorrectionMoon\n\
@@ -1137,7 +1141,7 @@ cos(LDc) = %.4f\n\
 LDc = %.4f%c = %s\n\n"),
       ham, ParallaxCorrectionMoon, RefractionCorrectionMoon, hom, hab,
       ParallaxCorrection, RefractionCorrection, hob, hom, hob, hom, hob, dz,
-      cosldc, ldc, 0x00B0, toSDMM_PlugIn(0, ldc, true));
+      cosldc, m_LDC, 0x00B0, toSDMM_PlugIn(0, m_LDC, true));
 
   wxDateTime startTime =
       m_CorrectedDateTime - wxTimeSpan::Seconds(m_TimeCertainty / 2);
@@ -1211,13 +1215,13 @@ LDc = %.4f%c = %s\n"),
   wxDateTime interpolatedTime =
       startTime +
       wxTimeSpan(0, 0,
-                 (ldc - startLdc) * m_TimeCertainty / (endLdc - startLdc));
+                 (m_LDC - startLdc) * m_TimeCertainty / (endLdc - startLdc));
   m_CalcStr += wxString::Format(
       _("\nInterpolating Lunar Distance Cleared to find out UTC\n\
 UTC = time.start + (LDc - LDc.start) * (time.end - time.start) / (LDc.end - LDc.start)\n\
 UTC = %s + (%.4f - %.4f) * (%s - %s) / (%.4f - %.4f)\n\
 UTC = %s\n"),
-      startTime.Format("%Y-%m-%d %H:%M:%S"), ldc, startLdc,
+      startTime.Format("%Y-%m-%d %H:%M:%S"), m_LDC, startLdc,
       endTime.Format("%Y-%m-%d %H:%M:%S"),
       startTime.Format("%Y-%m-%d %H:%M:%S"), endLdc, startLdc,
       interpolatedTime.Format("%Y-%m-%d %H:%M:%S"));

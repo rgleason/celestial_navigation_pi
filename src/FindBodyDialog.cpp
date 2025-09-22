@@ -39,57 +39,65 @@
 
 FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
     : FindBodyDialogBase(parent), m_Sight(sight) {
-  double lat, lon;
-  celestial_navigation_pi_BoatPos(lat, lon);
-  wxFileConfig* pConf = GetOCPNConfigObject();
-  pConf->SetPath(_T("/PlugIns/CelestialNavigation/FindBody"));
-
-  bool boat_position;
-  pConf->Read(_T("BoatPosition"), &boat_position, true);
-  m_cbBoatPosition->SetValue(boat_position);
-
-  bool magnetic_azimuth;
-  pConf->Read(_T("MagneticAzimuth"), &magnetic_azimuth, false);
-  m_cbMagneticAzimuth->SetValue(magnetic_azimuth);
-
-  if (!m_cbBoatPosition->GetValue()) {
-    pConf->Read(_T("Lat"), &lat, lat);
-    pConf->Read(_T("Lon"), &lon, lon);
+  if (!sight.m_DRBoatPosition) {
+    m_tLatitude->ChangeValue(wxString::Format(_T("%.4f"), m_Sight.m_DRLat));
+    m_tLongitude->ChangeValue(wxString::Format(_T("%.4f"), m_Sight.m_DRLon));
   }
-
-  m_tLatitude->SetValue(wxString::Format(_T("%.4f"), lat));
-  m_tLongitude->SetValue(wxString::Format(_T("%.4f"), lon));
+  m_cbBoatPosition->SetValue(sight.m_DRBoatPosition);
+  m_cbMagneticAzimuth->SetValue(sight.m_DRMagneticAzimuth);
+  m_Lunar->Show(m_Sight.m_Type == Sight::LUNAR);
 
   Centre();
-  Update();
+  UpdateBoatPosition();
 }
 
-FindBodyDialog::~FindBodyDialog() {
-  wxFileConfig* pConf = GetOCPNConfigObject();
-  pConf->SetPath(_T("/PlugIns/CelestialNavigation/FindBody"));
-  pConf->Write(_T("BoatPosition"), m_cbBoatPosition->GetValue());
-  pConf->Write(_T("MagneticAzimuth"), m_cbMagneticAzimuth->GetValue());
-  double lat, lon;
-  if (m_tLatitude->GetValue().ToDouble(&lat)) pConf->Write(_T("Lat"), lat);
-  if (m_tLongitude->GetValue().ToDouble(&lon)) pConf->Write(_T("Lon"), lon);
-}
+FindBodyDialog::~FindBodyDialog() {}
 
 void FindBodyDialog::OnUpdate(wxCommandEvent& event) { Update(); }
 
+void FindBodyDialog::OnUpdateBoatPosition(wxCommandEvent& event) {
+  UpdateBoatPosition();
+}
+
 void FindBodyDialog::OnDone(wxCommandEvent& event) { EndModal(wxID_OK); }
+
+void FindBodyDialog::UpdateBoatPosition() {
+  m_Sight.m_DRBoatPosition = m_cbBoatPosition->GetValue();
+  if (m_Sight.m_DRBoatPosition) {
+    double lat, lon;
+    celestial_navigation_pi_BoatPos(lat, lon);
+    m_Sight.m_DRLat = lat;
+    m_Sight.m_DRLon = lon;
+    m_tLatitude->Enable(false);
+    m_tLongitude->Enable(false);
+  } else {
+    m_tLatitude->GetValue().ToDouble(&m_Sight.m_DRLat);
+    m_tLongitude->GetValue().ToDouble(&m_Sight.m_DRLon);
+    m_tLatitude->Enable(true);
+    m_tLongitude->Enable(true);
+  }
+  m_tLatitude->ChangeValue(wxString::Format(_T("%.4f"), m_Sight.m_DRLat));
+  m_tLongitude->ChangeValue(wxString::Format(_T("%.4f"), m_Sight.m_DRLon));
+  Update();
+}
 
 void FindBodyDialog::Update() {
   /* NOTE: we do not peform any altitude corrections here */
-  double lat1, lon1, lat2, lon2, hc, zn;
-  m_tLatitude->GetValue().ToDouble(&lat1);
-  m_tLongitude->GetValue().ToDouble(&lon1);
+  double lat, lon, hc, zn;
 
-  m_Sight.BodyLocation(m_Sight.m_DateTime, &lat2, &lon2, 0, 0, 0);
-  m_Sight.AltitudeAzimuth(lat1, lon1, lat2, lon2, &hc, &zn);
+  m_Sight.m_DRMagneticAzimuth = m_cbMagneticAzimuth->GetValue();
+  if (!m_Sight.m_DRBoatPosition) {
+    m_tLatitude->GetValue().ToDouble(&m_Sight.m_DRLat);
+    m_tLongitude->GetValue().ToDouble(&m_Sight.m_DRLon);
+  }
 
-  if (m_cbMagneticAzimuth->GetValue()) {
-    zn -= celestial_navigation_pi_GetWMM(lat1, lon1, m_Sight.m_EyeHeight,
-                                         m_Sight.m_DateTime);
+  m_Sight.BodyLocation(m_Sight.m_DateTime, &lat, &lon, 0, 0, 0);
+  m_Sight.AltitudeAzimuth(m_Sight.m_DRLat, m_Sight.m_DRLon, lat, lon, &hc, &zn);
+
+  if (m_Sight.m_DRMagneticAzimuth) {
+    zn -=
+        celestial_navigation_pi_GetWMM(m_Sight.m_DRLat, m_Sight.m_DRLon,
+                                       m_Sight.m_EyeHeight, m_Sight.m_DateTime);
     zn = resolve_heading_positive(zn);
   }
 
@@ -103,5 +111,22 @@ void FindBodyDialog::Update() {
   } else {
     m_cbTowards->SetValue(true);
     m_cbAway->SetValue(false);
+  }
+
+  if (m_Sight.m_Type == Sight::LUNAR) {
+    m_tLDC->SetValue(wxString::Format(_T("%.4f"), m_Sight.m_LDC));
+    wxDateTime dt = m_Sight.m_CorrectedDateTime +
+                    wxTimeSpan::Seconds(m_Sight.m_TimeCorrection);
+    dt.MakeFromUTC();
+    m_tDateTimeRevised->SetValue(dt.Format("%Y-%m-%d %H:%M:%S", dt.UTC));
+    m_tDateTimeChange->SetValue(
+        wxString::Format(_T("%ld"), m_Sight.m_TimeCorrection));
+    m_tLonRevised->SetValue(wxString::Format(
+        _T("%.4f"), m_Sight.m_DRLon - 0.25 * m_Sight.m_TimeCorrection / 60));
+    m_tLonError->SetValue(
+        wxString::Format(_T("%.4f"), 0.25 * m_Sight.m_TimeCorrection));
+    m_tPosError->SetValue(wxString::Format(
+        _T("%.4f"),
+        cos(d_to_r(m_Sight.m_DRLat)) * 0.25 * m_Sight.m_TimeCorrection));
   }
 }

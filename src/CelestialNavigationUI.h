@@ -232,10 +232,18 @@ class FindBodyDialogBase : public wxDialog
 		wxTextCtrl* m_tIntercept;
 		wxCheckBox* m_cbTowards;
 		wxCheckBox* m_cbAway;
+		wxStaticBoxSizer* m_Lunar;
+		wxTextCtrl* m_tLDC;
+		wxTextCtrl* m_tDateTimeRevised;
+		wxTextCtrl* m_tDateTimeChange;
+		wxTextCtrl* m_tLonRevised;
+		wxTextCtrl* m_tLonError;
+		wxTextCtrl* m_tPosError;
 		wxButton* m_bDone;
 
 		// Virtual event handlers, override them in your derived class
 		virtual void OnUpdate( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnUpdateBoatPosition( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDone( wxCommandEvent& event ) { event.Skip(); }
 
 
