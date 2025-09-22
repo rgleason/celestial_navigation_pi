@@ -806,9 +806,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 
 	wxFlexGridSizer* fgSizer29;
 	fgSizer29 = new wxFlexGridSizer( 0, 3, 0, 0 );
-	fgSizer29->AddGrowableCol( 0 );
 	fgSizer29->AddGrowableCol( 1 );
-	fgSizer29->AddGrowableCol( 2 );
 	fgSizer29->SetFlexibleDirection( wxBOTH );
 	fgSizer29->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
@@ -828,7 +826,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	sbSizer14->Add( m_tDateTimeRevised, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer29->Add( sbSizer14, 2, wxEXPAND, 5 );
+	fgSizer29->Add( sbSizer14, 1, wxEXPAND, 5 );
 
 	wxStaticBoxSizer* sbSizer15;
 	sbSizer15 = new wxStaticBoxSizer( new wxStaticBox( m_Lunar->GetStaticBox(), wxID_ANY, _("UTC change (s)") ), wxVERTICAL );
@@ -855,7 +853,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	sbSizer152->Add( m_tLonError, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer29->Add( sbSizer152, 2, wxEXPAND, 5 );
+	fgSizer29->Add( sbSizer152, 1, wxEXPAND, 5 );
 
 	wxStaticBoxSizer* sbSizer153;
 	sbSizer153 = new wxStaticBoxSizer( new wxStaticBox( m_Lunar->GetStaticBox(), wxID_ANY, _("Pos error (nm)") ), wxVERTICAL );

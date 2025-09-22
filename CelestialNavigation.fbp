@@ -6692,7 +6692,7 @@
               <object class="wxFlexGridSizer" expanded="true">
                 <property name="cols">3</property>
                 <property name="flexible_direction">wxBOTH</property>
-                <property name="growablecols">0,1,2</property>
+                <property name="growablecols">1</property>
                 <property name="growablerows"></property>
                 <property name="hgap">0</property>
                 <property name="minimum_size"></property>
@@ -6701,11 +6701,11 @@
                 <property name="permission">none</property>
                 <property name="rows">0</property>
                 <property name="vgap">0</property>
-                <object class="sizeritem" expanded="false">
+                <object class="sizeritem" expanded="true">
                   <property name="border">5</property>
                   <property name="flag">wxEXPAND</property>
                   <property name="proportion">1</property>
-                  <object class="wxStaticBoxSizer" expanded="false">
+                  <object class="wxStaticBoxSizer" expanded="true">
                     <property name="id">wxID_ANY</property>
                     <property name="label">LD cleared</property>
                     <property name="minimum_size"></property>
@@ -6783,8 +6783,8 @@
                 <object class="sizeritem" expanded="true">
                   <property name="border">5</property>
                   <property name="flag">wxEXPAND</property>
-                  <property name="proportion">2</property>
-                  <object class="wxStaticBoxSizer" expanded="false">
+                  <property name="proportion">1</property>
+                  <object class="wxStaticBoxSizer" expanded="true">
                     <property name="id">wxID_ANY</property>
                     <property name="label">UTC revised</property>
                     <property name="minimum_size"></property>
@@ -6863,7 +6863,7 @@
                   <property name="border">5</property>
                   <property name="flag">wxEXPAND</property>
                   <property name="proportion">1</property>
-                  <object class="wxStaticBoxSizer" expanded="false">
+                  <object class="wxStaticBoxSizer" expanded="true">
                     <property name="id">wxID_ANY</property>
                     <property name="label">UTC change (s)</property>
                     <property name="minimum_size"></property>
@@ -7020,7 +7020,7 @@
                 <object class="sizeritem" expanded="true">
                   <property name="border">5</property>
                   <property name="flag">wxEXPAND</property>
-                  <property name="proportion">2</property>
+                  <property name="proportion">1</property>
                   <object class="wxStaticBoxSizer" expanded="false">
                     <property name="id">wxID_ANY</property>
                     <property name="label">Lon error (&apos;)</property>
