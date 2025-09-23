@@ -1077,7 +1077,7 @@ LDo = %.4f%c = %s\n"),
         SD, 0x00B0, ApparentLunarDistance, 0x00B0,
         toSDMM_PlugIn(0, ApparentLunarDistance, true));
   } else {
-    if (m_BodyLimb == NEAR) {
+    if (m_BodyLimb == LUNAR_NEAR) {
       ApparentLunarDistance = m_Measurement - IndexCorrection + lunar_topoSD,
       m_CalcStr +=
           wxString::Format(_("\
