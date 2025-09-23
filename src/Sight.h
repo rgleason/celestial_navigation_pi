@@ -58,7 +58,7 @@ const wxString SightType[] = {_("Altitude"), _("Azimuth"), _("Lunar")};
 class Sight : public wxObject {
 public:
   enum Type { ALTITUDE, AZIMUTH, LUNAR };
-  enum BodyLimb { LOWER = 0, NEAR = 0, CENTER = 1, FAR = 1, UPPER = 2 };
+  enum BodyLimb { LOWER = 0, NEAR = 1, CENTER = 2, FAR = 3, UPPER = 4 };
 
   Sight() {}
   Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
