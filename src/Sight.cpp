@@ -1215,7 +1215,7 @@ LDc = %.4f%c = %s\n"),
   wxDateTime interpolatedTime =
       startTime +
       wxTimeSpan(0, 0,
-                 (m_LDC - startLdc) * m_TimeCertainty / (endLdc - startLdc));
+                 (long) round((m_LDC - startLdc) * m_TimeCertainty / (endLdc - startLdc)));
   m_CalcStr += wxString::Format(
       _("\nInterpolating Lunar Distance Cleared to find out UTC\n\
 UTC = time.start + (LDc - LDc.start) * (time.end - time.start) / (LDc.end - LDc.start)\n\

@@ -89,7 +89,7 @@ struct lunarsightdata LUNAR_SIGHTS[] = {
     /* case 5 */
 //    { "2025-08-09 07:00:00", "Saturn", Sight::LUNAR_NEAR, 10, 1010, 0.1, 2.4, { 45, 2.8 }, Sight::LOWER, { 22, 53 }, Sight::CENTER, { 42, 11 }, 44.800810, -3 },
     /* case 6 */
-    { "2025-08-09 07:00:00", "Saturn", Sight::LUNAR_NEAR, 10, 1010, 0.1, 2.4, { 44, 56.5 }, Sight::LOWER, { 63, 59 }, Sight::CENTER, { 70, 38 }, 44.800810, -3 },
+    { "2025-08-09 07:00:00", "Saturn", Sight::LUNAR_NEAR, 10, 1010, 0.1, 2.4, { 44, 56.5 }, Sight::LOWER, { 63, 59 }, Sight::CENTER, { 70, 38 }, 44.800810, -2 },
 };
 
 TEST_F(LunarTest, Sight) {
