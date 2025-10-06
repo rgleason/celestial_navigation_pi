@@ -232,7 +232,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_staticText12->Wrap( -1 );
 	fgSizer25->Add( m_staticText12, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_tLunarMoonAltitude = new wxTextCtrl( sbSizer10->GetStaticBox(), wxID_ANY, _("0"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_tLunarMoonAltitude = new wxTextCtrl( sbSizer10->GetStaticBox(), wxID_ANY, _("000.0000"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer25->Add( m_tLunarMoonAltitude, 0, wxALL, 5 );
 
 	m_staticText121 = new wxStaticText( sbSizer10->GetStaticBox(), wxID_ANY, _("Limb"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -263,7 +263,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_staticText122->Wrap( -1 );
 	fgSizer29->Add( m_staticText122, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_tLunarBodyAltitude = new wxTextCtrl( sbSizer11->GetStaticBox(), wxID_ANY, _("0"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_tLunarBodyAltitude = new wxTextCtrl( sbSizer11->GetStaticBox(), wxID_ANY, _("000.0000"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer29->Add( m_tLunarBodyAltitude, 0, wxALL, 5 );
 
 	m_staticText1211 = new wxStaticText( sbSizer11->GetStaticBox(), wxID_ANY, _("Limb"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -292,7 +292,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_panel1->SetSizer( fgSizer5 );
 	m_panel1->Layout();
 	fgSizer5->Fit( m_panel1 );
-	m_notebook1->AddPage( m_panel1, _("Sight"), true );
+	m_notebook1->AddPage( m_panel1, _("Sight"), false );
 	m_panel2 = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxFlexGridSizer* fgSizer8;
 	fgSizer8 = new wxFlexGridSizer( 0, 1, 0, 0 );
@@ -450,47 +450,47 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 
 	m_staticText15 = new wxStaticText( m_panel8, wxID_ANY, _("Eye Height"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText15->Wrap( -1 );
-	fgSizer13->Add( m_staticText15, 0, wxALL, 5 );
+	fgSizer13->Add( m_staticText15, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_tEyeHeight = new wxTextCtrl( m_panel8, wxID_ANY, _("00.0"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_tEyeHeight = new wxTextCtrl( m_panel8, wxID_ANY, _("00.00"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer13->Add( m_tEyeHeight, 0, wxALL, 5 );
 
 	m_staticText16 = new wxStaticText( m_panel8, wxID_ANY, _("Meters"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText16->Wrap( -1 );
-	fgSizer13->Add( m_staticText16, 0, wxALL, 5 );
+	fgSizer13->Add( m_staticText16, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_staticText17 = new wxStaticText( m_panel8, wxID_ANY, _("Temperature"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText17->Wrap( -1 );
-	fgSizer13->Add( m_staticText17, 0, wxALL, 5 );
+	fgSizer13->Add( m_staticText17, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_sTemperature = new wxSpinCtrl( m_panel8, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -100, 100, 20 );
-	fgSizer13->Add( m_sTemperature, 0, wxALL, 5 );
+	m_tTemperature = new wxTextCtrl( m_panel8, wxID_ANY, _("10.0"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer13->Add( m_tTemperature, 0, wxALL, 5 );
 
-	m_staticText19 = new wxStaticText( m_panel8, wxID_ANY, _("Celcius"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText19 = new wxStaticText( m_panel8, wxID_ANY, _("Celsius"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText19->Wrap( -1 );
-	fgSizer13->Add( m_staticText19, 0, wxALL, 5 );
+	fgSizer13->Add( m_staticText19, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_staticText20 = new wxStaticText( m_panel8, wxID_ANY, _("Pressure"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText20->Wrap( -1 );
-	fgSizer13->Add( m_staticText20, 0, wxALL, 5 );
+	fgSizer13->Add( m_staticText20, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_sPressure = new wxSpinCtrl( m_panel8, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 2000, 1000 );
-	fgSizer13->Add( m_sPressure, 0, wxALL, 5 );
+	m_tPressure = new wxTextCtrl( m_panel8, wxID_ANY, _("1013.0"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer13->Add( m_tPressure, 0, wxALL, 5 );
 
 	m_staticText21 = new wxStaticText( m_panel8, wxID_ANY, _("MilliBars"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText21->Wrap( -1 );
-	fgSizer13->Add( m_staticText21, 0, wxALL, 5 );
+	fgSizer13->Add( m_staticText21, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_staticText30 = new wxStaticText( m_panel8, wxID_ANY, _("Index Error"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText30->Wrap( -1 );
-	fgSizer13->Add( m_staticText30, 0, wxALL, 5 );
+	fgSizer13->Add( m_staticText30, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_tIndexError = new wxTextCtrl( m_panel8, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_tIndexError = new wxTextCtrl( m_panel8, wxID_ANY, _("0"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer13->Add( m_tIndexError, 0, wxALL, 5 );
 
 	m_staticText31 = new wxStaticText( m_panel8, wxID_ANY, _("Minutes"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText31->Wrap( -1 );
-	fgSizer13->Add( m_staticText31, 0, wxALL, 5 );
+	fgSizer13->Add( m_staticText31, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 
 	fgSizer21->Add( fgSizer13, 1, wxEXPAND, 5 );
@@ -502,7 +502,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_panel8->SetSizer( fgSizer21 );
 	m_panel8->Layout();
 	fgSizer21->Fit( m_panel8 );
-	m_notebook1->AddPage( m_panel8, _("Parameters"), false );
+	m_notebook1->AddPage( m_panel8, _("Parameters"), true );
 	m_panel81 = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxFlexGridSizer* fgSizer211;
 	fgSizer211 = new wxFlexGridSizer( 0, 1, 0, 0 );
@@ -575,8 +575,8 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_sTransparency->Connect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( SightDialogBase::RecomputeScroll ), NULL, this );
 	m_ColourPicker->Connect( wxEVT_COMMAND_COLOURPICKER_CHANGED, wxColourPickerEventHandler( SightDialogBase::RecomputeColor ), NULL, this );
 	m_tEyeHeight->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
-	m_sTemperature->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( SightDialogBase::RecomputeSpin ), NULL, this );
-	m_sPressure->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( SightDialogBase::RecomputeSpin ), NULL, this );
+	m_tTemperature->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
+	m_tPressure->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_tIndexError->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_bSetDefaults->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( SightDialogBase::OnSetDefaults ), NULL, this );
 	m_bShowDefinitions->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( SightDialogBase::OnShowDefinitions ), NULL, this );
@@ -618,8 +618,8 @@ SightDialogBase::~SightDialogBase()
 	m_sTransparency->Disconnect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( SightDialogBase::RecomputeScroll ), NULL, this );
 	m_ColourPicker->Disconnect( wxEVT_COMMAND_COLOURPICKER_CHANGED, wxColourPickerEventHandler( SightDialogBase::RecomputeColor ), NULL, this );
 	m_tEyeHeight->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
-	m_sTemperature->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( SightDialogBase::RecomputeSpin ), NULL, this );
-	m_sPressure->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( SightDialogBase::RecomputeSpin ), NULL, this );
+	m_tTemperature->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
+	m_tPressure->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_tIndexError->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_bSetDefaults->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( SightDialogBase::OnSetDefaults ), NULL, this );
 	m_bShowDefinitions->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( SightDialogBase::OnShowDefinitions ), NULL, this );

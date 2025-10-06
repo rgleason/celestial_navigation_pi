@@ -147,10 +147,10 @@ class SightDialogBase : public wxDialog
 		wxTextCtrl* m_tEyeHeight;
 		wxStaticText* m_staticText16;
 		wxStaticText* m_staticText17;
-		wxSpinCtrl* m_sTemperature;
+		wxTextCtrl* m_tTemperature;
 		wxStaticText* m_staticText19;
 		wxStaticText* m_staticText20;
-		wxSpinCtrl* m_sPressure;
+		wxTextCtrl* m_tPressure;
 		wxStaticText* m_staticText21;
 		wxStaticText* m_staticText30;
 		wxTextCtrl* m_tIndexError;

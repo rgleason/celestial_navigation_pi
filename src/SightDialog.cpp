@@ -148,9 +148,9 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   m_sCertaintySeconds->SetValue(m_Sight.m_TimeCertainty);
 
   m_sTransparency->SetValue(m_Sight.m_Colour.Alpha());
-  m_tEyeHeight->SetValue(wxString::Format(_T("%.1f"), m_Sight.m_EyeHeight));
-  m_sTemperature->SetValue(m_Sight.m_Temperature);
-  m_sPressure->SetValue(m_Sight.m_Pressure);
+  m_tEyeHeight->SetValue(wxString::Format(_T("%.2f"), m_Sight.m_EyeHeight));
+  m_tTemperature->SetValue(wxString::Format(_T("%.1f"), m_Sight.m_Temperature));
+  m_tPressure->SetValue(wxString::Format(_T("%d"), (int) m_Sight.m_Pressure));
   m_tIndexError->SetValue(wxString::Format(_T("%.5f"), m_Sight.m_IndexError));
 
   m_tShiftNm->SetValue(wxString::Format(_T("%.2f"), m_Sight.m_ShiftNm));
@@ -234,14 +234,15 @@ void SightDialog::OnSetDefaults(wxCommandEvent& event) {
   wxFileConfig* pConf = GetOCPNConfigObject();
   pConf->SetPath(_T("/PlugIns/CelestialNavigation"));
 
-  double eyeheight;
-  m_tEyeHeight->GetValue().ToDouble(&eyeheight);
-  pConf->Write(_T("DefaultEyeHeight"), eyeheight);
-  pConf->Write(_T("DefaultTemperature"), m_sTemperature->GetValue());
-  pConf->Write(_T("DefaultPressure"), m_sPressure->GetValue());
-  double indexerror;
-  m_tIndexError->GetValue().ToDouble(&indexerror);
-  pConf->Write(_T("DefaultIndexError"), indexerror);
+  double value;
+  m_tEyeHeight->GetValue().ToDouble(&value);
+  pConf->Write(_T("DefaultEyeHeight"), value);
+  m_tTemperature->GetValue().ToDouble(&value);
+  pConf->Write(_T("DefaultTemperature"), value);
+  m_tPressure->GetValue().ToDouble(&value);
+  pConf->Write(_T("DefaultPressure"), value);
+  m_tIndexError->GetValue().ToDouble(&value);
+  pConf->Write(_T("DefaultIndexError"), value);
 }
 
 void SightDialog::Recompute() {
@@ -303,8 +304,8 @@ void SightDialog::Recompute() {
   m_Sight.m_LunarBodyLimb = (Sight::BodyLimb)m_cLunarBodyLimb->GetSelection();
 
   m_tEyeHeight->GetValue().ToDouble(&m_Sight.m_EyeHeight);
-  m_Sight.m_Temperature = m_sTemperature->GetValue();
-  m_Sight.m_Pressure = m_sPressure->GetValue();
+  m_tTemperature->GetValue().ToDouble(&m_Sight.m_Temperature);
+  m_tPressure->GetValue().ToDouble(&m_Sight.m_Pressure);
   m_tIndexError->GetValue().ToDouble(&m_Sight.m_IndexError);
 
   wxColour fc = m_ColourPicker->GetColour(), c = wxColour(m_Sight.m_ColourName);

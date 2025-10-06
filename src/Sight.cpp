@@ -99,7 +99,7 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
 
   pConf->Read(_T("DefaultEyeHeight"), &m_EyeHeight, 2);
   pConf->Read(_T("DefaultTemperature"), &m_Temperature, 10);
-  pConf->Read(_T("DefaultPressure"), &m_Pressure, 1010);
+  pConf->Read(_T("DefaultPressure"), &m_Pressure, 1013);
   pConf->Read(_T("DefaultIndexError"), &m_IndexError, 0);
 
   const wxString sightcolornames[] = {_T("MEDIUM VIOLET RED"),
@@ -738,10 +738,10 @@ lc = %.4f%c = %s\n"),
   double LimbCorrection = 0;
   if (lc) {
     if (m_BodyLimb == UPPER) {
-      LimbCorrection = lc;
+      LimbCorrection = -lc;
       m_CalcStr += wxString::Format(_("Upper Limb"));
     } else if (m_BodyLimb == LOWER) {
-      LimbCorrection = -lc;
+      LimbCorrection = lc;
       m_CalcStr += wxString::Format(_("Lower Limb"));
     }
 
@@ -751,11 +751,11 @@ lc = %.4f%c = %s\n"),
   }
 
   double CorrectedAltitude =
-      ApparentAltitude - RefractionCorrection - LimbCorrection;
+      ApparentAltitude - RefractionCorrection + LimbCorrection;
   m_CalcStr +=
       wxString::Format(_("\nCorrected Altitude (Hc)\n\
-CorrectedAltitude = ApparentAltitude - RefractionCorrection - LimbCorrection\n\
-CorrectedAltitude = %.4f%c - %.4f%c - %.4f%c\n\
+CorrectedAltitude = ApparentAltitude - RefractionCorrection + LimbCorrection\n\
+CorrectedAltitude = %.4f%c - %.4f%c + %.4f%c\n\
 CorrectedAltitude = %.4f%c = %s\n"),
                        ApparentAltitude, 0x00B0, RefractionCorrection, 0x00B0,
                        LimbCorrection, 0x00B0, CorrectedAltitude, 0x00B0,
@@ -900,10 +900,10 @@ lc = %.4f%c = %s\n"),
   double LimbCorrectionMoon = 0;
   if (lunar_lc) {
     if (m_LunarMoonLimb == UPPER) {
-      LimbCorrectionMoon = lunar_lc;
+      LimbCorrectionMoon = -lunar_lc;
       m_CalcStr += wxString::Format(_("Upper Limb"));
     } else if (m_LunarMoonLimb == LOWER) {
-      LimbCorrectionMoon = -lunar_lc;
+      LimbCorrectionMoon = lunar_lc;
       m_CalcStr += wxString::Format(_("Lower Limb"));
     }
 
@@ -913,11 +913,11 @@ lc = %.4f%c = %s\n"),
   }
 
   double CorrectedAltitudeMoon =
-      ApparentAltitudeMoon - RefractionCorrectionMoon - LimbCorrectionMoon;
+      ApparentAltitudeMoon - RefractionCorrectionMoon + LimbCorrectionMoon;
   m_CalcStr += wxString::Format(
       _("\nCorrected Altitude (Hc)\n\
-CorrectedAltitudeMoon = ApparentAltitudeMoon - RefractionCorrectionMoon - LimbCorrectionMoon\n\
-CorrectedAltitudeMoon = %.4f%c - %.4f%c - %.4f%c\n\
+CorrectedAltitudeMoon = ApparentAltitudeMoon - RefractionCorrectionMoon + LimbCorrectionMoon\n\
+CorrectedAltitudeMoon = %.4f%c - %.4f%c + %.4f%c\n\
 CorrectedAltitudeMoon = %.4f%c = %s\n"),
       ApparentAltitudeMoon, 0x00B0, RefractionCorrectionMoon, 0x00B0,
       LimbCorrectionMoon, 0x00B0, CorrectedAltitudeMoon, 0x00B0,
@@ -1002,10 +1002,10 @@ ra = %.4f, lc = 0.266564/ra = %.4f%c = %s\n"),
   double LimbCorrection = 0;
   if (lc) {
     if (m_LunarBodyLimb == UPPER) {
-      LimbCorrection = lc;
+      LimbCorrection = -lc;
       m_CalcStr += wxString::Format(_("Upper Limb"));
     } else if (m_LunarBodyLimb == LOWER) {
-      LimbCorrection = -lc;
+      LimbCorrection = lc;
       m_CalcStr += wxString::Format(_("Lower Limb"));
     }
 
@@ -1015,10 +1015,10 @@ ra = %.4f, lc = 0.266564/ra = %.4f%c = %s\n"),
   }
 
   double CorrectedAltitude =
-      ApparentAltitude - RefractionCorrection - LimbCorrection;
+      ApparentAltitude - RefractionCorrection + LimbCorrection;
   m_CalcStr +=
       wxString::Format(_("\nCorrected Altitude\n\
-CorrectedAltitude = ApparentAltitude - RefractionCorrection - LimbCorrection\n\
+CorrectedAltitude = ApparentAltitude - RefractionCorrection + LimbCorrection\n\
 CorrectedAltitude = %.4f%c - %.4f%c - %.4f%c\n\
 CorrectedAltitude = %.4f%c = %s\n"),
                        ApparentAltitude, 0x00B0, RefractionCorrection, 0x00B0,
@@ -1102,19 +1102,18 @@ LDo = %.4f%c = %s\n"),
     }
   }
 
-  double ham = ApparentAltitudeMoon - LimbCorrectionMoon;
-  double hab = ApparentAltitude - LimbCorrection;
+  double ham = ApparentAltitudeMoon + LimbCorrectionMoon;
+  double hab = ApparentAltitude + LimbCorrection;
   double cosdz =
       cos(d_to_r(ApparentLunarDistance)) / cos(d_to_r(ham)) / cos(d_to_r(hab)) -
       tan(d_to_r(ham)) * tan(d_to_r(hab));
   double dz = r_to_d(acos(cosdz));
   m_CalcStr += wxString::Format(_("\nDZ Angle\n\
-ha.m = ApparentAltitudeMoon - LimbCorrectionMoon\n\
-ha.m = %.4f - %.4f = %.4f\n\
-ha.b = ApparentAltitude - LimbCorrection\n\
-ha.b = %.4f - %.4f = %.4f\n\
+ha.m = ApparentAltitudeMoon + LimbCorrectionMoon\n\
+ha.m = %.4f + %.4f = %.4f\n\
+ha.b = ApparentAltitude + LimbCorrection\n\
+ha.b = %.4f + %.4f = %.4f\n\
 cos(LDo) = sin(ha.m) * sin(ha.b) + cos(ha.m) * cos(ha.b) * cos(DZ)\n\
-cos(DZ) = cos(LDo) / cos(ha.m) / cos(ha.b) - tan(ha.m) * tan(ha.b)\n\
 cos(DZ) = cos(LDo) / cos(ha.m) / cos(ha.b) - tan(ha.m) * tan(ha.b)\n\
 cos(DZ) = cos(%.4f) / cos(%.4f) / cos(%.4f) - tan(%.4f) * tan(%.4f)\n\
 cos(DZ) = %.4f\n\
