@@ -232,7 +232,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_staticText12->Wrap( -1 );
 	fgSizer25->Add( m_staticText12, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_tLunarMoonAltitude = new wxTextCtrl( sbSizer10->GetStaticBox(), wxID_ANY, _("000.0000"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_tLunarMoonAltitude = new wxTextCtrl( sbSizer10->GetStaticBox(), wxID_ANY, _("000.00000"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer25->Add( m_tLunarMoonAltitude, 0, wxALL, 5 );
 
 	m_staticText121 = new wxStaticText( sbSizer10->GetStaticBox(), wxID_ANY, _("Limb"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -263,7 +263,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_staticText122->Wrap( -1 );
 	fgSizer29->Add( m_staticText122, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_tLunarBodyAltitude = new wxTextCtrl( sbSizer11->GetStaticBox(), wxID_ANY, _("000.0000"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_tLunarBodyAltitude = new wxTextCtrl( sbSizer11->GetStaticBox(), wxID_ANY, _("000.00000"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer29->Add( m_tLunarBodyAltitude, 0, wxALL, 5 );
 
 	m_staticText1211 = new wxStaticText( sbSizer11->GetStaticBox(), wxID_ANY, _("Limb"), wxDefaultPosition, wxDefaultSize, 0 );

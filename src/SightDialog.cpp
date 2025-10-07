@@ -169,10 +169,10 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   m_ColourPicker->SetColour(m_Sight.m_Colour);
 
   m_tLunarMoonAltitude->SetValue(
-      wxString::Format(_T("%.4f"), m_Sight.m_LunarMoonAltitude));
+      wxString::Format(_T("%.5f"), m_Sight.m_LunarMoonAltitude));
   m_cLunarMoonLimb->SetSelection((int)m_Sight.m_LunarMoonLimb);
   m_tLunarBodyAltitude->SetValue(
-      wxString::Format(_T("%.4f"), m_Sight.m_LunarBodyAltitude));
+      wxString::Format(_T("%.5f"), m_Sight.m_LunarBodyAltitude));
   m_cLunarBodyLimb->SetSelection((int)m_Sight.m_LunarBodyLimb);
 
   m_breadytorecompute = true;
