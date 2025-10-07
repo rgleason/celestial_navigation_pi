@@ -1212,9 +1212,9 @@ LDc = %.4f%c = %s\n"),
       endBodyLat, dgha, cosldc, endLdc, 0x00B0, toSDMM_PlugIn(0, endLdc, true));
 
   wxDateTime interpolatedTime =
-      startTime +
-      wxTimeSpan(0, 0,
-                 (long) round((m_LDC - startLdc) * m_TimeCertainty / (endLdc - startLdc)));
+      startTime + wxTimeSpan(0, 0,
+                             (long)round((m_LDC - startLdc) * m_TimeCertainty /
+                                         (endLdc - startLdc)));
   m_CalcStr += wxString::Format(
       _("\nInterpolating Lunar Distance Cleared to find out UTC\n\
 UTC = time.start + (LDc - LDc.start) * (time.end - time.start) / (LDc.end - LDc.start)\n\
