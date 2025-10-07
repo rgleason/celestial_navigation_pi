@@ -1055,14 +1055,14 @@ ParallaxCorrection = %.4f%c = %s\n"),
                          toSDMM_PlugIn(0, ParallaxCorrection, true));
   }
 
-  double ObservedAltitude = CorrectedAltitude + ParallaxCorrection;
+  m_ObservedAltitude = CorrectedAltitude + ParallaxCorrection;
   m_CalcStr += wxString::Format(_("\nObserved Altitude (Ho)\n\
 ObservedAltitude = CorrectedAltitude + ParallaxCorrection\n\
 ObservedAltitude = %.4f%c + %.4f%c\n\
 ObservedAltitude = %.4f%c = %s\n"),
                                 CorrectedAltitude, 0x00B0, ParallaxCorrection,
-                                0x00B0, ObservedAltitude, 0x00B0,
-                                toSDMM_PlugIn(0, ObservedAltitude, true));
+                                0x00B0, m_ObservedAltitude, 0x00B0,
+                                toSDMM_PlugIn(0, m_ObservedAltitude, true));
 
   double ApparentLunarDistance;
   m_CalcStr += _("\n\nApparent Lunar Distance (LDo)\n");
