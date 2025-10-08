@@ -148,9 +148,9 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   m_sCertaintySeconds->SetValue(m_Sight.m_TimeCertainty);
 
   m_sTransparency->SetValue(m_Sight.m_Colour.Alpha());
-  m_tEyeHeight->SetValue(wxString::Format(_T("%.2f"), m_Sight.m_EyeHeight));
+  m_tEyeHeight->SetValue(wxString::Format(_T("%.1f"), m_Sight.m_EyeHeight));
   m_tTemperature->SetValue(wxString::Format(_T("%.1f"), m_Sight.m_Temperature));
-  m_tPressure->SetValue(wxString::Format(_T("%d"), (int)m_Sight.m_Pressure));
+  m_tPressure->SetValue(wxString::Format(_T("%.2f"), m_Sight.m_Pressure));
   m_tIndexError->SetValue(wxString::Format(_T("%.5f"), m_Sight.m_IndexError));
 
   m_tShiftNm->SetValue(wxString::Format(_T("%.2f"), m_Sight.m_ShiftNm));
