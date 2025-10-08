@@ -485,7 +485,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_staticText30->Wrap( -1 );
 	fgSizer13->Add( m_staticText30, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_tIndexError = new wxTextCtrl( m_panel8, wxID_ANY, _("0"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_tIndexError = new wxTextCtrl( m_panel8, wxID_ANY, _("0.0000"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer13->Add( m_tIndexError, 0, wxALL, 5 );
 
 	m_staticText31 = new wxStaticText( m_panel8, wxID_ANY, _("Minutes"), wxDefaultPosition, wxDefaultSize, 0 );
