@@ -476,7 +476,7 @@ void CelestialNavigationDialog::RebuildList() {
     m_lSights->SetItem(idx, rmTIME,
                        dt.FormatISODate() + _T(" ") + dt.FormatISOTime());
     m_lSights->SetItem(idx, rmMEASUREMENT,
-                       wxString::Format(_T("%.4f"), s.m_Measurement));
+                       wxString::Format(_T("%.5f"), s.m_Measurement));
     if (s.m_Type == Sight::LUNAR)
       m_lSights->SetItem(
           idx, rmCOLOR,
@@ -507,7 +507,7 @@ void CelestialNavigationDialog::UpdateSight(int idx, bool warnings) {
   m_lSights->SetItem(idx, rmTIME,
                      dt.FormatISODate() + _T(" ") + dt.FormatISOTime());
   m_lSights->SetItem(idx, rmMEASUREMENT,
-                     wxString::Format(_T("%.4f"), s.m_Measurement));
+                     wxString::Format(_T("%.5f"), s.m_Measurement));
   if (s.m_Type == Sight::LUNAR)
     m_lSights->SetItem(idx, rmCOLOR,
                        _("Time Correction") +

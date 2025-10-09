@@ -40,8 +40,8 @@
 FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
     : FindBodyDialogBase(parent), m_Sight(sight) {
   if (!sight.m_DRBoatPosition) {
-    m_tLatitude->ChangeValue(wxString::Format(_T("%.4f"), m_Sight.m_DRLat));
-    m_tLongitude->ChangeValue(wxString::Format(_T("%.4f"), m_Sight.m_DRLon));
+    m_tLatitude->ChangeValue(wxString::Format(_T("%.5f"), m_Sight.m_DRLat));
+    m_tLongitude->ChangeValue(wxString::Format(_T("%.5f"), m_Sight.m_DRLon));
   }
   m_cbBoatPosition->SetValue(sight.m_DRBoatPosition);
   m_cbMagneticAzimuth->SetValue(sight.m_DRMagneticAzimuth);
@@ -76,8 +76,8 @@ void FindBodyDialog::UpdateBoatPosition() {
     m_tLatitude->Enable(true);
     m_tLongitude->Enable(true);
   }
-  m_tLatitude->ChangeValue(wxString::Format(_T("%.4f"), m_Sight.m_DRLat));
-  m_tLongitude->ChangeValue(wxString::Format(_T("%.4f"), m_Sight.m_DRLon));
+  m_tLatitude->ChangeValue(wxString::Format(_T("%.5f"), m_Sight.m_DRLat));
+  m_tLongitude->ChangeValue(wxString::Format(_T("%.5f"), m_Sight.m_DRLon));
   Update();
 }
 
@@ -114,7 +114,7 @@ void FindBodyDialog::Update() {
   }
 
   if (m_Sight.m_Type == Sight::LUNAR) {
-    m_tLDC->SetValue(wxString::Format(_T("%.4f"), m_Sight.m_LDC));
+    m_tLDC->SetValue(wxString::Format(_T("%.5f"), m_Sight.m_LDC));
     wxDateTime dt = m_Sight.m_CorrectedDateTime +
                     wxTimeSpan::Seconds(m_Sight.m_TimeCorrection);
     dt.MakeFromUTC();
@@ -122,11 +122,11 @@ void FindBodyDialog::Update() {
     m_tDateTimeChange->SetValue(
         wxString::Format(_T("%ld"), m_Sight.m_TimeCorrection));
     m_tLonRevised->SetValue(wxString::Format(
-        _T("%.4f"), m_Sight.m_DRLon - 0.25 * m_Sight.m_TimeCorrection / 60));
+        _T("%.5f"), m_Sight.m_DRLon - 0.25 * m_Sight.m_TimeCorrection / 60));
     m_tLonError->SetValue(
-        wxString::Format(_T("%.4f"), 0.25 * m_Sight.m_TimeCorrection));
+        wxString::Format(_T("%.5f"), 0.25 * m_Sight.m_TimeCorrection));
     m_tPosError->SetValue(wxString::Format(
-        _T("%.4f"),
+        _T("%.5f"),
         cos(d_to_r(m_Sight.m_DRLat)) * 0.25 * m_Sight.m_TimeCorrection));
   }
 }

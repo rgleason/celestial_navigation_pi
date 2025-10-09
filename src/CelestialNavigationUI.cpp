@@ -453,7 +453,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	fgSizer13->Add( m_staticText15, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_tEyeHeight = new wxTextCtrl( m_panel8, wxID_ANY, _("00.00"), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizer13->Add( m_tEyeHeight, 0, wxALL, 5 );
+	fgSizer13->Add( m_tEyeHeight, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText16 = new wxStaticText( m_panel8, wxID_ANY, _("Meters"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText16->Wrap( -1 );
@@ -464,7 +464,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	fgSizer13->Add( m_staticText17, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_tTemperature = new wxTextCtrl( m_panel8, wxID_ANY, _("10.0"), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizer13->Add( m_tTemperature, 0, wxALL, 5 );
+	fgSizer13->Add( m_tTemperature, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText19 = new wxStaticText( m_panel8, wxID_ANY, _("Celsius"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText19->Wrap( -1 );
@@ -486,7 +486,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	fgSizer13->Add( m_staticText30, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_tIndexError = new wxTextCtrl( m_panel8, wxID_ANY, _("0.0000"), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizer13->Add( m_tIndexError, 0, wxALL, 5 );
+	fgSizer13->Add( m_tIndexError, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText31 = new wxStaticText( m_panel8, wxID_ANY, _("Minutes"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText31->Wrap( -1 );
@@ -826,7 +826,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	wxStaticBoxSizer* sbSizer14;
 	sbSizer14 = new wxStaticBoxSizer( new wxStaticBox( m_Lunar->GetStaticBox(), wxID_ANY, _("UTC revised") ), wxVERTICAL );
 
-	m_tDateTimeRevised = new wxTextCtrl( sbSizer14->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	m_tDateTimeRevised = new wxTextCtrl( sbSizer14->GetStaticBox(), wxID_ANY, _("0000-00-00 00:00:00"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
 	sbSizer14->Add( m_tDateTimeRevised, 0, wxALL|wxEXPAND, 5 );
 
 
