@@ -45,11 +45,13 @@ public:
   //    void SetColorScheme(ColorScheme cs);
 
   void OnSetDefaults(wxCommandEvent& event);
-  void MeasurementEntered(wxCommandEvent& event) { EndModal(wxID_OK); }
   void Recompute(wxCommandEvent& event) { Recompute(); }
   void RecomputeCalendar(wxCalendarEvent& event) { Recompute(); }
   void RecomputeSpin(wxSpinEvent& event) { Recompute(); }
   //    void RecomputeScroll( wxScrollEvent& event ) { Recompute(); }
+  void RecomputeDMM(wxNotebookEvent& event) { RecomputeDMM(); }
+  void RecomputeDMM(wxCommandEvent& event) { RecomputeDMM(); }
+
   void RecomputeColor(wxColourPickerEvent& event) { Recompute(); }
   void NewBody();
   void NewBody(wxCommandEvent& event) {
@@ -61,6 +63,7 @@ public:
 
   wxDateTime DateTime();
   void Recompute();
+  void RecomputeDMM();
 
 private:
   double BodyAltitude(wxString body);

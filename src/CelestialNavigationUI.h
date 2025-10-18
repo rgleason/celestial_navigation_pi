@@ -104,12 +104,10 @@ class SightDialogBase : public wxDialog
 		wxStaticText* m_staticText3;
 		wxChoice* m_cLimb;
 		wxStaticBoxSizer* m_sbSizerSight;
-		wxTextCtrl* m_tMeasurement;
 		wxStaticText* m_staticText6;
-		wxTextCtrl* m_tMeasurementMinutes;
-		wxStaticText* m_staticText7;
-		wxTextCtrl* m_tMeasurementCertainty;
+		wxTextCtrl* m_tMeasurement;
 		wxStaticText* m_staticText8;
+		wxTextCtrl* m_tMeasurementCertainty;
 		wxBoxSizer* m_fgSizerLunar;
 		wxStaticText* m_staticText12;
 		wxTextCtrl* m_tLunarMoonAltitude;
@@ -164,9 +162,10 @@ class SightDialogBase : public wxDialog
 		wxButton* m_sdbSizer1Cancel;
 
 		// Virtual event handlers, override them in your derived class
+		virtual void RecomputeDMM( wxNotebookEvent& event ) { event.Skip(); }
 		virtual void Recompute( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnFindBody( wxCommandEvent& event ) { event.Skip(); }
-		virtual void MeasurementEntered( wxCommandEvent& event ) { event.Skip(); }
+		virtual void RecomputeDMM( wxCommandEvent& event ) { event.Skip(); }
 		virtual void RecomputeCalendar( wxCalendarEvent& event ) { event.Skip(); }
 		virtual void RecomputeSpin( wxSpinEvent& event ) { event.Skip(); }
 		virtual void RecomputeScroll( wxScrollEvent& event ) { event.Skip(); }

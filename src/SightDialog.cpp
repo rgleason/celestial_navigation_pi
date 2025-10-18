@@ -158,22 +158,25 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
       wxString::Format(_T("%.2f"), m_Sight.m_ShiftBearing));
   m_cbMagneticShiftBearing->SetValue(m_Sight.m_bMagneticShiftBearing);
 
-  double measurement = trunc(m_Sight.m_Measurement);
-  double measurementminutes = 60 * (m_Sight.m_Measurement - measurement);
-  m_tMeasurement->SetValue(wxString::Format(_T("%.0f"), measurement));
-  m_tMeasurementMinutes->SetValue(
-      wxString::Format(_T("%.2f"), measurementminutes));
+  m_tMeasurement->SetValue(toSDMM_PlugIn(0, m_Sight.m_Measurement, true));
   m_tMeasurementCertainty->SetValue(
       wxString::Format(_T("%.2f"), m_Sight.m_MeasurementCertainty));
   m_cbMagneticAzimuth->SetValue(m_Sight.m_bMagneticNorth);
   m_ColourPicker->SetColour(m_Sight.m_Colour);
 
   m_tLunarMoonAltitude->SetValue(
-      wxString::Format(_T("%.5f"), m_Sight.m_LunarMoonAltitude));
+      toSDMM_PlugIn(0, m_Sight.m_LunarMoonAltitude, true));
   m_cLunarMoonLimb->SetSelection((int)m_Sight.m_LunarMoonLimb);
   m_tLunarBodyAltitude->SetValue(
-      wxString::Format(_T("%.5f"), m_Sight.m_LunarBodyAltitude));
+      toSDMM_PlugIn(0, m_Sight.m_LunarBodyAltitude, true));
+  m_cLunarMoonLimb->SetSelection((int)m_Sight.m_LunarMoonLimb);
   m_cLunarBodyLimb->SetSelection((int)m_Sight.m_LunarBodyLimb);
+
+  int x, y;
+  GetTextExtent(_T("000° 00.0000'"), &x, &y);
+  m_tMeasurement->SetSizeHints(x + 20, -1);
+  m_tLunarMoonAltitude->SetSizeHints(x + 20, -1);
+  m_tLunarBodyAltitude->SetSizeHints(x + 20, -1);
 
   m_breadytorecompute = true;
   Recompute();
@@ -245,6 +248,19 @@ void SightDialog::OnSetDefaults(wxCommandEvent& event) {
   pConf->Write(_T("DefaultIndexError"), value);
 }
 
+void SightDialog::RecomputeDMM() {
+  m_Sight.m_Measurement = fromDMM_Plugin(m_tMeasurement->GetValue());
+  m_tMeasurement->SetValue(toSDMM_PlugIn(0, m_Sight.m_Measurement, true));
+  m_Sight.m_LunarMoonAltitude =
+      fromDMM_Plugin(m_tLunarMoonAltitude->GetValue());
+  m_tLunarMoonAltitude->SetValue(
+      toSDMM_PlugIn(0, m_Sight.m_LunarMoonAltitude, true));
+  m_Sight.m_LunarBodyAltitude =
+      fromDMM_Plugin(m_tLunarBodyAltitude->GetValue());
+  m_tLunarBodyAltitude->SetValue(
+      toSDMM_PlugIn(0, m_Sight.m_LunarBodyAltitude, true));
+}
+
 void SightDialog::Recompute() {
   m_cbMagneticAzimuth->Enable(m_cType->GetSelection() == AZIMUTH);
   m_cLimb->Enable(m_cType->GetSelection() != AZIMUTH);
@@ -288,19 +304,17 @@ void SightDialog::Recompute() {
   m_Sight.m_DateTime = DateTime();
   m_Sight.m_TimeCertainty = m_sCertaintySeconds->GetValue();
 
-  double measurement, measurementminutes;
-  m_tMeasurement->GetValue().ToDouble(&measurement);
-  m_tMeasurementMinutes->GetValue().ToDouble(&measurementminutes);
-  measurement += measurementminutes / 60;
-  m_Sight.m_Measurement = measurement;
+  m_Sight.m_Measurement = fromDMM_Plugin(m_tMeasurement->GetValue());
 
   double measurementcertainty;
   m_tMeasurementCertainty->GetValue().ToDouble(&measurementcertainty);
   m_Sight.m_MeasurementCertainty = measurementcertainty;
 
-  m_tLunarMoonAltitude->GetValue().ToDouble(&m_Sight.m_LunarMoonAltitude);
+  m_Sight.m_LunarMoonAltitude =
+      fromDMM_Plugin(m_tLunarMoonAltitude->GetValue());
   m_Sight.m_LunarMoonLimb = (Sight::BodyLimb)m_cLunarMoonLimb->GetSelection();
-  m_tLunarBodyAltitude->GetValue().ToDouble(&m_Sight.m_LunarBodyAltitude);
+  m_Sight.m_LunarBodyAltitude =
+      fromDMM_Plugin(m_tLunarBodyAltitude->GetValue());
   m_Sight.m_LunarBodyLimb = (Sight::BodyLimb)m_cLunarBodyLimb->GetSelection();
 
   m_tEyeHeight->GetValue().ToDouble(&m_Sight.m_EyeHeight);

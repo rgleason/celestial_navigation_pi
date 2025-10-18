@@ -215,6 +215,10 @@ wxString DECL_EXP toSDMM_PlugIn(int NEflag, double a, bool hi_precision) {
   return s;
 }
 
+extern DECL_EXP double fromDMM_Plugin(wxString sdms) {
+  return 0;
+}
+
 // Define the wxAuiManager methods
 bool wxAuiManager::DetachPane(wxWindow* window) {
   return true;  // Mock implementation always succeeds

@@ -40,12 +40,19 @@
 FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
     : FindBodyDialogBase(parent), m_Sight(sight) {
   if (!sight.m_DRBoatPosition) {
-    m_tLatitude->ChangeValue(wxString::Format(_T("%.5f"), m_Sight.m_DRLat));
-    m_tLongitude->ChangeValue(wxString::Format(_T("%.5f"), m_Sight.m_DRLon));
+    m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_Sight.m_DRLat, true));
+    m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_Sight.m_DRLon, true));
   }
   m_cbBoatPosition->SetValue(sight.m_DRBoatPosition);
   m_cbMagneticAzimuth->SetValue(sight.m_DRMagneticAzimuth);
   m_Lunar->Show(m_Sight.m_Type == Sight::LUNAR);
+
+  int x, y;
+  GetTextExtent(_T("000° 00.0000' S"), &x, &y);
+  m_tLatitude->SetSizeHints(x + 20, -1);
+  m_tLongitude->SetSizeHints(x + 20, -1);
+  m_tLDC->SetSizeHints(x + 20, -1);
+  m_tLonRevised->SetSizeHints(x + 20, -1);
 
   Centre();
   UpdateBoatPosition();
@@ -71,13 +78,13 @@ void FindBodyDialog::UpdateBoatPosition() {
     m_tLatitude->Enable(false);
     m_tLongitude->Enable(false);
   } else {
-    m_tLatitude->GetValue().ToDouble(&m_Sight.m_DRLat);
-    m_tLongitude->GetValue().ToDouble(&m_Sight.m_DRLon);
+    m_Sight.m_DRLat = fromDMM_Plugin(m_tLatitude->GetValue());
+    m_Sight.m_DRLon = fromDMM_Plugin(m_tLongitude->GetValue());
     m_tLatitude->Enable(true);
     m_tLongitude->Enable(true);
   }
-  m_tLatitude->ChangeValue(wxString::Format(_T("%.5f"), m_Sight.m_DRLat));
-  m_tLongitude->ChangeValue(wxString::Format(_T("%.5f"), m_Sight.m_DRLon));
+  m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_Sight.m_DRLat, true));
+  m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_Sight.m_DRLon, true));
   Update();
 }
 
@@ -87,8 +94,8 @@ void FindBodyDialog::Update() {
 
   m_Sight.m_DRMagneticAzimuth = m_cbMagneticAzimuth->GetValue();
   if (!m_Sight.m_DRBoatPosition) {
-    m_tLatitude->GetValue().ToDouble(&m_Sight.m_DRLat);
-    m_tLongitude->GetValue().ToDouble(&m_Sight.m_DRLon);
+    m_Sight.m_DRLat = fromDMM_Plugin(m_tLatitude->GetValue());
+    m_Sight.m_DRLon = fromDMM_Plugin(m_tLongitude->GetValue());
   }
 
   m_Sight.BodyLocation(m_Sight.m_DateTime, &lat, &lon, 0, 0, 0);
@@ -101,8 +108,8 @@ void FindBodyDialog::Update() {
     zn = resolve_heading_positive(zn);
   }
 
-  m_tAltitude->SetValue(wxString::Format(_T("%f"), hc));
-  m_tAzimuth->SetValue(wxString::Format(_T("%f"), zn));
+  m_tAltitude->SetValue(toSDMM_PlugIn(0, hc, true));
+  m_tAzimuth->SetValue(toSDMM_PlugIn(0, zn, true));
   m_tIntercept->SetValue(
       wxString::Format(_T("%f"), fabs(hc - m_Sight.m_ObservedAltitude) * 60));
   if (hc >= m_Sight.m_ObservedAltitude) {
@@ -114,15 +121,15 @@ void FindBodyDialog::Update() {
   }
 
   if (m_Sight.m_Type == Sight::LUNAR) {
-    m_tLDC->SetValue(wxString::Format(_T("%.5f"), m_Sight.m_LDC));
+    m_tLDC->SetValue(toSDMM_PlugIn(0, m_Sight.m_LDC, true));
     wxDateTime dt = m_Sight.m_CorrectedDateTime +
                     wxTimeSpan::Seconds(m_Sight.m_TimeCorrection);
     dt.MakeFromUTC();
     m_tDateTimeRevised->SetValue(dt.Format("%Y-%m-%d %H:%M:%S", dt.UTC));
     m_tDateTimeChange->SetValue(
         wxString::Format(_T("%ld"), m_Sight.m_TimeCorrection));
-    m_tLonRevised->SetValue(wxString::Format(
-        _T("%.5f"), m_Sight.m_DRLon - 0.25 * m_Sight.m_TimeCorrection / 60));
+    m_tLonRevised->SetValue(toSDMM_PlugIn(
+        2, (m_Sight.m_DRLon - 0.25 * m_Sight.m_TimeCorrection / 60), true));
     m_tLonError->SetValue(
         wxString::Format(_T("%.5f"), 0.25 * m_Sight.m_TimeCorrection));
     m_tPosError->SetValue(wxString::Format(

@@ -476,7 +476,7 @@ void CelestialNavigationDialog::RebuildList() {
     m_lSights->SetItem(idx, rmTIME,
                        dt.FormatISODate() + _T(" ") + dt.FormatISOTime());
     m_lSights->SetItem(idx, rmMEASUREMENT,
-                       wxString::Format(_T("%.5f"), s.m_Measurement));
+                       toSDMM_PlugIn(0, s.m_Measurement, true));
     if (s.m_Type == Sight::LUNAR)
       m_lSights->SetItem(
           idx, rmCOLOR,
