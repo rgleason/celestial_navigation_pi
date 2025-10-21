@@ -715,7 +715,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	wxStaticBoxSizer* sbSizer6;
 	sbSizer6 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Latitude") ), wxVERTICAL );
 
-	m_tLatitude = new wxTextCtrl( sbSizer6->GetStaticBox(), wxID_ANY, _("N 000° 00.0000'"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_tLatitude = new wxTextCtrl( sbSizer6->GetStaticBox(), wxID_ANY, _("N 000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
 	sbSizer6->Add( m_tLatitude, 0, wxALL|wxEXPAND, 5 );
 
 
@@ -724,7 +724,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	wxStaticBoxSizer* sbSizer7;
 	sbSizer7 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Longitude") ), wxVERTICAL );
 
-	m_tLongitude = new wxTextCtrl( sbSizer7->GetStaticBox(), wxID_ANY, _("E 000° 00.0000'"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_tLongitude = new wxTextCtrl( sbSizer7->GetStaticBox(), wxID_ANY, _("E 000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
 	sbSizer7->Add( m_tLongitude, 0, wxALL|wxEXPAND, 5 );
 
 
@@ -770,7 +770,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	wxStaticBoxSizer* sbSizer10;
 	sbSizer10 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Intercept (in Nm)") ), wxVERTICAL );
 
-	m_tIntercept = new wxTextCtrl( sbSizer10->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_tIntercept = new wxTextCtrl( sbSizer10->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
 	sbSizer10->Add( m_tIntercept, 0, wxALL|wxEXPAND, 5 );
 
 
@@ -881,7 +881,9 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 
 	// Connect Events
 	m_tLatitude->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
+	m_tLatitude->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( FindBodyDialogBase::RecomputeDMM ), NULL, this );
 	m_tLongitude->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
+	m_tLongitude->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( FindBodyDialogBase::RecomputeDMM ), NULL, this );
 	m_cbBoatPosition->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdateBoatPosition ), NULL, this );
 	m_cbMagneticAzimuth->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
 	m_bDone->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnDone ), NULL, this );
@@ -891,7 +893,9 @@ FindBodyDialogBase::~FindBodyDialogBase()
 {
 	// Disconnect Events
 	m_tLatitude->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
+	m_tLatitude->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( FindBodyDialogBase::RecomputeDMM ), NULL, this );
 	m_tLongitude->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
+	m_tLongitude->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( FindBodyDialogBase::RecomputeDMM ), NULL, this );
 	m_cbBoatPosition->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdateBoatPosition ), NULL, this );
 	m_cbMagneticAzimuth->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
 	m_bDone->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnDone ), NULL, this );

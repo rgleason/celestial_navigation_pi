@@ -242,6 +242,7 @@ class FindBodyDialogBase : public wxDialog
 
 		// Virtual event handlers, override them in your derived class
 		virtual void OnUpdate( wxCommandEvent& event ) { event.Skip(); }
+		virtual void RecomputeDMM( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnUpdateBoatPosition( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDone( wxCommandEvent& event ) { event.Skip(); }
 
