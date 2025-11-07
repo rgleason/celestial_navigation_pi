@@ -153,6 +153,10 @@ class SightDialogBase : public wxDialog
 		wxStaticText* m_staticText30;
 		wxTextCtrl* m_tIndexError;
 		wxStaticText* m_staticText31;
+		wxCheckBox* m_cbDipShort;
+		wxTextCtrl* m_tDipShortDistance;
+		wxStaticText* m_staticText40;
+		wxCheckBox* m_cbArtificialHorizon;
 		wxButton* m_bSetDefaults;
 		wxPanel* m_panel81;
 		wxTextCtrl* m_tCalculations;

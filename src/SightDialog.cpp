@@ -152,6 +152,10 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   m_tTemperature->SetValue(wxString::Format(_T("%.1f"), m_Sight.m_Temperature));
   m_tPressure->SetValue(wxString::Format(_T("%.2f"), m_Sight.m_Pressure));
   m_tIndexError->SetValue(wxString::Format(_T("%.5f"), m_Sight.m_IndexError));
+  m_cbDipShort->SetValue(m_Sight.m_DipShort);
+  m_tDipShortDistance->SetValue(
+      wxString::Format(_T("%.4f"), m_Sight.m_DipShortDistance));
+  m_cbArtificialHorizon->SetValue(m_Sight.m_ArtificialHorizon);
 
   m_tShiftNm->SetValue(wxString::Format(_T("%.2f"), m_Sight.m_ShiftNm));
   m_tShiftBearing->SetValue(
@@ -246,6 +250,11 @@ void SightDialog::OnSetDefaults(wxCommandEvent& event) {
   pConf->Write(_T("DefaultPressure"), value);
   m_tIndexError->GetValue().ToDouble(&value);
   pConf->Write(_T("DefaultIndexError"), value);
+  pConf->Write(_T("DefaultDIPShort"), m_cbDipShort->GetValue());
+  m_tDipShortDistance->GetValue().ToDouble(&value);
+  pConf->Write(_T("DefaultDIPShortDistance"), value);
+  pConf->Write(_T("DefaultArtificialHorizon"),
+               m_cbArtificialHorizon->GetValue());
 }
 
 void SightDialog::RecomputeDMM() {
@@ -321,6 +330,9 @@ void SightDialog::Recompute() {
   m_tTemperature->GetValue().ToDouble(&m_Sight.m_Temperature);
   m_tPressure->GetValue().ToDouble(&m_Sight.m_Pressure);
   m_tIndexError->GetValue().ToDouble(&m_Sight.m_IndexError);
+  m_Sight.m_DipShort = m_cbDipShort->GetValue();
+  m_tDipShortDistance->GetValue().ToDouble(&m_Sight.m_DipShortDistance);
+  m_Sight.m_ArtificialHorizon = m_cbArtificialHorizon->GetValue();
 
   wxColour fc = m_ColourPicker->GetColour(), c = wxColour(m_Sight.m_ColourName);
   if (c.Red() != fc.Red() || c.Green() != fc.Green() || c.Blue() != fc.Blue())

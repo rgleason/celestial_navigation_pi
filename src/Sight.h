@@ -109,10 +109,13 @@ public:
   double m_LunarMoonAltitude, m_LunarBodyAltitude;
   BodyLimb m_LunarMoonLimb, m_LunarBodyLimb;
 
-  double m_EyeHeight;    // Height above sea in meters
-  double m_Temperature;  // Temperature in degrees celcius
-  double m_Pressure;     // Pressure in millibars
-  double m_IndexError;   // Error of measurement in degrees
+  double m_EyeHeight;         // Height above sea in meters
+  double m_Temperature;       // Temperature in degrees celcius
+  double m_Pressure;          // Pressure in millibars
+  double m_IndexError;        // Error of measurement in degrees
+  bool m_DipShort;            // DIP Short ?
+  double m_DipShortDistance;  // DIP Short distance
+  bool m_ArtificialHorizon;   // Artificial Horizon ?
 
   double m_ShiftNm;              // direction to move points
   double m_ShiftBearing;         // direction to move points

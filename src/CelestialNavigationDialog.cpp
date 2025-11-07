@@ -286,6 +286,9 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_Temperature = AttributeDouble(e, "Temperature", 10);
         s.m_Pressure = AttributeDouble(e, "Pressure", 1010);
         s.m_IndexError = AttributeDouble(e, "IndexError", 0);
+        s.m_DipShort = AttributeBool(e, "DipShort", 0);
+        s.m_DipShortDistance = AttributeBool(e, "DipShortDistance", 0);
+        s.m_ArtificialHorizon = AttributeBool(e, "ArtificialHorizon", 0);
 
         s.m_ShiftNm = AttributeDouble(e, "ShiftNm", 0);
         s.m_ShiftBearing = AttributeDouble(e, "ShiftBearing", 0);
@@ -377,6 +380,9 @@ void CelestialNavigationDialog::SaveXML() {
     c->SetDoubleAttribute("Temperature", s.m_Temperature);
     c->SetDoubleAttribute("Pressure", s.m_Pressure);
     c->SetDoubleAttribute("IndexError", s.m_IndexError);
+    c->SetDoubleAttribute("DipShort", s.m_DipShort);
+    c->SetDoubleAttribute("DipShortDistance", s.m_DipShortDistance);
+    c->SetDoubleAttribute("ArtificialHorizon", s.m_ArtificialHorizon);
 
     c->SetDoubleAttribute("ShiftNm", s.m_ShiftNm);
     c->SetDoubleAttribute("ShiftBearing", s.m_ShiftBearing);

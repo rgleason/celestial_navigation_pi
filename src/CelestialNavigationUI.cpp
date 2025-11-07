@@ -485,6 +485,19 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_staticText31->Wrap( -1 );
 	fgSizer13->Add( m_staticText31, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
+	m_cbDipShort = new wxCheckBox( m_panel8, wxID_ANY, _("Dip Short"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer13->Add( m_cbDipShort, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+
+	m_tDipShortDistance = new wxTextCtrl( m_panel8, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer13->Add( m_tDipShortDistance, 0, wxALL|wxEXPAND, 5 );
+
+	m_staticText40 = new wxStaticText( m_panel8, wxID_ANY, _("NM"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText40->Wrap( -1 );
+	fgSizer13->Add( m_staticText40, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+
+	m_cbArtificialHorizon = new wxCheckBox( m_panel8, wxID_ANY, _("Artificial Horizon"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer13->Add( m_cbArtificialHorizon, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+
 
 	fgSizer21->Add( fgSizer13, 1, wxEXPAND, 5 );
 

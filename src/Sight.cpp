@@ -101,6 +101,9 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
   pConf->Read(_T("DefaultTemperature"), &m_Temperature, 10);
   pConf->Read(_T("DefaultPressure"), &m_Pressure, 1013);
   pConf->Read(_T("DefaultIndexError"), &m_IndexError, 0);
+  pConf->Read(_T("DefaultDIPShort"), &m_DipShort, 0);
+  pConf->Read(_T("DefaultDIPShortDistance"), &m_DipShortDistance, 0);
+  pConf->Read(_T("DefaultArtificialHorizon"), &m_ArtificialHorizon, 0);
 
   const wxString sightcolornames[] = {_T("MEDIUM VIOLET RED"),
                                       _T("MIDNIGHT BLUE"),
@@ -649,15 +652,37 @@ void Sight::RecomputeAltitude() {
       wxString::Format(_("Index Error = %.4f%c = %s\n\n"), IndexCorrection,
                        0x00B0, toSDMM_PlugIn(0, IndexCorrection, true));
 
-  /* correct for height of observer
-     The dip of the sea horizon in minutes = 1.758*sqrt(height) */
-  double EyeHeightCorrection = 1.758 * sqrt(m_EyeHeight) / 60.0;
-  m_CalcStr +=
-      wxString::Format(_("Eye Height = %.4f m\n\
+  double EyeHeightCorrection = 0;
+  if (m_ArtificialHorizon) {
+    m_CalcStr +=
+        wxString::Format(_("Artificial horizon, no height correction\n"));
+  } else {
+    /* correct for height of observer
+       The dip of the sea horizon in minutes = 1.758*sqrt(height) */
+    if (m_DipShort) {
+      if (m_DipShortDistance == 0) {
+        m_CalcStr += wxString::Format(_("Dip Short Distance cannot be 0 !\n"));
+        return;
+      }
+      EyeHeightCorrection = 0.4156 * m_DipShortDistance +
+                            1.856 * m_EyeHeight / m_DipShortDistance;
+      m_CalcStr +=
+          wxString::Format(_("Dip Short Distance = %.4f m\n\
+Height Correction = 0.4156 * %.4f + 1.856 * %.5f / %.4f\n\
+Height Correction = %.4f%c = %s\n"),
+                           m_DipShortDistance, m_DipShortDistance, m_EyeHeight,
+                           m_DipShortDistance, EyeHeightCorrection, 0x00B0,
+                           toSDMM_PlugIn(0, EyeHeightCorrection, true));
+    } else {
+      EyeHeightCorrection = 1.758 * sqrt(m_EyeHeight) / 60.0;
+      m_CalcStr += wxString::Format(
+          _("Eye Height = %.4f m\n\
 Height Correction = 1.758%c * sqrt(%.4f) / 60.0\n\
 Height Correction = %.4f%c = %s\n"),
-                       m_EyeHeight, 0x00B0, m_EyeHeight, EyeHeightCorrection,
-                       0x00B0, toSDMM_PlugIn(0, EyeHeightCorrection, true));
+          m_EyeHeight, 0x00B0, m_EyeHeight, EyeHeightCorrection, 0x00B0,
+          toSDMM_PlugIn(0, EyeHeightCorrection, true));
+    }
+  }
 
   /* Apparent Altitude Ha */
   double ApparentAltitude =
@@ -670,6 +695,15 @@ ApparentAltitude = %.4f%c = %s\n"),
                        m_Measurement, 0x00B0, IndexCorrection, 0x00B0,
                        EyeHeightCorrection, 0x00B0, ApparentAltitude, 0x00B0,
                        toSDMM_PlugIn(0, ApparentAltitude, true));
+
+  if (m_ArtificialHorizon) {
+    m_CalcStr += wxString::Format(_("\nArtificial horizon\n\
+ApparentAltitude = ApparentAltitude / 2\n\
+ApparentAltitude = %.4f%c / 2 = %.4f%c\n"),
+                                  ApparentAltitude, 0x00B0,
+                                  ApparentAltitude / 2, 0x00B0);
+    ApparentAltitude /= 2;
+  }
 
   /* compensate for refraction */
   double RefractionCorrection;
@@ -834,15 +868,37 @@ void Sight::RecomputeLunar() {
       wxString::Format(_("Index Error = %.4f%c = %s\n\n"), IndexCorrection,
                        0x00B0, toSDMM_PlugIn(0, IndexCorrection, true));
 
-  /* correct for height of observer
-     The dip of the sea horizon in minutes = 1.758*sqrt(height) */
-  double EyeHeightCorrection = 1.758 * sqrt(m_EyeHeight) / 60.0;
-  m_CalcStr +=
-      wxString::Format(_("Eye Height = %.4f m\n\
+  double EyeHeightCorrection = 0;
+  if (m_ArtificialHorizon) {
+    m_CalcStr +=
+        wxString::Format(_("Artificial horizon, no height correction\n"));
+  } else {
+    if (m_DipShort) {
+      if (m_DipShortDistance == 0) {
+        m_CalcStr += wxString::Format(_("Dip Short Distance cannot be 0 !\n"));
+        return;
+      }
+      EyeHeightCorrection = 0.4156 * m_DipShortDistance +
+                            1.856 * m_EyeHeight / m_DipShortDistance;
+      m_CalcStr +=
+          wxString::Format(_("Dip Short Distance = %.4f m\n\
+Height Correction = 0.4156 * %.4f + 1.856 * %.5f / %.4f\n\
+Height Correction = %.4f%c = %s\n"),
+                           m_DipShortDistance, m_DipShortDistance, m_EyeHeight,
+                           m_DipShortDistance, EyeHeightCorrection, 0x00B0,
+                           toSDMM_PlugIn(0, EyeHeightCorrection, true));
+    } else {
+      /* correct for height of observer
+         The dip of the sea horizon in minutes = 1.758*sqrt(height) */
+      EyeHeightCorrection = 1.758 * sqrt(m_EyeHeight) / 60.0;
+      m_CalcStr += wxString::Format(
+          _("Eye Height = %.4f m\n\
 Height Correction = 1.758%c * sqrt(%.4f) / 60.0\n\
 Height Correction = %.4f%c = %s\n"),
-                       m_EyeHeight, 0x00B0, m_EyeHeight, EyeHeightCorrection,
-                       0x00B0, toSDMM_PlugIn(0, EyeHeightCorrection, true));
+          m_EyeHeight, 0x00B0, m_EyeHeight, EyeHeightCorrection, 0x00B0,
+          toSDMM_PlugIn(0, EyeHeightCorrection, true));
+    }
+  }
 
   /* Apparent Altitude Ha */
   double ApparentAltitudeMoon =
@@ -855,6 +911,15 @@ ApparentAltitudeMoon = %.4f%c = %s\n"),
                        m_LunarMoonAltitude, 0x00B0, IndexCorrection, 0x00B0,
                        EyeHeightCorrection, 0x00B0, ApparentAltitudeMoon,
                        0x00B0, toSDMM_PlugIn(0, ApparentAltitudeMoon, true));
+
+  if (m_ArtificialHorizon) {
+    m_CalcStr += wxString::Format(_("\nArtificial horizon\n\
+ApparentAltitudeMoon = ApparentAltitudeMoon / 2\n\
+ApparentAltitudeMoon = %.4f%c / 2 = %.4f%c\n"),
+                                  ApparentAltitudeMoon, 0x00B0,
+                                  ApparentAltitudeMoon / 2, 0x00B0);
+    ApparentAltitudeMoon /= 2;
+  }
 
   /* compensate for refraction */
   double RefractionCorrectionMoon;
@@ -966,6 +1031,15 @@ ApparentAltitude = %.4f%c = %s\n"),
                        m_LunarBodyAltitude, 0x00B0, IndexCorrection, 0x00B0,
                        EyeHeightCorrection, 0x00B0, ApparentAltitude, 0x00B0,
                        toSDMM_PlugIn(0, ApparentAltitude, true));
+
+  if (m_ArtificialHorizon) {
+    m_CalcStr += wxString::Format(_("Artificial horizon\n\
+ApparentAltitude = ApparentAltitudeMoon / 2\n\
+ApparentAltitude = %.4f%c / 2 = %.4f%c"),
+                                  ApparentAltitude, 0x00B0,
+                                  ApparentAltitude / 2, 0x00B0);
+    ApparentAltitude /= 2;
+  }
 
   /* compensate for refraction */
   double RefractionCorrection;
