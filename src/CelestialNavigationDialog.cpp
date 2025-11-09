@@ -338,6 +338,12 @@ failed:
   return false;
 }
 
+void SetFloatAttribute(TiXmlElement *c, const char *label, Sight& s, float value) {
+  char buf[20];
+  sprintf(buf, "%f", value);
+  c->SetAttribute(label, buf);
+}
+
 void CelestialNavigationDialog::SaveXML() {
   TiXmlDocument doc;
   TiXmlDeclaration* decl = new TiXmlDeclaration("1.0", "utf-8", "");
@@ -363,37 +369,37 @@ void CelestialNavigationDialog::SaveXML() {
     c->SetAttribute("Type", s.m_Type);
     c->SetAttribute("Body", s.m_Body.mb_str());
     c->SetAttribute("BodyLimb", s.m_BodyLimb);
-    c->SetDoubleAttribute("LunarMoonAltitude", s.m_LunarMoonAltitude);
+    SetFloatAttribute(c, "LunarMoonAltitude", s, s.m_LunarMoonAltitude);
     c->SetAttribute("LunarMoonLimb", s.m_LunarMoonLimb);
-    c->SetDoubleAttribute("LunarBodyAltitude", s.m_LunarBodyAltitude);
+    SetFloatAttribute(c, "LunarBodyAltitude", s, s.m_LunarBodyAltitude);
     c->SetAttribute("LunarBodyLimb", s.m_LunarBodyLimb);
 
     c->SetAttribute("Date", s.m_DateTime.FormatISODate().mb_str());
     c->SetAttribute("Time", s.m_DateTime.FormatISOTime().mb_str());
 
-    c->SetDoubleAttribute("TimeCertainty", s.m_TimeCertainty);
+    SetFloatAttribute(c, "TimeCertainty", s, s.m_TimeCertainty);
 
-    c->SetDoubleAttribute("Measurement", s.m_Measurement);
-    c->SetDoubleAttribute("MeasurementCertainty", s.m_MeasurementCertainty);
+    SetFloatAttribute(c, "Measurement", s, s.m_Measurement);
+    SetFloatAttribute(c, "MeasurementCertainty", s, s.m_MeasurementCertainty);
 
-    c->SetDoubleAttribute("EyeHeight", s.m_EyeHeight);
-    c->SetDoubleAttribute("Temperature", s.m_Temperature);
-    c->SetDoubleAttribute("Pressure", s.m_Pressure);
-    c->SetDoubleAttribute("IndexError", s.m_IndexError);
-    c->SetDoubleAttribute("DipShort", s.m_DipShort);
-    c->SetDoubleAttribute("DipShortDistance", s.m_DipShortDistance);
-    c->SetDoubleAttribute("ArtificialHorizon", s.m_ArtificialHorizon);
+    SetFloatAttribute(c, "EyeHeight", s, s.m_EyeHeight);
+    SetFloatAttribute(c, "Temperature", s, s.m_Temperature);
+    SetFloatAttribute(c, "Pressure", s, s.m_Pressure);
+    SetFloatAttribute(c, "IndexError", s, s.m_IndexError);
+    SetFloatAttribute(c, "DipShort", s, s.m_DipShort);
+    SetFloatAttribute(c, "DipShortDistance", s, s.m_DipShortDistance);
+    SetFloatAttribute(c, "ArtificialHorizon", s, s.m_ArtificialHorizon);
 
-    c->SetDoubleAttribute("ShiftNm", s.m_ShiftNm);
-    c->SetDoubleAttribute("ShiftBearing", s.m_ShiftBearing);
-    c->SetDoubleAttribute("MagneticShiftBearing", s.m_bMagneticShiftBearing);
+    SetFloatAttribute(c, "ShiftNm", s, s.m_ShiftNm);
+    SetFloatAttribute(c, "ShiftBearing", s, s.m_ShiftBearing);
+    SetFloatAttribute(c, "MagneticShiftBearing", s, s.m_bMagneticShiftBearing);
 
     c->SetAttribute("ColourName", s.m_ColourName.mb_str());
     c->SetAttribute("Colour", s.m_Colour.GetAsString().mb_str());
     c->SetAttribute("Transparency", s.m_Colour.Alpha());
 
-    c->SetDoubleAttribute("DRLat", s.m_DRLat);
-    c->SetDoubleAttribute("DRLon", s.m_DRLon);
+    SetFloatAttribute(c, "DRLat", s, s.m_DRLat);
+    SetFloatAttribute(c, "DRLon", s, s.m_DRLon);
     c->SetAttribute("DRBoatPosition", s.m_DRBoatPosition);
     c->SetAttribute("DRMagneticAzimuth", s.m_DRMagneticAzimuth);
 
