@@ -72,6 +72,7 @@ target_include_directories(celestial_tests
         ${CMAKE_SOURCE_DIR}/opencpn-libs/${PKG_API_LIB}/include
         ${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml/include
         ${CMAKE_SOURCE_DIR}/opencpn-libs/wxJSON/include
+        ${CMAKE_SOURCE_DIR}/src/plugin_dc/dc_utils/include
         ${GTEST_INCLUDE_DIRS}
         ${wxWidgets_INCLUDE_DIRS}
 )
@@ -85,6 +86,7 @@ target_link_libraries(celestial_tests
         ocpn::api
         ocpn::tinyxml
         ocpn::wxjson
+        ocpn::plugin-dc
         ${OPENGL_LIBRARIES}
 )
 

@@ -269,7 +269,7 @@ if (NOT OCPN_FLATPAK_CONFIG)
   add_subdirectory(opencpn-libs/wxJSON)
   target_link_libraries(${PACKAGE_NAME} ocpn::wxjson)
 
-  add_subdirectory(opencpn-libs/plugin_dc)
+  add_subdirectory(src/plugin_dc)
   target_link_libraries(${PACKAGE_NAME} ocpn::plugin-dc)
 
   add_subdirectory(opencpn-libs/bzip2)
