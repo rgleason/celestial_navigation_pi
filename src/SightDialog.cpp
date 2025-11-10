@@ -38,6 +38,7 @@
 #include "SightDialog.h"
 #include "FindBodyDialog.h"
 #include "celestial_navigation_pi.h"
+#include "geodesic.h"
 
 SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
     : SightDialogBase(parent),
@@ -126,8 +127,18 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   SetPosition(p);
 
   wxSize sz = GetSize();
-  pConf->Read(_T ( "SightsDialogWidth" ), &sz.x, sz.x);
-  pConf->Read(_T ( "SightsDialogHeight" ), &sz.y, sz.y);
+  int w, h;
+  pConf->Read(_T ( "SightsDialogWidth" ), &w, -1);
+  pConf->Read(_T ( "SightsDialogHeight" ), &h, -1);
+  if (w == -1 || h == -1) {
+#ifdef __OCPN__ANDROID__
+    // for some reason Android gets the height wrong...
+    sz.y += 30;
+#endif
+  } else {
+    sz.x = w;
+    sz.y = h;
+  }
   SetSize(sz);
 
   m_cType->SetSelection(m_Sight.m_Type);
@@ -166,7 +177,9 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   m_tMeasurementCertainty->SetValue(
       wxString::Format(_T("%.2f"), m_Sight.m_MeasurementCertainty));
   m_cbMagneticAzimuth->SetValue(m_Sight.m_bMagneticNorth);
-  m_ColourPicker->SetColour(m_Sight.m_Colour);
+  m_ColourPicker->SetColour(wxColour(m_Sight.m_Colour.Red(),
+                                     m_Sight.m_Colour.Green(),
+                                     m_Sight.m_Colour.Blue()));
 
   m_tLunarMoonAltitude->SetValue(
       toSDMM_PlugIn(0, m_Sight.m_LunarMoonAltitude, true));
@@ -277,24 +290,21 @@ void SightDialog::Recompute() {
   m_fgSizerLunar->Show(m_cType->GetSelection() == LUNAR);
   if (m_cType->GetSelection() == LUNAR) {
     m_sbSizerSight->GetStaticBox()->SetLabel(_T("Lunar distance (LDOpc)"));
-    m_sbSizerSight->Layout();
     m_Sight.m_BodyLimb = (Sight::BodyLimb)m_cLimb->GetSelection();
     m_cLimb->Clear();
     m_cLimb->Append(_T("Near"));
     m_cLimb->Append(_T("Far"));
-    m_cLimb->Layout();
     m_cLimb->SetSelection((int)m_Sight.m_BodyLimb);
   } else {
     m_sbSizerSight->GetStaticBox()->SetLabel(_T("Sight measurement (Hs)"));
-    m_sbSizerSight->Layout();
     m_Sight.m_BodyLimb = (Sight::BodyLimb)m_cLimb->GetSelection();
     m_cLimb->Clear();
     m_cLimb->Append(_T("Lower"));
     m_cLimb->Append(_T("Center"));
     m_cLimb->Append(_T("Upper"));
-    m_cLimb->Layout();
     m_cLimb->SetSelection((int)m_Sight.m_BodyLimb);
   }
+  m_fgPanelSizer->Layout();
 
   if (!m_breadytorecompute) return;
 

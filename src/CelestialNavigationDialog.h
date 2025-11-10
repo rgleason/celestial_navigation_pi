@@ -30,6 +30,7 @@
 
 #include <list>
 
+#include "celestial_navigation_pi.h"
 #include "geodesic.h"
 #include "CelestialNavigationUI.h"
 #include "FixDialog.h"
@@ -39,13 +40,16 @@
 
 class CelestialNavigationDialog : public CelestialNavigationDialogBase {
 public:
-  CelestialNavigationDialog(wxWindow* parent);
+  CelestialNavigationDialog(wxWindow* parent, celestial_navigation_pi* ppi);
   ~CelestialNavigationDialog();
   void UpdateSights();
 
-  FixDialog m_FixDialog;
+  ClockCorrectionDialog* m_ClockCorrectionDialog;
+  FixDialog* m_FixDialog;
   double m_pix_per_mm;
   std::vector<Sight> m_Sights;
+
+  void OnFixClose();
 
 private:
   bool OpenXML(bool reportfailure);
@@ -53,7 +57,7 @@ private:
 
   void RebuildList();
   void UpdateButtons();  // Correct button state
-  void UpdateFix(bool warnings = true);
+  void UpdateFix();
 
   // event handlers
   void OnNew(wxCommandEvent& event);
@@ -68,6 +72,7 @@ private:
   void OnClockOffset(wxCommandEvent& event);
   void OnInformation(wxCommandEvent& event);
   void OnHide(wxCommandEvent& event);
+  void OnClose(wxCloseEvent& event);
 
   void OnClockCorrection(wxSpinEvent& event);
   void OnSightListLeftDown(wxMouseEvent& event);
@@ -77,13 +82,13 @@ private:
   void OnColumnHeaderClick(wxListEvent& event);
   void OnSightSelected(wxListEvent& event);
 
-  void InsertSight(Sight* s, bool warnings = true);
-  void UpdateSight(int idx, bool warnings = true);
+  void InsertSight(Sight* s);
+  void UpdateSight(int idx);
 
+  celestial_navigation_pi* m_Plugin;
   wxString m_sights_path;
-  int clock_correction;
+  int m_ClockCorrection;
 
-  ClockCorrectionDialog m_ClockCorrectionDialog;
   wxPoint m_startPos;
   wxPoint m_startMouse;
   wxSize m_fullSize;

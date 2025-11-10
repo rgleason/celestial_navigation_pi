@@ -66,8 +66,6 @@ void FindBodyDialog::OnUpdateBoatPosition(wxCommandEvent& event) {
   UpdateBoatPosition();
 }
 
-void FindBodyDialog::OnDone(wxCommandEvent& event) { EndModal(wxID_OK); }
-
 void FindBodyDialog::UpdateBoatPosition() {
   m_Sight.m_DRBoatPosition = m_cbBoatPosition->GetValue();
   if (m_Sight.m_DRBoatPosition) {

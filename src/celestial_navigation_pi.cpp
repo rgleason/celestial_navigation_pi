@@ -31,16 +31,12 @@
 #endif  // precompiled headers
 
 #include <wx/stdpaths.h>
-#ifdef __WXOSX__
-#include <OpenGL/gl.h>
-#else
-#include <GL/gl.h>
-#endif
 
 #include "ocpn_plugin.h"
 
-#include "Sight.h"
 #include "celestial_navigation_pi.h"
+#include "CelestialNavigationDialog.h"
+#include "Sight.h"
 #include "icons.h"
 #include <wx/jsonreader.h>
 #include <wx/jsonwriter.h>
@@ -215,7 +211,7 @@ void celestial_navigation_pi::OnToolbarToolCallback(int id) {
     }
 
     m_pCelestialNavigationDialog =
-        new CelestialNavigationDialog(m_parent_window);
+        new CelestialNavigationDialog(m_parent_window, this);
   }
 
   m_pCelestialNavigationDialog->Show(!m_pCelestialNavigationDialog->IsShown());
@@ -230,52 +226,49 @@ void celestial_navigation_pi::SetColorScheme(PI_ColorScheme cs) {
 }
 
 bool celestial_navigation_pi::RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp) {
-  return RenderOverlayAll(&dc, vp);
+  piDC* pidc = new piDC(dc);
+  bool ret = RenderOverlayAll(pidc, vp);
+  delete pidc;
+  return ret;
 }
 
 bool celestial_navigation_pi::RenderGLOverlay(wxGLContext* pcontext,
                                               PlugIn_ViewPort* vp) {
-  return RenderOverlayAll(NULL, vp);
+  piDC* pidc = new piDC(pcontext);
+  pidc->SetVP(vp);
+  bool ret = RenderOverlayAll(pidc, vp);
+  delete pidc;
+  return ret;
 }
 
-bool celestial_navigation_pi::RenderOverlayAll(wxDC* dc, PlugIn_ViewPort* vp) {
+bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
   if (!m_pCelestialNavigationDialog || !m_pCelestialNavigationDialog->IsShown())
     return false;
 
   /* draw sights */
-  std::vector<Sight> lSights = m_pCelestialNavigationDialog->m_Sights;
-  for (Sight& s : lSights) {
+  for (Sight& s : m_pCelestialNavigationDialog->m_Sights) {
     s.Render(dc, *vp, m_pCelestialNavigationDialog->m_pix_per_mm);
   }
 
-  if (!m_pCelestialNavigationDialog->m_FixDialog.IsShown()) return true;
+  if (!m_pCelestialNavigationDialog->m_FixDialog ||
+      !m_pCelestialNavigationDialog->m_FixDialog->IsShown())
+    return true;
 
   /* now render fix */
-  double lat = m_pCelestialNavigationDialog->m_FixDialog.m_fixlat;
-  double lon = m_pCelestialNavigationDialog->m_FixDialog.m_fixlon;
-  double err = m_pCelestialNavigationDialog->m_FixDialog.m_fixerror;
+  double lat = m_pCelestialNavigationDialog->m_FixDialog->m_fixlat;
+  double lon = m_pCelestialNavigationDialog->m_FixDialog->m_fixlon;
+  double err = m_pCelestialNavigationDialog->m_FixDialog->m_fixerror;
   wxPoint r1, r2;
   GetCanvasPixLL(vp, &r1, lat - 1, lon - 1);
   GetCanvasPixLL(vp, &r2, lat + 1, lon + 1);
 
   if (!isnan(err)) {
-    if (dc) {
-      dc->SetPen(wxPen(wxColor(255, 0, 0), 1));
-      dc->SetBrush(*wxTRANSPARENT_BRUSH);
-      dc->DrawLine(r1.x, r1.y, r2.x, r2.y);
-      dc->DrawLine(r1.x, r2.y, r2.x, r1.y);
-    } else {
-      glColor3d(1, 0, 0);
-      glLineWidth((int)(0.5 * m_pCelestialNavigationDialog->m_pix_per_mm));
-      glBegin(GL_LINES);
-      glVertex2i(r1.x, r1.y);
-      glVertex2i(r2.x, r2.y);
-      glVertex2i(r1.x, r2.y);
-      glVertex2i(r2.x, r1.y);
-      glEnd();
-    }
+    dc->SetPen(wxPen(wxColor(255, 0, 0),
+                     (int)(0.5 * m_pCelestialNavigationDialog->m_pix_per_mm)));
+    dc->SetBrush(*wxTRANSPARENT_BRUSH);
+    dc->DrawLine(r1.x, r1.y, r2.x, r2.y);
+    dc->DrawLine(r1.x, r2.y, r2.x, r1.y);
   }
-
   return true;
 }
 
@@ -315,6 +308,12 @@ void celestial_navigation_pi::SetPluginMessage(wxString& message_id,
 
     gQueryVar = decl_val;
   }
+}
+
+void celestial_navigation_pi::OnDialogClose() {
+  m_pCelestialNavigationDialog->Hide();
+  m_pCelestialNavigationDialog->Destroy();
+  m_pCelestialNavigationDialog = NULL;
 }
 
 double celestial_navigation_pi_GetWMM(double lat, double lon, double altitude,

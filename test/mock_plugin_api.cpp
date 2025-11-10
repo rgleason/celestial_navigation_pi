@@ -242,3 +242,8 @@ bool wxAuiPaneInfo::IsValid() const { return true; }
 void DimeWindow(wxWindow* win) {}
 void GetCanvasPixLL(PlugIn_ViewPort* vp, wxPoint* pp, double lat, double lon) {}
 void RequestRefresh(wxWindow* window) {}
+
+extern DECL_EXP wxString GetLocaleCanonicalName() {
+  return "";
+}
+

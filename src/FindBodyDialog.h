@@ -39,7 +39,6 @@ public:
 
   void OnUpdate(wxCommandEvent& event);
   void OnUpdateBoatPosition(wxCommandEvent& event);
-  void OnDone(wxCommandEvent& event);
   void RecomputeDMM(wxCommandEvent& event) { UpdateBoatPosition(); }
   void Update();
   void UpdateBoatPosition();

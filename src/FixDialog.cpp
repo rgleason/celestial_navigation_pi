@@ -38,8 +38,12 @@
 // #include <cmath>
 using namespace std;
 
-FixDialog::FixDialog(wxWindow* parent)
-    : FixDialogBase(parent), m_fixlat(NAN), m_fixlon(NAN), m_fixerror(NAN) {
+FixDialog::FixDialog(CelestialNavigationDialog* parent)
+    : FixDialogBase(parent),
+      m_fixlat(NAN),
+      m_fixlon(NAN),
+      m_fixerror(NAN),
+      m_Parent(parent) {
   double lat, lon;
   celestial_navigation_pi_BoatPos(lat, lon);
   m_sInitialLatitude->SetValue(lat);
@@ -137,7 +141,7 @@ int matrix_invert3(double a[3][3]) {
   return 1;
 }
 
-void FixDialog::Update(int clock_offset, bool warnings) {
+void FixDialog::Update(int clock_offset) {
   std::list<std::vector<double> > J;
   std::list<double> R;
 
@@ -151,15 +155,13 @@ void FixDialog::Update(int clock_offset, bool warnings) {
 
   m_clock_offset = clock_offset;
   int iterations = 0;
-  std::vector<Sight> lSights =
-      ((CelestialNavigationDialog*)GetParent())->m_Sights;
 again:
-  for (Sight& s : lSights) {
+  for (Sight& s : ((CelestialNavigationDialog*)GetParent())->m_Sights) {
     if (!s.IsVisible() || s.m_Type != Sight::ALTITUDE) continue;
 
     if (s.m_ShiftNm) {
       static bool seenwarning = false;
-      if (!seenwarning && warnings) {
+      if (!seenwarning) {
         wxMessageDialog mdlg(
             this, _("Shifted sights are not used to compute a fix, \
 determine fix visually instead.\n"),
@@ -227,6 +229,16 @@ determine fix visually instead.\n"),
 
     J.push_back(v);
     R.push_back(d);
+  }
+
+  /* it takes at least 2 visible sights to have a fix */
+  if (J.size() < 2) {
+    m_fixerror = NAN;
+    m_stLatitude->SetValue(_("   N/A   "));
+    m_stLongitude->SetValue(_("   N/A   "));
+    m_stFixError->SetValue(_("   N/A   "));
+    m_bGo->Disable();
+    return;
   }
 
   /* fit to unit sphere (keep results on surface of earth) */
@@ -305,9 +317,9 @@ determine fix visually instead.\n"),
   } else {
   fail:
     m_fixerror = NAN;
-    m_stLatitude->SetLabel(_("   N/A   "));
-    m_stLongitude->SetLabel(_("   N/A   "));
-    m_stFixError->SetLabel(_("   N/A   "));
+    m_stLatitude->SetValue(_("   N/A   "));
+    m_stLongitude->SetValue(_("   N/A   "));
+    m_stFixError->SetValue(_("   N/A   "));
     m_bGo->Disable();
   }
 
@@ -323,7 +335,4 @@ void FixDialog::OnGo(wxCommandEvent& event) {
   JumpToPosition(m_fixlat, m_fixlon, scale);
 }
 
-void FixDialog::OnClose(wxCloseEvent& event) {
-  event.Skip();
-  RequestRefresh(GetParent()->GetParent());
-}
+void FixDialog::OnClose(wxCommandEvent& event) { m_Parent->OnFixClose(); }

@@ -29,6 +29,7 @@
 #define _CLOCKCORRECTIONDIALOG_H_
 
 #include "CelestialNavigationUI.h"
+#include "CelestialNavigationDialog.h"
 
 #include <list>
 
@@ -36,10 +37,12 @@ class Sight;
 
 class ClockCorrectionDialog : public ClockCorrectionDialogBase {
 public:
-  ClockCorrectionDialog(wxWindow* parent) : ClockCorrectionDialogBase(parent) {}
+  ClockCorrectionDialog(CelestialNavigationDialog* parent, int value);
 
 private:
   void OnUpdate(wxSpinEvent& event);
+
+  CelestialNavigationDialog* m_Parent;
 };
 
 #endif

@@ -26,6 +26,7 @@
  */
 
 #include <list>
+#include "pidc.h"
 
 #ifdef __MSVC__
 #define _USE_MATH_DEFINES
@@ -124,7 +125,7 @@ public:
   wxString m_ColourName;
   wxColour m_Colour;  // Color of the sight
 
-  virtual void Render(wxDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm);
+  virtual void Render(piDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm);
 
   void BodyLocation(wxDateTime time, double* lat, double* lon, double* ghaash,
                     double* rad, double* dist);
@@ -180,7 +181,7 @@ private:
 
   void DrawPolygon(PlugIn_ViewPort& VP, wxRealPointList& area, bool poly);
 
-  wxDC* m_dc;
+  piDC* m_dc;
 
   static int s_lastsightcolor;
 };

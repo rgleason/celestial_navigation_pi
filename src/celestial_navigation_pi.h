@@ -34,8 +34,7 @@
 #define ABOUT_AUTHOR_URL "http://seandepagnier.users.sourceforge.net"
 
 #include "ocpn_plugin.h"
-
-#include "CelestialNavigationDialog.h"
+#include "pidc.h"
 
 //----------------------------------------------------------------------------------------------------------
 //    The PlugIn Class Definition
@@ -43,6 +42,8 @@
 
 #define CELESTIAL_NAVIGATION_TOOL_POSITION \
   -1  // Request default positioning of toolbar tool
+
+class CelestialNavigationDialog;
 
 class celestial_navigation_pi : public wxEvtHandler, opencpn_plugin_118 {
 public:
@@ -74,12 +75,13 @@ public:
 
   bool RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp);
   bool RenderGLOverlay(wxGLContext* pcontext, PlugIn_ViewPort* vp);
-  bool RenderOverlayAll(wxDC* dc, PlugIn_ViewPort* vp);
+  bool RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp);
 
   static wxString StandardPath();
   void SetPositionFixEx(PlugIn_Position_Fix_Ex& pfix);
   void SetCursorLatLon(double lat, double lon);
   void SetPluginMessage(wxString& message_id, wxString& message_body);
+  void OnDialogClose();
 
 private:
   wxWindow* m_parent_window;

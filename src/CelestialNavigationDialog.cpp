@@ -36,10 +36,10 @@
 
 #include "ocpn_plugin.h"
 
+#include "celestial_navigation_pi.h"
 #include "Sight.h"
 #include "SightDialog.h"
 #include "CelestialNavigationDialog.h"
-#include "celestial_navigation_pi.h"
 #include <algorithm>
 #include <functional>
 
@@ -87,10 +87,12 @@ wxString columns[] = {
     _(""), _("Type"), _("Body"), _("Time (UTC)"), _("Measurement"), _("Color"),
 };
 
-CelestialNavigationDialog::CelestialNavigationDialog(wxWindow* parent)
+CelestialNavigationDialog::CelestialNavigationDialog(
+    wxWindow* parent, celestial_navigation_pi* ppi)
     : CelestialNavigationDialogBase(parent),
-      m_FixDialog(this),
-      m_ClockCorrectionDialog(this) {
+      m_ClockCorrectionDialog(NULL),
+      m_FixDialog(NULL),
+      m_Plugin(ppi) {
   wxFileConfig* pConf = GetOCPNConfigObject();
 
   pConf->SetPath(_T("/PlugIns/CelestialNavigation"));
@@ -196,6 +198,9 @@ CelestialNavigationDialog::~CelestialNavigationDialog() {
   pConf->Write(_T ( "DialogY" ), p.y);
 
   wxSize s = GetSize();
+  if (!m_lSights->IsShown()) {
+    s = m_fullSize;
+  }
   pConf->Write(_T ( "DialogWidth" ), s.x);
   pConf->Write(_T ( "DialogHeight" ), s.y);
 
@@ -248,8 +253,7 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
     for (TiXmlElement* e = root.FirstChild().Element(); e;
          e = e->NextSiblingElement()) {
       if (!strcmp(e->Value(), "ClockError")) {
-        m_ClockCorrectionDialog.m_sClockCorrection->SetValue(
-            AttributeInt(e, "Seconds", 0));
+        m_ClockCorrection = AttributeInt(e, "Seconds", 0);
       } else if (!strcmp(e->Value(), "Sight")) {
         Sight s;
 
@@ -308,7 +312,7 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_bSelected = false;
 
         if (s.m_bVisible) {
-          s.Recompute(m_ClockCorrectionDialog.m_sClockCorrection->GetValue());
+          s.Recompute(m_ClockCorrection);
           s.RebuildPolygons();
         }
         m_Sights.push_back(std::move(s));
@@ -338,7 +342,8 @@ failed:
   return false;
 }
 
-void SetFloatAttribute(TiXmlElement *c, const char *label, Sight& s, float value) {
+void SetFloatAttribute(TiXmlElement* c, const char* label, Sight& s,
+                       float value) {
   char buf[20];
   sprintf(buf, "%f", value);
   c->SetAttribute(label, buf);
@@ -358,8 +363,7 @@ void CelestialNavigationDialog::SaveXML() {
   root->SetAttribute("creator", "Opencpn Celestial Navigation plugin");
 
   TiXmlElement* c = new TiXmlElement("ClockError");
-  c->SetAttribute("Seconds",
-                  m_ClockCorrectionDialog.m_sClockCorrection->GetValue());
+  c->SetAttribute("Seconds", m_ClockCorrection);
   root->LinkEndChild(c);
 
   for (Sight& s : m_Sights) {
@@ -505,11 +509,11 @@ void CelestialNavigationDialog::RebuildList() {
   }
 
   UpdateButtons();
-  UpdateFix(true);
+  UpdateFix();
   SaveXML();
 }
 
-void CelestialNavigationDialog::UpdateSight(int idx, bool warnings) {
+void CelestialNavigationDialog::UpdateSight(int idx) {
   Sight& s = m_Sights[idx];
 
   // then add sights to the listctrl
@@ -528,7 +532,7 @@ void CelestialNavigationDialog::UpdateSight(int idx, bool warnings) {
     m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName);
 
   UpdateButtons();
-  UpdateFix(warnings);
+  UpdateFix();
   SaveXML();
 }
 
@@ -548,19 +552,18 @@ void CelestialNavigationDialog::UpdateButtons() {
   m_bDeleteSight->Enable(enable);
 }
 
-void CelestialNavigationDialog::UpdateFix(bool warnings) {
-  m_FixDialog.Update(m_ClockCorrectionDialog.m_sClockCorrection->GetValue(),
-                     warnings);
+void CelestialNavigationDialog::UpdateFix() {
+  if (m_FixDialog) m_FixDialog->Update(m_ClockCorrection);
 }
 
 void CelestialNavigationDialog::OnNew(wxCommandEvent& event) {
   wxDateTime now = wxDateTime::Now().ToUTC();
 
   Sight ns(Sight::ALTITUDE, _("Sun"), Sight::LOWER, now, 0, 0, 10);
-  SightDialog dialog(this, ns,
-                     m_ClockCorrectionDialog.m_sClockCorrection->GetValue());
+  SightDialog dialog(this, ns, m_ClockCorrection);
 
-  if (dialog.ShowModal() == wxID_OK) {
+  dialog.ShowModal();
+  if (dialog.GetReturnCode() == wxID_OK) {
     if (ns.m_bVisible) {
       dialog.Recompute();
       ns.RebuildPolygons();
@@ -599,10 +602,10 @@ void CelestialNavigationDialog::OnEdit() {
   Sight& s = m_Sights[selectedIndex];
   Sight originalsight = s; /* in case of cancel */
 
-  SightDialog dialog(this, s,
-                     m_ClockCorrectionDialog.m_sClockCorrection->GetValue());
+  SightDialog dialog(this, s, m_ClockCorrection);
 
-  if (dialog.ShowModal() == wxID_OK) {
+  dialog.ShowModal();
+  if (dialog.GetReturnCode() == wxID_OK) {
     if (s.m_bVisible) {
       dialog.Recompute();
       s.RebuildPolygons();
@@ -646,8 +649,18 @@ void CelestialNavigationDialog::OnDeleteAll(wxCommandEvent& event) {
 }
 
 void CelestialNavigationDialog::OnFix(wxCommandEvent& event) {
-  m_FixDialog.Show();
-  RequestRefresh(GetParent());
+  if (m_FixDialog == NULL) {
+    m_FixDialog = new FixDialog(this);
+    m_FixDialog->Show();
+    m_FixDialog->Update(m_ClockCorrection);
+    RequestRefresh(GetParent()->GetParent());
+  }
+}
+
+void CelestialNavigationDialog::OnFixClose() {
+  m_FixDialog->Hide();
+  m_FixDialog->Destroy();
+  m_FixDialog = NULL;
 }
 
 void CelestialNavigationDialog::OnDRShift(wxCommandEvent& event) {
@@ -671,7 +684,21 @@ void CelestialNavigationDialog::OnDRShift(wxCommandEvent& event) {
 }
 
 void CelestialNavigationDialog::OnClockOffset(wxCommandEvent& event) {
-  m_ClockCorrectionDialog.Show();
+  m_ClockCorrectionDialog = new ClockCorrectionDialog(this, m_ClockCorrection);
+  m_ClockCorrectionDialog->ShowModal();
+  if (m_ClockCorrectionDialog->GetReturnCode() == wxID_OK) {
+    m_ClockCorrection = m_ClockCorrectionDialog->m_sClockCorrection->GetValue();
+    for (Sight& s : m_Sights) {
+      if (s.m_bVisible) {
+        s.Recompute(m_ClockCorrection);
+        s.RebuildPolygons();
+      }
+    }
+    UpdateSights();
+    RequestRefresh(GetParent());
+  }
+  m_ClockCorrectionDialog->Destroy();
+  m_ClockCorrectionDialog = NULL;
 }
 
 void CelestialNavigationDialog::OnInformation(wxCommandEvent& event) {
@@ -698,6 +725,10 @@ void CelestialNavigationDialog::OnHide(wxCommandEvent& event) {
   }
 }
 
+void CelestialNavigationDialog::OnClose(wxCloseEvent& event) {
+  m_Plugin->OnDialogClose();
+}
+
 void CelestialNavigationDialog::OnSightListLeftDown(wxMouseEvent& event) {
   wxPoint pos = event.GetPosition();
   int flags = 0;
@@ -711,7 +742,7 @@ void CelestialNavigationDialog::OnSightListLeftDown(wxMouseEvent& event) {
     m_lSights->SetItemImage(clicked_index, sight.IsVisible() ? 0 : -1);
 
     if (sight.IsVisible() && !sight.IsCalculated()) {
-      sight.Recompute(m_ClockCorrectionDialog.m_sClockCorrection->GetValue());
+      sight.Recompute(m_ClockCorrection);
       sight.RebuildPolygons();
     }
 

@@ -77,6 +77,7 @@ CelestialNavigationDialogBase::CelestialNavigationDialogBase( wxWindow* parent, 
 	this->Centre( wxBOTH );
 
 	// Connect Events
+	this->Connect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( CelestialNavigationDialogBase::OnClose ) );
 	m_lSights->Connect( wxEVT_LEFT_DCLICK, wxMouseEventHandler( CelestialNavigationDialogBase::OnEditMouse ), NULL, this );
 	m_lSights->Connect( wxEVT_LEFT_DOWN, wxMouseEventHandler( CelestialNavigationDialogBase::OnSightListLeftDown ), NULL, this );
 	m_lSights->Connect( wxEVT_COMMAND_LIST_COL_CLICK, wxListEventHandler( CelestialNavigationDialogBase::OnColumnHeaderClick ), NULL, this );
@@ -97,6 +98,7 @@ CelestialNavigationDialogBase::CelestialNavigationDialogBase( wxWindow* parent, 
 CelestialNavigationDialogBase::~CelestialNavigationDialogBase()
 {
 	// Disconnect Events
+	this->Disconnect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( CelestialNavigationDialogBase::OnClose ) );
 	m_lSights->Disconnect( wxEVT_LEFT_DCLICK, wxMouseEventHandler( CelestialNavigationDialogBase::OnEditMouse ), NULL, this );
 	m_lSights->Disconnect( wxEVT_LEFT_DOWN, wxMouseEventHandler( CelestialNavigationDialogBase::OnSightListLeftDown ), NULL, this );
 	m_lSights->Disconnect( wxEVT_COMMAND_LIST_COL_CLICK, wxListEventHandler( CelestialNavigationDialogBase::OnColumnHeaderClick ), NULL, this );
@@ -128,10 +130,10 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 
 	m_notebook1 = new wxNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
 	m_panel1 = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	wxFlexGridSizer* fgSizer5;
-	fgSizer5 = new wxFlexGridSizer( 0, 1, 0, 0 );
-	fgSizer5->SetFlexibleDirection( wxBOTH );
-	fgSizer5->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+	m_fgPanelSizer = new wxFlexGridSizer( 0, 1, 0, 0 );
+	m_fgPanelSizer->AddGrowableCol( 0 );
+	m_fgPanelSizer->SetFlexibleDirection( wxBOTH );
+	m_fgPanelSizer->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
 	wxFlexGridSizer* fgSizer3;
 	fgSizer3 = new wxFlexGridSizer( 0, 3, 0, 0 );
@@ -177,7 +179,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	fgSizer3->Add( 0, 0, 1, wxEXPAND, 5 );
 
 
-	fgSizer5->Add( fgSizer3, 1, wxEXPAND, 5 );
+	m_fgPanelSizer->Add( fgSizer3, 1, wxEXPAND, 5 );
 
 	wxFlexGridSizer* fgSizer22;
 	fgSizer22 = new wxFlexGridSizer( 0, 2, 0, 0 );
@@ -279,12 +281,12 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	fgSizer22->Add( m_fgSizerLunar, 1, wxEXPAND, 5 );
 
 
-	fgSizer5->Add( fgSizer22, 1, wxEXPAND, 5 );
+	m_fgPanelSizer->Add( fgSizer22, 1, wxEXPAND, 5 );
 
 
-	m_panel1->SetSizer( fgSizer5 );
+	m_panel1->SetSizer( m_fgPanelSizer );
 	m_panel1->Layout();
-	fgSizer5->Fit( m_panel1 );
+	m_fgPanelSizer->Fit( m_panel1 );
 	m_notebook1->AddPage( m_panel1, _("Sight"), true );
 	m_panel2 = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxFlexGridSizer* fgSizer8;
@@ -423,7 +425,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	fgSizer14->Add( m_staticText18, 0, wxALL, 5 );
 
 	m_ColourPicker = new wxColourPickerCtrl( m_panel3, wxID_ANY, *wxBLACK, wxDefaultPosition, wxDefaultSize, wxCLRP_DEFAULT_STYLE );
-	fgSizer14->Add( m_ColourPicker, 0, wxALL, 5 );
+	fgSizer14->Add( m_ColourPicker, 0, wxALL|wxEXPAND, 5 );
 
 
 	m_panel3->SetSizer( fgSizer14 );
@@ -643,42 +645,44 @@ DRShiftDialog::DRShiftDialog( wxWindow* parent, wxWindowID id, const wxString& t
 	fgSizer30->SetFlexibleDirection( wxBOTH );
 	fgSizer30->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
-	m_staticText51 = new wxStaticText( this, wxID_ANY, _("Shift all visible Sights"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText51->Wrap( -1 );
-	fgSizer30->Add( m_staticText51, 0, wxALL, 5 );
+	wxStaticBoxSizer* sbSizer19;
+	sbSizer19 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Shift all visible sights") ), wxVERTICAL );
 
 	wxFlexGridSizer* fgSizer18;
 	fgSizer18 = new wxFlexGridSizer( 0, 3, 0, 0 );
 	fgSizer18->SetFlexibleDirection( wxBOTH );
 	fgSizer18->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
-	m_staticText211 = new wxStaticText( this, wxID_ANY, _("Distance"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText211 = new wxStaticText( sbSizer19->GetStaticBox(), wxID_ANY, _("Distance"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText211->Wrap( -1 );
 	fgSizer18->Add( m_staticText211, 0, wxALL, 5 );
 
-	m_tShiftNm = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_tShiftNm = new wxTextCtrl( sbSizer19->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer18->Add( m_tShiftNm, 0, wxALL, 5 );
 
-	m_staticText23 = new wxStaticText( this, wxID_ANY, _("Nm"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText23 = new wxStaticText( sbSizer19->GetStaticBox(), wxID_ANY, _("Nm"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText23->Wrap( -1 );
 	fgSizer18->Add( m_staticText23, 0, wxALL, 5 );
 
-	m_staticText24 = new wxStaticText( this, wxID_ANY, _("Bearing"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText24 = new wxStaticText( sbSizer19->GetStaticBox(), wxID_ANY, _("Bearing"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText24->Wrap( -1 );
 	fgSizer18->Add( m_staticText24, 0, wxALL, 5 );
 
-	m_tShiftBearing = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_tShiftBearing = new wxTextCtrl( sbSizer19->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer18->Add( m_tShiftBearing, 0, wxALL, 5 );
 
-	m_staticText25 = new wxStaticText( this, wxID_ANY, _("Degrees"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText25 = new wxStaticText( sbSizer19->GetStaticBox(), wxID_ANY, _("Degrees"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText25->Wrap( -1 );
 	fgSizer18->Add( m_staticText25, 0, wxALL, 5 );
 
-	m_cbMagneticShiftBearing = new wxCheckBox( this, wxID_ANY, _("Magnetic Bearing"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_cbMagneticShiftBearing = new wxCheckBox( sbSizer19->GetStaticBox(), wxID_ANY, _("Magnetic Bearing"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer18->Add( m_cbMagneticShiftBearing, 0, wxALL, 5 );
 
 
-	fgSizer30->Add( fgSizer18, 1, wxEXPAND, 5 );
+	sbSizer19->Add( fgSizer18, 1, wxEXPAND, 5 );
+
+
+	fgSizer30->Add( sbSizer19, 1, wxEXPAND, 5 );
 
 	m_sdbSizer4 = new wxStdDialogButtonSizer();
 	m_sdbSizer4OK = new wxButton( this, wxID_OK );
@@ -882,8 +886,12 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 
 	fgSizer24->Add( m_Lunar, 1, wxEXPAND, 5 );
 
-	m_bDone = new wxButton( this, wxID_ANY, _("Done"), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizer24->Add( m_bDone, 0, wxALL, 5 );
+	m_sdbSizer4 = new wxStdDialogButtonSizer();
+	m_sdbSizer4OK = new wxButton( this, wxID_OK );
+	m_sdbSizer4->AddButton( m_sdbSizer4OK );
+	m_sdbSizer4->Realize();
+
+	fgSizer24->Add( m_sdbSizer4, 1, wxEXPAND, 5 );
 
 
 	this->SetSizer( fgSizer24 );
@@ -899,7 +907,6 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	m_tLongitude->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( FindBodyDialogBase::RecomputeDMM ), NULL, this );
 	m_cbBoatPosition->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdateBoatPosition ), NULL, this );
 	m_cbMagneticAzimuth->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
-	m_bDone->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnDone ), NULL, this );
 }
 
 FindBodyDialogBase::~FindBodyDialogBase()
@@ -911,7 +918,6 @@ FindBodyDialogBase::~FindBodyDialogBase()
 	m_tLongitude->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( FindBodyDialogBase::RecomputeDMM ), NULL, this );
 	m_cbBoatPosition->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdateBoatPosition ), NULL, this );
 	m_cbMagneticAzimuth->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
-	m_bDone->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnDone ), NULL, this );
 
 }
 
@@ -950,6 +956,11 @@ InformationDialog::~InformationDialog()
 FixDialogBase::FixDialogBase( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+
+	wxFlexGridSizer* fgSizer34;
+	fgSizer34 = new wxFlexGridSizer( 0, 1, 0, 0 );
+	fgSizer34->SetFlexibleDirection( wxBOTH );
+	fgSizer34->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
 	wxStaticBoxSizer* sbSizer7;
 	sbSizer7 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Fix From Visible Sights") ), wxVERTICAL );
@@ -1018,28 +1029,38 @@ FixDialogBase::FixDialogBase( wxWindow* parent, wxWindowID id, const wxString& t
 	sbSizer7->Add( fgSizer16, 1, wxEXPAND, 5 );
 
 
-	this->SetSizer( sbSizer7 );
+	fgSizer34->Add( sbSizer7, 1, wxEXPAND, 5 );
+
+	m_sdbSizer8 = new wxStdDialogButtonSizer();
+	m_sdbSizer8OK = new wxButton( this, wxID_OK );
+	m_sdbSizer8->AddButton( m_sdbSizer8OK );
+	m_sdbSizer8->Realize();
+
+	fgSizer34->Add( m_sdbSizer8, 1, wxEXPAND, 5 );
+
+
+	this->SetSizer( fgSizer34 );
 	this->Layout();
-	sbSizer7->Fit( this );
+	fgSizer34->Fit( this );
 
 	this->Centre( wxBOTH );
 
 	// Connect Events
-	this->Connect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( FixDialogBase::OnClose ) );
 	m_sInitialLatitude->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( FixDialogBase::OnUpdateSpin ), NULL, this );
 	m_sInitialLongitude->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( FixDialogBase::OnUpdateSpin ), NULL, this );
 	m_cbFixAlgorithm->Connect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( FixDialogBase::OnUpdate ), NULL, this );
 	m_bGo->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( FixDialogBase::OnGo ), NULL, this );
+	m_sdbSizer8OK->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( FixDialogBase::OnClose ), NULL, this );
 }
 
 FixDialogBase::~FixDialogBase()
 {
 	// Disconnect Events
-	this->Disconnect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( FixDialogBase::OnClose ) );
 	m_sInitialLatitude->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( FixDialogBase::OnUpdateSpin ), NULL, this );
 	m_sInitialLongitude->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( FixDialogBase::OnUpdateSpin ), NULL, this );
 	m_cbFixAlgorithm->Disconnect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( FixDialogBase::OnUpdate ), NULL, this );
 	m_bGo->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( FixDialogBase::OnGo ), NULL, this );
+	m_sdbSizer8OK->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( FixDialogBase::OnClose ), NULL, this );
 
 }
 
@@ -1047,28 +1068,45 @@ ClockCorrectionDialogBase::ClockCorrectionDialogBase( wxWindow* parent, wxWindow
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 
+	wxFlexGridSizer* fgSizer31;
+	fgSizer31 = new wxFlexGridSizer( 0, 1, 0, 0 );
+	fgSizer31->SetFlexibleDirection( wxBOTH );
+	fgSizer31->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+
 	wxStaticBoxSizer* sbSizer10;
 	sbSizer10 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Clock Correction") ), wxVERTICAL );
 
-	wxFlexGridSizer* fgSizer20;
-	fgSizer20 = new wxFlexGridSizer( 0, 1, 0, 0 );
-	fgSizer20->SetFlexibleDirection( wxBOTH );
-	fgSizer20->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+	wxFlexGridSizer* fgSizer33;
+	fgSizer33 = new wxFlexGridSizer( 0, 2, 0, 0 );
+	fgSizer33->SetFlexibleDirection( wxBOTH );
+	fgSizer33->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
 	m_sClockCorrection = new wxSpinCtrl( sbSizer10->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -10000, 10000, 0 );
-	fgSizer20->Add( m_sClockCorrection, 0, wxALL, 5 );
+	fgSizer33->Add( m_sClockCorrection, 0, wxALL, 5 );
 
 	m_staticText361 = new wxStaticText( sbSizer10->GetStaticBox(), wxID_ANY, _("Seconds"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText361->Wrap( -1 );
-	fgSizer20->Add( m_staticText361, 0, wxALL, 5 );
+	fgSizer33->Add( m_staticText361, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 
-	sbSizer10->Add( fgSizer20, 1, wxEXPAND, 5 );
+	sbSizer10->Add( fgSizer33, 1, wxEXPAND, 5 );
 
 
-	this->SetSizer( sbSizer10 );
+	fgSizer31->Add( sbSizer10, 1, wxEXPAND, 5 );
+
+	m_sdbSizer7 = new wxStdDialogButtonSizer();
+	m_sdbSizer7OK = new wxButton( this, wxID_OK );
+	m_sdbSizer7->AddButton( m_sdbSizer7OK );
+	m_sdbSizer7Cancel = new wxButton( this, wxID_CANCEL );
+	m_sdbSizer7->AddButton( m_sdbSizer7Cancel );
+	m_sdbSizer7->Realize();
+
+	fgSizer31->Add( m_sdbSizer7, 1, wxEXPAND, 5 );
+
+
+	this->SetSizer( fgSizer31 );
 	this->Layout();
-	sbSizer10->Fit( this );
+	fgSizer31->Fit( this );
 
 	this->Centre( wxBOTH );
 

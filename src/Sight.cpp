@@ -40,12 +40,6 @@
 #include <wx/listimpl.cpp>
 #include <wx/fileconf.h>
 
-#ifdef __WXOSX__
-#include <OpenGL/gl.h>
-#else
-#include <GL/gl.h>
-#endif
-
 #include "ocpn_plugin.h"
 
 #include "celestial_navigation_pi.h"
@@ -149,7 +143,7 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
   m_ColourName = sightcolornames[s_lastsightcolor].Lower();
   m_Colour = wxColour(m_ColourName);
 
-  m_Colour.Set(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(), 150);
+  m_Colour.Set(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(), m_Colour.Alpha());
 
   if (++s_lastsightcolor ==
       (sizeof sightcolornames) / (sizeof *sightcolornames))
@@ -479,18 +473,16 @@ void Sight::DrawPolygon(PlugIn_ViewPort& VP, wxRealPointList& area, bool poly) {
   }
 
   if (!(rear1 && rear2)) {
-    if (m_dc) {
-      if (poly) {
-        m_dc->DrawPolygon(n, ppoints);
-      } else
-        m_dc->DrawLines(n, ppoints);
+    if (poly) {
+      m_dc->DrawPolygon(n, ppoints);
     } else {
-      if (poly) {
-        glBegin(GL_POLYGON);
-      } else
-        glBegin(GL_LINE_STRIP);
-      for (int i = n - 1; i >= 0; i--) glVertex2i(ppoints[i].x, ppoints[i].y);
-      glEnd();
+#if USE_ANDROID_GLES2
+      for (int i = 0; i < n - 1; i++)
+        m_dc->DrawLine(ppoints[i].x, ppoints[i].y, ppoints[i + 1].x,
+                       ppoints[i + 1].y);
+#else
+      m_dc->DrawLines(n, ppoints);
+#endif
     }
   }
 
@@ -505,23 +497,13 @@ double Sight::ComputeStepSize(double certainty, double stepsize, double min,
 }
 
 /* render the area of position for this sight */
-void Sight::Render(wxDC* dc, PlugIn_ViewPort& VP, double pix_per_mm) {
+void Sight::Render(piDC* dc, PlugIn_ViewPort& VP, double pix_per_mm) {
   if (!m_bVisible) return;
 
   m_dc = dc;
 
-  if (dc) {
-    dc->SetPen(wxPen(m_Colour, 1));
-    dc->SetBrush(wxBrush(m_Colour));
-  } else {
-    glColor4ub(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(),
-               m_Colour.Alpha());
-    glPushAttrib(GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT);  // Save state
-    glLineWidth(1);
-    glEnable(GL_POLYGON_SMOOTH);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  }
+  dc->SetPen(wxPen(m_Colour, 0, wxPENSTYLE_TRANSPARENT));
+  dc->SetBrush(wxBrush(m_Colour));
 
   std::list<wxRealPointList*>::iterator it = polygons.begin();
   while (it != polygons.end()) {
@@ -529,15 +511,8 @@ void Sight::Render(wxDC* dc, PlugIn_ViewPort& VP, double pix_per_mm) {
     ++it;
   }
 
-  if (dc) {
-    dc->SetPen(wxPen(m_Colour, (int)(0.5 * pix_per_mm)));
-  } else {
-    glLineWidth((int)(0.5 * pix_per_mm));
-    glEnable(GL_LINE_SMOOTH);
-  }
+  dc->SetPen(wxPen(m_Colour, (int)(0.5 * pix_per_mm)));
   DrawPolygon(VP, lines, false);
-
-  if (!m_dc) glPopAttrib();  // restore state
 }
 
 void Sight::Recompute(int clock_offset) {

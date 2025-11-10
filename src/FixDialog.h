@@ -29,6 +29,7 @@
 #define _FIXDIALOG_H_
 
 #include "CelestialNavigationUI.h"
+#include "CelestialNavigationDialog.h"
 
 #include <list>
 
@@ -36,17 +37,19 @@ class Sight;
 
 class FixDialog : public FixDialogBase {
 public:
-  FixDialog(wxWindow* parent);
-  void Update(int clock_offset, bool warnings);
+  FixDialog(CelestialNavigationDialog* parent);
+  void Update(int clock_offset);
 
   int m_clock_offset;
   double m_fixlat, m_fixlon, m_fixerror;
 
 private:
   void OnGo(wxCommandEvent& event);
-  void OnClose(wxCloseEvent& event);
-  void OnUpdate(wxCommandEvent& event) { Update(m_clock_offset, false); }
-  void OnUpdateSpin(wxSpinEvent& event) { Update(m_clock_offset, false); }
+  void OnClose(wxCommandEvent& event);
+  void OnUpdate(wxCommandEvent& event) { Update(m_clock_offset); }
+  void OnUpdateSpin(wxSpinEvent& event) { Update(m_clock_offset); }
+
+  CelestialNavigationDialog* m_Parent;
 };
 
 #endif
