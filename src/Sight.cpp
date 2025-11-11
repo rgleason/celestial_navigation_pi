@@ -639,19 +639,23 @@ void Sight::RecomputeAltitude() {
         m_CalcStr += wxString::Format(_("Dip Short Distance cannot be 0 !\n"));
         return;
       }
-      EyeHeightCorrection = 0.4156 * m_DipShortDistance +
-                            1.856 * m_EyeHeight / m_DipShortDistance;
+      EyeHeightCorrection =
+          (0.4156 * m_DipShortDistance + 1.856 * m_EyeHeight) /
+          m_DipShortDistance / 60.0;
       m_CalcStr +=
-          wxString::Format(_("Dip Short Distance = %.4f m\n\
-Height Correction = 0.4156 * %.4f + 1.856 * %.5f / %.4f\n\
+          wxString::Format(_("Dip Short Distance = %.4f NM\n\
+Eye Height = %.4f m\n\
+Height Correction = (0.4156 * Dip Short Distance + 1.856 * Eye Height) / Dip Short Distance / 60\n\
+Height Correction = (0.4156 * %.4f + 1.856 * %.5f) / %.4f / 60\n\
 Height Correction = %.4f%c = %s\n"),
-                           m_DipShortDistance, m_DipShortDistance, m_EyeHeight,
-                           m_DipShortDistance, EyeHeightCorrection, 0x00B0,
-                           toSDMM_PlugIn(0, EyeHeightCorrection, true));
+                           m_DipShortDistance, m_EyeHeight, m_DipShortDistance,
+                           m_EyeHeight, m_DipShortDistance, EyeHeightCorrection,
+                           0x00B0, toSDMM_PlugIn(0, EyeHeightCorrection, true));
     } else {
       EyeHeightCorrection = 1.758 * sqrt(m_EyeHeight) / 60.0;
       m_CalcStr += wxString::Format(
           _("Eye Height = %.4f m\n\
+Height Correction = (1.758 * sqrt(Eye Height)) / 60\n\
 Height Correction = 1.758%c * sqrt(%.4f) / 60.0\n\
 Height Correction = %.4f%c = %s\n"),
           m_EyeHeight, 0x00B0, m_EyeHeight, EyeHeightCorrection, 0x00B0,
