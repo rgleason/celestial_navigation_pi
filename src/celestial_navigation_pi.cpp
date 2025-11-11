@@ -258,16 +258,17 @@ bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
   double lat = m_pCelestialNavigationDialog->m_FixDialog->m_fixlat;
   double lon = m_pCelestialNavigationDialog->m_FixDialog->m_fixlon;
   double err = m_pCelestialNavigationDialog->m_FixDialog->m_fixerror;
-  wxPoint r1, r2;
-  GetCanvasPixLL(vp, &r1, lat - 1, lon - 1);
-  GetCanvasPixLL(vp, &r2, lat + 1, lon + 1);
 
   if (!isnan(err)) {
+    wxPoint r;
+    GetCanvasPixLL(vp, &r, lat, lon);
+    int crosslen = (int) ( 10.0 * m_pCelestialNavigationDialog->m_pix_per_mm);
+
     dc->SetPen(wxPen(wxColor(255, 0, 0),
                      (int)(0.5 * m_pCelestialNavigationDialog->m_pix_per_mm)));
     dc->SetBrush(*wxTRANSPARENT_BRUSH);
-    dc->DrawLine(r1.x, r1.y, r2.x, r2.y);
-    dc->DrawLine(r1.x, r2.y, r2.x, r1.y);
+    dc->DrawLine(r.x - crosslen, r.y - crosslen, r.x + crosslen, r.y + crosslen);
+    dc->DrawLine(r.x - crosslen, r.y + crosslen, r.x + crosslen, r.y - crosslen);
   }
   return true;
 }

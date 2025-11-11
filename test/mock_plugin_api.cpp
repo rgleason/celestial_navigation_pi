@@ -247,3 +247,8 @@ extern DECL_EXP wxString GetLocaleCanonicalName() {
   return "";
 }
 
+extern "C" DECL_EXP void toSM_Plugin(double lat, double lon, double lat0,
+                                     double lon0, double *x, double *y) {
+}
+
+

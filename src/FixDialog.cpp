@@ -48,6 +48,10 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
   celestial_navigation_pi_BoatPos(lat, lon);
   m_sInitialLatitude->SetValue(lat);
   m_sInitialLongitude->SetValue(lon);
+  int x, y;
+  GetTextExtent(_T("000° 00.0000' S"), &x, &y);
+  m_stLatitude->SetSizeHints(x + 20, -1);
+  m_stLongitude->SetSizeHints(x + 20, -1);
 }
 
 double dist(wxRealPoint a, wxRealPoint b) {
@@ -305,13 +309,8 @@ determine fix visually instead.\n"),
     for (it2 = R.begin(); it2 != R.end(); it2++) m_fixerror += (*it2) * (*it2);
     m_fixerror = sqrt(m_fixerror);
 
-    double lat = trunc(m_fixlat);
-    double latmin = fabs(60 * (m_fixlat - lat));
-    double lon = trunc(m_fixlon);
-    double lonmin = fabs(60 * (m_fixlon - lon));
-
-    m_stLatitude->SetValue(wxString::Format(_T("%.0f %.1f'"), lat, latmin));
-    m_stLongitude->SetValue(wxString::Format(_T("%.0f %.1f'"), lon, lonmin));
+    m_stLatitude->SetValue(toSDMM_PlugIn(1, m_fixlat, true));
+    m_stLongitude->SetValue(toSDMM_PlugIn(2, m_fixlon, true));
     m_stFixError->SetValue(wxString::Format(_T("%.3g"), m_fixerror));
     m_bGo->Enable();
   } else {

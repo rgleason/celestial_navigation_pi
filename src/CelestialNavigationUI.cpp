@@ -974,7 +974,7 @@ FixDialogBase::FixDialogBase( wxWindow* parent, wxWindowID id, const wxString& t
 	m_staticText26->Wrap( -1 );
 	fgSizer16->Add( m_staticText26, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
-	m_stLatitude = new wxTextCtrl( sbSizer7->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	m_stLatitude = new wxTextCtrl( sbSizer7->GetStaticBox(), wxID_ANY, _("000° 00.0000' N"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
 	fgSizer16->Add( m_stLatitude, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText28 = new wxStaticText( sbSizer7->GetStaticBox(), wxID_ANY, _("Longitude"), wxDefaultPosition, wxDefaultSize, 0 );
