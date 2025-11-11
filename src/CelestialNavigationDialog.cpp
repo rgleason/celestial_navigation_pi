@@ -291,7 +291,7 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_Pressure = AttributeDouble(e, "Pressure", 1010);
         s.m_IndexError = AttributeDouble(e, "IndexError", 0);
         s.m_DipShort = AttributeBool(e, "DipShort", 0);
-        s.m_DipShortDistance = AttributeBool(e, "DipShortDistance", 0);
+        s.m_DipShortDistance = AttributeDouble(e, "DipShortDistance", 0);
         s.m_ArtificialHorizon = AttributeBool(e, "ArtificialHorizon", 0);
 
         s.m_ShiftNm = AttributeDouble(e, "ShiftNm", 0);
@@ -390,13 +390,13 @@ void CelestialNavigationDialog::SaveXML() {
     SetFloatAttribute(c, "Temperature", s, s.m_Temperature);
     SetFloatAttribute(c, "Pressure", s, s.m_Pressure);
     SetFloatAttribute(c, "IndexError", s, s.m_IndexError);
-    SetFloatAttribute(c, "DipShort", s, s.m_DipShort);
+    c->SetAttribute("DipShort", s.m_DipShort);
     SetFloatAttribute(c, "DipShortDistance", s, s.m_DipShortDistance);
-    SetFloatAttribute(c, "ArtificialHorizon", s, s.m_ArtificialHorizon);
+    c->SetAttribute("ArtificialHorizon", s.m_ArtificialHorizon);
 
     SetFloatAttribute(c, "ShiftNm", s, s.m_ShiftNm);
     SetFloatAttribute(c, "ShiftBearing", s, s.m_ShiftBearing);
-    SetFloatAttribute(c, "MagneticShiftBearing", s, s.m_bMagneticShiftBearing);
+    c->SetAttribute("MagneticShiftBearing", s.m_bMagneticShiftBearing);
 
     c->SetAttribute("ColourName", s.m_ColourName.mb_str());
     c->SetAttribute("Colour", s.m_Colour.GetAsString().mb_str());
