@@ -143,7 +143,7 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
   m_ColourName = sightcolornames[s_lastsightcolor].Lower();
   m_Colour = wxColour(m_ColourName);
 
-  m_Colour.Set(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(), m_Colour.Alpha());
+  m_Colour.Set(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(), 150);
 
   if (++s_lastsightcolor ==
       (sizeof sightcolornames) / (sizeof *sightcolornames))
