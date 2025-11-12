@@ -632,26 +632,29 @@ void Sight::RecomputeAltitude() {
     m_CalcStr +=
         wxString::Format(_("Artificial horizon, no height correction\n"));
   } else {
-    /* correct for height of observer
-       The dip of the sea horizon in minutes = 1.758*sqrt(height) */
     if (m_DipShort) {
+      /* Dip Short sight.
+         Bowditch: atan(h/(6076*d)+d/8268), h = HOE in ft, d = n.m. */
       if (m_DipShortDistance == 0) {
         m_CalcStr += wxString::Format(_("Dip Short Distance cannot be 0 !\n"));
         return;
       }
       EyeHeightCorrection =
-          (0.4156 * m_DipShortDistance + 1.856 * m_EyeHeight) /
-          m_DipShortDistance / 60.0;
-      m_CalcStr +=
-          wxString::Format(_("Dip Short Distance = %.4f NM\n\
-Eye Height = %.4f m\n\
-Height Correction = (0.4156 * Dip Short Distance + 1.856 * Eye Height) / Dip Short Distance / 60\n\
-Height Correction = (0.4156 * %.4f + 1.856 * %.5f) / %.4f / 60\n\
+          r_to_d(atan(m_EyeHeight / (0.3048 * 6076 * m_DipShortDistance) +
+                      m_DipShortDistance / 8268));
+      m_CalcStr += wxString::Format(
+          _("Dip Short Distance = %.4f nm\n\
+Eye Height = %.4f m = %.4f ft\n\
+Height Correction = atan(Eye Height / (6076 * Dip Short Distance) + Dip Short Distance / 8268)\n\
+Height Correction = atan(%.4f / (6076 * %.4f) + %.4f / 8268)\n\
 Height Correction = %.4f%c = %s\n"),
-                           m_DipShortDistance, m_EyeHeight, m_DipShortDistance,
-                           m_EyeHeight, m_DipShortDistance, EyeHeightCorrection,
-                           0x00B0, toSDMM_PlugIn(0, EyeHeightCorrection, true));
+          m_DipShortDistance, m_EyeHeight, m_EyeHeight / 0.3048,
+          m_EyeHeight / 0.3048, m_DipShortDistance, m_DipShortDistance,
+          EyeHeightCorrection, 0x00B0,
+          toSDMM_PlugIn(0, EyeHeightCorrection, true));
     } else {
+      /* correct for height of observer
+         The dip of the sea horizon in minutes = 1.758*sqrt(height) */
       EyeHeightCorrection = 1.758 * sqrt(m_EyeHeight) / 60.0;
       m_CalcStr += wxString::Format(
           _("Eye Height = %.4f m\n\
