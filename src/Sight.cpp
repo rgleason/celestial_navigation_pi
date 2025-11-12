@@ -687,6 +687,17 @@ ApparentAltitude = %.4f%c / 2 = %.4f%c\n"),
     ApparentAltitude /= 2;
   }
 
+  /* Backsight ? */
+  if (ApparentAltitude > 90) {
+    m_CalcStr +=
+        wxString::Format(_("\nApparent Altitude (Ha) > 90, assuming backsight\n\
+ApparentAltitude = 180%c - ApparentAltitude\n\
+ApparentAltitude = 180%c - %.4f%c = %.4f%c\n"),
+                         0x00B0, ApparentAltitude, 0x00B0, 0x00B0,
+                         180 - ApparentAltitude, 0x00B0);
+    ApparentAltitude = 180 - ApparentAltitude;
+  }
+
   /* compensate for refraction */
   double RefractionCorrection;
 #if 0
