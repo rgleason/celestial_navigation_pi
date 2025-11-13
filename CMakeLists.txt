@@ -18,7 +18,7 @@
 ## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,                                       *
 ## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                       *
 #-----------------------------------------------------------------------------
-# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.341.0 30/04/2025 DD/MM/YYYY
+# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.345.0 15/10/2025 DD/MM/YYYY
 # buildCI:yes useODAPI:no validateJSON:no
 # ---------------------------------------------------------------------------
 ## -- When changing this file do NOT change the order of the sections.    -- ##
@@ -30,7 +30,7 @@
 set(CMLOC "CMakeLists: ")
 
 # define minimum cmake version
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 if(COMMAND cmake_policy)
   if (POLICY CMP0043)
     cmake_policy(SET CMP0043 NEW)
@@ -61,7 +61,7 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
 # define plugin name, owner and versions
 set(VERBOSE_NAME Celestial_Navigation)
-set(COMMON_NAME "Celestial Navigation")  
+set(COMMON_NAME "Celestial Navigation")
 set(TITLE_NAME "CELESTIALNAVIGATION")
 set(PACKAGE_CONTACT  "Sean D'Epagnier ")
 set(PACKAGE "celestial_navigation")
@@ -85,9 +85,8 @@ set(TP_COMMENT "  * Release using CI")
 
 set(PARENT "opencpn")
 
-#Use to set up a local webserver with git installed.
-#Default is github.com. Now set in pluginconfigure.cmake
-#set(GIT_REPOSITORY_SERVER "github.com")
+# Use to set up a local webserver with git installed. Default is github.com.
+# Now set in pluginconfigure.cmake set(GIT_REPOSITORY_SERVER "github.com")
 
 ## Specifies Cloudsmith upload repository suffix for each catalog
 set(PROD "prod")   #Standard Repos
@@ -224,6 +223,8 @@ add_definitions(-DPLUGIN_USE_SVG)
 
 ## ----- If using JSON validation in plugin section above is needed --------##
 
+if (QT_ANDROID)
+endif (QT_ANDROID)
 
 ##=============================================================
 ## Change as required to collect all the set( headers and SRCS
@@ -241,8 +242,8 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/astrolabe)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/geomag)
 
 
-## Change target_sources to match your project needs.
-##==============================================================
+# Change target_sources to match your project needs.
+# ==============================================================
 
 target_sources(${PACKAGE_NAME} PUBLIC ${SRC} )
 
@@ -257,7 +258,7 @@ if (NOT OCPN_FLATPAK_CONFIG)
     target_link_libraries(${PACKAGE_NAME} windows::headers)
   endif (WIN32)
 
-  add_subdirectory(opencpn-libs/api-18)
+  add_subdirectory(opencpn-libs/api-${OCPN_API_VERSION_MINOR})
   target_link_libraries(${PACKAGE_NAME} ocpn::api)
 
   add_subdirectory(opencpn-libs/tinyxml)
@@ -269,7 +270,11 @@ if (NOT OCPN_FLATPAK_CONFIG)
   add_subdirectory(opencpn-libs/wxJSON)
   target_link_libraries(${PACKAGE_NAME} ocpn::wxjson)
 
-  add_subdirectory(src/plugin_dc)
+#  add_subdirectory(src/plugin_dc)  
+#  Note moved to opencpn-libs,
+#  Note need to remove this folder later
+
+  add_subdirectory(opencpn-libs/plugin_dc)
   target_link_libraries(${PACKAGE_NAME} ocpn::plugin-dc)
 
   add_subdirectory(opencpn-libs/bzip2)
