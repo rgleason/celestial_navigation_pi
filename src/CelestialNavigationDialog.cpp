@@ -307,6 +307,7 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_DRLon = AttributeDouble(e, "DRLon", 0);
         s.m_DRBoatPosition = AttributeBool(e, "DRBoatPosition", false);
         s.m_DRMagneticAzimuth = AttributeBool(e, "DRMagneticAzimuth", false);
+        s.m_TimeCorrection = AttributeInt(e, "TimeCorrection", 0);
 
         s.m_bCalculated = false;
         s.m_bSelected = false;
@@ -406,6 +407,7 @@ void CelestialNavigationDialog::SaveXML() {
     SetFloatAttribute(c, "DRLon", s, s.m_DRLon);
     c->SetAttribute("DRBoatPosition", s.m_DRBoatPosition);
     c->SetAttribute("DRMagneticAzimuth", s.m_DRMagneticAzimuth);
+    c->SetAttribute("TimeCorrection", s.m_TimeCorrection);
 
     root->LinkEndChild(c);
   }
