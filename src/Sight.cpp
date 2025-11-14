@@ -1315,6 +1315,97 @@ UTC = %s\n"),
   m_Body = body;
 }
 
+void Sight::EstimateHs(double hc, double *hs, double *error) {
+  *hs = NAN;
+  *error = NAN;
+  if (hc < 0) return;
+
+  // first calculate HP and SD
+  double SD = 0, topoSD = 0;
+  double HP = 0;
+  double planet_dist, rad;
+  BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad, &planet_dist);
+
+  if (!m_Body.Cmp(_T("Sun"))) {
+    HP = 0.002442 / rad;
+    double lc = 0.266564 / rad;
+    SD = r_to_d(sin(d_to_r(lc)));
+    topoSD = SD;
+  }
+  if (!m_Body.Cmp(_T("Moon"))) {
+    wxDateTime time = m_CorrectedDateTime;
+    time.MakeFromUTC();
+    double jdu = time.GetJulianDayNumber();
+    double jdd = ut_to_dt(jdu);
+    double moon_dist = moon_distance(jdd);
+    HP = r_to_d(asin(EARTH_RADIUS / moon_dist));
+    SD = r_to_d(asin(K_MOON * sin(d_to_r(HP))));
+  }
+  if (m_IsPlanet) {
+    HP = r_to_d(asin(EARTH_RADIUS / planet_dist));
+  }
+
+  double ca, ha, parallax, dip, ic, refraction, lc, ho;
+  double diff;
+
+  // estimate CA
+  ca = hc;
+  diff = 0;
+  if (HP > 0) {
+    ca = hc;
+    for (int i = 0; i < 6; i++) {
+      ca -= diff;
+      parallax = r_to_d(asin(sin(d_to_r(HP)) * cos(d_to_r(ca))));
+      double ho_estimate = ca + parallax;
+      diff = abs(ho_estimate - hc);
+      if (diff == 0) break;
+    }
+  }
+
+  // estimate HA
+  ha = ca;
+  diff = 0;
+  for (int i = 0; i < 4; i++) {
+    ha += diff;
+    double topoSD = SD * (1 + sin(d_to_r(ha)) * sin(d_to_r(HP)));
+    lc = r_to_d(asin(d_to_r(topoSD)));
+    if (m_BodyLimb == UPPER) {
+      lc = -lc;
+    } else if (m_BodyLimb == CENTER) {
+      lc = 0;
+    }
+    double x = tan(d_to_r(ha) + d_to_r(4.848e-2) / (tan(d_to_r(ha) + .028)));
+    refraction = .267 * m_Pressure / (x * (m_Temperature + 273.15)) / 60.0;
+    double ca_estimate = ha + lc - refraction;
+    diff = ca - ca_estimate;
+    if (diff == 0) break;
+  }
+
+  // final calculations
+  if (m_ArtificialHorizon) {
+    dip = 0;
+  } else if (m_DipShort) {
+    dip = r_to_d(atan(m_EyeHeight / (0.3048 * 6076 * m_DipShortDistance) + m_DipShortDistance / 8268));
+  } else {
+    dip = -1.758 * sqrt(m_EyeHeight) / 60.0;
+  }
+
+  ic = -m_IndexError / 60.0;
+
+  if (m_ArtificialHorizon) {
+    *hs = ha * 2 + ic;
+  } else {
+    *hs = ha + dip + ic;
+  }
+
+  if (m_ArtificialHorizon) {
+    ho = (*hs - ic) / 2 - refraction + parallax + lc;
+  } else {
+    ho = *hs - dip - ic - refraction + parallax + lc;
+  }
+  *error = (ho - hc) * 60;
+}
+
 void Sight::RebuildPolygonsAltitude() {
   polygons.clear();
   lines.clear();

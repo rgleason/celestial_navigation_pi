@@ -236,6 +236,8 @@ class FindBodyDialogBase : public wxDialog
 		wxTextCtrl* m_tIntercept;
 		wxCheckBox* m_cbTowards;
 		wxCheckBox* m_cbAway;
+		wxTextCtrl* m_tEstimatedHs;
+		wxTextCtrl* m_tEstimatedError;
 		wxStaticBoxSizer* m_Lunar;
 		wxTextCtrl* m_tLDC;
 		wxTextCtrl* m_tDateTimeRevised;

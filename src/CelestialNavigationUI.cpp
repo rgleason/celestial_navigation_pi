@@ -815,6 +815,24 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 
 	fgSizer28->Add( bSizer41, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
+	wxStaticBoxSizer* sbSizer81;
+	sbSizer81 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Est. Altitude (Hs)") ), wxVERTICAL );
+
+	m_tEstimatedHs = new wxTextCtrl( sbSizer81->GetStaticBox(), wxID_ANY, _("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	sbSizer81->Add( m_tEstimatedHs, 0, wxALL|wxEXPAND, 5 );
+
+
+	fgSizer28->Add( sbSizer81, 1, wxEXPAND, 5 );
+
+	wxStaticBoxSizer* sbSizer811;
+	sbSizer811 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Est. Error (')") ), wxVERTICAL );
+
+	m_tEstimatedError = new wxTextCtrl( sbSizer811->GetStaticBox(), wxID_ANY, _("0000"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	sbSizer811->Add( m_tEstimatedError, 0, wxALL|wxEXPAND, 5 );
+
+
+	fgSizer28->Add( sbSizer811, 1, wxEXPAND, 5 );
+
 
 	fgSizer24->Add( fgSizer28, 1, wxEXPAND, 5 );
 

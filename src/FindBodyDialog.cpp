@@ -118,6 +118,15 @@ void FindBodyDialog::Update() {
     m_cbAway->SetValue(false);
   }
 
+  double estimatedHs, estimatedError;
+  m_Sight.EstimateHs(hc, &estimatedHs, &estimatedError);
+  if (!isnan(estimatedHs)) {
+    m_tEstimatedHs->SetValue(toSDMM_PlugIn(0, estimatedHs, true));
+  }
+  if (!isnan(estimatedError)) {
+    m_tEstimatedError->SetValue(wxString::Format(_T("%.5f"), estimatedError));
+  }
+
   if (m_Sight.m_Type == Sight::LUNAR) {
     m_tLDC->SetValue(toSDMM_PlugIn(0, m_Sight.m_LDC, true));
     wxDateTime dt = m_Sight.m_CorrectedDateTime +
@@ -135,3 +144,5 @@ void FindBodyDialog::Update() {
         cos(d_to_r(m_Sight.m_DRLat)) * 0.25 * m_Sight.m_TimeCorrection));
   }
 }
+
+
