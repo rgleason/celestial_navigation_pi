@@ -344,7 +344,7 @@ failed:
 }
 
 void SetFloatAttribute(TiXmlElement* c, const char* label, Sight& s,
-                       float value) {
+                       double value) {
   char buf[20];
   sprintf(buf, "%f", value);
   c->SetAttribute(label, buf);
