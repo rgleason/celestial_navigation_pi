@@ -1387,10 +1387,10 @@ void Sight::EstimateHs(double hc, double *hs, double *error) {
   } else if (m_DipShort) {
     dip = r_to_d(atan(m_EyeHeight / (0.3048 * 6076 * m_DipShortDistance) + m_DipShortDistance / 8268));
   } else {
-    dip = -1.758 * sqrt(m_EyeHeight) / 60.0;
+    dip = 1.758 * sqrt(m_EyeHeight) / 60.0;
   }
 
-  ic = -m_IndexError / 60.0;
+  ic = m_IndexError / 60.0;
 
   if (m_ArtificialHorizon) {
     *hs = ha * 2 + ic;
