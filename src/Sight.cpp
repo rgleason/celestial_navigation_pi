@@ -1353,7 +1353,7 @@ void Sight::EstimateHs(double hc, double *hs, double *error) {
   diff = 0;
   if (HP > 0) {
     ca = hc;
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 11; i++) {
       ca -= diff;
       parallax = r_to_d(asin(sin(d_to_r(HP)) * cos(d_to_r(ca))));
       double ho_estimate = ca + parallax;
@@ -1365,7 +1365,7 @@ void Sight::EstimateHs(double hc, double *hs, double *error) {
   // estimate HA
   ha = ca;
   diff = 0;
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 11; i++) {
     ha += diff;
     double topoSD = SD * (1 + sin(d_to_r(ha)) * sin(d_to_r(HP)));
     lc = r_to_d(asin(d_to_r(topoSD)));
