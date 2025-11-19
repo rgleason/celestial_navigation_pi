@@ -824,15 +824,6 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 
 	fgSizer28->Add( sbSizer81, 1, wxEXPAND, 5 );
 
-	wxStaticBoxSizer* sbSizer811;
-	sbSizer811 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Est. Error (')") ), wxVERTICAL );
-
-	m_tEstimatedError = new wxTextCtrl( sbSizer811->GetStaticBox(), wxID_ANY, _("0000"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
-	sbSizer811->Add( m_tEstimatedError, 0, wxALL|wxEXPAND, 5 );
-
-
-	fgSizer28->Add( sbSizer811, 1, wxEXPAND, 5 );
-
 
 	fgSizer24->Add( fgSizer28, 1, wxEXPAND, 5 );
 

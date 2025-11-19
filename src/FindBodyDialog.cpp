@@ -125,11 +125,6 @@ void FindBodyDialog::Update() {
   } else {
     m_tEstimatedHs->SetValue("   N/A");
   }
-  if (!isnan(estimatedError)) {
-    m_tEstimatedError->SetValue(wxString::Format(_T("%.5f"), estimatedError));
-  } else {
-    m_tEstimatedError->SetValue("   N/A");
-  }
 
   if (m_Sight.m_Type == Sight::LUNAR) {
     m_tLDC->SetValue(toSDMM_PlugIn(0, m_Sight.m_LDC, true));
