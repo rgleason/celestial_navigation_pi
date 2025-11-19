@@ -59,6 +59,8 @@ public:
     Recompute();
   }
   void OnFindBody(wxCommandEvent& event);
+  void OnFindLunarMoon(wxCommandEvent& event);
+  void OnFindLunarBody(wxCommandEvent& event);
   void OnShowDefinitions(wxCommandEvent& event);
 
   wxDateTime DateTime();

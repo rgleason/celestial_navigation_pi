@@ -231,6 +231,40 @@ void SightDialog::SetColorScheme(ColorScheme cs)
 void SightDialog::OnFindBody(wxCommandEvent& event) {
   FindBodyDialog findbody_dialog(this, m_Sight);
   findbody_dialog.ShowModal();
+  if (findbody_dialog.GetReturnCode() == wxID_OK) {
+    m_tMeasurement->SetValue(findbody_dialog.m_tEstimatedHs->GetValue());
+  }
+}
+
+void SightDialog::OnFindLunarMoon(wxCommandEvent& event) {
+  Sight lunarSight = m_Sight;
+  lunarSight.m_Body = _T("Moon");
+  lunarSight.m_Type = Sight::ALTITUDE;
+  lunarSight.m_BodyLimb = m_Sight.m_LunarMoonLimb;
+  FindBodyDialog findbody_dialog(this, lunarSight);
+  findbody_dialog.ShowModal();
+  if (findbody_dialog.GetReturnCode() == wxID_OK) {
+    m_tLunarMoonAltitude->SetValue(findbody_dialog.m_tEstimatedHs->GetValue());
+  }
+  m_Sight.m_DRLat = lunarSight.m_DRLat;
+  m_Sight.m_DRLon = lunarSight.m_DRLon;
+  m_Sight.m_DRBoatPosition = lunarSight.m_DRBoatPosition;
+  m_Sight.m_DRMagneticAzimuth = lunarSight.m_DRMagneticAzimuth;
+}
+
+void SightDialog::OnFindLunarBody(wxCommandEvent& event) {
+  Sight lunarSight = m_Sight;
+  lunarSight.m_Type = Sight::ALTITUDE;
+  lunarSight.m_BodyLimb = m_Sight.m_LunarBodyLimb;
+  FindBodyDialog findbody_dialog(this, lunarSight);
+  findbody_dialog.ShowModal();
+  if (findbody_dialog.GetReturnCode() == wxID_OK) {
+    m_tLunarBodyAltitude->SetValue(findbody_dialog.m_tEstimatedHs->GetValue());
+  }
+  m_Sight.m_DRLat = lunarSight.m_DRLat;
+  m_Sight.m_DRLon = lunarSight.m_DRLon;
+  m_Sight.m_DRBoatPosition = lunarSight.m_DRBoatPosition;
+  m_Sight.m_DRMagneticAzimuth = lunarSight.m_DRMagneticAzimuth;
 }
 
 wxDateTime SightDialog::DateTime() {
@@ -289,6 +323,7 @@ void SightDialog::Recompute() {
 
   m_fgSizerLunar->Show(m_cType->GetSelection() == LUNAR);
   if (m_cType->GetSelection() == LUNAR) {
+    m_bFindBody->SetLabel(_T("Time"));
     m_sbSizerSight->GetStaticBox()->SetLabel(_T("Lunar distance (LDOpc)"));
     m_Sight.m_BodyLimb = (Sight::BodyLimb)m_cLimb->GetSelection();
     m_cLimb->Clear();
@@ -296,6 +331,7 @@ void SightDialog::Recompute() {
     m_cLimb->Append(_T("Far"));
     m_cLimb->SetSelection((int)m_Sight.m_BodyLimb);
   } else {
+    m_bFindBody->SetLabel(_T("Find"));
     m_sbSizerSight->GetStaticBox()->SetLabel(_T("Sight measurement (Hs)"));
     m_Sight.m_BodyLimb = (Sight::BodyLimb)m_cLimb->GetSelection();
     m_cLimb->Clear();

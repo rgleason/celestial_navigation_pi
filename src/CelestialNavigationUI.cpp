@@ -219,7 +219,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	sbSizer10 = new wxStaticBoxSizer( new wxStaticBox( m_panel1, wxID_ANY, _("Moon") ), wxVERTICAL );
 
 	wxFlexGridSizer* fgSizer25;
-	fgSizer25 = new wxFlexGridSizer( 0, 2, 0, 0 );
+	fgSizer25 = new wxFlexGridSizer( 0, 3, 0, 0 );
 	fgSizer25->SetFlexibleDirection( wxBOTH );
 	fgSizer25->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
@@ -229,6 +229,9 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 
 	m_tLunarMoonAltitude = new wxTextCtrl( sbSizer10->GetStaticBox(), wxID_ANY, _("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
 	fgSizer25->Add( m_tLunarMoonAltitude, 0, wxALL, 5 );
+
+	m_bFindLunarMoon = new wxButton( sbSizer10->GetStaticBox(), wxID_ANY, _("Find"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer25->Add( m_bFindLunarMoon, 0, wxALL, 5 );
 
 	m_staticText121 = new wxStaticText( sbSizer10->GetStaticBox(), wxID_ANY, _("Limb"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText121->Wrap( -1 );
@@ -250,7 +253,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	sbSizer11 = new wxStaticBoxSizer( new wxStaticBox( m_panel1, wxID_ANY, _("Body") ), wxVERTICAL );
 
 	wxFlexGridSizer* fgSizer29;
-	fgSizer29 = new wxFlexGridSizer( 0, 2, 0, 0 );
+	fgSizer29 = new wxFlexGridSizer( 0, 3, 0, 0 );
 	fgSizer29->SetFlexibleDirection( wxBOTH );
 	fgSizer29->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
@@ -260,6 +263,9 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 
 	m_tLunarBodyAltitude = new wxTextCtrl( sbSizer11->GetStaticBox(), wxID_ANY, _("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
 	fgSizer29->Add( m_tLunarBodyAltitude, 0, wxALL, 5 );
+
+	m_bFindLunarBody = new wxButton( sbSizer11->GetStaticBox(), wxID_ANY, _("Find"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer29->Add( m_bFindLunarBody, 0, wxALL, 5 );
 
 	m_staticText1211 = new wxStaticText( sbSizer11->GetStaticBox(), wxID_ANY, _("Limb"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText1211->Wrap( -1 );
@@ -561,9 +567,11 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_tMeasurementCertainty->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_tLunarMoonAltitude->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_tLunarMoonAltitude->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( SightDialogBase::RecomputeDMM ), NULL, this );
+	m_bFindLunarMoon->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( SightDialogBase::OnFindLunarMoon ), NULL, this );
 	m_cLunarMoonLimb->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_tLunarBodyAltitude->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_tLunarBodyAltitude->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( SightDialogBase::RecomputeDMM ), NULL, this );
+	m_bFindLunarBody->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( SightDialogBase::OnFindLunarBody ), NULL, this );
 	m_cLunarBodyLimb->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_Calendar->Connect( wxEVT_CALENDAR_SEL_CHANGED, wxCalendarEventHandler( SightDialogBase::RecomputeCalendar ), NULL, this );
 	m_sHours->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( SightDialogBase::RecomputeSpin ), NULL, this );
@@ -605,9 +613,11 @@ SightDialogBase::~SightDialogBase()
 	m_tMeasurementCertainty->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_tLunarMoonAltitude->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_tLunarMoonAltitude->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( SightDialogBase::RecomputeDMM ), NULL, this );
+	m_bFindLunarMoon->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( SightDialogBase::OnFindLunarMoon ), NULL, this );
 	m_cLunarMoonLimb->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_tLunarBodyAltitude->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_tLunarBodyAltitude->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( SightDialogBase::RecomputeDMM ), NULL, this );
+	m_bFindLunarBody->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( SightDialogBase::OnFindLunarBody ), NULL, this );
 	m_cLunarBodyLimb->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( SightDialogBase::Recompute ), NULL, this );
 	m_Calendar->Disconnect( wxEVT_CALENDAR_SEL_CHANGED, wxCalendarEventHandler( SightDialogBase::RecomputeCalendar ), NULL, this );
 	m_sHours->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( SightDialogBase::RecomputeSpin ), NULL, this );
@@ -724,10 +734,9 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	fgSizer24->SetFlexibleDirection( wxBOTH );
 	fgSizer24->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
-	wxFlexGridSizer* fgSizer28;
-	fgSizer28 = new wxFlexGridSizer( 0, 3, 0, 0 );
-	fgSizer28->SetFlexibleDirection( wxBOTH );
-	fgSizer28->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+	m_Body = new wxFlexGridSizer( 0, 3, 0, 0 );
+	m_Body->SetFlexibleDirection( wxBOTH );
+	m_Body->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
 	wxStaticBoxSizer* sbSizer6;
 	sbSizer6 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Latitude") ), wxVERTICAL );
@@ -736,7 +745,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	sbSizer6->Add( m_tLatitude, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer28->Add( sbSizer6, 1, wxALL|wxEXPAND, 5 );
+	m_Body->Add( sbSizer6, 1, wxALL|wxEXPAND, 5 );
 
 	wxStaticBoxSizer* sbSizer7;
 	sbSizer7 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Longitude") ), wxVERTICAL );
@@ -745,7 +754,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	sbSizer7->Add( m_tLongitude, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer28->Add( sbSizer7, 1, wxALL|wxEXPAND, 5 );
+	m_Body->Add( sbSizer7, 1, wxALL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer( wxVERTICAL );
@@ -755,7 +764,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	bSizer5->Add( m_cbBoatPosition, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer28->Add( bSizer5, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	m_Body->Add( bSizer5, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
 	wxStaticBoxSizer* sbSizer8;
 	sbSizer8 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Altitude (Hc)") ), wxVERTICAL );
@@ -764,7 +773,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	sbSizer8->Add( m_tAltitude, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer28->Add( sbSizer8, 1, wxALL|wxEXPAND, 5 );
+	m_Body->Add( sbSizer8, 1, wxALL|wxEXPAND, 5 );
 
 	wxStaticBoxSizer* sbSizer9;
 	sbSizer9 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Azimuth (Zn)") ), wxVERTICAL );
@@ -773,7 +782,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	sbSizer9->Add( m_tAzimuth, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer28->Add( sbSizer9, 1, wxALL|wxEXPAND, 5 );
+	m_Body->Add( sbSizer9, 1, wxALL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer( wxVERTICAL );
@@ -782,7 +791,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	bSizer2->Add( m_cbMagneticAzimuth, 0, wxALL|wxFIXED_MINSIZE, 5 );
 
 
-	fgSizer28->Add( bSizer2, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	m_Body->Add( bSizer2, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
 	wxStaticBoxSizer* sbSizer10;
 	sbSizer10 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Intercept (in Nm)") ), wxVERTICAL );
@@ -791,7 +800,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	sbSizer10->Add( m_tIntercept, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer28->Add( sbSizer10, 1, wxALL|wxEXPAND, 5 );
+	m_Body->Add( sbSizer10, 1, wxALL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer4;
 	bSizer4 = new wxBoxSizer( wxVERTICAL );
@@ -802,7 +811,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	bSizer4->Add( m_cbTowards, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
 
-	fgSizer28->Add( bSizer4, 1, wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+	m_Body->Add( bSizer4, 1, wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer41;
 	bSizer41 = new wxBoxSizer( wxVERTICAL );
@@ -813,7 +822,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	bSizer41->Add( m_cbAway, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
 
-	fgSizer28->Add( bSizer41, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	m_Body->Add( bSizer41, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
 	wxStaticBoxSizer* sbSizer81;
 	sbSizer81 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Est. Altitude (Hs)") ), wxVERTICAL );
@@ -822,10 +831,10 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	sbSizer81->Add( m_tEstimatedHs, 0, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer28->Add( sbSizer81, 1, wxEXPAND, 5 );
+	m_Body->Add( sbSizer81, 1, wxEXPAND, 5 );
 
 
-	fgSizer24->Add( fgSizer28, 1, wxEXPAND, 5 );
+	fgSizer24->Add( m_Body, 1, wxEXPAND, 5 );
 
 	m_Lunar = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Lunar") ), wxVERTICAL );
 
@@ -895,12 +904,14 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 
 	fgSizer24->Add( m_Lunar, 1, wxEXPAND, 5 );
 
-	m_sdbSizer4 = new wxStdDialogButtonSizer();
-	m_sdbSizer4OK = new wxButton( this, wxID_OK );
-	m_sdbSizer4->AddButton( m_sdbSizer4OK );
-	m_sdbSizer4->Realize();
+	m_sFindDialogButton = new wxStdDialogButtonSizer();
+	m_sFindDialogButtonOK = new wxButton( this, wxID_OK );
+	m_sFindDialogButton->AddButton( m_sFindDialogButtonOK );
+	m_sFindDialogButtonCancel = new wxButton( this, wxID_CANCEL );
+	m_sFindDialogButton->AddButton( m_sFindDialogButtonCancel );
+	m_sFindDialogButton->Realize();
 
-	fgSizer24->Add( m_sdbSizer4, 1, wxEXPAND, 5 );
+	fgSizer24->Add( m_sFindDialogButton, 1, wxEXPAND, 5 );
 
 
 	this->SetSizer( fgSizer24 );

@@ -46,6 +46,10 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
   m_cbBoatPosition->SetValue(sight.m_DRBoatPosition);
   m_cbMagneticAzimuth->SetValue(sight.m_DRMagneticAzimuth);
   m_Lunar->Show(m_Sight.m_Type == Sight::LUNAR);
+  m_Body->Show(!(m_Sight.m_Type == Sight::LUNAR));
+  m_sFindDialogButtonOK->SetLabel(_T("Copy Hs"));
+  m_sFindDialogButtonOK->Show(!(m_Sight.m_Type == Sight::LUNAR));
+  m_sFindDialogButtonCancel->SetLabel(_T("Dismiss"));
 
   int x, y;
   GetTextExtent(_T("000° 00.0000' S"), &x, &y);
@@ -122,8 +126,10 @@ void FindBodyDialog::Update() {
   m_Sight.EstimateHs(hc, &estimatedHs, &estimatedError);
   if (!isnan(estimatedHs)) {
     m_tEstimatedHs->SetValue(toSDMM_PlugIn(0, estimatedHs, true));
+    m_sFindDialogButtonOK->Enable();
   } else {
     m_tEstimatedHs->SetValue("   N/A");
+    m_sFindDialogButtonOK->Disable();
   }
 
   if (m_Sight.m_Type == Sight::LUNAR) {

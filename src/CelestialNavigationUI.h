@@ -113,10 +113,12 @@ class SightDialogBase : public wxDialog
 		wxBoxSizer* m_fgSizerLunar;
 		wxStaticText* m_staticText12;
 		wxTextCtrl* m_tLunarMoonAltitude;
+		wxButton* m_bFindLunarMoon;
 		wxStaticText* m_staticText121;
 		wxChoice* m_cLunarMoonLimb;
 		wxStaticText* m_staticText122;
 		wxTextCtrl* m_tLunarBodyAltitude;
+		wxButton* m_bFindLunarBody;
 		wxStaticText* m_staticText1211;
 		wxChoice* m_cLunarBodyLimb;
 		wxPanel* m_panel2;
@@ -172,6 +174,8 @@ class SightDialogBase : public wxDialog
 		virtual void Recompute( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnFindBody( wxCommandEvent& event ) { event.Skip(); }
 		virtual void RecomputeDMM( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnFindLunarMoon( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnFindLunarBody( wxCommandEvent& event ) { event.Skip(); }
 		virtual void RecomputeCalendar( wxCalendarEvent& event ) { event.Skip(); }
 		virtual void RecomputeSpin( wxSpinEvent& event ) { event.Skip(); }
 		virtual void RecomputeScroll( wxScrollEvent& event ) { event.Skip(); }
@@ -227,6 +231,7 @@ class FindBodyDialogBase : public wxDialog
 	private:
 
 	protected:
+		wxFlexGridSizer* m_Body;
 		wxTextCtrl* m_tLatitude;
 		wxTextCtrl* m_tLongitude;
 		wxCheckBox* m_cbBoatPosition;
@@ -236,7 +241,6 @@ class FindBodyDialogBase : public wxDialog
 		wxTextCtrl* m_tIntercept;
 		wxCheckBox* m_cbTowards;
 		wxCheckBox* m_cbAway;
-		wxTextCtrl* m_tEstimatedHs;
 		wxStaticBoxSizer* m_Lunar;
 		wxTextCtrl* m_tLDC;
 		wxTextCtrl* m_tDateTimeRevised;
@@ -244,8 +248,9 @@ class FindBodyDialogBase : public wxDialog
 		wxTextCtrl* m_tLonRevised;
 		wxTextCtrl* m_tLonError;
 		wxTextCtrl* m_tPosError;
-		wxStdDialogButtonSizer* m_sdbSizer4;
-		wxButton* m_sdbSizer4OK;
+		wxStdDialogButtonSizer* m_sFindDialogButton;
+		wxButton* m_sFindDialogButtonOK;
+		wxButton* m_sFindDialogButtonCancel;
 
 		// Virtual event handlers, override them in your derived class
 		virtual void OnUpdate( wxCommandEvent& event ) { event.Skip(); }
@@ -254,6 +259,7 @@ class FindBodyDialogBase : public wxDialog
 
 
 	public:
+		wxTextCtrl* m_tEstimatedHs;
 
 		FindBodyDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Find Celestial Body"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 
