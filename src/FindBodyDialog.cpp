@@ -122,9 +122,13 @@ void FindBodyDialog::Update() {
   m_Sight.EstimateHs(hc, &estimatedHs, &estimatedError);
   if (!isnan(estimatedHs)) {
     m_tEstimatedHs->SetValue(toSDMM_PlugIn(0, estimatedHs, true));
+  } else {
+    m_tEstimatedHs->SetValue("   N/A");
   }
   if (!isnan(estimatedError)) {
     m_tEstimatedError->SetValue(wxString::Format(_T("%.5f"), estimatedError));
+  } else {
+    m_tEstimatedError->SetValue("   N/A");
   }
 
   if (m_Sight.m_Type == Sight::LUNAR) {
