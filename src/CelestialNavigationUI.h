@@ -241,13 +241,6 @@ class FindBodyDialogBase : public wxDialog
 		wxTextCtrl* m_tIntercept;
 		wxCheckBox* m_cbTowards;
 		wxCheckBox* m_cbAway;
-		wxStaticBoxSizer* m_Lunar;
-		wxTextCtrl* m_tLDC;
-		wxTextCtrl* m_tDateTimeRevised;
-		wxTextCtrl* m_tDateTimeChange;
-		wxTextCtrl* m_tLonRevised;
-		wxTextCtrl* m_tLonError;
-		wxTextCtrl* m_tPosError;
 		wxStdDialogButtonSizer* m_sFindDialogButton;
 		wxButton* m_sFindDialogButtonOK;
 		wxButton* m_sFindDialogButtonCancel;
@@ -264,6 +257,32 @@ class FindBodyDialogBase : public wxDialog
 		FindBodyDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Find Celestial Body"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 
 		~FindBodyDialogBase();
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class LunarResultsDialogBase
+///////////////////////////////////////////////////////////////////////////////
+class LunarResultsDialogBase : public wxDialog
+{
+	private:
+
+	protected:
+		wxStaticBoxSizer* m_Lunar;
+		wxTextCtrl* m_tLDC;
+		wxTextCtrl* m_tDateTimeRevised;
+		wxTextCtrl* m_tDateTimeChange;
+		wxTextCtrl* m_tLonRevised;
+		wxTextCtrl* m_tLonError;
+		wxTextCtrl* m_tPosError;
+		wxStdDialogButtonSizer* m_sFindDialogButton;
+		wxButton* m_sFindDialogButtonOK;
+
+	public:
+
+		LunarResultsDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Lunar Results"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
+
+		~LunarResultsDialogBase();
 
 };
 

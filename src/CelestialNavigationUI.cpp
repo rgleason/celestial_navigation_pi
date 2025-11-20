@@ -836,6 +836,52 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 
 	fgSizer24->Add( m_Body, 1, wxEXPAND, 5 );
 
+	m_sFindDialogButton = new wxStdDialogButtonSizer();
+	m_sFindDialogButtonOK = new wxButton( this, wxID_OK );
+	m_sFindDialogButton->AddButton( m_sFindDialogButtonOK );
+	m_sFindDialogButtonCancel = new wxButton( this, wxID_CANCEL );
+	m_sFindDialogButton->AddButton( m_sFindDialogButtonCancel );
+	m_sFindDialogButton->Realize();
+
+	fgSizer24->Add( m_sFindDialogButton, 1, wxEXPAND, 5 );
+
+
+	this->SetSizer( fgSizer24 );
+	this->Layout();
+	fgSizer24->Fit( this );
+
+	this->Centre( wxBOTH );
+
+	// Connect Events
+	m_tLatitude->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
+	m_tLatitude->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( FindBodyDialogBase::RecomputeDMM ), NULL, this );
+	m_tLongitude->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
+	m_tLongitude->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( FindBodyDialogBase::RecomputeDMM ), NULL, this );
+	m_cbBoatPosition->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdateBoatPosition ), NULL, this );
+	m_cbMagneticAzimuth->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
+}
+
+FindBodyDialogBase::~FindBodyDialogBase()
+{
+	// Disconnect Events
+	m_tLatitude->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
+	m_tLatitude->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( FindBodyDialogBase::RecomputeDMM ), NULL, this );
+	m_tLongitude->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
+	m_tLongitude->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( FindBodyDialogBase::RecomputeDMM ), NULL, this );
+	m_cbBoatPosition->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdateBoatPosition ), NULL, this );
+	m_cbMagneticAzimuth->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
+
+}
+
+LunarResultsDialogBase::LunarResultsDialogBase( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+
+	wxFlexGridSizer* fgSizer24;
+	fgSizer24 = new wxFlexGridSizer( 0, 1, 0, 0 );
+	fgSizer24->SetFlexibleDirection( wxBOTH );
+	fgSizer24->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+
 	m_Lunar = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Lunar") ), wxVERTICAL );
 
 	wxFlexGridSizer* fgSizer29;
@@ -907,8 +953,6 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	m_sFindDialogButton = new wxStdDialogButtonSizer();
 	m_sFindDialogButtonOK = new wxButton( this, wxID_OK );
 	m_sFindDialogButton->AddButton( m_sFindDialogButtonOK );
-	m_sFindDialogButtonCancel = new wxButton( this, wxID_CANCEL );
-	m_sFindDialogButton->AddButton( m_sFindDialogButtonCancel );
 	m_sFindDialogButton->Realize();
 
 	fgSizer24->Add( m_sFindDialogButton, 1, wxEXPAND, 5 );
@@ -919,26 +963,10 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	fgSizer24->Fit( this );
 
 	this->Centre( wxBOTH );
-
-	// Connect Events
-	m_tLatitude->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
-	m_tLatitude->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( FindBodyDialogBase::RecomputeDMM ), NULL, this );
-	m_tLongitude->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
-	m_tLongitude->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( FindBodyDialogBase::RecomputeDMM ), NULL, this );
-	m_cbBoatPosition->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdateBoatPosition ), NULL, this );
-	m_cbMagneticAzimuth->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
 }
 
-FindBodyDialogBase::~FindBodyDialogBase()
+LunarResultsDialogBase::~LunarResultsDialogBase()
 {
-	// Disconnect Events
-	m_tLatitude->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
-	m_tLatitude->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( FindBodyDialogBase::RecomputeDMM ), NULL, this );
-	m_tLongitude->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
-	m_tLongitude->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( FindBodyDialogBase::RecomputeDMM ), NULL, this );
-	m_cbBoatPosition->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdateBoatPosition ), NULL, this );
-	m_cbMagneticAzimuth->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( FindBodyDialogBase::OnUpdate ), NULL, this );
-
 }
 
 InformationDialog::InformationDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )

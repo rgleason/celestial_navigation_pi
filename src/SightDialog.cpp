@@ -37,6 +37,7 @@
 #include "Sight.h"
 #include "SightDialog.h"
 #include "FindBodyDialog.h"
+#include "LunarResultsDialog.h"
 #include "celestial_navigation_pi.h"
 #include "geodesic.h"
 
@@ -229,10 +230,15 @@ void SightDialog::SetColorScheme(ColorScheme cs)
 #endif
 
 void SightDialog::OnFindBody(wxCommandEvent& event) {
-  FindBodyDialog findbody_dialog(this, m_Sight);
-  findbody_dialog.ShowModal();
-  if (findbody_dialog.GetReturnCode() == wxID_OK) {
-    m_tMeasurement->SetValue(findbody_dialog.m_tEstimatedHs->GetValue());
+  if (m_Sight.m_Type == Sight::LUNAR) {
+    LunarResultsDialog lunarresults_dialog(this, m_Sight);
+    lunarresults_dialog.ShowModal();
+  } else {
+    FindBodyDialog findbody_dialog(this, m_Sight);
+    findbody_dialog.ShowModal();
+    if (findbody_dialog.GetReturnCode() == wxID_OK) {
+      m_tMeasurement->SetValue(findbody_dialog.m_tEstimatedHs->GetValue());
+    }
   }
 }
 

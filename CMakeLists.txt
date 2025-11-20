@@ -191,6 +191,7 @@ SET(SRCS
         src/Sight.cpp
         src/icons.cpp
         src/FindBodyDialog.cpp
+        src/LunarResultsDialog.cpp
         src/FixDialog.cpp
         src/ClockCorrectionDialog.cpp
         src/geodesic.c

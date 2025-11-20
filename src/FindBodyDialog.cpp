@@ -45,18 +45,13 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
   }
   m_cbBoatPosition->SetValue(sight.m_DRBoatPosition);
   m_cbMagneticAzimuth->SetValue(sight.m_DRMagneticAzimuth);
-  m_Lunar->Show(m_Sight.m_Type == Sight::LUNAR);
-  m_Body->Show(!(m_Sight.m_Type == Sight::LUNAR));
   m_sFindDialogButtonOK->SetLabel(_T("Copy Hs"));
-  m_sFindDialogButtonOK->Show(!(m_Sight.m_Type == Sight::LUNAR));
   m_sFindDialogButtonCancel->SetLabel(_T("Close"));
 
   int x, y;
   GetTextExtent(_T("000° 00.0000' S"), &x, &y);
   m_tLatitude->SetSizeHints(x + 20, -1);
   m_tLongitude->SetSizeHints(x + 20, -1);
-  m_tLDC->SetSizeHints(x + 20, -1);
-  m_tLonRevised->SetSizeHints(x + 20, -1);
 
   Centre();
   UpdateBoatPosition();
@@ -131,23 +126,4 @@ void FindBodyDialog::Update() {
     m_tEstimatedHs->SetValue("   N/A");
     m_sFindDialogButtonOK->Disable();
   }
-
-  if (m_Sight.m_Type == Sight::LUNAR) {
-    m_tLDC->SetValue(toSDMM_PlugIn(0, m_Sight.m_LDC, true));
-    wxDateTime dt = m_Sight.m_CorrectedDateTime +
-                    wxTimeSpan::Seconds(m_Sight.m_TimeCorrection);
-    dt.MakeFromUTC();
-    m_tDateTimeRevised->SetValue(dt.Format("%Y-%m-%d %H:%M:%S", dt.UTC));
-    m_tDateTimeChange->SetValue(
-        wxString::Format(_T("%ld"), m_Sight.m_TimeCorrection));
-    m_tLonRevised->SetValue(toSDMM_PlugIn(
-        2, (m_Sight.m_DRLon - 0.25 * m_Sight.m_TimeCorrection / 60), true));
-    m_tLonError->SetValue(
-        wxString::Format(_T("%.5f"), 0.25 * m_Sight.m_TimeCorrection));
-    m_tPosError->SetValue(wxString::Format(
-        _T("%.5f"),
-        cos(d_to_r(m_Sight.m_DRLat)) * 0.25 * m_Sight.m_TimeCorrection));
-  }
 }
-
-
