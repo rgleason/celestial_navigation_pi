@@ -358,6 +358,10 @@ void SightDialog::Recompute() {
 
   m_Sight.m_DateTime = DateTime();
   m_Sight.m_TimeCertainty = m_sCertaintySeconds->GetValue();
+  if (m_Sight.m_Type == Sight::LUNAR && m_Sight.m_TimeCertainty == 0) {
+    m_Sight.m_TimeCertainty = 10800;
+    m_sCertaintySeconds->SetValue(m_Sight.m_TimeCertainty);
+  }
 
   m_Sight.m_Measurement = fromDMM_Plugin(m_tMeasurement->GetValue());
 
