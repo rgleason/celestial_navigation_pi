@@ -49,7 +49,7 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
   m_Body->Show(!(m_Sight.m_Type == Sight::LUNAR));
   m_sFindDialogButtonOK->SetLabel(_T("Copy Hs"));
   m_sFindDialogButtonOK->Show(!(m_Sight.m_Type == Sight::LUNAR));
-  m_sFindDialogButtonCancel->SetLabel(_T("Dismiss"));
+  m_sFindDialogButtonCancel->SetLabel(_T("Close"));
 
   int x, y;
   GetTextExtent(_T("000° 00.0000' S"), &x, &y);
