@@ -247,6 +247,8 @@ void SightDialog::OnFindLunarMoon(wxCommandEvent& event) {
   lunarSight.m_Body = _T("Moon");
   lunarSight.m_Type = Sight::ALTITUDE;
   lunarSight.m_BodyLimb = m_Sight.m_LunarMoonLimb;
+  lunarSight.m_Measurement = m_Sight.m_LunarMoonAltitude;
+  lunarSight.Recompute(m_clock_offset);
   FindBodyDialog findbody_dialog(this, lunarSight);
   findbody_dialog.ShowModal();
   if (findbody_dialog.GetReturnCode() == wxID_OK) {
@@ -262,6 +264,8 @@ void SightDialog::OnFindLunarBody(wxCommandEvent& event) {
   Sight lunarSight = m_Sight;
   lunarSight.m_Type = Sight::ALTITUDE;
   lunarSight.m_BodyLimb = m_Sight.m_LunarBodyLimb;
+  lunarSight.m_Measurement = m_Sight.m_LunarBodyAltitude;
+  lunarSight.Recompute(m_clock_offset);
   FindBodyDialog findbody_dialog(this, lunarSight);
   findbody_dialog.ShowModal();
   if (findbody_dialog.GetReturnCode() == wxID_OK) {
