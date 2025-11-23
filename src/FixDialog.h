@@ -33,6 +33,10 @@
 
 #include <list>
 
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
+
 class Sight;
 
 class FixDialog : public FixDialogBase {
@@ -48,8 +52,13 @@ private:
   void OnClose(wxCommandEvent& event);
   void OnUpdate(wxCommandEvent& event) { Update(m_clock_offset); }
   void OnUpdateSpin(wxSpinEvent& event) { Update(m_clock_offset); }
+#ifdef __OCPN__ANDROID__
+  void OnEvtPanGesture(wxQT_PanGestureEvent& event);
+#endif
 
   CelestialNavigationDialog* m_Parent;
+  int m_lastPanX;
+  int m_lastPanY;
 };
 
 #endif

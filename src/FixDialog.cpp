@@ -35,6 +35,10 @@
 
 #include <vector>
 
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
+
 // #include <cmath>
 using namespace std;
 
@@ -52,7 +56,37 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
   GetTextExtent(_T("000° 00.0000' S"), &x, &y);
   m_stLatitude->SetSizeHints(x + 20, -1);
   m_stLongitude->SetSizeHints(x + 20, -1);
+
+#ifdef __OCPN__ANDROID__
+  GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
+  GetHandle()->grabGesture(Qt::PanGesture);
+  Connect(wxEVT_QT_PANGESTURE,
+          (wxObjectEventFunction)(wxEventFunction)&FixDialog::OnEvtPanGesture,
+          NULL, this);
+#endif
 }
+
+#ifdef __OCPN__ANDROID__
+void FixDialog::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
+  int x = event.GetOffset().x;
+  int y = event.GetOffset().y;
+
+  int dx = x - m_lastPanX;
+  int dy = y - m_lastPanY;
+
+  if (event.GetState() == GestureUpdated) {
+    wxPoint p = GetPosition();
+    wxSize s = GetSize();
+    p.x = wxMax(0, p.x + dx);
+    p.y = wxMax(0, p.y + dy);
+    p.x = wxMin(p.x, ::wxGetDisplaySize().x - s.x);
+    p.y = wxMin(p.y, ::wxGetDisplaySize().y - s.y);
+    SetPosition(p);
+  }
+  m_lastPanX = x;
+  m_lastPanY = y;
+}
+#endif
 
 double dist(wxRealPoint a, wxRealPoint b) {
   double x = a.x - b.x;

@@ -37,6 +37,10 @@
 #include "celestial_navigation_pi.h"
 #include "geodesic.h"
 
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
+
 FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
     : FindBodyDialogBase(parent), m_Sight(sight) {
   if (!sight.m_DRBoatPosition) {
@@ -53,9 +57,40 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
   m_tLatitude->SetSizeHints(x + 20, -1);
   m_tLongitude->SetSizeHints(x + 20, -1);
 
+#ifdef __OCPN__ANDROID__
+  GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
+  GetHandle()->grabGesture(Qt::PanGesture);
+  Connect(
+      wxEVT_QT_PANGESTURE,
+      (wxObjectEventFunction)(wxEventFunction)&FindBodyDialog::OnEvtPanGesture,
+      NULL, this);
+#endif
+
   Centre();
   UpdateBoatPosition();
 }
+
+#ifdef __OCPN__ANDROID__
+void FindBodyDialog::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
+  int x = event.GetOffset().x;
+  int y = event.GetOffset().y;
+
+  int dx = x - m_lastPanX;
+  int dy = y - m_lastPanY;
+
+  if (event.GetState() == GestureUpdated) {
+    wxPoint p = GetPosition();
+    wxSize s = GetSize();
+    p.x = wxMax(0, p.x + dx);
+    p.y = wxMax(0, p.y + dy);
+    p.x = wxMin(p.x, ::wxGetDisplaySize().x - s.x);
+    p.y = wxMin(p.y, ::wxGetDisplaySize().y - s.y);
+    SetPosition(p);
+  }
+  m_lastPanX = x;
+  m_lastPanY = y;
+}
+#endif
 
 FindBodyDialog::~FindBodyDialog() {}
 

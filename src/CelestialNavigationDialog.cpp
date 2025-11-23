@@ -43,6 +43,10 @@
 #include <algorithm>
 #include <functional>
 
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
+
 /* XPM */
 static const char* eye[] = {"20 20 7 1",
                             ". c none",
@@ -143,51 +147,37 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   wxDisplaySize(&sx, &sy);
   m_pix_per_mm = ((double)sx) / (mmx);
 
-//
-#if 0  // TODO  (DSR) This Android GUI interface needs work
 #ifdef __OCPN__ANDROID__
-    GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
-    GetHandle()->grabGesture(Qt::PanGesture);
-    GetHandle()->setStyleSheet( qtStyleSheet);
-    m_lSights->GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);//
-    m_lSights->GetHandle()->grabGesture(Qt::PanGesture);
-    m_lSights->Connect( wxEVT_QT_PANGESTURE,
-                       (wxObjectEventFunction) (wxEventFunction) &CelestialNavigationDialog::OnEvtPanGesture, NULL, this );
-    GetHandle()->setStyleSheet( qtStyleSheet);//
-   Move(0, 0);
+  GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
+  GetHandle()->grabGesture(Qt::PanGesture);
+  Connect(wxEVT_QT_PANGESTURE,
+          (wxObjectEventFunction)(wxEventFunction)&CelestialNavigationDialog::
+              OnEvtPanGesture,
+          NULL, this);
 #endif
-#endif  // if 0
-
-  //
 }
 
-#if 0  // TODO  (DSR) This Android GUI interface needs work
-
 #ifdef __OCPN__ANDROID__
-void CelestialNavigationDialog::OnEvtPanGesture( wxQT_PanGestureEvent &event)
-{
-    switch(event.GetState()){
-        case GestureStarted:
-            m_startPos = GetPosition();
-            m_startMouse = event.GetCursorPos(); //g_mouse_pos_screen;
-            break;
-        default:
-        {
-            wxPoint pos = event.GetCursorPos();
-            int x = wxMax(0, pos.x + m_startPos.x - m_startMouse.x);
-            int y = wxMax(0, pos.y + m_startPos.y - m_startMouse.y);
-            int xmax = ::wxGetDisplaySize().x - GetSize().x;
-            x = wxMin(x, xmax);
-            int ymax = ::wxGetDisplaySize().y - GetSize().y;          // Some fluff at the bottom
-            y = wxMin(y, ymax);
+void CelestialNavigationDialog::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
+  int x = event.GetOffset().x;
+  int y = event.GetOffset().y;
 
-            Move(x, y);
-        } break;
-    }
-// master
+  int dx = x - m_lastPanX;
+  int dy = y - m_lastPanY;
+
+  if (event.GetState() == GestureUpdated) {
+    wxPoint p = GetPosition();
+    wxSize s = GetSize();
+    p.x = wxMax(0, p.x + dx);
+    p.y = wxMax(0, p.y + dy);
+    p.x = wxMin(p.x, ::wxGetDisplaySize().x - s.x);
+    p.y = wxMin(p.y, ::wxGetDisplaySize().y - s.y);
+    SetPosition(p);
+  }
+  m_lastPanX = x;
+  m_lastPanY = y;
 }
 #endif
-#endif  // if 0
 
 CelestialNavigationDialog::~CelestialNavigationDialog() {
   wxFileConfig* pConf = GetOCPNConfigObject();

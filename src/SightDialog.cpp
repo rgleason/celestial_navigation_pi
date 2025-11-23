@@ -41,6 +41,10 @@
 #include "celestial_navigation_pi.h"
 #include "geodesic.h"
 
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
+
 SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
     : SightDialogBase(parent),
       m_Sight(s),
@@ -196,9 +200,39 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   m_tLunarMoonAltitude->SetSizeHints(x + 20, -1);
   m_tLunarBodyAltitude->SetSizeHints(x + 20, -1);
 
+#ifdef __OCPN__ANDROID__
+  GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
+  GetHandle()->grabGesture(Qt::PanGesture);
+  Connect(wxEVT_QT_PANGESTURE,
+          (wxObjectEventFunction)(wxEventFunction)&SightDialog::OnEvtPanGesture,
+          NULL, this);
+#endif
+
   m_breadytorecompute = true;
   Recompute();
 }
+
+#ifdef __OCPN__ANDROID__
+void SightDialog::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
+  int x = event.GetOffset().x;
+  int y = event.GetOffset().y;
+
+  int dx = x - m_lastPanX;
+  int dy = y - m_lastPanY;
+
+  if (event.GetState() == GestureUpdated) {
+    wxPoint p = GetPosition();
+    wxSize s = GetSize();
+    p.x = wxMax(0, p.x + dx);
+    p.y = wxMax(0, p.y + dy);
+    p.x = wxMin(p.x, ::wxGetDisplaySize().x - s.x);
+    p.y = wxMin(p.y, ::wxGetDisplaySize().y - s.y);
+    SetPosition(p);
+  }
+  m_lastPanX = x;
+  m_lastPanY = y;
+}
+#endif
 
 SightDialog::~SightDialog() {
   wxFileConfig* pConf = GetOCPNConfigObject();

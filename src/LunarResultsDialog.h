@@ -30,6 +30,10 @@
 
 #include "CelestialNavigationUI.h"
 
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
+
 class Sight;
 
 class LunarResultsDialog : public LunarResultsDialogBase {
@@ -39,8 +43,13 @@ public:
 
   void OnUpdate(wxCommandEvent& event);
   void Update();
+#ifdef __OCPN__ANDROID__
+  void OnEvtPanGesture(wxQT_PanGestureEvent& event);
+#endif
 
   Sight& m_Sight;
+  int m_lastPanX;
+  int m_lastPanY;
 };
 
 #endif

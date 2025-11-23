@@ -38,6 +38,10 @@
 
 #include <vector>
 
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
+
 class CelestialNavigationDialog : public CelestialNavigationDialogBase {
 public:
   CelestialNavigationDialog(wxWindow* parent, celestial_navigation_pi* ppi);
@@ -81,6 +85,9 @@ private:
   void OnEdit(wxListEvent& event) { OnEdit(); }
   void OnColumnHeaderClick(wxListEvent& event);
   void OnSightSelected(wxListEvent& event);
+#ifdef __OCPN__ANDROID__
+  void OnEvtPanGesture(wxQT_PanGestureEvent& event);
+#endif
 
   void InsertSight(Sight* s);
   void UpdateSight(int idx);
@@ -94,6 +101,9 @@ private:
   wxSize m_fullSize;
   int m_sortCol;
   bool m_bSortAsc;
+
+  int m_lastPanX;
+  int m_lastPanY;
 };
 
 #endif  // _CelestialNavigationDialog_h_

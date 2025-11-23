@@ -33,6 +33,10 @@
 
 #include "CelestialNavigationUI.h"
 
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
+
 class Sight;
 
 class SightDialog : public SightDialogBase {
@@ -69,10 +73,16 @@ public:
 
 private:
   double BodyAltitude(wxString body);
+#ifdef __OCPN__ANDROID__
+  void OnEvtPanGesture(wxQT_PanGestureEvent& event);
+#endif
 
   Sight& m_Sight;
   int m_clock_offset;
   bool m_breadytorecompute;
+
+  int m_lastPanX;
+  int m_lastPanY;
 };
 
 #endif
