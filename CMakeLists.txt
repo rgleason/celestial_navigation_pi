@@ -1,23 +1,24 @@
-##---------------------------------------------------------------------------
-## Author:      Sean d'Epagnier
-##***************************************************************************
-## *   Copyright (C) 2010 by Sean d'Epagnier                              *
-## *   License:     GPLv3+
-## *   This program is free software; you can redistribute it and/or modify  *
-## *   it under the terms of the GNU General Public License as published by  *
-## *   the Free Software Foundation; either version 2 of the License, or     *
-## *   (at your option) any later version.                                   *
-## *                                                                         *
-## *   This program is distributed in the hope that it will be useful,       *
-## *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-## *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-## *   GNU General Public License for more details.                          *
-## *                                                                         *
-## *   You should have received a copy of the GNU General Public License     *
-## *   along with this program; if not, write to the                         *
-## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,                                       *
-## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                       *
-#-----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Author:      Sean d'Epagnier
+# License: GPL v3+   License:  wxWidgets
+# ---------------------------------------------------------------------------
+# -   Copyright (C) 2010 by Sean d'Epagnier                              *
+# -   License:     GPLv3+
+# - This program is free software; you can redistribute it and/or modify  *
+# - it under the terms of the GNU General Public License as published by  *
+# - the Free Software Foundation; either version 2 of the License, or     *
+# - (at your option) any later version.                                   *
+# - *
+# - This program is distributed in the hope that it will be useful,       *
+# - but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+# - MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+# - GNU General Public License for more details.                          *
+# - *
+# - You should have received a copy of the GNU General Public License     *
+# - along with this program; if not, write to the                         *
+# - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,                                       *
+# - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                       *
+# -----------------------------------------------------------------------------
 # Frontend2 Author: Jon Gough Testplugin(TP) v1.0.345.0 15/10/2025 DD/MM/YYYY
 # buildCI:yes useODAPI:no validateJSON:no
 # ---------------------------------------------------------------------------
@@ -86,7 +87,7 @@ set(TP_COMMENT "  * Release using CI")
 set(PARENT "opencpn")
 
 # Use to set up a local webserver with git installed. Default is github.com.
-# Now set in pluginconfigure.cmake set(GIT_REPOSITORY_SERVER "github.com")
+# Now set in PluginSetup.cmake set(GIT_REPOSITORY_SERVER "github.com")
 
 ## Specifies Cloudsmith upload repository suffix for each catalog
 set(PROD "prod")   #Standard Repos
@@ -95,8 +96,8 @@ set(ALPHA "alpha") #Standard Repos
 
 # Set if  Cloudsmith Base Repository name does not match your Git Repository name.
 #set (CLOUDSMITH_BASE_REPOSITORY "${GIT_REPOSITORY_NAME}")
-#set (CLOUDSMITH_BASE_REPOSITORY "opencpn-plugins")  #Ricks's customization
-set (CLOUDSMITH_BASE_REPOSITORY "celestial-navigation")  # without the pi 
+#set (CLOUDSMITH_BASE_REPOSITORY "opencpn-plugins")  # Ricks's customization
+set (CLOUDSMITH_BASE_REPOSITORY "celestial-navigation")  # without the _pi 
 
 # Set the following to use OpenCPN cloudsmith repositories instead of own repositories
 set(CLOUDSMITH_USER "opencpn")
