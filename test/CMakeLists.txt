@@ -47,6 +47,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/celestial_navigation_pi.cpp
     ${CMAKE_SOURCE_DIR}/src/epv00.cpp
     ${CMAKE_SOURCE_DIR}/src/FixDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/LunarResultsDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/SightDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/geodesic.c
     ${CMAKE_SOURCE_DIR}/src/geomag/geomag.c
