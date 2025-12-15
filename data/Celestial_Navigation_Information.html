@@ -37,7 +37,7 @@ page) for terms and definitions used below.</li>
 Lunar Distance Use Case</a>.</li>
 
 <li>Overall process roadmap (click for full size):
-<p><a href="process-roadmap.jpg"><img src="process-roadmap.jpg" width="50%" alt="CelNav process roadmap"></a>
+<p><a href="process-roadmap.png"><img src="process-roadmap.png" width="100%" alt="CelNav process roadmap"></a>
 </ul>
 
 
@@ -182,18 +182,21 @@ Last sight is not shifted.
 
 <h3>Fix Button (Sights dialog form)</h3>
 
-The Fix is determined from the sights with COPs made visible. Careful! Hide the
-sights you don't want included in the Fix or Running Fix. If DR Shift was not
-used, this FIX button will not consider Time and whether the Vessel moved
-between your first to last sight. Two or more sights with COP visible are
-needed. The algorithm first seeks a Fix nearest "Your Boat". If it doesn’t find
-it, enter the closest dead reckoning latitude and longitude, and try again. When
-a Fix is found, a 2 cm long red X is displayed on the chart. Does the FIX make
-sense? If not, you might have included some unintended sights. Find them and
-make them invisible.
+The Fix with a 2cm large red X is placed using the sights with COPs made
+visible if the sights are without DR Shift (advanced a LOP/COP). Careful! Hide
+the sights you don't want included in the Fix. If the vessel moved between
+sights and DR Shift was not input, the FIX places the 2cm Red X at Lat/Long as
+if the vessel didn't move. If the DR Shift was input, the red X won't appear.
+But, the LOP/COP will have been advanced per the DR Shift inputs and the FIX
+form allows an Open CPN Mark to be Drop visually. Two or more sights with COP
+visible are needed. The algorithm first seeks a Fix nearest "Your Boat". If it
+doesn’t find it, enter the closest dead reckoning latitude and longitude, and
+try again. When a Fix is found, a 2 cm long red X is displayed on the chart.
+Does the FIX make sense? If not, you might have included some unintended
+sights. Find them and make them invisible.
 
-<p>After finding the Fix, use Core CPN functionality to drop a Waypoint and
-label it at the FIX position so Fix is shown on your DR Track.
+<p>After finding the Fix, use Core CPN functionality to drop a mark and label
+it at the FIX position so Fix is shown on your chart.
 
 <p>When the Fix button is closed the X disappears from the chart.
 
@@ -204,7 +207,7 @@ sights taken above sea level altitudes, and true north azimuth type of sights.
 <h3>Clock Offset Tab (Sights Dialog form). (Optional)</h3>
 
 Many traditional navigators set Clock Offset to 0 because they already
-compensated for watch error in the individual sights before UTC input Clock
+compensated for watch error in the individual sights before UTC input. Clock
 Offset or Correction adjusts and redraws all stored sights (shown or not). It
 can be used to set DeltaT, although the plugin calculates celestial objects
 value using current DeltaT formulas. Sean suggests adjusting the global "Clock
@@ -233,6 +236,9 @@ location of where the sight was taken.
 <p>With this new release, old sights with the DR location manually input will be
 initialized with Latitude 0, Longitude 0. Reason - previously release didn't
 save the DR.
+
+<p>For the sight changes to be saved, the Celestial Navigation Forms must be
+closed.  The upper left corner red button is a cancel.
 
 <h2>Reduce Errors:</h2>
 
