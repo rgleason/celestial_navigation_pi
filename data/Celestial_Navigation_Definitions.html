@@ -5,7 +5,7 @@
   </head>
   <body>
 
-<h1><u>Abbreviations, Definitions and Measurements</u></h1>
+<h1><u>Abbreviations, Definitions and Measurements (Rev 15 Dec 2025)</u></h1>
 <hr>
 
 <p>Celestial navigation has been with us since the beginning of time. Various
@@ -63,19 +63,21 @@ Latitude and Longitude position on Earth.
 <h3><b>Celestial Definitions</b></h3>
 
 <ul>
-<li><b>Meridians: The Lines Connecting Earth's Poles</b>:
-An imaginary line on Earth's surface that runs from the North Pole to the South
-Pole, connecting points of equal longitude.</li>
+<li><b>Meridians: The Lines Connecting Earth's Poles</b>: An imaginary line on
+Earth's surface that runs from the North Pole (NP) to the South Pole,
+connecting points of equal longitude.</li>
 
-<li><b>Ecliptic: The Sun's Celestial Highway</b>:
-The ecliptic is the plane of Earth's orbit. From our viewpoint, it maps the
-sun's path over the year and hosts the Zodiac signs. Kepler determined that
-planetary orbits around the sun were elliptical rather than circular based on
-observations that appeared as circles edge-on.</li>
+<li><b>Ecliptic: The Sun's Celestial Highway</b>: The ecliptic is the plane of
+Earth's orbit around the Sun. From our viewpoint, it maps the sun's path over
+the year and hosts the Zodiac signs.</li>
 
-<li><b>Equinoctial Plane: Earth's Celestial Equator</b>:
-The plane on the celestial sphere that separates the Northern part from the
-Southern part. It is an extension of the equatorial plane.</li> </ul>
+<li>Kepler determined that planetary orbits around the sun were elliptical
+rather than circular based on observations that appeared as circles
+edge-on.</li>
+
+<li><b>Equinoctial Plane: Earth's Celestial Equator</b>: The plane on the
+celestial sphere that separates the Northern part from the Southern part. It is
+an extension of the Earth's equatorial plane.</li> </ul>
 
 <h3><b>Measurements</b></h3>
 
@@ -109,6 +111,9 @@ confusion, specify whether it is TRUE north or MAGNETIC north. When the
 magnetic variation is West, it's added to the true bearing to determine the
 magnetic bearing. The opposite is true for East variation: it's
 subtracted.</li>
+
+<li><b>WMM World Magnetic Model</b>:
+is used by Open CPN and Celestial Navigation to Determine Magnetic direction.
 
 <li><b>Nautical mile</b>:
 1852 meters or 6080 feet. It is based on a minute of Latitude. It is commonly
@@ -154,12 +159,12 @@ meridian.</li>
 
 <li><b>LHA</b>:
 Local Hour Angle, horizontal angular degrees (0 to 360 degrees) measured
-Westward from the Assumed or DR Position meridian to the celestial object. LHA
-= GHA (of celestial object) - Longitude West. Measured Eastward LHA = GHA +
-Longitude East.</li>
+Westward from DR Position meridian to the celestial object. LHA = GHA (of
+celestial object) - Longitude West. Measured Eastward LHA = GHA + Longitude
+East.</li>
 
 <li><b>GP</b>:
-Geographical Position of a heavenly body. (GHA and Dec)</li>
+Geographical Position of a celestial body. (GHA and Dec)</li>
 
 <li><p><b>DEC</b>:
 Declination- angular degrees (0 to 90 degrees) or Latitude of a celestial body
@@ -182,13 +187,15 @@ displayed Per OpenCPN Display option. Change Display Option and Re-display also
 changes.</li>
 
 <li><b>Estimated Hs (New Feature)</b>:
-Celestial Nav plugin will estimate Hs (Sextant altitude Measurement) at the DR
-Lat and Longitude. This can be used to validate measurement, preset sextant for
-a Future sight, use as a Star Finder.</li>
+Celestial Nav plugin will estimate Hs (Sextant altitude Measurement) at the
+sight's DR Lat &amp; Longitude. This can be used to: validate sight
+measurement, preset sextant for a Future sight, use the sight as a Star
+Finder.</li>
 
-<li>To Measure lunar Distance, you need a high quality and well adjusted
-sextant. What is good enough for Altitude Sights isn't good enough for
-Lunars.</li>
+<li>For Lunar Distance Measurements, you need a high quality and well adjusted
+sextant. What is good enough for Altitude Sights might not be good enough for
+Lunars. Just recognize that the time accuracy is affected by the quality of
+your sextant and how well it is adjusted.</li>
 
 <li><b>Sextant Perpendicularity error</b>:
 happens when the index mirror isn't perpendicular to the sextant's frame. This
@@ -203,22 +210,21 @@ eliminate side error, you'll need to revalidate and then remove Index
 Error.</li>
 
 <li><b>Sextant Index Error</b>:
-happens when index mirror and horizon mirror are not perfectly parallel to each
-other. When the index arm is set to zero minutes, you don't see a single
-continuous line or see a broken line. You determine the error by turning the
-micrometer drum until the Line look continuous. And then read the index. On the
-arc: The error is positive meaning the sextant reads a higher angle than the
-altitude. Off the arc, the error is negative meaning the sextant reads a lower
-angle than the altitude. The relationship to Index Correction Is based on the
-saying is, "if OFF put it ON. If ON take it OFF". For Altitude Sights, you'll
-add or subtract Index Correction to your Sights. For Lunar Sights, you want to
-do as much as you can to eliminate Index Error.</li>
+You have index error when index mirror and horizon mirror are not perfectly
+parallel to each other. When the index arm is set to zero minutes, and you
+don't see a single continuous line or see a broken line, turn the micrometer
+drum until the line looks continuous. Then read the index. If "On the arc" The
+error is positive meaning the sextant reads a higher angle than the altitude.
+If "Off the arc", the error is negative meaning the sextant reads a lower angle
+than the altitude. For Lunar Sights, you want to do as much as you can to
+eliminate Index Error. Index Error for Altitude sights can be tolerated if it
+is only a few arc minutes. </li>
 
 <li><b>Index Correction</b>:
-The correction made by the Sextant observer when recording the <b>Hs</b>. If
-"on the arc", take it off (subtract), if "off the arc" add it on. In Celestial
-Navigation, you identify the Index Error for the sight. And the application
-handles the Index Correction</li>
+The correction made by the Sextant observer when recording the <b>Hs</b>. The
+adage is if "on the arc", take it off (subtract), if "off the arc" add it on.
+In Celestial Navigation, Plugin identify the Index Error (Parameters) for the
+sight. The application handles the Index Correction calculation.</li>
 
 <li><b>Ha</b>:
 Apparent altitude: sextant measurement (Hs) adjusted for index correction (IC
@@ -284,20 +290,22 @@ meaning as Ho for altitude sights.</li>
 Difference between the Bearing of the Apparent Moon to the Bearing of the
 Apparent Celestial Body. This is not the same angle as Azimuth (Zn).</li> </ul>
 
-<h3><b>DRIPS neumonic</b></h3>
+<h3><b>DRIPS mnemonic</b></h3>
 
 <ul>
-<li><b>Dip</b>
-of the Horizon (function of eye height)</li>
-<li><b>R</b>
-= Refraction (function of Ha, temperature and pressure)</li>
-<li><b>IE</b>
-= Index Error of sextant</li>
-<li><b>PA</b>
-= Parallax in Altitude (function of HP and Ha)</li>
-<li><b>SD</b>
-= Semi-Diameter. One half of the angular width of the Sun or Moon of the
-body..</li>
+
+<li><b>Dip</b> of the Horizon (function of eye height)</li>
+
+<li><b>R</b> = Refraction (function of Ha, temperature and pressure)</li>
+
+<li><b>IE</b> = Index Error of sextant</li>
+
+<li><b>PA</b> = Parallax in Altitude (function of HP and Ha). HP of Sun, Moon,
+Planets is part of the Almanac data.</li>
+
+<li><b>SD</b> = Semi-Diameter. One half of the angular width of the Sun or
+Moon. SD of planets is assumed to be 0 in Celestial Nav plugin.</li>
+
 </ul>
 
 <h3><b>Additional Calculations and Measurements</b></h3>
@@ -323,17 +331,18 @@ visible horizon. Dip is subtracted from Hs.</li>
 
 <li><b>Dip Short</b>:
 When celestial body is brought down to a shore line because land obstructs
-vision of distant sea. To calculate Dip Short correction You need to know the
-Distance (in nautical miles) from your location To the shoreline in the
+vision to the distant sea. To calculate Dip Short correction You need to know
+the Distance (in nautical miles) from your location To the shoreline in the
 direction of the Azimuth.</li>
 
 <li><b>Artificial Horizon</b>:
-Bring down Celestial Body to a liquid surface (A substitute horizon) because of
-no visible natural horizon. The Correction is halving the measured angle.</li>
+Bring down Celestial Body to a liquid surface (a substitute horizon) because of
+no useable natural horizon or shoreline. The Correction is halving the measured
+angle.</li>
 
 <li><b>Backsight</b>:
-If you can't sight the celestial body because the body's Bearing is obstructed,
-turn 180 degrees and bring it down to the Opposite side which is not
+If you can't sight the celestial body because the bearing of the body is
+obstructed, turn 180 degrees away and bring it down to the side that is not
 obstructed.</li>
 
 <li><b>Refraction</b>:
@@ -351,6 +360,11 @@ correction is in arc minute.</li>
 Horizontal Parallax, correction for shift due to not taking Sights from the
 center of the earth.i Parallax is added.</li>
 
+<li><b>Augmentation</b>:
+Part of Parallax. A small increase in the Moon's Apparent size (SD) based on
+altitude overhead. Augmentation increases as Moon rises towards it's Zenith and
+then declines to 0 when the Moon sets.
+
 <li><b>SD</b>:
 Semi-diameter. Half the apparent angular diameter of a celestial body as seen
 from the observer on Earth. Used for corrections to the observed altitude
@@ -358,7 +372,7 @@ from the observer on Earth. Used for corrections to the observed altitude
 
 <li><b>Limb</b>:
 For Sun and Moon measurement accuracy, the <b>Hs</b> is measured from the Upper
-Limb or the Lower Limb of the Body. Add or Subtract Semi-Diameter from
+Limb or the Lower Limb of the Body. Add or subtract Semi-Diameter from
 <b>Hs</b> to adjust sextant measurement to the center of the body.</li>
 
 <li><b>Star Finders</b>:
@@ -375,10 +389,14 @@ celestial positions. Celestial-navigation_pi adjusts DeltaT yearly to published
 values. If there becomes a need for additional DeltaT adjustment use <b>Sight
 &gt; Clock Error Tab</b>.</li>
 
+<li><b>Terrestrial Time (TT)</b>:
+Used for predicting celestial body positions. Differing from UTC.
+
 <li><b>Julian Date and Time</b>:
 Julian Date (JD) provides a standardized way to represent time in astronomical
 observations and calculations. It is a continuous count of days and fractions
-of days since noon Universal Time (UT1) on January 1, 4713 BC</li>
+of days since noon Universal Time (UT1) on January 1, 4713 BC. It is not
+impacted by Daylight savings, leap year, etc.</li>
 
 <li><b>UTC (Coordinated Universal Time)</b>:
 is the primary time standard by which the world regulates clocks, based on
@@ -399,14 +417,14 @@ Greenwich Mean Time </li>
 Dead Reckoning Position from Deduced Reckoning.</li>
 
 <li><b>AP</b>:
-Assumed Position. AP is derived from DR and is used for Calculating position
-using tables such as Pub229.</li>
+Assumed Position. AP is derived from DR and is used for Calculating position to
+be used in table lookups such as Pub229.</li>
 
 <li><b>COP</b>:
 Circle of Position. Circle of Equal Altitude. With a single circle of position,
 your position is somewhere on the Circle of Position. Deduce the likelihood of
 being on a specific location on the Circle of Position based on DR position.
-Or, 2 or more COPs that create an intersection and FIX.</li>
+Or, 2 or more COPs create 2 intersections. One of which can be a FIX.</li>
 
 <li><b>LOP</b>:
 Line of Position is the same as COP. COP when zoomed in looks like a straight
@@ -418,8 +436,7 @@ within 20 minutes.</li>
 
 <li><b>R-FIX</b>:
 Running Fix, two or more LOP or COP taken greater than 20 minutes apart. There
-is less certainty in a Running Fix</li>
-</ul>
+is less certainty in a Running Fix</li> </ul>
 
 <h3><b>Sign conventions</b></h3>
 
@@ -440,18 +457,19 @@ Westward from Greenwich. LHA (0 - 360) is measured Westward from your DR
 Meridian. SHA (0 - 360) is measured Westward from GHA of Aries. Azimuth (Zn) (0
 - 360) is measured from North Pole Clockwise to the Body,</li>
 
-<li>Bearings are positive clockwise, negative anticlockwise.</li>
+<li>Bearings are positive clockwise, negative anti-clockwise.</li>
 
 <li>With this release, less of a need to convert from Decimal Degrees,
-Degrees(space)Minutes(seconds). Cel Nav supports the OpenCPN Angle
-formats.</li>
+Degrees(space)Minutes(seconds). Cel Nav supports the OpenCPN Angle formats.
+And in Calculate form, shows both decimal degrees And degree and fractional
+minutes.</li>
 
 <li>To convert from arc minutes to degrees, divide by 60. For example, 45
 minutes is (45/60) or 0.75 degrees.</li>
 
 <li>To convert from Decimal Degrees to Degrees and Minutes. Multiply the
 decimal part of the degrees by 60. For example, 25.75 degrees. Is (25 degrees +
-75*60’) or 25 degrees 45’</li>
+0.75*60’) or 25 degrees 45’</li>
 
 <li>To convert from Degrees-minutes to Decimal Degrees. Divide the minutes by
 60. For example, 25 degrees 45.5’ is 25+45.5/60 = 25.75833 degrees</li>
@@ -460,9 +478,10 @@ decimal part of the degrees by 60. For example, 25.75 degrees. Is (25 degrees +
 miles. 1 nautical mile equals 1 arc minute).</li>
 </ul>
 
-<p>Also in these formulas, angles are in degrees, which is why 60 appears to
-convert degrees into minutes or nautical miles (since 1 nautical mile equals 1
-minute of arc on Earth).
+<p>In Celestial Equation formulas, angles are calculated in decimal degrees,
+They are displayed with 4 significant digits after the decimal point.
+Intermediate calculations are carried out to more significant digits. And where
+possible, the degree - minutes associated with the decimal Degrees is shown.
 
 <p>Good reference
 <u><a href="https://www.siranah.de/html/sail040e.htm#a2">https://www.siranah.de/html/sail040e.htm#a2</a></u>
