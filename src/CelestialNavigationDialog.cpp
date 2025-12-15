@@ -693,7 +693,7 @@ void CelestialNavigationDialog::OnClockOffset(wxCommandEvent& event) {
   m_ClockCorrectionDialog = NULL;
 }
 
-void CelestialNavigationDialog::OnInformation(wxCommandEvent& event) {
+void CelestialNavigationDialog::OnDocumentation(wxCommandEvent& event) {
   wxString infolocation = celestial_navigation_pi_DataDir() + _T("/data/") +
                           _T("Celestial_Navigation_Information.html");
   infolocation.Prepend(_T("file://"));

@@ -57,7 +57,7 @@ class CelestialNavigationDialogBase : public wxDialog
 		wxButton* m_bEditSight;
 		wxToggleButton* m_tbHide;
 		wxButton* m_bDeleteSight;
-		wxButton* m_bInformation;
+		wxButton* m_bDocumentation;
 		wxButton* m_bDeleteAllSights;
 
 		// Virtual event handlers, override them in your derived class
@@ -74,7 +74,7 @@ class CelestialNavigationDialogBase : public wxDialog
 		virtual void OnEdit( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnHide( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDelete( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnInformation( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnDocumentation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDeleteAll( wxCommandEvent& event ) { event.Skip(); }
 
 

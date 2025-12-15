@@ -74,7 +74,7 @@ private:
   void OnFix(wxCommandEvent& event);
   void OnDRShift(wxCommandEvent& event);
   void OnClockOffset(wxCommandEvent& event);
-  void OnInformation(wxCommandEvent& event);
+  void OnDocumentation(wxCommandEvent& event);
   void OnHide(wxCommandEvent& event);
   void OnClose(wxCloseEvent& event);
 
