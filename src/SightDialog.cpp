@@ -37,7 +37,13 @@
 #include "Sight.h"
 #include "SightDialog.h"
 #include "FindBodyDialog.h"
+#include "LunarResultsDialog.h"
 #include "celestial_navigation_pi.h"
+#include "geodesic.h"
+
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
 
 SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
     : SightDialogBase(parent),
@@ -126,8 +132,18 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   SetPosition(p);
 
   wxSize sz = GetSize();
-  pConf->Read(_T ( "SightsDialogWidth" ), &sz.x, sz.x);
-  pConf->Read(_T ( "SightsDialogHeight" ), &sz.y, sz.y);
+  int w, h;
+  pConf->Read(_T ( "SightsDialogWidth" ), &w, -1);
+  pConf->Read(_T ( "SightsDialogHeight" ), &h, -1);
+  if (w == -1 || h == -1) {
+#ifdef __OCPN__ANDROID__
+    // for some reason Android gets the height wrong...
+    sz.y += 30;
+#endif
+  } else {
+    sz.x = w;
+    sz.y = h;
+  }
   SetSize(sz);
 
   m_cType->SetSelection(m_Sight.m_Type);
@@ -148,38 +164,75 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   m_sCertaintySeconds->SetValue(m_Sight.m_TimeCertainty);
 
   m_sTransparency->SetValue(m_Sight.m_Colour.Alpha());
-  m_tEyeHeight->SetValue(wxString::Format(_T("%.1f"), m_Sight.m_EyeHeight));
-  m_sTemperature->SetValue(m_Sight.m_Temperature);
-  m_sPressure->SetValue(m_Sight.m_Pressure);
+  m_tEyeHeight->SetValue(wxString::Format(_T("%.2f"), m_Sight.m_EyeHeight));
+  m_tTemperature->SetValue(wxString::Format(_T("%.1f"), m_Sight.m_Temperature));
+  m_tPressure->SetValue(wxString::Format(_T("%.2f"), m_Sight.m_Pressure));
   m_tIndexError->SetValue(wxString::Format(_T("%.5f"), m_Sight.m_IndexError));
+  m_cbDipShort->SetValue(m_Sight.m_DipShort);
+  m_tDipShortDistance->SetValue(
+      wxString::Format(_T("%.4f"), m_Sight.m_DipShortDistance));
+  m_cbArtificialHorizon->SetValue(m_Sight.m_ArtificialHorizon);
 
   m_tShiftNm->SetValue(wxString::Format(_T("%.2f"), m_Sight.m_ShiftNm));
   m_tShiftBearing->SetValue(
       wxString::Format(_T("%.2f"), m_Sight.m_ShiftBearing));
   m_cbMagneticShiftBearing->SetValue(m_Sight.m_bMagneticShiftBearing);
 
-  double measurement = trunc(m_Sight.m_Measurement);
-  double measurementminutes = 60 * (m_Sight.m_Measurement - measurement);
-  m_tMeasurement->SetValue(wxString::Format(_T("%.0f"), measurement));
-  m_tMeasurementMinutes->SetValue(
-      wxString::Format(_T("%.2f"), measurementminutes));
+  m_tMeasurement->SetValue(toSDMM_PlugIn(0, m_Sight.m_Measurement, true));
   m_tMeasurementCertainty->SetValue(
       wxString::Format(_T("%.2f"), m_Sight.m_MeasurementCertainty));
   m_cbMagneticAzimuth->SetValue(m_Sight.m_bMagneticNorth);
-  m_ColourPicker->SetColour(m_Sight.m_Colour);
+  m_ColourPicker->SetColour(wxColour(m_Sight.m_Colour.Red(),
+                                     m_Sight.m_Colour.Green(),
+                                     m_Sight.m_Colour.Blue()));
 
-  // calculate approximate lunar altitude
-  if (isnan(m_Sight.m_LunarMoonAltitude))
-    m_Sight.m_LunarMoonAltitude = BodyAltitude(_T("Moon"));
   m_tLunarMoonAltitude->SetValue(
-      wxString::Format(_T("%.2f"), m_Sight.m_LunarMoonAltitude));
+      toSDMM_PlugIn(0, m_Sight.m_LunarMoonAltitude, true));
+  m_cLunarMoonLimb->SetSelection((int)m_Sight.m_LunarMoonLimb);
   m_tLunarBodyAltitude->SetValue(
-      wxString::Format(_T("%.2f"), m_Sight.m_LunarBodyAltitude));
-  NewBody();
+      toSDMM_PlugIn(0, m_Sight.m_LunarBodyAltitude, true));
+  m_cLunarMoonLimb->SetSelection((int)m_Sight.m_LunarMoonLimb);
+  m_cLunarBodyLimb->SetSelection((int)m_Sight.m_LunarBodyLimb);
+
+  int x, y;
+  GetTextExtent(_T("000° 00.0000'"), &x, &y);
+  m_tMeasurement->SetSizeHints(x + 20, -1);
+  m_tLunarMoonAltitude->SetSizeHints(x + 20, -1);
+  m_tLunarBodyAltitude->SetSizeHints(x + 20, -1);
+
+#ifdef __OCPN__ANDROID__
+  GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
+  GetHandle()->grabGesture(Qt::PanGesture);
+  Connect(wxEVT_QT_PANGESTURE,
+          (wxObjectEventFunction)(wxEventFunction)&SightDialog::OnEvtPanGesture,
+          NULL, this);
+#endif
 
   m_breadytorecompute = true;
   Recompute();
 }
+
+#ifdef __OCPN__ANDROID__
+void SightDialog::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
+  int x = event.GetOffset().x;
+  int y = event.GetOffset().y;
+
+  int dx = x - m_lastPanX;
+  int dy = y - m_lastPanY;
+
+  if (event.GetState() == GestureUpdated) {
+    wxPoint p = GetPosition();
+    wxSize s = GetSize();
+    p.x = wxMax(0, p.x + dx);
+    p.y = wxMax(0, p.y + dy);
+    p.x = wxMin(p.x, ::wxGetDisplaySize().x - s.x);
+    p.y = wxMin(p.y, ::wxGetDisplaySize().y - s.y);
+    SetPosition(p);
+  }
+  m_lastPanX = x;
+  m_lastPanY = y;
+}
+#endif
 
 SightDialog::~SightDialog() {
   wxFileConfig* pConf = GetOCPNConfigObject();
@@ -210,14 +263,52 @@ void SightDialog::SetColorScheme(ColorScheme cs)
 }
 #endif
 
-void SightDialog::NewBody() {
-  m_tLunarBodyAltitude->SetValue(
-      wxString::Format(_T("%f"), BodyAltitude(m_cBody->GetStringSelection())));
+void SightDialog::OnFindBody(wxCommandEvent& event) {
+  if (m_Sight.m_Type == Sight::LUNAR) {
+    LunarResultsDialog lunarresults_dialog(this, m_Sight);
+    lunarresults_dialog.ShowModal();
+  } else {
+    FindBodyDialog findbody_dialog(this, m_Sight);
+    findbody_dialog.ShowModal();
+    if (findbody_dialog.GetReturnCode() == wxID_OK) {
+      m_tMeasurement->SetValue(findbody_dialog.m_tEstimatedHs->GetValue());
+    }
+  }
 }
 
-void SightDialog::OnFindBody(wxCommandEvent& event) {
-  FindBodyDialog findbody_dialog(this, m_Sight);
+void SightDialog::OnFindLunarMoon(wxCommandEvent& event) {
+  Sight lunarSight = m_Sight;
+  lunarSight.m_Body = _T("Moon");
+  lunarSight.m_Type = Sight::ALTITUDE;
+  lunarSight.m_BodyLimb = m_Sight.m_LunarMoonLimb;
+  lunarSight.m_Measurement = m_Sight.m_LunarMoonAltitude;
+  lunarSight.Recompute(m_clock_offset);
+  FindBodyDialog findbody_dialog(this, lunarSight);
   findbody_dialog.ShowModal();
+  if (findbody_dialog.GetReturnCode() == wxID_OK) {
+    m_tLunarMoonAltitude->SetValue(findbody_dialog.m_tEstimatedHs->GetValue());
+  }
+  m_Sight.m_DRLat = lunarSight.m_DRLat;
+  m_Sight.m_DRLon = lunarSight.m_DRLon;
+  m_Sight.m_DRBoatPosition = lunarSight.m_DRBoatPosition;
+  m_Sight.m_DRMagneticAzimuth = lunarSight.m_DRMagneticAzimuth;
+}
+
+void SightDialog::OnFindLunarBody(wxCommandEvent& event) {
+  Sight lunarSight = m_Sight;
+  lunarSight.m_Type = Sight::ALTITUDE;
+  lunarSight.m_BodyLimb = m_Sight.m_LunarBodyLimb;
+  lunarSight.m_Measurement = m_Sight.m_LunarBodyAltitude;
+  lunarSight.Recompute(m_clock_offset);
+  FindBodyDialog findbody_dialog(this, lunarSight);
+  findbody_dialog.ShowModal();
+  if (findbody_dialog.GetReturnCode() == wxID_OK) {
+    m_tLunarBodyAltitude->SetValue(findbody_dialog.m_tEstimatedHs->GetValue());
+  }
+  m_Sight.m_DRLat = lunarSight.m_DRLat;
+  m_Sight.m_DRLon = lunarSight.m_DRLon;
+  m_Sight.m_DRBoatPosition = lunarSight.m_DRBoatPosition;
+  m_Sight.m_DRMagneticAzimuth = lunarSight.m_DRMagneticAzimuth;
 }
 
 wxDateTime SightDialog::DateTime() {
@@ -241,14 +332,33 @@ void SightDialog::OnSetDefaults(wxCommandEvent& event) {
   wxFileConfig* pConf = GetOCPNConfigObject();
   pConf->SetPath(_T("/PlugIns/CelestialNavigation"));
 
-  double eyeheight;
-  m_tEyeHeight->GetValue().ToDouble(&eyeheight);
-  pConf->Write(_T("DefaultEyeHeight"), eyeheight);
-  pConf->Write(_T("DefaultTemperature"), m_sTemperature->GetValue());
-  pConf->Write(_T("DefaultPressure"), m_sPressure->GetValue());
-  double indexerror;
-  m_tIndexError->GetValue().ToDouble(&indexerror);
-  pConf->Write(_T("DefaultIndexError"), indexerror);
+  double value;
+  m_tEyeHeight->GetValue().ToDouble(&value);
+  pConf->Write(_T("DefaultEyeHeight"), value);
+  m_tTemperature->GetValue().ToDouble(&value);
+  pConf->Write(_T("DefaultTemperature"), value);
+  m_tPressure->GetValue().ToDouble(&value);
+  pConf->Write(_T("DefaultPressure"), value);
+  m_tIndexError->GetValue().ToDouble(&value);
+  pConf->Write(_T("DefaultIndexError"), value);
+  pConf->Write(_T("DefaultDIPShort"), m_cbDipShort->GetValue());
+  m_tDipShortDistance->GetValue().ToDouble(&value);
+  pConf->Write(_T("DefaultDIPShortDistance"), value);
+  pConf->Write(_T("DefaultArtificialHorizon"),
+               m_cbArtificialHorizon->GetValue());
+}
+
+void SightDialog::RecomputeDMM() {
+  m_Sight.m_Measurement = fromDMM_Plugin(m_tMeasurement->GetValue());
+  m_tMeasurement->SetValue(toSDMM_PlugIn(0, m_Sight.m_Measurement, true));
+  m_Sight.m_LunarMoonAltitude =
+      fromDMM_Plugin(m_tLunarMoonAltitude->GetValue());
+  m_tLunarMoonAltitude->SetValue(
+      toSDMM_PlugIn(0, m_Sight.m_LunarMoonAltitude, true));
+  m_Sight.m_LunarBodyAltitude =
+      fromDMM_Plugin(m_tLunarBodyAltitude->GetValue());
+  m_tLunarBodyAltitude->SetValue(
+      toSDMM_PlugIn(0, m_Sight.m_LunarBodyAltitude, true));
 }
 
 void SightDialog::Recompute() {
@@ -256,6 +366,25 @@ void SightDialog::Recompute() {
   m_cLimb->Enable(m_cType->GetSelection() != AZIMUTH);
 
   m_fgSizerLunar->Show(m_cType->GetSelection() == LUNAR);
+  if (m_cType->GetSelection() == LUNAR) {
+    m_bFindBody->SetLabel(_T("Time"));
+    m_sbSizerSight->GetStaticBox()->SetLabel(_T("Lunar distance (LDOpc)"));
+    m_Sight.m_BodyLimb = (Sight::BodyLimb)m_cLimb->GetSelection();
+    m_cLimb->Clear();
+    m_cLimb->Append(_T("Near"));
+    m_cLimb->Append(_T("Far"));
+    m_cLimb->SetSelection((int)m_Sight.m_BodyLimb);
+  } else {
+    m_bFindBody->SetLabel(_T("Find"));
+    m_sbSizerSight->GetStaticBox()->SetLabel(_T("Sight measurement (Hs)"));
+    m_Sight.m_BodyLimb = (Sight::BodyLimb)m_cLimb->GetSelection();
+    m_cLimb->Clear();
+    m_cLimb->Append(_T("Lower"));
+    m_cLimb->Append(_T("Center"));
+    m_cLimb->Append(_T("Upper"));
+    m_cLimb->SetSelection((int)m_Sight.m_BodyLimb);
+  }
+  m_fgPanelSizer->Layout();
 
   if (!m_breadytorecompute) return;
 
@@ -273,24 +402,31 @@ void SightDialog::Recompute() {
 
   m_Sight.m_DateTime = DateTime();
   m_Sight.m_TimeCertainty = m_sCertaintySeconds->GetValue();
+  if (m_Sight.m_Type == Sight::LUNAR && m_Sight.m_TimeCertainty == 0) {
+    m_Sight.m_TimeCertainty = 10800;
+    m_sCertaintySeconds->SetValue(m_Sight.m_TimeCertainty);
+  }
 
-  double measurement, measurementminutes;
-  m_tMeasurement->GetValue().ToDouble(&measurement);
-  m_tMeasurementMinutes->GetValue().ToDouble(&measurementminutes);
-  measurement += measurementminutes / 60;
-  m_Sight.m_Measurement = measurement;
+  m_Sight.m_Measurement = fromDMM_Plugin(m_tMeasurement->GetValue());
 
   double measurementcertainty;
   m_tMeasurementCertainty->GetValue().ToDouble(&measurementcertainty);
   m_Sight.m_MeasurementCertainty = measurementcertainty;
 
-  m_tLunarMoonAltitude->GetValue().ToDouble(&m_Sight.m_LunarMoonAltitude);
-  m_tLunarBodyAltitude->GetValue().ToDouble(&m_Sight.m_LunarBodyAltitude);
+  m_Sight.m_LunarMoonAltitude =
+      fromDMM_Plugin(m_tLunarMoonAltitude->GetValue());
+  m_Sight.m_LunarMoonLimb = (Sight::BodyLimb)m_cLunarMoonLimb->GetSelection();
+  m_Sight.m_LunarBodyAltitude =
+      fromDMM_Plugin(m_tLunarBodyAltitude->GetValue());
+  m_Sight.m_LunarBodyLimb = (Sight::BodyLimb)m_cLunarBodyLimb->GetSelection();
 
   m_tEyeHeight->GetValue().ToDouble(&m_Sight.m_EyeHeight);
-  m_Sight.m_Temperature = m_sTemperature->GetValue();
-  m_Sight.m_Pressure = m_sPressure->GetValue();
+  m_tTemperature->GetValue().ToDouble(&m_Sight.m_Temperature);
+  m_tPressure->GetValue().ToDouble(&m_Sight.m_Pressure);
   m_tIndexError->GetValue().ToDouble(&m_Sight.m_IndexError);
+  m_Sight.m_DipShort = m_cbDipShort->GetValue();
+  m_tDipShortDistance->GetValue().ToDouble(&m_Sight.m_DipShortDistance);
+  m_Sight.m_ArtificialHorizon = m_cbArtificialHorizon->GetValue();
 
   wxColour fc = m_ColourPicker->GetColour(), c = wxColour(m_Sight.m_ColourName);
   if (c.Red() != fc.Red() || c.Green() != fc.Green() || c.Blue() != fc.Blue())

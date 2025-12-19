@@ -32,16 +32,10 @@
 #include "ocpn_plugin.h"
 #include "Sight.h"
 
-void ClockCorrectionDialog::OnUpdate(wxSpinEvent& event) {
-  CelestialNavigationDialog* parent((CelestialNavigationDialog*)GetParent());
-  std::vector<Sight> lSights = parent->m_Sights;
-  for (Sight& s : lSights) {
-    if (s.m_bVisible) {
-      s.Recompute(m_sClockCorrection->GetValue());
-      s.RebuildPolygons();
-    }
-  }
-
-  parent->UpdateSights();
-  RequestRefresh(parent->GetParent());
+ClockCorrectionDialog::ClockCorrectionDialog(CelestialNavigationDialog* parent,
+                                             int value)
+    : ClockCorrectionDialogBase(parent), m_Parent(parent) {
+  m_sClockCorrection->SetValue(value);
 }
+
+void ClockCorrectionDialog::OnUpdate(wxSpinEvent& event) {}

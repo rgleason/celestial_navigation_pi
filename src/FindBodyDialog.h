@@ -30,6 +30,10 @@
 
 #include "CelestialNavigationUI.h"
 
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
+
 class Sight;
 
 class FindBodyDialog : public FindBodyDialogBase {
@@ -38,10 +42,17 @@ public:
   ~FindBodyDialog();
 
   void OnUpdate(wxCommandEvent& event);
-  void OnDone(wxCommandEvent& event);
+  void OnUpdateBoatPosition(wxCommandEvent& event);
+  void RecomputeDMM(wxCommandEvent& event) { UpdateBoatPosition(); }
   void Update();
+  void UpdateBoatPosition();
+#ifdef __OCPN__ANDROID__
+  void OnEvtPanGesture(wxQT_PanGestureEvent& event);
+#endif
 
   Sight& m_Sight;
+  int m_lastPanX;
+  int m_lastPanY;
 };
 
 #endif

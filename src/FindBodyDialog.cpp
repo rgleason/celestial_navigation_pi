@@ -37,64 +37,111 @@
 #include "celestial_navigation_pi.h"
 #include "geodesic.h"
 
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
+
 FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
     : FindBodyDialogBase(parent), m_Sight(sight) {
-  double lat, lon;
-  celestial_navigation_pi_BoatPos(lat, lon);
-  wxFileConfig* pConf = GetOCPNConfigObject();
-  pConf->SetPath(_T("/PlugIns/CelestialNavigation/FindBody"));
-
-  bool boat_position;
-  pConf->Read(_T("BoatPosition"), &boat_position, true);
-  m_cbBoatPosition->SetValue(boat_position);
-
-  bool magnetic_azimuth;
-  pConf->Read(_T("MagneticAzimuth"), &magnetic_azimuth, false);
-  m_cbMagneticAzimuth->SetValue(magnetic_azimuth);
-
-  if (!m_cbBoatPosition->GetValue()) {
-    pConf->Read(_T("Lat"), &lat, lat);
-    pConf->Read(_T("Lon"), &lon, lon);
+  if (!sight.m_DRBoatPosition) {
+    m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_Sight.m_DRLat, true));
+    m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_Sight.m_DRLon, true));
   }
+  m_cbBoatPosition->SetValue(sight.m_DRBoatPosition);
+  m_cbMagneticAzimuth->SetValue(sight.m_DRMagneticAzimuth);
+  m_sFindDialogButtonOK->SetLabel(_T("Copy Hs"));
+  m_sFindDialogButtonCancel->SetLabel(_T("Close"));
 
-  m_tLatitude->SetValue(wxString::Format(_T("%.4f"), lat));
-  m_tLongitude->SetValue(wxString::Format(_T("%.4f"), lon));
+  int x, y;
+  GetTextExtent(_T("000° 00.0000' S"), &x, &y);
+  m_tLatitude->SetSizeHints(x + 20, -1);
+  m_tLongitude->SetSizeHints(x + 20, -1);
+
+#ifdef __OCPN__ANDROID__
+  GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
+  GetHandle()->grabGesture(Qt::PanGesture);
+  Connect(
+      wxEVT_QT_PANGESTURE,
+      (wxObjectEventFunction)(wxEventFunction)&FindBodyDialog::OnEvtPanGesture,
+      NULL, this);
+#endif
 
   Centre();
-  Update();
+  UpdateBoatPosition();
 }
 
-FindBodyDialog::~FindBodyDialog() {
-  wxFileConfig* pConf = GetOCPNConfigObject();
-  pConf->SetPath(_T("/PlugIns/CelestialNavigation/FindBody"));
-  pConf->Write(_T("BoatPosition"), m_cbBoatPosition->GetValue());
-  pConf->Write(_T("MagneticAzimuth"), m_cbMagneticAzimuth->GetValue());
-  double lat, lon;
-  if (m_tLatitude->GetValue().ToDouble(&lat)) pConf->Write(_T("Lat"), lat);
-  if (m_tLongitude->GetValue().ToDouble(&lon)) pConf->Write(_T("Lon"), lon);
+#ifdef __OCPN__ANDROID__
+void FindBodyDialog::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
+  int x = event.GetOffset().x;
+  int y = event.GetOffset().y;
+
+  int dx = x - m_lastPanX;
+  int dy = y - m_lastPanY;
+
+  if (event.GetState() == GestureUpdated) {
+    wxPoint p = GetPosition();
+    wxSize s = GetSize();
+    p.x = wxMax(0, p.x + dx);
+    p.y = wxMax(0, p.y + dy);
+    p.x = wxMin(p.x, ::wxGetDisplaySize().x - s.x);
+    p.y = wxMin(p.y, ::wxGetDisplaySize().y - s.y);
+    SetPosition(p);
+  }
+  m_lastPanX = x;
+  m_lastPanY = y;
 }
+#endif
+
+FindBodyDialog::~FindBodyDialog() {}
 
 void FindBodyDialog::OnUpdate(wxCommandEvent& event) { Update(); }
 
-void FindBodyDialog::OnDone(wxCommandEvent& event) { EndModal(wxID_OK); }
+void FindBodyDialog::OnUpdateBoatPosition(wxCommandEvent& event) {
+  UpdateBoatPosition();
+}
+
+void FindBodyDialog::UpdateBoatPosition() {
+  m_Sight.m_DRBoatPosition = m_cbBoatPosition->GetValue();
+  if (m_Sight.m_DRBoatPosition) {
+    double lat, lon;
+    celestial_navigation_pi_BoatPos(lat, lon);
+    m_Sight.m_DRLat = lat;
+    m_Sight.m_DRLon = lon;
+    m_tLatitude->Enable(false);
+    m_tLongitude->Enable(false);
+  } else {
+    m_Sight.m_DRLat = fromDMM_Plugin(m_tLatitude->GetValue());
+    m_Sight.m_DRLon = fromDMM_Plugin(m_tLongitude->GetValue());
+    m_tLatitude->Enable(true);
+    m_tLongitude->Enable(true);
+  }
+  m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_Sight.m_DRLat, true));
+  m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_Sight.m_DRLon, true));
+  Update();
+}
 
 void FindBodyDialog::Update() {
   /* NOTE: we do not peform any altitude corrections here */
-  double lat1, lon1, lat2, lon2, hc, zn;
-  m_tLatitude->GetValue().ToDouble(&lat1);
-  m_tLongitude->GetValue().ToDouble(&lon1);
+  double lat, lon, hc, zn;
 
-  m_Sight.BodyLocation(m_Sight.m_DateTime, &lat2, &lon2, 0, 0, 0);
-  m_Sight.AltitudeAzimuth(lat1, lon1, lat2, lon2, &hc, &zn);
+  m_Sight.m_DRMagneticAzimuth = m_cbMagneticAzimuth->GetValue();
+  if (!m_Sight.m_DRBoatPosition) {
+    m_Sight.m_DRLat = fromDMM_Plugin(m_tLatitude->GetValue());
+    m_Sight.m_DRLon = fromDMM_Plugin(m_tLongitude->GetValue());
+  }
 
-  if (m_cbMagneticAzimuth->GetValue()) {
-    zn -= celestial_navigation_pi_GetWMM(lat1, lon1, m_Sight.m_EyeHeight,
-                                         m_Sight.m_DateTime);
+  m_Sight.BodyLocation(m_Sight.m_DateTime, &lat, &lon, 0, 0, 0);
+  m_Sight.AltitudeAzimuth(m_Sight.m_DRLat, m_Sight.m_DRLon, lat, lon, &hc, &zn);
+
+  if (m_Sight.m_DRMagneticAzimuth) {
+    zn -=
+        celestial_navigation_pi_GetWMM(m_Sight.m_DRLat, m_Sight.m_DRLon,
+                                       m_Sight.m_EyeHeight, m_Sight.m_DateTime);
     zn = resolve_heading_positive(zn);
   }
 
-  m_tAltitude->SetValue(wxString::Format(_T("%f"), hc));
-  m_tAzimuth->SetValue(wxString::Format(_T("%f"), zn));
+  m_tAltitude->SetValue(toSDMM_PlugIn(0, hc, true));
+  m_tAzimuth->SetValue(toSDMM_PlugIn(0, zn, true));
   m_tIntercept->SetValue(
       wxString::Format(_T("%f"), fabs(hc - m_Sight.m_ObservedAltitude) * 60));
   if (hc >= m_Sight.m_ObservedAltitude) {
@@ -103,5 +150,15 @@ void FindBodyDialog::Update() {
   } else {
     m_cbTowards->SetValue(true);
     m_cbAway->SetValue(false);
+  }
+
+  double estimatedHs, estimatedError;
+  m_Sight.EstimateHs(hc, &estimatedHs, &estimatedError);
+  if (!isnan(estimatedHs)) {
+    m_tEstimatedHs->SetValue(toSDMM_PlugIn(0, estimatedHs, true));
+    m_sFindDialogButtonOK->Enable();
+  } else {
+    m_tEstimatedHs->SetValue("   N/A");
+    m_sFindDialogButtonOK->Disable();
   }
 }

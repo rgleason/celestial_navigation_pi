@@ -36,12 +36,16 @@
 
 #include "ocpn_plugin.h"
 
+#include "celestial_navigation_pi.h"
 #include "Sight.h"
 #include "SightDialog.h"
 #include "CelestialNavigationDialog.h"
-#include "celestial_navigation_pi.h"
 #include <algorithm>
 #include <functional>
+
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
 
 /* XPM */
 static const char* eye[] = {"20 20 7 1",
@@ -87,10 +91,12 @@ wxString columns[] = {
     _(""), _("Type"), _("Body"), _("Time (UTC)"), _("Measurement"), _("Color"),
 };
 
-CelestialNavigationDialog::CelestialNavigationDialog(wxWindow* parent)
+CelestialNavigationDialog::CelestialNavigationDialog(
+    wxWindow* parent, celestial_navigation_pi* ppi)
     : CelestialNavigationDialogBase(parent),
-      m_FixDialog(this),
-      m_ClockCorrectionDialog(this) {
+      m_ClockCorrectionDialog(NULL),
+      m_FixDialog(NULL),
+      m_Plugin(ppi) {
   wxFileConfig* pConf = GetOCPNConfigObject();
 
   pConf->SetPath(_T("/PlugIns/CelestialNavigation"));
@@ -141,51 +147,37 @@ CelestialNavigationDialog::CelestialNavigationDialog(wxWindow* parent)
   wxDisplaySize(&sx, &sy);
   m_pix_per_mm = ((double)sx) / (mmx);
 
-//
-#if 0  // TODO  (DSR) This Android GUI interface needs work
 #ifdef __OCPN__ANDROID__
-    GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
-    GetHandle()->grabGesture(Qt::PanGesture);
-    GetHandle()->setStyleSheet( qtStyleSheet);
-    m_lSights->GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);//
-    m_lSights->GetHandle()->grabGesture(Qt::PanGesture);
-    m_lSights->Connect( wxEVT_QT_PANGESTURE,
-                       (wxObjectEventFunction) (wxEventFunction) &CelestialNavigationDialog::OnEvtPanGesture, NULL, this );
-    GetHandle()->setStyleSheet( qtStyleSheet);//
-   Move(0, 0);
+  GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
+  GetHandle()->grabGesture(Qt::PanGesture);
+  Connect(wxEVT_QT_PANGESTURE,
+          (wxObjectEventFunction)(wxEventFunction)&CelestialNavigationDialog::
+              OnEvtPanGesture,
+          NULL, this);
 #endif
-#endif  // if 0
-
-  //
 }
 
-#if 0  // TODO  (DSR) This Android GUI interface needs work
-
 #ifdef __OCPN__ANDROID__
-void CelestialNavigationDialog::OnEvtPanGesture( wxQT_PanGestureEvent &event)
-{
-    switch(event.GetState()){
-        case GestureStarted:
-            m_startPos = GetPosition();
-            m_startMouse = event.GetCursorPos(); //g_mouse_pos_screen;
-            break;
-        default:
-        {
-            wxPoint pos = event.GetCursorPos();
-            int x = wxMax(0, pos.x + m_startPos.x - m_startMouse.x);
-            int y = wxMax(0, pos.y + m_startPos.y - m_startMouse.y);
-            int xmax = ::wxGetDisplaySize().x - GetSize().x;
-            x = wxMin(x, xmax);
-            int ymax = ::wxGetDisplaySize().y - GetSize().y;          // Some fluff at the bottom
-            y = wxMin(y, ymax);
+void CelestialNavigationDialog::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
+  int x = event.GetOffset().x;
+  int y = event.GetOffset().y;
 
-            Move(x, y);
-        } break;
-    }
-// master
+  int dx = x - m_lastPanX;
+  int dy = y - m_lastPanY;
+
+  if (event.GetState() == GestureUpdated) {
+    wxPoint p = GetPosition();
+    wxSize s = GetSize();
+    p.x = wxMax(0, p.x + dx);
+    p.y = wxMax(0, p.y + dy);
+    p.x = wxMin(p.x, ::wxGetDisplaySize().x - s.x);
+    p.y = wxMin(p.y, ::wxGetDisplaySize().y - s.y);
+    SetPosition(p);
+  }
+  m_lastPanX = x;
+  m_lastPanY = y;
 }
 #endif
-#endif  // if 0
 
 CelestialNavigationDialog::~CelestialNavigationDialog() {
   wxFileConfig* pConf = GetOCPNConfigObject();
@@ -196,6 +188,9 @@ CelestialNavigationDialog::~CelestialNavigationDialog() {
   pConf->Write(_T ( "DialogY" ), p.y);
 
   wxSize s = GetSize();
+  if (!m_lSights->IsShown()) {
+    s = m_fullSize;
+  }
   pConf->Write(_T ( "DialogWidth" ), s.x);
   pConf->Write(_T ( "DialogHeight" ), s.y);
 
@@ -248,8 +243,7 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
     for (TiXmlElement* e = root.FirstChild().Element(); e;
          e = e->NextSiblingElement()) {
       if (!strcmp(e->Value(), "ClockError")) {
-        m_ClockCorrectionDialog.m_sClockCorrection->SetValue(
-            AttributeInt(e, "Seconds", 0));
+        m_ClockCorrection = AttributeInt(e, "Seconds", 0);
       } else if (!strcmp(e->Value(), "Sight")) {
         Sight s;
 
@@ -257,6 +251,12 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_Type = (Sight::Type)AttributeInt(e, "Type", 0);
         s.m_Body = wxString::FromUTF8(e->Attribute("Body"));
         s.m_BodyLimb = (Sight::BodyLimb)AttributeInt(e, "BodyLimb", 0);
+        s.m_LunarMoonAltitude = AttributeDouble(e, "LunarMoonAltitude", 0);
+        s.m_LunarMoonLimb =
+            (Sight::BodyLimb)AttributeInt(e, "LunarMoonLimb", 0);
+        s.m_LunarBodyAltitude = AttributeDouble(e, "LunarBodyAltitude", 0);
+        s.m_LunarBodyLimb =
+            (Sight::BodyLimb)AttributeInt(e, "LunarBodyLimb", 0);
 
         s.m_DateTime.ParseISODate(wxString::FromUTF8(e->Attribute("Date")));
 
@@ -280,6 +280,9 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_Temperature = AttributeDouble(e, "Temperature", 10);
         s.m_Pressure = AttributeDouble(e, "Pressure", 1010);
         s.m_IndexError = AttributeDouble(e, "IndexError", 0);
+        s.m_DipShort = AttributeBool(e, "DipShort", 0);
+        s.m_DipShortDistance = AttributeDouble(e, "DipShortDistance", 0);
+        s.m_ArtificialHorizon = AttributeBool(e, "ArtificialHorizon", 0);
 
         s.m_ShiftNm = AttributeDouble(e, "ShiftNm", 0);
         s.m_ShiftBearing = AttributeDouble(e, "ShiftBearing", 0);
@@ -289,11 +292,18 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_Colour = wxColour(wxString::FromUTF8(e->Attribute("Colour")));
         s.m_Colour.Set(s.m_Colour.Red(), s.m_Colour.Green(), s.m_Colour.Blue(),
                        AttributeInt(e, "Transparency", 150));
+
+        s.m_DRLat = AttributeDouble(e, "DRLat", 0);
+        s.m_DRLon = AttributeDouble(e, "DRLon", 0);
+        s.m_DRBoatPosition = AttributeBool(e, "DRBoatPosition", false);
+        s.m_DRMagneticAzimuth = AttributeBool(e, "DRMagneticAzimuth", false);
+        s.m_TimeCorrection = AttributeInt(e, "TimeCorrection", 0);
+
         s.m_bCalculated = false;
         s.m_bSelected = false;
 
         if (s.m_bVisible) {
-          s.Recompute(m_ClockCorrectionDialog.m_sClockCorrection->GetValue());
+          s.Recompute(m_ClockCorrection);
           s.RebuildPolygons();
         }
         m_Sights.push_back(std::move(s));
@@ -323,6 +333,13 @@ failed:
   return false;
 }
 
+void SetFloatAttribute(TiXmlElement* c, const char* label, Sight& s,
+                       double value) {
+  char buf[20];
+  sprintf(buf, "%f", value);
+  c->SetAttribute(label, buf);
+}
+
 void CelestialNavigationDialog::SaveXML() {
   TiXmlDocument doc;
   TiXmlDeclaration* decl = new TiXmlDeclaration("1.0", "utf-8", "");
@@ -337,8 +354,7 @@ void CelestialNavigationDialog::SaveXML() {
   root->SetAttribute("creator", "Opencpn Celestial Navigation plugin");
 
   TiXmlElement* c = new TiXmlElement("ClockError");
-  c->SetAttribute("Seconds",
-                  m_ClockCorrectionDialog.m_sClockCorrection->GetValue());
+  c->SetAttribute("Seconds", m_ClockCorrection);
   root->LinkEndChild(c);
 
   for (Sight& s : m_Sights) {
@@ -348,27 +364,40 @@ void CelestialNavigationDialog::SaveXML() {
     c->SetAttribute("Type", s.m_Type);
     c->SetAttribute("Body", s.m_Body.mb_str());
     c->SetAttribute("BodyLimb", s.m_BodyLimb);
+    SetFloatAttribute(c, "LunarMoonAltitude", s, s.m_LunarMoonAltitude);
+    c->SetAttribute("LunarMoonLimb", s.m_LunarMoonLimb);
+    SetFloatAttribute(c, "LunarBodyAltitude", s, s.m_LunarBodyAltitude);
+    c->SetAttribute("LunarBodyLimb", s.m_LunarBodyLimb);
 
     c->SetAttribute("Date", s.m_DateTime.FormatISODate().mb_str());
     c->SetAttribute("Time", s.m_DateTime.FormatISOTime().mb_str());
 
-    c->SetDoubleAttribute("TimeCertainty", s.m_TimeCertainty);
+    SetFloatAttribute(c, "TimeCertainty", s, s.m_TimeCertainty);
 
-    c->SetDoubleAttribute("Measurement", s.m_Measurement);
-    c->SetDoubleAttribute("MeasurementCertainty", s.m_MeasurementCertainty);
+    SetFloatAttribute(c, "Measurement", s, s.m_Measurement);
+    SetFloatAttribute(c, "MeasurementCertainty", s, s.m_MeasurementCertainty);
 
-    c->SetDoubleAttribute("EyeHeight", s.m_EyeHeight);
-    c->SetDoubleAttribute("Temperature", s.m_Temperature);
-    c->SetDoubleAttribute("Pressure", s.m_Pressure);
-    c->SetDoubleAttribute("IndexError", s.m_IndexError);
+    SetFloatAttribute(c, "EyeHeight", s, s.m_EyeHeight);
+    SetFloatAttribute(c, "Temperature", s, s.m_Temperature);
+    SetFloatAttribute(c, "Pressure", s, s.m_Pressure);
+    SetFloatAttribute(c, "IndexError", s, s.m_IndexError);
+    c->SetAttribute("DipShort", s.m_DipShort);
+    SetFloatAttribute(c, "DipShortDistance", s, s.m_DipShortDistance);
+    c->SetAttribute("ArtificialHorizon", s.m_ArtificialHorizon);
 
-    c->SetDoubleAttribute("ShiftNm", s.m_ShiftNm);
-    c->SetDoubleAttribute("ShiftBearing", s.m_ShiftBearing);
-    c->SetDoubleAttribute("MagneticShiftBearing", s.m_bMagneticShiftBearing);
+    SetFloatAttribute(c, "ShiftNm", s, s.m_ShiftNm);
+    SetFloatAttribute(c, "ShiftBearing", s, s.m_ShiftBearing);
+    c->SetAttribute("MagneticShiftBearing", s.m_bMagneticShiftBearing);
 
     c->SetAttribute("ColourName", s.m_ColourName.mb_str());
     c->SetAttribute("Colour", s.m_Colour.GetAsString().mb_str());
     c->SetAttribute("Transparency", s.m_Colour.Alpha());
+
+    SetFloatAttribute(c, "DRLat", s, s.m_DRLat);
+    SetFloatAttribute(c, "DRLon", s, s.m_DRLon);
+    c->SetAttribute("DRBoatPosition", s.m_DRBoatPosition);
+    c->SetAttribute("DRMagneticAzimuth", s.m_DRMagneticAzimuth);
+    c->SetAttribute("TimeCorrection", s.m_TimeCorrection);
 
     root->LinkEndChild(c);
   }
@@ -380,7 +409,7 @@ void CelestialNavigationDialog::SaveXML() {
   }
 }
 
-bool compareSightAsc(const Sight &a, const Sight &b, int sortCol) {
+bool compareSightAsc(const Sight& a, const Sight& b, int sortCol) {
   switch (sortCol) {
     case rmVISIBLE:
       if (a.m_bVisible != b.m_bVisible) return a.m_bVisible < b.m_bVisible;
@@ -417,7 +446,7 @@ bool compareSightAsc(const Sight &a, const Sight &b, int sortCol) {
   return true;
 }
 
-bool compareSight(const Sight &a, const Sight &b, int sortCol, bool sortAsc) {
+bool compareSight(const Sight& a, const Sight& b, int sortCol, bool sortAsc) {
   return sortAsc ? compareSightAsc(a, b, sortCol)
                  : !compareSightAsc(a, b, sortCol);
 }
@@ -455,12 +484,12 @@ void CelestialNavigationDialog::RebuildList() {
     m_lSights->SetItem(idx, rmTIME,
                        dt.FormatISODate() + _T(" ") + dt.FormatISOTime());
     m_lSights->SetItem(idx, rmMEASUREMENT,
-                       wxString::Format(_T("%.4f"), s.m_Measurement));
+                       toSDMM_PlugIn(0, s.m_Measurement, true));
     if (s.m_Type == Sight::LUNAR)
       m_lSights->SetItem(
           idx, rmCOLOR,
           _("Time Correction") +
-              wxString::Format(_T(": %.4f"), s.m_TimeCorrection));
+              wxString::Format(_T(": %ld s"), s.m_TimeCorrection));
     else
       m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName);
 
@@ -472,11 +501,11 @@ void CelestialNavigationDialog::RebuildList() {
   }
 
   UpdateButtons();
-  UpdateFix(true);
+  UpdateFix();
   SaveXML();
 }
 
-void CelestialNavigationDialog::UpdateSight(int idx, bool warnings) {
+void CelestialNavigationDialog::UpdateSight(int idx) {
   Sight& s = m_Sights[idx];
 
   // then add sights to the listctrl
@@ -486,16 +515,16 @@ void CelestialNavigationDialog::UpdateSight(int idx, bool warnings) {
   m_lSights->SetItem(idx, rmTIME,
                      dt.FormatISODate() + _T(" ") + dt.FormatISOTime());
   m_lSights->SetItem(idx, rmMEASUREMENT,
-                     wxString::Format(_T("%.4f"), s.m_Measurement));
+                     wxString::Format(_T("%.5f"), s.m_Measurement));
   if (s.m_Type == Sight::LUNAR)
     m_lSights->SetItem(idx, rmCOLOR,
                        _("Time Correction") +
-                           wxString::Format(_T(": %.4f"), s.m_TimeCorrection));
+                           wxString::Format(_T(": %ld s"), s.m_TimeCorrection));
   else
     m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName);
 
   UpdateButtons();
-  UpdateFix(warnings);
+  UpdateFix();
   SaveXML();
 }
 
@@ -515,19 +544,18 @@ void CelestialNavigationDialog::UpdateButtons() {
   m_bDeleteSight->Enable(enable);
 }
 
-void CelestialNavigationDialog::UpdateFix(bool warnings) {
-  m_FixDialog.Update(m_ClockCorrectionDialog.m_sClockCorrection->GetValue(),
-                     warnings);
+void CelestialNavigationDialog::UpdateFix() {
+  if (m_FixDialog) m_FixDialog->Update(m_ClockCorrection);
 }
 
 void CelestialNavigationDialog::OnNew(wxCommandEvent& event) {
   wxDateTime now = wxDateTime::Now().ToUTC();
 
   Sight ns(Sight::ALTITUDE, _("Sun"), Sight::LOWER, now, 0, 0, 10);
-  SightDialog dialog(this, ns,
-                     m_ClockCorrectionDialog.m_sClockCorrection->GetValue());
+  SightDialog dialog(this, ns, m_ClockCorrection);
 
-  if (dialog.ShowModal() == wxID_OK) {
+  dialog.ShowModal();
+  if (dialog.GetReturnCode() == wxID_OK) {
     if (ns.m_bVisible) {
       dialog.Recompute();
       ns.RebuildPolygons();
@@ -566,10 +594,10 @@ void CelestialNavigationDialog::OnEdit() {
   Sight& s = m_Sights[selectedIndex];
   Sight originalsight = s; /* in case of cancel */
 
-  SightDialog dialog(this, s,
-                     m_ClockCorrectionDialog.m_sClockCorrection->GetValue());
+  SightDialog dialog(this, s, m_ClockCorrection);
 
-  if (dialog.ShowModal() == wxID_OK) {
+  dialog.ShowModal();
+  if (dialog.GetReturnCode() == wxID_OK) {
     if (s.m_bVisible) {
       dialog.Recompute();
       s.RebuildPolygons();
@@ -613,8 +641,18 @@ void CelestialNavigationDialog::OnDeleteAll(wxCommandEvent& event) {
 }
 
 void CelestialNavigationDialog::OnFix(wxCommandEvent& event) {
-  m_FixDialog.Show();
-  RequestRefresh(GetParent());
+  if (m_FixDialog == NULL) {
+    m_FixDialog = new FixDialog(this);
+    m_FixDialog->Show();
+    m_FixDialog->Update(m_ClockCorrection);
+    RequestRefresh(GetParent()->GetParent());
+  }
+}
+
+void CelestialNavigationDialog::OnFixClose() {
+  m_FixDialog->Hide();
+  m_FixDialog->Destroy();
+  m_FixDialog = NULL;
 }
 
 void CelestialNavigationDialog::OnDRShift(wxCommandEvent& event) {
@@ -638,10 +676,24 @@ void CelestialNavigationDialog::OnDRShift(wxCommandEvent& event) {
 }
 
 void CelestialNavigationDialog::OnClockOffset(wxCommandEvent& event) {
-  m_ClockCorrectionDialog.Show();
+  m_ClockCorrectionDialog = new ClockCorrectionDialog(this, m_ClockCorrection);
+  m_ClockCorrectionDialog->ShowModal();
+  if (m_ClockCorrectionDialog->GetReturnCode() == wxID_OK) {
+    m_ClockCorrection = m_ClockCorrectionDialog->m_sClockCorrection->GetValue();
+    for (Sight& s : m_Sights) {
+      if (s.m_bVisible) {
+        s.Recompute(m_ClockCorrection);
+        s.RebuildPolygons();
+      }
+    }
+    UpdateSights();
+    RequestRefresh(GetParent());
+  }
+  m_ClockCorrectionDialog->Destroy();
+  m_ClockCorrectionDialog = NULL;
 }
 
-void CelestialNavigationDialog::OnInformation(wxCommandEvent& event) {
+void CelestialNavigationDialog::OnDocumentation(wxCommandEvent& event) {
   wxString infolocation = celestial_navigation_pi_DataDir() + _T("/data/") +
                           _T("Celestial_Navigation_Information.html");
   infolocation.Prepend(_T("file://"));
@@ -665,6 +717,10 @@ void CelestialNavigationDialog::OnHide(wxCommandEvent& event) {
   }
 }
 
+void CelestialNavigationDialog::OnClose(wxCloseEvent& event) {
+  m_Plugin->OnDialogClose();
+}
+
 void CelestialNavigationDialog::OnSightListLeftDown(wxMouseEvent& event) {
   wxPoint pos = event.GetPosition();
   int flags = 0;
@@ -678,7 +734,7 @@ void CelestialNavigationDialog::OnSightListLeftDown(wxMouseEvent& event) {
     m_lSights->SetItemImage(clicked_index, sight.IsVisible() ? 0 : -1);
 
     if (sight.IsVisible() && !sight.IsCalculated()) {
-      sight.Recompute(m_ClockCorrectionDialog.m_sClockCorrection->GetValue());
+      sight.Recompute(m_ClockCorrection);
       sight.RebuildPolygons();
     }
 

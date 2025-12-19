@@ -24,6 +24,8 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml ${CMAKE_CURRENT_BINARY
 
 set(SRC
     altitude_tests.cpp
+    lunar_tests.cpp
+    common.cpp
     mock_plugin_api.cpp
     mock_plugin_impl.cpp
     ${CMAKE_SOURCE_DIR}/src/Sight.cpp
@@ -45,6 +47,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/celestial_navigation_pi.cpp
     ${CMAKE_SOURCE_DIR}/src/epv00.cpp
     ${CMAKE_SOURCE_DIR}/src/FixDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/LunarResultsDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/SightDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/geodesic.c
     ${CMAKE_SOURCE_DIR}/src/geomag/geomag.c
@@ -70,6 +73,7 @@ target_include_directories(celestial_tests
         ${CMAKE_SOURCE_DIR}/opencpn-libs/${PKG_API_LIB}/include
         ${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml/include
         ${CMAKE_SOURCE_DIR}/opencpn-libs/wxJSON/include
+        ${CMAKE_SOURCE_DIR}/src/plugin_dc/dc_utils/include
         ${GTEST_INCLUDE_DIRS}
         ${wxWidgets_INCLUDE_DIRS}
 )
@@ -83,6 +87,7 @@ target_link_libraries(celestial_tests
         ocpn::api
         ocpn::tinyxml
         ocpn::wxjson
+        ocpn::plugin-dc
         ${OPENGL_LIBRARIES}
 )
 

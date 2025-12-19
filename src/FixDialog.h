@@ -29,24 +29,36 @@
 #define _FIXDIALOG_H_
 
 #include "CelestialNavigationUI.h"
+#include "CelestialNavigationDialog.h"
 
 #include <list>
+
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
 
 class Sight;
 
 class FixDialog : public FixDialogBase {
 public:
-  FixDialog(wxWindow* parent);
-  void Update(int clock_offset, bool warnings);
+  FixDialog(CelestialNavigationDialog* parent);
+  void Update(int clock_offset);
 
   int m_clock_offset;
   double m_fixlat, m_fixlon, m_fixerror;
 
 private:
   void OnGo(wxCommandEvent& event);
-  void OnClose(wxCloseEvent& event);
-  void OnUpdate(wxCommandEvent& event) { Update(m_clock_offset, false); }
-  void OnUpdateSpin(wxSpinEvent& event) { Update(m_clock_offset, false); }
+  void OnClose(wxCommandEvent& event);
+  void OnUpdate(wxCommandEvent& event) { Update(m_clock_offset); }
+  void OnUpdateSpin(wxSpinEvent& event) { Update(m_clock_offset); }
+#ifdef __OCPN__ANDROID__
+  void OnEvtPanGesture(wxQT_PanGestureEvent& event);
+#endif
+
+  CelestialNavigationDialog* m_Parent;
+  int m_lastPanX;
+  int m_lastPanY;
 };
 
 #endif

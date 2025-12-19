@@ -26,6 +26,7 @@
  */
 
 #include <list>
+#include "pidc.h"
 
 #ifdef __MSVC__
 #define _USE_MATH_DEFINES
@@ -58,7 +59,13 @@ const wxString SightType[] = {_("Altitude"), _("Azimuth"), _("Lunar")};
 class Sight : public wxObject {
 public:
   enum Type { ALTITUDE, AZIMUTH, LUNAR };
-  enum BodyLimb { LOWER, CENTER, UPPER };
+  enum BodyLimb {
+    LOWER = 0,
+    LUNAR_NEAR = 0,
+    CENTER = 1,
+    LUNAR_FAR = 1,
+    UPPER = 2
+  };
 
   Sight() {}
   Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
@@ -101,11 +108,15 @@ public:
   double m_Measurement;  // Measurement angle in degrees (NaN is valid for all)
   double m_MeasurementCertainty;
   double m_LunarMoonAltitude, m_LunarBodyAltitude;
+  BodyLimb m_LunarMoonLimb, m_LunarBodyLimb;
 
-  double m_EyeHeight;    // Height above sea in meters
-  double m_Temperature;  // Temperature in degrees celcius
-  double m_Pressure;     // Pressure in millibars
-  double m_IndexError;   // Error of measurement in degrees
+  double m_EyeHeight;         // Height above sea in meters
+  double m_Temperature;       // Temperature in degrees celcius
+  double m_Pressure;          // Pressure in millibars
+  double m_IndexError;        // Error of measurement in degrees
+  bool m_DipShort;            // DIP Short ?
+  double m_DipShortDistance;  // DIP Short distance
+  bool m_ArtificialHorizon;   // Artificial Horizon ?
 
   double m_ShiftNm;              // direction to move points
   double m_ShiftBearing;         // direction to move points
@@ -114,15 +125,18 @@ public:
   wxString m_ColourName;
   wxColour m_Colour;  // Color of the sight
 
-  virtual void Render(wxDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm);
+  virtual void Render(piDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm);
 
   void BodyLocation(wxDateTime time, double* lat, double* lon, double* ghaash,
                     double* rad, double* dist);
   void AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
                        double* hc, double* zn);
+  void EstimateHs(double hc, double *hs, double *error);
   std::list<wxRealPoint> GetPoints();
 
   wxString m_CalcStr;
+
+  wxDateTime m_CorrectedDateTime;
 
   /* for altitude */
   double m_ObservedAltitude; /* after all corrections are applied */
@@ -131,7 +145,14 @@ public:
   bool m_bMagneticNorth;  // if azimuth angle is in magnetic coordinates
 
   /* for lunar */
-  double m_TimeCorrection;
+  long m_TimeCorrection;
+  double m_LDC;
+
+  /* DR info */
+  double m_DRLat;
+  double m_DRLon;
+  bool m_DRBoatPosition;
+  bool m_DRMagneticAzimuth;
 
 protected:
   double CalcAngle(wxRealPoint p1, wxRealPoint p2);
@@ -161,9 +182,7 @@ private:
 
   void DrawPolygon(PlugIn_ViewPort& VP, wxRealPointList& area, bool poly);
 
-  wxDC* m_dc;
-
-  wxDateTime m_CorrectedDateTime;
+  piDC* m_dc;
 
   static int s_lastsightcolor;
 };

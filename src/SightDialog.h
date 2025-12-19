@@ -33,6 +33,10 @@
 
 #include "CelestialNavigationUI.h"
 
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
+
 class Sight;
 
 class SightDialog : public SightDialogBase {
@@ -45,11 +49,13 @@ public:
   //    void SetColorScheme(ColorScheme cs);
 
   void OnSetDefaults(wxCommandEvent& event);
-  void MeasurementEntered(wxCommandEvent& event) { EndModal(wxID_OK); }
   void Recompute(wxCommandEvent& event) { Recompute(); }
   void RecomputeCalendar(wxCalendarEvent& event) { Recompute(); }
   void RecomputeSpin(wxSpinEvent& event) { Recompute(); }
   //    void RecomputeScroll( wxScrollEvent& event ) { Recompute(); }
+  void RecomputeDMM(wxNotebookEvent& event) { RecomputeDMM(); }
+  void RecomputeDMM(wxCommandEvent& event) { RecomputeDMM(); }
+
   void RecomputeColor(wxColourPickerEvent& event) { Recompute(); }
   void NewBody();
   void NewBody(wxCommandEvent& event) {
@@ -57,17 +63,26 @@ public:
     Recompute();
   }
   void OnFindBody(wxCommandEvent& event);
+  void OnFindLunarMoon(wxCommandEvent& event);
+  void OnFindLunarBody(wxCommandEvent& event);
   void OnShowDefinitions(wxCommandEvent& event);
 
   wxDateTime DateTime();
   void Recompute();
+  void RecomputeDMM();
 
 private:
   double BodyAltitude(wxString body);
+#ifdef __OCPN__ANDROID__
+  void OnEvtPanGesture(wxQT_PanGestureEvent& event);
+#endif
 
   Sight& m_Sight;
   int m_clock_offset;
   bool m_breadytorecompute;
+
+  int m_lastPanX;
+  int m_lastPanY;
 };
 
 #endif

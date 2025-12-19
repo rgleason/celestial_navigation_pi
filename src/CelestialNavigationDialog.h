@@ -30,6 +30,7 @@
 
 #include <list>
 
+#include "celestial_navigation_pi.h"
 #include "geodesic.h"
 #include "CelestialNavigationUI.h"
 #include "FixDialog.h"
@@ -37,15 +38,22 @@
 
 #include <vector>
 
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
+
 class CelestialNavigationDialog : public CelestialNavigationDialogBase {
 public:
-  CelestialNavigationDialog(wxWindow* parent);
+  CelestialNavigationDialog(wxWindow* parent, celestial_navigation_pi* ppi);
   ~CelestialNavigationDialog();
   void UpdateSights();
 
-  FixDialog m_FixDialog;
+  ClockCorrectionDialog* m_ClockCorrectionDialog;
+  FixDialog* m_FixDialog;
   double m_pix_per_mm;
   std::vector<Sight> m_Sights;
+
+  void OnFixClose();
 
 private:
   bool OpenXML(bool reportfailure);
@@ -53,7 +61,7 @@ private:
 
   void RebuildList();
   void UpdateButtons();  // Correct button state
-  void UpdateFix(bool warnings = true);
+  void UpdateFix();
 
   // event handlers
   void OnNew(wxCommandEvent& event);
@@ -66,8 +74,9 @@ private:
   void OnFix(wxCommandEvent& event);
   void OnDRShift(wxCommandEvent& event);
   void OnClockOffset(wxCommandEvent& event);
-  void OnInformation(wxCommandEvent& event);
+  void OnDocumentation(wxCommandEvent& event);
   void OnHide(wxCommandEvent& event);
+  void OnClose(wxCloseEvent& event);
 
   void OnClockCorrection(wxSpinEvent& event);
   void OnSightListLeftDown(wxMouseEvent& event);
@@ -76,19 +85,25 @@ private:
   void OnEdit(wxListEvent& event) { OnEdit(); }
   void OnColumnHeaderClick(wxListEvent& event);
   void OnSightSelected(wxListEvent& event);
+#ifdef __OCPN__ANDROID__
+  void OnEvtPanGesture(wxQT_PanGestureEvent& event);
+#endif
 
-  void InsertSight(Sight* s, bool warnings = true);
-  void UpdateSight(int idx, bool warnings = true);
+  void InsertSight(Sight* s);
+  void UpdateSight(int idx);
 
+  celestial_navigation_pi* m_Plugin;
   wxString m_sights_path;
-  int clock_correction;
+  int m_ClockCorrection;
 
-  ClockCorrectionDialog m_ClockCorrectionDialog;
   wxPoint m_startPos;
   wxPoint m_startMouse;
   wxSize m_fullSize;
   int m_sortCol;
   bool m_bSortAsc;
+
+  int m_lastPanX;
+  int m_lastPanY;
 };
 
 #endif  // _CelestialNavigationDialog_h_

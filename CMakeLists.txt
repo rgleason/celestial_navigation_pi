@@ -1,24 +1,25 @@
-##---------------------------------------------------------------------------
-## Author:      Sean d'Epagnier
-##***************************************************************************
-## *   Copyright (C) 2010 by Sean d'Epagnier                              *
-## *   License:     GPLv3+
-## *   This program is free software; you can redistribute it and/or modify  *
-## *   it under the terms of the GNU General Public License as published by  *
-## *   the Free Software Foundation; either version 2 of the License, or     *
-## *   (at your option) any later version.                                   *
-## *                                                                         *
-## *   This program is distributed in the hope that it will be useful,       *
-## *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-## *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-## *   GNU General Public License for more details.                          *
-## *                                                                         *
-## *   You should have received a copy of the GNU General Public License     *
-## *   along with this program; if not, write to the                         *
-## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,                                       *
-## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                       *
-#-----------------------------------------------------------------------------
-# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.341.0 30/04/2025 DD/MM/YYYY
+# ---------------------------------------------------------------------------
+# Author:      Sean d'Epagnier
+# License: GPL v3+   License:  wxWidgets
+# ---------------------------------------------------------------------------
+# -   Copyright (C) 2010 by Sean d'Epagnier                              *
+# -   License:     GPLv3+
+# - This program is free software; you can redistribute it and/or modify  *
+# - it under the terms of the GNU General Public License as published by  *
+# - the Free Software Foundation; either version 2 of the License, or     *
+# - (at your option) any later version.                                   *
+# - *
+# - This program is distributed in the hope that it will be useful,       *
+# - but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+# - MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+# - GNU General Public License for more details.                          *
+# - *
+# - You should have received a copy of the GNU General Public License     *
+# - along with this program; if not, write to the                         *
+# - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,                                       *
+# - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                       *
+# -----------------------------------------------------------------------------
+# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.352.0 09/12/2025 DD/MM/YYYY
 # buildCI:yes useODAPI:no validateJSON:no
 # ---------------------------------------------------------------------------
 ## -- When changing this file do NOT change the order of the sections.    -- ##
@@ -30,7 +31,7 @@
 set(CMLOC "CMakeLists: ")
 
 # define minimum cmake version
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 if(COMMAND cmake_policy)
   if (POLICY CMP0043)
     cmake_policy(SET CMP0043 NEW)
@@ -61,7 +62,7 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
 # define plugin name, owner and versions
 set(VERBOSE_NAME Celestial_Navigation)
-set(COMMON_NAME "Celestial Navigation")  
+set(COMMON_NAME "Celestial Navigation")
 set(TITLE_NAME "CELESTIALNAVIGATION")
 set(PACKAGE_CONTACT  "Sean D'Epagnier ")
 set(PACKAGE "celestial_navigation")
@@ -75,9 +76,9 @@ set(LONG_DESCRIPTION
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "4")
 set(VERSION_PATCH "65")
-set(VERSION_TWEAK "0")
-set(VERSION_DATE  "05/06/2025" )# DD/MM/YYYY format
-set(OCPN_MIN_VERSION "ov58")
+set(VERSION_TWEAK "24")
+set(VERSION_DATE  "15/12/2025" )# DD/MM/YYYY format
+set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
 set(OCPN_API_VERSION_MINOR "18")
@@ -85,9 +86,8 @@ set(TP_COMMENT "  * Release using CI")
 
 set(PARENT "opencpn")
 
-#Use to set up a local webserver with git installed.
-#Default is github.com. Now set in pluginconfigure.cmake
-#set(GIT_REPOSITORY_SERVER "github.com")
+# Use to set up a local webserver with git installed. Default is github.com.
+# Now set in PluginSetup.cmake set(GIT_REPOSITORY_SERVER "github.com")
 
 ## Specifies Cloudsmith upload repository suffix for each catalog
 set(PROD "prod")   #Standard Repos
@@ -96,8 +96,8 @@ set(ALPHA "alpha") #Standard Repos
 
 # Set if  Cloudsmith Base Repository name does not match your Git Repository name.
 #set (CLOUDSMITH_BASE_REPOSITORY "${GIT_REPOSITORY_NAME}")
-#set (CLOUDSMITH_BASE_REPOSITORY "opencpn-plugins")  #Ricks's customization
-set (CLOUDSMITH_BASE_REPOSITORY "celestial-navigation")  # without the pi 
+#set (CLOUDSMITH_BASE_REPOSITORY "opencpn-plugins")  # Ricks's customization
+set (CLOUDSMITH_BASE_REPOSITORY "celestial-navigation")  # without the _pi 
 
 # Set the following to use OpenCPN cloudsmith repositories instead of own repositories
 set(CLOUDSMITH_USER "opencpn")
@@ -192,6 +192,7 @@ SET(SRCS
         src/Sight.cpp
         src/icons.cpp
         src/FindBodyDialog.cpp
+        src/LunarResultsDialog.cpp
         src/FixDialog.cpp
         src/ClockCorrectionDialog.cpp
         src/geodesic.c
@@ -224,6 +225,8 @@ add_definitions(-DPLUGIN_USE_SVG)
 
 ## ----- If using JSON validation in plugin section above is needed --------##
 
+if (QT_ANDROID)
+endif (QT_ANDROID)
 
 ##=============================================================
 ## Change as required to collect all the set( headers and SRCS
@@ -241,8 +244,8 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/astrolabe)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/geomag)
 
 
-## Change target_sources to match your project needs.
-##==============================================================
+# Change target_sources to match your project needs.
+# ==============================================================
 
 target_sources(${PACKAGE_NAME} PUBLIC ${SRC} )
 
@@ -257,7 +260,7 @@ if (NOT OCPN_FLATPAK_CONFIG)
     target_link_libraries(${PACKAGE_NAME} windows::headers)
   endif (WIN32)
 
-  add_subdirectory(opencpn-libs/api-18)
+  add_subdirectory(opencpn-libs/api-${OCPN_API_VERSION_MINOR})
   target_link_libraries(${PACKAGE_NAME} ocpn::api)
 
   add_subdirectory(opencpn-libs/tinyxml)
@@ -269,7 +272,11 @@ if (NOT OCPN_FLATPAK_CONFIG)
   add_subdirectory(opencpn-libs/wxJSON)
   target_link_libraries(${PACKAGE_NAME} ocpn::wxjson)
 
-  add_subdirectory(opencpn-libs/plugin_dc)
+#  Note this is a local copy of plugin_dc from opencpn-libs,
+#  Note remove this in the future when fixes are upstreamed
+  add_subdirectory(src/plugin_dc)
+#  add_subdirectory(opencpn-libs/plugin_dc)
+
   target_link_libraries(${PACKAGE_NAME} ocpn::plugin-dc)
 
   add_subdirectory(opencpn-libs/bzip2)

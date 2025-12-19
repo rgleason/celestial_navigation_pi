@@ -35,16 +35,58 @@
 
 #include <vector>
 
+#ifdef __OCPN__ANDROID__
+#include <wx/qt/private/wxQtGesture.h>
+#endif
+
 // #include <cmath>
 using namespace std;
 
-FixDialog::FixDialog(wxWindow* parent)
-    : FixDialogBase(parent), m_fixlat(NAN), m_fixlon(NAN), m_fixerror(NAN) {
+FixDialog::FixDialog(CelestialNavigationDialog* parent)
+    : FixDialogBase(parent),
+      m_fixlat(NAN),
+      m_fixlon(NAN),
+      m_fixerror(NAN),
+      m_Parent(parent) {
   double lat, lon;
   celestial_navigation_pi_BoatPos(lat, lon);
   m_sInitialLatitude->SetValue(lat);
   m_sInitialLongitude->SetValue(lon);
+  int x, y;
+  GetTextExtent(_T("000° 00.0000' S"), &x, &y);
+  m_stLatitude->SetSizeHints(x + 20, -1);
+  m_stLongitude->SetSizeHints(x + 20, -1);
+
+#ifdef __OCPN__ANDROID__
+  GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
+  GetHandle()->grabGesture(Qt::PanGesture);
+  Connect(wxEVT_QT_PANGESTURE,
+          (wxObjectEventFunction)(wxEventFunction)&FixDialog::OnEvtPanGesture,
+          NULL, this);
+#endif
 }
+
+#ifdef __OCPN__ANDROID__
+void FixDialog::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
+  int x = event.GetOffset().x;
+  int y = event.GetOffset().y;
+
+  int dx = x - m_lastPanX;
+  int dy = y - m_lastPanY;
+
+  if (event.GetState() == GestureUpdated) {
+    wxPoint p = GetPosition();
+    wxSize s = GetSize();
+    p.x = wxMax(0, p.x + dx);
+    p.y = wxMax(0, p.y + dy);
+    p.x = wxMin(p.x, ::wxGetDisplaySize().x - s.x);
+    p.y = wxMin(p.y, ::wxGetDisplaySize().y - s.y);
+    SetPosition(p);
+  }
+  m_lastPanX = x;
+  m_lastPanY = y;
+}
+#endif
 
 double dist(wxRealPoint a, wxRealPoint b) {
   double x = a.x - b.x;
@@ -137,7 +179,7 @@ int matrix_invert3(double a[3][3]) {
   return 1;
 }
 
-void FixDialog::Update(int clock_offset, bool warnings) {
+void FixDialog::Update(int clock_offset) {
   std::list<std::vector<double> > J;
   std::list<double> R;
 
@@ -151,15 +193,13 @@ void FixDialog::Update(int clock_offset, bool warnings) {
 
   m_clock_offset = clock_offset;
   int iterations = 0;
-  std::vector<Sight> lSights =
-      ((CelestialNavigationDialog*)GetParent())->m_Sights;
 again:
-  for (Sight& s : lSights) {
+  for (Sight& s : ((CelestialNavigationDialog*)GetParent())->m_Sights) {
     if (!s.IsVisible() || s.m_Type != Sight::ALTITUDE) continue;
 
     if (s.m_ShiftNm) {
       static bool seenwarning = false;
-      if (!seenwarning && warnings) {
+      if (!seenwarning) {
         wxMessageDialog mdlg(
             this, _("Shifted sights are not used to compute a fix, \
 determine fix visually instead.\n"),
@@ -229,6 +269,16 @@ determine fix visually instead.\n"),
     R.push_back(d);
   }
 
+  /* it takes at least 2 visible sights to have a fix */
+  if (J.size() < 2) {
+    m_fixerror = NAN;
+    m_stLatitude->SetValue(_("   N/A   "));
+    m_stLongitude->SetValue(_("   N/A   "));
+    m_stFixError->SetValue(_("   N/A   "));
+    m_bGo->Disable();
+    return;
+  }
+
   /* fit to unit sphere (keep results on surface of earth) */
   {
     std::vector<double> v;
@@ -293,21 +343,16 @@ determine fix visually instead.\n"),
     for (it2 = R.begin(); it2 != R.end(); it2++) m_fixerror += (*it2) * (*it2);
     m_fixerror = sqrt(m_fixerror);
 
-    double lat = trunc(m_fixlat);
-    double latmin = fabs(60 * (m_fixlat - lat));
-    double lon = trunc(m_fixlon);
-    double lonmin = fabs(60 * (m_fixlon - lon));
-
-    m_stLatitude->SetValue(wxString::Format(_T("%.0f %.1f'"), lat, latmin));
-    m_stLongitude->SetValue(wxString::Format(_T("%.0f %.1f'"), lon, lonmin));
+    m_stLatitude->SetValue(toSDMM_PlugIn(1, m_fixlat, true));
+    m_stLongitude->SetValue(toSDMM_PlugIn(2, m_fixlon, true));
     m_stFixError->SetValue(wxString::Format(_T("%.3g"), m_fixerror));
     m_bGo->Enable();
   } else {
   fail:
     m_fixerror = NAN;
-    m_stLatitude->SetLabel(_("   N/A   "));
-    m_stLongitude->SetLabel(_("   N/A   "));
-    m_stFixError->SetLabel(_("   N/A   "));
+    m_stLatitude->SetValue(_("   N/A   "));
+    m_stLongitude->SetValue(_("   N/A   "));
+    m_stFixError->SetValue(_("   N/A   "));
     m_bGo->Disable();
   }
 
@@ -323,7 +368,4 @@ void FixDialog::OnGo(wxCommandEvent& event) {
   JumpToPosition(m_fixlat, m_fixlon, scale);
 }
 
-void FixDialog::OnClose(wxCloseEvent& event) {
-  event.Skip();
-  RequestRefresh(GetParent()->GetParent());
-}
+void FixDialog::OnClose(wxCommandEvent& event) { m_Parent->OnFixClose(); }

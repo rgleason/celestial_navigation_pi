@@ -57,10 +57,11 @@ class CelestialNavigationDialogBase : public wxDialog
 		wxButton* m_bEditSight;
 		wxToggleButton* m_tbHide;
 		wxButton* m_bDeleteSight;
-		wxButton* m_bInformation;
+		wxButton* m_bDocumentation;
 		wxButton* m_bDeleteAllSights;
 
 		// Virtual event handlers, override them in your derived class
+		virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
 		virtual void OnEditMouse( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnSightListLeftDown( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnColumnHeaderClick( wxListEvent& event ) { event.Skip(); }
@@ -73,7 +74,7 @@ class CelestialNavigationDialogBase : public wxDialog
 		virtual void OnEdit( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnHide( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDelete( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnInformation( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnDocumentation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDeleteAll( wxCommandEvent& event ) { event.Skip(); }
 
 
@@ -95,6 +96,7 @@ class SightDialogBase : public wxDialog
 	protected:
 		wxNotebook* m_notebook1;
 		wxPanel* m_panel1;
+		wxFlexGridSizer* m_fgPanelSizer;
 		wxStaticText* m_staticText1;
 		wxChoice* m_cType;
 		wxCheckBox* m_cbMagneticAzimuth;
@@ -103,15 +105,22 @@ class SightDialogBase : public wxDialog
 		wxButton* m_bFindBody;
 		wxStaticText* m_staticText3;
 		wxChoice* m_cLimb;
-		wxTextCtrl* m_tMeasurement;
+		wxStaticBoxSizer* m_sbSizerSight;
 		wxStaticText* m_staticText6;
-		wxTextCtrl* m_tMeasurementMinutes;
-		wxStaticText* m_staticText7;
-		wxTextCtrl* m_tMeasurementCertainty;
+		wxTextCtrl* m_tMeasurement;
 		wxStaticText* m_staticText8;
+		wxTextCtrl* m_tMeasurementCertainty;
 		wxBoxSizer* m_fgSizerLunar;
+		wxStaticText* m_staticText12;
 		wxTextCtrl* m_tLunarMoonAltitude;
+		wxButton* m_bFindLunarMoon;
+		wxStaticText* m_staticText121;
+		wxChoice* m_cLunarMoonLimb;
+		wxStaticText* m_staticText122;
 		wxTextCtrl* m_tLunarBodyAltitude;
+		wxButton* m_bFindLunarBody;
+		wxStaticText* m_staticText1211;
+		wxChoice* m_cLunarBodyLimb;
 		wxPanel* m_panel2;
 		wxCalendarCtrl* m_Calendar;
 		wxSpinCtrl* m_sHours;
@@ -140,14 +149,18 @@ class SightDialogBase : public wxDialog
 		wxTextCtrl* m_tEyeHeight;
 		wxStaticText* m_staticText16;
 		wxStaticText* m_staticText17;
-		wxSpinCtrl* m_sTemperature;
+		wxTextCtrl* m_tTemperature;
 		wxStaticText* m_staticText19;
 		wxStaticText* m_staticText20;
-		wxSpinCtrl* m_sPressure;
+		wxTextCtrl* m_tPressure;
 		wxStaticText* m_staticText21;
 		wxStaticText* m_staticText30;
 		wxTextCtrl* m_tIndexError;
 		wxStaticText* m_staticText31;
+		wxCheckBox* m_cbDipShort;
+		wxTextCtrl* m_tDipShortDistance;
+		wxStaticText* m_staticText40;
+		wxCheckBox* m_cbArtificialHorizon;
 		wxButton* m_bSetDefaults;
 		wxPanel* m_panel81;
 		wxTextCtrl* m_tCalculations;
@@ -157,10 +170,12 @@ class SightDialogBase : public wxDialog
 		wxButton* m_sdbSizer1Cancel;
 
 		// Virtual event handlers, override them in your derived class
+		virtual void RecomputeDMM( wxNotebookEvent& event ) { event.Skip(); }
 		virtual void Recompute( wxCommandEvent& event ) { event.Skip(); }
-		virtual void NewBody( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnFindBody( wxCommandEvent& event ) { event.Skip(); }
-		virtual void MeasurementEntered( wxCommandEvent& event ) { event.Skip(); }
+		virtual void RecomputeDMM( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnFindLunarMoon( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnFindLunarBody( wxCommandEvent& event ) { event.Skip(); }
 		virtual void RecomputeCalendar( wxCalendarEvent& event ) { event.Skip(); }
 		virtual void RecomputeSpin( wxSpinEvent& event ) { event.Skip(); }
 		virtual void RecomputeScroll( wxScrollEvent& event ) { event.Skip(); }
@@ -185,7 +200,6 @@ class DRShiftDialog : public wxDialog
 	private:
 
 	protected:
-		wxStaticText* m_staticText51;
 		wxStaticText* m_staticText211;
 		wxStaticText* m_staticText23;
 		wxStaticText* m_staticText24;
@@ -203,7 +217,7 @@ class DRShiftDialog : public wxDialog
 		wxTextCtrl* m_tShiftBearing;
 		wxCheckBox* m_cbMagneticShiftBearing;
 
-		DRShiftDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Dead Reckoning shift"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE );
+		DRShiftDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Dead Reckoning shift"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 
 		~DRShiftDialog();
 
@@ -217,6 +231,7 @@ class FindBodyDialogBase : public wxDialog
 	private:
 
 	protected:
+		wxFlexGridSizer* m_Body;
 		wxTextCtrl* m_tLatitude;
 		wxTextCtrl* m_tLongitude;
 		wxCheckBox* m_cbBoatPosition;
@@ -226,18 +241,48 @@ class FindBodyDialogBase : public wxDialog
 		wxTextCtrl* m_tIntercept;
 		wxCheckBox* m_cbTowards;
 		wxCheckBox* m_cbAway;
-		wxButton* m_bDone;
+		wxStdDialogButtonSizer* m_sFindDialogButton;
+		wxButton* m_sFindDialogButtonOK;
+		wxButton* m_sFindDialogButtonCancel;
 
 		// Virtual event handlers, override them in your derived class
 		virtual void OnUpdate( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnDone( wxCommandEvent& event ) { event.Skip(); }
+		virtual void RecomputeDMM( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnUpdateBoatPosition( wxCommandEvent& event ) { event.Skip(); }
 
 
 	public:
+		wxTextCtrl* m_tEstimatedHs;
 
-		FindBodyDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Find Celestial Body"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE );
+		FindBodyDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Find Celestial Body"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 
 		~FindBodyDialogBase();
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class LunarResultsDialogBase
+///////////////////////////////////////////////////////////////////////////////
+class LunarResultsDialogBase : public wxDialog
+{
+	private:
+
+	protected:
+		wxStaticBoxSizer* m_Lunar;
+		wxTextCtrl* m_tLDC;
+		wxTextCtrl* m_tDateTimeRevised;
+		wxTextCtrl* m_tDateTimeChange;
+		wxTextCtrl* m_tLonRevised;
+		wxTextCtrl* m_tLonError;
+		wxTextCtrl* m_tPosError;
+		wxStdDialogButtonSizer* m_sFindDialogButton;
+		wxButton* m_sFindDialogButtonOK;
+
+	public:
+
+		LunarResultsDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Lunar Results"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
+
+		~LunarResultsDialogBase();
 
 };
 
@@ -255,7 +300,7 @@ class InformationDialog : public wxDialog
 	public:
 		wxHtmlWindow* m_htmlInformation;
 
-		InformationDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 560,400 ), long style = wxDEFAULT_DIALOG_STYLE );
+		InformationDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 560,400 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 
 		~InformationDialog();
 
@@ -282,17 +327,19 @@ class FixDialogBase : public wxDialog
 		wxStaticText* m_staticText36;
 		wxComboBox* m_cbFixAlgorithm;
 		wxButton* m_bGo;
+		wxStdDialogButtonSizer* m_sdbSizer8;
+		wxButton* m_sdbSizer8OK;
 
 		// Virtual event handlers, override them in your derived class
-		virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
 		virtual void OnUpdateSpin( wxSpinEvent& event ) { event.Skip(); }
 		virtual void OnUpdate( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnGo( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnClose( wxCommandEvent& event ) { event.Skip(); }
 
 
 	public:
 
-		FixDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Fix"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE );
+		FixDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Fix"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 
 		~FixDialogBase();
 
@@ -307,6 +354,9 @@ class ClockCorrectionDialogBase : public wxDialog
 
 	protected:
 		wxStaticText* m_staticText361;
+		wxStdDialogButtonSizer* m_sdbSizer7;
+		wxButton* m_sdbSizer7OK;
+		wxButton* m_sdbSizer7Cancel;
 
 		// Virtual event handlers, override them in your derived class
 		virtual void OnUpdate( wxSpinEvent& event ) { event.Skip(); }
@@ -315,7 +365,7 @@ class ClockCorrectionDialogBase : public wxDialog
 	public:
 		wxSpinCtrl* m_sClockCorrection;
 
-		ClockCorrectionDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Clock Correction"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE );
+		ClockCorrectionDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Clock Correction"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 
 		~ClockCorrectionDialogBase();
 

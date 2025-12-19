@@ -20,6 +20,7 @@
 #include <cmath>
 #include <iomanip>
 #include <sstream>
+#include "common.h"
 
 class AltitudeTest : public ::testing::Test {
 protected:
@@ -31,29 +32,6 @@ protected:
         }
         std::cout << "Using plugin data directory: " << datadir << std::endl;
     }
-};
-
-// Helper functions
-double DegMin2DecDeg(double degrees, double minutes) {
-    double result = std::abs(degrees) + (std::abs(minutes) / 60.0);
-    return (degrees < 0 || minutes < 0) ? -result : result;
-}
-
-std::string TenthsMinutestoStr(int tenths_minutes) {
-    int degrees = tenths_minutes / 600;
-    double minutes = ((double)(tenths_minutes - degrees * 600)) / 10;
-    std::stringstream ss;
-    ss << degrees << "° " << std::fixed << std::setprecision(1) << minutes << "'";
-    return ss.str();
-}
-
-int DecDegToTenthsMinutes(double decimal_degrees) {
-    return round(decimal_degrees * 60 * 10);
-}
-
-struct degmin {
-    double deg;
-    double min;
 };
 
 static int error_ho;
@@ -150,55 +128,6 @@ static void commontest(Sight &sight, wxDateTime &datetime,
     std::cout << "Detailed Calculation String:" << std::endl;
     std::cout << sight.m_CalcStr << std::endl;
 }
-
-void report(const char *name, const char *type, std::vector<int> &vec) {
-
-    double mean = 0;
-    for (int i = 0; i < (int) vec.size(); i++) {
-        mean += vec[i];
-    }
-    mean /= vec.size() * 10;
-
-    double deviation = 0;
-    for (int i = 0; i < (int) vec.size(); i++) {
-        deviation += (((double)vec[i]) / 10.0  - mean) * (((double)vec[i] / 10.0) - mean);
-    }
-    deviation /= (vec.size() - 1);
-    deviation = sqrt(deviation);
-
-    double min = DBL_MAX;
-    double max = 0;
-    int exact = 0;
-    int overone = 0;
-    int underone = 0;
-    for (int i = 0; i < (int) vec.size(); i++) {
-        if (vec[i] == 0)
-            ++exact;
-        if (vec[i] < -1)
-            ++underone;
-        if (vec[i] > 1)
-            ++overone;
-        double value = (double)vec[i] / 10.0;
-        if (value < min)
-            min = value;
-        if (value > max)
-            max = value;
-    }
-
-    std::cout << name << " " << type << ":" << std::endl;
-    std::cout << "    number of values: " << vec.size() << std::endl;
-    std::cout << "    min difference: " << min << std::endl;
-    std::cout << "    max difference: " << max << std::endl;
-    std::cout << "    mean difference: " << mean << std::endl;
-    std::cout << "    standard deviation: " << deviation << std::endl;
-    std::cout << "    exact matches: " << exact
-              << " (" << ((exact * 100) / vec.size())<< "%)" << std::endl;
-    std::cout << "    under -0.1' matches: " << underone
-              << " (" << ((underone * 100) / vec.size()) << "%)" << std::endl;
-    std::cout << "    over 0.1' matches: " << overone
-              << " (" << ((overone * 100) / vec.size()) << "%)" << std::endl;
-}
-
 
 struct interceptsightdata {
     const char *date;
@@ -863,3 +792,158 @@ TEST_F(AltitudeTest, Stars) {
     std::cout << "============================================================================="
               << std::endl;
 };
+
+struct derivehs {
+    const char *date;
+    const char *body;
+    Sight::BodyLimb limb;
+    double temp;
+    double pres;
+    double ie;
+    double eye;
+    double dipshort;
+    const char *drlat;
+    const char *drlon;
+    double hc;
+};
+
+struct derivehs DERIVEHS_SIGHTS[] = {
+    // from "Derive Hs using iteration EXEL.xlsx"
+    { "2025-08-16 09:06:30", "Moon", Sight::LOWER, 7.0, 1021.1, 1.4, 0.0, 0, "N 43 10.0", "W 77 29 43", 59.8850416666667},
+    { "2025-10-16 09:06:30", "Jupiter", Sight::CENTER, 7.0, 1021.1, 1.4, 0.0, 0, "N 43 10.0", "W 77 29 43", 55.81429},
+    { "2025-02-17 10:00:00", "Jupiter", Sight::CENTER, 7.0, 1021.1, 1.4, 0.0, 0, "N 22 00.0", "W 223 00.0", 85.7774433333333},
+    { "2024-11-13 20:24:27", "Sun", Sight::LOWER, 6.7, 1027.4, 5.8, 2.44, 1, "N 43 14.2", "W 77 31.3", 11.9268283333333},
+    { "2024-11-13 22:07:08", "Moon", Sight::LOWER, 6.7, 1027.4, 3.2, 3.81, 0.68, "N 43 14.1", "W 77 32.1", 18.941},
+    { "2024-11-13 22:26:39", "Venus", Sight::CENTER, 6.1, 1026.4, 3.2, 3.81, 0.25, "N 43 14.1", "W 77 32.1", 12.0331033333333},
+    { "2024-11-18 22:27:10", "Capella", Sight::CENTER, 11.7, 994.2, 2.9, 4.1148, 0, "N 43 14.3", "W 077 32.0", 13.0281133333333},
+    { "2025-04-04 17:55:34", "Moon", Sight::UPPER, 10, 1010.0, 3.4, 1.9812, 0.78, "N 43 14.0", "W 077 32.1", 27.386445},
+    { "2025-04-21 00:32:52", "Jupiter", Sight::CENTER, 10, 1010, 3.5, 3.9624, 1.08, "43 14.3 N", "077 32.1W", 35.843295},
+    { "2025-07-23 01:29:57", "Deneb", Sight::CENTER, 19.4, 1022.0, -4.1, 2.7432, 0.8, "43 15.7 N", "077 27.0 W", 45.0727466666667},
+    { "2025-07-23 01:41:26", "Dubhe", Sight::CENTER, 19.4, 1022.0, -4.1, 2.7432, 0, "43 15.7 N", "077 27.0 W", 40.3349983333333},
+    { "2025-04-18 00:12:07", "Sirius", Sight::CENTER, 9.4, 1021.7, -3.1, 3.048, 2.2, "42 52.4 N", "076 56.9 W", 23.9597933333333},
+    { "2025-11-05 10:00:00", "Saturn", Sight::CENTER, 21.1, 1015.9, 0.1, 2.4384, 0, "20S", "179 45 E", 66.4760383333333},
+    { "2025-11-05 10:00:00", "Moon", Sight::LOWER, 21.1, 1015.9, 0.1, 2.4384, 0, "20S", "179 45 E", 44.9147716666667},
+    { "2025-08-09 07:00:00", "Saturn", Sight::CENTER, 10.0, 1010, 0.1, 2.44, 0, "10S", "78 30 W", 70.58764},
+    { "2025-08-09 07:00:00", "Moon", Sight::LOWER, 10.0, 1010, 0.1, 2.44, 0, "10S", "78 30 W", 64.6055233333333},
+    { "2025-07-20 18:17:21", "Sun", Sight::UPPER, 10, 1010, 1.5, 3.5, 0, "23N", "90W", 86.4419283333333},
+    { "2025-07-20 10:00:00", "Sun", Sight::UPPER, 10, 1010, 1.5, 3.5, 0, "23S", "103E", 7.91003833333333},
+    { "2025-11-06 18:30:00", "Sun", Sight::LOWER, 7.8, 1012.5, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 26.6326883333333},
+    { "2025-11-06 18:30:00", "Sun", Sight::LOWER, 7.8, 1012.5, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 26.6326883333333},
+    { "2025-11-06 19:00:00", "Sun", Sight::UPPER, 7.8, 1012.5, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 23.91599},
+    { "2025-11-06 12:20:00", "Sun", Sight::UPPER, 7.8, 1012.5, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 3.87972833333333},
+    { "2025-11-05 14:17:30", "Sun", Sight::LOWER, 7.8, 1012.5, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 20.9787916666667},
+    { "2025-11-05 17:00:00", "Moon", Sight::UPPER, 21.12, 1015.9, -3.5, 2.4384, 0, "N 14", "W 258 15.7", 83.2898816666667},
+    { "2025-07-24 01:30:00", "Vega", Sight::CENTER, 15, 1013, 3.5, 3.0, 0, "N 39", "W 60", 78.3977483333333},
+    { "2025-04-21 00:00:00", "Mars", Sight::CENTER, 15, 1013, 3.5, 3.0, 0, "N 00 0.0", "W 00 0.0", 4.26678833333333},
+    { "2025-03-11 17:30:00", "Achernar", Sight::CENTER, 10, 1010, 0.5, 3.0, 0, "N 16", "E 0 5.0", 6.93904},
+    { "2025-03-11 17:40:00", "Achernar", Sight::CENTER, 10, 1010, 0.5, 3.0, 0, "N 16", "W 14.0", 11.007635},
+    { "2025-03-11 17:40:00", "Achernar", Sight::CENTER, 10, 1010, 0.5, 3.0, 0, "N 16 0", "W 30 0", 15.016445},
+    { "2025-11-08 16:50:00", "Jupiter", Sight::CENTER, 10, 1010, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 4.52166666666667},
+    { "2025-11-07 21:20:00", "Sun", Sight::LOWER, 10, 998.6, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 4.76748666666667},
+    { "2025-11-07 20:53:02", "Venus", Sight::CENTER, 10, 999.5, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 4.41685333333333},
+    { "2025-11-07 20:56:55", "Venus", Sight::CENTER, 10, 999.5, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 3.74543166666667},
+    { "2025-11-07 21:01:36", "Capella", Sight::CENTER, 10, 999.5, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 2.03007333333333},
+    { "2025-11-07 21:11:32", "Capella", Sight::CENTER, 10, 999.5, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 2.599235},
+    { "2025-11-07 21:10:52", "Fomalhaut", Sight::CENTER, 10, 999.5, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 0.395866666666667},
+    { "2025-11-08 05:48:32", "Sirius", Sight::CENTER, 12.2, 999.0, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 17.63997},
+    { "2025-11-08 05:55:20", "Rigel", Sight::CENTER, 12.2, 999.0, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 35.5562366666667},
+    { "2025-11-08 06:00:57", "Regulus", Sight::CENTER, 12.2, 999.0, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 6.62326833333333},
+    { "2025-11-08 06:04:24", "Procyon", Sight::CENTER, 12.2, 999.0, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 29.3258283333333},
+    { "2025-11-08 06:09:03", "Pollux", Sight::CENTER, 12.2, 999.0, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 44.184875},
+    { "2025-11-08 06:13:22", "Polaris", Sight::CENTER, 12.2, 999.0, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 43.76672},
+    { "2025-11-08 06:16:53", "Deneb", Sight::CENTER, 12.2, 999.0, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 16.24884},
+    { "2025-11-08 06:20:11", "Capella", Sight::CENTER, 12.2, 999.0, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 79.365105},
+    { "2025-11-08 06:24:07", "Betelgeuse", Sight::CENTER, 12.2, 999.0, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 48.978545},
+    { "2025-11-08 06:29:05", "Aldebaran", Sight::CENTER, 12.2, 999.0, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 63.3477266666667},
+    { "2025-11-08 06:33:51", "Jupiter", Sight::CENTER, 12.2, 999.0, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 43.1325983333333},
+    { "2025-11-08 06:38:15", "Moon", Sight::LOWER, 12.2, 999.0, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 71.233485},
+    { "2025-11-08 06:43:17", "Moon", Sight::UPPER, 12.2, 999.0, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 71.8193316666667},
+    { "2025-11-08 07:08:16", "Saturn", Sight::CENTER, 12.2, 999.0, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 4.16166},
+    { "2025-11-09 14:35:55", "Sun", Sight::LOWER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 21.9874666666667},
+    { "2025-11-09 14:36:42", "Moon", Sight::LOWER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 21.8328},
+    { "2025-11-09 14:37:10", "Venus", Sight::CENTER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 32.2568916666667},
+    { "2025-11-09 14:37:42", "Jupiter", Sight::CENTER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 25.8975583333333},
+    { "2025-11-09 14:38:35", "Antares", Sight::CENTER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 3.12469166666667},
+    { "2025-11-09 14:39:00", "Arcturus", Sight::CENTER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 59.119235},
+    { "2025-11-09 14:39:48", "Capella", Sight::CENTER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 17.701375},
+    { "2025-11-09 14:40:16", "Deneb", Sight::CENTER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 13.8096283333333},
+    { "2025-11-09 14:41:02", "Polaris", Sight::CENTER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 42.6524033333333},
+    { "2025-11-09 14:41:22", "Pollux", Sight::CENTER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 29.074485},
+    { "2025-11-09 14:41:49", "Procyon", Sight::CENTER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 13.130945},
+    { "2025-11-09 14:42:16", "Regulus", Sight::CENTER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 43.6238916666667},
+    { "2025-11-09 14:43:12", "Spica", Sight::CENTER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 34.8789266666667},
+    { "2025-11-09 14:43:34", "Vega", Sight::CENTER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 27.2752416666667},
+    { "2025-11-09 14:44:13", "Mars", Sight::CENTER, 4.0, 1013, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 11.3680433333333},
+    { "2025-11-09 18:55:57", "Sun", Sight::UPPER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 23.5465316666667},
+    { "2025-11-09 18:56:56", "Venus", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 22.1529733333333},
+    { "2025-11-09 18:57:27", "Mars", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 24.1147116666667},
+    { "2025-11-09 18:59:58", "Alioth", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 48.8101166666667},
+    { "2025-11-09 19:00:23", "Alkaid", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 55.72007},
+    { "2025-11-09 19:01:09", "Alphecca", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 65.0334133333333},
+    { "2025-11-09 19:01:30", "Alpheratz", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 9.534165},
+    { "2025-11-09 19:01:52", "Altair", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 40.6502733333333},
+    { "2025-11-09 19:02:20", "Antares", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 19.7927383333333},
+    { "2025-11-09 19:04:39", "Denebola", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 16.8398333333333},
+    { "2025-11-09 19:05:09", "Dubhe", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 36.278085},
+    { "2025-11-09 19:05:37", "Eltanin", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 78.7701683333333},
+    { "2025-11-09 19:06:01", "Enif", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 22.7117666666667},
+    { "2025-11-09 19:06:58", "Kaus Australis", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 10.7340233333333},
+    { "2025-11-09 19:07:20", "Kochab", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 55.101515},
+    { "2025-11-09 19:07:40", "Markab", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 11.9475416666667},
+    { "2025-11-09 19:08:02", "Menkent", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 0.26226},
+    { "2025-11-09 19:09:11", "Mirfak", Sight::CENTER, 4.0, 1007, 1.5, 2.37744, 0, "N 43 10.0", "W 77 29.7", 6.15948833333333},
+    { "2025-11-10 12:35:16", "Sun", Sight::LOWER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 5.43033},
+    { "2025-11-10 12:35:48", "Sun", Sight::UPPER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 5.51450333333333},
+    { "2025-11-10 12:35:16", "Moon", Sight::UPPER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 51.289955},
+    { "2025-11-10 12:37:02", "Moon", Sight::LOWER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 51.2130583333333},
+    { "2025-11-10 12:37:22", "Venus", Sight::CENTER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 18.098365},
+    { "2025-11-10 12:37:48", "Jupiter", Sight::CENTER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 46.912595},
+    { "2025-11-10 12:38:46", "Aldebaran", Sight::CENTER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 9.28121333333333},
+    { "2025-11-10 12:39:21", "Arcturus", Sight::CENTER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 40.4160633333333},
+    { "2025-11-10 12:39:45", "Betelgeuse", Sight::CENTER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 17.2804766666667},
+    { "2025-11-10 12:40:10", "Capella", Sight::CENTER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 33.7548483333333},
+    { "2025-11-10 12:40:27", "Deneb", Sight::CENTER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 2.99768666666667},
+    { "2025-11-10 12:41:12", "Pollux", Sight::CENTER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 50.196245},
+    { "2025-11-10 12:41:40", "Procyon", Sight::CENTER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 33.405355},
+    { "2025-11-10 12:42:11", "Regulus", Sight::CENTER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 57.370255},
+    { "2025-11-10 12:42:39", "Sirius", Sight::CENTER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 7.80996},
+    { "2025-11-10 12:42:58", "Spica", Sight::CENTER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 25.2195166666667},
+    { "2025-11-10 12:42:58", "Vega", Sight::CENTER, 0, 1013, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", 10.2589416666667},
+// skip negative Hc
+//  { "2025-11-11 23:04:15", "Moon", Sight::LOWER, 2, 1010, 5.0, 3.1, 0, "N 43 10.0", "W 77 29.7", -28.57},
+    { "2025-04-23 20:00:00", "Sun", Sight::UPPER, 10, 1010, 1.5, 3.5, 0, "N 05 36.0", "W 96 47.0", 65.5652666666667},
+};
+
+TEST_F(AltitudeTest, DeriveHs) {
+
+    int count = (int)(sizeof(DERIVEHS_SIGHTS) / sizeof(DERIVEHS_SIGHTS[0]));
+    for (int i = 0; i < count; i++) {
+        struct derivehs data = DERIVEHS_SIGHTS[i];
+
+        wxDateTime datetime;
+        ASSERT_TRUE(datetime.ParseDateTime(data.date)) << "Failed to parse datetime";
+
+        Sight sight(Sight::ALTITUDE, data.body, data.limb, datetime, 0, 0, 1);
+        sight.m_IndexError = data.ie;
+        sight.m_EyeHeight = data.eye;
+        sight.m_Temperature = data.temp;
+        sight.m_Pressure = data.pres;
+        if (data.dipshort != 0) {
+            sight.m_DipShort = true;
+            sight.m_DipShortDistance = data.dipshort;
+        }
+        sight.m_DRLat = fromDMM_Plugin(data.drlat);
+        sight.m_DRLon = fromDMM_Plugin(data.drlon);
+        sight.Recompute(0);
+
+        std::cout << "=== " << data.body << " (line " << i << ", date " << data.date << ") ==="
+                  << std::endl << std::endl;
+
+        const double EPSILON = 10e-7;
+        double hs, error_hs, error, error_error;
+        sight.EstimateHs(data.hc, &hs, &error);
+
+        EXPECT_NEAR(error, 0, EPSILON)
+            << "Error differs from 0 by " << error;
+    }
+}
