@@ -27,6 +27,7 @@ src/transform_star.cpp
 src/epv00.cpp
 src/celestial_navigation_pi.cpp
 src/moon.cpp
+src/OcpnApiCompat.h
 src/celestial_navigation_pi.h
 src/CelestialNavigationDialog.h
 src/HorizonEventDialog.h
