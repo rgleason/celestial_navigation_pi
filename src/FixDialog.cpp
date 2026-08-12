@@ -195,7 +195,9 @@ void FixDialog::Update(int clock_offset) {
   int iterations = 0;
 again:
   for (Sight& s : ((CelestialNavigationDialog*)GetParent())->m_Sights) {
-    if (!s.IsVisible() || s.m_Type != Sight::ALTITUDE) continue;
+    if (!s.IsVisible() ||
+        (s.m_Type != Sight::ALTITUDE && s.m_Type != Sight::HORIZON))
+      continue;
 
     if (s.m_ShiftNm) {
       static bool seenwarning = false;

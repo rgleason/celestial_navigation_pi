@@ -12,6 +12,8 @@ src/astrolabe/util.cpp
 src/astrolabe/vsop87d.cpp
 src/geomag/geomag.c
 src/CelestialNavigationDialog.cpp
+src/HorizonEventDialog.cpp
+src/TimeStatus.cpp
 src/CelestialNavigationUI.cpp
 src/SightDialog.cpp
 src/Sight.cpp
@@ -27,6 +29,8 @@ src/celestial_navigation_pi.cpp
 src/moon.cpp
 src/celestial_navigation_pi.h
 src/CelestialNavigationDialog.h
+src/HorizonEventDialog.h
+src/TimeStatus.h
 src/CelestialNavigationUI.h
 src/ClockCorrectionDialog.h
 src/FindBodyDialog.h

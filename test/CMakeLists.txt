@@ -25,10 +25,13 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml ${CMAKE_CURRENT_BINARY
 set(SRC
     altitude_tests.cpp
     lunar_tests.cpp
+    horizon_event_tests.cpp
+    time_status_tests.cpp
     common.cpp
     mock_plugin_api.cpp
     mock_plugin_impl.cpp
     ${CMAKE_SOURCE_DIR}/src/Sight.cpp
+    ${CMAKE_SOURCE_DIR}/src/TimeStatus.cpp
     ${CMAKE_SOURCE_DIR}/src/celestial_navigation_pi.cpp
     ${CMAKE_SOURCE_DIR}/src/astrolabe/calendar.cpp
     ${CMAKE_SOURCE_DIR}/src/astrolabe/dicts.cpp
@@ -41,6 +44,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/astrolabe/vsop87d.cpp
     ${CMAKE_SOURCE_DIR}/src/transform_star.cpp
     ${CMAKE_SOURCE_DIR}/src/CelestialNavigationDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/HorizonEventDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/ClockCorrectionDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/CelestialNavigationUI.cpp
     ${CMAKE_SOURCE_DIR}/src/FindBodyDialog.cpp

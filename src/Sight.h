@@ -25,6 +25,9 @@
  *
  */
 
+#ifndef _CELESTIAL_NAVIGATION_SIGHT_H_
+#define _CELESTIAL_NAVIGATION_SIGHT_H_
+
 #include <list>
 #include "pidc.h"
 
@@ -54,11 +57,13 @@ WX_DECLARE_LIST(wxRealPoint, wxRealPointList);
 //    Sight
 //----------------------------------------------------------------------------
 
-const wxString SightType[] = {_("Altitude"), _("Azimuth"), _("Lunar")};
+const wxString SightType[] = {_("Altitude"), _("Azimuth"), _("Lunar"),
+                              _("Horizon")};
 
 class Sight : public wxObject {
 public:
-  enum Type { ALTITUDE, AZIMUTH, LUNAR };
+  enum Type { ALTITUDE, AZIMUTH, LUNAR, HORIZON };
+  enum HorizonEvent { SUNRISE, SUNSET };
   enum BodyLimb {
     LOWER = 0,
     LUNAR_NEAR = 0,
@@ -67,7 +72,7 @@ public:
     UPPER = 2
   };
 
-  Sight() {}
+  Sight();
   Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
         double timecertainty, double measurement, double measurementcertainty);
 
@@ -88,9 +93,17 @@ public:
   void RecomputeAltitude();
   void RecomputeAzimuth();
   void RecomputeLunar();
+  void RecomputeHorizon();
 
   void RebuildPolygonsAltitude();
   void RebuildPolygonsAzimuth();
+  void RebuildPolygonsHorizon();
+
+  double HorizonTrueBearing() const;
+  bool HorizonEstimatedPosition(double* lat, double* lon);
+  double HorizonEstimateUncertaintyNm() const;
+  wxString HorizonEventName() const;
+  wxString HorizonMeasurementText() const;
 
   bool m_bVisible;  // should this sight be drawn?
   bool m_bCalculated;
@@ -131,7 +144,7 @@ public:
                     double* rad, double* dist);
   void AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
                        double* hc, double* zn);
-  void EstimateHs(double hc, double *hs, double *error);
+  void EstimateHs(double hc, double* hs, double* error);
   std::list<wxRealPoint> GetPoints();
 
   wxString m_CalcStr;
@@ -143,6 +156,22 @@ public:
 
   /* for azimuth */
   bool m_bMagneticNorth;  // if azimuth angle is in magnetic coordinates
+
+  /* for sunrise/sunset horizon events */
+  HorizonEvent m_HorizonEvent;
+  bool m_HorizonBearingProvided;
+  bool m_HorizonBearingMagnetic;
+  double m_HorizonBearing;
+  double m_HorizonVariation;            // degrees, east positive
+  double m_HorizonDeviation;            // degrees, east positive
+  double m_HorizonBearingUncertainty;   // degrees
+  double m_HorizonAltitudeUncertainty;  // arcminutes
+  int m_HorizonQuality;                 // 0 clear, 1 hazy, 2 obstructed
+  wxString m_HorizonTimeSource;
+  bool m_HorizonEstimateValid;
+  double m_HorizonEstimateLat;
+  double m_HorizonEstimateLon;
+  double m_HorizonEstimateRadiusNm;
 
   /* for lunar */
   long m_TimeCorrection;
@@ -189,3 +218,5 @@ private:
 
 double resolve_heading(double heading);
 double resolve_heading_positive(double heading);
+
+#endif

@@ -75,9 +75,9 @@ set(LONG_DESCRIPTION
 
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "4")
-set(VERSION_PATCH "66")
+set(VERSION_PATCH "67")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "19/12/2025" )# DD/MM/YYYY format
+set(VERSION_DATE  "12/08/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -187,6 +187,8 @@ SET(SRCS
         src/astrolabe/vsop87d.cpp
         src/geomag/geomag.c
         src/CelestialNavigationDialog.cpp
+        src/HorizonEventDialog.cpp
+        src/TimeStatus.cpp
         src/CelestialNavigationUI.cpp
         src/SightDialog.cpp
         src/Sight.cpp
@@ -205,6 +207,8 @@ SET(SRCS
 SET(HDRS
         src/celestial_navigation_pi.h
         src/CelestialNavigationDialog.h
+        src/HorizonEventDialog.h
+        src/TimeStatus.h
         src/CelestialNavigationUI.h
         src/ClockCorrectionDialog.h
         src/FindBodyDialog.h

@@ -1,26 +1,36 @@
 Celestial Navigation Plugin for OpenCPN
 =======================================
 
-automatically perform sight reductions, and plot position from celestial sights.
+Perform sight reductions and plot positions from celestial observations.
 
-Source Repository: https://github.com/seandepagnier/celestial_navigation_pi
-Maintainence Repository: https://github.com/rgleason/celestial_navigation_pi
-Please make PR's to both repositories. Thank you.
+This maintained fork adds:
+
+* a time-integrity panel showing local, UTC, GNSS/NMEA and chrony status;
+* an optional persistent show/hide control for the time panel; and
+* observed sunrise/sunset horizon events, with optional magnetic or true
+  bearing, magnetic variation, compass deviation and uncertainty estimates.
+
+Maintained fork: https://github.com/pob220/celestial_navigation_pi
+
+Upstream maintenance repository:
+https://github.com/rgleason/celestial_navigation_pi
+
+Original source repository:
+https://github.com/seandepagnier/celestial_navigation_pi
 
 Compiling
 =========
 
-* git clone git://github.com/seandepagnier/celestial_navigation_pi.git
+* `git clone --recurse-submodules https://github.com/pob220/celestial_navigation_pi.git`
 
 Under windows, you must find the file "opencpn.lib" (Visual Studio) or "libopencpn.dll.a" (mingw) which is built in the build directory after compiling opencpn.  This file must be copied to the plugin directory.
 
 Build as normally:
 
-* cd ..
-* cd build
-* cmake ..
-* make
-* make install
+* `mkdir build && cd build`
+* `cmake ..`
+* `cmake --build .`
+* `cmake --install .`
 
 License
 =======

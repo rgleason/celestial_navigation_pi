@@ -37,6 +37,7 @@
 #include "ClockCorrectionDialog.h"
 
 #include <vector>
+#include <wx/timer.h>
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
@@ -62,9 +63,16 @@ private:
   void RebuildList();
   void UpdateButtons();  // Correct button state
   void UpdateFix();
+  void BuildTimeIntegrityPanel(bool visible);
+  void SetTimeIntegrityVisible(bool visible, bool resize);
+  void UpdateTimeIntegrityPanel();
+  void QueryChrony();
+  void OnTimeTimer(wxTimerEvent& event);
+  void OnTimeIntegrityToggle(wxCommandEvent& event);
 
   // event handlers
   void OnNew(wxCommandEvent& event);
+  void OnHorizonEvent(wxCommandEvent& event);
   void OnDuplicate(wxCommandEvent& event);
   void OnEdit();
   void OnEditMouse(wxMouseEvent& event) { OnEdit(); }
@@ -85,6 +93,7 @@ private:
   void OnEdit(wxListEvent& event) { OnEdit(); }
   void OnColumnHeaderClick(wxListEvent& event);
   void OnSightSelected(wxListEvent& event);
+  wxString CurrentTimeCaptureSummary();
 #ifdef __OCPN__ANDROID__
   void OnEvtPanGesture(wxQT_PanGestureEvent& event);
 #endif
@@ -95,6 +104,20 @@ private:
   celestial_navigation_pi* m_Plugin;
   wxString m_sights_path;
   int m_ClockCorrection;
+
+  wxStaticText* m_localTime;
+  wxStaticText* m_utcTime;
+  wxPanel* m_timeIntegrityPanel;
+  wxToggleButton* m_timeIntegrityToggle;
+  wxStaticText* m_gnssTime;
+  wxStaticText* m_gnssDifference;
+  wxStaticText* m_systemTimeStatus;
+  wxStaticText* m_sightCorrection;
+  wxButton* m_horizonEventButton;
+  wxTimer m_timeTimer;
+  int m_chronyPollTicks;
+  ChronyTrackingInfo m_chronyTracking;
+  bool m_chronyAvailable;
 
   wxPoint m_startPos;
   wxPoint m_startMouse;

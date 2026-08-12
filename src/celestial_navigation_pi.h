@@ -35,6 +35,7 @@
 
 #include "ocpn_plugin.h"
 #include "pidc.h"
+#include "TimeStatus.h"
 
 //----------------------------------------------------------------------------------------------------------
 //    The PlugIn Class Definition
@@ -79,6 +80,8 @@ public:
 
   static wxString StandardPath();
   void SetPositionFixEx(PlugIn_Position_Fix_Ex& pfix);
+  void SetNMEASentence(wxString& sentence);
+  GnssTimeSnapshot GetGnssTimeSnapshot() const;
   void SetCursorLatLon(double lat, double lon);
   void SetPluginMessage(wxString& message_id, wxString& message_body);
   void OnDialogClose();
@@ -88,6 +91,7 @@ private:
   int m_leftclick_tool_id;
 
   CelestialNavigationDialog* m_pCelestialNavigationDialog;
+  GnssTimeMonitor m_gnssTime;
 };
 
 extern void celestial_navigation_pi_BoatPos(double& lat, double& lon);

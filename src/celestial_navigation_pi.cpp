@@ -121,7 +121,7 @@ int celestial_navigation_pi::Init(void) {
   m_pCelestialNavigationDialog = NULL;
 
   return (WANTS_OVERLAY_CALLBACK | WANTS_OPENGL_OVERLAY_CALLBACK |
-          WANTS_NMEA_EVENTS |
+          WANTS_NMEA_EVENTS | WANTS_NMEA_SENTENCES |
           //            WANTS_CURSOR_LATLON       |
           WANTS_TOOLBAR_CALLBACK | WANTS_PLUGIN_MESSAGING |
           INSTALLS_TOOLBAR_TOOL);
@@ -285,6 +285,14 @@ static double s_boat_lat, s_boat_lon;
 void celestial_navigation_pi::SetPositionFixEx(PlugIn_Position_Fix_Ex& pfix) {
   s_boat_lat = pfix.Lat;
   s_boat_lon = pfix.Lon;
+}
+
+void celestial_navigation_pi::SetNMEASentence(wxString& sentence) {
+  m_gnssTime.Update(sentence);
+}
+
+GnssTimeSnapshot celestial_navigation_pi::GetGnssTimeSnapshot() const {
+  return m_gnssTime.Snapshot();
 }
 
 void celestial_navigation_pi::SetCursorLatLon(double lat, double lon) {}
