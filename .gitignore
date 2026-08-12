@@ -4,3 +4,4 @@ po/POTFILES.in.test
 temp
 tmp
 master.zip
+build-eclipse/
