@@ -1,0 +1,8 @@
+format=celestial-eclipse-data-pack-v1
+file=de440s.bsp
+bytes=32726016
+sha256=c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2
+source=NASA/JPL/NAIF DE440 short planetary ephemeris
+coverage_start=1849-12-26
+coverage_end=2150-01-22
+runtime_network_access=none

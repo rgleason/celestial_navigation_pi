@@ -1,7 +1,11 @@
 #include "eclipse/besselian.h"
 #include "eclipse/astronomy.h"
+#include "eclipse/engine.h"
+#include "eclipse/data_pack.h"
+#include "eclipse/geometry.h"
 #include "eclipse/spk.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
@@ -18,6 +22,13 @@ void ExpectNear(const std::string& label, double actual, double expected,
     std::cerr << "FAIL " << label << ": expected " << expected << " +/- "
               << tolerance << ", got " << actual << " (error " << error
               << ")\n";
+    ++failures;
+  }
+}
+
+void ExpectTrue(const std::string& label, bool value) {
+  if (!value) {
+    std::cerr << "FAIL " << label << '\n';
     ++failures;
   }
 }
@@ -60,6 +71,13 @@ void TestGreatestEclipseCentralLine() {
 void TestOptionalDe440Kernel() {
   const char* path = std::getenv("ECLIPSE_DE440_PATH");
   if (!path || !*path) return;
+  const eclipse::DataPackStatus data_status = eclipse::VerifyDe440s(path);
+  if (!data_status.valid) {
+    std::cerr << "FAIL verifying DE440s data pack: " << data_status.error
+              << '\n';
+    ++failures;
+    return;
+  }
   eclipse::SpkKernel kernel;
   std::string error;
   if (!kernel.Open(path, &error)) {
@@ -131,6 +149,117 @@ void TestOptionalDe440Kernel() {
              25.0 + 30.3 / 60.0, 0.003);
   ExpectNear("DE440 2027 greatest longitude", shadow_axis.longitude_deg,
              33.0 + 11.0 / 60.0, 0.004);
+
+  eclipse::EclipseEngine engine;
+  if (!engine.OpenEphemeris(path, &error)) {
+    std::cerr << "FAIL engine opening DE440: " << error << '\n';
+    ++failures;
+    return;
+  }
+
+  // Verify independent event discovery. NASA's greatest-eclipse TT is
+  // 10:07:49.4 and the reference Delta-T is 71.7 seconds.
+  eclipse::CalendarDateTime start_date;
+  start_date.year = 2027;
+  eclipse::CalendarDateTime end_date;
+  end_date.year = 2028;
+  double start_jd = 0.0;
+  double end_jd = 0.0;
+  if (!eclipse::CalendarToJulianDate(start_date, &start_jd, &error) ||
+      !eclipse::CalendarToJulianDate(end_date, &end_jd, &error)) {
+    std::cerr << "FAIL converting regression dates: " << error << '\n';
+    ++failures;
+    return;
+  }
+  std::vector<eclipse::EclipseEvent> events;
+  if (!engine.FindEvents(start_jd, end_jd, &events, &error, 71.7)) {
+    std::cerr << "FAIL discovering 2027 eclipses: " << error << '\n';
+    ++failures;
+    return;
+  }
+  ExpectTrue("two eclipses discovered in 2027", events.size() == 2u);
+  if (events.size() == 2u) {
+    ExpectTrue("February 2027 eclipse is annular",
+               events[0].type == eclipse::kAnnularEclipse);
+    ExpectTrue("August 2027 eclipse is total",
+               events[1].type == eclipse::kTotalEclipse);
+    ExpectNear("2027 greatest TT", events[1].maximum_tt_jd,
+               2461619.922099537, 3.0 / 86400.0);
+  }
+
+  // NASA's published path row at 10:00 UT. The limits in the table are
+  // rounded to 0.1 arcminute and its conventional lunar-radius corrections
+  // differ slightly from a physical cone, so sub-kilometre tolerances are
+  // neither meaningful nor expected here.
+  const double row_tt = 2461619.5 + (10.0 + 71.7 / 3600.0) / 24.0;
+  eclipse::ShadowFootprint footprint;
+  if (!engine.Footprint(row_tt, 71.7, 7200, &footprint, &error)) {
+    std::cerr << "FAIL evaluating NASA 10:00 path row: " << error << '\n';
+    ++failures;
+    return;
+  }
+  eclipse::GeoPoint before;
+  eclipse::GeoPoint after;
+  eclipse::SolarLunarState adjacent_state;
+  eclipse::EarthOrientation adjacent_orientation;
+  if (!engine.State(row_tt - 1.0 / 86400.0, 71.7, &adjacent_state,
+                    &adjacent_orientation, &error) ||
+      !eclipse::ShadowAxisPosition(adjacent_state, adjacent_orientation,
+                                   eclipse::ReferenceEllipsoid(), &before) ||
+      !engine.State(row_tt + 1.0 / 86400.0, 71.7, &adjacent_state,
+                    &adjacent_orientation, &error) ||
+      !eclipse::ShadowAxisPosition(adjacent_state, adjacent_orientation,
+                                   eclipse::ReferenceEllipsoid(), &after)) {
+    std::cerr << "FAIL evaluating adjacent 10:00 axes: " << error << '\n';
+    ++failures;
+    return;
+  }
+  eclipse::GeoPoint north;
+  eclipse::GeoPoint south;
+  if (!eclipse::SelectCrossTrackLimits(footprint, before, after,
+                                        &north, &south)) {
+    std::cerr << "FAIL selecting 10:00 path limits\n";
+    ++failures;
+    return;
+  }
+  if (north.latitude_deg < south.latitude_deg) std::swap(north, south);
+  ExpectNear("2027 10:00 north latitude", north.latitude_deg,
+             27.0 + 51.4 / 60.0, 0.006);
+  ExpectNear("2027 10:00 north longitude", north.longitude_deg,
+             31.0 + 44.0 / 60.0, 0.006);
+  ExpectNear("2027 10:00 south latitude", south.latitude_deg,
+             25.0 + 55.3 / 60.0, 0.006);
+  ExpectNear("2027 10:00 south longitude", south.longitude_deg,
+             30.0 + 18.2 / 60.0, 0.006);
+  ExpectNear("2027 10:00 centre latitude", footprint.axis.latitude_deg,
+             26.0 + 53.3 / 60.0, 0.006);
+  ExpectNear("2027 10:00 centre longitude", footprint.axis.longitude_deg,
+             31.0 + 0.8 / 60.0, 0.006);
+  ExpectNear("2027 10:00 path width",
+             eclipse::SurfaceDistanceKm(north, south), 257.0, 1.0);
+
+  // Local circumstances at NASA's greatest-eclipse location. Published
+  // duration is 6m22.6s; the spherical-limb solution agrees within a second.
+  eclipse::EclipseEvent august;
+  august.type = eclipse::kTotalEclipse;
+  august.maximum_tt_jd = 2461619.9221;
+  august.delta_t_seconds = 71.7;
+  eclipse::LocalContacts contacts;
+  if (!engine.SolveLocalContacts(august,
+          eclipse::GeoPoint(25.0 + 30.3 / 60.0,
+                            33.0 + 11.0 / 60.0),
+          0.0, &contacts, &error)) {
+    std::cerr << "FAIL solving local contacts: " << error << '\n';
+    ++failures;
+    return;
+  }
+  ExpectTrue("2027 greatest location is total",
+             contacts.type == eclipse::kTotalEclipse);
+  ExpectNear("2027 central duration", contacts.central_duration_seconds,
+             382.6, 1.0);
+  ExpectNear("2027 local maximum UT",
+             contacts.maximum.tt_jd - 71.7 / 86400.0,
+             2461619.921269676, 1.0 / 86400.0);
 }
 
 }  // namespace

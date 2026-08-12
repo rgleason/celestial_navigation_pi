@@ -22,8 +22,11 @@ set_target_properties(eclipse_erfa PROPERTIES
 add_library(eclipse_core STATIC
   src/astronomy.cpp
   src/besselian.cpp
+  src/data_pack.cpp
+  src/engine.cpp
   src/geometry.cpp
   src/spk.cpp
+  src/time.cpp
 )
 add_library(celestial::eclipse_core ALIAS eclipse_core)
 
@@ -56,6 +59,7 @@ if(ECLIPSE_BUILD_TESTS)
   enable_testing()
   add_executable(eclipse_core_tests tests/besselian_tests.cpp)
   target_sources(eclipse_core_tests PRIVATE tests/geometry_tests.cpp)
+  target_sources(eclipse_core_tests PRIVATE tests/time_tests.cpp)
   target_link_libraries(eclipse_core_tests PRIVATE celestial::eclipse_core)
   target_compile_features(eclipse_core_tests PRIVATE cxx_std_11)
   add_test(NAME eclipse_core_tests COMMAND eclipse_core_tests)

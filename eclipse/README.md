@@ -9,6 +9,13 @@ eclipse of 2 August 2027 as a terrestrial-geometry reference. Production
 events are derived independently from the installed, checksum-verified DE440
 offline data pack.
 
+See [DATA.md](DATA.md) for the exact offline pack, integrity checks and storage
+budget. The standalone tool can verify a staged kernel with:
+
+```sh
+eclipse-cli verify-data /path/to/de440s.bsp
+```
+
 Build and test:
 
 ```sh
@@ -22,4 +29,3 @@ Reference source:
 - NASA/GSFC, Fred Espenak, *Besselian Elements for the Total Solar Eclipse of
   2027 Aug 02*.
   <https://eclipse.gsfc.nasa.gov/SEbeselm/SEbeselm2001/SE2027Aug02Tbeselm.html>
-
