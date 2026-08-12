@@ -29,7 +29,7 @@
 #include "CelestialNavigationDialog.h"
 #include "FixDialog.h"
 
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 #include "Sight.h"
 #include "celestial_navigation_pi.h"
 

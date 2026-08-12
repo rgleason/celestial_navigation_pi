@@ -57,7 +57,7 @@ typedef void (__stdcall* _GLUfuncptr)();
 #include "linmath.h"
 
 #include "TexFont.h"
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 
 #ifdef ocpnUSE_GL
 #include <wx/glcanvas.h>

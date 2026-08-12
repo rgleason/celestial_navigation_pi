@@ -15,7 +15,7 @@
 #include "wx/tokenzr.h"
 
 #include <gtest/gtest.h>
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 #include "Sight.h"
 #include <cmath>
 #include <iomanip>

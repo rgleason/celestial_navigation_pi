@@ -34,7 +34,7 @@
 #include <memory>
 #include <string>
 
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 #include "mock_plugin_api.h"
 
 // Plugin API mock implementations
@@ -313,5 +313,4 @@ extern DECL_EXP wxString GetLocaleCanonicalName() {
 extern "C" DECL_EXP void toSM_Plugin(double lat, double lon, double lat0,
                                      double lon0, double *x, double *y) {
 }
-
 

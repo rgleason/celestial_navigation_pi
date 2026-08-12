@@ -40,7 +40,7 @@
 #include <wx/listimpl.cpp>
 #include <wx/fileconf.h>
 
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 
 #include "celestial_navigation_pi.h"
 #include "Sight.h"

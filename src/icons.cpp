@@ -10,7 +10,7 @@
 wxBitmap* _img_celestial_navigation;
 
 #ifdef PLUGIN_USE_SVG
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 wxString _svg_celestial_navigation;
 wxString _svg_celestial_navigation_rollover;
 wxString _svg_celestial_navigation_toggled;

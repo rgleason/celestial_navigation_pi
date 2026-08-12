@@ -16,7 +16,7 @@
 #include <wx/statbox.h>
 #include <wx/stattext.h>
 
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 
 namespace {
 

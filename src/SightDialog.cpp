@@ -32,7 +32,7 @@
 #include "wx/colordlg.h"
 #include "wx/fileconf.h"
 
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 
 #include "Sight.h"
 #include "SightDialog.h"

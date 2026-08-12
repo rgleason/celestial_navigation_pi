@@ -20,7 +20,7 @@
 #ifndef _MOCK_PLUGIN_API_H_
 #define _MOCK_PLUGIN_API_H_
 
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 #include <vector>
 #include <wx/string.h>
 

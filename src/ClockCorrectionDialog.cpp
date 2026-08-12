@@ -29,7 +29,7 @@
 #include "CelestialNavigationDialog.h"
 #include "ClockCorrectionDialog.h"
 
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 #include "Sight.h"
 
 ClockCorrectionDialog::ClockCorrectionDialog(CelestialNavigationDialog* parent,

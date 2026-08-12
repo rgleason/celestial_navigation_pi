@@ -33,7 +33,7 @@
 
 #define ABOUT_AUTHOR_URL "http://seandepagnier.users.sourceforge.net"
 
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 #include "pidc.h"
 #include "TimeStatus.h"
 

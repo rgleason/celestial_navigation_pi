@@ -21,7 +21,7 @@
 #include <wx/html/htmlwin.h>
 #include <wx/html/winpars.h>
 
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 
 // API 19 implementations
 

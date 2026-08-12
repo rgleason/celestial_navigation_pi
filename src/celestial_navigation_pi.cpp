@@ -32,7 +32,7 @@
 
 #include <wx/stdpaths.h>
 
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 
 #include "celestial_navigation_pi.h"
 #include "CelestialNavigationDialog.h"
