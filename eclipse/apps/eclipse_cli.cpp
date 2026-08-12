@@ -1,5 +1,6 @@
 #include "eclipse/besselian.h"
 #include "eclipse/astronomy.h"
+#include "eclipse/geometry.h"
 #include "eclipse/spk.h"
 
 #include <cstdlib>
@@ -16,6 +17,7 @@ void Usage(std::ostream& stream) {
          << "  eclipse-cli spk-position <kernel> <target> <center> <ET-seconds>\n"
          << "  eclipse-cli de440-2027-axis <kernel>\n"
          << "  eclipse-cli de440-axis <kernel> <TT-JD> <Delta-T-seconds>\n"
+         << "  eclipse-cli de440-2027-row <kernel> <UT-hours>\n"
          << "\n"
          << "Example: eclipse-cli nasa-2027-central 10.1104722222\n";
 }
@@ -23,6 +25,86 @@ void Usage(std::ostream& stream) {
 }  // namespace
 
 int main(int argc, char** argv) {
+  if (argc == 4 && std::string(argv[1]) == "de440-2027-row") {
+    char* end = NULL;
+    const double ut_hours = std::strtod(argv[3], &end);
+    if (!end || *end != '\0' || ut_hours < 0.0 || ut_hours >= 24.0) return 2;
+    const double delta_t = 71.7;
+    const double tt_jd = 2461619.5 +
+                         (ut_hours + delta_t / 3600.0) / 24.0;
+    const double et = (tt_jd - 2451545.0) * 86400.0;
+    eclipse::SpkKernel kernel;
+    std::string error;
+    if (!kernel.Open(argv[2], &error)) {
+      std::cerr << error << '\n';
+      return 1;
+    }
+    eclipse::SolarLunarState state;
+    if (!eclipse::AstrometricPosition(kernel, 301, 399, et,
+                                      &state.moon_from_earth_km, &error) ||
+        !eclipse::AstrometricPosition(kernel, 10, 399, et,
+                                      &state.sun_from_earth_km, &error)) {
+      std::cerr << error << '\n';
+      return 1;
+    }
+    eclipse::EarthOrientation orientation;
+    orientation.tt_jd = tt_jd;
+    orientation.ut1_jd = tt_jd - delta_t / 86400.0;
+    const eclipse::ShadowFootprint footprint =
+        eclipse::CentralShadowFootprint(
+            state, orientation, eclipse::ReferenceEllipsoid(),
+            eclipse::PhysicalConstants(), 7200);
+    if (!footprint.central || footprint.boundary.empty()) {
+      std::cerr << "No central footprint at this time\n";
+      return 1;
+    }
+    eclipse::GeoPoint axis_before;
+    eclipse::GeoPoint axis_after;
+    for (int direction = -1; direction <= 1; direction += 2) {
+      eclipse::SolarLunarState adjacent;
+      if (!eclipse::AstrometricPosition(kernel, 301, 399, et + direction,
+                                         &adjacent.moon_from_earth_km, &error) ||
+          !eclipse::AstrometricPosition(kernel, 10, 399, et + direction,
+                                         &adjacent.sun_from_earth_km, &error)) {
+        std::cerr << error << '\n';
+        return 1;
+      }
+      eclipse::EarthOrientation adjacent_orientation = orientation;
+      adjacent_orientation.tt_jd += direction / 86400.0;
+      adjacent_orientation.ut1_jd += direction / 86400.0;
+      eclipse::GeoPoint* output = direction < 0 ? &axis_before : &axis_after;
+      if (!eclipse::ShadowAxisPosition(adjacent, adjacent_orientation,
+                                       eclipse::ReferenceEllipsoid(), output)) {
+        std::cerr << "Unable to determine adjacent shadow axis\n";
+        return 1;
+      }
+    }
+    eclipse::GeoPoint north;
+    eclipse::GeoPoint south;
+    if (!eclipse::SelectCrossTrackLimits(footprint, axis_before, axis_after,
+                                         &north, &south)) {
+      std::cerr << "Unable to select cross-track limits\n";
+      return 1;
+    }
+    const eclipse::LocalCircumstances local =
+        eclipse::EvaluateLocalCircumstances(
+            state, orientation, footprint.axis, 0.0,
+            eclipse::ReferenceEllipsoid(), eclipse::PhysicalConstants());
+    std::cout << std::fixed << std::setprecision(8)
+              << "ut_hours,north_lat,north_lon,south_lat,south_lon,"
+                 "axis_lat,axis_lon,magnitude,obscuration,sun_altitude,"
+                 "sun_azimuth,path_width_km,boundary_points\n"
+              << ut_hours << ',' << north.latitude_deg << ','
+              << north.longitude_deg << ',' << south.latitude_deg << ','
+              << south.longitude_deg << ',' << footprint.axis.latitude_deg
+              << ',' << footprint.axis.longitude_deg << ',' << local.magnitude
+              << ',' << local.obscuration << ',' << local.sun_altitude_deg
+              << ',' << local.sun_azimuth_deg << ','
+              << eclipse::SurfaceDistanceKm(north, south) << ','
+              << footprint.boundary.size() << '\n';
+    return 0;
+  }
+
   if (argc == 5 && std::string(argv[1]) == "de440-axis") {
     char* end = NULL;
     const double tt_jd = std::strtod(argv[3], &end);
