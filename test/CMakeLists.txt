@@ -26,13 +26,17 @@ set(SRC
     altitude_tests.cpp
     lunar_tests.cpp
     horizon_event_tests.cpp
+    navigation_algorithms_tests.cpp
     time_status_tests.cpp
     common.cpp
     mock_plugin_api.cpp
     mock_plugin_impl.cpp
     ${CMAKE_SOURCE_DIR}/src/Sight.cpp
+    ${CMAKE_SOURCE_DIR}/src/BodyCatalog.cpp
+    ${CMAKE_SOURCE_DIR}/src/NavigationAlgorithms.cpp
+    ${CMAKE_SOURCE_DIR}/src/PlannerDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/SightAnalysisDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/TimeStatus.cpp
-    ${CMAKE_SOURCE_DIR}/src/celestial_navigation_pi.cpp
     ${CMAKE_SOURCE_DIR}/src/astrolabe/calendar.cpp
     ${CMAKE_SOURCE_DIR}/src/astrolabe/dicts.cpp
     ${CMAKE_SOURCE_DIR}/src/astrolabe/dynamical.cpp
@@ -45,6 +49,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/transform_star.cpp
     ${CMAKE_SOURCE_DIR}/src/CelestialNavigationDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/HorizonEventDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/EclipseDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/ClockCorrectionDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/CelestialNavigationUI.cpp
     ${CMAKE_SOURCE_DIR}/src/FindBodyDialog.cpp
@@ -92,6 +97,7 @@ target_link_libraries(celestial_tests
         ocpn::tinyxml
         ocpn::wxjson
         ocpn::plugin-dc
+        celestial::eclipse_core
         ${OPENGL_LIBRARIES}
 )
 

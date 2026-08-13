@@ -1,0 +1,126 @@
+= Offline planning, running fixes and sight analysis
+
+The navigation-planning tools are designed for offshore use. They perform no
+network access and do not depend on the optional eclipse data packs. Ordinary
+Sun, Moon, planet and star calculations use the same bundled VSOP87D,
+ELP2000/82 and navigational-star implementation used by sight reduction.
+
+== Sun, Moon and Sight Planner
+
+Open *Sun & Moon…* on the main Celestial Navigation window. The common header
+selects both a position and a UTC. A completely manual position and time are
+always available. Current boat position, chart cursor, selected-sight DR and
+the most recent calculated fix are conveniences and are used only when the
+corresponding source is available.
+
+Date and time are entered with separate calendar and clock controls. The input
+can be interpreted as UTC or as the computer's local civil time; changing that
+choice preserves the instant and all calculations are normalized to UTC. Event
+times can independently be displayed as UTC, the computer's local civil time
+and zone, local mean time derived from longitude, or a fixed UTC offset. The
+computer-local display observes the operating system's daylight-saving rules
+for the event date. The ordinary planner validates dates from 1900 through
+2100.
+
+Enable *Time-tagged moving observer* to define the position at the displayed
+reference UTC and propagate it along COG (true) and SOG. Each event row then
+also reports the propagated observer position.
+
+=== Events
+
+The daily table contains astronomical, nautical and civil dawn/dusk, sunrise,
+local apparent noon, sunset, Moon rise/transit/set and the next four principal
+Moon phases. Rise and set calculations solve apparent upper-limb altitude,
+including refraction, semidiameter, parallax and eye-height dip. Twilight uses
+the conventional geometric Sun-centre altitudes of -6, -12 and -18 degrees.
+Polar day/night and circumpolar Moon states are reported instead of inventing
+an event.
+
+The table covers the UTC calendar day containing the planning time. At far
+eastern or western longitudes, the corresponding local rise and set can
+therefore carry different local calendar dates; both the always-present UTC
+column and the selected display-time column make this explicit.
+
+The Moon summary includes illumination, named phase, waxing/waning state,
+approximate lunar age, altitude, true azimuth and angular separation from the
+Sun.
+
+=== Bodies and best sights
+
+The body table reports Hc, Zn true, GHA, declination, approximate visual
+magnitude and a planning score. The score favours usable mid-altitudes,
+brightness and suitable twilight. Recommended pairs additionally favour a
+near-right-angle crossing; triads use the determinant of their two-dimensional
+bearing information matrix. The explanation and polar sky plot are intended
+to make the recommendation auditable. They do not replace the navigator's
+assessment of cloud, horizon and identification risk.
+
+Select a row and use *Create selected sight…* to open the normal Sight dialog
+with body, time and DR already filled. No zero-altitude observation is silently
+created.
+
+=== Almanac
+
+The almanac page produces an hourly, 24-hour table of GHA, SHA, declination, Hc
+and Zn for the Sun, Moon, visible planets and Polaris. *Export CSV…* writes a
+plain-text file suitable for a spreadsheet or an offline printed worksheet.
+Exported UTC timestamps use ISO 8601 form such as
+`2026-08-13T04:48:00Z`.
+
+=== Noon and Polaris
+
+The special-workflow page reports local apparent noon and can solve latitude
+from a corrected Sun meridian altitude or a corrected Polaris altitude. The
+result is a workflow aid: index error, dip, refraction, limb choice, time and DR
+uncertainty still apply. Equal-altitude Sun pairs may be entered as ordinary
+time-tagged sights and solved with the running-fix mode described below.
+
+== Time-tagged numerical running fix
+
+Open *Fix…* and enable *Propagate every sight to a common epoch*. Enter the
+common epoch with the calendar and clock controls, selecting UTC or computer
+local civil time as appropriate, then enter COG true and SOG. The value is
+normalized to UTC before calculation. The latitude/longitude labelled DR are
+the initial estimate at that epoch. For each visible altitude or horizon
+event, the solver:
+
+. propagates the candidate epoch position to the observation UTC on a great
+  circle;
+. calculates Hc for the body's position at that UTC;
+. forms the weighted Ho-Hc residual; and
+. iterates a two-parameter nonlinear least-squares solution for epoch latitude
+  and longitude.
+
+The result includes each sight's residual, RMS and an approximate uncertainty
+ellipse. Manual DR Shift values are not added a second time in this mode. The
+legacy stationary plane/sphere/cone solvers remain selectable when running-fix
+mode is off.
+
+== Horizon-event observations
+
+Use *Horizon Event…* to record the first visible upper limb at sunrise or the
+last visible upper limb at sunset. Enter or capture UTC, its uncertainty, eye
+height, pressure, temperature and horizon quality. An optional compass bearing
+can be entered as true, or as magnetic with explicit variation and compass
+deviation. The saved sight retains all of this context and contributes an
+approximate line of position to the ordinary or running fix.
+
+This is deliberately assigned conservative uncertainty. Refraction, haze,
+land or an indistinct horizon normally dominate the result, and a
+bearing-derived estimate without a sextant is not a replacement for a normal
+multi-sight fix.
+
+== Sight Sequence Analyzer
+
+*Analyze Sights…* compares visible calculated altitude sights with a stationary
+or moving known/DR track. It plots and lists Ho-Hc, reports mean and standard
+deviation, robust median/MAD, a time trend and possible outliers. The median is
+reported as a possible personal bias but is never silently applied to a sight.
+
+== Scope and safety
+
+These tools support planning, training and independent navigation. Approximate
+stellar/planet magnitudes are only ranking inputs. Event accuracy near a
+refracting or obstructed horizon is normally limited by real atmospheric and
+horizon conditions. Always retain raw observations, time-source information
+and an independent DR, and verify important results by another method.

@@ -36,6 +36,7 @@
 #include "FixDialog.h"
 #include "ClockCorrectionDialog.h"
 #include "EclipseDialog.h"
+#include "PlannerDialog.h"
 
 #include <vector>
 #include <wx/timer.h>
@@ -58,6 +59,13 @@ public:
   void OnFixClose();
   bool RenderEclipse(piDC* dc, PlugIn_ViewPort* viewport);
   void RunEclipseIntegrationScenario();
+  void RunPlannerIntegrationScenario();
+  celestial_navigation_pi* GetPlugin() const { return m_Plugin; }
+  const Sight* GetSelectedSight() const;
+  bool GetLastFix(double* latitude, double* longitude) const;
+  void SetLastFix(double latitude, double longitude);
+  void CreatePlannedSight(const wxString& body, const wxDateTime& utc,
+                          double drLat, double drLon);
 
 private:
   bool OpenXML(bool reportfailure);
@@ -77,6 +85,8 @@ private:
   void OnNew(wxCommandEvent& event);
   void OnHorizonEvent(wxCommandEvent& event);
   void OnEclipse(wxCommandEvent& event);
+  void OnPlanner(wxCommandEvent& event);
+  void OnAnalyze(wxCommandEvent& event);
   void OnDuplicate(wxCommandEvent& event);
   void OnEdit();
   void OnEditMouse(wxMouseEvent& event) { OnEdit(); }
@@ -119,11 +129,16 @@ private:
   wxStaticText* m_sightCorrection;
   wxButton* m_horizonEventButton;
   wxButton* m_eclipseButton;
+  wxButton* m_plannerButton;
+  wxButton* m_analyzeButton;
   EclipseDialog* m_eclipseDialog;
   wxTimer m_timeTimer;
   int m_chronyPollTicks;
   ChronyTrackingInfo m_chronyTracking;
   bool m_chronyAvailable;
+  bool m_hasLastFix;
+  double m_lastFixLatitude;
+  double m_lastFixLongitude;
 
   wxPoint m_startPos;
   wxPoint m_startMouse;

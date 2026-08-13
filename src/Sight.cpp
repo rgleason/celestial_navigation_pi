@@ -44,6 +44,7 @@
 
 #include "celestial_navigation_pi.h"
 #include "Sight.h"
+#include "UtcDateTime.h"
 #include "transform_star.hpp"
 #include "moon.h"
 
@@ -66,7 +67,7 @@ double resolve_heading_positive(double heading) {
 int Sight::s_lastsightcolor;
 
 Sight::Sight()
-    : Sight(ALTITUDE, _T("Sun"), LOWER, wxDateTime::Now().ToUTC(), 0, 0, 10) {}
+    : Sight(ALTITUDE, _T("Sun"), LOWER, UtcDateTime::Now(), 0, 0, 10) {}
 
 Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
              double timecertainty, double measurement,
@@ -159,8 +160,10 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
 
   m_ColourName = sightcolornames[s_lastsightcolor].Lower();
   m_Colour = wxColour(m_ColourName);
-
-  m_Colour.Set(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(), 150);
+  if (m_Colour.IsOk())
+    m_Colour.Set(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(), 150);
+  else
+    m_Colour.Set(25, 25, 112, 150);  // headless unit-test fallback
 
   if (++s_lastsightcolor ==
       (sizeof sightcolornames) / (sizeof *sightcolornames))
@@ -190,12 +193,13 @@ using astrolabe::util::ecl_to_equ;
 /* calculate what position the body for this sight is directly over at a given
  * time */
 void Sight::BodyLocation(wxDateTime time, double* lat, double* lon,
-                         double* ghaast, double* rad, double* dist) {
+                         double* ghaast, double* rad, double* dist,
+                         bool timeIsInstant) {
   astrolabe::globals::vsop87d_text_path = celestial_navigation_pi_DataDir();
   astrolabe::globals::vsop87d_text_path.append("/data/");
   astrolabe::globals::vsop87d_text_path.append("vsop87d.txt");
 
-  time.MakeFromUTC();
+  if (!timeIsInstant) time.MakeFromUTC();
   double jdu = time.GetJulianDayNumber();
   // julian day dynamic
   double jdd = ut_to_dt(jdu);
@@ -549,7 +553,7 @@ void Sight::Recompute(int clock_offset) {
     m_CalcStr += wxString::Format(
         _("Applying clock correction of %d seconds\n\n"), clock_offset);
 
-  m_CorrectedDateTime = m_DateTime + wxTimeSpan::Seconds(clock_offset);
+  m_CorrectedDateTime = UtcDateTime::AddSeconds(m_DateTime, clock_offset);
 
   switch (m_Type) {
     case ALTITUDE:
@@ -926,7 +930,8 @@ void Sight::RecomputeHorizon() {
         "Horizontal parallax = %.4f%c\n"
         "Geocentric centre altitude = %.4f%c\n\n"),
       HorizonEventName(),
-      m_CorrectedDateTime.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC),
+      UtcDateTime::FormatUtc(m_CorrectedDateTime,
+                             "%Y-%m-%d %H:%M:%S"),
       m_HorizonTimeSource, dip, 0x00B0, refraction, 0x00B0, semidiameter,
       0x00B0, horizontalParallax, 0x00B0, m_ObservedAltitude, 0x00B0);
 
@@ -1374,9 +1379,9 @@ LDc = %.4f%c = %s\n\n"),
       cosldc, m_LDC, 0x00B0, toSDMM_PlugIn(0, m_LDC, true));
 
   wxDateTime startTime =
-      m_CorrectedDateTime - wxTimeSpan::Seconds(m_TimeCertainty / 2);
+      UtcDateTime::AddSeconds(m_CorrectedDateTime, -m_TimeCertainty / 2.0);
   wxDateTime endTime =
-      m_CorrectedDateTime + wxTimeSpan::Seconds(m_TimeCertainty / 2);
+      UtcDateTime::AddSeconds(m_CorrectedDateTime, m_TimeCertainty / 2.0);
 
   double startBodyLat, startBodyLon, startBodyGhaast, startBodyRad;
   BodyLocation(startTime, &startBodyLat, &startBodyLon, &startBodyGhaast,
@@ -1424,7 +1429,9 @@ cos(LDc) = sin(dec.m) * sin(dec.b) + cos(dec.m) * cos(dec.b) * cos(Dgha)\n\
 cos(LDc) = sin(%.4f) * sin(%.4f) + cos(%.4f) * cos(%.4f) * cos(%.4f)\n\
 cos(LDc) = %.4f\n\
 LDc = %.4f%c = %s\n"),
-                       startTime.Format("%Y-%m-%d %H:%M:%S"), startMoonLat,
+                       UtcDateTime::FormatUtc(startTime,
+                                              "%Y-%m-%d %H:%M:%S"),
+                       startMoonLat,
                        startBodyLat, startMoonLat, startBodyLat, dgha, cosldc,
                        startLdc, 0x00B0, toSDMM_PlugIn(0, startLdc, true));
 
@@ -1439,25 +1446,26 @@ cos(LDc) = sin(dec.m) * sin(dec.b) + cos(dec.m) * cos(dec.b) * cos(Dgha)\n\
 cos(LDc) = sin(%.4f) * sin(%.4f) + cos(%.4f) * cos(%.4f) * cos(%.4f)\n\
 cos(LDc) = %.4f\n\
 LDc = %.4f%c = %s\n"),
-      endTime.Format("%Y-%m-%d %H:%M:%S"), endMoonLat, endBodyLat, endMoonLat,
+      UtcDateTime::FormatUtc(endTime, "%Y-%m-%d %H:%M:%S"), endMoonLat,
+      endBodyLat, endMoonLat,
       endBodyLat, dgha, cosldc, endLdc, 0x00B0, toSDMM_PlugIn(0, endLdc, true));
 
-  wxDateTime interpolatedTime =
-      startTime + wxTimeSpan(0, 0,
-                             (long)round((m_LDC - startLdc) * m_TimeCertainty /
-                                         (endLdc - startLdc)));
+  wxDateTime interpolatedTime = UtcDateTime::AddSeconds(
+      startTime,
+      round((m_LDC - startLdc) * m_TimeCertainty / (endLdc - startLdc)));
   m_CalcStr += wxString::Format(
       _("\nInterpolating Lunar Distance Cleared to find out UTC\n\
 UTC = time.start + (LDc - LDc.start) * (time.end - time.start) / (LDc.end - LDc.start)\n\
 UTC = %s + (%.4f - %.4f) * (%s - %s) / (%.4f - %.4f)\n\
 UTC = %s\n"),
-      startTime.Format("%Y-%m-%d %H:%M:%S"), m_LDC, startLdc,
-      endTime.Format("%Y-%m-%d %H:%M:%S"),
-      startTime.Format("%Y-%m-%d %H:%M:%S"), endLdc, startLdc,
-      interpolatedTime.Format("%Y-%m-%d %H:%M:%S"));
+      UtcDateTime::FormatUtc(startTime, "%Y-%m-%d %H:%M:%S"), m_LDC,
+      startLdc, UtcDateTime::FormatUtc(endTime, "%Y-%m-%d %H:%M:%S"),
+      UtcDateTime::FormatUtc(startTime, "%Y-%m-%d %H:%M:%S"), endLdc,
+      startLdc,
+      UtcDateTime::FormatUtc(interpolatedTime, "%Y-%m-%d %H:%M:%S"));
 
-  m_TimeCorrection =
-      (interpolatedTime - m_CorrectedDateTime).GetSeconds().ToLong();
+  m_TimeCorrection = static_cast<long>(std::lround(
+      UtcDateTime::SecondsBetween(interpolatedTime, m_CorrectedDateTime)));
   m_CalcStr +=
       wxString::Format(_("\nTime correction %ld seconds"), m_TimeCorrection);
 
@@ -1509,7 +1517,7 @@ void Sight::EstimateHs(double hc, double* hs, double* error) {
     HP = r_to_d(asin(EARTH_RADIUS / planet_dist));
   }
 
-  double ca, ha, parallax, dip, ic, refraction, lc, ho;
+  double ca, ha, parallax = 0, dip, ic, refraction, lc, ho;
   double diff;
 
   // estimate CA
@@ -1680,8 +1688,8 @@ void Sight::BuildAltitudeLineOfPosition(double tracestep, double altitudemin,
                                         double timestep) {
   for (double time = timemin; time <= timemax; time += timestep) {
     double lat, lon;
-    BodyLocation(m_CorrectedDateTime + wxTimeSpan::Seconds(time), &lat, &lon, 0,
-                 0, 0);
+    BodyLocation(UtcDateTime::AddSeconds(m_CorrectedDateTime, time), &lat,
+                 &lon, 0, 0, 0);
     wxRealPointList *p, *l = new wxRealPointList;
     for (double trace = -180; trace <= 180; trace += tracestep) {
       p = new wxRealPointList;
@@ -1828,8 +1836,8 @@ void Sight::BuildBearingLineOfPosition(double altitudestep, double azimuthmin,
 
     double blat, blon;
 
-    BodyLocation(m_CorrectedDateTime + wxTimeSpan::Seconds(time), &blat, &blon,
-                 0, 0, 0);
+    BodyLocation(UtcDateTime::AddSeconds(m_CorrectedDateTime, time), &blat,
+                 &blon, 0, 0, 0);
 
     blon = resolve_heading(blon);
 

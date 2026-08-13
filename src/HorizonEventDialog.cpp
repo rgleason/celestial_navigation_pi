@@ -17,6 +17,7 @@
 #include <wx/stattext.h>
 
 #include "OcpnApiCompat.h"
+#include "UtcDateTime.h"
 
 namespace {
 
@@ -323,7 +324,7 @@ void HorizonEventDialog::UpdatePreview() {
 }
 
 void HorizonEventDialog::OnCaptureNow(wxCommandEvent& event) {
-  const wxDateTime now = wxDateTime::UNow();
+  const wxDateTime now = UtcDateTime::Now();
   m_calendar->SetDate(now);
   m_hours->SetValue(now.GetHour());
   m_minutes->SetValue(now.GetMinute());

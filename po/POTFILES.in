@@ -12,6 +12,10 @@ src/astrolabe/util.cpp
 src/astrolabe/vsop87d.cpp
 src/geomag/geomag.c
 src/CelestialNavigationDialog.cpp
+src/BodyCatalog.cpp
+src/NavigationAlgorithms.cpp
+src/PlannerDialog.cpp
+src/SightAnalysisDialog.cpp
 src/HorizonEventDialog.cpp
 src/EclipseDialog.cpp
 src/TimeStatus.cpp
@@ -31,6 +35,11 @@ src/moon.cpp
 src/OcpnApiCompat.h
 src/celestial_navigation_pi.h
 src/CelestialNavigationDialog.h
+src/BodyCatalog.h
+src/NavigationAlgorithms.h
+src/PlannerDialog.h
+src/SightAnalysisDialog.h
+src/UtcDateTime.h
 src/HorizonEventDialog.h
 src/EclipseDialog.h
 src/TimeStatus.h

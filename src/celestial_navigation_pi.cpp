@@ -59,7 +59,11 @@ extern "C" DECL_EXP void destroy_pi(opencpn_plugin* p) { delete p; }
 //---------------------------------------------------------------------------------------------------------
 
 celestial_navigation_pi::celestial_navigation_pi(void* ppimgr)
-    : opencpn_plugin_118(ppimgr), m_hasPositionFix(false) {
+    : opencpn_plugin_118(ppimgr),
+      m_hasPositionFix(false),
+      m_hasCursorPosition(false),
+      m_cursorLatitude(0.0),
+      m_cursorLongitude(0.0) {
   // Create the PlugIn icons
   initialize_images();
 
@@ -133,9 +137,17 @@ int celestial_navigation_pi::Init(void) {
   });
 #endif
 
+#ifdef CELESTIAL_PLANNER_INTEGRATION_TEST
+  wxTheApp->CallAfter([this]() {
+    OnToolbarToolCallback(m_leftclick_tool_id);
+    if (m_pCelestialNavigationDialog)
+      m_pCelestialNavigationDialog->RunPlannerIntegrationScenario();
+  });
+#endif
+
   return (WANTS_OVERLAY_CALLBACK | WANTS_OPENGL_OVERLAY_CALLBACK |
           WANTS_NMEA_EVENTS | WANTS_NMEA_SENTENCES |
-          //            WANTS_CURSOR_LATLON       |
+          WANTS_CURSOR_LATLON |
           WANTS_TOOLBAR_CALLBACK | WANTS_PLUGIN_MESSAGING |
           INSTALLS_TOOLBAR_TOOL);
 }
@@ -323,6 +335,14 @@ void celestial_navigation_pi::SetPositionFixEx(PlugIn_Position_Fix_Ex& pfix) {
   m_hasPositionFix = std::isfinite(pfix.Lat) && std::isfinite(pfix.Lon) &&
                      pfix.Lat >= -90.0 && pfix.Lat <= 90.0 &&
                      pfix.Lon >= -180.0 && pfix.Lon <= 180.0;
+  m_navigation.valid = m_hasPositionFix;
+  m_navigation.latitude = pfix.Lat;
+  m_navigation.longitude = pfix.Lon;
+  m_navigation.cogTrue = std::isfinite(pfix.Cog) ? pfix.Cog : 0.0;
+  m_navigation.sogKnots = std::isfinite(pfix.Sog) ? pfix.Sog : 0.0;
+  m_navigation.variation = std::isfinite(pfix.Var) ? pfix.Var : 0.0;
+  if (pfix.FixTime > 0)
+    m_navigation.fixUtc = wxDateTime(static_cast<time_t>(pfix.FixTime));
 }
 
 void celestial_navigation_pi::SetNMEASentence(wxString& sentence) {
@@ -341,7 +361,26 @@ bool celestial_navigation_pi::GetBoatPosition(double* latitude,
   return true;
 }
 
-void celestial_navigation_pi::SetCursorLatLon(double lat, double lon) {}
+BoatNavigationSnapshot celestial_navigation_pi::GetBoatNavigationSnapshot()
+    const {
+  return m_navigation;
+}
+
+bool celestial_navigation_pi::GetCursorPosition(double* latitude,
+                                                double* longitude) const {
+  if (!m_hasCursorPosition || !latitude || !longitude) return false;
+  *latitude = m_cursorLatitude;
+  *longitude = m_cursorLongitude;
+  return true;
+}
+
+void celestial_navigation_pi::SetCursorLatLon(double lat, double lon) {
+  m_cursorLatitude = lat;
+  m_cursorLongitude = lon;
+  m_hasCursorPosition = std::isfinite(lat) && std::isfinite(lon) &&
+                        lat >= -90.0 && lat <= 90.0 && lon >= -180.0 &&
+                        lon <= 180.0;
+}
 
 void celestial_navigation_pi_BoatPos(double& lat, double& lon) {
   lat = s_boat_lat;

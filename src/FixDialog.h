@@ -30,6 +30,7 @@
 
 #include "CelestialNavigationUI.h"
 #include "CelestialNavigationDialog.h"
+#include "NavigationAlgorithms.h"
 
 #include <list>
 
@@ -38,16 +39,25 @@
 #endif
 
 class Sight;
+class wxChoice;
+class wxDatePickerCtrl;
+class wxTimePickerCtrl;
 
 class FixDialog : public FixDialogBase {
 public:
   FixDialog(CelestialNavigationDialog* parent);
   void Update(int clock_offset);
+  void RunIntegrationScenario();
 
   int m_clock_offset;
   double m_fixlat, m_fixlon, m_fixerror;
 
 private:
+  wxDateTime ReadEpochUtc() const;
+  void SetEpochControls(const wxDateTime& utc);
+  void ChangeEpochTimeBasis(wxCommandEvent& event);
+  void UpdateRunningFix(int clock_offset);
+  void OnRunningControl(wxCommandEvent& event) { Update(m_clock_offset); }
   void OnGo(wxCommandEvent& event);
   void OnClose(wxCommandEvent& event);
   void OnUpdate(wxCommandEvent& event) { Update(m_clock_offset); }
@@ -57,6 +67,15 @@ private:
 #endif
 
   CelestialNavigationDialog* m_Parent;
+  wxCheckBox* m_runningFix;
+  wxChoice* m_epochTimeBasis;
+  wxDatePickerCtrl* m_epochDate;
+  wxTimePickerCtrl* m_epochTime;
+  wxSpinCtrlDouble* m_courseTrue;
+  wxSpinCtrlDouble* m_speedKnots;
+  wxStaticText* m_runningSummary;
+  wxListCtrl* m_residuals;
+  int m_lastEpochTimeBasis;
   int m_lastPanX;
   int m_lastPanY;
 };

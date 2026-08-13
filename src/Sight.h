@@ -81,9 +81,9 @@ public:
   void SetVisible(bool visible = true);  ///< set visibility and make points
                                          ///< selectable accordingly
   void SetSelected(bool selected = true);
-  bool IsVisible() { return m_bVisible; }
-  bool IsCalculated() { return m_bCalculated; }
-  bool IsSelected() { return m_bSelected; }
+  bool IsVisible() const { return m_bVisible; }
+  bool IsCalculated() const { return m_bCalculated; }
+  bool IsSelected() const { return m_bSelected; }
 
   void Recompute(int clock_offset);
   void RebuildPolygons();
@@ -141,7 +141,7 @@ public:
   virtual void Render(piDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm);
 
   void BodyLocation(wxDateTime time, double* lat, double* lon, double* ghaash,
-                    double* rad, double* dist);
+                    double* rad, double* dist, bool timeIsInstant = false);
   void AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
                        double* hc, double* zn);
   void EstimateHs(double hc, double* hs, double* error);

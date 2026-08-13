@@ -1,0 +1,75 @@
+#ifndef CELESTIAL_NAVIGATION_PLANNER_DIALOG_H
+#define CELESTIAL_NAVIGATION_PLANNER_DIALOG_H
+
+#include "NavigationAlgorithms.h"
+
+#include <wx/dialog.h>
+
+class CelestialNavigationDialog;
+class SkyPlotPanel;
+class wxCheckBox;
+class wxChoice;
+class wxDatePickerCtrl;
+class wxListCtrl;
+class wxNotebook;
+class wxSpinCtrlDouble;
+class wxStaticText;
+class wxTimePickerCtrl;
+
+class PlannerDialog : public wxDialog {
+public:
+  explicit PlannerDialog(CelestialNavigationDialog* parent);
+  ~PlannerDialog();
+  void SelectPageForIntegration(unsigned page);
+
+private:
+  ObserverMotion ReadMotion(bool showErrors);
+  wxDateTime ReadUtc(bool showErrors);
+  void SetUtcControls(const wxDateTime& utc);
+  void ChangeInputTimeBasis(wxCommandEvent& event);
+  void UpdateInputTimeLabels();
+  void ApplyPositionSource();
+  void ApplyTimeSource();
+  wxString DisplayTime(const wxDateTime& utc) const;
+  void RefreshAll(wxCommandEvent& event);
+  void RefreshEvents();
+  void RefreshBodies();
+  void RefreshAlmanac();
+  void RefreshSpecial();
+  void ExportAlmanac(wxCommandEvent& event);
+  void CreateSelectedSight(wxCommandEvent& event);
+  void SolveSpecialLatitude(wxCommandEvent& event);
+
+  CelestialNavigationDialog* m_parent;
+  wxChoice* m_positionSource;
+  wxSpinCtrlDouble* m_latitude;
+  wxSpinCtrlDouble* m_longitude;
+  wxChoice* m_timeSource;
+  wxChoice* m_inputTimeBasis;
+  wxStaticText* m_dateLabel;
+  wxStaticText* m_timeLabel;
+  wxDatePickerCtrl* m_utcDate;
+  wxTimePickerCtrl* m_utcTime;
+  wxChoice* m_displayTime;
+  wxSpinCtrlDouble* m_fixedOffset;
+  wxCheckBox* m_moving;
+  wxSpinCtrlDouble* m_course;
+  wxSpinCtrlDouble* m_speed;
+  wxSpinCtrlDouble* m_eyeHeight;
+  wxStaticText* m_status;
+  wxNotebook* m_notebook;
+  wxListCtrl* m_events;
+  wxStaticText* m_moonSummary;
+  wxListCtrl* m_bodies;
+  wxListCtrl* m_combinations;
+  SkyPlotPanel* m_skyPlot;
+  wxListCtrl* m_almanac;
+  wxChoice* m_specialBody;
+  wxSpinCtrlDouble* m_specialAltitude;
+  wxStaticText* m_specialSummary;
+  int m_lastInputTimeBasis;
+  std::vector<RankedBody> m_rankedBodies;
+  std::vector<AlmanacRow> m_almanacRows;
+};
+
+#endif

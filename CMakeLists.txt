@@ -70,11 +70,11 @@ set(SHORT_DESCRIPTION
 	"Celestial Navigation Plugin for OpenCPN"
 )
 set(LONG_DESCRIPTION
-	"Nautical almanac, celestial fixes, horizon events, time integrity and a fully offline DE440 solar-eclipse planner."
+	"Offline nautical almanac, sight planning and ranking, time-tagged running fixes, sequence analysis, horizon events, time integrity and a DE440 solar-eclipse planner."
 )
 
 set(VERSION_MAJOR "2")
-set(VERSION_MINOR "5")
+set(VERSION_MINOR "6")
 set(VERSION_PATCH "0")
 set(VERSION_TWEAK "0")
 set(VERSION_DATE  "13/08/2026" )# DD/MM/YYYY format
@@ -187,6 +187,10 @@ SET(SRCS
         src/astrolabe/vsop87d.cpp
         src/geomag/geomag.c
         src/CelestialNavigationDialog.cpp
+        src/BodyCatalog.cpp
+        src/NavigationAlgorithms.cpp
+        src/PlannerDialog.cpp
+        src/SightAnalysisDialog.cpp
         src/HorizonEventDialog.cpp
         src/EclipseDialog.cpp
         src/TimeStatus.cpp
@@ -209,6 +213,11 @@ SET(HDRS
         src/OcpnApiCompat.h
         src/celestial_navigation_pi.h
         src/CelestialNavigationDialog.h
+        src/BodyCatalog.h
+        src/NavigationAlgorithms.h
+        src/PlannerDialog.h
+        src/SightAnalysisDialog.h
+        src/UtcDateTime.h
         src/HorizonEventDialog.h
         src/EclipseDialog.h
         src/TimeStatus.h
@@ -269,6 +278,12 @@ option(CELESTIAL_ECLIPSE_INTEGRATION_TEST
 if(CELESTIAL_ECLIPSE_INTEGRATION_TEST)
   target_compile_definitions(${PACKAGE_NAME} PRIVATE
     CELESTIAL_ECLIPSE_INTEGRATION_TEST=1)
+endif()
+option(CELESTIAL_PLANNER_INTEGRATION_TEST
+       "Open and exercise the offline sight planner automatically" OFF)
+if(CELESTIAL_PLANNER_INTEGRATION_TEST)
+  target_compile_definitions(${PACKAGE_NAME} PRIVATE
+    CELESTIAL_PLANNER_INTEGRATION_TEST=1)
 endif()
 
 

@@ -4,12 +4,16 @@ The required base pack is the official JPL/NAIF `de440s.bsp` kernel plus the
 small text manifest in `data/de440s.manifest`. Despite its name, `de440s` is
 already the short DE440 subset: it covers 1850–2150 and is 32,726,016 bytes
 (31.21 MiB). Creating another bespoke SPK subset would save little while
-introducing avoidable provenance and interpolation risk.
+introducing avoidable provenance and interpolation risk. The kernel and both
+optional runtime packs are versioned in this repository with Git LFS, so a
+Git-LFS-enabled clone contains everything needed for completely offline use.
 
 At runtime the engine never connects to a network. A user or package builder
-places `de440s.bsp` in the plugin's private eclipse-data directory. The plugin
-checks its byte count, SHA-256 digest, DAF/SPK structure and segment count
-before it is accepted. A truncated, modified or substituted file is rejected.
+imports `data/de440s.bsp` into the plugin's private eclipse-data directory.
+The plugin checks its byte count, SHA-256 digest, DAF/SPK structure and segment
+count before it is accepted. A truncated, modified or substituted file is
+rejected. The same local import workflow applies to the optional PCK and LOLA
+files.
 
 The base installation budget is therefore approximately:
 
@@ -52,9 +56,10 @@ eclipse-cli verify-lola lola64-pa.bin
 ```
 
 The netCDF source and converter are not installed with OpenCPN. The runtime
-pack is a deliberately separate optional data store because it is useful only
-for terrain-sensitive contact refinements and is much larger than the 31 MiB
-base ephemeris.
+pack remains a deliberately separate optional data store at installation time
+because it is useful only for terrain-sensitive contact refinements and is
+much larger than the 31 MiB base ephemeris. It is included in the source
+repository so an offline source build does not depend on a later download.
 
 The kernel's authoritative source is NASA's Navigation and Ancillary
 Information Facility (NAIF):

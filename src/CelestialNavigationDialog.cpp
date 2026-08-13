@@ -42,8 +42,12 @@
 #include "Sight.h"
 #include "SightDialog.h"
 #include "HorizonEventDialog.h"
+#include "PlannerDialog.h"
+#include "SightAnalysisDialog.h"
 #include "CelestialNavigationDialog.h"
+#include "UtcDateTime.h"
 #include <algorithm>
+#include <cmath>
 #include <ctime>
 #include <functional>
 
@@ -117,9 +121,14 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       m_sightCorrection(NULL),
       m_horizonEventButton(NULL),
       m_eclipseButton(NULL),
+      m_plannerButton(NULL),
+      m_analyzeButton(NULL),
       m_eclipseDialog(NULL),
       m_chronyPollTicks(0),
-      m_chronyAvailable(false) {
+      m_chronyAvailable(false),
+      m_hasLastFix(false),
+      m_lastFixLatitude(0.0),
+      m_lastFixLongitude(0.0) {
   wxFileConfig* pConf = GetOCPNConfigObject();
 
   pConf->SetPath(_T("/PlugIns/CelestialNavigation"));
@@ -145,18 +154,29 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   m_lSights->AssignImageList(imglist, wxIMAGE_LIST_SMALL);
 
   wxSizer* actionButtons = m_bNewSight->GetContainingSizer();
+  m_bFix->SetLabel(_("Fix..."));
   m_horizonEventButton = new wxButton(this, wxID_ANY, _("Horizon Event..."));
   m_horizonEventButton->SetToolTip(
       _("Record an observed sunrise or sunset time and optional bearing"));
   actionButtons->Insert(2, m_horizonEventButton, 0, wxALL | wxEXPAND, 5);
-  actionButtons->InsertSpacer(3, 0);
   m_horizonEventButton->Bind(wxEVT_BUTTON,
                              &CelestialNavigationDialog::OnHorizonEvent, this);
+  m_plannerButton = new wxButton(this, wxID_ANY, _("Sun && Moon..."));
+  m_plannerButton->SetToolTip(
+      _("Offline rise, set, twilight, body planning and almanac"));
+  actionButtons->Insert(3, m_plannerButton, 0, wxALL | wxEXPAND, 5);
+  m_plannerButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnPlanner,
+                        this);
+  m_analyzeButton = new wxButton(this, wxID_ANY, _("Analyze Sights..."));
+  m_analyzeButton->SetToolTip(
+      _("Analyze repeated sights, scatter, bias, trend and outliers"));
+  actionButtons->Insert(4, m_analyzeButton, 0, wxALL | wxEXPAND, 5);
+  m_analyzeButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnAnalyze,
+                        this);
   m_eclipseButton = new wxButton(this, wxID_ANY, _("Eclipses..."));
   m_eclipseButton->SetToolTip(
       _("Find and plot offline solar eclipse paths and local circumstances"));
-  actionButtons->Insert(4, m_eclipseButton, 0, wxALL | wxEXPAND, 5);
-  actionButtons->InsertSpacer(5, 0);
+  actionButtons->Insert(5, m_eclipseButton, 0, wxALL | wxEXPAND, 5);
   m_eclipseButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnEclipse,
                         this);
 
@@ -981,6 +1001,91 @@ void CelestialNavigationDialog::OnEclipse(wxCommandEvent&) {
   if (!m_eclipseDialog) m_eclipseDialog = new EclipseDialog(this, m_Plugin);
   m_eclipseDialog->Show();
   m_eclipseDialog->Raise();
+}
+
+void CelestialNavigationDialog::OnPlanner(wxCommandEvent&) {
+  PlannerDialog dialog(this);
+  dialog.ShowModal();
+}
+
+void CelestialNavigationDialog::RunPlannerIntegrationScenario() {
+  wxString scenario;
+  wxGetEnv("CELESTIAL_GUI_TEST_DIALOG", &scenario);
+  scenario.MakeLower();
+  wxLogMessage("Celestial GUI integration scenario: %s", scenario);
+
+  if (scenario == "main") return;
+
+  if (scenario == "fix") {
+    wxCommandEvent event;
+    OnFix(event);
+    if (m_FixDialog) m_FixDialog->RunIntegrationScenario();
+    return;
+  }
+
+  if (scenario == "analyzer") {
+    SightAnalysisDialog* dialog = new SightAnalysisDialog(this);
+    dialog->Show();
+    dialog->Raise();
+    return;
+  }
+
+  PlannerDialog* dialog = new PlannerDialog(this);
+  wxString pageText;
+  long page = 0;
+  if (wxGetEnv("CELESTIAL_GUI_TEST_PAGE", &pageText)) pageText.ToLong(&page);
+  dialog->SelectPageForIntegration(page < 0 ? 0 : static_cast<unsigned>(page));
+  dialog->Show();
+  dialog->Raise();
+}
+
+void CelestialNavigationDialog::OnAnalyze(wxCommandEvent&) {
+  SightAnalysisDialog dialog(this);
+  dialog.ShowModal();
+}
+
+const Sight* CelestialNavigationDialog::GetSelectedSight() const {
+  const long selected = m_lSights->GetNextItem(
+      -1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+  if (selected < 0 || static_cast<size_t>(selected) >= m_Sights.size())
+    return nullptr;
+  return &m_Sights[selected];
+}
+
+bool CelestialNavigationDialog::GetLastFix(double* latitude,
+                                           double* longitude) const {
+  if (!m_hasLastFix || !latitude || !longitude) return false;
+  *latitude = m_lastFixLatitude;
+  *longitude = m_lastFixLongitude;
+  return true;
+}
+
+void CelestialNavigationDialog::SetLastFix(double latitude, double longitude) {
+  m_hasLastFix = std::isfinite(latitude) && std::isfinite(longitude);
+  m_lastFixLatitude = latitude;
+  m_lastFixLongitude = longitude;
+}
+
+void CelestialNavigationDialog::CreatePlannedSight(const wxString& body,
+                                                   const wxDateTime& utc,
+                                                   double drLat,
+                                                   double drLon) {
+  Sight sight(Sight::ALTITUDE, body, Sight::LOWER,
+              UtcDateTime::FromInstant(utc), 0, 0, 1);
+  sight.m_DRBoatPosition = false;
+  sight.m_DRLat = drLat;
+  sight.m_DRLon = drLon;
+  SightDialog dialog(this, sight, m_ClockCorrection);
+  if (dialog.ShowModal() != wxID_OK) return;
+  if (sight.m_bVisible) {
+    dialog.Recompute();
+    sight.RebuildPolygons();
+  }
+  for (Sight& existing : m_Sights) existing.SetSelected(false);
+  sight.SetSelected(true);
+  m_Sights.push_back(std::move(sight));
+  RebuildList();
+  RequestRefresh(GetParent());
 }
 
 void CelestialNavigationDialog::RunEclipseIntegrationScenario() {
