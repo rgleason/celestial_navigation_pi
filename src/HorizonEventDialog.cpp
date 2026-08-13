@@ -4,13 +4,16 @@
 
 #include "HorizonEventDialog.h"
 
+#include <algorithm>
 #include <cmath>
 
 #include <wx/calctrl.h>
 #include <wx/button.h>
 #include <wx/checkbox.h>
 #include <wx/choice.h>
+#include <wx/display.h>
 #include <wx/fileconf.h>
+#include <wx/scrolwin.h>
 #include <wx/sizer.h>
 #include <wx/spinctrl.h>
 #include <wx/statbox.h>
@@ -50,11 +53,18 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
                wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
       m_sight(sight),
       m_clockOffset(clockOffset),
-      m_systemTimeSummary(systemTimeSummary) {
+      m_systemTimeSummary(systemTimeSummary),
+      m_scroller(NULL) {
+  wxBoxSizer* dialogRoot = new wxBoxSizer(wxVERTICAL);
+  m_scroller =
+      new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+                           wxVSCROLL | wxTAB_TRAVERSAL | wxBORDER_NONE);
+  m_scroller->SetScrollRate(0, 12);
+  m_scroller->SetBackgroundColour(GetBackgroundColour());
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
 
   wxStaticText* explanation = new wxStaticText(
-      this, wxID_ANY,
+      m_scroller, wxID_ANY,
       _("Record first upper-limb appearance at sunrise or final upper-limb "
         "disappearance at sunset. The result is an approximate navigation "
         "constraint, not a sextant-quality fix."));
@@ -62,53 +72,54 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   root->Add(explanation, 0, wxEXPAND | wxALL, 8);
 
   wxStaticBoxSizer* observation =
-      new wxStaticBoxSizer(wxVERTICAL, this, _("Observation"));
+      new wxStaticBoxSizer(wxVERTICAL, m_scroller, _("Observation"));
   wxFlexGridSizer* obsGrid = new wxFlexGridSizer(0, 2, 5, 10);
   obsGrid->AddGrowableCol(1);
 
-  obsGrid->Add(new wxStaticText(this, wxID_ANY, _("Event")), 0,
+  obsGrid->Add(new wxStaticText(m_scroller, wxID_ANY, _("Event")), 0,
                wxALIGN_CENTER_VERTICAL);
-  m_event = new wxChoice(this, wxID_ANY);
+  m_event = new wxChoice(m_scroller, wxID_ANY);
   m_event->Append(_("Sunrise — first upper limb"));
   m_event->Append(_("Sunset — last upper limb"));
   m_event->SetSelection(static_cast<int>(sight.m_HorizonEvent));
   obsGrid->Add(m_event, 1, wxEXPAND);
 
-  obsGrid->Add(new wxStaticText(this, wxID_ANY, _("UTC date")), 0,
+  obsGrid->Add(new wxStaticText(m_scroller, wxID_ANY, _("UTC date")), 0,
                wxALIGN_CENTER_VERTICAL);
-  m_calendar = new wxCalendarCtrl(this, wxID_ANY, sight.m_DateTime);
+  m_calendar = new wxCalendarCtrl(m_scroller, wxID_ANY, sight.m_DateTime);
   obsGrid->Add(m_calendar, 1, wxEXPAND);
 
-  obsGrid->Add(new wxStaticText(this, wxID_ANY, _("UTC time")), 0,
+  obsGrid->Add(new wxStaticText(m_scroller, wxID_ANY, _("UTC time")), 0,
                wxALIGN_CENTER_VERTICAL);
   wxBoxSizer* timeRow = new wxBoxSizer(wxHORIZONTAL);
-  m_hours = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
-                           wxSize(65, -1), wxSP_ARROW_KEYS, 0, 23,
-                           sight.m_DateTime.GetHour());
-  m_minutes = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
-                             wxSize(65, -1), wxSP_ARROW_KEYS, 0, 59,
-                             sight.m_DateTime.GetMinute());
-  m_seconds = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
-                             wxSize(65, -1), wxSP_ARROW_KEYS, 0, 59,
-                             sight.m_DateTime.GetSecond());
+  m_hours = new wxSpinCtrl(m_scroller, wxID_ANY, wxEmptyString,
+                           wxDefaultPosition, wxSize(65, -1), wxSP_ARROW_KEYS,
+                           0, 23, sight.m_DateTime.GetHour());
+  m_minutes = new wxSpinCtrl(m_scroller, wxID_ANY, wxEmptyString,
+                             wxDefaultPosition, wxSize(65, -1), wxSP_ARROW_KEYS,
+                             0, 59, sight.m_DateTime.GetMinute());
+  m_seconds = new wxSpinCtrl(m_scroller, wxID_ANY, wxEmptyString,
+                             wxDefaultPosition, wxSize(65, -1), wxSP_ARROW_KEYS,
+                             0, 59, sight.m_DateTime.GetSecond());
   timeRow->Add(m_hours);
-  timeRow->Add(new wxStaticText(this, wxID_ANY, ":"), 0,
+  timeRow->Add(new wxStaticText(m_scroller, wxID_ANY, ":"), 0,
                wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 3);
   timeRow->Add(m_minutes);
-  timeRow->Add(new wxStaticText(this, wxID_ANY, ":"), 0,
+  timeRow->Add(new wxStaticText(m_scroller, wxID_ANY, ":"), 0,
                wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 3);
   timeRow->Add(m_seconds);
-  wxButton* capture = new wxButton(this, wxID_ANY, _("Capture current UTC"));
+  wxButton* capture =
+      new wxButton(m_scroller, wxID_ANY, _("Capture current UTC"));
   timeRow->Add(capture, 0, wxLEFT, 10);
   obsGrid->Add(timeRow, 1, wxEXPAND);
 
   m_timeUncertainty =
-      AddNumber(this, obsGrid, _("Time uncertainty"), sight.m_TimeCertainty, 0,
-                600, 1, 1, _("seconds"));
+      AddNumber(m_scroller, obsGrid, _("Time uncertainty"),
+                sight.m_TimeCertainty, 0, 600, 1, 1, _("seconds"));
 
-  obsGrid->Add(new wxStaticText(this, wxID_ANY, _("Time source")), 0,
+  obsGrid->Add(new wxStaticText(m_scroller, wxID_ANY, _("Time source")), 0,
                wxALIGN_CENTER_VERTICAL);
-  m_timeSource = new wxChoice(this, wxID_ANY);
+  m_timeSource = new wxChoice(m_scroller, wxID_ANY);
   m_timeSource->Append(_("System UTC capture"));
   m_timeSource->Append(_("Synchronised watch / manual entry"));
   m_timeSource->Append(_("Other manual entry"));
@@ -119,76 +130,84 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   obsGrid->Add(m_timeSource, 1, wxEXPAND);
   observation->Add(obsGrid, 0, wxEXPAND | wxALL, 6);
   wxStaticText* clock = new wxStaticText(
-      this, wxID_ANY, _("Current system timing: ") + m_systemTimeSummary);
+      m_scroller, wxID_ANY, _("Current system timing: ") + m_systemTimeSummary);
   clock->Wrap(590);
   observation->Add(clock, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 6);
   root->Add(observation, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
 
   wxStaticBoxSizer* bearingBox =
-      new wxStaticBoxSizer(wxVERTICAL, this, _("Bearing (optional)"));
+      new wxStaticBoxSizer(wxVERTICAL, m_scroller, _("Bearing (optional)"));
   m_hasBearing = new wxCheckBox(
-      this, wxID_ANY,
+      m_scroller, wxID_ANY,
       _("Include a compass bearing to obtain a rough position estimate"));
   m_hasBearing->SetValue(sight.m_HorizonBearingProvided);
   bearingBox->Add(m_hasBearing, 0, wxALL, 6);
   wxFlexGridSizer* bearingGrid = new wxFlexGridSizer(0, 2, 5, 10);
   bearingGrid->AddGrowableCol(1);
-  bearingGrid->Add(new wxStaticText(this, wxID_ANY, _("Bearing reference")), 0,
-                   wxALIGN_CENTER_VERTICAL);
-  m_bearingReference = new wxChoice(this, wxID_ANY);
+  bearingGrid->Add(
+      new wxStaticText(m_scroller, wxID_ANY, _("Bearing reference")), 0,
+      wxALIGN_CENTER_VERTICAL);
+  m_bearingReference = new wxChoice(m_scroller, wxID_ANY);
   m_bearingReference->Append(_("Magnetic compass"));
   m_bearingReference->Append(_("True bearing"));
   m_bearingReference->SetSelection(sight.m_HorizonBearingMagnetic ? 0 : 1);
   bearingGrid->Add(m_bearingReference, 1, wxEXPAND);
   m_bearing =
-      AddNumber(this, bearingGrid, _("Observed bearing"),
+      AddNumber(m_scroller, bearingGrid, _("Observed bearing"),
                 sight.m_HorizonBearing, 0, 359.99, 0.1, 2, _("degrees"));
   m_variation =
-      AddNumber(this, bearingGrid, _("Magnetic variation (E + / W -)"),
+      AddNumber(m_scroller, bearingGrid, _("Magnetic variation (E + / W -)"),
                 sight.m_HorizonVariation, -90, 90, 0.1, 2, _("degrees"));
   m_deviation =
-      AddNumber(this, bearingGrid, _("Compass deviation (E + / W -)"),
+      AddNumber(m_scroller, bearingGrid, _("Compass deviation (E + / W -)"),
                 sight.m_HorizonDeviation, -45, 45, 0.1, 2, _("degrees"));
   m_bearingUncertainty =
-      AddNumber(this, bearingGrid, _("Bearing uncertainty (+/-)"),
+      AddNumber(m_scroller, bearingGrid, _("Bearing uncertainty (+/-)"),
                 sight.m_HorizonBearingUncertainty, 0, 30, 0.1, 1, _("degrees"));
-  bearingGrid->Add(new wxStaticText(this, wxID_ANY, _("Effective bearing")), 0,
-                   wxALIGN_CENTER_VERTICAL);
-  m_trueBearing = new wxStaticText(this, wxID_ANY, wxEmptyString);
+  bearingGrid->Add(
+      new wxStaticText(m_scroller, wxID_ANY, _("Effective bearing")), 0,
+      wxALIGN_CENTER_VERTICAL);
+  m_trueBearing = new wxStaticText(m_scroller, wxID_ANY, wxEmptyString);
   bearingGrid->Add(m_trueBearing, 1, wxEXPAND);
   bearingBox->Add(bearingGrid, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 6);
   root->Add(bearingBox, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
 
   wxStaticBoxSizer* conditions =
-      new wxStaticBoxSizer(wxVERTICAL, this, _("Horizon conditions"));
+      new wxStaticBoxSizer(wxVERTICAL, m_scroller, _("Horizon conditions"));
   wxFlexGridSizer* conditionsGrid = new wxFlexGridSizer(0, 2, 5, 10);
   conditionsGrid->AddGrowableCol(1);
-  m_eyeHeight = AddNumber(this, conditionsGrid, _("Height of eye"),
+  m_eyeHeight = AddNumber(m_scroller, conditionsGrid, _("Height of eye"),
                           sight.m_EyeHeight, 0, 100, 0.1, 2, _("metres"));
-  m_temperature = AddNumber(this, conditionsGrid, _("Air temperature"),
+  m_temperature = AddNumber(m_scroller, conditionsGrid, _("Air temperature"),
                             sight.m_Temperature, -60, 60, 0.5, 1, _("C"));
-  m_pressure = AddNumber(this, conditionsGrid, _("Pressure"), sight.m_Pressure,
-                         850, 1100, 1, 1, _("hPa"));
-  conditionsGrid->Add(new wxStaticText(this, wxID_ANY, _("Horizon quality")), 0,
-                      wxALIGN_CENTER_VERTICAL);
-  m_horizonQuality = new wxChoice(this, wxID_ANY);
+  m_pressure = AddNumber(m_scroller, conditionsGrid, _("Pressure"),
+                         sight.m_Pressure, 850, 1100, 1, 1, _("hPa"));
+  conditionsGrid->Add(
+      new wxStaticText(m_scroller, wxID_ANY, _("Horizon quality")), 0,
+      wxALIGN_CENTER_VERTICAL);
+  m_horizonQuality = new wxChoice(m_scroller, wxID_ANY);
   m_horizonQuality->Append(_("Clear sea horizon"));
   m_horizonQuality->Append(_("Hazy or indistinct horizon"));
   m_horizonQuality->Append(_("Obstructed or land horizon"));
   m_horizonQuality->SetSelection(sight.m_HorizonQuality);
   conditionsGrid->Add(m_horizonQuality, 1, wxEXPAND);
   m_altitudeUncertainty = AddNumber(
-      this, conditionsGrid, _("Horizon/refraction uncertainty (+/-)"),
+      m_scroller, conditionsGrid, _("Horizon/refraction uncertainty (+/-)"),
       sight.m_HorizonAltitudeUncertainty, 0, 180, 1, 1, _("arcminutes"));
   conditions->Add(conditionsGrid, 0, wxEXPAND | wxALL, 6);
   root->Add(conditions, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
 
   wxStaticBoxSizer* result =
-      new wxStaticBoxSizer(wxVERTICAL, this, _("Estimated result"));
-  m_preview = new wxStaticText(this, wxID_ANY, wxEmptyString);
+      new wxStaticBoxSizer(wxVERTICAL, m_scroller, _("Estimated result"));
+  m_preview = new wxStaticText(m_scroller, wxID_ANY, wxEmptyString);
   m_preview->Wrap(590);
   result->Add(m_preview, 0, wxEXPAND | wxALL, 6);
   root->Add(result, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
+
+  m_scroller->SetSizer(root);
+  root->Layout();
+  m_scroller->FitInside();
+  dialogRoot->Add(m_scroller, 1, wxEXPAND);
 
   wxStdDialogButtonSizer* buttons = new wxStdDialogButtonSizer;
   wxButton* ok = new wxButton(this, wxID_OK);
@@ -196,10 +215,20 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   buttons->AddButton(ok);
   buttons->AddButton(cancel);
   buttons->Realize();
-  root->Add(buttons, 0, wxEXPAND | wxALL, 8);
+  dialogRoot->Add(buttons, 0, wxEXPAND | wxALL, 8);
 
-  SetSizerAndFit(root);
-  SetMinSize(wxSize(640, GetSize().y));
+  SetSizer(dialogRoot);
+  SetMinSize(wxSize(600, 420));
+  wxRect displayArea(0, 0, 700, 760);
+  const int displayIndex = wxDisplay::GetFromWindow(parent);
+  if (displayIndex != wxNOT_FOUND)
+    displayArea =
+        wxDisplay(static_cast<unsigned int>(displayIndex)).GetClientArea();
+  else if (wxDisplay::GetCount() > 0)
+    displayArea = wxDisplay(static_cast<unsigned int>(0)).GetClientArea();
+  const int width = std::max(600, std::min(700, displayArea.GetWidth() - 40));
+  const int height = std::max(420, std::min(760, displayArea.GetHeight() - 80));
+  SetSize(wxSize(width, height));
   CentreOnParent();
 
   capture->Bind(wxEVT_BUTTON, &HorizonEventDialog::OnCaptureNow, this);
@@ -223,6 +252,14 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
 
   UpdateBearingControls();
   UpdatePreview();
+}
+
+void HorizonEventDialog::RelayoutContent() {
+  if (m_scroller && m_scroller->GetSizer()) {
+    m_scroller->GetSizer()->Layout();
+    m_scroller->FitInside();
+  }
+  Layout();
 }
 
 void HorizonEventDialog::ReadControls(Sight& sight) const {
@@ -278,7 +315,7 @@ void HorizonEventDialog::UpdatePreview() {
     m_preview->SetLabel(
         _("This observation will plot a horizon-event line of position. Add "
           "another sight or event to obtain a fix."));
-    Layout();
+    RelayoutContent();
     return;
   }
 
@@ -320,7 +357,7 @@ void HorizonEventDialog::UpdatePreview() {
           "estimate. The time-based line of position can still be saved.") +
         warning);
   }
-  Layout();
+  RelayoutContent();
 }
 
 void HorizonEventDialog::OnCaptureNow(wxCommandEvent& event) {

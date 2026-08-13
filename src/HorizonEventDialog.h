@@ -13,6 +13,7 @@
 class wxCheckBox;
 class wxChoice;
 class wxCalendarEvent;
+class wxScrolledWindow;
 class wxSpinCtrl;
 class wxSpinCtrlDouble;
 class wxStaticText;
@@ -30,12 +31,14 @@ private:
   void OnOK(wxCommandEvent& event);
   void UpdatePreview();
   void UpdateBearingControls();
+  void RelayoutContent();
   void ReadControls(Sight& sight) const;
 
   Sight& m_sight;
   int m_clockOffset;
   wxString m_systemTimeSummary;
 
+  wxScrolledWindow* m_scroller;
   wxChoice* m_event;
   wxCalendarCtrl* m_calendar;
   wxSpinCtrl* m_hours;
