@@ -4,6 +4,8 @@
 #include "eclipse/engine.h"
 #include "eclipse/data_pack.h"
 #include "eclipse/spk.h"
+#include "eclipse/pck.h"
+#include "eclipse/lunar_limb.h"
 
 #include <cstdlib>
 #include <iomanip>
@@ -13,24 +15,203 @@
 namespace {
 
 void Usage(std::ostream& stream) {
-  stream << "Offline Celestial Eclipse Engine\n"
-         << "Usage:\n"
-         << "  eclipse-cli nasa-2027-central <UT-hours>\n"
-         << "  eclipse-cli spk-position <kernel> <target> <center> <ET-seconds>\n"
-         << "  eclipse-cli de440-2027-axis <kernel>\n"
-         << "  eclipse-cli de440-axis <kernel> <TT-JD> <Delta-T-seconds>\n"
-         << "  eclipse-cli de440-2027-row <kernel> <UT-hours>\n"
-         << "  eclipse-cli find <kernel> <start-year> <end-year>\n"
-         << "  eclipse-cli path-2027 <kernel> [interval-seconds]\n"
-         << "  eclipse-cli local-2027 <kernel> <latitude> <longitude> [height-m]\n"
-         << "  eclipse-cli verify-data <kernel>\n"
-         << "\n"
-         << "Example: eclipse-cli nasa-2027-central 10.1104722222\n";
+  stream
+      << "Offline Celestial Eclipse Engine\n"
+      << "Usage:\n"
+      << "  eclipse-cli nasa-2027-central <UT-hours>\n"
+      << "  eclipse-cli spk-position <kernel> <target> <center> <ET-seconds>\n"
+      << "  eclipse-cli de440-2027-axis <kernel>\n"
+      << "  eclipse-cli de440-axis <kernel> <TT-JD> <Delta-T-seconds>\n"
+      << "  eclipse-cli de440-2027-row <kernel> <UT-hours>\n"
+      << "  eclipse-cli find <kernel> <start-year> <end-year>\n"
+      << "  eclipse-cli path-2027 <kernel> [interval-seconds]\n"
+      << "  eclipse-cli local-2027 <kernel> <latitude> <longitude> [height-m]\n"
+      << "  eclipse-cli verify-data <kernel>\n"
+      << "  eclipse-cli verify-pck <lunar-orientation-pck>\n"
+      << "  eclipse-cli verify-lola <lola-pack>\n"
+      << "  eclipse-cli geojson-2027 <kernel> [grid-degrees]\n"
+      << "  eclipse-cli moon-orientation <pck> <ET-seconds>\n"
+      << "  eclipse-cli event-at <kernel> <TT-JD> <Delta-T-seconds>\n"
+      << "  eclipse-cli local-2027-lola <kernel> <pck> <lola-pack> "
+         "<latitude> <longitude>\n"
+      << "\n"
+      << "Example: eclipse-cli nasa-2027-central 10.1104722222\n";
 }
 
 }  // namespace
 
 int main(int argc, char** argv) {
+  if (argc == 3 && (std::string(argv[1]) == "verify-pck" ||
+                    std::string(argv[1]) == "verify-lola")) {
+    const bool pck = std::string(argv[1]) == "verify-pck";
+    const eclipse::DataPackStatus status =
+        pck ? eclipse::VerifyLunarOrientationPck(argv[2])
+            : eclipse::VerifyLola64Pa(argv[2]);
+    if (!status.valid) {
+      std::cerr << status.error << '\n';
+      return 1;
+    }
+    std::cout << "valid," << (pck ? "moon-pa-de440" : "lola64-pa") << ",bytes,"
+              << status.bytes << ",sha256," << status.sha256 << '\n';
+    return 0;
+  }
+
+  if (argc == 7 && std::string(argv[1]) == "local-2027-lola") {
+    char* end = NULL;
+    const double latitude = std::strtod(argv[5], &end);
+    if (!end || *end != '\0') return 2;
+    const double longitude = std::strtod(argv[6], &end);
+    if (!end || *end != '\0') return 2;
+    eclipse::EclipseEngine engine;
+    eclipse::PckKernel pck;
+    eclipse::LunarLimbGrid grid;
+    std::string error;
+    if (!engine.OpenEphemeris(argv[2], &error) || !pck.Open(argv[3], &error) ||
+        !grid.Open(argv[4], &error)) {
+      std::cerr << error << '\n';
+      return 1;
+    }
+    eclipse::EclipseEvent event;
+    event.type = eclipse::kTotalEclipse;
+    event.maximum_tt_jd = 2461619.9221;
+    event.delta_t_seconds = 71.7;
+    eclipse::LocalContacts contacts;
+    if (!engine.SolveLocalContacts(event,
+                                   eclipse::GeoPoint(latitude, longitude), 0.0,
+                                   &contacts, &error)) {
+      std::cerr << error << '\n';
+      return 1;
+    }
+    const double original[4] = {contacts.c1.tt_jd, contacts.c2.tt_jd,
+                                contacts.c3.tt_jd, contacts.c4.tt_jd};
+    if (!engine.RefineContactsWithLola(event,
+                                       eclipse::GeoPoint(latitude, longitude),
+                                       0.0, pck, grid, &contacts, &error)) {
+      std::cerr << error << '\n';
+      return 1;
+    }
+    const eclipse::ContactTime* refined[4] = {&contacts.c1, &contacts.c2,
+                                              &contacts.c3, &contacts.c4};
+    const char* names[4] = {"C1", "C2", "C3", "C4"};
+    std::cout << "contact,lola_minus_spherical_seconds\n";
+    for (int index = 0; index < 4; ++index)
+      if (refined[index]->valid)
+        std::cout << names[index] << ',' << std::fixed << std::setprecision(6)
+                  << (refined[index]->tt_jd - original[index]) * 86400.0
+                  << '\n';
+    std::cout << "central_duration_seconds," << std::setprecision(3)
+              << contacts.central_duration_seconds << '\n';
+    return 0;
+  }
+
+  if (argc == 5 && std::string(argv[1]) == "event-at") {
+    char* end = NULL;
+    const double tt = std::strtod(argv[3], &end);
+    if (!end || *end != '\0') return 2;
+    const double delta_t = std::strtod(argv[4], &end);
+    if (!end || *end != '\0') return 2;
+    eclipse::EclipseEngine engine;
+    eclipse::EclipseEvent event;
+    std::string error;
+    if (!engine.OpenEphemeris(argv[2], &error) ||
+        !engine.EvaluateEvent(tt, delta_t, &event, &error)) {
+      std::cerr << (error.empty() ? "Not a solar eclipse" : error) << '\n';
+      return 1;
+    }
+    std::cout << eclipse::EclipseTypeName(event.type) << ',' << std::fixed
+              << std::setprecision(8) << event.greatest_position.latitude_deg
+              << ',' << event.greatest_position.longitude_deg << ','
+              << event.magnitude << ',' << event.axis_distance_km << '\n';
+    return 0;
+  }
+
+  if (argc == 4 && std::string(argv[1]) == "moon-orientation") {
+    char* end = NULL;
+    const double et = std::strtod(argv[3], &end);
+    if (!end || *end != '\0') return 2;
+    eclipse::PckKernel kernel;
+    std::string error;
+    eclipse::Vector3 axes[3];
+    if (!kernel.Open(argv[2], &error) ||
+        !kernel.IcrfToBodyFixed(et, axes, &error)) {
+      std::cerr << error << '\n';
+      return 1;
+    }
+    std::cout << std::fixed << std::setprecision(12);
+    std::cout << axes[0].x << ',' << axes[1].x << ',' << axes[2].x << '\n'
+              << axes[0].y << ',' << axes[1].y << ',' << axes[2].y << '\n'
+              << axes[0].z << ',' << axes[1].z << ',' << axes[2].z << '\n';
+    return 0;
+  }
+
+  if ((argc == 3 || argc == 4) && std::string(argv[1]) == "geojson-2027") {
+    double grid = 2.0;
+    char* end = NULL;
+    if (argc == 4) {
+      grid = std::strtod(argv[3], &end);
+      if (!end || *end != '\0') return 2;
+    }
+    eclipse::EclipseEngine engine;
+    std::string error;
+    if (!engine.OpenEphemeris(argv[2], &error)) {
+      std::cerr << error << '\n';
+      return 1;
+    }
+    eclipse::EclipseEvent event;
+    event.type = eclipse::kTotalEclipse;
+    event.maximum_tt_jd = 2461619.9221;
+    event.delta_t_seconds = 71.7;
+    std::vector<eclipse::PathPoint> path;
+    const double levels_values[] = {0.2, 0.4, 0.6, 0.8, 0.9};
+    const std::vector<double> levels(levels_values, levels_values + 5);
+    std::vector<eclipse::MagnitudeContour> contours;
+    if (!engine.BuildCentralPath(event, 120.0, &path, &error) ||
+        !engine.BuildMagnitudeContours(event, levels, grid, 300.0, &contours,
+                                       &error)) {
+      std::cerr << error << '\n';
+      return 1;
+    }
+    std::cout << std::fixed << std::setprecision(7)
+              << "{\"type\":\"FeatureCollection\",\"features\":[";
+    const char* names[] = {"northern limit", "central line", "southern limit"};
+    for (int line = 0; line < 3; ++line) {
+      if (line) std::cout << ',';
+      std::cout << "{\"type\":\"Feature\",\"properties\":{\"kind\":\""
+                << names[line]
+                << "\"},\"geometry\":{\"type\":"
+                   "\"LineString\",\"coordinates\":[";
+      for (std::size_t index = 0; index < path.size(); ++index) {
+        if (index) std::cout << ',';
+        const eclipse::GeoPoint& point = line == 0 ? path[index].northern_limit
+                                         : line == 1
+                                             ? path[index].central_line
+                                             : path[index].southern_limit;
+        std::cout << '[' << point.longitude_deg << ',' << point.latitude_deg
+                  << ']';
+      }
+      std::cout << "]}}";
+    }
+    for (std::size_t index = 0; index < contours.size(); ++index) {
+      std::cout << ",{\"type\":\"Feature\",\"properties\":{\"kind\":"
+                   "\"magnitude contour\",\"magnitude\":"
+                << contours[index].magnitude
+                << "},\"geometry\":{\"type\":\"MultiLineString\","
+                   "\"coordinates\":[";
+      for (std::size_t segment = 0; segment < contours[index].segments.size();
+           ++segment) {
+        if (segment) std::cout << ',';
+        const eclipse::ContourSegment& item = contours[index].segments[segment];
+        std::cout << "[[" << item.first.longitude_deg << ','
+                  << item.first.latitude_deg << "],["
+                  << item.second.longitude_deg << ','
+                  << item.second.latitude_deg << "]]";
+      }
+      std::cout << "]}}";
+    }
+    std::cout << "]}\n";
+    return 0;
+  }
+
   if (argc == 3 && std::string(argv[1]) == "verify-data") {
     const eclipse::DataPackStatus status = eclipse::VerifyDe440s(argv[2]);
     if (!status.valid) {
@@ -42,8 +223,7 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  if ((argc == 3 || argc == 4) &&
-      std::string(argv[1]) == "path-2027") {
+  if ((argc == 3 || argc == 4) && std::string(argv[1]) == "path-2027") {
     double interval = 60.0;
     char* end = NULL;
     if (argc == 4) {
@@ -86,12 +266,10 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  if ((argc == 5 || argc == 6) &&
-      std::string(argv[1]) == "local-2027") {
+  if ((argc == 5 || argc == 6) && std::string(argv[1]) == "local-2027") {
     char* end = NULL;
     const double latitude = std::strtod(argv[3], &end);
-    if (!end || *end != '\0' || latitude < -90.0 || latitude > 90.0)
-      return 2;
+    if (!end || *end != '\0' || latitude < -90.0 || latitude > 90.0) return 2;
     const double longitude = std::strtod(argv[4], &end);
     if (!end || *end != '\0' || longitude < -180.0 || longitude > 180.0)
       return 2;
@@ -112,32 +290,32 @@ int main(int argc, char** argv) {
     event.delta_t_seconds = 71.7;
     eclipse::LocalContacts contacts;
     if (!engine.SolveLocalContacts(event,
-          eclipse::GeoPoint(latitude, longitude), height, &contacts, &error)) {
+                                   eclipse::GeoPoint(latitude, longitude),
+                                   height, &contacts, &error)) {
       std::cerr << error << '\n';
       return 1;
     }
-    const eclipse::ContactTime* values[] = {
-        &contacts.c1, &contacts.c2, &contacts.maximum,
-        &contacts.c3, &contacts.c4};
+    const eclipse::ContactTime* values[] = {&contacts.c1, &contacts.c2,
+                                            &contacts.maximum, &contacts.c3,
+                                            &contacts.c4};
     const char* names[] = {"C1", "C2", "MAX", "C3", "C4"};
     std::cout << "contact,ut,altitude_deg,azimuth_deg\n";
     for (int index = 0; index < 5; ++index) {
       if (!values[index]->valid) continue;
       const eclipse::CalendarDateTime utc = eclipse::JulianDateToCalendar(
           values[index]->tt_jd - event.delta_t_seconds / 86400.0);
-      std::cout << names[index] << ',' << std::setfill('0')
-                << std::setw(2) << utc.hour << ':' << std::setw(2)
-                << utc.minute << ':' << std::fixed << std::setprecision(3)
-                << std::setw(6) << utc.second << ',' << std::setprecision(4)
+      std::cout << names[index] << ',' << std::setfill('0') << std::setw(2)
+                << utc.hour << ':' << std::setw(2) << utc.minute << ':'
+                << std::fixed << std::setprecision(3) << std::setw(6)
+                << utc.second << ',' << std::setprecision(4)
                 << values[index]->sun_altitude_deg << ','
                 << values[index]->sun_azimuth_deg << '\n';
     }
     std::cout << "type," << eclipse::EclipseTypeName(contacts.type)
-              << "\nmagnitude," << std::setprecision(7)
-              << contacts.magnitude << "\nobscuration,"
-              << contacts.obscuration << "\ncentral_duration_seconds,"
-              << std::setprecision(3) << contacts.central_duration_seconds
-              << '\n';
+              << "\nmagnitude," << std::setprecision(7) << contacts.magnitude
+              << "\nobscuration," << contacts.obscuration
+              << "\ncentral_duration_seconds," << std::setprecision(3)
+              << contacts.central_duration_seconds << '\n';
     return contacts.c1.valid ? 0 : 1;
   }
 
@@ -173,8 +351,8 @@ int main(int argc, char** argv) {
                  "longitude_deg,magnitude,axis_distance_km\n";
     for (std::size_t index = 0; index < events.size(); ++index) {
       const eclipse::EclipseEvent& event = events[index];
-      const double ut_jd = event.maximum_tt_jd -
-                           event.delta_t_seconds / 86400.0;
+      const double ut_jd =
+          event.maximum_tt_jd - event.delta_t_seconds / 86400.0;
       const eclipse::CalendarDateTime date =
           eclipse::JulianDateToCalendar(ut_jd);
       std::cout << std::setfill('0') << std::setw(4) << date.year << '-'
@@ -183,10 +361,10 @@ int main(int argc, char** argv) {
                 << date.minute << ':' << std::fixed << std::setprecision(3)
                 << std::setw(6) << date.second << 'Z' << ','
                 << eclipse::EclipseTypeName(event.type) << ','
-                << std::setprecision(9) << ut_jd << ','
-                << std::setprecision(3) << event.delta_t_seconds << ','
-                << std::setprecision(6) << event.greatest_position.latitude_deg
-                << ',' << event.greatest_position.longitude_deg << ','
+                << std::setprecision(9) << ut_jd << ',' << std::setprecision(3)
+                << event.delta_t_seconds << ',' << std::setprecision(6)
+                << event.greatest_position.latitude_deg << ','
+                << event.greatest_position.longitude_deg << ','
                 << event.magnitude << ',' << event.axis_distance_km << '\n';
     }
     return 0;
@@ -197,8 +375,7 @@ int main(int argc, char** argv) {
     const double ut_hours = std::strtod(argv[3], &end);
     if (!end || *end != '\0' || ut_hours < 0.0 || ut_hours >= 24.0) return 2;
     const double delta_t = 71.7;
-    const double tt_jd = 2461619.5 +
-                         (ut_hours + delta_t / 3600.0) / 24.0;
+    const double tt_jd = 2461619.5 + (ut_hours + delta_t / 3600.0) / 24.0;
     const double et = (tt_jd - 2451545.0) * 86400.0;
     eclipse::SpkKernel kernel;
     std::string error;
@@ -217,10 +394,9 @@ int main(int argc, char** argv) {
     eclipse::EarthOrientation orientation;
     orientation.tt_jd = tt_jd;
     orientation.ut1_jd = tt_jd - delta_t / 86400.0;
-    const eclipse::ShadowFootprint footprint =
-        eclipse::CentralShadowFootprint(
-            state, orientation, eclipse::ReferenceEllipsoid(),
-            eclipse::PhysicalConstants(), 7200);
+    const eclipse::ShadowFootprint footprint = eclipse::CentralShadowFootprint(
+        state, orientation, eclipse::ReferenceEllipsoid(),
+        eclipse::PhysicalConstants(), 7200);
     if (!footprint.central || footprint.boundary.empty()) {
       std::cerr << "No central footprint at this time\n";
       return 1;
@@ -230,9 +406,9 @@ int main(int argc, char** argv) {
     for (int direction = -1; direction <= 1; direction += 2) {
       eclipse::SolarLunarState adjacent;
       if (!eclipse::AstrometricPosition(kernel, 301, 399, et + direction,
-                                         &adjacent.moon_from_earth_km, &error) ||
+                                        &adjacent.moon_from_earth_km, &error) ||
           !eclipse::AstrometricPosition(kernel, 10, 399, et + direction,
-                                         &adjacent.sun_from_earth_km, &error)) {
+                                        &adjacent.sun_from_earth_km, &error)) {
         std::cerr << error << '\n';
         return 1;
       }
@@ -254,9 +430,9 @@ int main(int argc, char** argv) {
       return 1;
     }
     const eclipse::LocalCircumstances local =
-        eclipse::EvaluateLocalCircumstances(
-            state, orientation, footprint.axis, 0.0,
-            eclipse::ReferenceEllipsoid(), eclipse::PhysicalConstants());
+        eclipse::EvaluateLocalCircumstances(state, orientation, footprint.axis,
+                                            0.0, eclipse::ReferenceEllipsoid(),
+                                            eclipse::PhysicalConstants());
     std::cout << std::fixed << std::setprecision(8)
               << "ut_hours,north_lat,north_lon,south_lat,south_lon,"
                  "axis_lat,axis_lon,magnitude,obscuration,sun_altitude,"
@@ -384,15 +560,15 @@ int main(int argc, char** argv) {
     return 2;
   }
 
-  const eclipse::BesselianElements elements =
-      eclipse::Nasa2027Aug02Reference();
+  const eclipse::BesselianElements elements = eclipse::Nasa2027Aug02Reference();
   const double tt_hours = ut_hours + elements.delta_t_seconds / 3600.0;
   const double tt_jd = 2461619.5 + tt_hours / 24.0;
-  const eclipse::EvaluatedElements evaluated = eclipse::Evaluate(elements, tt_jd);
+  const eclipse::EvaluatedElements evaluated =
+      eclipse::Evaluate(elements, tt_jd);
 
   eclipse::GeoPoint position;
-  if (!eclipse::CentralLinePosition(evaluated,
-                                    eclipse::ReferenceEllipsoid(), &position)) {
+  if (!eclipse::CentralLinePosition(evaluated, eclipse::ReferenceEllipsoid(),
+                                    &position)) {
     std::cerr << "The shadow axis does not intersect WGS 84 at this time.\n";
     return 1;
   }

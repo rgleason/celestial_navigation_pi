@@ -19,9 +19,9 @@ struct GeometryInvariantTests {
     orientation.tt_jd = 2451545.0;
     orientation.ut1_jd = 2451545.0;
     const eclipse::LocalCircumstances local =
-        eclipse::EvaluateLocalCircumstances(
-            state, orientation, observer, 0.0,
-            eclipse::ReferenceEllipsoid(), eclipse::PhysicalConstants());
+        eclipse::EvaluateLocalCircumstances(state, orientation, observer, 0.0,
+                                            eclipse::ReferenceEllipsoid(),
+                                            eclipse::PhysicalConstants());
     if (!std::isfinite(local.magnitude) || !std::isfinite(local.obscuration)) {
       std::cerr << "FAIL geometry invariant returned non-finite result\n";
       std::exit(EXIT_FAILURE);
@@ -32,4 +32,3 @@ struct GeometryInvariantTests {
 GeometryInvariantTests geometry_invariant_tests;
 
 }  // namespace
-

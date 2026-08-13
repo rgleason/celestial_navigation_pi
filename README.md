@@ -8,7 +8,20 @@ This maintained fork adds:
 * a time-integrity panel showing local, UTC, GNSS/NMEA and chrony status;
 * an optional persistent show/hide control for the time panel; and
 * observed sunrise/sunset horizon events, with optional magnetic or true
-  bearing, magnetic variation, compass deviation and uncertainty estimates.
+  bearing, magnetic variation, compass deviation and uncertainty estimates;
+  and
+* a completely offline solar-eclipse planner powered by JPL DE440, with event
+  discovery through 2100, local C1–C4 circumstances, central-path limits,
+  partial-eclipse magnitude contours and optional NASA LOLA lunar-limb contact
+  refinement.
+
+The eclipse planner is opened with **Eclipses…** on the plugin's main window.
+Its astronomical data is deliberately separate from the plugin binary: use
+the three **Import** buttons once to copy the checksum-verified DE440s base
+kernel and, optionally, the lunar-orientation and LOLA packs into OpenCPN's
+private plugin-data directory. No eclipse calculation or UI action performs
+network access. See [eclipse/DATA.md](eclipse/DATA.md) for exact files,
+provenance, checksums and storage sizes.
 
 Maintained fork: https://github.com/pob220/celestial_navigation_pi
 

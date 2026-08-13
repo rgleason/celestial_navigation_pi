@@ -96,8 +96,7 @@ bool SpkKernel::Open(const std::string& path, std::string* error) {
 
   const std::int32_t nd = ReadLittleEndian<std::int32_t>(header + 8);
   const std::int32_t ni = ReadLittleEndian<std::int32_t>(header + 12);
-  std::int32_t summary_record =
-      ReadLittleEndian<std::int32_t>(header + 76);
+  std::int32_t summary_record = ReadLittleEndian<std::int32_t>(header + 76);
   if (nd != 2 || ni != 6 || summary_record < 1) {
     if (error) *error = "Unsupported or corrupt SPK summary layout";
     return false;
@@ -120,8 +119,7 @@ bool SpkKernel::Open(const std::string& path, std::string* error) {
     }
 
     for (std::int32_t index = 0; index < summary_count; ++index) {
-      const unsigned char* summary =
-          record + 24 + index * summary_words * 8;
+      const unsigned char* summary = record + 24 + index * summary_words * 8;
       SegmentInfo segment;
       segment.start_et = ReadLittleEndian<double>(summary);
       segment.end_et = ReadLittleEndian<double>(summary + 8);
@@ -131,6 +129,10 @@ bool SpkKernel::Open(const std::string& path, std::string* error) {
       segment.type = ReadLittleEndian<std::int32_t>(summary + 28);
       segment.initial_address = ReadLittleEndian<std::int32_t>(summary + 32);
       segment.final_address = ReadLittleEndian<std::int32_t>(summary + 36);
+      segment.initial_epoch = 0.0;
+      segment.interval_length = 0.0;
+      segment.record_size = 0;
+      segment.record_count = 0;
       segments_.push_back(segment);
     }
     summary_record = static_cast<std::int32_t>(next_record_value);
@@ -139,6 +141,25 @@ bool SpkKernel::Open(const std::string& path, std::string* error) {
   if (segments_.empty()) {
     if (error) *error = "SPK kernel contains no segments";
     return false;
+  }
+  for (std::size_t index = 0; index < segments_.size(); ++index) {
+    SegmentInfo& segment = segments_[index];
+    if (segment.type != 2) continue;
+    unsigned char directory[32];
+    if (!ReadBytes(static_cast<std::uint64_t>(segment.final_address - 4) * 8u,
+                   directory, sizeof(directory), error))
+      return false;
+    segment.initial_epoch = ReadLittleEndian<double>(directory);
+    segment.interval_length = ReadLittleEndian<double>(directory + 8);
+    const double record_size = ReadLittleEndian<double>(directory + 16);
+    const double record_count = ReadLittleEndian<double>(directory + 24);
+    segment.record_size = static_cast<std::int32_t>(record_size);
+    segment.record_count = static_cast<std::int32_t>(record_count);
+    if (segment.interval_length <= 0.0 || segment.record_count <= 0 ||
+        segment.record_size < 8 || (segment.record_size - 2) % 3 != 0) {
+      if (error) *error = "Corrupt SPK type-2 segment directory";
+      return false;
+    }
   }
   return true;
 }
@@ -160,41 +181,22 @@ bool SpkKernel::EvaluateSegment(const SegmentInfo& segment, double et,
     return false;
   }
 
-  double initial_epoch = 0.0;
-  double interval_length = 0.0;
-  double record_size_value = 0.0;
-  double record_count_value = 0.0;
-  if (!ReadDoubleWord(segment.final_address - 3, &initial_epoch, error) ||
-      !ReadDoubleWord(segment.final_address - 2, &interval_length, error) ||
-      !ReadDoubleWord(segment.final_address - 1, &record_size_value, error) ||
-      !ReadDoubleWord(segment.final_address, &record_count_value, error)) {
-    return false;
-  }
-
-  const std::int32_t record_size =
-      static_cast<std::int32_t>(record_size_value);
-  const std::int32_t record_count =
-      static_cast<std::int32_t>(record_count_value);
-  if (interval_length <= 0.0 || record_count <= 0 || record_size < 8 ||
-      (record_size - 2) % 3 != 0) {
-    if (error) *error = "Corrupt SPK type-2 segment directory";
-    return false;
-  }
-
   std::int32_t record_index = static_cast<std::int32_t>(
-      std::floor((et - initial_epoch) / interval_length));
+      std::floor((et - segment.initial_epoch) / segment.interval_length));
   record_index = std::max<std::int32_t>(
-      0, std::min<std::int32_t>(record_count - 1, record_index));
+      0, std::min<std::int32_t>(segment.record_count - 1, record_index));
   const std::int32_t record_address =
-      segment.initial_address + record_index * record_size;
+      segment.initial_address + record_index * segment.record_size;
 
-  std::vector<double> record(static_cast<std::size_t>(record_size));
-  for (std::int32_t word = 0; word < record_size; ++word) {
-    if (!ReadDoubleWord(record_address + word,
-                        &record[static_cast<std::size_t>(word)], error)) {
-      return false;
-    }
-  }
+  std::vector<unsigned char> bytes(
+      static_cast<std::size_t>(segment.record_size) * 8u);
+  if (!ReadBytes(static_cast<std::uint64_t>(record_address - 1) * 8u, &bytes[0],
+                 bytes.size(), error))
+    return false;
+  std::vector<double> record(static_cast<std::size_t>(segment.record_size));
+  for (std::int32_t word = 0; word < segment.record_size; ++word)
+    record[static_cast<std::size_t>(word)] =
+        ReadLittleEndian<double>(&bytes[static_cast<std::size_t>(word) * 8u]);
   const double midpoint = record[0];
   const double radius = record[1];
   if (radius <= 0.0) {
@@ -208,7 +210,7 @@ bool SpkKernel::EvaluateSegment(const SegmentInfo& segment, double et,
   }
 
   const std::size_t coefficient_count =
-      static_cast<std::size_t>((record_size - 2) / 3);
+      static_cast<std::size_t>((segment.record_size - 2) / 3);
   std::vector<double> coefficients(coefficient_count);
   double components[3] = {0.0, 0.0, 0.0};
   for (std::size_t component = 0; component < 3; ++component) {
@@ -260,9 +262,9 @@ bool SpkKernel::PositionToSsb(std::int32_t target, double et,
 
   Vector3 relative;
   Vector3 center;
-  const bool success = EvaluateSegment(*selected, et, &relative, error) &&
-                       PositionToSsb(selected->center, et, &center, stack,
-                                     error);
+  const bool success =
+      EvaluateSegment(*selected, et, &relative, error) &&
+      PositionToSsb(selected->center, et, &center, stack, error);
   stack->pop_back();
   if (!success) return false;
   *position_km = center + relative;
@@ -292,4 +294,3 @@ bool SpkKernel::Position(std::int32_t target, std::int32_t center, double et,
 }
 
 }  // namespace eclipse
-

@@ -82,6 +82,7 @@ public:
   void SetPositionFixEx(PlugIn_Position_Fix_Ex& pfix);
   void SetNMEASentence(wxString& sentence);
   GnssTimeSnapshot GetGnssTimeSnapshot() const;
+  bool GetBoatPosition(double* latitude, double* longitude) const;
   void SetCursorLatLon(double lat, double lon);
   void SetPluginMessage(wxString& message_id, wxString& message_body);
   void OnDialogClose();
@@ -92,6 +93,7 @@ private:
 
   CelestialNavigationDialog* m_pCelestialNavigationDialog;
   GnssTimeMonitor m_gnssTime;
+  bool m_hasPositionFix;
 };
 
 extern void celestial_navigation_pi_BoatPos(double& lat, double& lon);

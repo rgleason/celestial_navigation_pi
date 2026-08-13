@@ -31,15 +31,16 @@ struct ShadowFootprint {
 
 // Intersects the umbral/antumbral cone with WGS 84. Boundary points are in
 // azimuth order around the cone and may cross the anti-meridian.
-ShadowFootprint CentralShadowFootprint(
-    const SolarLunarState& state, const EarthOrientation& orientation,
-    const ReferenceEllipsoid& ellipsoid, const PhysicalConstants& constants,
-    int angular_samples);
+ShadowFootprint CentralShadowFootprint(const SolarLunarState& state,
+                                       const EarthOrientation& orientation,
+                                       const ReferenceEllipsoid& ellipsoid,
+                                       const PhysicalConstants& constants,
+                                       int angular_samples);
 
 bool SelectCrossTrackLimits(const ShadowFootprint& footprint,
                             const GeoPoint& axis_before,
-                            const GeoPoint& axis_after,
-                            GeoPoint* left_limit, GeoPoint* right_limit);
+                            const GeoPoint& axis_after, GeoPoint* left_limit,
+                            GeoPoint* right_limit);
 
 double SurfaceDistanceKm(const GeoPoint& first, const GeoPoint& second);
 
@@ -56,11 +57,35 @@ struct LocalCircumstances {
   bool annular;
 
   LocalCircumstances()
-      : separation_rad(0.0), sun_semidiameter_rad(0.0),
-        moon_semidiameter_rad(0.0), magnitude(0.0), obscuration(0.0),
-        sun_altitude_deg(0.0), sun_azimuth_deg(0.0), partial(false),
-        total(false), annular(false) {}
+      : separation_rad(0.0),
+        sun_semidiameter_rad(0.0),
+        moon_semidiameter_rad(0.0),
+        magnitude(0.0),
+        obscuration(0.0),
+        sun_altitude_deg(0.0),
+        sun_azimuth_deg(0.0),
+        partial(false),
+        total(false),
+        annular(false) {}
 };
+
+struct EarthFixedSolarLunarState {
+  Vector3 sun_from_earth_km;
+  Vector3 moon_from_earth_km;
+};
+
+EarthFixedSolarLunarState ToEarthFixed(const SolarLunarState& state,
+                                       const EarthOrientation& orientation);
+
+Vector3 ObserverPositionIcrf(const GeoPoint& observer, double height_metres,
+                             const EarthOrientation& orientation,
+                             const ReferenceEllipsoid& ellipsoid,
+                             double earth_equatorial_radius_km);
+
+LocalCircumstances EvaluateLocalCircumstancesFixed(
+    const EarthFixedSolarLunarState& state, const GeoPoint& observer,
+    double height_metres, const ReferenceEllipsoid& ellipsoid,
+    const PhysicalConstants& constants);
 
 LocalCircumstances EvaluateLocalCircumstances(
     const SolarLunarState& state, const EarthOrientation& orientation,

@@ -97,7 +97,7 @@ enum {
 };  // RMColumns;
 
 wxString columns[] = {
-    _(""), _("Type"), _("Body"), _("Time (UTC)"), _("Measurement"), _("Color"),
+    "", _("Type"), _("Body"), _("Time (UTC)"), _("Measurement"), _("Color"),
 };
 
 CelestialNavigationDialog::CelestialNavigationDialog(
@@ -116,6 +116,8 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       m_systemTimeStatus(NULL),
       m_sightCorrection(NULL),
       m_horizonEventButton(NULL),
+      m_eclipseButton(NULL),
+      m_eclipseDialog(NULL),
       m_chronyPollTicks(0),
       m_chronyAvailable(false) {
   wxFileConfig* pConf = GetOCPNConfigObject();
@@ -150,6 +152,13 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   actionButtons->InsertSpacer(3, 0);
   m_horizonEventButton->Bind(wxEVT_BUTTON,
                              &CelestialNavigationDialog::OnHorizonEvent, this);
+  m_eclipseButton = new wxButton(this, wxID_ANY, _("Eclipses..."));
+  m_eclipseButton->SetToolTip(
+      _("Find and plot offline solar eclipse paths and local circumstances"));
+  actionButtons->Insert(4, m_eclipseButton, 0, wxALL | wxEXPAND, 5);
+  actionButtons->InsertSpacer(5, 0);
+  m_eclipseButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnEclipse,
+                        this);
 
   m_lSights->InsertColumn(rmVISIBLE, wxT(""));
   for (int i = 1; i < rmMAX; i++) {
@@ -225,6 +234,10 @@ CelestialNavigationDialog::~CelestialNavigationDialog() {
   m_timeTimer.Stop();
   Unbind(wxEVT_TIMER, &CelestialNavigationDialog::OnTimeTimer, this,
          m_timeTimer.GetId());
+  if (m_eclipseDialog) {
+    m_eclipseDialog->Destroy();
+    m_eclipseDialog = NULL;
+  }
 
   wxFileConfig* pConf = GetOCPNConfigObject();
   pConf->SetPath(_T("/PlugIns/CelestialNavigation"));
@@ -962,6 +975,23 @@ void CelestialNavigationDialog::OnHorizonEvent(wxCommandEvent& event) {
   m_Sights.push_back(std::move(sight));
   RebuildList();
   RequestRefresh(GetParent());
+}
+
+void CelestialNavigationDialog::OnEclipse(wxCommandEvent&) {
+  if (!m_eclipseDialog) m_eclipseDialog = new EclipseDialog(this, m_Plugin);
+  m_eclipseDialog->Show();
+  m_eclipseDialog->Raise();
+}
+
+void CelestialNavigationDialog::RunEclipseIntegrationScenario() {
+  wxCommandEvent command;
+  OnEclipse(command);
+  if (m_eclipseDialog) m_eclipseDialog->RunIntegrationScenario2027();
+}
+
+bool CelestialNavigationDialog::RenderEclipse(piDC* dc,
+                                              PlugIn_ViewPort* viewport) {
+  return m_eclipseDialog && m_eclipseDialog->Render(dc, viewport);
 }
 
 void CelestialNavigationDialog::OnDuplicate(wxCommandEvent& event) {

@@ -35,6 +35,7 @@
 #include "CelestialNavigationUI.h"
 #include "FixDialog.h"
 #include "ClockCorrectionDialog.h"
+#include "EclipseDialog.h"
 
 #include <vector>
 #include <wx/timer.h>
@@ -55,6 +56,8 @@ public:
   std::vector<Sight> m_Sights;
 
   void OnFixClose();
+  bool RenderEclipse(piDC* dc, PlugIn_ViewPort* viewport);
+  void RunEclipseIntegrationScenario();
 
 private:
   bool OpenXML(bool reportfailure);
@@ -73,6 +76,7 @@ private:
   // event handlers
   void OnNew(wxCommandEvent& event);
   void OnHorizonEvent(wxCommandEvent& event);
+  void OnEclipse(wxCommandEvent& event);
   void OnDuplicate(wxCommandEvent& event);
   void OnEdit();
   void OnEditMouse(wxMouseEvent& event) { OnEdit(); }
@@ -114,6 +118,8 @@ private:
   wxStaticText* m_systemTimeStatus;
   wxStaticText* m_sightCorrection;
   wxButton* m_horizonEventButton;
+  wxButton* m_eclipseButton;
+  EclipseDialog* m_eclipseDialog;
   wxTimer m_timeTimer;
   int m_chronyPollTicks;
   ChronyTrackingInfo m_chronyTracking;

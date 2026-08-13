@@ -42,15 +42,12 @@ Vector3 IcrfToEarthFixed(const Vector3& icrf,
                          const EarthOrientation& orientation) {
   double matrix[3][3];
   eraC2t06a(2451545.0, orientation.tt_jd - 2451545.0, 2451545.0,
-            orientation.ut1_jd - 2451545.0,
-            orientation.polar_motion_x_rad,
+            orientation.ut1_jd - 2451545.0, orientation.polar_motion_x_rad,
             orientation.polar_motion_y_rad, matrix);
-  return Vector3(matrix[0][0] * icrf.x + matrix[0][1] * icrf.y +
-                     matrix[0][2] * icrf.z,
-                 matrix[1][0] * icrf.x + matrix[1][1] * icrf.y +
-                     matrix[1][2] * icrf.z,
-                 matrix[2][0] * icrf.x + matrix[2][1] * icrf.y +
-                     matrix[2][2] * icrf.z);
+  return Vector3(
+      matrix[0][0] * icrf.x + matrix[0][1] * icrf.y + matrix[0][2] * icrf.z,
+      matrix[1][0] * icrf.x + matrix[1][1] * icrf.y + matrix[1][2] * icrf.z,
+      matrix[2][0] * icrf.x + matrix[2][1] * icrf.y + matrix[2][2] * icrf.z);
 }
 
 bool ShadowAxisPosition(const SolarLunarState& state,
@@ -62,8 +59,7 @@ bool ShadowAxisPosition(const SolarLunarState& state,
       Normalize(state.moon_from_earth_km - state.sun_from_earth_km);
   if (direction_icrf.Norm() == 0.0) return false;
 
-  const Vector3 moon =
-      IcrfToEarthFixed(state.moon_from_earth_km, orientation);
+  const Vector3 moon = IcrfToEarthFixed(state.moon_from_earth_km, orientation);
   const Vector3 direction = IcrfToEarthFixed(direction_icrf, orientation);
   const double polar_ratio = ellipsoid.polar_ratio();
   const double inverse_polar_squared = 1.0 / (polar_ratio * polar_ratio);

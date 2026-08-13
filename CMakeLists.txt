@@ -70,14 +70,14 @@ set(SHORT_DESCRIPTION
 	"Celestial Navigation Plugin for OpenCPN"
 )
 set(LONG_DESCRIPTION
-	"Nautical almanac: sun, moon, planets and navigational stars. Compute position fix from celestial measurements."
+	"Nautical almanac, celestial fixes, horizon events, time integrity and a fully offline DE440 solar-eclipse planner."
 )
 
 set(VERSION_MAJOR "2")
-set(VERSION_MINOR "4")
-set(VERSION_PATCH "67")
+set(VERSION_MINOR "5")
+set(VERSION_PATCH "0")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "12/08/2026" )# DD/MM/YYYY format
+set(VERSION_DATE  "13/08/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -188,6 +188,7 @@ SET(SRCS
         src/geomag/geomag.c
         src/CelestialNavigationDialog.cpp
         src/HorizonEventDialog.cpp
+        src/EclipseDialog.cpp
         src/TimeStatus.cpp
         src/CelestialNavigationUI.cpp
         src/SightDialog.cpp
@@ -209,6 +210,7 @@ SET(HDRS
         src/celestial_navigation_pi.h
         src/CelestialNavigationDialog.h
         src/HorizonEventDialog.h
+        src/EclipseDialog.h
         src/TimeStatus.h
         src/CelestialNavigationUI.h
         src/ClockCorrectionDialog.h
@@ -253,6 +255,21 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/geomag)
 # ==============================================================
 
 target_sources(${PACKAGE_NAME} PUBLIC ${SRC} )
+
+# The eclipse numerical core is also usable as a standalone library/CLI. The
+# plugin embeds only the network-free runtime library; development tools and
+# tests remain in the standalone build.
+set(ECLIPSE_BUILD_CLI OFF CACHE BOOL "" FORCE)
+set(ECLIPSE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ECLIPSE_BUILD_LOLA_TOOL OFF CACHE BOOL "" FORCE)
+add_subdirectory(eclipse)
+target_link_libraries(${PACKAGE_NAME} celestial::eclipse_core)
+option(CELESTIAL_ECLIPSE_INTEGRATION_TEST
+       "Open and exercise the 2027 eclipse planner automatically" OFF)
+if(CELESTIAL_ECLIPSE_INTEGRATION_TEST)
+  target_compile_definitions(${PACKAGE_NAME} PRIVATE
+    CELESTIAL_ECLIPSE_INTEGRATION_TEST=1)
+endif()
 
 
 if (NOT OCPN_FLATPAK_CONFIG)

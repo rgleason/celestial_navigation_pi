@@ -20,6 +20,8 @@ struct DataPackStatus {
 const char* ExpectedDe440sSha256();
 std::uint64_t ExpectedDe440sBytes();
 DataPackStatus VerifyDe440s(const std::string& path);
+DataPackStatus VerifyLunarOrientationPck(const std::string& path);
+DataPackStatus VerifyLola64Pa(const std::string& path);
 
 }  // namespace eclipse
 

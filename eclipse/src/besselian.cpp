@@ -12,8 +12,8 @@ struct Vec3 {
   double z;
 };
 
-Vec3 FundamentalToEarthEquatorial(const EvaluatedElements& elements,
-                                  double xi, double eta, double zeta) {
+Vec3 FundamentalToEarthEquatorial(const EvaluatedElements& elements, double xi,
+                                  double eta, double zeta) {
   const double sin_d = std::sin(elements.declination_rad);
   const double cos_d = std::cos(elements.declination_rad);
 
@@ -44,10 +44,7 @@ double Polynomial3::Derivative(double hours) const {
 }
 
 BesselianElements::BesselianElements()
-    : reference_tt_jd(0.0),
-      delta_t_seconds(0.0),
-      tan_f1(0.0),
-      tan_f2(0.0) {}
+    : reference_tt_jd(0.0), delta_t_seconds(0.0), tan_f1(0.0), tan_f2(0.0) {}
 
 EvaluatedElements Evaluate(const BesselianElements& elements,
                            double terrestrial_time_jd) {
@@ -95,11 +92,10 @@ bool CentralLinePosition(const EvaluatedElements& elements,
   const double root2 = (-b - sqrt_discriminant) / (2.0 * a);
   const double zeta = std::max(root1, root2);
 
-  const Vec3 point = FundamentalToEarthEquatorial(
-      elements, elements.x, elements.y, zeta);
+  const Vec3 point =
+      FundamentalToEarthEquatorial(elements, elements.x, elements.y, zeta);
   const double geocentric_longitude = std::atan2(point.y, point.x);
-  const double longitude =
-      geocentric_longitude - elements.hour_angle_rad;
+  const double longitude = geocentric_longitude - elements.hour_angle_rad;
 
   // Convert ECEF coordinates on WGS 84 to geodetic latitude. Because the
   // coordinates already lie on the ellipsoid, the closed-form normal relation
@@ -107,12 +103,10 @@ bool CentralLinePosition(const EvaluatedElements& elements,
   const double polar_ratio = ellipsoid.polar_ratio();
   const double one_minus_e2 = polar_ratio * polar_ratio;
   const double horizontal = std::hypot(point.x, point.y);
-  const double latitude =
-      std::atan2(point.z, one_minus_e2 * horizontal);
+  const double latitude = std::atan2(point.z, one_minus_e2 * horizontal);
 
   position->latitude_deg = RadiansToDegrees(latitude);
-  position->longitude_deg =
-      NormalizeLongitude(RadiansToDegrees(longitude));
+  position->longitude_deg = NormalizeLongitude(RadiansToDegrees(longitude));
   return true;
 }
 
@@ -123,14 +117,10 @@ BesselianElements Nasa2027Aug02Reference() {
   result.delta_t_seconds = 71.7;
   result.x = Polynomial3(-0.019645, 0.5447105, -0.0000444, -0.0000091);
   result.y = Polynomial3(0.160063, -0.2111569, -0.0001217, 0.0000037);
-  result.declination_deg =
-      Polynomial3(17.76247, -0.010181, -0.000004, 0.0);
-  result.penumbral_radius =
-      Polynomial3(0.530596, 0.0000138, -0.0000128, 0.0);
-  result.umbral_radius =
-      Polynomial3(-0.015464, 0.0000137, -0.0000128, 0.0);
-  result.hour_angle_deg =
-      Polynomial3(328.42249, 15.002093, 0.0, 0.0);
+  result.declination_deg = Polynomial3(17.76247, -0.010181, -0.000004, 0.0);
+  result.penumbral_radius = Polynomial3(0.530596, 0.0000138, -0.0000128, 0.0);
+  result.umbral_radius = Polynomial3(-0.015464, 0.0000137, -0.0000128, 0.0);
+  result.hour_angle_deg = Polynomial3(328.42249, 15.002093, 0.0, 0.0);
   result.tan_f1 = 0.0046064;
   result.tan_f2 = 0.0045834;
   return result;

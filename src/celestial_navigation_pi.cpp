@@ -59,7 +59,7 @@ extern "C" DECL_EXP void destroy_pi(opencpn_plugin* p) { delete p; }
 //---------------------------------------------------------------------------------------------------------
 
 celestial_navigation_pi::celestial_navigation_pi(void* ppimgr)
-    : opencpn_plugin_118(ppimgr) {
+    : opencpn_plugin_118(ppimgr), m_hasPositionFix(false) {
   // Create the PlugIn icons
   initialize_images();
 
@@ -119,6 +119,19 @@ int celestial_navigation_pi::Init(void) {
 #endif
 
   m_pCelestialNavigationDialog = NULL;
+
+#ifdef CELESTIAL_ECLIPSE_INTEGRATION_TEST
+  wxTheApp->CallAfter([this]() {
+    OnToolbarToolCallback(m_leftclick_tool_id);
+    if (m_pCelestialNavigationDialog) {
+      m_pCelestialNavigationDialog->RunEclipseIntegrationScenario();
+      // Centre the Test-OpenCPN canvas on the 2027 path at a useful regional
+      // scale.  JumpToPosition takes pixels/metre, not a chart denominator.
+      JumpToPosition(25.5, 33.2, 5e-4);
+      RequestRefresh(GetOCPNCanvasWindow());
+    }
+  });
+#endif
 
   return (WANTS_OVERLAY_CALLBACK | WANTS_OPENGL_OVERLAY_CALLBACK |
           WANTS_NMEA_EVENTS | WANTS_NMEA_SENTENCES |
@@ -226,6 +239,15 @@ void celestial_navigation_pi::SetColorScheme(PI_ColorScheme cs) {
 }
 
 bool celestial_navigation_pi::RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp) {
+#ifdef CELESTIAL_ECLIPSE_INTEGRATION_TEST
+  static bool logged_cpu_overlay = false;
+  if (!logged_cpu_overlay && m_pCelestialNavigationDialog &&
+      m_pCelestialNavigationDialog->IsShown()) {
+    wxLogMessage(
+        "CELESTIAL_ECLIPSE_INTEGRATION_TEST: CPU overlay callback active");
+    logged_cpu_overlay = true;
+  }
+#endif
   piDC* pidc = new piDC(dc);
   bool ret = RenderOverlayAll(pidc, vp);
   delete pidc;
@@ -234,6 +256,15 @@ bool celestial_navigation_pi::RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp) {
 
 bool celestial_navigation_pi::RenderGLOverlay(wxGLContext* pcontext,
                                               PlugIn_ViewPort* vp) {
+#ifdef CELESTIAL_ECLIPSE_INTEGRATION_TEST
+  static bool logged_gl_overlay = false;
+  if (!logged_gl_overlay && m_pCelestialNavigationDialog &&
+      m_pCelestialNavigationDialog->IsShown()) {
+    wxLogMessage(
+        "CELESTIAL_ECLIPSE_INTEGRATION_TEST: OpenGL overlay callback active");
+    logged_gl_overlay = true;
+  }
+#endif
   piDC* pidc = new piDC(pcontext);
   pidc->SetVP(vp);
   bool ret = RenderOverlayAll(pidc, vp);
@@ -250,6 +281,8 @@ bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
     s.Render(dc, *vp, m_pCelestialNavigationDialog->m_pix_per_mm);
   }
 
+  m_pCelestialNavigationDialog->RenderEclipse(dc, vp);
+
   if (!m_pCelestialNavigationDialog->m_FixDialog ||
       !m_pCelestialNavigationDialog->m_FixDialog->IsShown())
     return true;
@@ -262,13 +295,15 @@ bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
   if (!isnan(err)) {
     wxPoint r;
     GetCanvasPixLL(vp, &r, lat, lon);
-    int crosslen = (int) ( 10.0 * m_pCelestialNavigationDialog->m_pix_per_mm);
+    int crosslen = (int)(10.0 * m_pCelestialNavigationDialog->m_pix_per_mm);
 
     dc->SetPen(wxPen(wxColor(255, 0, 0),
                      (int)(0.5 * m_pCelestialNavigationDialog->m_pix_per_mm)));
     dc->SetBrush(*wxTRANSPARENT_BRUSH);
-    dc->DrawLine(r.x - crosslen, r.y - crosslen, r.x + crosslen, r.y + crosslen);
-    dc->DrawLine(r.x - crosslen, r.y + crosslen, r.x + crosslen, r.y - crosslen);
+    dc->DrawLine(r.x - crosslen, r.y - crosslen, r.x + crosslen,
+                 r.y + crosslen);
+    dc->DrawLine(r.x - crosslen, r.y + crosslen, r.x + crosslen,
+                 r.y - crosslen);
   }
   return true;
 }
@@ -285,6 +320,9 @@ static double s_boat_lat, s_boat_lon;
 void celestial_navigation_pi::SetPositionFixEx(PlugIn_Position_Fix_Ex& pfix) {
   s_boat_lat = pfix.Lat;
   s_boat_lon = pfix.Lon;
+  m_hasPositionFix = std::isfinite(pfix.Lat) && std::isfinite(pfix.Lon) &&
+                     pfix.Lat >= -90.0 && pfix.Lat <= 90.0 &&
+                     pfix.Lon >= -180.0 && pfix.Lon <= 180.0;
 }
 
 void celestial_navigation_pi::SetNMEASentence(wxString& sentence) {
@@ -293,6 +331,14 @@ void celestial_navigation_pi::SetNMEASentence(wxString& sentence) {
 
 GnssTimeSnapshot celestial_navigation_pi::GetGnssTimeSnapshot() const {
   return m_gnssTime.Snapshot();
+}
+
+bool celestial_navigation_pi::GetBoatPosition(double* latitude,
+                                              double* longitude) const {
+  if (!m_hasPositionFix || !latitude || !longitude) return false;
+  *latitude = s_boat_lat;
+  *longitude = s_boat_lon;
+  return true;
 }
 
 void celestial_navigation_pi::SetCursorLatLon(double lat, double lon) {}

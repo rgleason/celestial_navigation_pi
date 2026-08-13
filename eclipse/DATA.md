@@ -18,16 +18,51 @@ The base installation budget is therefore approximately:
 | DE440s | 31.21 MiB |
 | Manifest and time tables | under 1 MiB |
 | Eclipse engine and ERFA code | under 5 MiB |
-| Optional event-specific lunar-limb packs | target under 25 MiB total |
+| DE440 lunar-orientation PCK (optional) | 12.27 MiB |
+| Converted LOLA 64 ppd global limb grid (optional) | 506.25 MiB |
 
-Build trees and any source terrain products are not runtime data. The guarded
+The optional grid is derived from NASA Goddard's 2024 MOON_PA 64 ppd LOLA
+pixel grid. Its one-metre signed offsets preserve the source's useful vertical
+precision while halving the floating-point source size. This global pack is
+larger than an event-only profile, but it can refine C1–C4 for any observer and
+any supported eclipse without another download or preprocessing run.
+
+Build trees and the 701 MiB netCDF source terrain product are not runtime data. The guarded
 working budget is 90 GiB, leaving 10 GiB below the user's requested 100 GB
 ceiling. Normal development is expected to remain below 5 GiB even when a
 LOLA source tile is staged temporarily.
 
+Exact optional pack inputs
+--------------------------
+
+The lunar-orientation file is NAIF's
+`moon_pa_de440_200625.bpc` (12,863,488 bytes). The terrain source is NASA
+Goddard PGDA's `LDEM64_PA_pixel_202405.grd` (735,220,834 bytes), a
+23,040 × 11,520 netCDF pixel grid in the same Moon principal-axes frame. The
+developer-side converter produces `lola64-pa.bin` (530,841,624 bytes) as
+signed one-metre offsets from a 1737.4 km lunar radius. Exact source and output
+SHA-256 values are pinned in `data/*.manifest`; the plugin rejects any other
+byte stream.
+
+The source grid can be converted with:
+
+```sh
+lola-pack LDEM64_PA_pixel_202405.grd lola64-pa.bin
+eclipse-cli verify-lola lola64-pa.bin
+```
+
+The netCDF source and converter are not installed with OpenCPN. The runtime
+pack is a deliberately separate optional data store because it is useful only
+for terrain-sensitive contact refinements and is much larger than the 31 MiB
+base ephemeris.
+
 The kernel's authoritative source is NASA's Navigation and Ancillary
 Information Facility (NAIF):
 `https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp`.
+The optional PCK is published at
+`https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/moon_pa_de440_200625.bpc`,
+and the LOLA source at
+`https://pgda.gsfc.nasa.gov/data/LOLA_PA/LDEM64_PA_pixel_202405.grd`.
 This URL is a packaging/provenance reference only; the application contains
 no downloader and is fully functional with its installed data pack while
 offline.

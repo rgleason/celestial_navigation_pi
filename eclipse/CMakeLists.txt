@@ -4,6 +4,7 @@ project(celestial_eclipse_engine VERSION 0.1.0 LANGUAGES C CXX)
 
 option(ECLIPSE_BUILD_CLI "Build the standalone eclipse command-line tool" ON)
 option(ECLIPSE_BUILD_TESTS "Build the standalone eclipse tests" ON)
+option(ECLIPSE_BUILD_LOLA_TOOL "Build the optional LOLA pack converter" ON)
 
 file(GLOB ERFA_SOURCES CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/third_party/erfa/src/*.c"
@@ -22,9 +23,12 @@ set_target_properties(eclipse_erfa PROPERTIES
 add_library(eclipse_core STATIC
   src/astronomy.cpp
   src/besselian.cpp
+  src/contours.cpp
   src/data_pack.cpp
   src/engine.cpp
   src/geometry.cpp
+  src/lunar_limb.cpp
+  src/pck.cpp
   src/spk.cpp
   src/time.cpp
 )
@@ -48,6 +52,20 @@ else()
   target_compile_options(eclipse_core PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+if(ECLIPSE_BUILD_LOLA_TOOL)
+  find_path(NETCDF_INCLUDE_DIR netcdf.h)
+  find_library(NETCDF_LIBRARY netcdf)
+  if(NETCDF_INCLUDE_DIR AND NETCDF_LIBRARY)
+    add_executable(lola_pack apps/lola_pack.cpp)
+    target_include_directories(lola_pack PRIVATE ${NETCDF_INCLUDE_DIR})
+    target_link_libraries(lola_pack PRIVATE ${NETCDF_LIBRARY})
+    target_compile_features(lola_pack PRIVATE cxx_std_11)
+    set_target_properties(lola_pack PROPERTIES OUTPUT_NAME lola-pack)
+  else()
+    message(STATUS "netCDF not found; optional lola-pack tool disabled")
+  endif()
+endif()
+
 if(ECLIPSE_BUILD_CLI)
   add_executable(eclipse_cli apps/eclipse_cli.cpp)
   target_link_libraries(eclipse_cli PRIVATE celestial::eclipse_core)
@@ -62,5 +80,8 @@ if(ECLIPSE_BUILD_TESTS)
   target_sources(eclipse_core_tests PRIVATE tests/time_tests.cpp)
   target_link_libraries(eclipse_core_tests PRIVATE celestial::eclipse_core)
   target_compile_features(eclipse_core_tests PRIVATE cxx_std_11)
+  target_compile_definitions(eclipse_core_tests PRIVATE
+    ECLIPSE_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests"
+  )
   add_test(NAME eclipse_core_tests COMMAND eclipse_core_tests)
 endif()

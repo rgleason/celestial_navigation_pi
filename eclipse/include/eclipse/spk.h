@@ -13,7 +13,7 @@ namespace eclipse {
 // Minimal, read-only NAIF DAF/SPK type-2 reader. DE440s uses type-2 Chebyshev
 // position segments, so the runtime does not require CSPICE or network access.
 class SpkKernel {
- public:
+public:
   struct SegmentInfo {
     double start_et;
     double end_et;
@@ -23,6 +23,10 @@ class SpkKernel {
     std::int32_t type;
     std::int32_t initial_address;
     std::int32_t final_address;
+    double initial_epoch;
+    double interval_length;
+    std::int32_t record_size;
+    std::int32_t record_count;
   };
 
   SpkKernel();
@@ -36,7 +40,7 @@ class SpkKernel {
   bool Position(std::int32_t target, std::int32_t center, double et,
                 Vector3* position_km, std::string* error) const;
 
- private:
+private:
   bool ReadBytes(std::uint64_t offset, void* destination, std::size_t size,
                  std::string* error) const;
   bool ReadDoubleWord(std::int32_t address, double* value,
@@ -55,4 +59,3 @@ class SpkKernel {
 }  // namespace eclipse
 
 #endif
-

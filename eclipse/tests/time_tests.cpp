@@ -35,6 +35,11 @@ struct TimeInvariantTests {
       std::cerr << "FAIL implausible 2027 Delta-T model: " << delta_t << '\n';
       std::exit(EXIT_FAILURE);
     }
+    if (std::fabs(eclipse::ModelDeltaTSeconds(1850.0) - 7.1069) > 0.01 ||
+        std::fabs(eclipse::ModelDeltaTSeconds(1900.0) + 2.79) > 0.001) {
+      std::cerr << "FAIL historical Delta-T piecewise model\n";
+      std::exit(EXIT_FAILURE);
+    }
   }
 };
 
