@@ -621,6 +621,16 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
             AttributeDouble(e, "LunarMoonAltitudeUncertainty", .2);
         s.m_LunarBodyAltitudeUncertainty =
             AttributeDouble(e, "LunarBodyAltitudeUncertainty", .2);
+        s.m_LunarSeparateTimes =
+            AttributeInt(e, "LunarSeparateTimes", 0) != 0;
+        s.m_LunarMoonTimeOffsetSeconds =
+            AttributeInt(e, "LunarMoonTimeOffsetSeconds", 0);
+        s.m_LunarBodyTimeOffsetSeconds =
+            AttributeInt(e, "LunarBodyTimeOffsetSeconds", 0);
+        s.m_LunarMovingObserver =
+            AttributeInt(e, "LunarMovingObserver", 0) != 0;
+        s.m_LunarCourseTrue = AttributeDouble(e, "LunarCourseTrue", 0.0);
+        s.m_LunarSpeedKnots = AttributeDouble(e, "LunarSpeedKnots", 0.0);
 
         s.m_DateTime.ParseISODate(wxString::FromUTF8(e->Attribute("Date")));
 
@@ -755,6 +765,15 @@ void CelestialNavigationDialog::SaveXML() {
                       s.m_LunarMoonAltitudeUncertainty);
     SetFloatAttribute(c, "LunarBodyAltitudeUncertainty", s,
                       s.m_LunarBodyAltitudeUncertainty);
+    c->SetAttribute("LunarSeparateTimes", s.m_LunarSeparateTimes ? 1 : 0);
+    c->SetAttribute("LunarMoonTimeOffsetSeconds",
+                    s.m_LunarMoonTimeOffsetSeconds);
+    c->SetAttribute("LunarBodyTimeOffsetSeconds",
+                    s.m_LunarBodyTimeOffsetSeconds);
+    c->SetAttribute("LunarMovingObserver",
+                    s.m_LunarMovingObserver ? 1 : 0);
+    SetFloatAttribute(c, "LunarCourseTrue", s, s.m_LunarCourseTrue);
+    SetFloatAttribute(c, "LunarSpeedKnots", s, s.m_LunarSpeedKnots);
 
     c->SetAttribute("Date", s.m_DateTime.FormatISODate().mb_str());
     c->SetAttribute("Time", s.m_DateTime.FormatISOTime().mb_str());

@@ -200,39 +200,59 @@ HorizontalFixResult SolveHorizontalThreePointFix(
     result.error = "Horizontal sextant angles must be between 0 and 180 degrees";
     return result;
   }
+  if (!std::isfinite(observation.first_time_offset_seconds) ||
+      !std::isfinite(observation.second_time_offset_seconds) ||
+      !std::isfinite(observation.course_true_deg) ||
+      !std::isfinite(observation.speed_knots) || observation.speed_knots < 0.0) {
+    result.error = "A horizontal-angle time or motion input is invalid";
+    return result;
+  }
+
+  auto observer_at = [&](const GeoPoint& reference, double seconds) {
+    if (!observation.moving_observer || observation.speed_knots == 0.0 ||
+        seconds == 0.0)
+      return reference;
+    double distance = observation.speed_knots * seconds / 3600.0;
+    double course = observation.course_true_deg;
+    if (distance < 0.0) {
+      distance = -distance;
+      course += 180.0;
+    }
+    return Destination(reference, course, distance);
+  };
+  auto residuals = [&](const GeoPoint& reference, double* first,
+                       double* second) {
+    const GeoPoint first_observer =
+        observer_at(reference, observation.first_time_offset_seconds);
+    const GeoPoint second_observer =
+        observer_at(reference, observation.second_time_offset_seconds);
+    *first = IncludedHorizontalAngleDeg(first_observer, observation.left,
+                                        observation.centre) -
+             observation.left_centre_angle_deg;
+    *second = IncludedHorizontalAngleDeg(second_observer, observation.centre,
+                                         observation.right) -
+              observation.centre_right_angle_deg;
+  };
 
   GeoPoint position = initial_position;
   double determinant = 0.0;
   double j00 = 0.0, j01 = 0.0, j10 = 0.0, j11 = 0.0;
   for (int iteration = 0; iteration < 50; ++iteration) {
-    const double f0 = IncludedHorizontalAngleDeg(
-                          position, observation.left, observation.centre) -
-                      observation.left_centre_angle_deg;
-    const double f1 = IncludedHorizontalAngleDeg(
-                          position, observation.centre, observation.right) -
-                      observation.centre_right_angle_deg;
+    double f0 = 0.0, f1 = 0.0;
+    residuals(position, &f0, &f1);
     if (std::hypot(f0, f1) * 60.0 < 1e-5) break;
     const double step = 1e-5;
     GeoPoint lat_step = position;
     lat_step.latitude_deg += step;
     GeoPoint lon_step = position;
     lon_step.longitude_deg += step;
-    j00 = (IncludedHorizontalAngleDeg(lat_step, observation.left,
-                                     observation.centre) -
-           observation.left_centre_angle_deg - f0) /
-          step;
-    j10 = (IncludedHorizontalAngleDeg(lat_step, observation.centre,
-                                     observation.right) -
-           observation.centre_right_angle_deg - f1) /
-          step;
-    j01 = (IncludedHorizontalAngleDeg(lon_step, observation.left,
-                                     observation.centre) -
-           observation.left_centre_angle_deg - f0) /
-          step;
-    j11 = (IncludedHorizontalAngleDeg(lon_step, observation.centre,
-                                     observation.right) -
-           observation.centre_right_angle_deg - f1) /
-          step;
+    double lat_f0 = 0.0, lat_f1 = 0.0, lon_f0 = 0.0, lon_f1 = 0.0;
+    residuals(lat_step, &lat_f0, &lat_f1);
+    residuals(lon_step, &lon_f0, &lon_f1);
+    j00 = (lat_f0 - f0) / step;
+    j10 = (lat_f1 - f1) / step;
+    j01 = (lon_f0 - f0) / step;
+    j11 = (lon_f1 - f1) / step;
     determinant = j00 * j11 - j01 * j10;
     if (std::fabs(determinant) < 1e-10) {
       result.error = "Horizontal-angle geometry is singular or nearly tangent";
@@ -252,19 +272,33 @@ HorizontalFixResult SolveHorizontalThreePointFix(
     }
   }
 
-  result.first_residual_arcmin =
-      (IncludedHorizontalAngleDeg(position, observation.left,
-                                  observation.centre) -
-       observation.left_centre_angle_deg) *
-      60.0;
-  result.second_residual_arcmin =
-      (IncludedHorizontalAngleDeg(position, observation.centre,
-                                  observation.right) -
-       observation.centre_right_angle_deg) *
-      60.0;
+  double final_first = 0.0, final_second = 0.0;
+  residuals(position, &final_first, &final_second);
+  result.first_residual_arcmin = final_first * 60.0;
+  result.second_residual_arcmin = final_second * 60.0;
   if (std::hypot(result.first_residual_arcmin,
                  result.second_residual_arcmin) > 0.01) {
     result.error = "Horizontal-angle solution did not converge from the supplied approximate position";
+    return result;
+  }
+  // Re-evaluate the Jacobian at the converged fix.  In particular, an exact
+  // synthetic observation (or an excellent initial position) may converge
+  // before the iteration loop ever needs to form a Jacobian.
+  const double step = 1e-5;
+  GeoPoint lat_step = position;
+  lat_step.latitude_deg += step;
+  GeoPoint lon_step = position;
+  lon_step.longitude_deg += step;
+  double lat_f0 = 0.0, lat_f1 = 0.0, lon_f0 = 0.0, lon_f1 = 0.0;
+  residuals(lat_step, &lat_f0, &lat_f1);
+  residuals(lon_step, &lon_f0, &lon_f1);
+  j00 = (lat_f0 - final_first) / step;
+  j10 = (lat_f1 - final_second) / step;
+  j01 = (lon_f0 - final_first) / step;
+  j11 = (lon_f1 - final_second) / step;
+  determinant = j00 * j11 - j01 * j10;
+  if (std::fabs(determinant) < 1e-10) {
+    result.error = "Horizontal-angle geometry is singular or nearly tangent";
     return result;
   }
   result.position = position;

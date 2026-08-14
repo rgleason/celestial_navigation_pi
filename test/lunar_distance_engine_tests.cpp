@@ -234,3 +234,108 @@ TEST(LunarDistanceEngine,
     nearest = std::min(nearest, ld::GreatCircleDistanceNm(candidate, truth));
   EXPECT_LT(nearest, 1e-4);
 }
+
+TEST(LunarDistanceEngine,
+     SeparateWatchTimesRecoverClockAndMovingReferencePosition) {
+  const double truth_correction =
+      4.0 * 3600.0 + 17.0 * 60.0 + 23.4;
+  const ld::GeographicPoint truth{28.75, -41.125};
+
+  ld::Observation observation;
+  observation.separate_times = true;
+  observation.moon_time_offset_seconds = -12.0;
+  observation.body_time_offset_seconds = 9.0;
+  observation.moving_observer = true;
+  observation.course_true_deg = 72.0;
+  observation.speed_knots = 7.0;
+  observation.moon_altitude_limb = ld::AltitudeLimb::Lower;
+  observation.body_altitude_limb = ld::AltitudeLimb::Lower;
+  observation.moon_contact = ld::DistanceContact::Near;
+  observation.body_contact = ld::DistanceContact::Near;
+  observation.index_error_arcmin = -0.7;
+  observation.eye_height_m = 2.5;
+  observation.pressure_hpa = 1008.0;
+  observation.temperature_c = 16.0;
+  observation.distance_uncertainty_arcmin = 0.2;
+  observation.moon_altitude_uncertainty_arcmin = 0.3;
+  observation.body_altitude_uncertainty_arcmin = 0.3;
+
+  auto ephemeris = [=](double candidate_correction,
+                       ld::EphemerisSample* sample, std::string*) {
+    const double hours =
+        (candidate_correction - truth_correction) / 3600.0;
+    sample->moon_geographic_latitude_deg = 18.0 + 0.05 * hours;
+    sample->moon_geographic_longitude_deg = 36.0 - 14.45 * hours;
+    sample->body_geographic_latitude_deg = -12.5 + 0.01 * hours;
+    sample->body_geographic_longitude_deg = -78.0 - 15.0 * hours;
+    sample->moon_semidiameter_deg = 0.265;
+    sample->moon_horizontal_parallax_deg = 0.95;
+    sample->body_semidiameter_deg = 0.266;
+    sample->body_horizontal_parallax_deg = 0.0024;
+    sample->predicted_distance_deg =
+        ld::GreatCircleDistanceNm(
+            {sample->moon_geographic_latitude_deg,
+             sample->moon_geographic_longitude_deg},
+            {sample->body_geographic_latitude_deg,
+             sample->body_geographic_longitude_deg}) /
+        60.0;
+    return true;
+  };
+
+  const ld::PredictedObservation generated =
+      ld::PredictTimeTaggedObservation(observation, ephemeris,
+                                       truth_correction, truth);
+  ASSERT_TRUE(generated.valid) << generated.error;
+  observation.raw_distance_deg = generated.raw_distance_deg;
+  observation.moon_altitude_deg = generated.moon_altitude_deg;
+  observation.body_altitude_deg = generated.body_altitude_deg;
+
+  ld::SolveOptions options;
+  options.start_offset_seconds = -21600.0;
+  options.end_offset_seconds = 21600.0;
+  options.scan_step_seconds = 300.0;
+  const ld::SolveResult solved =
+      ld::SolveTimeTagged(observation, ephemeris, options);
+  ASSERT_TRUE(solved.valid) << solved.error;
+  double best_time_error = 1e9;
+  double best_position_error = 1e9;
+  double best_time_uncertainty = INFINITY;
+  double best_position_uncertainty = INFINITY;
+  for (const ld::TimeCandidate& candidate : solved.candidates) {
+    const double time_error =
+        std::fabs(candidate.offset_seconds - truth_correction);
+    if (time_error < best_time_error) {
+      best_time_error = time_error;
+      best_position_error = 1e9;
+      best_time_uncertainty = candidate.time_uncertainty_seconds;
+      best_position_uncertainty = candidate.position_uncertainty_nm;
+      for (const ld::GeographicPoint& position : candidate.positions)
+        best_position_error = std::min(
+            best_position_error,
+            ld::GreatCircleDistanceNm(position, truth));
+    }
+  }
+  EXPECT_LT(best_time_error, 0.1)
+      << "nearest recovered correction error in seconds";
+  EXPECT_LT(best_position_error, 0.005)
+      << "position error at nearest recovered correction in NM";
+  EXPECT_TRUE(std::isfinite(best_time_uncertainty));
+  EXPECT_GT(best_time_uncertainty, 0.0);
+  EXPECT_TRUE(std::isfinite(best_position_uncertainty));
+  EXPECT_GT(best_position_uncertainty, 0.0);
+
+  // Treating these genuinely sequential angles as simultaneous must not be
+  // allowed to masquerade as the same solution.
+  ld::Observation simultaneous = observation;
+  simultaneous.separate_times = false;
+  simultaneous.moving_observer = false;
+  const ld::SolveResult mistagged =
+      ld::SolveTime(simultaneous, ephemeris, options);
+  double mistagged_time_error = INFINITY;
+  for (const ld::TimeCandidate& candidate : mistagged.candidates)
+    mistagged_time_error =
+        std::min(mistagged_time_error,
+                 std::fabs(candidate.offset_seconds - truth_correction));
+  EXPECT_GT(mistagged_time_error, 1.0)
+      << "discarding the individual watch times should measurably bias UTC";
+}

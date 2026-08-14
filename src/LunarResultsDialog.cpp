@@ -22,9 +22,14 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
   wxStaticText* explanation = new wxStaticText(
       this, wxID_ANY,
-      _("The observed Moon-to-body distance has been cleared of dip, "
-        "refraction, semidiameter and parallax, then matched against the "
-        "offline ephemeris."));
+      m_sight.m_LunarSeparateTimes
+          ? _("The lunar distance and the two altitudes are evaluated at "
+              "their individual watch times. Their shared constant watch "
+              "offset and the reference-epoch position are solved jointly "
+              "against the offline ephemeris.")
+          : _("The observed Moon-to-body distance has been cleared of dip, "
+              "refraction, semidiameter and parallax, then matched against "
+              "the offline ephemeris."));
   explanation->Wrap(740);
   root->Add(explanation, 0, wxALL | wxEXPAND, 10);
 
@@ -37,13 +42,18 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
                                 wxLC_REPORT | wxLC_SINGLE_SEL);
   m_candidates->InsertColumn(0, _("UTC candidate"));
   m_candidates->InsertColumn(1, _("Clock correction"));
-  m_candidates->InsertColumn(2, _("LD cleared"));
+  m_candidates->InsertColumn(
+      2, m_sight.m_LunarSeparateTimes ? _("Model centre distance")
+                                      : _("LD cleared"));
   m_candidates->InsertColumn(3, _("Rate (arcmin/h)"));
   m_candidates->InsertColumn(4, _("Estimated UTC uncertainty"));
   root->Add(m_candidates, 1, wxLEFT | wxRIGHT | wxEXPAND, 10);
 
-  root->Add(new wxStaticText(this, wxID_ANY,
-                             _("Position from the two measured altitudes")),
+  root->Add(new wxStaticText(
+                this, wxID_ANY,
+                m_sight.m_LunarSeparateTimes
+                    ? _("Position at the lunar-distance reading time")
+                    : _("Position from the two measured altitudes")),
             0, wxLEFT | wxRIGHT | wxTOP, 10);
   m_positions = new wxListCtrl(this, wxID_ANY, wxDefaultPosition,
                                wxSize(-1, 105),
@@ -52,14 +62,21 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
   m_positions->InsertColumn(1, _("Latitude"));
   m_positions->InsertColumn(2, _("Longitude"));
   m_positions->InsertColumn(3, _("Distance from DR/boat"));
+  m_positions->InsertColumn(4, _("Estimated position uncertainty"));
   root->Add(m_positions, 0, wxLEFT | wxRIGHT | wxEXPAND, 10);
 
   wxStaticText* warning = new wxStaticText(
       this, wxID_ANY,
-      _("The lunar distance determines the constant watch offset. The two "
-        "accompanying corrected altitudes can also intersect to give position "
-        "and longitude; a rough DR/hemisphere chooses between the two "
-        "mathematical intersections."));
+      m_sight.m_LunarSeparateTimes
+          ? _("All three watch readings retain their measured intervals and "
+              "receive the same recovered UTC correction. If motion is "
+              "enabled, COG/SOG advances the observer between readings. A "
+              "rough DR or hemisphere still helps select among mathematical "
+              "solutions.")
+          : _("The lunar distance determines the constant watch offset. The "
+              "two accompanying corrected altitudes can also intersect to "
+              "give position and longitude; a rough DR/hemisphere chooses "
+              "between the two mathematical intersections."));
   warning->Wrap(740);
   root->Add(warning, 0, wxALL | wxEXPAND, 10);
 
@@ -82,6 +99,10 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
        wxID_CLOSE);
   m_applyOffset->Bind(wxEVT_BUTTON,
                       &LunarResultsDialog::ApplySelectedWatchOffset, this);
+  m_candidates->Bind(wxEVT_LIST_ITEM_SELECTED,
+                     [this](wxListEvent& event) {
+                       UpdatePositions(event.GetIndex());
+                     });
 
   SetSizer(root);
   SetMinSize(wxSize(650, 460));
@@ -142,15 +163,41 @@ void LunarResultsDialog::UpdateResults() {
   m_applyOffset->Enable(m_sight.m_LunarSolutionValid &&
                         !m_sight.m_LunarCandidates.empty());
 
-  if (m_sight.m_LunarPositionResult.valid) {
+  UpdatePositions(static_cast<long>(selected));
+}
+
+void LunarResultsDialog::UpdatePositions(long candidate_index) {
+  m_positions->DeleteAllItems();
+  const std::vector<lunar_distance::GeographicPoint>* positions = nullptr;
+  const lunar_distance::TimeCandidate* time_candidate = nullptr;
+  if (candidate_index >= 0 &&
+      static_cast<std::size_t>(candidate_index) <
+          m_sight.m_LunarCandidates.size()) {
+    time_candidate =
+        &m_sight.m_LunarCandidates[static_cast<std::size_t>(candidate_index)];
+    if (!time_candidate->positions.empty()) positions = &time_candidate->positions;
+  }
+  if (!positions && m_sight.m_LunarPositionResult.valid) {
+    positions = &m_sight.m_LunarPositionResult.candidates;
+  }
+  if (positions) {
     const lunar_distance::GeographicPoint approximate{m_sight.m_DRLat,
                                                        m_sight.m_DRLon};
-    for (std::size_t index = 0;
-         index < m_sight.m_LunarPositionResult.candidates.size(); ++index) {
-      const auto& position = m_sight.m_LunarPositionResult.candidates[index];
+    std::size_t nearest = 0;
+    double nearest_distance = INFINITY;
+    for (std::size_t index = 0; index < positions->size(); ++index) {
+      const double distance = lunar_distance::GreatCircleDistanceNm(
+          approximate, (*positions)[index]);
+      if (distance < nearest_distance) {
+        nearest_distance = distance;
+        nearest = index;
+      }
+    }
+    for (std::size_t index = 0; index < positions->size(); ++index) {
+      const auto& position = (*positions)[index];
       const long row = m_positions->InsertItem(
           static_cast<long>(index),
-          static_cast<int>(index) == m_sight.m_LunarSelectedPosition
+          index == nearest
               ? wxString::Format(_("%zu (nearest DR)"), index + 1)
               : wxString::Format(_("%zu"), index + 1));
       m_positions->SetItem(row, 1,
@@ -164,13 +211,21 @@ void LunarResultsDialog::UpdateResults() {
           wxString::Format("%.1f NM",
                            lunar_distance::GreatCircleDistanceNm(
                                approximate, position)));
+      m_positions->SetItem(
+          row, 4,
+          time_candidate &&
+                  std::isfinite(time_candidate->position_uncertainty_nm) &&
+                  time_candidate->position_uncertainty_nm > 0.0
+              ? wxString::Format("%.2f NM (1-sigma)",
+                                 time_candidate->position_uncertainty_nm)
+              : _("Not estimated"));
     }
   } else {
     m_positions->InsertItem(
         0, _("No intersection: ") +
                wxString::FromUTF8(m_sight.m_LunarPositionResult.error.c_str()));
   }
-  for (int column = 0; column < 4; ++column)
+  for (int column = 0; column < 5; ++column)
     m_positions->SetColumnWidth(column, wxLIST_AUTOSIZE_USEHEADER);
 }
 

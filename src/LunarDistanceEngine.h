@@ -28,6 +28,12 @@ struct Observation {
   double distance_uncertainty_arcmin = 0.2;
   double moon_altitude_uncertainty_arcmin = 0.2;
   double body_altitude_uncertainty_arcmin = 0.2;
+  bool separate_times = false;
+  double moon_time_offset_seconds = 0.0;
+  double body_time_offset_seconds = 0.0;
+  bool moving_observer = false;
+  double course_true_deg = 0.0;
+  double speed_knots = 0.0;
 };
 
 struct EphemerisSample {
@@ -75,6 +81,8 @@ struct TimeCandidate {
   double slope_arcmin_per_hour = 0.0;
   double angular_uncertainty_arcmin = 0.0;
   double time_uncertainty_seconds = 0.0;
+  std::vector<GeographicPoint> positions;
+  double position_uncertainty_nm = 0.0;
 };
 
 struct SolveOptions {
@@ -93,6 +101,14 @@ struct SolveResult {
   double closest_residual_arcmin = 0.0;
 };
 
+struct PredictedObservation {
+  bool valid = false;
+  std::string error;
+  double raw_distance_deg = 0.0;
+  double moon_altitude_deg = 0.0;
+  double body_altitude_deg = 0.0;
+};
+
 using EphemerisFunction =
     std::function<bool(double offset_seconds, EphemerisSample* sample,
                        std::string* error)>;
@@ -103,6 +119,23 @@ Clearance ClearDistance(const Observation& observation,
 SolveResult SolveTime(const Observation& observation,
                       const EphemerisFunction& ephemeris,
                       const SolveOptions& options);
+
+// Solve a genuinely sequential lunar observation. The lunar-distance reading
+// is the reference epoch; Moon/body altitude time offsets are watch intervals
+// and therefore remain valid even when the watch has an unknown constant UTC
+// offset. Latitude/longitude at the reference epoch and the clock correction
+// are solved together. Optional COG/SOG propagates the observer between the
+// three readings.
+SolveResult SolveTimeTagged(const Observation& observation,
+                            const EphemerisFunction& ephemeris,
+                            const SolveOptions& options);
+
+// Forward model used by the joint solver and exposed for independent
+// regression fixtures. The supplied position is at the lunar-distance epoch.
+PredictedObservation PredictTimeTaggedObservation(
+    const Observation& settings, const EphemerisFunction& ephemeris,
+    double clock_correction_seconds,
+    const GeographicPoint& reference_position);
 
 PositionResult IntersectAltitudeCircles(
     const GeographicPoint& moon_geographic_position,

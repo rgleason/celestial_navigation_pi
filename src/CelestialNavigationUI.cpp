@@ -295,7 +295,8 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_panel1->Layout();
 	m_panel1->FitInside();
 	m_notebook1->AddPage( m_panel1, _("Sight"), true );
-	m_panel2 = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel2 = new wxScrolledWindow( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL|wxVSCROLL );
+	m_panel2->SetScrollRate( 0, 12 );
 	wxFlexGridSizer* fgSizer8;
 	fgSizer8 = new wxFlexGridSizer( 0, 1, 0, 0 );
 	fgSizer8->SetFlexibleDirection( wxBOTH );
@@ -373,7 +374,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 
 	m_panel2->SetSizer( fgSizer8 );
 	m_panel2->Layout();
-	fgSizer8->Fit( m_panel2 );
+	m_panel2->FitInside();
 	m_notebook1->AddPage( m_panel2, _("Time (UTC)"), false );
 	m_panel6 = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxFlexGridSizer* fgSizer18;

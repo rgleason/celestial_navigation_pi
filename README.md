@@ -16,10 +16,11 @@ This maintained fork adds:
   a COG/SOG motion model to a common epoch;
 * a sight-sequence analyzer for residuals, scatter, robust outliers, trend and
   personal bias, plus dedicated noon and Polaris helpers;
-* a rebuilt lunar-distance workflow which clears the observed distance,
-  searches for every matching UTC in a selectable interval, quantifies the
-  time uncertainty, recovers a constant watch offset, and intersects the two
-  accompanying altitude circles to obtain latitude/longitude candidates;
+* a rebuilt lunar-distance workflow which supports simultaneous or separately
+  time-tagged lunar distance/Moon altitude/body altitude readings, searches
+  for every matching UTC in a selectable interval, jointly recovers a
+  constant watch offset and reference-epoch position, optionally advances a
+  moving vessel by COG/SOG, and reports numerical time/position uncertainty;
 * coastal sextant tools for vertical-angle ranges, optional bearing/range
   positions, one-angle chart loci and numerical three-object/two-angle fixes;
 * a working celestial-body azimuth sight, explicitly distinguished from a
@@ -48,8 +49,9 @@ See the
 [offline planning and running-fix guide](manual/modules/ROOT/pages/offline-planning.adoc).
 The separate
 [lunar-distance and coastal-sextant guide](manual/modules/ROOT/pages/lunar-coastal.adoc)
-explains the observation model, unknown-watch-offset workflow, genuine
-two-position ambiguity, controls and limitations.
+explains the simultaneous and sequential observation models,
+unknown-watch-offset workflow, genuine position ambiguity, controls and
+limitations.
 
 Maintained fork: https://github.com/pob220/celestial_navigation_pi
 

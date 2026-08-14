@@ -44,6 +44,11 @@ struct HorizontalAngleObservation {
   double left_centre_angle_deg = 0.0;
   double centre_right_angle_deg = 0.0;
   double angle_uncertainty_arcmin = 0.2;
+  bool moving_observer = false;
+  double first_time_offset_seconds = 0.0;
+  double second_time_offset_seconds = 0.0;
+  double course_true_deg = 0.0;
+  double speed_knots = 0.0;
 };
 
 struct HorizontalFixResult {

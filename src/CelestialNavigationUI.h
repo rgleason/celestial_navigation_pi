@@ -122,7 +122,7 @@ class SightDialogBase : public wxDialog
 		wxButton* m_bFindLunarBody;
 		wxStaticText* m_staticText1211;
 		wxChoice* m_cLunarBodyLimb;
-		wxPanel* m_panel2;
+		wxScrolledWindow* m_panel2;
 		wxCalendarCtrl* m_Calendar;
 		wxSpinCtrl* m_sHours;
 		wxStaticText* m_staticText9;

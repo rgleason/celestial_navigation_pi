@@ -91,6 +91,12 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
       m_LunarBodyDistanceLimb(LUNAR_NEAR),
       m_LunarMoonAltitudeUncertainty(0.2),
       m_LunarBodyAltitudeUncertainty(0.2),
+      m_LunarSeparateTimes(false),
+      m_LunarMoonTimeOffsetSeconds(0),
+      m_LunarBodyTimeOffsetSeconds(0),
+      m_LunarMovingObserver(false),
+      m_LunarCourseTrue(0.0),
+      m_LunarSpeedKnots(0.0),
       m_ShiftNm(0),
       m_ShiftBearing(0),
       m_bMagneticShiftBearing(true),
@@ -1100,6 +1106,13 @@ void Sight::RecomputeLunar() {
       std::max(0.0, m_LunarMoonAltitudeUncertainty);
   observation.body_altitude_uncertainty_arcmin =
       std::max(0.0, m_LunarBodyAltitudeUncertainty);
+  observation.separate_times = m_LunarSeparateTimes;
+  observation.moon_time_offset_seconds = m_LunarMoonTimeOffsetSeconds;
+  observation.body_time_offset_seconds = m_LunarBodyTimeOffsetSeconds;
+  observation.moving_observer =
+      m_LunarSeparateTimes && m_LunarMovingObserver;
+  observation.course_true_deg = m_LunarCourseTrue;
+  observation.speed_knots = m_LunarSpeedKnots;
 
   const wxString selected_body = m_Body;
   m_LunarUsesDe440 = false;
@@ -1242,7 +1255,9 @@ void Sight::RecomputeLunar() {
   options.end_offset_seconds = search_span / 2.0;
   options.scan_step_seconds = std::min(300.0, std::max(30.0, search_span / 288.0));
   const lunar_distance::SolveResult solution =
-      lunar_distance::SolveTime(observation, ephemeris, options);
+      observation.separate_times
+          ? lunar_distance::SolveTimeTagged(observation, ephemeris, options)
+          : lunar_distance::SolveTime(observation, ephemeris, options);
   m_LunarCandidates = solution.candidates;
   m_LunarSolutionValid = solution.valid;
   m_LunarSolutionError = wxString::FromUTF8(solution.error.c_str());
@@ -1251,12 +1266,19 @@ void Sight::RecomputeLunar() {
   m_TimeCorrection = 0;
   m_LDC = NAN;
 
-  m_CalcStr = _(
-      "Lunar-distance time recovery\n\n"
-      "The measured limb distance is converted to an apparent centre distance. "
-      "The two measured altitudes are then used to remove atmospheric refraction "
-      "and geocentric parallax by spherical trigonometry. The cleared distance is "
-      "matched numerically against the offline ephemeris.\n\n");
+  m_CalcStr = _("Lunar-distance time recovery\n\n");
+  if (observation.separate_times) {
+    m_CalcStr += _(
+        "Time-tagged mode jointly solves the constant watch correction and "
+        "reference-epoch position. Each altitude is reduced at its own watch "
+        "interval; the lunar distance is forward-modelled at its own epoch.\n\n");
+  } else {
+    m_CalcStr += _(
+        "The measured limb distance is converted to an apparent centre distance. "
+        "The simultaneous measured altitudes remove atmospheric refraction and "
+        "geocentric parallax by spherical trigonometry. The cleared distance is "
+        "matched numerically against the offline ephemeris.\n\n");
+  }
   m_CalcStr += wxString::Format(
       _("Reference UTC: %s\nSearch interval: %.1f hours (%.1f hours either side)\n"),
       UtcDateTime::FormatUtc(m_CorrectedDateTime, "%Y-%m-%d %H:%M:%S"),
@@ -1269,10 +1291,24 @@ void Sight::RecomputeLunar() {
       toSDMM_PlugIn(0, m_Measurement, true),
       toSDMM_PlugIn(0, m_LunarMoonAltitude, true), m_Body,
       toSDMM_PlugIn(0, m_LunarBodyAltitude, true));
+  if (observation.separate_times) {
+    m_CalcStr += wxString::Format(
+        _("Watch intervals from lunar distance: Moon altitude %+.0f s; "
+          "%s altitude %+.0f s\n"),
+        observation.moon_time_offset_seconds, m_Body,
+        observation.body_time_offset_seconds);
+    m_CalcStr += observation.moving_observer
+                     ? wxString::Format(
+                           _("Observer motion: COG %.1f%c true, SOG %.2f kn\n"),
+                           observation.course_true_deg, 0x00B0,
+                           observation.speed_knots)
+                     : _("Observer motion between readings: not applied\n");
+  }
 
   lunar_distance::EphemerisSample reference_sample;
   std::string reference_error;
-  if (ephemeris(0.0, &reference_sample, &reference_error)) {
+  if (!observation.separate_times &&
+      ephemeris(0.0, &reference_sample, &reference_error)) {
     const lunar_distance::Clearance clearance =
         lunar_distance::ClearDistance(observation, reference_sample);
     if (clearance.valid) {
@@ -1297,13 +1333,35 @@ void Sight::RecomputeLunar() {
     return;
   }
 
+  if (!observation.separate_times) {
+    for (lunar_distance::TimeCandidate& candidate : m_LunarCandidates) {
+      lunar_distance::EphemerisSample candidate_sample;
+      std::string candidate_error;
+      if (!ephemeris(candidate.offset_seconds, &candidate_sample,
+                     &candidate_error))
+        continue;
+      const lunar_distance::Clearance candidate_clearance =
+          lunar_distance::ClearDistance(observation, candidate_sample);
+      if (!candidate_clearance.valid) continue;
+      const lunar_distance::PositionResult positions =
+          lunar_distance::IntersectAltitudeCircles(
+              {candidate_sample.moon_geographic_latitude_deg,
+               candidate_sample.moon_geographic_longitude_deg},
+              candidate_clearance.moon_geocentric_altitude_deg,
+              {candidate_sample.body_geographic_latitude_deg,
+               candidate_sample.body_geographic_longitude_deg},
+              candidate_clearance.body_geocentric_altitude_deg);
+      if (positions.valid) candidate.positions = positions.candidates;
+    }
+  }
+
   std::size_t selected = 0;
-  for (std::size_t index = 1; index < solution.candidates.size(); ++index) {
-    if (fabs(solution.candidates[index].offset_seconds) <
-        fabs(solution.candidates[selected].offset_seconds))
+  for (std::size_t index = 1; index < m_LunarCandidates.size(); ++index) {
+    if (fabs(m_LunarCandidates[index].offset_seconds) <
+        fabs(m_LunarCandidates[selected].offset_seconds))
       selected = index;
   }
-  const lunar_distance::TimeCandidate& chosen = solution.candidates[selected];
+  const lunar_distance::TimeCandidate& chosen = m_LunarCandidates[selected];
   m_TimeCorrection = static_cast<long>(lround(chosen.offset_seconds));
   m_LDC = chosen.cleared_distance_deg;
   m_CalcStr += wxString::Format(
@@ -1322,19 +1380,29 @@ void Sight::RecomputeLunar() {
   for (const std::string& warning : solution.warnings)
     m_CalcStr += _("Warning: ") + wxString::FromUTF8(warning.c_str()) + _("\n");
 
-  lunar_distance::EphemerisSample chosen_sample;
-  std::string chosen_error;
-  if (ephemeris(chosen.offset_seconds, &chosen_sample, &chosen_error)) {
-    const lunar_distance::Clearance chosen_clearance =
-        lunar_distance::ClearDistance(observation, chosen_sample);
-    if (chosen_clearance.valid) {
-      m_LunarPositionResult = lunar_distance::IntersectAltitudeCircles(
-          {chosen_sample.moon_geographic_latitude_deg,
-           chosen_sample.moon_geographic_longitude_deg},
-          chosen_clearance.moon_geocentric_altitude_deg,
-          {chosen_sample.body_geographic_latitude_deg,
-           chosen_sample.body_geographic_longitude_deg},
-          chosen_clearance.body_geocentric_altitude_deg);
+  if (observation.separate_times) {
+    if (!chosen.positions.empty()) {
+      m_LunarPositionResult.valid = true;
+      m_LunarPositionResult.candidates = chosen.positions;
+    } else {
+      m_LunarPositionResult.error =
+          "The joint time-tagged solution did not return a position";
+    }
+  } else {
+    lunar_distance::EphemerisSample chosen_sample;
+    std::string chosen_error;
+    if (ephemeris(chosen.offset_seconds, &chosen_sample, &chosen_error)) {
+      const lunar_distance::Clearance chosen_clearance =
+          lunar_distance::ClearDistance(observation, chosen_sample);
+      if (chosen_clearance.valid) {
+        m_LunarPositionResult = lunar_distance::IntersectAltitudeCircles(
+            {chosen_sample.moon_geographic_latitude_deg,
+             chosen_sample.moon_geographic_longitude_deg},
+            chosen_clearance.moon_geocentric_altitude_deg,
+            {chosen_sample.body_geographic_latitude_deg,
+             chosen_sample.body_geographic_longitude_deg},
+            chosen_clearance.body_geocentric_altitude_deg);
+      }
     }
   }
   if (m_LunarPositionResult.valid) {
@@ -1359,11 +1427,19 @@ void Sight::RecomputeLunar() {
               ? _T(" (nearest DR/boat position)")
               : _T(""));
     }
-    m_CalcStr += wxString::Format(
-        _("Altitude-circle crossing angle: %.2f%c.\n"),
-        m_LunarPositionResult.circle_crossing_angle_deg, 0x00B0);
-    if (m_LunarPositionResult.circle_crossing_angle_deg < 15.0)
-      m_CalcStr += _("Warning: shallow altitude-circle crossing gives weak position geometry.\n");
+    if (!observation.separate_times) {
+      m_CalcStr += wxString::Format(
+          _("Altitude-circle crossing angle: %.2f%c.\n"),
+          m_LunarPositionResult.circle_crossing_angle_deg, 0x00B0);
+      if (m_LunarPositionResult.circle_crossing_angle_deg < 15.0)
+        m_CalcStr += _("Warning: shallow altitude-circle crossing gives weak position geometry.\n");
+    } else {
+      m_CalcStr += std::isfinite(chosen.position_uncertainty_nm)
+                       ? wxString::Format(
+                             _("Estimated joint position uncertainty: %.2f NM (1-sigma; local linear model).\n"),
+                             chosen.position_uncertainty_nm)
+                       : _("Estimated joint position uncertainty: indeterminate (singular local geometry).\n");
+    }
   } else {
     m_CalcStr += _("\nThe two corrected altitude circles did not yield a position: ") +
                  wxString::FromUTF8(m_LunarPositionResult.error.c_str()) +
@@ -1372,8 +1448,14 @@ void Sight::RecomputeLunar() {
   m_CalcStr += _(
       "\nThe recovered correction is a constant watch offset. It may be "
       "applied to other sightings recorded while the watch retained interval "
-      "accuracy. The position above comes from the two measured altitudes; it "
-      "is not a 15-degrees-per-hour longitude shortcut.\n");
+      "accuracy. ");
+  m_CalcStr += observation.separate_times
+                   ? _("The reference-epoch position above is the joint "
+                       "solution of the three time-tagged angles; it is not a "
+                       "15-degrees-per-hour longitude shortcut.\n")
+                   : _("The position above comes from the two measured "
+                       "altitudes; it is not a 15-degrees-per-hour longitude "
+                       "shortcut.\n");
   return;
 
 #if 0  // Historical implementation retained for algorithm provenance.

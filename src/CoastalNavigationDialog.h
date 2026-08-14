@@ -60,6 +60,10 @@ private:
   wxTextCtrl* m_firstAngle;
   wxTextCtrl* m_secondAngle;
   wxTextCtrl* m_angleUncertainty;
+  wxCheckBox* m_advanceHorizontalObserver;
+  wxTextCtrl* m_horizontalInterval;
+  wxTextCtrl* m_horizontalCourse;
+  wxTextCtrl* m_horizontalSpeed;
   wxTextCtrl* m_initialLat;
   wxTextCtrl* m_initialLon;
   wxStaticText* m_horizontalResult;

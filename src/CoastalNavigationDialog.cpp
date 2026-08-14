@@ -81,6 +81,12 @@ CoastalNavigationDialog::CoastalNavigationDialog(
       bearingBox->GetStaticBox(), wxID_ANY,
       _("Include observed bearing from vessel to target"));
   bearingBox->Add(m_includeBearing, 0, wxALL, 5);
+  wxStaticText* bearingTiming = new wxStaticText(
+      bearingBox->GetStaticBox(), wxID_ANY,
+      _("Record the bearing at effectively the same time as the vertical "
+        "angle, or reduce it to that position epoch before entry."));
+  bearingTiming->Wrap(650);
+  bearingBox->Add(bearingTiming, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
   wxFlexGridSizer* bearingGrid = new wxFlexGridSizer(0, 3, 6, 8);
   bearingGrid->AddGrowableCol(1, 1);
   bearingGrid->Add(new wxStaticText(bearingBox->GetStaticBox(), wxID_ANY,
@@ -154,6 +160,35 @@ CoastalNavigationDialog::CoastalNavigationDialog(
                           _("Approximate vessel longitude"), lon,
                           _("decimal degrees"));
   horizontalRoot->Add(horizontalGrid, 0, wxALL | wxEXPAND, 10);
+
+  wxStaticBoxSizer* sequence = new wxStaticBoxSizer(
+      wxVERTICAL, horizontal, _("Sequential angle readings"));
+  m_advanceHorizontalObserver = new wxCheckBox(
+      sequence->GetStaticBox(), wxID_ANY,
+      _("Advance the vessel between the two HSA readings"));
+  sequence->Add(m_advanceHorizontalObserver, 0, wxALL, 5);
+  wxFlexGridSizer* sequenceGrid = new wxFlexGridSizer(0, 3, 6, 8);
+  sequenceGrid->AddGrowableCol(1, 1);
+  m_horizontalInterval = AddField(
+      sequenceGrid, sequence->GetStaticBox(),
+      _("Second-angle interval from first"), _("0"), _("seconds"));
+  m_horizontalCourse = AddField(sequenceGrid, sequence->GetStaticBox(),
+                                _("COG true"), _("0.0"), _("degrees"));
+  m_horizontalSpeed = AddField(sequenceGrid, sequence->GetStaticBox(),
+                               _("SOG"), _("0.0"), _("kn"));
+  sequence->Add(sequenceGrid, 0, wxALL | wxEXPAND, 5);
+  horizontalRoot->Add(sequence, 0,
+                      wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
+  auto updateSequence = [this]() {
+    const bool enabled = m_advanceHorizontalObserver->GetValue();
+    m_horizontalInterval->Enable(enabled);
+    m_horizontalCourse->Enable(enabled);
+    m_horizontalSpeed->Enable(enabled);
+  };
+  m_advanceHorizontalObserver->Bind(
+      wxEVT_CHECKBOX,
+      [updateSequence](wxCommandEvent&) { updateSequence(); });
+  updateSequence();
   wxBoxSizer* horizontalButtons = new wxBoxSizer(wxHORIZONTAL);
   wxButton* boat = new wxButton(horizontal, wxID_ANY, _("Use boat position"));
   wxButton* calculateHorizontal =
@@ -304,6 +339,15 @@ void CoastalNavigationDialog::CalculateHorizontal(wxCommandEvent&) {
       !ReadDouble(m_angleUncertainty, _("Angle uncertainty"),
                   &observation.angle_uncertainty_arcmin))
     return;
+  observation.moving_observer = m_advanceHorizontalObserver->GetValue();
+  if (observation.moving_observer &&
+      (!ReadDouble(m_horizontalInterval, _("Second-angle interval"),
+                   &observation.second_time_offset_seconds) ||
+       !ReadDouble(m_horizontalCourse, _("COG true"),
+                   &observation.course_true_deg) ||
+       !ReadDouble(m_horizontalSpeed, _("SOG"),
+                   &observation.speed_knots)))
+    return;
   const cn::HorizontalFixResult result =
       cn::SolveHorizontalThreePointFix(observation, initial);
   m_hsaLoci = cn::BuildHorizontalAngleLocus(
@@ -312,7 +356,22 @@ void CoastalNavigationDialog::CalculateHorizontal(wxCommandEvent&) {
   const auto second = cn::BuildHorizontalAngleLocus(
       observation.centre, observation.right,
       observation.centre_right_angle_deg);
-  m_hsaLoci.insert(m_hsaLoci.end(), second.begin(), second.end());
+  if (observation.moving_observer && observation.speed_knots != 0.0) {
+    const double signed_distance = observation.speed_knots *
+                                   observation.second_time_offset_seconds /
+                                   3600.0;
+    const double reverse_course = observation.course_true_deg +
+                                  (signed_distance >= 0.0 ? 180.0 : 0.0);
+    for (const auto& branch : second) {
+      std::vector<cn::GeoPoint> propagated;
+      for (const cn::GeoPoint& point : branch)
+        propagated.push_back(cn::Destination(
+            point, reverse_course, std::fabs(signed_distance)));
+      m_hsaLoci.push_back(std::move(propagated));
+    }
+  } else {
+    m_hsaLoci.insert(m_hsaLoci.end(), second.begin(), second.end());
+  }
   if (!result.valid) {
     m_hasHorizontalFix = false;
     m_horizontalResult->SetLabel(
@@ -321,11 +380,15 @@ void CoastalNavigationDialog::CalculateHorizontal(wxCommandEvent&) {
   } else {
     m_hasHorizontalFix = true;
     m_horizontalFix = result.position;
-    m_horizontalResult->SetLabel(wxString::Format(
+    wxString resultText = wxString::Format(
         _("Fix %.6f%c, %.6f%c; residuals %+.4f' / %+.4f'; estimated 1-sigma geometry uncertainty %.3f NM; condition %.1f."),
         result.position.latitude_deg, 0x00B0, result.position.longitude_deg,
         0x00B0, result.first_residual_arcmin, result.second_residual_arcmin,
-        result.estimated_uncertainty_nm, result.geometry_condition));
+        result.estimated_uncertainty_nm, result.geometry_condition);
+    if (observation.moving_observer)
+      resultText += _(" The fix and both plotted loci are reduced to the "
+                      "first-angle reference epoch.");
+    m_horizontalResult->SetLabel(resultText);
   }
   RefreshChart();
 }

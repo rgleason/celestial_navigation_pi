@@ -16,6 +16,7 @@ public:
 
 private:
   void UpdateResults();
+  void UpdatePositions(long candidate_index);
   void ApplySelectedWatchOffset(wxCommandEvent& event);
 
   Sight& m_sight;

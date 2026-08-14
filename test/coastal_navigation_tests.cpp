@@ -63,6 +63,33 @@ TEST(CoastalNavigation, ThreePointHorizontalFixRecoversKnownPosition) {
   EXPECT_LT(std::fabs(result.second_residual_arcmin), 0.001);
 }
 
+TEST(CoastalNavigation, SequentialAnglesRecoverMovingReferencePosition) {
+  cn::HorizontalAngleObservation observation;
+  observation.left = {50.02, -1.05};
+  observation.centre = {50.08, -0.98};
+  observation.right = {50.00, -0.90};
+  const cn::GeoPoint truth{49.95, -1.00};
+  observation.moving_observer = true;
+  observation.first_time_offset_seconds = 0.0;
+  observation.second_time_offset_seconds = 45.0;
+  observation.course_true_deg = 80.0;
+  observation.speed_knots = 18.0;
+  const cn::GeoPoint second_position = cn::Destination(
+      truth, observation.course_true_deg,
+      observation.speed_knots * observation.second_time_offset_seconds /
+          3600.0);
+  observation.left_centre_angle_deg = cn::IncludedHorizontalAngleDeg(
+      truth, observation.left, observation.centre);
+  observation.centre_right_angle_deg = cn::IncludedHorizontalAngleDeg(
+      second_position, observation.centre, observation.right);
+  const cn::HorizontalFixResult result = cn::SolveHorizontalThreePointFix(
+      observation, cn::GeoPoint{49.96, -1.01});
+  ASSERT_TRUE(result.valid) << result.error;
+  EXPECT_LT(cn::GreatCircleDistanceNm(result.position, truth), 0.001);
+  EXPECT_TRUE(std::isfinite(result.estimated_uncertainty_nm));
+  EXPECT_GT(result.estimated_uncertainty_nm, 0.0);
+}
+
 TEST(CoastalNavigation, SingleHorizontalAngleProducesChartableLocus) {
   const cn::GeoPoint first{53.0, -3.1};
   const cn::GeoPoint second{53.0, -2.9};

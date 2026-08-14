@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: celestial_navigation_pi 2.6.0.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 08:56+0100\n"
+"POT-Creation-Date: 2026-08-15 00:42+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,7 +23,7 @@ msgstr ""
 msgid "Body"
 msgstr ""
 
-#: src/CelestialNavigationDialog.cpp:104 src/CelestialNavigationUI.cpp:430
+#: src/CelestialNavigationDialog.cpp:104 src/CelestialNavigationUI.cpp:431
 msgid "Color"
 msgstr ""
 
@@ -31,7 +31,7 @@ msgstr ""
 msgid "Measurement"
 msgstr ""
 
-#: src/CelestialNavigationDialog.cpp:104 src/CelestialNavigationUI.cpp:377
+#: src/CelestialNavigationDialog.cpp:104 src/CelestialNavigationUI.cpp:378
 #: src/PlannerDialog.cpp:163 src/PlannerDialog.cpp:461
 msgid "Time (UTC)"
 msgstr ""
@@ -90,12 +90,12 @@ msgid "Time integrity"
 msgstr ""
 
 #: src/CelestialNavigationDialog.cpp:351 src/CelestialNavigationDialog.cpp:438
-#: src/CelestialNavigationDialog.cpp:1305 src/CelestialNavigationUI.cpp:55
+#: src/CelestialNavigationDialog.cpp:1316 src/CelestialNavigationUI.cpp:55
 msgid "Hide"
 msgstr ""
 
 #: src/CelestialNavigationDialog.cpp:351 src/CelestialNavigationDialog.cpp:438
-#: src/CelestialNavigationDialog.cpp:1299
+#: src/CelestialNavigationDialog.cpp:1310
 msgid "Show"
 msgstr ""
 
@@ -200,37 +200,37 @@ msgstr ""
 msgid "Invalid xml file"
 msgstr ""
 
-#: src/CelestialNavigationDialog.cpp:693
+#: src/CelestialNavigationDialog.cpp:703
 msgid "Unrecognized xml node"
 msgstr ""
 
-#: src/CelestialNavigationDialog.cpp:711 src/CelestialNavigationDialog.cpp:808
-#: src/CelestialNavigationDialog.cpp:1214 src/Sight.cpp:2210
+#: src/CelestialNavigationDialog.cpp:721 src/CelestialNavigationDialog.cpp:827
+#: src/CelestialNavigationDialog.cpp:1233 src/Sight.cpp:2292
 #: src/celestial_navigation_pi.cpp:116 src/celestial_navigation_pi.cpp:121
 msgid "Celestial Navigation"
 msgstr ""
 
-#: src/CelestialNavigationDialog.cpp:807
+#: src/CelestialNavigationDialog.cpp:826
 msgid "Failed to save xml file: "
 msgstr ""
 
-#: src/CelestialNavigationDialog.cpp:896 src/CelestialNavigationDialog.cpp:930
+#: src/CelestialNavigationDialog.cpp:915 src/CelestialNavigationDialog.cpp:949
 msgid "Time Correction"
 msgstr ""
 
-#: src/CelestialNavigationDialog.cpp:963
+#: src/CelestialNavigationDialog.cpp:982
 msgid "Sun"
 msgstr ""
 
-#: src/CelestialNavigationDialog.cpp:984
+#: src/CelestialNavigationDialog.cpp:1003
 msgid "System UTC status unavailable"
 msgstr ""
 
-#: src/CelestialNavigationDialog.cpp:987
+#: src/CelestialNavigationDialog.cpp:1006
 msgid "; GNSS comparison current ("
 msgstr ""
 
-#: src/CelestialNavigationDialog.cpp:1213
+#: src/CelestialNavigationDialog.cpp:1232
 msgid "Are you sure you want to delete all sights?"
 msgstr ""
 
@@ -275,7 +275,7 @@ msgstr ""
 msgid "Azimuth"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:148 src/CelestialNavigationUI.cpp:886
+#: src/CelestialNavigationUI.cpp:148 src/CelestialNavigationUI.cpp:887
 #: src/Sight.h:62
 msgid "Lunar"
 msgstr ""
@@ -318,9 +318,9 @@ msgid "Sight measurement (Hs)"
 msgstr ""
 
 #: src/CelestialNavigationUI.cpp:201 src/CelestialNavigationUI.cpp:231
-#: src/CelestialNavigationUI.cpp:265 src/CelestialNavigationUI.cpp:773
-#: src/CelestialNavigationUI.cpp:782 src/CelestialNavigationUI.cpp:831
-#: src/CelestialNavigationUI.cpp:897
+#: src/CelestialNavigationUI.cpp:265 src/CelestialNavigationUI.cpp:774
+#: src/CelestialNavigationUI.cpp:783 src/CelestialNavigationUI.cpp:832
+#: src/CelestialNavigationUI.cpp:898
 msgid "000° 00.0000'"
 msgstr ""
 
@@ -328,7 +328,7 @@ msgstr ""
 msgid "Certainty (')"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:208 src/CelestialNavigationUI.cpp:457
+#: src/CelestialNavigationUI.cpp:208 src/CelestialNavigationUI.cpp:458
 msgid "00.00"
 msgstr ""
 
@@ -340,253 +340,253 @@ msgstr ""
 msgid "Sight"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:325
+#: src/CelestialNavigationUI.cpp:326
 msgid "Hours"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:332 src/CelestialNavigationUI.cpp:493
+#: src/CelestialNavigationUI.cpp:333 src/CelestialNavigationUI.cpp:494
 msgid "Minutes"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:339 src/CelestialNavigationUI.cpp:357
-#: src/CelestialNavigationUI.cpp:1136 src/SightDialog.cpp:393
-#: src/SightDialog.cpp:403
+#: src/CelestialNavigationUI.cpp:340 src/CelestialNavigationUI.cpp:358
+#: src/CelestialNavigationUI.cpp:1137 src/SightDialog.cpp:531
+#: src/SightDialog.cpp:541
 msgid "Seconds"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:347
+#: src/CelestialNavigationUI.cpp:348
 msgid "Certainty"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:384 src/CelestialNavigationUI.cpp:667
+#: src/CelestialNavigationUI.cpp:385 src/CelestialNavigationUI.cpp:668
 msgid "Distance"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:391 src/CelestialNavigationUI.cpp:674
+#: src/CelestialNavigationUI.cpp:392 src/CelestialNavigationUI.cpp:675
 msgid "Nm"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:395 src/CelestialNavigationUI.cpp:678
+#: src/CelestialNavigationUI.cpp:396 src/CelestialNavigationUI.cpp:679
 msgid "Bearing"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:402 src/CelestialNavigationUI.cpp:685
+#: src/CelestialNavigationUI.cpp:403 src/CelestialNavigationUI.cpp:686
 msgid "Degrees"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:406 src/CelestialNavigationUI.cpp:689
+#: src/CelestialNavigationUI.cpp:407 src/CelestialNavigationUI.cpp:690
 msgid "Magnetic Bearing"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:413
+#: src/CelestialNavigationUI.cpp:414
 msgid "DR Shift"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:420
+#: src/CelestialNavigationUI.cpp:421
 msgid "Transparency"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:441
+#: src/CelestialNavigationUI.cpp:442
 msgid "Config"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:453
+#: src/CelestialNavigationUI.cpp:454
 msgid "Eye Height"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:460
+#: src/CelestialNavigationUI.cpp:461
 msgid "Meters"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:464
+#: src/CelestialNavigationUI.cpp:465
 msgid "Temperature"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:468
+#: src/CelestialNavigationUI.cpp:469
 msgid "10.0"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:471
+#: src/CelestialNavigationUI.cpp:472
 msgid "Celsius"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:475 src/HorizonEventDialog.cpp:183
+#: src/CelestialNavigationUI.cpp:476 src/HorizonEventDialog.cpp:183
 msgid "Pressure"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:479
+#: src/CelestialNavigationUI.cpp:480
 msgid "1013.0"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:482
+#: src/CelestialNavigationUI.cpp:483
 msgid "MilliBars"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:486
+#: src/CelestialNavigationUI.cpp:487
 msgid "Index Error"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:490
+#: src/CelestialNavigationUI.cpp:491
 msgid "0.0000"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:497
+#: src/CelestialNavigationUI.cpp:498
 msgid "Dip Short Distance"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:503
+#: src/CelestialNavigationUI.cpp:504
 msgid "NM"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:507
+#: src/CelestialNavigationUI.cpp:508
 msgid "Artificial Horizon"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:513
+#: src/CelestialNavigationUI.cpp:514
 msgid "Set As Defaults"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:520
+#: src/CelestialNavigationUI.cpp:521
 msgid "Parameters"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:532
+#: src/CelestialNavigationUI.cpp:533
 msgid "Abbreviations, Definitions"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:539
+#: src/CelestialNavigationUI.cpp:540
 msgid "Calculations"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:660
+#: src/CelestialNavigationUI.cpp:661
 msgid "Shift all visible sights"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:743 src/CelestialNavigationUI.cpp:1022
-#: src/EclipseDialog.cpp:185 src/LunarResultsDialog.cpp:52
+#: src/CelestialNavigationUI.cpp:744 src/CelestialNavigationUI.cpp:1023
+#: src/EclipseDialog.cpp:185 src/LunarResultsDialog.cpp:62
 #: src/PlannerDialog.cpp:136
 msgid "Latitude"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:745
+#: src/CelestialNavigationUI.cpp:746
 msgid "N 000° 00.0000'"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:752 src/CelestialNavigationUI.cpp:1029
-#: src/EclipseDialog.cpp:190 src/LunarResultsDialog.cpp:53
+#: src/CelestialNavigationUI.cpp:753 src/CelestialNavigationUI.cpp:1030
+#: src/EclipseDialog.cpp:190 src/LunarResultsDialog.cpp:63
 #: src/PlannerDialog.cpp:143
 msgid "Longitude"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:754 src/CelestialNavigationUI.cpp:924
+#: src/CelestialNavigationUI.cpp:755 src/CelestialNavigationUI.cpp:925
 msgid "E 000° 00.0000'"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:763
+#: src/CelestialNavigationUI.cpp:764
 msgid "Boat Position"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:771
+#: src/CelestialNavigationUI.cpp:772
 msgid "Altitude (Hc)"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:780
+#: src/CelestialNavigationUI.cpp:781
 msgid "Azimuth (Zn)"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:791
+#: src/CelestialNavigationUI.cpp:792
 msgid "Magnetic"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:798
+#: src/CelestialNavigationUI.cpp:799
 msgid "Intercept (in Nm)"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:809
+#: src/CelestialNavigationUI.cpp:810
 msgid "Towards"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:820
+#: src/CelestialNavigationUI.cpp:821
 msgid "Away"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:829
+#: src/CelestialNavigationUI.cpp:830
 msgid "Est. Altitude (Hs)"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:895 src/LunarResultsDialog.cpp:40
+#: src/CelestialNavigationUI.cpp:896 src/LunarResultsDialog.cpp:47
 msgid "LD cleared"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:904
+#: src/CelestialNavigationUI.cpp:905
 msgid "UTC revised"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:906
+#: src/CelestialNavigationUI.cpp:907
 msgid "0000-00-00 00:00:00"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:913
+#: src/CelestialNavigationUI.cpp:914
 msgid "UTC change (s)"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:922
+#: src/CelestialNavigationUI.cpp:923
 msgid "Lon revised"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:931
+#: src/CelestialNavigationUI.cpp:932
 msgid "Lon error (')"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:940
+#: src/CelestialNavigationUI.cpp:941
 msgid "Pos error (nm)"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:1015
+#: src/CelestialNavigationUI.cpp:1016
 msgid "Fix From Visible Sights"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:1026
+#: src/CelestialNavigationUI.cpp:1027
 msgid "000° 00.0000' N"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:1036
+#: src/CelestialNavigationUI.cpp:1037
 msgid "Error"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:1046
+#: src/CelestialNavigationUI.cpp:1047
 msgid "DR Latitude"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:1053
+#: src/CelestialNavigationUI.cpp:1054
 msgid "DR Longitude"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:1060
+#: src/CelestialNavigationUI.cpp:1061
 msgid "Algorithm"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:1064 src/CelestialNavigationUI.cpp:1066
+#: src/CelestialNavigationUI.cpp:1065 src/CelestialNavigationUI.cpp:1067
 msgid "Sphere"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:1065
+#: src/CelestialNavigationUI.cpp:1066
 msgid "Plane"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:1067
+#: src/CelestialNavigationUI.cpp:1068
 msgid "Cone"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:1068
+#: src/CelestialNavigationUI.cpp:1069
 msgid "Cone 2"
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:1072
+#: src/CelestialNavigationUI.cpp:1073
 msgid " Go "
 msgstr ""
 
-#: src/CelestialNavigationUI.cpp:1126 src/CelestialNavigationUI.h:369
+#: src/CelestialNavigationUI.cpp:1127 src/CelestialNavigationUI.h:369
 msgid "Clock Correction"
 msgstr ""
 
@@ -638,10 +638,10 @@ msgid "Target latitude"
 msgstr ""
 
 #: src/CoastalNavigationDialog.cpp:62 src/CoastalNavigationDialog.cpp:64
-#: src/CoastalNavigationDialog.cpp:132 src/CoastalNavigationDialog.cpp:134
-#: src/CoastalNavigationDialog.cpp:136 src/CoastalNavigationDialog.cpp:138
-#: src/CoastalNavigationDialog.cpp:140 src/CoastalNavigationDialog.cpp:142
-#: src/CoastalNavigationDialog.cpp:152 src/CoastalNavigationDialog.cpp:155
+#: src/CoastalNavigationDialog.cpp:138 src/CoastalNavigationDialog.cpp:140
+#: src/CoastalNavigationDialog.cpp:142 src/CoastalNavigationDialog.cpp:144
+#: src/CoastalNavigationDialog.cpp:146 src/CoastalNavigationDialog.cpp:148
+#: src/CoastalNavigationDialog.cpp:158 src/CoastalNavigationDialog.cpp:161
 msgid "decimal degrees"
 msgstr ""
 
@@ -666,21 +666,22 @@ msgid "Index error (on the arc +)"
 msgstr ""
 
 #: src/CoastalNavigationDialog.cpp:68 src/CoastalNavigationDialog.cpp:72
-#: src/CoastalNavigationDialog.cpp:98 src/CoastalNavigationDialog.cpp:100
-#: src/CoastalNavigationDialog.cpp:103
+#: src/CoastalNavigationDialog.cpp:104 src/CoastalNavigationDialog.cpp:106
+#: src/CoastalNavigationDialog.cpp:109 src/CoastalNavigationDialog.cpp:176
+#: src/CoastalNavigationDialog.cpp:178
 msgid "0.0"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:68 src/CoastalNavigationDialog.cpp:149
+#: src/CoastalNavigationDialog.cpp:68 src/CoastalNavigationDialog.cpp:155
 msgid "arcmin"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:69 src/CoastalNavigationDialog.cpp:239
+#: src/CoastalNavigationDialog.cpp:69 src/CoastalNavigationDialog.cpp:274
 msgid "Charted top height"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:70 src/CoastalNavigationDialog.cpp:144
-#: src/CoastalNavigationDialog.cpp:146
+#: src/CoastalNavigationDialog.cpp:70 src/CoastalNavigationDialog.cpp:150
+#: src/CoastalNavigationDialog.cpp:152
 msgid "30.0"
 msgstr ""
 
@@ -696,7 +697,7 @@ msgstr ""
 msgid "m (tide included)"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:74 src/CoastalNavigationDialog.cpp:243
+#: src/CoastalNavigationDialog.cpp:74 src/CoastalNavigationDialog.cpp:278
 #: src/HorizonEventDialog.cpp:179
 msgid "Height of eye"
 msgstr ""
@@ -717,232 +718,280 @@ msgstr ""
 msgid "Include observed bearing from vessel to target"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:87 src/HorizonEventDialog.cpp:148
+#: src/CoastalNavigationDialog.cpp:86
+msgid ""
+"Record the bearing at effectively the same time as the vertical angle, or "
+"reduce it to that position epoch before entry."
+msgstr ""
+
+#: src/CoastalNavigationDialog.cpp:93 src/HorizonEventDialog.cpp:148
 msgid "Bearing reference"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:90
+#: src/CoastalNavigationDialog.cpp:96
 msgid "True"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:91 src/HorizonEventDialog.cpp:151
+#: src/CoastalNavigationDialog.cpp:97 src/HorizonEventDialog.cpp:151
 msgid "Magnetic compass"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:98 src/CoastalNavigationDialog.cpp:267
+#: src/CoastalNavigationDialog.cpp:104 src/CoastalNavigationDialog.cpp:302
 #: src/HorizonEventDialog.cpp:156
 msgid "Observed bearing"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:98 src/CoastalNavigationDialog.cpp:101
-#: src/CoastalNavigationDialog.cpp:104 src/CoastalNavigationDialog.cpp:144
-#: src/CoastalNavigationDialog.cpp:146 src/HorizonEventDialog.cpp:157
-#: src/HorizonEventDialog.cpp:160 src/HorizonEventDialog.cpp:163
-#: src/HorizonEventDialog.cpp:166
+#: src/CoastalNavigationDialog.cpp:104 src/CoastalNavigationDialog.cpp:107
+#: src/CoastalNavigationDialog.cpp:110 src/CoastalNavigationDialog.cpp:150
+#: src/CoastalNavigationDialog.cpp:152 src/CoastalNavigationDialog.cpp:176
+#: src/HorizonEventDialog.cpp:157 src/HorizonEventDialog.cpp:160
+#: src/HorizonEventDialog.cpp:163 src/HorizonEventDialog.cpp:166
 msgid "degrees"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:100 src/HorizonEventDialog.cpp:159
+#: src/CoastalNavigationDialog.cpp:106 src/HorizonEventDialog.cpp:159
 msgid "Magnetic variation (E + / W -)"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:103 src/HorizonEventDialog.cpp:162
+#: src/CoastalNavigationDialog.cpp:109 src/HorizonEventDialog.cpp:162
 msgid "Compass deviation (E + / W -)"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:108
+#: src/CoastalNavigationDialog.cpp:114
 msgid "Calculate and plot range"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:110 src/CoastalNavigationDialog.cpp:164
+#: src/CoastalNavigationDialog.cpp:116 src/CoastalNavigationDialog.cpp:199
 msgid "No result yet."
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:117
+#: src/CoastalNavigationDialog.cpp:123
 msgid "Vertical angle / distance"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:124
+#: src/CoastalNavigationDialog.cpp:130
 msgid ""
 "Enter three charted objects in left-centre-right visual order and the two "
 "included angles. The approximate position chooses the correct solution when "
 "the geometry has an ambiguity."
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:131
+#: src/CoastalNavigationDialog.cpp:137
 msgid "Left object latitude"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:133
+#: src/CoastalNavigationDialog.cpp:139
 msgid "Left object longitude"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:135
+#: src/CoastalNavigationDialog.cpp:141
 msgid "Centre object latitude"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:137
+#: src/CoastalNavigationDialog.cpp:143
 msgid "Centre object longitude"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:139
+#: src/CoastalNavigationDialog.cpp:145
 msgid "Right object latitude"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:141
+#: src/CoastalNavigationDialog.cpp:147
 msgid "Right object longitude"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:143 src/CoastalNavigationDialog.cpp:300
+#: src/CoastalNavigationDialog.cpp:149 src/CoastalNavigationDialog.cpp:335
 msgid "Left-centre angle"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:145 src/CoastalNavigationDialog.cpp:302
+#: src/CoastalNavigationDialog.cpp:151 src/CoastalNavigationDialog.cpp:337
 msgid "Centre-right angle"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:148
+#: src/CoastalNavigationDialog.cpp:154
 msgid "0.2"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:148
+#: src/CoastalNavigationDialog.cpp:154
 msgid "Angle uncertainty (1-sigma)"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:151
+#: src/CoastalNavigationDialog.cpp:157
 msgid "Approximate vessel latitude"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:154
+#: src/CoastalNavigationDialog.cpp:160
 msgid "Approximate vessel longitude"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:158 src/EclipseDialog.cpp:195
+#: src/CoastalNavigationDialog.cpp:165
+msgid "Sequential angle readings"
+msgstr ""
+
+#: src/CoastalNavigationDialog.cpp:168
+msgid "Advance the vessel between the two HSA readings"
+msgstr ""
+
+#: src/CoastalNavigationDialog.cpp:174
+msgid "0"
+msgstr ""
+
+#: src/CoastalNavigationDialog.cpp:174
+msgid "Second-angle interval from first"
+msgstr ""
+
+#: src/CoastalNavigationDialog.cpp:174 src/HorizonEventDialog.cpp:118
+msgid "seconds"
+msgstr ""
+
+#: src/CoastalNavigationDialog.cpp:176 src/CoastalNavigationDialog.cpp:346
+#: src/FixDialog.cpp:100 src/SightAnalysisDialog.cpp:127 src/SightDialog.cpp:242
+msgid "COG true"
+msgstr ""
+
+#: src/CoastalNavigationDialog.cpp:178 src/CoastalNavigationDialog.cpp:348
+msgid "SOG"
+msgstr ""
+
+#: src/CoastalNavigationDialog.cpp:178
+msgid "kn"
+msgstr ""
+
+#: src/CoastalNavigationDialog.cpp:193 src/EclipseDialog.cpp:195
 msgid "Use boat position"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:160
+#: src/CoastalNavigationDialog.cpp:195
 msgid "Solve and plot HSA fix"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:172
+#: src/CoastalNavigationDialog.cpp:207
 msgid "Horizontal angles / fix"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:176
+#: src/CoastalNavigationDialog.cpp:211
 msgid "Clear chart plots"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:177 src/EclipseDialog.cpp:226
-#: src/LunarResultsDialog.cpp:78
+#: src/CoastalNavigationDialog.cpp:212 src/EclipseDialog.cpp:226
+#: src/LunarResultsDialog.cpp:95
 msgid "Close"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:206
+#: src/CoastalNavigationDialog.cpp:241
 msgid " is not a valid number."
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:206 src/CoastalNavigationDialog.cpp:221
+#: src/CoastalNavigationDialog.cpp:241 src/CoastalNavigationDialog.cpp:256
 msgid "Coastal navigation"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:216
+#: src/CoastalNavigationDialog.cpp:251
 msgid " latitude"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:217
+#: src/CoastalNavigationDialog.cpp:252
 msgid " longitude"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:220
+#: src/CoastalNavigationDialog.cpp:255
 msgid " is outside the valid latitude/longitude range."
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:230
+#: src/CoastalNavigationDialog.cpp:265
 msgid "Target position"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:237
+#: src/CoastalNavigationDialog.cpp:272
 msgid "Index error"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:241
+#: src/CoastalNavigationDialog.cpp:276
 msgid "Water level"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:248
+#: src/CoastalNavigationDialog.cpp:283
 msgid "No range: "
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:256
+#: src/CoastalNavigationDialog.cpp:291
 #, c-format
 msgid "Range %.3f NM; corrected angle %.6f%c; effective target height %.2f m."
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:260
+#: src/CoastalNavigationDialog.cpp:295
 msgid ""
 "\n"
 "Warning: "
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:268
+#: src/CoastalNavigationDialog.cpp:303
 msgid "Magnetic variation"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:269
+#: src/CoastalNavigationDialog.cpp:304
 msgid "Compass deviation"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:276
+#: src/CoastalNavigationDialog.cpp:311
 #, c-format
 msgid ""
 "\n"
 "Bearing/range estimate: %.6f%c, %.6f%c (true bearing %.2f%c)."
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:281
+#: src/CoastalNavigationDialog.cpp:316
 msgid ""
 "\n"
 "This is a range circle, not a fix. Add a bearing or another independent "
 "observation."
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:290
+#: src/CoastalNavigationDialog.cpp:325
 msgid "Left object"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:293
+#: src/CoastalNavigationDialog.cpp:328
 msgid "Centre object"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:295
+#: src/CoastalNavigationDialog.cpp:330
 msgid "Right object"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:298
+#: src/CoastalNavigationDialog.cpp:333
 msgid "Approximate position"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:304
+#: src/CoastalNavigationDialog.cpp:339
 msgid "Angle uncertainty"
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:319
+#: src/CoastalNavigationDialog.cpp:344
+msgid "Second-angle interval"
+msgstr ""
+
+#: src/CoastalNavigationDialog.cpp:378
 msgid "No fix: "
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:320
+#: src/CoastalNavigationDialog.cpp:379
 msgid ""
 "\n"
 "The individual HSA loci are plotted where their coastal-scale chart "
 "construction is valid."
 msgstr ""
 
-#: src/CoastalNavigationDialog.cpp:325
+#: src/CoastalNavigationDialog.cpp:384
 #, c-format
 msgid ""
 "Fix %.6f%c, %.6f%c; residuals %+.4f' / %+.4f'; estimated 1-sigma geometry "
 "uncertainty %.3f NM; condition %.1f."
+msgstr ""
+
+#: src/CoastalNavigationDialog.cpp:389
+msgid ""
+" The fix and both plotted loci are reduced to the first-angle reference epoch."
 msgstr ""
 
 #: src/EclipseDialog.cpp:75
@@ -1159,11 +1208,7 @@ msgstr ""
 msgid "Time"
 msgstr ""
 
-#: src/FixDialog.cpp:100 src/SightAnalysisDialog.cpp:127
-msgid "COG true"
-msgstr ""
-
-#: src/FixDialog.cpp:107 src/SightAnalysisDialog.cpp:134
+#: src/FixDialog.cpp:107 src/SightAnalysisDialog.cpp:134 src/SightDialog.cpp:250
 msgid "SOG kn"
 msgstr ""
 
@@ -1256,10 +1301,6 @@ msgstr ""
 
 #: src/HorizonEventDialog.cpp:117
 msgid "Time uncertainty"
-msgstr ""
-
-#: src/HorizonEventDialog.cpp:118
-msgid "seconds"
 msgstr ""
 
 #: src/HorizonEventDialog.cpp:120
@@ -1360,11 +1401,11 @@ msgid ""
 "sight or event to obtain a fix."
 msgstr ""
 
-#: src/HorizonEventDialog.cpp:325 src/Sight.cpp:990
+#: src/HorizonEventDialog.cpp:325 src/Sight.cpp:996
 msgid "magnetic"
 msgstr ""
 
-#: src/HorizonEventDialog.cpp:325 src/Sight.cpp:990
+#: src/HorizonEventDialog.cpp:325 src/Sight.cpp:996
 msgid "true"
 msgstr ""
 
@@ -1401,104 +1442,135 @@ msgstr ""
 msgid "Lunar-distance UTC recovery"
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:25
+#: src/LunarResultsDialog.cpp:26
+msgid ""
+"The lunar distance and the two altitudes are evaluated at their individual "
+"watch times. Their shared constant watch offset and the reference-epoch "
+"position are solved jointly against the offline ephemeris."
+msgstr ""
+
+#: src/LunarResultsDialog.cpp:30
 msgid ""
 "The observed Moon-to-body distance has been cleared of dip, refraction, "
 "semidiameter and parallax, then matched against the offline ephemeris."
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:38
+#: src/LunarResultsDialog.cpp:43
 msgid "UTC candidate"
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:39
+#: src/LunarResultsDialog.cpp:44
 msgid "Clock correction"
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:41
+#: src/LunarResultsDialog.cpp:46
+msgid "Model centre distance"
+msgstr ""
+
+#: src/LunarResultsDialog.cpp:48
 msgid "Rate (arcmin/h)"
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:42
+#: src/LunarResultsDialog.cpp:49
 msgid "Estimated UTC uncertainty"
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:46
+#: src/LunarResultsDialog.cpp:55
+msgid "Position at the lunar-distance reading time"
+msgstr ""
+
+#: src/LunarResultsDialog.cpp:56
 msgid "Position from the two measured altitudes"
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:51
+#: src/LunarResultsDialog.cpp:61
 msgid "Candidate"
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:54
+#: src/LunarResultsDialog.cpp:64
 msgid "Distance from DR/boat"
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:59
+#: src/LunarResultsDialog.cpp:65
+msgid "Estimated position uncertainty"
+msgstr ""
+
+#: src/LunarResultsDialog.cpp:71
+msgid ""
+"All three watch readings retain their measured intervals and receive the same "
+"recovered UTC correction. If motion is enabled, COG/SOG advances the observer "
+"between readings. A rough DR or hemisphere still helps select among "
+"mathematical solutions."
+msgstr ""
+
+#: src/LunarResultsDialog.cpp:76
 msgid ""
 "The lunar distance determines the constant watch offset. The two accompanying "
 "corrected altitudes can also intersect to give position and longitude; a "
 "rough DR/hemisphere chooses between the two mathematical intersections."
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:67
+#: src/LunarResultsDialog.cpp:84
 msgid "Calculation details"
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:76
+#: src/LunarResultsDialog.cpp:93
 msgid "Apply selected watch offset to all sights"
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:97
+#: src/LunarResultsDialog.cpp:118
 msgid "No UTC solution: "
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:102
+#: src/LunarResultsDialog.cpp:123
 msgid "One UTC solution was found in the selected search interval."
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:103
+#: src/LunarResultsDialog.cpp:124
 #, c-format
 msgid ""
 "%zu possible UTC solutions were found. Select using an approximate date/time "
 "or a second lunar distance."
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:135
+#: src/LunarResultsDialog.cpp:156
 msgid "Indeterminate"
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:154
+#: src/LunarResultsDialog.cpp:201
 #, c-format
 msgid "%zu (nearest DR)"
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:155
+#: src/LunarResultsDialog.cpp:202
 #, c-format
 msgid "%zu"
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:170
+#: src/LunarResultsDialog.cpp:221
+msgid "Not estimated"
+msgstr ""
+
+#: src/LunarResultsDialog.cpp:225
 msgid "No intersection: "
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:182
+#: src/LunarResultsDialog.cpp:237
 msgid "Lunar distance"
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:182
+#: src/LunarResultsDialog.cpp:237
 msgid "Select a UTC candidate first."
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:198
+#: src/LunarResultsDialog.cpp:253
 #, c-format
 msgid ""
 "Set the constant sight/watch correction to %+d seconds and recompute every "
 "saved sight? The recorded watch readings will not be changed."
 msgstr ""
 
-#: src/LunarResultsDialog.cpp:202
+#: src/LunarResultsDialog.cpp:257
 msgid "Apply recovered watch offset"
 msgstr ""
 
@@ -1824,36 +1896,36 @@ msgid ""
 "and DR errors."
 msgstr ""
 
-#: src/Sight.cpp:237
+#: src/Sight.cpp:243
 msgid "Astrolab failed, data unavailable:\n"
 msgstr ""
 
-#: src/Sight.cpp:238
+#: src/Sight.cpp:244
 msgid ""
 "\n"
 "Did you forget to install vsop87d.txt?\n"
 msgstr ""
 
-#: src/Sight.cpp:239
+#: src/Sight.cpp:245
 msgid "The plugin will not work correctly"
 msgstr ""
 
-#: src/Sight.cpp:240
+#: src/Sight.cpp:246
 msgid "Failure Alert"
 msgstr ""
 
-#: src/Sight.cpp:566
+#: src/Sight.cpp:572
 #, c-format
 msgid ""
 "Applying clock correction of %d seconds\n"
 "\n"
 msgstr ""
 
-#: src/Sight.cpp:639
+#: src/Sight.cpp:645
 msgid "Almanac Data For "
 msgstr ""
 
-#: src/Sight.cpp:640
+#: src/Sight.cpp:646
 #, c-format
 msgid ""
 "\n"
@@ -1871,35 +1943,35 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/Sight.cpp:667 src/Sight.cpp:1384
+#: src/Sight.cpp:673 src/Sight.cpp:1466
 msgid ""
 "Formulas used to calculate sight\n"
 "\n"
 msgstr ""
 
-#: src/Sight.cpp:670
+#: src/Sight.cpp:676
 #, c-format
 msgid ""
 "Altitude measurement (Hs) = %.4f%c = %s\n"
 "\n"
 msgstr ""
 
-#: src/Sight.cpp:676 src/Sight.cpp:1393
+#: src/Sight.cpp:682 src/Sight.cpp:1475
 #, c-format
 msgid ""
 "Index Error = %.4f%c = %s\n"
 "\n"
 msgstr ""
 
-#: src/Sight.cpp:682 src/Sight.cpp:1399
+#: src/Sight.cpp:688 src/Sight.cpp:1481
 msgid "Artificial horizon, no height correction\n"
 msgstr ""
 
-#: src/Sight.cpp:688 src/Sight.cpp:1403
+#: src/Sight.cpp:694 src/Sight.cpp:1485
 msgid "Dip Short Distance cannot be 0 !\n"
 msgstr ""
 
-#: src/Sight.cpp:695
+#: src/Sight.cpp:701
 #, c-format
 msgid ""
 "Dip Short Distance = %.4f nm\n"
@@ -1910,7 +1982,7 @@ msgid ""
 "Height Correction = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:709
+#: src/Sight.cpp:715
 #, c-format
 msgid ""
 "Eye Height = %.4f m\n"
@@ -1919,7 +1991,7 @@ msgid ""
 "Height Correction = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:722 src/Sight.cpp:1552
+#: src/Sight.cpp:728 src/Sight.cpp:1634
 #, c-format
 msgid ""
 "\n"
@@ -1929,7 +2001,7 @@ msgid ""
 "ApparentAltitude = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:731
+#: src/Sight.cpp:737
 #, c-format
 msgid ""
 "\n"
@@ -1938,7 +2010,7 @@ msgid ""
 "ApparentAltitude = %.4f%c / 2 = %.4f%c\n"
 msgstr ""
 
-#: src/Sight.cpp:742
+#: src/Sight.cpp:748
 #, c-format
 msgid ""
 "\n"
@@ -1947,7 +2019,7 @@ msgid ""
 "ApparentAltitude = 180%c - %.4f%c = %.4f%c\n"
 msgstr ""
 
-#: src/Sight.cpp:762
+#: src/Sight.cpp:768
 #, c-format
 msgid ""
 "\n"
@@ -1957,7 +2029,7 @@ msgid ""
 "x = %.4f\n"
 msgstr ""
 
-#: src/Sight.cpp:769 src/Sight.cpp:1581
+#: src/Sight.cpp:775 src/Sight.cpp:1663
 #, c-format
 msgid ""
 "RefractionCorrection = .267%c * Pressure / (x * (Temperature + 273.15)) / "
@@ -1966,7 +2038,7 @@ msgid ""
 "RefractionCorrection = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:787 src/Sight.cpp:1596
+#: src/Sight.cpp:793 src/Sight.cpp:1678
 #, c-format
 msgid ""
 "\n"
@@ -1974,7 +2046,7 @@ msgid ""
 "ra = %.4f, lc = 0.266564/ra = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:804
+#: src/Sight.cpp:810
 #, c-format
 msgid ""
 "\n"
@@ -1986,22 +2058,22 @@ msgid ""
 "lc = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:818 src/Sight.cpp:1494 src/Sight.cpp:1605
+#: src/Sight.cpp:824 src/Sight.cpp:1576 src/Sight.cpp:1687
 msgid "Upper Limb"
 msgstr ""
 
-#: src/Sight.cpp:821 src/Sight.cpp:1497 src/Sight.cpp:1608
+#: src/Sight.cpp:827 src/Sight.cpp:1579 src/Sight.cpp:1690
 msgid "Lower Limb"
 msgstr ""
 
-#: src/Sight.cpp:825 src/Sight.cpp:1612
+#: src/Sight.cpp:831 src/Sight.cpp:1694
 #, c-format
 msgid ""
 "\n"
 "LimbCorrection = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:832
+#: src/Sight.cpp:838
 #, c-format
 msgid ""
 "\n"
@@ -2011,7 +2083,7 @@ msgid ""
 "CorrectedAltitude = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:845 src/Sight.cpp:1633
+#: src/Sight.cpp:851 src/Sight.cpp:1715
 #, c-format
 msgid ""
 "\n"
@@ -2019,7 +2091,7 @@ msgid ""
 "rad = %.4f, HP = 0.002442/rad = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:852 src/Sight.cpp:1518
+#: src/Sight.cpp:858 src/Sight.cpp:1600
 #, c-format
 msgid ""
 "\n"
@@ -2027,7 +2099,7 @@ msgid ""
 "HP = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:859
+#: src/Sight.cpp:865
 #, c-format
 msgid ""
 "\n"
@@ -2035,7 +2107,7 @@ msgid ""
 "HP = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:868 src/Sight.cpp:1649
+#: src/Sight.cpp:874 src/Sight.cpp:1731
 #, c-format
 msgid ""
 "ParallaxCorrection = asin(sin(HP) * cos(CorrectedAltitude))\n"
@@ -2043,7 +2115,7 @@ msgid ""
 "ParallaxCorrection = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:877 src/Sight.cpp:1658
+#: src/Sight.cpp:883 src/Sight.cpp:1740
 #, c-format
 msgid ""
 "\n"
@@ -2053,11 +2125,11 @@ msgid ""
 "ObservedAltitude = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:895
+#: src/Sight.cpp:901
 msgid "Azimuth uncertainty must be zero or positive.\n"
 msgstr ""
 
-#: src/Sight.cpp:903
+#: src/Sight.cpp:909
 #, c-format
 msgid ""
 "Celestial azimuth line of position\n"
@@ -2069,18 +2141,18 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/Sight.cpp:913
+#: src/Sight.cpp:919
 msgid ""
 "The chart locus converts magnetic north to true north with the offline WMM at "
 "each trial position. Enter a magnetic bearing with compass deviation already "
 "removed; a raw compass bearing must first be corrected for deviation.\n"
 msgstr ""
 
-#: src/Sight.cpp:918
+#: src/Sight.cpp:924
 msgid "No magnetic correction is applied to this true bearing.\n"
 msgstr ""
 
-#: src/Sight.cpp:920
+#: src/Sight.cpp:926
 msgid ""
 "This sight type is a bearing to a celestial body. It is not a horizontal "
 "sextant angle between two terrestrial objects; use Coastal Sextant for that "
@@ -2088,19 +2160,19 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/Sight.cpp:937
+#: src/Sight.cpp:943
 msgid "Sunrise"
 msgstr ""
 
-#: src/Sight.cpp:937
+#: src/Sight.cpp:943
 msgid "Sunset"
 msgstr ""
 
-#: src/Sight.cpp:941
+#: src/Sight.cpp:947
 msgid "Time only"
 msgstr ""
 
-#: src/Sight.cpp:968
+#: src/Sight.cpp:974
 #, c-format
 msgid ""
 "Horizon Event: %s\n"
@@ -2116,7 +2188,7 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/Sight.cpp:985
+#: src/Sight.cpp:991
 #, c-format
 msgid ""
 "Observed bearing = %.2f%c %s\n"
@@ -2125,38 +2197,50 @@ msgid ""
 "True bearing = %.2f%c\n"
 msgstr ""
 
-#: src/Sight.cpp:996
+#: src/Sight.cpp:1002
 msgid ""
 "No bearing supplied: this event produces an altitude line of position only.\n"
 msgstr ""
 
-#: src/Sight.cpp:1255
+#: src/Sight.cpp:1269
 msgid ""
 "Lunar-distance time recovery\n"
 "\n"
-"The measured limb distance is converted to an apparent centre distance. The "
-"two measured altitudes are then used to remove atmospheric refraction and "
-"geocentric parallax by spherical trigonometry. The cleared distance is "
-"matched numerically against the offline ephemeris.\n"
+msgstr ""
+
+#: src/Sight.cpp:1272
+msgid ""
+"Time-tagged mode jointly solves the constant watch correction and reference-"
+"epoch position. Each altitude is reduced at its own watch interval; the lunar "
+"distance is forward-modelled at its own epoch.\n"
 "\n"
 msgstr ""
 
-#: src/Sight.cpp:1261
+#: src/Sight.cpp:1277
+msgid ""
+"The measured limb distance is converted to an apparent centre distance. The "
+"simultaneous measured altitudes remove atmospheric refraction and geocentric "
+"parallax by spherical trigonometry. The cleared distance is matched "
+"numerically against the offline ephemeris.\n"
+"\n"
+msgstr ""
+
+#: src/Sight.cpp:1283
 #, c-format
 msgid ""
 "Reference UTC: %s\n"
 "Search interval: %.1f hours (%.1f hours either side)\n"
 msgstr ""
 
-#: src/Sight.cpp:1265
+#: src/Sight.cpp:1287
 msgid "Ephemeris: local JPL DE440s (no network access)\n"
 msgstr ""
 
-#: src/Sight.cpp:1266
+#: src/Sight.cpp:1288
 msgid "Ephemeris: bundled analytical catalogue (offline fallback)\n"
 msgstr ""
 
-#: src/Sight.cpp:1268
+#: src/Sight.cpp:1290
 #, c-format
 msgid ""
 "Observed distance: %s\n"
@@ -2164,7 +2248,23 @@ msgid ""
 "%s altitude: %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1281
+#: src/Sight.cpp:1296
+#, c-format
+msgid ""
+"Watch intervals from lunar distance: Moon altitude %+.0f s; %s altitude %+.0f "
+"s\n"
+msgstr ""
+
+#: src/Sight.cpp:1302
+#, c-format
+msgid "Observer motion: COG %.1f%c true, SOG %.2f kn\n"
+msgstr ""
+
+#: src/Sight.cpp:1305
+msgid "Observer motion between readings: not applied\n"
+msgstr ""
+
+#: src/Sight.cpp:1317
 #, c-format
 msgid ""
 "\n"
@@ -2175,77 +2275,99 @@ msgid ""
 "Cleared distance at reference epoch: %.6f%c\n"
 msgstr ""
 
-#: src/Sight.cpp:1296 src/Sight.cpp:1323
+#: src/Sight.cpp:1332 src/Sight.cpp:1381
 msgid "\n"
 msgstr ""
 
-#: src/Sight.cpp:1296
+#: src/Sight.cpp:1332
 msgid ""
 "\n"
 "No valid UTC solution: "
 msgstr ""
 
-#: src/Sight.cpp:1310
+#: src/Sight.cpp:1368
 #, c-format
 msgid ""
 "\n"
 "Matching UTC candidate%s:\n"
 msgstr ""
 
-#: src/Sight.cpp:1317
+#: src/Sight.cpp:1375
 #, c-format
 msgid ""
 "%s%s  slope %.3f arcmin/hour; estimated 1-sigma time uncertainty %.1f s\n"
 msgstr ""
 
-#: src/Sight.cpp:1323
+#: src/Sight.cpp:1381
 msgid "Warning: "
 msgstr ""
 
-#: src/Sight.cpp:1356
+#: src/Sight.cpp:1424
 #, c-format
 msgid "Position candidate %zu: %.6f%c, %.6f%c%s\n"
 msgstr ""
 
-#: src/Sight.cpp:1363
+#: src/Sight.cpp:1432
 #, c-format
 msgid "Altitude-circle crossing angle: %.2f%c.\n"
 msgstr ""
 
-#: src/Sight.cpp:1366
+#: src/Sight.cpp:1435
 msgid ""
 "Warning: shallow altitude-circle crossing gives weak position geometry.\n"
 msgstr ""
 
-#: src/Sight.cpp:1368
+#: src/Sight.cpp:1439
+#, c-format
+msgid ""
+"Estimated joint position uncertainty: %.2f NM (1-sigma; local linear model).\n"
+msgstr ""
+
+#: src/Sight.cpp:1441
+msgid ""
+"Estimated joint position uncertainty: indeterminate (singular local "
+"geometry).\n"
+msgstr ""
+
+#: src/Sight.cpp:1444
 msgid ""
 "\n"
 "The two corrected altitude circles did not yield a position: "
 msgstr ""
 
-#: src/Sight.cpp:1370
+#: src/Sight.cpp:1446
 msgid ""
 "\n"
 "Additional altitude sights can still use the recovered watch offset.\n"
 msgstr ""
 
-#: src/Sight.cpp:1373
+#: src/Sight.cpp:1449
 msgid ""
 "\n"
 "The recovered correction is a constant watch offset. It may be applied to "
-"other sightings recorded while the watch retained interval accuracy. The "
-"position above comes from the two measured altitudes; it is not a 15-degrees-"
-"per-hour longitude shortcut.\n"
+"other sightings recorded while the watch retained interval accuracy. "
 msgstr ""
 
-#: src/Sight.cpp:1387
+#: src/Sight.cpp:1453
+msgid ""
+"The reference-epoch position above is the joint solution of the three time-"
+"tagged angles; it is not a 15-degrees-per-hour longitude shortcut.\n"
+msgstr ""
+
+#: src/Sight.cpp:1456
+msgid ""
+"The position above comes from the two measured altitudes; it is not a 15-"
+"degrees-per-hour longitude shortcut.\n"
+msgstr ""
+
+#: src/Sight.cpp:1469
 #, c-format
 msgid ""
 "Moon altitude measurement (Hs) = %.4f%c = %s\n"
 "\n"
 msgstr ""
 
-#: src/Sight.cpp:1409
+#: src/Sight.cpp:1491
 #, c-format
 msgid ""
 "Dip Short Distance = %.4f m\n"
@@ -2253,7 +2375,7 @@ msgid ""
 "Height Correction = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1420
+#: src/Sight.cpp:1502
 #, c-format
 msgid ""
 "Eye Height = %.4f m\n"
@@ -2261,7 +2383,7 @@ msgid ""
 "Height Correction = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1432
+#: src/Sight.cpp:1514
 #, c-format
 msgid ""
 "\n"
@@ -2271,7 +2393,7 @@ msgid ""
 "ApparentAltitudeMoon = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1441
+#: src/Sight.cpp:1523
 #, c-format
 msgid ""
 "\n"
@@ -2280,7 +2402,7 @@ msgid ""
 "ApparentAltitudeMoon = %.4f%c / 2 = %.4f%c\n"
 msgstr ""
 
-#: src/Sight.cpp:1454
+#: src/Sight.cpp:1536
 #, c-format
 msgid ""
 "\n"
@@ -2291,7 +2413,7 @@ msgid ""
 "x = %.4f\n"
 msgstr ""
 
-#: src/Sight.cpp:1462
+#: src/Sight.cpp:1544
 #, c-format
 msgid ""
 "RefractionCorrectionMoon = .267%c * Pressure / (x * (Temperature + 273.15)) / "
@@ -2300,7 +2422,7 @@ msgid ""
 "RefractionCorrectionMoon = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1481
+#: src/Sight.cpp:1563
 #, c-format
 msgid ""
 "\n"
@@ -2312,14 +2434,14 @@ msgid ""
 "lc = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1500
+#: src/Sight.cpp:1582
 #, c-format
 msgid ""
 "\n"
 "LimbCorrectionMoon = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1508
+#: src/Sight.cpp:1590
 #, c-format
 msgid ""
 "\n"
@@ -2330,7 +2452,7 @@ msgid ""
 "CorrectedAltitudeMoon = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1525
+#: src/Sight.cpp:1607
 #, c-format
 msgid ""
 "ParallaxCorrectionMoon = asin(sin(HP) * cos(CorrectedAltitude))\n"
@@ -2338,7 +2460,7 @@ msgid ""
 "ParallaxCorrectionMoon = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1534
+#: src/Sight.cpp:1616
 #, c-format
 msgid ""
 "\n"
@@ -2348,7 +2470,7 @@ msgid ""
 "ObservedAltitudeMoon = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1545
+#: src/Sight.cpp:1627
 #, c-format
 msgid ""
 "\n"
@@ -2356,7 +2478,7 @@ msgid ""
 "%s altitude measurement (Hs) = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1561
+#: src/Sight.cpp:1643
 #, c-format
 msgid ""
 "Artificial horizon\n"
@@ -2364,7 +2486,7 @@ msgid ""
 "ApparentAltitude = %.4f%c / 2 = %.4f%c"
 msgstr ""
 
-#: src/Sight.cpp:1574
+#: src/Sight.cpp:1656
 #, c-format
 msgid ""
 "\n"
@@ -2374,7 +2496,7 @@ msgid ""
 "x = %.4f\n"
 msgstr ""
 
-#: src/Sight.cpp:1619
+#: src/Sight.cpp:1701
 #, c-format
 msgid ""
 "\n"
@@ -2384,7 +2506,7 @@ msgid ""
 "CorrectedAltitude = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1640
+#: src/Sight.cpp:1722
 #, c-format
 msgid ""
 "\n"
@@ -2392,14 +2514,14 @@ msgid ""
 "HP = %.4f%c\n"
 msgstr ""
 
-#: src/Sight.cpp:1667
+#: src/Sight.cpp:1749
 msgid ""
 "\n"
 "\n"
 "Apparent Lunar Distance (LDo)\n"
 msgstr ""
 
-#: src/Sight.cpp:1671
+#: src/Sight.cpp:1753
 #, c-format
 msgid ""
 "LDo = LDO.pc - IndexCorrection + LunarTopoSD + SunSD\n"
@@ -2407,7 +2529,7 @@ msgid ""
 "LDo = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1682
+#: src/Sight.cpp:1764
 #, c-format
 msgid ""
 "LDo is NEAR\n"
@@ -2416,7 +2538,7 @@ msgid ""
 "LDo = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1693
+#: src/Sight.cpp:1775
 #, c-format
 msgid ""
 "LDo is FAR\n"
@@ -2425,7 +2547,7 @@ msgid ""
 "LDo = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1710
+#: src/Sight.cpp:1792
 #, c-format
 msgid ""
 "\n"
@@ -2441,7 +2563,7 @@ msgid ""
 "DZ = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1731
+#: src/Sight.cpp:1813
 #, c-format
 msgid ""
 "\n"
@@ -2457,7 +2579,7 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/Sight.cpp:1790
+#: src/Sight.cpp:1872
 #, c-format
 msgid ""
 "Lunar Distance Cleared (LDc) prediction for %s\n"
@@ -2467,7 +2589,7 @@ msgid ""
 "LDc = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1807
+#: src/Sight.cpp:1889
 #, c-format
 msgid ""
 "\n"
@@ -2478,7 +2600,7 @@ msgid ""
 "LDc = %.4f%c = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1820
+#: src/Sight.cpp:1902
 #, c-format
 msgid ""
 "\n"
@@ -2489,14 +2611,14 @@ msgid ""
 "UTC = %s\n"
 msgstr ""
 
-#: src/Sight.cpp:1833
+#: src/Sight.cpp:1915
 #, c-format
 msgid ""
 "\n"
 "Time correction %ld seconds"
 msgstr ""
 
-#: src/Sight.cpp:1985
+#: src/Sight.cpp:2067
 #, c-format
 msgid ""
 "\n"
@@ -2504,7 +2626,7 @@ msgid ""
 "Conservative uncertainty radius = %.1f NM\n"
 msgstr ""
 
-#: src/Sight.cpp:2210
+#: src/Sight.cpp:2292
 msgid "Building bearing Sight Positions"
 msgstr ""
 
@@ -2575,45 +2697,80 @@ msgstr ""
 msgid "Within robust sequence spread"
 msgstr ""
 
-#: src/SightDialog.cpp:129
+#: src/SightDialog.cpp:139
 msgid ""
 "Bearing is relative to magnetic north. Correct a raw compass bearing for "
 "compass deviation before entry."
 msgstr ""
 
-#: src/SightDialog.cpp:145 src/SightDialog.cpp:172
+#: src/SightDialog.cpp:155 src/SightDialog.cpp:182
 msgid "Altitude uncertainty"
 msgstr ""
 
-#: src/SightDialog.cpp:153 src/SightDialog.cpp:180
+#: src/SightDialog.cpp:163 src/SightDialog.cpp:190
 msgid "arcmin (1-sigma)"
 msgstr ""
 
-#: src/SightDialog.cpp:158
+#: src/SightDialog.cpp:168
 msgid "Distance contact"
 msgstr ""
 
-#: src/SightDialog.cpp:161
+#: src/SightDialog.cpp:171
 msgid "Near limb"
 msgstr ""
 
-#: src/SightDialog.cpp:162
+#: src/SightDialog.cpp:172
 msgid "Centre"
 msgstr ""
 
-#: src/SightDialog.cpp:163
+#: src/SightDialog.cpp:173
 msgid "Far limb"
 msgstr ""
 
-#: src/SightDialog.cpp:384
+#: src/SightDialog.cpp:201
+msgid "Sequential lunar observation"
+msgstr ""
+
+#: src/SightDialog.cpp:204
+msgid "The three angles have separate watch times"
+msgstr ""
+
+#: src/SightDialog.cpp:210
+msgid "Lunar distance watch time"
+msgstr ""
+
+#: src/SightDialog.cpp:214
+msgid "Use the date/time controls above (reference epoch)"
+msgstr ""
+
+#: src/SightDialog.cpp:217
+msgid "Moon altitude watch time"
+msgstr ""
+
+#: src/SightDialog.cpp:225
+msgid "Body altitude watch time"
+msgstr ""
+
+#: src/SightDialog.cpp:237
+msgid "Advance vessel between readings"
+msgstr ""
+
+#: src/SightDialog.cpp:259
+msgid ""
+"The same unknown constant watch correction is applied to all three times. "
+"Times across midnight are interpreted as the nearest time within 12 hours of "
+"the lunar-distance reading."
+msgstr ""
+
+#: src/SightDialog.cpp:522
 msgid "Total UTC search span (seconds)"
 msgstr ""
 
-#: src/SightDialog.cpp:425
+#: src/SightDialog.cpp:564
 msgid "Lunar shot will be invalid taking distance from moon to itself"
 msgstr ""
 
-#: src/SightDialog.cpp:426
+#: src/SightDialog.cpp:565
 msgid "Warning"
 msgstr ""
 

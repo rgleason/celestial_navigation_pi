@@ -23,7 +23,22 @@ measurements. Enter realistic one-sigma uncertainties for the distance and
 both altitudes. The watch may be seconds or hours wrong: its interval rate,
 rather than its displayed UTC, must remain trustworthy between observations.
 
-Press *Time*. The solver:
+The three angles do not have to be simultaneous. Enable *The three angles have
+separate watch times* in the *Time* tab and enter the Moon-altitude and
+body-altitude watch readings; the normal date/time control is the lunar
+distance reading and reference epoch. Only the time of day is needed for the
+two nearby altitude readings. A reading crossing midnight is interpreted as
+the nearest occurrence within 12 hours of the lunar-distance reading. All
+three readings receive the same unknown constant UTC correction, so their
+measured intervals are preserved.
+
+If the vessel moved appreciably during the sequence, enable *Advance vessel
+between readings* and enter COG true and SOG. The reported position is at the
+lunar-distance reference epoch. This is a constant-course/constant-speed
+model; use representative motion for the short observation sequence and do
+not enable it merely to force a result.
+
+Press *Time*. In simultaneous mode the traditional clearing solver:
 
 . converts the measured limbs to apparent centres;
 . applies index correction, dip, refraction, semidiameter and parallax;
@@ -32,6 +47,18 @@ Press *Time*. The solver:
   and
 . reports the UTC candidate, constant watch correction, lunar-distance rate
   and propagated time uncertainty.
+
+In separate-time mode the mathematical problem is a coupled three-equation
+solution. For each trial clock correction the plugin evaluates the Moon and
+selected body at all three corrected epochs, reduces each altitude at its own
+epoch, transports the observer when requested, and forward-models the raw
+lunar distance. It solves the common clock correction, reference latitude and
+reference longitude together. The reported one-sigma UTC and position
+uncertainties come from the local weighted numerical covariance of the three
+raw angles; weak or highly correlated geometry therefore produces a larger
+estimate. These estimates describe the entered random angle uncertainties,
+not unmodelled systematic effects such as an incorrect index correction,
+abnormal refraction or COG/SOG error.
 
 The Sun/Moon calculation uses the local JPL DE440s kernel when it has already
 been installed for the eclipse module. Other bodies, or an installation
@@ -48,10 +75,13 @@ sextant, limb, altitude and refraction errors normally dominate.
 === Longitude with an unknown watch offset
 
 Once a lunar recovers UTC, the accompanying corrected Moon and body altitudes
-are two circles of equal altitude at that recovered instant. Their exact
-spherical intersections are reported as position candidates, including
-longitude. This is a direct position calculation; the plugin does not use the
-invalid shortcut of multiplying watch error by 15 degrees per hour.
+provide position constraints. In simultaneous mode they are two circles of
+equal altitude at the recovered instant. In separate-time mode their circles
+are evaluated at their individual epochs and numerically reduced to the
+lunar-distance reference epoch. Position candidates, including longitude,
+are reported. This is a direct joint position calculation; the plugin does
+not use the invalid shortcut of multiplying watch error by 15 degrees per
+hour.
 
 Two circles generally have two mathematical intersections. A rough
 hemisphere/DR position selects the nearer one. If absolutely no positional
@@ -63,8 +93,9 @@ recomputes every saved sight without changing any recorded watch reading.
 Additional altitude sights taken while the watch kept interval time can then
 be used by the normal stationary or time-tagged running-fix solver.
 
-The results show the altitude-circle crossing angle. A shallow crossing is a
-weak positional geometry and magnifies observational error.
+Simultaneous results show the altitude-circle crossing angle. A shallow
+crossing is weak positional geometry and magnifies observational error.
+Separate-time results instead show the numerical joint position uncertainty.
 
 == Coastal sextant navigation
 
@@ -88,7 +119,8 @@ large errors. Charted height and tide datum must refer to compatible datums.
 An optional true bearing turns the range into an estimated position. A raw
 magnetic compass bearing is converted with explicit east-positive variation
 and deviation. Its accuracy is limited by the bearing as well as the vertical
-angle.
+angle. Record the bearing at effectively the same instant as the vertical
+angle, or reduce it to that position epoch before entry.
 
 === Horizontal sextant angles
 
@@ -104,6 +136,14 @@ geometry may have other solutions or fail to converge. The plotted individual
 loci are coastal-scale charting aids, while the reported numerical fix uses
 exact spherical bearings.
 
+If the two horizontal angles were read sequentially while underway, enable
+*Advance the vessel between the two HSA readings*. Enter the second reading's
+signed interval from the first, plus COG true and SOG. The numerical solver
+evaluates each angle at its own vessel position and reduces the resulting fix
+and chart loci to the first-angle reference epoch. With no vessel motion, the
+times of observations of fixed terrestrial objects do not change the
+geometry.
+
 == Azimuth sight scope
 
 The normal *Azimuth* type means the bearing of a celestial body relative to
@@ -115,10 +155,11 @@ bearing for compass deviation before entering it.
 == Verification and references
 
 Automated tests cover limb signs, impossible spherical observations,
-sub-second numerical root refinement, multiple/no-root cases, an end-to-end
-unknown watch offset and longitude recovery, a JPL Horizons comparison,
-vertical-angle ranges, the Bowditch Table 15 formula and synthetic
-three-object fixes.
+sub-second numerical root refinement, multiple/no-root cases, end-to-end
+unknown-watch-offset and longitude recovery with non-simultaneous readings
+and vessel motion, a JPL Horizons comparison, vertical-angle ranges, the
+Bowditch Table 15 formula, and simultaneous/sequential synthetic three-object
+fixes.
 
 Primary references:
 

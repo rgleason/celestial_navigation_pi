@@ -127,6 +127,12 @@ public:
   BodyLimb m_LunarBodyDistanceLimb;
   double m_LunarMoonAltitudeUncertainty;
   double m_LunarBodyAltitudeUncertainty;
+  bool m_LunarSeparateTimes;
+  int m_LunarMoonTimeOffsetSeconds;
+  int m_LunarBodyTimeOffsetSeconds;
+  bool m_LunarMovingObserver;
+  double m_LunarCourseTrue;
+  double m_LunarSpeedKnots;
 
   double m_EyeHeight;         // Height above sea in meters
   double m_Temperature;       // Temperature in degrees celcius
