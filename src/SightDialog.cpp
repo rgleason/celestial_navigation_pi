@@ -50,7 +50,10 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
     : SightDialogBase(parent),
       m_Sight(s),
       m_clock_offset(clock_offset),
-      m_breadytorecompute(false) {
+      m_breadytorecompute(false),
+      m_lunarBodyDistanceContact(nullptr),
+      m_lunarMoonAltitudeUncertainty(nullptr),
+      m_lunarBodyAltitudeUncertainty(nullptr) {
   for (const auto& body : BodyCatalog::All()) m_cBody->Append(body.name);
 
   m_cBody->SetSelection(0);
@@ -83,6 +86,10 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   SetSize(sz);
 
   m_cType->SetSelection(m_Sight.m_Type);
+
+  if (m_Sight.m_DRBoatPosition) {
+    celestial_navigation_pi_BoatPos(m_Sight.m_DRLat, m_Sight.m_DRLon);
+  }
 
   m_cbMagneticAzimuth->Enable(m_cType->GetSelection() == AZIMUTH);
   m_cLimb->Enable(m_cType->GetSelection() == ALTITUDE);
@@ -118,6 +125,9 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   m_tMeasurementCertainty->SetValue(
       wxString::Format(_T("%.2f"), m_Sight.m_MeasurementCertainty));
   m_cbMagneticAzimuth->SetValue(m_Sight.m_bMagneticNorth);
+  m_cbMagneticAzimuth->SetToolTip(
+      _("Bearing is relative to magnetic north. Correct a raw compass bearing "
+        "for compass deviation before entry."));
   m_ColourPicker->SetColour(wxColour(m_Sight.m_Colour.Red(),
                                      m_Sight.m_Colour.Green(),
                                      m_Sight.m_Colour.Blue()));
@@ -130,11 +140,72 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   m_cLunarMoonLimb->SetSelection((int)m_Sight.m_LunarMoonLimb);
   m_cLunarBodyLimb->SetSelection((int)m_Sight.m_LunarBodyLimb);
 
+  wxSizer* moonGrid = m_cLunarMoonLimb->GetContainingSizer();
+  moonGrid->Add(new wxStaticText(m_cLunarMoonLimb->GetParent(), wxID_ANY,
+                                 _("Altitude uncertainty")),
+                0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+  m_lunarMoonAltitudeUncertainty = new wxTextCtrl(
+      m_cLunarMoonLimb->GetParent(), wxID_ANY,
+      wxString::Format("%.2f", m_Sight.m_LunarMoonAltitudeUncertainty),
+      wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+  moonGrid->Add(m_lunarMoonAltitudeUncertainty, 0, wxALL, 5);
+  moonGrid->Add(new wxStaticText(m_cLunarMoonLimb->GetParent(), wxID_ANY,
+                                 _("arcmin (1-sigma)")),
+                0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+  wxSizer* bodyGrid = m_cLunarBodyLimb->GetContainingSizer();
+  bodyGrid->Add(new wxStaticText(m_cLunarBodyLimb->GetParent(), wxID_ANY,
+                                 _("Distance contact")),
+                0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+  wxArrayString distanceContacts;
+  distanceContacts.Add(_("Near limb"));
+  distanceContacts.Add(_("Centre"));
+  distanceContacts.Add(_("Far limb"));
+  m_lunarBodyDistanceContact = new wxChoice(
+      m_cLunarBodyLimb->GetParent(), wxID_ANY, wxDefaultPosition,
+      wxDefaultSize, distanceContacts);
+  m_lunarBodyDistanceContact->SetSelection(
+      static_cast<int>(m_Sight.m_LunarBodyDistanceLimb));
+  bodyGrid->Add(m_lunarBodyDistanceContact, 0, wxALL, 5);
+  bodyGrid->AddSpacer(1);
+  bodyGrid->Add(new wxStaticText(m_cLunarBodyLimb->GetParent(), wxID_ANY,
+                                 _("Altitude uncertainty")),
+                0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+  m_lunarBodyAltitudeUncertainty = new wxTextCtrl(
+      m_cLunarBodyLimb->GetParent(), wxID_ANY,
+      wxString::Format("%.2f", m_Sight.m_LunarBodyAltitudeUncertainty),
+      wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+  bodyGrid->Add(m_lunarBodyAltitudeUncertainty, 0, wxALL, 5);
+  bodyGrid->Add(new wxStaticText(m_cLunarBodyLimb->GetParent(), wxID_ANY,
+                                 _("arcmin (1-sigma)")),
+                0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+  m_lunarBodyDistanceContact->Bind(wxEVT_CHOICE,
+                                   [this](wxCommandEvent&) { Recompute(); });
+  m_lunarMoonAltitudeUncertainty->Bind(
+      wxEVT_TEXT_ENTER, [this](wxCommandEvent&) { Recompute(); });
+  m_lunarBodyAltitudeUncertainty->Bind(
+      wxEVT_TEXT_ENTER, [this](wxCommandEvent&) { Recompute(); });
+  m_sCertaintySeconds->SetRange(0, 172800);
+  if (m_Sight.m_Type == Sight::LUNAR && m_Sight.m_TimeCertainty <= 0.0) {
+    m_Sight.m_TimeCertainty = 86400.0;
+    m_sCertaintySeconds->SetValue(86400);
+  }
+
   int x, y;
   GetTextExtent(_T("000° 00.0000'"), &x, &y);
   m_tMeasurement->SetSizeHints(x + 20, -1);
   m_tLunarMoonAltitude->SetSizeHints(x + 20, -1);
   m_tLunarBodyAltitude->SetSizeHints(x + 20, -1);
+
+  // The generated base dialog computes its virtual size before the additional
+  // lunar contact/uncertainty rows exist.  Refresh the scrolled Sight page so
+  // every lunar control remains reachable even on a short display or when an
+  // older, smaller persisted dialog size is restored.
+  m_fgPanelSizer->Layout();
+  m_panel1->FitInside();
+  Layout();
+  SetMinSize(wxSize(480, 360));
 
 #ifdef __OCPN__ANDROID__
   GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
@@ -310,6 +381,16 @@ void SightDialog::Recompute() {
     m_cLimb->Append(_T("Near"));
     m_cLimb->Append(_T("Far"));
     m_cLimb->SetSelection((int)m_Sight.m_BodyLimb);
+    m_staticText13->SetLabel(_("Total UTC search span (seconds)"));
+  } else if (m_cType->GetSelection() == AZIMUTH) {
+    m_bFindBody->SetLabel(_T("Find"));
+    m_sbSizerSight->GetStaticBox()->SetLabel(
+        _T("Celestial body bearing (not a terrestrial horizontal angle)"));
+    m_Sight.m_BodyLimb = Sight::CENTER;
+    m_cLimb->Clear();
+    m_cLimb->Append(_T("Center"));
+    m_cLimb->SetSelection(0);
+    m_staticText13->SetLabel(_("Seconds"));
   } else {
     m_bFindBody->SetLabel(_T("Find"));
     m_sbSizerSight->GetStaticBox()->SetLabel(_T("Sight measurement (Hs)"));
@@ -319,6 +400,16 @@ void SightDialog::Recompute() {
     m_cLimb->Append(_T("Center"));
     m_cLimb->Append(_T("Upper"));
     m_cLimb->SetSelection((int)m_Sight.m_BodyLimb);
+    m_staticText13->SetLabel(_("Seconds"));
+  }
+  // Text/choice events can be emitted while the derived dialog constructor
+  // is still populating the generated controls.  The lunar-only controls are
+  // created later in that constructor, so do not dereference them during an
+  // early Recompute event.
+  if (m_lunarBodyDistanceContact) {
+    m_lunarBodyDistanceContact->Enable(
+        m_cType->GetSelection() == LUNAR &&
+        !m_cBody->GetStringSelection().Cmp(_T("Sun")));
   }
   m_fgPanelSizer->Layout();
 
@@ -339,7 +430,7 @@ void SightDialog::Recompute() {
   m_Sight.m_DateTime = DateTime();
   m_Sight.m_TimeCertainty = m_sCertaintySeconds->GetValue();
   if (m_Sight.m_Type == Sight::LUNAR && m_Sight.m_TimeCertainty == 0) {
-    m_Sight.m_TimeCertainty = 10800;
+    m_Sight.m_TimeCertainty = 86400;
     m_sCertaintySeconds->SetValue(m_Sight.m_TimeCertainty);
   }
 
@@ -355,6 +446,12 @@ void SightDialog::Recompute() {
   m_Sight.m_LunarBodyAltitude =
       fromDMM_Plugin(m_tLunarBodyAltitude->GetValue());
   m_Sight.m_LunarBodyLimb = (Sight::BodyLimb)m_cLunarBodyLimb->GetSelection();
+  m_Sight.m_LunarBodyDistanceLimb =
+      (Sight::BodyLimb)m_lunarBodyDistanceContact->GetSelection();
+  m_lunarMoonAltitudeUncertainty->GetValue().ToDouble(
+      &m_Sight.m_LunarMoonAltitudeUncertainty);
+  m_lunarBodyAltitudeUncertainty->GetValue().ToDouble(
+      &m_Sight.m_LunarBodyAltitudeUncertainty);
 
   m_tEyeHeight->GetValue().ToDouble(&m_Sight.m_EyeHeight);
   m_tTemperature->GetValue().ToDouble(&m_Sight.m_Temperature);

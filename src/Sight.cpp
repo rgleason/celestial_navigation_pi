@@ -39,6 +39,7 @@
 #include <wx/progdlg.h>
 #include <wx/listimpl.cpp>
 #include <wx/fileconf.h>
+#include <wx/filename.h>
 
 #include "OcpnApiCompat.h"
 
@@ -47,6 +48,9 @@
 #include "UtcDateTime.h"
 #include "transform_star.hpp"
 #include "moon.h"
+#include "eclipse/astronomy.h"
+#include "eclipse/spk.h"
+#include "eclipse/time.h"
 
 WX_DEFINE_LIST(wxRealPointList);
 
@@ -84,6 +88,9 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
       m_LunarBodyAltitude(0),
       m_LunarMoonLimb(LOWER),
       m_LunarBodyLimb(LOWER),
+      m_LunarBodyDistanceLimb(LUNAR_NEAR),
+      m_LunarMoonAltitudeUncertainty(0.2),
+      m_LunarBodyAltitudeUncertainty(0.2),
       m_ShiftNm(0),
       m_ShiftBearing(0),
       m_bMagneticShiftBearing(true),
@@ -102,6 +109,11 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
       m_HorizonEstimateLat(0),
       m_HorizonEstimateLon(0),
       m_HorizonEstimateRadiusNm(0),
+      m_TimeCorrection(0),
+      m_LDC(NAN),
+      m_LunarSolutionValid(false),
+      m_LunarSelectedPosition(-1),
+      m_LunarUsesDe440(false),
       m_DRLat(0),
       m_DRLon(0),
       m_DRBoatPosition(true),
@@ -879,6 +891,39 @@ ObservedAltitude = %.4f%c = %s\n"),
 
 void Sight::RecomputeAzimuth() {
   m_Measurement = resolve_heading_positive(m_Measurement);
+  if (!std::isfinite(m_MeasurementCertainty) || m_MeasurementCertainty < 0.0) {
+    m_CalcStr = _("Azimuth uncertainty must be zero or positive.\n");
+    m_bCalculated = false;
+    return;
+  }
+  double bodyLat = 0.0, bodyLon = 0.0, ghaast = 0.0, radius = 0.0;
+  BodyLocation(m_CorrectedDateTime, &bodyLat, &bodyLon, &ghaast, &radius,
+               nullptr);
+  m_CalcStr = wxString::Format(
+      _("Celestial azimuth line of position\n\n"
+        "Body: %s\nUTC: %s\nObserved bearing: %.4f%c %s\n"
+        "Bearing uncertainty: %.3f arcmin\n\n"),
+      m_Body, UtcDateTime::FormatUtc(m_CorrectedDateTime,
+                                     "%Y-%m-%d %H:%M:%S"),
+      m_Measurement, 0x00B0,
+      m_bMagneticNorth ? _T("magnetic") : _T("true"),
+      m_MeasurementCertainty);
+  if (m_bMagneticNorth)
+    m_CalcStr += _(
+        "The chart locus converts magnetic north to true north with the "
+        "offline WMM at each trial position. Enter a magnetic bearing with "
+        "compass deviation already removed; a raw compass bearing must first "
+        "be corrected for deviation.\n");
+  else
+    m_CalcStr += _("No magnetic correction is applied to this true bearing.\n");
+  m_CalcStr += _(
+      "This sight type is a bearing to a celestial body. It is not a "
+      "horizontal sextant angle between two terrestrial objects; use Coastal "
+      "Sextant for that method.\n\n");
+  m_CalcStr = Alminac(m_CorrectedDateTime, bodyLat, bodyLon, ghaast, radius,
+                      0.0, 0.0) +
+              m_CalcStr;
+  m_bCalculated = true;
 }
 
 double Sight::HorizonTrueBearing() const {
@@ -1014,6 +1059,324 @@ double Sight::HorizonEstimateUncertaintyNm() const {
 }
 
 void Sight::RecomputeLunar() {
+  // A lunar recovers Greenwich time by clearing the observed limb distance
+  // of dip, refraction, semidiameter and parallax, then matching the resulting
+  // geocentric centre distance against the ephemeris.  The former code only
+  // evaluated two endpoints and linearly extrapolated between them; it could
+  // silently return a time even when no root existed or several roots existed.
+  lunar_distance::Observation observation;
+  observation.raw_distance_deg = m_Measurement;
+  observation.moon_altitude_deg = m_LunarMoonAltitude;
+  observation.body_altitude_deg = m_LunarBodyAltitude;
+  auto altitude_limb = [](BodyLimb limb) {
+    if (limb == LOWER) return lunar_distance::AltitudeLimb::Lower;
+    if (limb == UPPER) return lunar_distance::AltitudeLimb::Upper;
+    return lunar_distance::AltitudeLimb::Center;
+  };
+  auto body_distance_contact = [](BodyLimb limb) {
+    if (limb == LUNAR_NEAR) return lunar_distance::DistanceContact::Near;
+    if (limb == UPPER) return lunar_distance::DistanceContact::Far;
+    return lunar_distance::DistanceContact::Center;
+  };
+  observation.moon_altitude_limb = altitude_limb(m_LunarMoonLimb);
+  observation.body_altitude_limb = altitude_limb(m_LunarBodyLimb);
+  observation.moon_contact = m_BodyLimb == LUNAR_NEAR
+                                 ? lunar_distance::DistanceContact::Near
+                                 : lunar_distance::DistanceContact::Far;
+  observation.body_contact =
+      !m_Body.Cmp(_T("Sun"))
+          ? body_distance_contact(m_LunarBodyDistanceLimb)
+          : lunar_distance::DistanceContact::Center;
+  observation.index_error_arcmin = m_IndexError;
+  observation.eye_height_m = m_EyeHeight;
+  observation.pressure_hpa = m_Pressure;
+  observation.temperature_c = m_Temperature;
+  observation.artificial_horizon = m_ArtificialHorizon;
+  observation.dip_short = m_DipShort;
+  observation.dip_short_distance_m = m_DipShortDistance;
+  observation.distance_uncertainty_arcmin =
+      std::max(0.0, m_MeasurementCertainty);
+  observation.moon_altitude_uncertainty_arcmin =
+      std::max(0.0, m_LunarMoonAltitudeUncertainty);
+  observation.body_altitude_uncertainty_arcmin =
+      std::max(0.0, m_LunarBodyAltitudeUncertainty);
+
+  const wxString selected_body = m_Body;
+  m_LunarUsesDe440 = false;
+  auto ephemeris = [this, selected_body](
+                       double offset_seconds,
+                       lunar_distance::EphemerisSample* sample,
+                       std::string* error) {
+    const wxDateTime time =
+        UtcDateTime::AddSeconds(m_CorrectedDateTime, offset_seconds);
+    if (!time.IsValid()) {
+      if (error) *error = "The candidate UTC is outside the supported range";
+      return false;
+    }
+
+    double body_dec = 0.0, body_hour_angle = 0.0, body_rad = 0.0;
+    double body_distance = 0.0;
+    m_Body = selected_body;
+    BodyLocation(time, &body_dec, &body_hour_angle, nullptr, &body_rad,
+                 &body_distance);
+    const bool body_is_planet = m_IsPlanet;
+    const bool body_is_star = m_IsStar;
+
+    double moon_dec = 0.0, moon_hour_angle = 0.0, moon_rad = 0.0;
+    m_Body = _T("Moon");
+    BodyLocation(time, &moon_dec, &moon_hour_angle, nullptr, &moon_rad,
+                 nullptr);
+    m_Body = selected_body;
+
+    const double delta_hour_angle =
+        resolve_heading(moon_hour_angle - body_hour_angle);
+    const double cosine =
+        sin(d_to_r(moon_dec)) * sin(d_to_r(body_dec)) +
+        cos(d_to_r(moon_dec)) * cos(d_to_r(body_dec)) *
+            cos(d_to_r(delta_hour_angle));
+    sample->predicted_distance_deg =
+        r_to_d(acos(std::max(-1.0, std::min(1.0, cosine))));
+    sample->body_geographic_latitude_deg = body_dec;
+    sample->body_geographic_longitude_deg = body_hour_angle;
+    sample->moon_geographic_latitude_deg = moon_dec;
+    sample->moon_geographic_longitude_deg = moon_hour_angle;
+    bool used_de440 = false;
+
+    if (!selected_body.Cmp(_T("Sun"))) {
+      static eclipse::SpkKernel kernel;
+      static wxString opened_path;
+      static bool attempted = false;
+#ifdef UNIT_TESTS
+      // wxStandardPaths requires a running wxApp.  The sight tests are
+      // deliberately headless, so exercise the same kernel against the
+      // source-tree test fixture instead of consulting the GUI profile.
+      const wxString path = wxString::FromUTF8(ECLIPSE_DE440_TEST_PATH);
+#else
+      const wxString path = celestial_navigation_pi::StandardPath() +
+                            _T("eclipse") + wxFileName::GetPathSeparator() +
+                            _T("de440s.bsp");
+#endif
+      if (!attempted || opened_path != path) {
+        attempted = true;
+        opened_path = path;
+        std::string open_error;
+        kernel.Open(path.ToStdString(), &open_error);
+      }
+      if (kernel.IsOpen()) {
+        eclipse::CalendarDateTime utc;
+        utc.year = time.GetYear();
+        utc.month = static_cast<int>(time.GetMonth()) + 1;
+        utc.day = time.GetDay();
+        utc.hour = time.GetHour();
+        utc.minute = time.GetMinute();
+        utc.second = time.GetSecond() + time.GetMillisecond() / 1000.0;
+        double utc_jd = 0.0;
+        std::string time_error;
+        if (eclipse::CalendarToJulianDate(utc, &utc_jd, &time_error)) {
+          double tai_minus_utc = eclipse::TaiMinusUtcSeconds(utc);
+          if (!std::isfinite(tai_minus_utc)) tai_minus_utc = 37.0;
+          const double tt_jd = utc_jd + (tai_minus_utc + 32.184) / 86400.0;
+          const double tdb_jd =
+              tt_jd + eclipse::TdbMinusTtSeconds(tt_jd, utc_jd) / 86400.0;
+          const double et = (tdb_jd - 2451545.0) * 86400.0;
+          eclipse::Vector3 moon_vector;
+          eclipse::Vector3 sun_vector;
+          std::string de_error;
+          if (eclipse::AstrometricPosition(kernel, 301, 399, et,
+                                           &moon_vector, &de_error) &&
+              eclipse::AstrometricPosition(kernel, 10, 399, et, &sun_vector,
+                                           &de_error)) {
+            const double denominator = moon_vector.Norm() * sun_vector.Norm();
+            if (denominator > 0.0) {
+              sample->predicted_distance_deg = r_to_d(acos(std::max(
+                  -1.0, std::min(1.0, eclipse::Dot(moon_vector, sun_vector) /
+                                           denominator))));
+              sample->moon_horizontal_parallax_deg =
+                  r_to_d(asin(EARTH_RADIUS / moon_vector.Norm()));
+              sample->moon_semidiameter_deg =
+                  r_to_d(asin(1737.4 / moon_vector.Norm()));
+              sample->body_horizontal_parallax_deg =
+                  r_to_d(asin(EARTH_RADIUS / sun_vector.Norm()));
+              sample->body_semidiameter_deg =
+                  r_to_d(asin(695700.0 / sun_vector.Norm()));
+              m_LunarUsesDe440 = true;
+              used_de440 = true;
+            }
+          }
+        }
+      }
+    }
+
+    if (!used_de440) {
+      wxDateTime instant = UtcDateTime::ToInstant(time);
+      const double moon_distance_km = moon_distance(ut_to_dt(
+          instant.GetJulianDayNumber()));
+      sample->moon_horizontal_parallax_deg =
+          r_to_d(asin(EARTH_RADIUS / moon_distance_km));
+      sample->moon_semidiameter_deg = r_to_d(asin(
+          K_MOON * sin(d_to_r(sample->moon_horizontal_parallax_deg))));
+
+      sample->body_semidiameter_deg = 0.0;
+      sample->body_horizontal_parallax_deg = 0.0;
+      if (!selected_body.Cmp(_T("Sun"))) {
+        if (!(body_rad > 0.0)) {
+          if (error)
+            *error = "The solar ephemeris returned an invalid distance";
+          return false;
+        }
+        sample->body_semidiameter_deg = 0.266564 / body_rad;
+        sample->body_horizontal_parallax_deg = 0.002442 / body_rad;
+      } else if (body_is_planet && body_distance > EARTH_RADIUS) {
+        sample->body_horizontal_parallax_deg =
+            r_to_d(asin(EARTH_RADIUS / body_distance));
+      }
+    }
+    m_IsPlanet = body_is_planet;
+    m_IsStar = body_is_star;
+    return std::isfinite(sample->predicted_distance_deg);
+  };
+
+  lunar_distance::SolveOptions options;
+  const double search_span = m_TimeCertainty > 0.0 ? m_TimeCertainty : 86400.0;
+  options.start_offset_seconds = -search_span / 2.0;
+  options.end_offset_seconds = search_span / 2.0;
+  options.scan_step_seconds = std::min(300.0, std::max(30.0, search_span / 288.0));
+  const lunar_distance::SolveResult solution =
+      lunar_distance::SolveTime(observation, ephemeris, options);
+  m_LunarCandidates = solution.candidates;
+  m_LunarSolutionValid = solution.valid;
+  m_LunarSolutionError = wxString::FromUTF8(solution.error.c_str());
+  m_LunarPositionResult = lunar_distance::PositionResult();
+  m_LunarSelectedPosition = -1;
+  m_TimeCorrection = 0;
+  m_LDC = NAN;
+
+  m_CalcStr = _(
+      "Lunar-distance time recovery\n\n"
+      "The measured limb distance is converted to an apparent centre distance. "
+      "The two measured altitudes are then used to remove atmospheric refraction "
+      "and geocentric parallax by spherical trigonometry. The cleared distance is "
+      "matched numerically against the offline ephemeris.\n\n");
+  m_CalcStr += wxString::Format(
+      _("Reference UTC: %s\nSearch interval: %.1f hours (%.1f hours either side)\n"),
+      UtcDateTime::FormatUtc(m_CorrectedDateTime, "%Y-%m-%d %H:%M:%S"),
+      search_span / 3600.0, search_span / 7200.0);
+  m_CalcStr += m_LunarUsesDe440
+                   ? _("Ephemeris: local JPL DE440s (no network access)\n")
+                   : _("Ephemeris: bundled analytical catalogue (offline fallback)\n");
+  m_CalcStr += wxString::Format(
+      _("Observed distance: %s\nMoon altitude: %s\n%s altitude: %s\n"),
+      toSDMM_PlugIn(0, m_Measurement, true),
+      toSDMM_PlugIn(0, m_LunarMoonAltitude, true), m_Body,
+      toSDMM_PlugIn(0, m_LunarBodyAltitude, true));
+
+  lunar_distance::EphemerisSample reference_sample;
+  std::string reference_error;
+  if (ephemeris(0.0, &reference_sample, &reference_error)) {
+    const lunar_distance::Clearance clearance =
+        lunar_distance::ClearDistance(observation, reference_sample);
+    if (clearance.valid) {
+      m_LDC = clearance.cleared_distance_deg;
+      m_CalcStr += wxString::Format(
+          _("\nApparent centre distance: %.6f%c\n"
+            "Moon apparent/geocentric altitude: %.6f%c / %.6f%c\n"
+            "%s apparent/geocentric altitude: %.6f%c / %.6f%c\n"
+            "Relative azimuth: %.6f%c\nCleared distance at reference epoch: %.6f%c\n"),
+          clearance.apparent_distance_deg, 0x00B0,
+          clearance.moon_apparent_center_altitude_deg, 0x00B0,
+          clearance.moon_geocentric_altitude_deg, 0x00B0, m_Body,
+          clearance.body_apparent_center_altitude_deg, 0x00B0,
+          clearance.body_geocentric_altitude_deg, 0x00B0,
+          clearance.relative_azimuth_deg, 0x00B0,
+          clearance.cleared_distance_deg, 0x00B0);
+    }
+  }
+
+  if (!solution.valid) {
+    m_CalcStr += _("\nNo valid UTC solution: ") + m_LunarSolutionError + _("\n");
+    return;
+  }
+
+  std::size_t selected = 0;
+  for (std::size_t index = 1; index < solution.candidates.size(); ++index) {
+    if (fabs(solution.candidates[index].offset_seconds) <
+        fabs(solution.candidates[selected].offset_seconds))
+      selected = index;
+  }
+  const lunar_distance::TimeCandidate& chosen = solution.candidates[selected];
+  m_TimeCorrection = static_cast<long>(lround(chosen.offset_seconds));
+  m_LDC = chosen.cleared_distance_deg;
+  m_CalcStr += wxString::Format(
+      _("\nMatching UTC candidate%s:\n"),
+      solution.candidates.size() == 1 ? _T("") : _T("s"));
+  for (std::size_t index = 0; index < solution.candidates.size(); ++index) {
+    const lunar_distance::TimeCandidate& candidate = solution.candidates[index];
+    const wxDateTime candidate_time = UtcDateTime::AddSeconds(
+        m_CorrectedDateTime, candidate.offset_seconds);
+    m_CalcStr += wxString::Format(
+        _("%s%s  slope %.3f arcmin/hour; estimated 1-sigma time uncertainty %.1f s\n"),
+        index == selected ? _T("* ") : _T("  "),
+        UtcDateTime::FormatUtc(candidate_time, "%Y-%m-%d %H:%M:%S.%l"),
+        candidate.slope_arcmin_per_hour, candidate.time_uncertainty_seconds);
+  }
+  for (const std::string& warning : solution.warnings)
+    m_CalcStr += _("Warning: ") + wxString::FromUTF8(warning.c_str()) + _("\n");
+
+  lunar_distance::EphemerisSample chosen_sample;
+  std::string chosen_error;
+  if (ephemeris(chosen.offset_seconds, &chosen_sample, &chosen_error)) {
+    const lunar_distance::Clearance chosen_clearance =
+        lunar_distance::ClearDistance(observation, chosen_sample);
+    if (chosen_clearance.valid) {
+      m_LunarPositionResult = lunar_distance::IntersectAltitudeCircles(
+          {chosen_sample.moon_geographic_latitude_deg,
+           chosen_sample.moon_geographic_longitude_deg},
+          chosen_clearance.moon_geocentric_altitude_deg,
+          {chosen_sample.body_geographic_latitude_deg,
+           chosen_sample.body_geographic_longitude_deg},
+          chosen_clearance.body_geocentric_altitude_deg);
+    }
+  }
+  if (m_LunarPositionResult.valid) {
+    lunar_distance::GeographicPoint approximate{m_DRLat, m_DRLon};
+    double nearest = INFINITY;
+    for (std::size_t index = 0;
+         index < m_LunarPositionResult.candidates.size(); ++index) {
+      const double distance = lunar_distance::GreatCircleDistanceNm(
+          approximate, m_LunarPositionResult.candidates[index]);
+      if (distance < nearest) {
+        nearest = distance;
+        m_LunarSelectedPosition = static_cast<int>(index);
+      }
+    }
+    for (std::size_t index = 0;
+         index < m_LunarPositionResult.candidates.size(); ++index) {
+      const auto& position = m_LunarPositionResult.candidates[index];
+      m_CalcStr += wxString::Format(
+          _("Position candidate %zu: %.6f%c, %.6f%c%s\n"), index + 1,
+          position.latitude_deg, 0x00B0, position.longitude_deg, 0x00B0,
+          static_cast<int>(index) == m_LunarSelectedPosition
+              ? _T(" (nearest DR/boat position)")
+              : _T(""));
+    }
+    m_CalcStr += wxString::Format(
+        _("Altitude-circle crossing angle: %.2f%c.\n"),
+        m_LunarPositionResult.circle_crossing_angle_deg, 0x00B0);
+    if (m_LunarPositionResult.circle_crossing_angle_deg < 15.0)
+      m_CalcStr += _("Warning: shallow altitude-circle crossing gives weak position geometry.\n");
+  } else {
+    m_CalcStr += _("\nThe two corrected altitude circles did not yield a position: ") +
+                 wxString::FromUTF8(m_LunarPositionResult.error.c_str()) +
+                 _("\nAdditional altitude sights can still use the recovered watch offset.\n");
+  }
+  m_CalcStr += _(
+      "\nThe recovered correction is a constant watch offset. It may be "
+      "applied to other sightings recorded while the watch retained interval "
+      "accuracy. The position above comes from the two measured altitudes; it "
+      "is not a 15-degrees-per-hour longitude shortcut.\n");
+  return;
+
+#if 0  // Historical implementation retained for algorithm provenance.
   double rad;
   double planet_dist;
   BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad, &planet_dist);
@@ -1485,6 +1848,7 @@ UTC = %s\n"),
                       lunar_rad, lunar_SD, lunar_HP) +
               m_CalcStr;
   m_Body = body;
+#endif
 }
 
 void Sight::EstimateHs(double hc, double* hs, double* error) {

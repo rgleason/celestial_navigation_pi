@@ -1,0 +1,133 @@
+= Lunar distance, watch recovery and coastal sextant methods
+
+All calculations described here run locally. No observation, position or
+ephemeris request is sent over the network.
+
+== Recovering UTC from a lunar distance
+
+A lunar observation records three sextant angles against the same watch:
+
+* the angular distance between the Moon and a selected body;
+* the Moon's altitude above the horizon; and
+* the selected body's altitude above the horizon.
+
+Choose *Lunar* in the normal sight editor. Enter the watch reading as the
+nominal UTC, even when its constant offset is unknown. *Total UTC search span*
+defines the interval searched symmetrically around that reading. For example,
+86400 seconds searches 12 hours on either side; 172800 seconds searches 24
+hours on either side. The calendar date must still be approximately known.
+
+Select the Moon near/far contact and, for the Sun, its near, centre or far
+distance contact separately from the limbs used for the two altitude
+measurements. Enter realistic one-sigma uncertainties for the distance and
+both altitudes. The watch may be seconds or hours wrong: its interval rate,
+rather than its displayed UTC, must remain trustworthy between observations.
+
+Press *Time*. The solver:
+
+. converts the measured limbs to apparent centres;
+. applies index correction, dip, refraction, semidiameter and parallax;
+. clears the measured distance by spherical trigonometry;
+. scans the complete selected time interval and refines every bracketed match;
+  and
+. reports the UTC candidate, constant watch correction, lunar-distance rate
+  and propagated time uncertainty.
+
+The Sun/Moon calculation uses the local JPL DE440s kernel when it has already
+been installed for the eclipse module. Other bodies, or an installation
+without DE440s, use the bundled offline analytical ephemeris. The results
+window identifies which source was used. NASA LOLA terrain is unrelated to
+ordinary lunar-distance clearing and is not used.
+
+When more than one time matches, the plugin does not silently choose a remote
+root. Narrow the approximate date/time, or use a second lunar observation.
+Geometry where lunar distance changes slowly is reported as weak. A
+one-second-rate watch does not by itself produce one-second recovered UTC:
+sextant, limb, altitude and refraction errors normally dominate.
+
+=== Longitude with an unknown watch offset
+
+Once a lunar recovers UTC, the accompanying corrected Moon and body altitudes
+are two circles of equal altitude at that recovered instant. Their exact
+spherical intersections are reported as position candidates, including
+longitude. This is a direct position calculation; the plugin does not use the
+invalid shortcut of multiplying watch error by 15 degrees per hour.
+
+Two circles generally have two mathematical intersections. A rough
+hemisphere/DR position selects the nearer one. If absolutely no positional
+knowledge is available, retain both candidates and resolve them with a third
+altitude sight, a second lunar, the observed sky orientation, or another
+independent constraint. After selecting the recovered UTC candidate, *Apply
+selected watch offset to all sights* stores a single global correction and
+recomputes every saved sight without changing any recorded watch reading.
+Additional altitude sights taken while the watch kept interval time can then
+be used by the normal stationary or time-tagged running-fix solver.
+
+The results show the altitude-circle crossing angle. A shallow crossing is a
+weak positional geometry and magnifies observational error.
+
+== Coastal sextant navigation
+
+Open *Coastal Sextant...* from the main plugin window. These methods use
+charted terrestrial objects and are separate from the celestial-body
+*Azimuth* sight type.
+
+=== Vertical angle and distance
+
+For an object whose waterline is visible, enter the sextant angle from
+waterline to top, the charted top height, water level above the chart height
+datum, height of eye and index error. The solver includes Earth curvature and
+a selectable standard terrestrial-refraction model. The result is a range
+circle centred on the charted object, not a fix.
+
+For an object whose base is hidden beyond the sea horizon, select *Sea horizon
+to top*. This uses the refraction-aware formula underlying Table 15 of the
+American Practical Navigator (Bowditch). Abnormal refraction can produce
+large errors. Charted height and tide datum must refer to compatible datums.
+
+An optional true bearing turns the range into an estimated position. A raw
+magnetic compass bearing is converted with explicit east-positive variation
+and deviation. Its accuracy is limited by the bearing as well as the vertical
+angle.
+
+=== Horizontal sextant angles
+
+One included angle between two charted objects defines a curved line of
+position. Enter three objects in their observed left-centre-right order and
+the left-centre and centre-right angles to obtain two independent loci. The
+plugin solves their intersection on the sphere from the supplied approximate
+position and reports residuals, a geometry condition indicator and an
+estimated one-sigma uncertainty.
+
+The approximate position chooses the intended solution; poor or tangent
+geometry may have other solutions or fail to converge. The plotted individual
+loci are coastal-scale charting aids, while the reported numerical fix uses
+exact spherical bearings.
+
+== Azimuth sight scope
+
+The normal *Azimuth* type means the bearing of a celestial body relative to
+true or magnetic north. It creates a celestial bearing line of position. It
+does not mean the horizontal angle between two terrestrial objects. In
+magnetic mode the plugin applies magnetic variation; correct a raw compass
+bearing for compass deviation before entering it.
+
+== Verification and references
+
+Automated tests cover limb signs, impossible spherical observations,
+sub-second numerical root refinement, multiple/no-root cases, an end-to-end
+unknown watch offset and longitude recovery, a JPL Horizons comparison,
+vertical-angle ranges, the Bowditch Table 15 formula and synthetic
+three-object fixes.
+
+Primary references:
+
+* US Naval Observatory, Celestial Navigation Data and algorithms:
+  https://aa.usno.navy.mil/publications/celnav
+* NGA, _American Practical Navigator_ (Bowditch), Volume II:
+  https://www.dco.uscg.mil/Portals/9/NMC/pdfs/examinations/bowditch_Vol_2_2019.pdf
+* The Journal of Navigation, “The Line of Position from a Horizontal Angle”:
+  https://www.cambridge.org/core/journals/journal-of-navigation/article/line-of-position-from-a-horizontal-angle/CE2BB0783B92731BCBB14ACC99052DB8
+
+These are backup and training aids, not a substitute for maintaining a DR,
+recording raw observations and checking a result by an independent method.

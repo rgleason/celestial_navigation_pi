@@ -70,6 +70,10 @@ public:
   wxDateTime DateTime();
   void Recompute();
   void RecomputeDMM();
+  void SetClockOffset(int seconds) {
+    m_clock_offset = seconds;
+    Recompute();
+  }
 
 private:
   double BodyAltitude(wxString body);
@@ -80,6 +84,9 @@ private:
   Sight& m_Sight;
   int m_clock_offset;
   bool m_breadytorecompute;
+  wxChoice* m_lunarBodyDistanceContact;
+  wxTextCtrl* m_lunarMoonAltitudeUncertainty;
+  wxTextCtrl* m_lunarBodyAltitudeUncertainty;
 
   int m_lastPanX;
   int m_lastPanY;

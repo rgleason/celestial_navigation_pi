@@ -32,7 +32,11 @@ double DecimalYear(const CalendarDateTime& calendar);
 // eclipse paths.
 double TdbMinusTtSeconds(double tt_jd, double ut1_jd);
 
+// TAI-UTC from ERFA's leap-second table. Returns NaN when the calendar date is
+// outside the table's supported domain. Future leap seconds are unknowable;
+// callers should identify the table date when this distinction matters.
+double TaiMinusUtcSeconds(const CalendarDateTime& utc);
+
 }  // namespace eclipse
 
 #endif
-

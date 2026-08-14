@@ -29,7 +29,9 @@
 #define _CELESTIAL_NAVIGATION_SIGHT_H_
 
 #include <list>
+#include <vector>
 #include "pidc.h"
+#include "LunarDistanceEngine.h"
 
 #ifdef __MSVC__
 #define _USE_MATH_DEFINES
@@ -122,6 +124,9 @@ public:
   double m_MeasurementCertainty;
   double m_LunarMoonAltitude, m_LunarBodyAltitude;
   BodyLimb m_LunarMoonLimb, m_LunarBodyLimb;
+  BodyLimb m_LunarBodyDistanceLimb;
+  double m_LunarMoonAltitudeUncertainty;
+  double m_LunarBodyAltitudeUncertainty;
 
   double m_EyeHeight;         // Height above sea in meters
   double m_Temperature;       // Temperature in degrees celcius
@@ -176,6 +181,12 @@ public:
   /* for lunar */
   long m_TimeCorrection;
   double m_LDC;
+  bool m_LunarSolutionValid;
+  wxString m_LunarSolutionError;
+  std::vector<lunar_distance::TimeCandidate> m_LunarCandidates;
+  lunar_distance::PositionResult m_LunarPositionResult;
+  int m_LunarSelectedPosition;
+  bool m_LunarUsesDe440;
 
   /* DR info */
   double m_DRLat;

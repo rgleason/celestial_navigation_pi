@@ -21,8 +21,9 @@ celestial body sights. And will calculate a Running Fix by advancing Lines of
 Position based on Vessel distance traveled and course between sights. It
 supports Lunar Distancing which was used to determine TIME (Greenwich Meridian,
 GMT, now UT/UTC) before widespread availability of chronometers. Also notable,
-Lunars can be done as a "backyard" sight without using a visible sea horizon. A
-future feature is Azimuth sights.
+Lunars can be done as a "backyard" sight with an artificial horizon. The
+plugin also supports celestial-body Azimuth sights and separate coastal
+vertical-angle and horizontal-sextant-angle tools.
 
 <ul>
 <li><a href="https://github.com/rgleason/celestial_navigation_pi/issues/131">
@@ -51,6 +52,13 @@ a sight or <i>Delete All sights</i>. Documents will display the training guide
 Which can be printed. <i>Hide/Show</i> Button will show or hide the sights.
 You can move the Celestial Nav plugin forms out of the way.
 
+<p><b>Coastal Sextant...</b> opens two terrestrial workflows. A vertical
+angle from a charted object's waterline (or sea horizon) to its top gives a
+range circle and can be combined with an optional corrected bearing. Two
+horizontal sextant angles among three charted objects give a numerical fix and
+charted loci. These methods are distinct from the celestial Azimuth sight
+type. They run completely offline.</p>
+
 <p>When a new sight is entered, its Circle of Position (COP) defaults on the
 chart. Select/unselect the <i>Eye</i> icon. There is no limit and no
 performance impact with the number of sights. But the more sights with the
@@ -63,9 +71,12 @@ a sextant. It can be one of these types:
 
 <ul>
 <li>Altitude: Angle of the body above the horizon (most common method)</li>
-<li>Lunar: angle from the moon to another body for TIME and assessing
-Watch error (number of min-sec fast or slow).</li>
-<li>Azimuth: (Future. Some framework is available)</li>
+<li>Lunar: angle from the Moon to another body, plus both altitudes, for
+recovering UTC/watch error and position candidates.</li>
+<li>Azimuth: bearing of a celestial body relative to true or magnetic north.
+This is not a terrestrial horizontal sextant angle.</li>
+<li>Horizon: observed first upper limb at sunrise or final upper limb at
+sunset, optionally with a bearing.</li>
 </ul>
 
 <p><b>Celestial Body</b>: select the Sun, Moon, Venus, Mars, Jupiter, Saturn,
@@ -94,9 +105,14 @@ line of position COP/LOP. If too small, it is hard to see. 0.1 min. is visible
 after zooming into a small area chart. 10+ min. visible after zooming out to a
 large area chart. Try the +/- on Chart Scale
 
-<p><b>TIME</b> (Lunars only). When TIME button is pressed, the computed UTC
-TIME and how much faster or slower it is to the sight's UTC input is displayed.
-Before pressing button, complete the remaining sight data.
+<p><b>TIME</b> (Lunars only). When TIME is pressed, the plugin clears the
+observed distance and searches the complete selected UTC interval. It reports
+all matching UTC candidates, the constant watch correction, estimated time
+uncertainty, and the two possible latitude/longitude intersections obtained
+from the accompanying Moon/body altitudes. A rough DR or hemisphere normally
+selects the intended intersection; otherwise use a third altitude sight or
+another independent constraint. The result is not the old 15 degrees per hour
+longitude shortcut.
 
 <p><b>FIND</b>. When this button is pressed, the sight input data is "reduced"
 using the Law of Cosines. Before using the computations, confirm your vessel's
@@ -144,10 +160,12 @@ against Hs can show outlier sights.
 
 <p><b>Time Certainty</b>: default is 0 seconds which shows a single darker line
 in the COP. A time Certainty of &gt; 0 shows two darker lines, equivalent to
-that many seconds apart. For Lunar Sights, Time Certainty is used to bracket
-your watches's +/- error. The default of 10800 sec can be changed. A COP or LOP
-is not shown for Lunar Sights. You can duplicate The lunar sight and EDIT the
-duplicates to type = altitude and see the COP/LOPs.
+that many seconds apart. For Lunar sights this control is labelled <b>Total UTC
+search span</b> and the interval is searched symmetrically around the entered
+watch time. The default 86400 seconds searches 12 hours either side; up to
+172800 seconds searches 24 hours either side. A lunar's two corrected altitude
+circles are reported in the TIME results. Additional altitude sights can use
+the recovered global watch correction in the normal Fix workflow.
 
 <h3>Parameters Tab (to review and update as required)</h3>
 

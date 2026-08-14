@@ -23,7 +23,7 @@ image::four-circles-of-position.png["4 Circles of Position",width=550,link="_ima
 
 == Types of Observations
 
-Three types of observations are supported:
+Four observation types and separate coastal sextant tools are supported:
 
 === Altitude (sextant measurement)
 
@@ -37,7 +37,25 @@ small boat in high seas. However, it is interesting for demonstration purposes, 
 
 === Lunar distance (sextant measurement)
 
-Measure the angle between two heavenly bodies. The computer then attempts to determine clock error from this measurement, and the system time may be corrected.
+Measure the angle between the Moon and another heavenly body together with
+both altitudes. The plugin clears the distance, searches for matching UTC,
+recovers a constant watch offset and reports the two spherical position
+intersections. See xref:lunar-coastal.adoc[Lunar distance, watch recovery and
+coastal sextant methods].
+
+=== Horizon event
+
+Record the first upper-limb appearance at sunrise or final upper-limb
+disappearance at sunset, optionally with a corrected magnetic or true bearing.
+This supplies a deliberately conservative navigation constraint.
+
+=== Coastal sextant tools
+
+The separate *Coastal Sextant...* window calculates vertical-angle ranges and
+three-object horizontal-sextant-angle fixes. These terrestrial methods are
+not the same as a celestial Azimuth sight. See
+xref:lunar-coastal.adoc[Lunar distance, watch recovery and coastal sextant
+methods].
 
 == Process
 

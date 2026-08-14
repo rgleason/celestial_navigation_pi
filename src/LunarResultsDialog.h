@@ -1,56 +1,29 @@
-/******************************************************************************
- *
- * Project:  OpenCPN
- * Purpose:  Celestial Navigation Support
- * Author:   Sean D'Epagnier
- *
- ***************************************************************************
- *   Copyright (C) 2013 by Sean D'Epagnier                                 *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 3 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************
- *
- */
+#ifndef CELESTIAL_NAVIGATION_LUNAR_RESULTS_DIALOG_H
+#define CELESTIAL_NAVIGATION_LUNAR_RESULTS_DIALOG_H
 
-#ifndef _LUNARRESULTSDIALOG_H_
-#define _LUNARRESULTSDIALOG_H_
-
-#include "CelestialNavigationUI.h"
-
-#ifdef __OCPN__ANDROID__
-#include <wx/qt/private/wxQtGesture.h>
-#endif
+#include <wx/dialog.h>
 
 class Sight;
+class wxListCtrl;
+class wxStaticText;
+class wxTextCtrl;
+class wxButton;
 
-class LunarResultsDialog : public LunarResultsDialogBase {
+class LunarResultsDialog : public wxDialog {
 public:
   LunarResultsDialog(wxWindow* parent, Sight& sight);
-  ~LunarResultsDialog();
+  ~LunarResultsDialog() override = default;
 
-  void OnUpdate(wxCommandEvent& event);
-  void Update();
-#ifdef __OCPN__ANDROID__
-  void OnEvtPanGesture(wxQT_PanGestureEvent& event);
-#endif
+private:
+  void UpdateResults();
+  void ApplySelectedWatchOffset(wxCommandEvent& event);
 
-  Sight& m_Sight;
-  int m_lastPanX;
-  int m_lastPanY;
+  Sight& m_sight;
+  wxStaticText* m_status;
+  wxListCtrl* m_candidates;
+  wxListCtrl* m_positions;
+  wxTextCtrl* m_details;
+  wxButton* m_applyOffset;
 };
 
 #endif
-// _LUNARRESULTSDIALOG_H_

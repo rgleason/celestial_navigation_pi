@@ -129,7 +129,8 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	fgSizer1->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
 	m_notebook1 = new wxNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
-	m_panel1 = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel1 = new wxScrolledWindow( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL|wxVSCROLL );
+	m_panel1->SetScrollRate( 0, 12 );
 	m_fgPanelSizer = new wxFlexGridSizer( 0, 1, 0, 0 );
 	m_fgPanelSizer->AddGrowableCol( 0 );
 	m_fgPanelSizer->SetFlexibleDirection( wxBOTH );
@@ -292,7 +293,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 
 	m_panel1->SetSizer( m_fgPanelSizer );
 	m_panel1->Layout();
-	m_fgPanelSizer->Fit( m_panel1 );
+	m_panel1->FitInside();
 	m_notebook1->AddPage( m_panel1, _("Sight"), true );
 	m_panel2 = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxFlexGridSizer* fgSizer8;

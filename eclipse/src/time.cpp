@@ -5,6 +5,7 @@ extern "C" {
 }
 
 #include <cmath>
+#include <limits>
 #include <sstream>
 
 namespace eclipse {
@@ -122,6 +123,14 @@ double ModelDeltaTSeconds(double year) {
 double TdbMinusTtSeconds(double tt_jd, double ut1_jd) {
   const double fractional_ut1 = ut1_jd - std::floor(ut1_jd - 0.5) - 0.5;
   return eraDtdb(2451545.0, tt_jd - 2451545.0, fractional_ut1, 0.0, 0.0, 0.0);
+}
+
+double TaiMinusUtcSeconds(const CalendarDateTime& utc) {
+  double delta = 0.0;
+  const double fraction =
+      (utc.hour * 3600.0 + utc.minute * 60.0 + utc.second) / 86400.0;
+  const int status = eraDat(utc.year, utc.month, utc.day, fraction, &delta);
+  return status < 0 ? std::numeric_limits<double>::quiet_NaN() : delta;
 }
 
 }  // namespace eclipse

@@ -197,6 +197,9 @@ SET(SRCS
         src/CelestialNavigationUI.cpp
         src/SightDialog.cpp
         src/Sight.cpp
+        src/LunarDistanceEngine.cpp
+        src/CoastalNavigationEngine.cpp
+        src/CoastalNavigationDialog.cpp
         src/icons.cpp
         src/FindBodyDialog.cpp
         src/LunarResultsDialog.cpp
@@ -228,6 +231,9 @@ SET(HDRS
         src/geodesic.h
         src/icons.h
         src/Sight.h
+        src/LunarDistanceEngine.h
+        src/CoastalNavigationEngine.h
+        src/CoastalNavigationDialog.h
         src/SightDialog.h
         src/moon.h
         )

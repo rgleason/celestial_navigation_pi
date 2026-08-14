@@ -29,6 +29,7 @@
 #include <wx/textctrl.h>
 #include <wx/statbox.h>
 #include <wx/panel.h>
+#include <wx/scrolwin.h>
 #include <wx/calctrl.h>
 #include <wx/spinctrl.h>
 #include <wx/slider.h>
@@ -95,7 +96,7 @@ class SightDialogBase : public wxDialog
 
 	protected:
 		wxNotebook* m_notebook1;
-		wxPanel* m_panel1;
+		wxScrolledWindow* m_panel1;
 		wxFlexGridSizer* m_fgPanelSizer;
 		wxStaticText* m_staticText1;
 		wxChoice* m_cType;
@@ -370,4 +371,3 @@ class ClockCorrectionDialogBase : public wxDialog
 		~ClockCorrectionDialogBase();
 
 };
-

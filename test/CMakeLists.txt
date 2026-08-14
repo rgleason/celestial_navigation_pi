@@ -24,7 +24,11 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml ${CMAKE_CURRENT_BINARY
 
 set(SRC
     altitude_tests.cpp
+    azimuth_tests.cpp
     lunar_tests.cpp
+    lunar_distance_engine_tests.cpp
+    lunar_de440_tests.cpp
+    coastal_navigation_tests.cpp
     horizon_event_tests.cpp
     navigation_algorithms_tests.cpp
     time_status_tests.cpp
@@ -32,6 +36,9 @@ set(SRC
     mock_plugin_api.cpp
     mock_plugin_impl.cpp
     ${CMAKE_SOURCE_DIR}/src/Sight.cpp
+    ${CMAKE_SOURCE_DIR}/src/LunarDistanceEngine.cpp
+    ${CMAKE_SOURCE_DIR}/src/CoastalNavigationEngine.cpp
+    ${CMAKE_SOURCE_DIR}/src/CoastalNavigationDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/BodyCatalog.cpp
     ${CMAKE_SOURCE_DIR}/src/NavigationAlgorithms.cpp
     ${CMAKE_SOURCE_DIR}/src/PlannerDialog.cpp
@@ -72,6 +79,7 @@ target_compile_definitions(celestial_tests
         CMAKE_BINARY_DIR="${CMAKE_BINARY_DIR}"
         TESTDATA="${CMAKE_CURRENT_LIST_DIR}/testdata"
         UNIT_TESTS
+        ECLIPSE_DE440_TEST_PATH="${CMAKE_SOURCE_DIR}/eclipse/data/de440s.bsp"
         TIXML_USE_STL
 )
 

@@ -15,7 +15,15 @@ This maintained fork adds:
 * a time-tagged numerical running fix which advances each observation through
   a COG/SOG motion model to a common epoch;
 * a sight-sequence analyzer for residuals, scatter, robust outliers, trend and
-  personal bias, plus dedicated noon and Polaris helpers; and
+  personal bias, plus dedicated noon and Polaris helpers;
+* a rebuilt lunar-distance workflow which clears the observed distance,
+  searches for every matching UTC in a selectable interval, quantifies the
+  time uncertainty, recovers a constant watch offset, and intersects the two
+  accompanying altitude circles to obtain latitude/longitude candidates;
+* coastal sextant tools for vertical-angle ranges, optional bearing/range
+  positions, one-angle chart loci and numerical three-object/two-angle fixes;
+* a working celestial-body azimuth sight, explicitly distinguished from a
+  terrestrial horizontal sextant angle; and
 * a completely offline solar-eclipse planner powered by JPL DE440, with event
   discovery through 2100, local C1–C4 circumstances, central-path limits,
   partial-eclipse magnitude contours and optional NASA LOLA lunar-limb contact
@@ -33,8 +41,15 @@ storage sizes.
 
 The ordinary navigation planner is independent of the eclipse data packs. It
 uses the plugin's bundled VSOP87D, ELP2000 and navigational-star data, works
-without DE440 or LOLA, and never requires a network connection. See the
+without DE440 or LOLA, and never requires a network connection. Lunar
+distances use the locally installed DE440s kernel when it is present and fall
+back to the bundled analytical catalogue otherwise; LOLA is never required.
+See the
 [offline planning and running-fix guide](manual/modules/ROOT/pages/offline-planning.adoc).
+The separate
+[lunar-distance and coastal-sextant guide](manual/modules/ROOT/pages/lunar-coastal.adoc)
+explains the observation model, unknown-watch-offset workflow, genuine
+two-position ambiguity, controls and limitations.
 
 Maintained fork: https://github.com/pob220/celestial_navigation_pi
 

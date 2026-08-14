@@ -294,6 +294,7 @@ bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
   }
 
   m_pCelestialNavigationDialog->RenderEclipse(dc, vp);
+  m_pCelestialNavigationDialog->RenderCoastal(dc, vp);
 
   if (!m_pCelestialNavigationDialog->m_FixDialog ||
       !m_pCelestialNavigationDialog->m_FixDialog->IsShown())

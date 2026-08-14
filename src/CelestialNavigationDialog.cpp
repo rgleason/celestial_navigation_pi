@@ -123,7 +123,9 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       m_eclipseButton(NULL),
       m_plannerButton(NULL),
       m_analyzeButton(NULL),
+      m_coastalButton(NULL),
       m_eclipseDialog(NULL),
+      m_coastalDialog(NULL),
       m_chronyPollTicks(0),
       m_chronyAvailable(false),
       m_hasLastFix(false),
@@ -172,6 +174,12 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       _("Analyze repeated sights, scatter, bias, trend and outliers"));
   actionButtons->Insert(4, m_analyzeButton, 0, wxALL | wxEXPAND, 5);
   m_analyzeButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnAnalyze,
+                        this);
+  m_coastalButton = new wxButton(this, wxID_ANY, _("Coastal Sextant..."));
+  m_coastalButton->SetToolTip(
+      _("Vertical-angle ranges and horizontal-sextant-angle fixes"));
+  actionButtons->Insert(5, m_coastalButton, 0, wxALL | wxEXPAND, 5);
+  m_coastalButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnCoastal,
                         this);
   m_eclipseButton = new wxButton(this, wxID_ANY, _("Eclipses..."));
   m_eclipseButton->SetToolTip(
@@ -257,6 +265,10 @@ CelestialNavigationDialog::~CelestialNavigationDialog() {
   if (m_eclipseDialog) {
     m_eclipseDialog->Destroy();
     m_eclipseDialog = NULL;
+  }
+  if (m_coastalDialog) {
+    m_coastalDialog->Destroy();
+    m_coastalDialog = NULL;
   }
 
   wxFileConfig* pConf = GetOCPNConfigObject();
@@ -603,6 +615,12 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_LunarBodyAltitude = AttributeDouble(e, "LunarBodyAltitude", 0);
         s.m_LunarBodyLimb =
             (Sight::BodyLimb)AttributeInt(e, "LunarBodyLimb", 0);
+        s.m_LunarBodyDistanceLimb = (Sight::BodyLimb)AttributeInt(
+            e, "LunarBodyDistanceLimb", Sight::LUNAR_NEAR);
+        s.m_LunarMoonAltitudeUncertainty =
+            AttributeDouble(e, "LunarMoonAltitudeUncertainty", .2);
+        s.m_LunarBodyAltitudeUncertainty =
+            AttributeDouble(e, "LunarBodyAltitudeUncertainty", .2);
 
         s.m_DateTime.ParseISODate(wxString::FromUTF8(e->Attribute("Date")));
 
@@ -732,6 +750,11 @@ void CelestialNavigationDialog::SaveXML() {
     c->SetAttribute("LunarMoonLimb", s.m_LunarMoonLimb);
     SetFloatAttribute(c, "LunarBodyAltitude", s, s.m_LunarBodyAltitude);
     c->SetAttribute("LunarBodyLimb", s.m_LunarBodyLimb);
+    c->SetAttribute("LunarBodyDistanceLimb", s.m_LunarBodyDistanceLimb);
+    SetFloatAttribute(c, "LunarMoonAltitudeUncertainty", s,
+                      s.m_LunarMoonAltitudeUncertainty);
+    SetFloatAttribute(c, "LunarBodyAltitudeUncertainty", s,
+                      s.m_LunarBodyAltitudeUncertainty);
 
     c->SetAttribute("Date", s.m_DateTime.FormatISODate().mb_str());
     c->SetAttribute("Time", s.m_DateTime.FormatISOTime().mb_str());
@@ -1003,6 +1026,12 @@ void CelestialNavigationDialog::OnEclipse(wxCommandEvent&) {
   m_eclipseDialog->Raise();
 }
 
+void CelestialNavigationDialog::OnCoastal(wxCommandEvent&) {
+  if (!m_coastalDialog) m_coastalDialog = new CoastalNavigationDialog(this);
+  m_coastalDialog->Show();
+  m_coastalDialog->Raise();
+}
+
 void CelestialNavigationDialog::OnPlanner(wxCommandEvent&) {
   PlannerDialog dialog(this);
   dialog.ShowModal();
@@ -1097,6 +1126,11 @@ void CelestialNavigationDialog::RunEclipseIntegrationScenario() {
 bool CelestialNavigationDialog::RenderEclipse(piDC* dc,
                                               PlugIn_ViewPort* viewport) {
   return m_eclipseDialog && m_eclipseDialog->Render(dc, viewport);
+}
+
+bool CelestialNavigationDialog::RenderCoastal(piDC* dc,
+                                              PlugIn_ViewPort* viewport) {
+  return m_coastalDialog && m_coastalDialog->Render(dc, viewport);
 }
 
 void CelestialNavigationDialog::OnDuplicate(wxCommandEvent& event) {
@@ -1225,18 +1259,23 @@ void CelestialNavigationDialog::OnClockOffset(wxCommandEvent& event) {
   m_ClockCorrectionDialog = new ClockCorrectionDialog(this, m_ClockCorrection);
   m_ClockCorrectionDialog->ShowModal();
   if (m_ClockCorrectionDialog->GetReturnCode() == wxID_OK) {
-    m_ClockCorrection = m_ClockCorrectionDialog->m_sClockCorrection->GetValue();
-    for (Sight& s : m_Sights) {
-      if (s.m_bVisible) {
-        s.Recompute(m_ClockCorrection);
-        s.RebuildPolygons();
-      }
-    }
-    UpdateSights();
-    RequestRefresh(GetParent());
+    ApplyClockCorrection(
+        m_ClockCorrectionDialog->m_sClockCorrection->GetValue());
   }
   m_ClockCorrectionDialog->Destroy();
   m_ClockCorrectionDialog = NULL;
+}
+
+void CelestialNavigationDialog::ApplyClockCorrection(int correction_seconds) {
+  m_ClockCorrection = correction_seconds;
+  for (Sight& sight : m_Sights) {
+    sight.Recompute(m_ClockCorrection);
+    if (sight.m_bVisible) sight.RebuildPolygons();
+  }
+  UpdateSights();
+  SaveXML();
+  UpdateTimeIntegrityPanel();
+  RequestRefresh(GetParent());
 }
 
 void CelestialNavigationDialog::OnDocumentation(wxCommandEvent& event) {

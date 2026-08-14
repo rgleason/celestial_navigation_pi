@@ -37,6 +37,7 @@
 #include "ClockCorrectionDialog.h"
 #include "EclipseDialog.h"
 #include "PlannerDialog.h"
+#include "CoastalNavigationDialog.h"
 
 #include <vector>
 #include <wx/timer.h>
@@ -58,6 +59,7 @@ public:
 
   void OnFixClose();
   bool RenderEclipse(piDC* dc, PlugIn_ViewPort* viewport);
+  bool RenderCoastal(piDC* dc, PlugIn_ViewPort* viewport);
   void RunEclipseIntegrationScenario();
   void RunPlannerIntegrationScenario();
   celestial_navigation_pi* GetPlugin() const { return m_Plugin; }
@@ -66,6 +68,8 @@ public:
   void SetLastFix(double latitude, double longitude);
   void CreatePlannedSight(const wxString& body, const wxDateTime& utc,
                           double drLat, double drLon);
+  int GetClockCorrection() const { return m_ClockCorrection; }
+  void ApplyClockCorrection(int correction_seconds);
 
 private:
   bool OpenXML(bool reportfailure);
@@ -87,6 +91,7 @@ private:
   void OnEclipse(wxCommandEvent& event);
   void OnPlanner(wxCommandEvent& event);
   void OnAnalyze(wxCommandEvent& event);
+  void OnCoastal(wxCommandEvent& event);
   void OnDuplicate(wxCommandEvent& event);
   void OnEdit();
   void OnEditMouse(wxMouseEvent& event) { OnEdit(); }
@@ -131,7 +136,9 @@ private:
   wxButton* m_eclipseButton;
   wxButton* m_plannerButton;
   wxButton* m_analyzeButton;
+  wxButton* m_coastalButton;
   EclipseDialog* m_eclipseDialog;
+  CoastalNavigationDialog* m_coastalDialog;
   wxTimer m_timeTimer;
   int m_chronyPollTicks;
   ChronyTrackingInfo m_chronyTracking;
