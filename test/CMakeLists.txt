@@ -56,6 +56,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/transform_star.cpp
     ${CMAKE_SOURCE_DIR}/src/CelestialNavigationDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/HorizonEventDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/HtmlHelp.cpp
     ${CMAKE_SOURCE_DIR}/src/EclipseDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/ClockCorrectionDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/CelestialNavigationUI.cpp

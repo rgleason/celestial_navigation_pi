@@ -192,6 +192,7 @@ SET(SRCS
         src/PlannerDialog.cpp
         src/SightAnalysisDialog.cpp
         src/HorizonEventDialog.cpp
+        src/HtmlHelp.cpp
         src/EclipseDialog.cpp
         src/TimeStatus.cpp
         src/CelestialNavigationUI.cpp
@@ -222,6 +223,7 @@ SET(HDRS
         src/SightAnalysisDialog.h
         src/UtcDateTime.h
         src/HorizonEventDialog.h
+        src/HtmlHelp.h
         src/EclipseDialog.h
         src/TimeStatus.h
         src/CelestialNavigationUI.h

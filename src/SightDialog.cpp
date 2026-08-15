@@ -42,6 +42,7 @@
 #include "celestial_navigation_pi.h"
 #include "geodesic.h"
 #include "BodyCatalog.h"
+#include "HtmlHelp.h"
 
 #include <algorithm>
 
@@ -642,9 +643,6 @@ double SightDialog::BodyAltitude(wxString body) {
 }
 
 void SightDialog::OnShowDefinitions(wxCommandEvent& event) {
-  wxString infolocation = celestial_navigation_pi_DataDir() + _T("/data/") +
-                          _T("Celestial_Navigation_Definitions.html");
-  infolocation.Prepend(_T("file://"));
-  infolocation.Replace(_T(" "), _T("%20"));
-  wxLaunchDefaultBrowser(infolocation);
+  ShowBundledHtmlHelp(this, _("Celestial Navigation Definitions"),
+                      _T("Celestial_Navigation_Definitions.html"));
 }

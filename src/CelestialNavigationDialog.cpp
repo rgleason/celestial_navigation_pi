@@ -44,6 +44,7 @@
 #include "HorizonEventDialog.h"
 #include "PlannerDialog.h"
 #include "SightAnalysisDialog.h"
+#include "HtmlHelp.h"
 #include "CelestialNavigationDialog.h"
 #include "UtcDateTime.h"
 #include <algorithm>
@@ -1298,11 +1299,8 @@ void CelestialNavigationDialog::ApplyClockCorrection(int correction_seconds) {
 }
 
 void CelestialNavigationDialog::OnDocumentation(wxCommandEvent& event) {
-  wxString infolocation = celestial_navigation_pi_DataDir() + _T("/data/") +
-                          _T("Celestial_Navigation_Information.html");
-  infolocation.Prepend(_T("file://"));
-  infolocation.Replace(_T(" "), _T("%20"));
-  wxLaunchDefaultBrowser(infolocation);
+  ShowBundledHtmlHelp(this, _("Celestial Navigation Documentation"),
+                      _T("Celestial_Navigation_Information.html"));
 }
 
 void CelestialNavigationDialog::OnHide(wxCommandEvent& event) {
