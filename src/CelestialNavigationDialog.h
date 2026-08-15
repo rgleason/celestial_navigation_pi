@@ -38,6 +38,7 @@
 #include "EclipseDialog.h"
 #include "PlannerDialog.h"
 #include "CoastalNavigationDialog.h"
+#include "LunarToolsDialog.h"
 
 #include <vector>
 #include <wx/timer.h>
@@ -92,6 +93,7 @@ private:
   void OnPlanner(wxCommandEvent& event);
   void OnAnalyze(wxCommandEvent& event);
   void OnCoastal(wxCommandEvent& event);
+  void OnLunarTools(wxCommandEvent& event);
   void OnDuplicate(wxCommandEvent& event);
   void OnEdit();
   void OnEditMouse(wxMouseEvent& event) { OnEdit(); }
@@ -137,6 +139,7 @@ private:
   wxButton* m_plannerButton;
   wxButton* m_analyzeButton;
   wxButton* m_coastalButton;
+  wxButton* m_lunarToolsButton;
   EclipseDialog* m_eclipseDialog;
   CoastalNavigationDialog* m_coastalDialog;
   wxTimer m_timeTimer;

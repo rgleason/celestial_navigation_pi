@@ -1064,12 +1064,7 @@ double Sight::HorizonEstimateUncertaintyNm() const {
   return sqrt(crossTrack * crossTrack + radial * radial + timing * timing);
 }
 
-void Sight::RecomputeLunar() {
-  // A lunar recovers Greenwich time by clearing the observed limb distance
-  // of dip, refraction, semidiameter and parallax, then matching the resulting
-  // geocentric centre distance against the ephemeris.  The former code only
-  // evaluated two endpoints and linearly extrapolated between them; it could
-  // silently return a time even when no root existed or several roots existed.
+lunar_distance::Observation Sight::LunarObservation() const {
   lunar_distance::Observation observation;
   observation.raw_distance_deg = m_Measurement;
   observation.moon_altitude_deg = m_LunarMoonAltitude;
@@ -1113,6 +1108,16 @@ void Sight::RecomputeLunar() {
       m_LunarSeparateTimes && m_LunarMovingObserver;
   observation.course_true_deg = m_LunarCourseTrue;
   observation.speed_knots = m_LunarSpeedKnots;
+  return observation;
+}
+
+void Sight::RecomputeLunar() {
+  // A lunar recovers Greenwich time by clearing the observed limb distance
+  // of dip, refraction, semidiameter and parallax, then matching the resulting
+  // geocentric centre distance against the ephemeris.  The former code only
+  // evaluated two endpoints and linearly extrapolated between them; it could
+  // silently return a time even when no root existed or several roots existed.
+  const lunar_distance::Observation observation = LunarObservation();
 
   const wxString selected_body = m_Body;
   m_LunarUsesDe440 = false;
@@ -1248,6 +1253,7 @@ void Sight::RecomputeLunar() {
     m_IsStar = body_is_star;
     return std::isfinite(sample->predicted_distance_deg);
   };
+  m_LunarEphemeris = ephemeris;
 
   lunar_distance::SolveOptions options;
   const double search_span = m_TimeCertainty > 0.0 ? m_TimeCertainty : 86400.0;

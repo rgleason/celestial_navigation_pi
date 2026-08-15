@@ -44,6 +44,7 @@
 #include "HorizonEventDialog.h"
 #include "PlannerDialog.h"
 #include "SightAnalysisDialog.h"
+#include "LunarToolsDialog.h"
 #include "HtmlHelp.h"
 #include "CelestialNavigationDialog.h"
 #include "UtcDateTime.h"
@@ -176,6 +177,12 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   actionButtons->Insert(4, m_analyzeButton, 0, wxALL | wxEXPAND, 5);
   m_analyzeButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnAnalyze,
                         this);
+  m_lunarToolsButton = new wxButton(this, wxID_ANY, _("Lunar Tools..."));
+  m_lunarToolsButton->SetToolTip(
+      _("Joint lunar sequences, lunar pair planning and sextant checks"));
+  actionButtons->Insert(5, m_lunarToolsButton, 0, wxALL | wxEXPAND, 5);
+  m_lunarToolsButton->Bind(wxEVT_BUTTON,
+                           &CelestialNavigationDialog::OnLunarTools, this);
   m_coastalButton = new wxButton(this, wxID_ANY, _("Coastal Sextant..."));
   m_coastalButton->SetToolTip(
       _("Vertical-angle ranges and horizontal-sextant-angle fixes"));
@@ -1057,6 +1064,11 @@ void CelestialNavigationDialog::OnPlanner(wxCommandEvent&) {
   dialog.ShowModal();
 }
 
+void CelestialNavigationDialog::OnLunarTools(wxCommandEvent&) {
+  LunarToolsDialog dialog(this);
+  dialog.ShowModal();
+}
+
 void CelestialNavigationDialog::RunPlannerIntegrationScenario() {
   wxString scenario;
   wxGetEnv("CELESTIAL_GUI_TEST_DIALOG", &scenario);
@@ -1074,6 +1086,51 @@ void CelestialNavigationDialog::RunPlannerIntegrationScenario() {
 
   if (scenario == "analyzer") {
     SightAnalysisDialog* dialog = new SightAnalysisDialog(this);
+    dialog->Show();
+    dialog->Raise();
+    return;
+  }
+
+  if (scenario == "lunar") {
+    wxString seedLunars;
+    if (wxGetEnv("CELESTIAL_GUI_TEST_SEED_LUNARS", &seedLunars) &&
+        seedLunars == "1") {
+      m_Sights.clear();
+      const wxDateTime reference = UtcDateTime::Now();
+      const lunar_distance::GeographicPoint known_position(0.0, 0.0);
+      const wxString bodies[] = {_T("Sun"), _T("Mercury"), _T("Regulus")};
+      for (int index = 0; index < 3; ++index) {
+        Sight sight(Sight::LUNAR, bodies[index], Sight::LUNAR_NEAR,
+                    UtcDateTime::AddSeconds(reference, index * 600.0),
+                    4.0 * 3600.0, 30.0, 0.2);
+        sight.m_LunarMoonAltitude = 30.0;
+        sight.m_LunarBodyAltitude = 30.0;
+        sight.m_LunarMoonLimb = Sight::CENTER;
+        sight.m_LunarBodyLimb = Sight::CENTER;
+        sight.m_LunarBodyDistanceLimb = Sight::CENTER;
+        sight.m_LunarMoonAltitudeUncertainty = 0.2;
+        sight.m_LunarBodyAltitudeUncertainty = 0.2;
+        sight.m_DRLat = known_position.latitude_deg;
+        sight.m_DRLon = known_position.longitude_deg;
+        sight.m_DRBoatPosition = false;
+        sight.Recompute(0);
+        const auto predicted = lunar_distance::PredictTimeTaggedObservation(
+            sight.LunarObservation(), sight.LunarEphemeris(), 0.0,
+            known_position);
+        if (!predicted.valid) continue;
+        sight.m_Measurement = predicted.raw_distance_deg;
+        sight.m_LunarMoonAltitude = predicted.moon_altitude_deg;
+        sight.m_LunarBodyAltitude = predicted.body_altitude_deg;
+        sight.Recompute(0);
+        m_Sights.push_back(std::move(sight));
+      }
+      RebuildList();
+    }
+    LunarToolsDialog* dialog = new LunarToolsDialog(this);
+    wxString pageText;
+    long page = 0;
+    if (wxGetEnv("CELESTIAL_GUI_TEST_PAGE", &pageText)) pageText.ToLong(&page);
+    dialog->SelectPageForIntegration(page < 0 ? 0 : static_cast<unsigned>(page));
     dialog->Show();
     dialog->Raise();
     return;

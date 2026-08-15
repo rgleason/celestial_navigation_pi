@@ -27,6 +27,8 @@ set(SRC
     azimuth_tests.cpp
     lunar_tests.cpp
     lunar_distance_engine_tests.cpp
+    lunar_session_engine_tests.cpp
+    sextant_calibration_engine_tests.cpp
     lunar_de440_tests.cpp
     coastal_navigation_tests.cpp
     horizon_event_tests.cpp
@@ -37,6 +39,9 @@ set(SRC
     mock_plugin_impl.cpp
     ${CMAKE_SOURCE_DIR}/src/Sight.cpp
     ${CMAKE_SOURCE_DIR}/src/LunarDistanceEngine.cpp
+    ${CMAKE_SOURCE_DIR}/src/LunarSessionEngine.cpp
+    ${CMAKE_SOURCE_DIR}/src/SextantCalibrationEngine.cpp
+    ${CMAKE_SOURCE_DIR}/src/LunarToolsDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/CoastalNavigationEngine.cpp
     ${CMAKE_SOURCE_DIR}/src/CoastalNavigationDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/BodyCatalog.cpp

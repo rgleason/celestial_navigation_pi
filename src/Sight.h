@@ -107,6 +107,14 @@ public:
   wxString HorizonEventName() const;
   wxString HorizonMeasurementText() const;
 
+  // Shared lunar input and forward model.  RecomputeLunar populates the
+  // ephemeris callback; the sequence solver deliberately reuses it so single
+  // and joint solutions cannot drift into different astronomical models.
+  lunar_distance::Observation LunarObservation() const;
+  const lunar_distance::EphemerisFunction& LunarEphemeris() const {
+    return m_LunarEphemeris;
+  }
+
   bool m_bVisible;  // should this sight be drawn?
   bool m_bCalculated;
   bool m_bSelected;
@@ -193,6 +201,7 @@ public:
   lunar_distance::PositionResult m_LunarPositionResult;
   int m_LunarSelectedPosition;
   bool m_LunarUsesDe440;
+  lunar_distance::EphemerisFunction m_LunarEphemeris;
 
   /* DR info */
   double m_DRLat;
