@@ -70,6 +70,13 @@ private:
   wxCheckBox* m_instructions;
   wxCheckBox* m_lunar;
   wxCheckBox* m_emergency;
+  wxCheckBox* m_incrementTables;
+  wxCheckBox* m_reductionTables;
+  wxCheckBox* m_directTables;
+  wxCheckBox* m_fullDirectTables;
+  wxCheckBox* m_altitudeTables;
+  wxCheckBox* m_visualAids;
+  wxChoice* m_planningInterval;
   wxSpinCtrl* m_sightForms;
   wxSpinCtrl* m_runningForms;
   wxSpinCtrl* m_noonForms;
@@ -80,6 +87,8 @@ private:
   wxCheckBox* m_duplex;
   wxCheckBox* m_monochrome;
   wxCheckBox* m_compact;
+  wxCheckBox* m_booklet;
+  wxSpinCtrl* m_signaturePages;
   wxFilePickerCtrl* m_output;
   wxStaticText* m_summary;
   wxStaticText* m_warning;

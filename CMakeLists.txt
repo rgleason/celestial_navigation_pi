@@ -74,10 +74,10 @@ set(LONG_DESCRIPTION
 )
 
 set(VERSION_MAJOR "2")
-set(VERSION_MINOR "6")
+set(VERSION_MINOR "7")
 set(VERSION_PATCH "0")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "13/08/2026" )# DD/MM/YYYY format
+set(VERSION_DATE  "16/08/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -203,6 +203,7 @@ SET(SRCS
         src/SextantCalibrationEngine.cpp
         src/LunarToolsDialog.cpp
         src/AlmanacGenerator.cpp
+        src/AlmanacPaperTables.cpp
         src/AlmanacDialog.cpp
         src/CoastalNavigationEngine.cpp
         src/CoastalNavigationDialog.cpp
@@ -243,6 +244,7 @@ SET(HDRS
         src/SextantCalibrationEngine.h
         src/LunarToolsDialog.h
         src/AlmanacGenerator.h
+        src/AlmanacPaperTables.h
         src/AlmanacDialog.h
         src/CoastalNavigationEngine.h
         src/CoastalNavigationDialog.h

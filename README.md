@@ -19,6 +19,12 @@ This maintained fork adds:
   saved route can be selected in the generator, or the same workflow can be
   opened pre-populated using **Generate fallback almanac…** on an OpenCPN
   route's context menu;
+  The generator ranges from a compact Passage Brief to a full global annual
+  edition. Its calculator-free safety level enforces hourly ephemerides,
+  minute/second and v/d interpolation tables, altitude corrections,
+  voyage-specific direct Hc/Zn lookup tables, universal Ageton reduction
+  tables, instructions and forms. Optional planning graphs and booklet
+  signature imposition are included;
 * a time-tagged numerical running fix which advances each observation through
   a COG/SOG motion model to a common epoch;
 * a sight-sequence analyzer for residuals, scatter, robust outliers, trend and
@@ -60,12 +66,11 @@ explains the simultaneous and sequential observation models,
 unknown-watch-offset workflow, genuine position ambiguity, controls and
 limitations.
 
-The Gate-6 voyage PDF is explicitly **calculator-complete**, not yet
-calculator-free: it is intended for a sextant, watch, plotting tools and an
-ordinary scientific calculator. See
-[the Gate-6 implementation and performance note](docs/ALMANAC_GATE6.md) for
-the exact safety boundary, baseline timings and the planned route to a
-paper-only tabular edition.
+The almanac can now be **calculator-free**: after printing, a navigator can
+reduce and plot supported sights using the document, sextant, accurate watch,
+pencil and plotting tools, without a computer, internet connection,
+scientific calculator or external almanac. The cover carries a machine-checked
+dependency manifest. See [the implementation and performance note](docs/ALMANAC_GATE6.md).
 
 Maintained fork: https://github.com/pob220/celestial_navigation_pi
 

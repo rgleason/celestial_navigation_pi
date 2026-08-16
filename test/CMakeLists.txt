@@ -48,6 +48,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/BodyCatalog.cpp
     ${CMAKE_SOURCE_DIR}/src/NavigationAlgorithms.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacGenerator.cpp
+    ${CMAKE_SOURCE_DIR}/src/AlmanacPaperTables.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/PlannerDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/SightAnalysisDialog.cpp

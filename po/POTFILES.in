@@ -28,6 +28,7 @@ src/LunarSessionEngine.cpp
 src/SextantCalibrationEngine.cpp
 src/LunarToolsDialog.cpp
 src/AlmanacGenerator.cpp
+src/AlmanacPaperTables.cpp
 src/AlmanacDialog.cpp
 src/CoastalNavigationEngine.cpp
 src/CoastalNavigationDialog.cpp
@@ -65,6 +66,7 @@ src/LunarSessionEngine.h
 src/SextantCalibrationEngine.h
 src/LunarToolsDialog.h
 src/AlmanacGenerator.h
+src/AlmanacPaperTables.h
 src/AlmanacDialog.h
 src/CoastalNavigationEngine.h
 src/CoastalNavigationDialog.h

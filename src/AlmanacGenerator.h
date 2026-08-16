@@ -13,11 +13,17 @@
 enum class AlmanacPreset {
   PassageBrief,
   VoyageAlmanac,
+  CalculatorFreeVoyage,
   CelestialNavigator,
+  FullGlobalAlmanac,
   Custom
 };
 enum class AlmanacCoverage { PlannedRoute, FixedPosition, LatitudeBand, Global };
-enum class AlmanacSafety { PlanningReference, CalculatorComplete };
+enum class AlmanacSafety {
+  PlanningReference,
+  CalculatorComplete,
+  CalculatorFree
+};
 enum class AlmanacPaper { A4, Letter, A5 };
 
 struct AlmanacRoutePoint {
@@ -58,6 +64,14 @@ struct AlmanacRequest {
   bool includeLunar = true;
   bool includeEmergencyGuide = true;
   bool selfContained = true;
+  bool includeIncrementTables = false;
+  bool includeCompactReductionTables = false;
+  bool includeDirectReductionTables = false;
+  bool fullDirectReductionCoverage = false;
+  bool includeAltitudeCorrectionTables = false;
+  bool includeVisualAids = true;
+  bool monthlyStarData = false;
+  unsigned planningIntervalDays = 1;
 
   unsigned sightForms = 4;
   unsigned runningFixForms = 2;
@@ -70,6 +84,8 @@ struct AlmanacRequest {
   bool duplex = true;
   bool monochrome = true;
   bool compact = true;
+  bool booklet = false;
+  unsigned signaturePages = 16;
 };
 
 struct AlmanacTable {
@@ -84,6 +100,23 @@ struct AlmanacChartPoint {
   double altitude = 0.0;
 };
 
+struct AlmanacPlotSeries {
+  wxString label;
+  std::vector<double> x;
+  std::vector<double> y;
+};
+
+struct AlmanacPlot {
+  wxString title;
+  wxString xLabel;
+  wxString yLabel;
+  double xMinimum = 0.0;
+  double xMaximum = 1.0;
+  double yMinimum = 0.0;
+  double yMaximum = 1.0;
+  std::vector<AlmanacPlotSeries> series;
+};
+
 struct AlmanacPage {
   wxString section;
   wxString title;
@@ -91,6 +124,7 @@ struct AlmanacPage {
   std::vector<wxString> paragraphs;
   std::vector<AlmanacTable> tables;
   std::vector<AlmanacChartPoint> chart;
+  std::vector<AlmanacPlot> plots;
   bool form = false;
 };
 
@@ -102,6 +136,8 @@ struct AlmanacDocument {
   std::vector<wxString> warnings;
   unsigned sheets = 0;
   size_t estimatedBytes = 0;
+  double estimatedSeconds = 0.0;
+  unsigned physicalPdfPages = 0;
 };
 
 class AlmanacGenerator {
@@ -116,6 +152,7 @@ public:
                                            unsigned dayCount);
   static wxString PreviewText(const AlmanacDocument& document,
                               unsigned maximumPages = 4);
+  static wxString DependencyManifest(const AlmanacRequest& request);
 };
 
 class AlmanacPdfWriter {

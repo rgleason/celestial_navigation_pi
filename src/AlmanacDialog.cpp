@@ -97,7 +97,9 @@ void AlmanacDialog::BuildInterface() {
   m_preset = new wxChoice(setup, wxID_ANY);
   m_preset->Append(_("Passage Brief"));
   m_preset->Append(_("Voyage Almanac"));
+  m_preset->Append(_("Calculator-free Voyage"));
   m_preset->Append(_("Celestial Navigator"));
+  m_preset->Append(_("Full Global Annual"));
   m_preset->Append(_("Custom"));
   AddLabelled(setupSizer, setup, _("Preset"), m_preset);
   m_voyageName = new wxTextCtrl(setup, wxID_ANY, _("OpenCPN Voyage Almanac"));
@@ -147,10 +149,11 @@ void AlmanacDialog::BuildInterface() {
   m_safety = new wxChoice(content, wxID_ANY);
   m_safety->Append(_("Planning reference"));
   m_safety->Append(_("Self-contained with scientific calculator"));
+  m_safety->Append(_("Self-contained calculator-free paper backup"));
   m_safety->SetSelection(1);
   AddLabelled(contentSizer, content, _("Safety level"), m_safety);
   m_selfContained = Check(content, contentSizer,
-      _("Enforce all dependencies for a calculator-complete paper backup"));
+      _("Enforce all dependencies for the selected safety level"));
   wxStaticBoxSizer* ephemeris =
       new wxStaticBoxSizer(wxVERTICAL, content, _("Daily ephemeris"));
   m_aries = Check(content, ephemeris, _("Aries"));
@@ -167,6 +170,17 @@ void AlmanacDialog::BuildInterface() {
   m_moonInfo = Check(content, planning, _("Moon phase and illumination"));
   m_recommendations = Check(content, planning, _("Suggested sights and geometry"));
   m_charts = Check(content, planning, _("Compact sky plots"));
+  m_visualAids = Check(content, planning,
+      _("Planning and correction graphs (tables remain authoritative)"));
+  m_planningInterval = new wxChoice(content, wxID_ANY);
+  m_planningInterval->Append(_("None"));
+  m_planningInterval->Append(_("Every day"));
+  m_planningInterval->Append(_("Every 2 days"));
+  m_planningInterval->Append(_("Every 7 days"));
+  m_planningInterval->Append(_("Every 14 days"));
+  m_planningInterval->Append(_("Every 30 days"));
+  m_planningInterval->SetSelection(1);
+  AddLabelled(planning, content, _("Planning-page cadence"), m_planningInterval);
   contentSizer->Add(planning, 0, wxEXPAND | wxTOP, 8);
   wxStaticBoxSizer* references =
       new wxStaticBoxSizer(wxVERTICAL, content, _("Working reference"));
@@ -174,6 +188,16 @@ void AlmanacDialog::BuildInterface() {
   m_instructions = Check(content, references, _("Sight reduction and plotting instructions"));
   m_lunar = Check(content, references, _("Lunar-distance and watch-recovery reference"));
   m_emergency = Check(content, references, _("Emergency recovery checklist"));
+  m_incrementTables = Check(content, references,
+      _("Minute/second increments and v/d tables (60 pages)"));
+  m_reductionTables = Check(content, references,
+      _("Compact universal Ageton reduction tables (46 pages)"));
+  m_directTables = Check(content, references,
+      _("Precomputed direct Hc/Zn tables for selected coverage"));
+  m_fullDirectTables = Check(content, references,
+      _("Direct tables for every declination (very large)"));
+  m_altitudeTables = Check(content, references,
+      _("Calculator-free altitude correction tables (6 pages)"));
   contentSizer->Add(references, 0, wxEXPAND | wxTOP, 8);
   content->SetSizer(contentSizer);
   m_notebook->AddPage(content, _("Content"));
@@ -202,6 +226,12 @@ void AlmanacDialog::BuildInterface() {
   m_duplex = Check(forms, formSizer, _("Duplex-friendly page count"));
   m_monochrome = Check(forms, formSizer, _("Monochrome friendly"));
   m_compact = Check(forms, formSizer, _("Compact layout"));
+  m_booklet = Check(forms, formSizer,
+      _("Booklet imposition (two logical pages per PDF page)"));
+  m_signaturePages = new wxSpinCtrl(forms, wxID_ANY, "16", wxDefaultPosition,
+      wxDefaultSize, wxSP_ARROW_KEYS, 4, 64, 16);
+  m_signaturePages->SetIncrement(4);
+  AddLabelled(formSizer, forms, _("Booklet signature pages"), m_signaturePages);
   m_output = new wxFilePickerCtrl(
       forms, wxID_ANY, wxEmptyString, _("Choose output PDF"),
       _("PDF files (*.pdf)|*.pdf"), wxDefaultPosition, wxDefaultSize,
@@ -287,13 +317,13 @@ void AlmanacDialog::UpdateCoverageControls() {
 }
 
 void AlmanacDialog::ApplyPresetSelection() {
-  if (m_preset->GetSelection() == 3) return;
+  if (m_preset->GetSelection() == 5) return;
   m_applyingPreset = true;
   AlmanacRequest request;
   AlmanacGenerator::ApplyPreset(
       static_cast<AlmanacPreset>(std::max(0, m_preset->GetSelection())),
       &request);
-  m_safety->SetSelection(request.safety == AlmanacSafety::CalculatorComplete ? 1 : 0);
+  m_safety->SetSelection(static_cast<int>(request.safety));
   m_selfContained->SetValue(request.selfContained);
   m_sun->SetValue(request.includeSun);
   m_moon->SetValue(request.includeMoon);
@@ -309,6 +339,16 @@ void AlmanacDialog::ApplyPresetSelection() {
   m_instructions->SetValue(request.includeInstructions);
   m_lunar->SetValue(request.includeLunar);
   m_emergency->SetValue(request.includeEmergencyGuide);
+  m_incrementTables->SetValue(request.includeIncrementTables);
+  m_reductionTables->SetValue(request.includeCompactReductionTables);
+  m_directTables->SetValue(request.includeDirectReductionTables);
+  m_fullDirectTables->SetValue(request.fullDirectReductionCoverage);
+  m_altitudeTables->SetValue(request.includeAltitudeCorrectionTables);
+  m_visualAids->SetValue(request.includeVisualAids);
+  const unsigned intervals[] = {0, 1, 2, 7, 14, 30};
+  for (unsigned i = 0; i < 6; ++i)
+    if (request.planningIntervalDays == intervals[i])
+      m_planningInterval->SetSelection(i);
   m_sightForms->SetValue(request.sightForms);
   m_runningForms->SetValue(request.runningFixForms);
   m_noonForms->SetValue(request.noonPolarisForms);
@@ -317,6 +357,15 @@ void AlmanacDialog::ApplyPresetSelection() {
   m_duplex->SetValue(request.duplex);
   m_monochrome->SetValue(request.monochrome);
   m_compact->SetValue(request.compact);
+  m_booklet->SetValue(request.booklet);
+  m_signaturePages->SetValue(request.signaturePages);
+  if (request.preset == AlmanacPreset::FullGlobalAlmanac) {
+    const int year = m_from->GetValue().GetYear();
+    m_from->SetValue(wxDateTime(1, wxDateTime::Jan, year));
+    m_to->SetValue(wxDateTime(31, wxDateTime::Dec, year));
+    m_coverage->SetSelection(static_cast<int>(AlmanacCoverage::Global));
+    UpdateCoverageControls();
+  }
   m_applyingPreset = false;
 }
 
@@ -337,8 +386,8 @@ AlmanacRequest AlmanacDialog::ReadRequest(wxString* error,
   request.routeSpeedKnots = m_speed->GetValue();
   request.dut1Known = m_dut1Known->GetValue();
   request.dut1Seconds = request.dut1Known ? m_dut1->GetValue() : 0.0;
-  request.safety = m_safety->GetSelection() == 1 ? AlmanacSafety::CalculatorComplete
-                                                 : AlmanacSafety::PlanningReference;
+  request.safety = static_cast<AlmanacSafety>(
+      std::max(0, m_safety->GetSelection()));
   request.selfContained = m_selfContained->GetValue();
   request.includeSun = m_sun->GetValue();
   request.includeMoon = m_moon->GetValue();
@@ -354,6 +403,16 @@ AlmanacRequest AlmanacDialog::ReadRequest(wxString* error,
   request.includeInstructions = m_instructions->GetValue();
   request.includeLunar = m_lunar->GetValue();
   request.includeEmergencyGuide = m_emergency->GetValue();
+  request.includeIncrementTables = m_incrementTables->GetValue();
+  request.includeCompactReductionTables = m_reductionTables->GetValue();
+  request.includeDirectReductionTables = m_directTables->GetValue();
+  request.fullDirectReductionCoverage = m_fullDirectTables->GetValue();
+  request.includeAltitudeCorrectionTables = m_altitudeTables->GetValue();
+  request.includeVisualAids = m_visualAids->GetValue();
+  const unsigned intervals[] = {0, 1, 2, 7, 14, 30};
+  request.planningIntervalDays = intervals[std::min(5,
+      std::max(0, m_planningInterval->GetSelection()))];
+  request.monthlyStarData = request.preset == AlmanacPreset::FullGlobalAlmanac;
   request.sightForms = m_sightForms->GetValue();
   request.runningFixForms = m_runningForms->GetValue();
   request.noonPolarisForms = m_noonForms->GetValue();
@@ -364,6 +423,8 @@ AlmanacRequest AlmanacDialog::ReadRequest(wxString* error,
   request.duplex = m_duplex->GetValue();
   request.monochrome = m_monochrome->GetValue();
   request.compact = m_compact->GetValue();
+  request.booklet = m_booklet->GetValue();
+  request.signaturePages = m_signaturePages->GetValue();
 #ifndef UNIT_TESTS
   if (includeRoute && request.coverage == AlmanacCoverage::PlannedRoute &&
       m_route->GetSelection() >= 0 &&
@@ -404,16 +465,22 @@ void AlmanacDialog::UpdateSummary() {
   const AlmanacDocument document = AlmanacGenerator::Estimate(request);
   const double mb = static_cast<double>(document.estimatedBytes) / (1024.0 * 1024.0);
   m_summary->SetLabel(wxString::Format(
-      _("%u days\n%u PDF pages\n%u printed sheets%s\nEstimated PDF: %.2f MB\n\nIncludes:\n%s%s%s%s%s\nPlanning may be route-filtered; ephemeris data for included bodies remains universal."),
+      _("%u days\n%u logical pages\n%u PDF pages\n%u printed sheets%s\nEstimated PDF: %.2f MB\nEstimated generation: %s\n\n%s\n\nIncludes:\n%s%s%s%s%s%s\nPlanning may be route-filtered; ephemeris and paper reduction data remain universal."),
       static_cast<unsigned>((UtcDateTime::ToInstant(request.toUtc) -
                              UtcDateTime::ToInstant(request.fromUtc)).GetDays() + 1),
-      static_cast<unsigned>(document.pages.size()), document.sheets,
+      static_cast<unsigned>(document.pages.size()), document.physicalPdfPages,
+      document.sheets,
       request.duplex ? _(" (duplex)") : "", mb,
+      document.estimatedSeconds < 90
+          ? wxString::Format(_("about %.0f seconds"), document.estimatedSeconds)
+          : wxString::Format(_("about %.1f minutes"), document.estimatedSeconds / 60.0),
+      AlmanacGenerator::DependencyManifest(request),
       request.preset == AlmanacPreset::PassageBrief ? _("Daily planning\n") : _("Hourly daily ephemeris\n"),
       request.includeEvents ? _("Rise/set and twilight\n") : "",
       request.includeRecommendations ? _("Suggested sights\n") : "",
       request.includeCorrections ? _("Corrections and formulae\n") : "",
-      request.includeLunar ? _("Lunar reference/opportunities\n") : ""));
+      request.includeLunar ? _("Lunar reference/opportunities\n") : "",
+      request.includeCompactReductionTables ? _("Calculator-free paper tables\n") : ""));
   m_summary->Wrap(275);
   m_warning->SetLabel(document.warnings.empty() ? wxString() : document.warnings.front());
   m_warning->Wrap(275);
@@ -421,9 +488,23 @@ void AlmanacDialog::UpdateSummary() {
 }
 
 void AlmanacDialog::OnChanged(wxCommandEvent& event) {
+  if (!m_applyingPreset && event.GetEventObject() == m_safety &&
+      m_safety->GetSelection() ==
+          static_cast<int>(AlmanacSafety::CalculatorFree)) {
+    m_selfContained->SetValue(true);
+    m_aries->SetValue(true);
+    m_sun->SetValue(true);
+    m_moon->SetValue(true);
+    m_corrections->SetValue(true);
+    m_instructions->SetValue(true);
+    m_emergency->SetValue(true);
+    m_incrementTables->SetValue(true);
+    m_reductionTables->SetValue(true);
+    m_altitudeTables->SetValue(true);
+  }
   if (!m_applyingPreset && event.GetEventObject() != m_preset &&
-      m_preset->GetSelection() != 3)
-    m_preset->SetSelection(3);
+      m_preset->GetSelection() != 5)
+    m_preset->SetSelection(5);
   event.Skip();
   UpdateSummary();
 }

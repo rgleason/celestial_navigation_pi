@@ -1,5 +1,6 @@
 #include "AlmanacGenerator.h"
 
+#include "AlmanacPaperTables.h"
 #include "BodyCatalog.h"
 #include "NavigationAlgorithms.h"
 #include "UtcDateTime.h"
@@ -110,52 +111,65 @@ wxString CoverageText(const AlmanacRequest& request) {
   return wxString();
 }
 
-AlmanacTable UniversalTable(const AlmanacRequest& request,
-                            const wxDateTime& day) {
-  AlmanacTable table;
-  table.headings.push_back("UTC");
-  table.relativeWidths.push_back(0.6);
-  if (request.includeAries) {
-    table.headings.push_back("Aries GHA");
-    table.relativeWidths.push_back(1.0);
-  }
+double ForwardGhaChange(double from, double to) {
+  double change = Wrap360(to - from);
+  if (change > 180.0) change -= 360.0;
+  return change;
+}
+
+std::vector<AlmanacTable> UniversalTables(const AlmanacRequest& request,
+                                          const wxDateTime& day) {
+  AlmanacTable sunTable;
+  sunTable.headings.push_back("UTC");
+  if (request.includeAries) sunTable.headings.push_back("Aries GHA");
   if (request.includeSun) {
-    table.headings.push_back("Sun GHA");
-    table.headings.push_back("Sun Dec");
-    table.relativeWidths.push_back(1.0);
-    table.relativeWidths.push_back(1.0);
+    sunTable.headings.push_back("Sun GHA");
+    sunTable.headings.push_back("Sun Dec");
+    sunTable.headings.push_back("d");
+    sunTable.headings.push_back("HP");
+    sunTable.headings.push_back("SD");
   }
-  if (request.includeMoon) {
-    table.headings.push_back("Moon GHA");
-    table.headings.push_back("Moon Dec");
-    table.headings.push_back("Moon HP");
-    table.relativeWidths.push_back(1.0);
-    table.relativeWidths.push_back(1.0);
-    table.relativeWidths.push_back(0.8);
-  }
+  AlmanacTable moonTable;
+  if (request.includeMoon)
+    moonTable.headings = {"UTC", "Moon GHA", "v", "Moon Dec", "d", "HP", "SD"};
   for (int hour = 0; hour < 24; ++hour) {
     const wxDateTime utc = AtHour(day, hour);
     const wxDateTime ut1 = UtcDateTime::AddSeconds(utc, request.dut1Seconds);
+    const wxDateTime nextUt1 = UtcDateTime::AddSeconds(ut1, 3600.0);
     const BodyState sun = CelestialEphemeris::Evaluate("Sun", ut1, 0, 0);
     const BodyState moon = CelestialEphemeris::Evaluate("Moon", ut1, 0, 0);
+    const BodyState nextSun = CelestialEphemeris::Evaluate("Sun", nextUt1, 0, 0);
+    const BodyState nextMoon = CelestialEphemeris::Evaluate("Moon", nextUt1, 0, 0);
     const BodyState polaris =
         CelestialEphemeris::Evaluate("Polaris", ut1, 0, 0);
     const double aries = Wrap360(polaris.gha - polaris.sha);
-    std::vector<wxString> row;
-    row.push_back(wxString::Format("%02d", hour));
-    if (request.includeAries) row.push_back(Angle(aries));
+    std::vector<wxString> sunRow{wxString::Format("%02d", hour)};
+    if (request.includeAries) sunRow.push_back(Angle(aries));
     if (request.includeSun) {
-      row.push_back(Angle(sun.gha));
-      row.push_back(Angle(sun.declination, true));
+      sunRow.push_back(Angle(sun.gha));
+      sunRow.push_back(Angle(sun.declination, true));
+      sunRow.push_back(wxString::Format("%+.1f'",
+          (nextSun.declination - sun.declination) * 60.0));
+      sunRow.push_back(wxString::Format("%.1f'", sun.horizontalParallax * 60.0));
+      sunRow.push_back(wxString::Format("%.1f'", sun.semidiameter * 60.0));
     }
+    sunTable.rows.push_back(sunRow);
     if (request.includeMoon) {
-      row.push_back(Angle(moon.gha));
-      row.push_back(Angle(moon.declination, true));
-      row.push_back(wxString::Format("%.1f'", moon.horizontalParallax * 60.0));
+      const double v = ForwardGhaChange(moon.gha, nextMoon.gha) * 60.0 -
+                       (14.0 * 60.0 + 19.0);
+      moonTable.rows.push_back(
+          {wxString::Format("%02d", hour), Angle(moon.gha),
+           wxString::Format("%+.1f'", v), Angle(moon.declination, true),
+           wxString::Format("%+.1f'",
+                            (nextMoon.declination - moon.declination) * 60.0),
+           wxString::Format("%.1f'", moon.horizontalParallax * 60.0),
+           wxString::Format("%.1f'", moon.semidiameter * 60.0)});
     }
-    table.rows.push_back(row);
   }
-  return table;
+  std::vector<AlmanacTable> tables;
+  if (request.includeAries || request.includeSun) tables.push_back(sunTable);
+  if (request.includeMoon) tables.push_back(moonTable);
+  return tables;
 }
 
 AlmanacTable PlanetTable(const AlmanacRequest& request,
@@ -177,26 +191,44 @@ AlmanacTable PlanetTable(const AlmanacRequest& request,
   return table;
 }
 
-AlmanacTable PlanetHourlyTable(const AlmanacRequest& request,
-                               const wxDateTime& day) {
-  AlmanacTable table;
-  table.headings = {"UTC", "Venus GHA", "Dec", "Mars GHA", "Dec",
-                    "Jupiter GHA", "Dec", "Saturn GHA", "Dec"};
-  table.relativeWidths = {0.5, 1, 0.85, 1, 0.85, 1, 0.85, 1, 0.85};
+std::vector<AlmanacTable> PlanetHourlyTables(const AlmanacRequest& request,
+                                             const wxDateTime& day) {
   const char* names[] = {"Venus", "Mars", "Jupiter", "Saturn"};
-  for (int hour = 0; hour < 24; ++hour) {
-    std::vector<wxString> row;
-    row.push_back(wxString::Format("%02d", hour));
-    for (const char* name : names) {
-      const BodyState state = CelestialEphemeris::Evaluate(
-          name, UtcDateTime::AddSeconds(AtHour(day, hour), request.dut1Seconds),
-          0, 0);
-      row.push_back(Angle(state.gha));
-      row.push_back(Angle(state.declination, true));
+  std::vector<AlmanacTable> tables;
+  for (unsigned pair = 0; pair < 2; ++pair) {
+    AlmanacTable table;
+    table.headings.push_back("UTC");
+    for (unsigned offset = 0; offset < 2; ++offset) {
+      const wxString name = names[pair * 2 + offset];
+      table.headings.push_back(name + " GHA");
+      table.headings.push_back("v");
+      table.headings.push_back("Dec");
+      table.headings.push_back("d");
+      table.headings.push_back("HP/SD");
     }
-    table.rows.push_back(row);
+    for (int hour = 0; hour < 24; ++hour) {
+      std::vector<wxString> row{wxString::Format("%02d", hour)};
+      const wxDateTime utc = UtcDateTime::AddSeconds(
+          AtHour(day, hour), request.dut1Seconds);
+      for (unsigned offset = 0; offset < 2; ++offset) {
+        const char* name = names[pair * 2 + offset];
+        const BodyState state = CelestialEphemeris::Evaluate(name, utc, 0, 0);
+        const BodyState next = CelestialEphemeris::Evaluate(
+            name, UtcDateTime::AddSeconds(utc, 3600.0), 0, 0);
+        const double v = ForwardGhaChange(state.gha, next.gha) * 60.0 - 900.0;
+        row.push_back(Angle(state.gha));
+        row.push_back(wxString::Format("%+.1f'", v));
+        row.push_back(Angle(state.declination, true));
+        row.push_back(wxString::Format("%+.1f'",
+                                       (next.declination - state.declination) * 60.0));
+        row.push_back(wxString::Format("%.1f/%.1f'",
+            state.horizontalParallax * 60.0, state.semidiameter * 60.0));
+      }
+      table.rows.push_back(row);
+    }
+    tables.push_back(table);
   }
-  return table;
+  return tables;
 }
 
 const std::vector<wxString>& OfficialNavigationalStars() {
@@ -295,21 +327,27 @@ void PdfText(std::ostringstream& stream, double x, double y, double size,
 }
 
 std::string RenderPage(const AlmanacPage& page, double width, double height,
-                       unsigned pageNumber, unsigned totalPages) {
+                       unsigned pageNumber, unsigned totalPages,
+                       bool compact) {
   std::ostringstream stream;
-  const double left = 42.0;
+  const double left = compact ? 36.0 : 42.0;
+  const size_t wrapWidth = static_cast<size_t>(std::max(48.0,
+      (width - 2.0 * left) / 5.5));
   double y = height - 44.0;
-  PdfText(stream, left, y, 16, page.title, true);
+  PdfText(stream, left, y, compact ? 15 : 16, page.title, true);
   y -= 19.0;
   if (!page.subtitle.empty()) {
-    PdfText(stream, left, y, 9, page.subtitle);
-    y -= 15.0;
+    for (const wxString& line : Wrap(page.subtitle, wrapWidth)) {
+      PdfText(stream, left, y, 9, line);
+      y -= 11.5;
+    }
+    y -= 3.5;
   }
   stream << "0.65 w " << left << " " << y << " m " << width - left
          << " " << y << " l S\n";
   y -= 15.0;
   for (const wxString& paragraph : page.paragraphs) {
-    for (const wxString& line : Wrap(paragraph, 94)) {
+    for (const wxString& line : Wrap(paragraph, wrapWidth)) {
       PdfText(stream, left, y, 9, line);
       y -= 11.5;
     }
@@ -320,7 +358,9 @@ std::string RenderPage(const AlmanacPage& page, double width, double height,
     tableLines += table.rows.size() + 1;
   const double chartReserve = page.chart.empty() ? 0.0 : 155.0;
   const double fittedRowHeight = tableLines
-      ? std::max(7.5, std::min(13.0, (y - 55.0 - chartReserve) / tableLines))
+      ? std::max(compact ? 7.0 : 7.5,
+                 std::min(compact ? 11.5 : 13.0,
+                          (y - 55.0 - chartReserve) / tableLines))
       : 13.0;
   for (const AlmanacTable& table : page.tables) {
     if (y < 100) break;
@@ -354,6 +394,67 @@ std::string RenderPage(const AlmanacPage& page, double width, double height,
              << " l S\n";
     }
     y -= 8.0;
+  }
+  if (!page.plots.empty() && y > 150) {
+    const double plotHeight = std::min(230.0,
+        (y - 50.0 - 18.0 * page.plots.size()) / page.plots.size());
+    for (size_t plotIndex = 0; plotIndex < page.plots.size(); ++plotIndex) {
+      const AlmanacPlot& plot = page.plots[plotIndex];
+      if (plotHeight < 90.0 || y - plotHeight < 40.0) break;
+      const double x0 = left + 35.0, x1 = width - left - 10.0;
+      const double top = y - 18.0, bottom = top - plotHeight;
+      PdfText(stream, left, y - 8.0, 9.0, plot.title, true);
+      stream << "0.35 w " << x0 << " " << bottom << " m " << x1 << " "
+             << bottom << " l " << x1 << " " << top << " l " << x0 << " "
+             << top << " l h S\n";
+      for (unsigned tick = 0; tick <= 4; ++tick) {
+        const double px = x0 + (x1 - x0) * tick / 4.0;
+        const double value = plot.xMinimum +
+                             (plot.xMaximum - plot.xMinimum) * tick / 4.0;
+        stream << "0.15 w " << px << " " << bottom << " m " << px << " "
+               << top << " l S\n";
+        PdfText(stream, px - 8.0, bottom - 12.0, 6.5,
+                wxString::Format("%.1f", value));
+        const double py = bottom + (top - bottom) * tick / 4.0;
+        const double yValue = plot.yMinimum +
+                              (plot.yMaximum - plot.yMinimum) * tick / 4.0;
+        stream << x0 << " " << py << " m " << x1 << " " << py << " l S\n";
+        PdfText(stream, left, py - 2.0, 6.5,
+                wxString::Format("%.1f", yValue));
+      }
+      PdfText(stream, (x0 + x1) / 2.0 - 25.0, bottom - 24.0, 7.0,
+              plot.xLabel);
+      size_t seriesIndex = 0;
+      for (const AlmanacPlotSeries& series : plot.series) {
+        const size_t count = std::min(series.x.size(), series.y.size());
+        if (count < 2) continue;
+        const unsigned dash = static_cast<unsigned>(seriesIndex % 4);
+        if (dash == 1) stream << "[5 3] 0 d\n";
+        else if (dash == 2) stream << "[2 2] 0 d\n";
+        else if (dash == 3) stream << "[8 2 2 2] 0 d\n";
+        else stream << "[] 0 d\n";
+        bool started = false;
+        for (size_t point = 0; point < count; ++point) {
+          const double px = x0 + (series.x[point] - plot.xMinimum) /
+              (plot.xMaximum - plot.xMinimum) * (x1 - x0);
+          const double py = bottom + (series.y[point] - plot.yMinimum) /
+              (plot.yMaximum - plot.yMinimum) * (top - bottom);
+          if (px < x0 || px > x1 || py < bottom || py > top) {
+            if (started) stream << "S\n";
+            started = false;
+            continue;
+          }
+          stream << px << " " << py << (started ? " l " : " m ");
+          started = true;
+        }
+        if (started) stream << "S\n";
+        PdfText(stream, x0 + seriesIndex * 78.0, top + 4.0, 6.5,
+                series.label);
+        ++seriesIndex;
+      }
+      stream << "[] 0 d\n";
+      y = bottom - 35.0;
+    }
   }
   if (!page.chart.empty() && y > 150) {
     const double radius = std::min(110.0, (y - 45.0) / 2.0);
@@ -392,6 +493,16 @@ void AlmanacGenerator::ApplyPreset(AlmanacPreset preset,
   request->includePlanets = request->includeEvents = true;
   request->includeMoonInformation = request->includeRecommendations = true;
   request->usefulPlanetsOnly = true;
+  request->includeIncrementTables = false;
+  request->includeCompactReductionTables = false;
+  request->includeDirectReductionTables = false;
+  request->fullDirectReductionCoverage = false;
+  request->includeAltitudeCorrectionTables = false;
+  request->includeVisualAids = true;
+  request->monthlyStarData = false;
+  request->planningIntervalDays = 1;
+  request->booklet = false;
+  request->signaturePages = 16;
   if (preset == AlmanacPreset::PassageBrief) {
     request->safety = AlmanacSafety::PlanningReference;
     request->selfContained = false;
@@ -415,6 +526,20 @@ void AlmanacGenerator::ApplyPreset(AlmanacPreset preset,
     request->runningFixForms = request->noonPolarisForms = 2;
     request->lunarForms = 2;
     request->watchForms = 1;
+  } else if (preset == AlmanacPreset::CalculatorFreeVoyage) {
+    request->safety = AlmanacSafety::CalculatorFree;
+    request->selfContained = true;
+    request->includeStars = request->includeStarCharts = true;
+    request->includeCorrections = request->includeInstructions = true;
+    request->includeLunar = request->includeEmergencyGuide = true;
+    request->includeIncrementTables = true;
+    request->includeCompactReductionTables = true;
+    request->includeAltitudeCorrectionTables = true;
+    request->includeDirectReductionTables = true;
+    request->sightForms = 6;
+    request->runningFixForms = request->noonPolarisForms = 3;
+    request->lunarForms = 3;
+    request->watchForms = 2;
   } else if (preset == AlmanacPreset::CelestialNavigator) {
     request->safety = AlmanacSafety::CalculatorComplete;
     request->selfContained = true;
@@ -426,6 +551,25 @@ void AlmanacGenerator::ApplyPreset(AlmanacPreset preset,
     request->runningFixForms = 4;
     request->noonPolarisForms = request->lunarForms = 3;
     request->watchForms = 2;
+  } else if (preset == AlmanacPreset::FullGlobalAlmanac) {
+    request->coverage = AlmanacCoverage::Global;
+    request->safety = AlmanacSafety::CalculatorFree;
+    request->selfContained = true;
+    request->includeStars = request->includeStarCharts = true;
+    request->includeCorrections = request->includeInstructions = true;
+    request->includeLunar = request->includeEmergencyGuide = true;
+    request->usefulPlanetsOnly = false;
+    request->includeIncrementTables = true;
+    request->includeCompactReductionTables = true;
+    request->includeAltitudeCorrectionTables = true;
+    request->includeDirectReductionTables = true;
+    request->fullDirectReductionCoverage = true;
+    request->monthlyStarData = true;
+    request->planningIntervalDays = 30;
+    request->sightForms = 10;
+    request->runningFixForms = 5;
+    request->noonPolarisForms = request->lunarForms = 4;
+    request->watchForms = 3;
   }
 }
 
@@ -433,19 +577,66 @@ AlmanacDocument AlmanacGenerator::Estimate(const AlmanacRequest& request) {
   AlmanacDocument document;
   const unsigned days = InclusiveDays(request);
   unsigned pages = 2;  // cover and contents
-  pages += days * (request.preset == AlmanacPreset::PassageBrief ? 1 : 2);
+  if (request.preset != AlmanacPreset::PassageBrief) pages += days;
   if (request.preset != AlmanacPreset::PassageBrief && request.includePlanets)
     pages += days;
-  if (request.includeStars) pages += 3;
+  const unsigned cadence = request.planningIntervalDays;
+  unsigned planningPages = 0;
+  if (cadence) {
+    planningPages = (days + cadence - 1) / cadence;
+    pages += planningPages;
+    if (request.includeVisualAids) pages += planningPages;
+    if (request.includeVisualAids && request.includeLunar)
+      pages += planningPages;
+  }
+  if (request.includeStars) {
+    unsigned epochs = 1;
+    if (request.monthlyStarData && days) {
+      epochs = 0;
+      int previousYear = -1;
+      int previousMonth = -1;
+      for (unsigned day = 0; day < days; ++day) {
+        const wxDateTime date = DayAt(request, day);
+        if (date.GetYear() != previousYear ||
+            static_cast<int>(date.GetMonth()) != previousMonth) {
+          ++epochs;
+          previousYear = date.GetYear();
+          previousMonth = static_cast<int>(date.GetMonth());
+        }
+      }
+    }
+    pages += 3 * epochs;
+  }
   if (request.includeInstructions) pages += 3;  // reduction, interpolation, noon
   if (request.includeCorrections) pages += 1;
   if (request.includeLunar) pages += 1;
   if (request.includeEmergencyGuide) pages += 1;
+  const unsigned paperPages = AlmanacPaperTables::PageCount(request);
+  pages += paperPages;
   pages += request.sightForms + request.runningFixForms +
            request.noonPolarisForms + request.lunarForms + request.watchForms;
   document.pages.resize(pages);
-  document.sheets = request.duplex ? (pages + 1) / 2 : pages;
-  document.estimatedBytes = 1400 + pages * 2400;
+  const unsigned padded = request.booklet ? ((pages + 3) / 4) * 4 : pages;
+  document.physicalPdfPages = request.booklet ? padded / 2 : pages;
+  document.sheets = request.booklet ? padded / 4
+                                    : (request.duplex ? (pages + 1) / 2 : pages);
+  size_t estimatedBytes = 1400 + static_cast<size_t>(pages) * 9000;
+  if (request.includeIncrementTables)
+    estimatedBytes += AlmanacPaperTables::IncrementPageCount() * 36000;
+  if (request.includeCompactReductionTables)
+    estimatedBytes += AlmanacPaperTables::ReductionPageCount() * 26000;
+  if (request.includeAltitudeCorrectionTables)
+    estimatedBytes += AlmanacPaperTables::AltitudeCorrectionPageCount() * 16000;
+  if (request.includeDirectReductionTables)
+    estimatedBytes +=
+        AlmanacPaperTables::DirectReductionPageCount(request) * 26000;
+  document.estimatedBytes = estimatedBytes;
+  document.estimatedSeconds = days * 0.05 + planningPages * 0.06 +
+                              paperPages * 0.001;
+  if (pages > 5000)
+    document.warnings.push_back(wxString::Format(
+        "Very large edition: %u logical pages. Check storage, print scope and a small sample before generating the full document.",
+        pages));
   return document;
 }
 
@@ -454,9 +645,9 @@ bool AlmanacGenerator::Validate(AlmanacRequest* request, wxString* error) {
     if (error) *error = "Enter a valid UTC date range.";
     return false;
   }
-  if (InclusiveDays(*request) == 0 || InclusiveDays(*request) > 93) {
+  if (InclusiveDays(*request) == 0 || InclusiveDays(*request) > 366) {
     if (error)
-      *error = "Gate 6 voyage output supports 1 to 93 inclusive days.";
+      *error = "Almanac output supports 1 to 366 inclusive days.";
     return false;
   }
   if (request->coverage == AlmanacCoverage::FixedPosition &&
@@ -470,7 +661,28 @@ bool AlmanacGenerator::Validate(AlmanacRequest* request, wxString* error) {
     if (error) *error = "Select an OpenCPN route containing at least two waypoints.";
     return false;
   }
-  if (request->selfContained || request->safety == AlmanacSafety::CalculatorComplete) {
+  if (request->signaturePages < 4 || request->signaturePages > 64 ||
+      request->signaturePages % 4 != 0) {
+    if (error) *error = "Booklet signature size must be a multiple of four from 4 to 64 pages.";
+    return false;
+  }
+  if (request->planningIntervalDays > 31) {
+    if (error) *error = "Planning-page interval must be 0 to 31 days.";
+    return false;
+  }
+  if (request->fullDirectReductionCoverage)
+    request->includeDirectReductionTables = true;
+  if (request->safety == AlmanacSafety::CalculatorFree) {
+    request->selfContained = true;
+    request->includeIncrementTables = true;
+    request->includeCompactReductionTables = true;
+    request->includeAltitudeCorrectionTables = true;
+    request->includeCorrections = true;
+    request->includeInstructions = true;
+    request->includeEmergencyGuide = true;
+    request->includeAries = request->includeSun = request->includeMoon = true;
+  } else if (request->selfContained ||
+             request->safety == AlmanacSafety::CalculatorComplete) {
     request->selfContained = true;
     request->safety = AlmanacSafety::CalculatorComplete;
     request->includeCorrections = true;
@@ -479,6 +691,21 @@ bool AlmanacGenerator::Validate(AlmanacRequest* request, wxString* error) {
     request->includeAries = request->includeSun = request->includeMoon = true;
   }
   return true;
+}
+
+wxString AlmanacGenerator::DependencyManifest(const AlmanacRequest& request) {
+  if (request.safety == AlmanacSafety::CalculatorFree &&
+      request.includeIncrementTables && request.includeCompactReductionTables &&
+      request.includeAltitudeCorrectionTables && request.includeAries &&
+      request.includeSun && request.includeMoon && request.includeInstructions &&
+      request.includeEmergencyGuide)
+    return request.includeDirectReductionTables
+        ? "COMPLETE: CALCULATOR-FREE - hourly ephemeris; increments and v/d; altitude corrections; direct Hc/Zn plus compact universal reduction; procedures; plotting forms."
+        : "COMPLETE: CALCULATOR-FREE - hourly ephemeris; increments and v/d; altitude corrections; compact universal reduction; procedures; plotting forms.";
+  if (request.safety == AlmanacSafety::CalculatorComplete &&
+      request.includeInstructions && request.includeCorrections)
+    return "COMPLETE: SCIENTIFIC-CALCULATOR - hourly ephemeris; correction formulae; reduction formulae; procedures and forms.";
+  return "PLANNING REFERENCE ONLY - retain an independent complete reduction reference.";
 }
 
 AlmanacRoutePoint AlmanacGenerator::PositionForDay(
@@ -525,7 +752,7 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
                                                : request.voyageName;
   document.generatedUtc = UtcDateTime::FormatIsoUtc(UtcDateTime::Now());
   document.manifest = wxString::Format(
-      "Celestial Navigation 2.6; VSOP87D/ELP astronomical engine; DUT1 %+.3f s (%s)",
+      "Celestial Navigation 2.7; VSOP87D/ELP astronomical engine; DUT1 %+.3f s (%s)",
       request.dut1Seconds, request.dut1Known ? "user supplied" : "assumed");
   if (!request.dut1Known)
     document.warnings.push_back(
@@ -543,9 +770,12 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
   cover.paragraphs = {
       "Generated by the OpenCPN Celestial Navigation plugin. This is an independent voyage reference, not an official Nautical Almanac publication.",
       CoverageText(request), document.manifest,
-      request.selfContained
-          ? "SELF-CONTAINED CALCULATOR BACKUP: includes the astronomical quantities, corrections, formulae and forms needed for reduction with a scientific calculator. Sextant, accurate time, plotting tools and competent navigation practice are still required."
-          : "PASSAGE PLANNING REFERENCE: retain a complete sight-reduction reference or working electronic calculator.",
+      AlmanacGenerator::DependencyManifest(request),
+      request.safety == AlmanacSafety::CalculatorFree
+          ? "PAPER-ONLY BACKUP: no computer or calculator is required after printing. Sextant, accurate time, pencil, plotting tools and competent navigation practice are still required."
+          : (request.selfContained
+             ? "SCIENTIFIC-CALCULATOR BACKUP: includes astronomical quantities, corrections, formulae and forms."
+             : "PASSAGE PLANNING REFERENCE: retain a complete sight-reduction reference."),
       "Vessel: ____________________    Primary watch: ____________________",
       "Watch error at departure: __________ s    Watch rate: __________ s/day"};
   for (const wxString& warning : document.warnings)
@@ -562,7 +792,8 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
       ephemeris.title = UtcDateTime::FormatUtc(day, "%A %d %B %Y");
       ephemeris.subtitle =
           "Hourly geocentric quantities. UTC labels; Earth rotation evaluated using UTC + DUT1.";
-      ephemeris.tables.push_back(UniversalTable(request, day));
+      const std::vector<AlmanacTable> universal = UniversalTables(request, day);
+      ephemeris.tables.insert(ephemeris.tables.end(), universal.begin(), universal.end());
       document.pages.push_back(ephemeris);
       if (request.includePlanets) {
         AlmanacPage planets;
@@ -571,10 +802,17 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
                         " - navigational planets";
         planets.subtitle =
             "Hourly geocentric GHA and declination. Mercury is not a Nautical Almanac navigational planet.";
-        planets.tables.push_back(PlanetHourlyTable(request, day));
+        const std::vector<AlmanacTable> planetTables =
+            PlanetHourlyTables(request, day);
+        planets.tables.insert(planets.tables.end(), planetTables.begin(),
+                              planetTables.end());
         document.pages.push_back(planets);
       }
     }
+
+    if (!request.planningIntervalDays ||
+        dayIndex % request.planningIntervalDays != 0)
+      continue;
 
     AlmanacPage planning;
     planning.section = "Daily planning";
@@ -675,16 +913,146 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
       planning.tables.push_back(lunar);
     }
     document.pages.push_back(planning);
+
+    if (request.includeVisualAids) {
+      AlmanacPage visual;
+      visual.section = "Visual planning aids";
+      visual.title = UtcDateTime::FormatUtc(day, "%A %d %B %Y") +
+                     " - expected body altitude";
+      visual.subtitle = wxString::Format(
+          "At planning position %.4f, %.4f. Curves aid sight selection; use the tabular ephemeris for reduction.",
+          position.latitude, position.longitude);
+      AlmanacPlot altitudePlot;
+      altitudePlot.title = "Apparent altitude through the UTC day";
+      altitudePlot.xLabel = "UTC hour";
+      altitudePlot.yLabel = "Altitude degrees";
+      altitudePlot.xMinimum = 0.0;
+      altitudePlot.xMaximum = 24.0;
+      altitudePlot.yMinimum = -20.0;
+      altitudePlot.yMaximum = 90.0;
+      std::vector<wxString> curveBodies;
+      if (request.includeSun) curveBodies.push_back("Sun");
+      if (request.includeMoon) curveBodies.push_back("Moon");
+      if (request.includePlanets) curveBodies.push_back("Venus");
+      if (request.includeStars) curveBodies.push_back("Sirius");
+      for (const wxString& name : curveBodies) {
+        AlmanacPlotSeries series;
+        series.label = name;
+        for (unsigned sample = 0; sample <= 24; ++sample) {
+          const wxDateTime sampleUtc = UtcDateTime::AddSeconds(day, sample * 3600.0);
+          const BodyState state = CelestialEphemeris::Evaluate(
+              name, sampleUtc, position.latitude, position.longitude);
+          if (!state.valid) continue;
+          series.x.push_back(sample);
+          series.y.push_back(state.apparentAltitude);
+        }
+        altitudePlot.series.push_back(series);
+      }
+      visual.plots.push_back(altitudePlot);
+      document.pages.push_back(visual);
+
+      if (request.includeLunar) {
+        const char* targets[] = {"Sun", "Venus", "Mars", "Jupiter", "Saturn",
+                                 "Aldebaran", "Antares", "Spica", "Regulus"};
+        wxString target = "Sun";
+        double bestRate = 0.0;
+        for (const char* candidate : targets) {
+          const BodyState moon0 = CelestialEphemeris::Evaluate(
+              "Moon", planningTime, position.latitude, position.longitude);
+          const BodyState body0 = CelestialEphemeris::Evaluate(
+              candidate, planningTime, position.latitude, position.longitude);
+          const wxDateTime later = UtcDateTime::AddSeconds(planningTime, 600);
+          const BodyState moon1 = CelestialEphemeris::Evaluate(
+              "Moon", later, position.latitude, position.longitude);
+          const BodyState body1 = CelestialEphemeris::Evaluate(
+              candidate, later, position.latitude, position.longitude);
+          if (!moon0.valid || !body0.valid || !moon1.valid || !body1.valid)
+            continue;
+          const double distance = Separation(moon0, body0);
+          const double rate = (Separation(moon1, body1) - distance) * 6.0;
+          if (distance > 15 && distance < 120 && std::fabs(rate) > bestRate) {
+            bestRate = std::fabs(rate);
+            target = candidate;
+          }
+        }
+        AlmanacPage lunarVisual;
+        lunarVisual.section = "Visual planning aids";
+        lunarVisual.title = UtcDateTime::FormatUtc(day, "%A %d %B %Y") +
+                            " - lunar-distance opportunity";
+        lunarVisual.subtitle = "Planning curves only. Clear each observed lunar distance and use tabular/interpolated ephemeris values for the final solution.";
+        AlmanacPlot distancePlot;
+        distancePlot.title = "Moon-" + target + " geocentric separation";
+        distancePlot.xLabel = "UTC hour";
+        distancePlot.yLabel = "Distance degrees";
+        distancePlot.xMinimum = 0;
+        distancePlot.xMaximum = 24;
+        distancePlot.yMinimum = 0;
+        distancePlot.yMaximum = 180;
+        AlmanacPlot ratePlot;
+        ratePlot.title = "Lunar-distance rate (timing sensitivity)";
+        ratePlot.xLabel = "UTC hour";
+        ratePlot.yLabel = "Arcminutes per minute";
+        ratePlot.xMinimum = 0;
+        ratePlot.xMaximum = 24;
+        ratePlot.yMinimum = -1;
+        ratePlot.yMaximum = 1;
+        AlmanacPlotSeries distances, rates;
+        distances.label = "Distance";
+        rates.label = "Rate";
+        for (unsigned sample = 0; sample <= 24; ++sample) {
+          const wxDateTime when = UtcDateTime::AddSeconds(day, sample * 3600.0);
+          const BodyState moon0 = CelestialEphemeris::Evaluate(
+              "Moon", when, position.latitude, position.longitude);
+          const BodyState body0 = CelestialEphemeris::Evaluate(
+              target, when, position.latitude, position.longitude);
+          const wxDateTime later = UtcDateTime::AddSeconds(when, 600);
+          const BodyState moon1 = CelestialEphemeris::Evaluate(
+              "Moon", later, position.latitude, position.longitude);
+          const BodyState body1 = CelestialEphemeris::Evaluate(
+              target, later, position.latitude, position.longitude);
+          if (!moon0.valid || !body0.valid || !moon1.valid || !body1.valid)
+            continue;
+          const double distance = Separation(moon0, body0);
+          distances.x.push_back(sample);
+          distances.y.push_back(distance);
+          rates.x.push_back(sample);
+          rates.y.push_back((Separation(moon1, body1) - distance) * 6.0);
+        }
+        distancePlot.series.push_back(distances);
+        ratePlot.series.push_back(rates);
+        lunarVisual.plots.push_back(distancePlot);
+        lunarVisual.plots.push_back(ratePlot);
+        document.pages.push_back(lunarVisual);
+      }
+    }
   }
 
   if (request.includeStars) {
-    const wxDateTime epoch = DayAt(request, days / 2);
+    std::vector<wxDateTime> epochs;
+    if (request.monthlyStarData) {
+      int previousYear = -1;
+      int previousMonth = -1;
+      for (unsigned day = 0; day < days; ++day) {
+        const wxDateTime date = DayAt(request, day);
+        if (date.GetYear() != previousYear ||
+            static_cast<int>(date.GetMonth()) != previousMonth) {
+          epochs.push_back(date);
+          previousYear = date.GetYear();
+          previousMonth = static_cast<int>(date.GetMonth());
+        }
+      }
+    } else {
+      epochs.push_back(DayAt(request, days / 2));
+    }
     const std::vector<wxString>& stars = OfficialNavigationalStars();
-    for (unsigned part = 0; part < 3; ++part) {
+    for (const wxDateTime& epoch : epochs) {
+     for (unsigned part = 0; part < 3; ++part) {
       AlmanacPage page;
       page.section = "Star data";
       page.title = wxString::Format("57 navigational stars - part %u", part + 1);
-      page.subtitle = "SHA and declination evaluated at 00:00 UT1 near the middle of the selected voyage.";
+      page.subtitle = wxString::Format(
+          "SHA and declination epoch %s 00:00 UT1.",
+          UtcDateTime::FormatUtc(epoch, "%d %b %Y"));
       AlmanacTable table;
       table.headings = {"No.", "Star", "SHA", "Declination", "Magnitude"};
       const size_t first = part * 19;
@@ -709,6 +1077,7 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
             Angle(polaris.sha), Angle(polaris.declination, true)));
       }
       document.pages.push_back(page);
+     }
     }
   }
 
@@ -768,6 +1137,8 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
        "4. Cross-check with independent bodies and reject no sight merely because it is inconvenient: retain residuals and explain exclusions.",
        "5. Treat this document as a calculation reference, not a substitute for training, judgement, a maintained sextant and redundant timekeeping."});
 
+  AlmanacPaperTables::Append(request, &document);
+
   AddFormPages(&document, "Sight reduction record", request.sightForms,
                {"Body", "UTC/watch", "Hs", "Corrections", "Ho", "Hc", "Zn", "Intercept"});
   AddFormPages(&document, "Running-fix record", request.runningFixForms,
@@ -792,9 +1163,12 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
     toc.rows.push_back({range.first, wxString::Format("%u", range.second.first),
                         wxString::Format("%u", range.second.second)});
   document.pages[1].tables[0] = toc;
-  document.sheets = request.duplex
-                        ? static_cast<unsigned>((document.pages.size() + 1) / 2)
-                        : static_cast<unsigned>(document.pages.size());
+  const unsigned logical = static_cast<unsigned>(document.pages.size());
+  const unsigned padded = request.booklet ? ((logical + 3) / 4) * 4 : logical;
+  document.physicalPdfPages = request.booklet ? padded / 2 : logical;
+  document.sheets = request.booklet ? padded / 4
+                                    : (request.duplex ? (logical + 1) / 2
+                                                      : logical);
   document.estimatedBytes = 1400 + document.pages.size() * 2400;
   return document;
 }
@@ -840,7 +1214,31 @@ bool AlmanacPdfWriter::Write(const AlmanacDocument& document,
     width = 419.53;
     height = 595.28;
   }
-  if (request.landscape) std::swap(width, height);
+  if (request.landscape || request.booklet) std::swap(width, height);
+
+  struct Spread { int left; int right; };
+  std::vector<Spread> spreads;
+  if (request.booklet) {
+    const unsigned total = static_cast<unsigned>(document.pages.size());
+    for (unsigned start = 0; start < total;) {
+      const unsigned actual = std::min(request.signaturePages, total - start);
+      const unsigned padded = ((actual + 3) / 4) * 4;
+      unsigned low = 0, high = padded - 1;
+      while (low < high) {
+        Spread front = {high < actual ? static_cast<int>(start + high) : -1,
+                        low < actual ? static_cast<int>(start + low) : -1};
+        spreads.push_back(front);
+        --high;
+        ++low;
+        Spread back = {low < actual ? static_cast<int>(start + low) : -1,
+                       high < actual ? static_cast<int>(start + high) : -1};
+        spreads.push_back(back);
+        ++low;
+        --high;
+      }
+      start += actual;
+    }
+  }
 
   std::vector<std::string> objects;
   objects.push_back("<< /Type /Catalog /Pages 2 0 R >>");
@@ -848,9 +1246,36 @@ bool AlmanacPdfWriter::Write(const AlmanacDocument& document,
   objects.push_back("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
   objects.push_back("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
   std::vector<unsigned> pageObjects;
-  for (size_t i = 0; i < document.pages.size(); ++i) {
-    const std::string content = RenderPage(document.pages[i], width, height,
-        static_cast<unsigned>(i + 1), static_cast<unsigned>(document.pages.size()));
+  const size_t physicalPages = request.booklet ? spreads.size()
+                                               : document.pages.size();
+  for (size_t i = 0; i < physicalPages; ++i) {
+    std::string content;
+    if (request.booklet) {
+      std::ostringstream combined;
+      const double logicalWidth = width / 2.0;
+      if (spreads[i].left >= 0) {
+        const unsigned index = static_cast<unsigned>(spreads[i].left);
+        combined << "q\n" << RenderPage(document.pages[index], logicalWidth,
+            height, index + 1, static_cast<unsigned>(document.pages.size()),
+            true)
+                 << "Q\n";
+      }
+      if (spreads[i].right >= 0) {
+        const unsigned index = static_cast<unsigned>(spreads[i].right);
+        combined << "q 1 0 0 1 " << logicalWidth << " 0 cm\n"
+                 << RenderPage(document.pages[index], logicalWidth, height,
+                    index + 1, static_cast<unsigned>(document.pages.size()),
+                    true)
+                 << "Q\n";
+      }
+      combined << "0.35 w " << width / 2.0 << " 10 m " << width / 2.0
+               << " " << height - 10 << " l S\n";
+      content = combined.str();
+    } else {
+      content = RenderPage(document.pages[i], width, height,
+          static_cast<unsigned>(i + 1),
+          static_cast<unsigned>(document.pages.size()), request.compact);
+    }
     const unsigned pageNumber = static_cast<unsigned>(objects.size() + 1);
     const unsigned contentNumber = pageNumber + 1;
     pageObjects.push_back(pageNumber);

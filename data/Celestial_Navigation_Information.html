@@ -365,7 +365,7 @@ sight is plotted and included where a workflow uses visible sights.</p>
 <tr><td>Sun &amp; Moon…</td><td>Open the offline event, body, best-sight, almanac, noon and Polaris planner.</td></tr>
 <tr><td>Analyze Sights…</td><td>Analyze residuals and repeat-observation behaviour.</td></tr>
 <tr><td>Lunar Tools…</td><td>Jointly solve several lunar observations, rank Moon–body pairs and check a sextant against computed angular distances.</td></tr>
-<tr><td>Generate Almanac…</td><td>Build a tailored, completely offline voyage almanac and calculator-complete paper backup as a PDF.</td></tr>
+<tr><td>Generate Almanac…</td><td>Build a tailored, completely offline planning, calculator-complete or calculator-free paper almanac as a PDF.</td></tr>
 <tr><td>Eclipses…</td><td>Search, plot and calculate offline solar-eclipse circumstances.</td></tr>
 <tr><td>Coastal Sextant…</td><td>Use vertical-angle ranging or horizontal-sextant-angle fixing.</td></tr>
 <tr><td>Duplicate / Edit / Delete</td><td>Manage a selected stored sight. Duplicate is useful for a run of sights.</td></tr>
@@ -472,16 +472,57 @@ default 150 NM off-course corridor preselected; all settings remain editable.</p
 <ul>
   <li><strong>Passage Brief</strong> is a compact planning aid. It deliberately omits some reduction reference material.</li>
   <li><strong>Voyage Almanac</strong> is the normal calculator-complete paper backup.</li>
+  <li><strong>Calculator-free Voyage</strong> adds all paper interpolation, correction and reduction dependencies, including direct Hc/Zn and universal Ageton tables.</li>
   <li><strong>Celestial Navigator</strong> provides more forms and fuller planning material.</li>
+  <li><strong>Full Global Annual</strong> selects a complete calendar year, global coverage, monthly star data and the deliberately very large full-declination direct-table option.</li>
   <li><strong>Custom</strong> appears when preset options are changed.</li>
 </ul>
 <p><strong>Self-contained with scientific calculator</strong> means that the
 PDF includes hourly Sun, Moon, Aries and navigational-planet data, the 57
 navigational stars, corrections, formulae, procedures and forms needed to
-perform reductions with an ordinary scientific calculator. It does not mean
-that sextant, accurate time, plotting tools, training or judgement are no
-longer needed. Gate-6 output does not contain the many volumes of global
-precomputed sight-reduction tables needed for calculator-free tabular work.</p>
+perform reductions with an ordinary scientific calculator.</p>
+<p><strong>Self-contained calculator-free paper backup</strong> enforces a
+stronger dependency manifest. After printing, no computer, internet service,
+trigonometric calculator or external almanac is needed. The document includes:</p>
+<ul>
+  <li>hourly GHA, declination, v, d, HP and semidiameter as applicable;</li>
+  <li>60 minute pages with second-specific Sun/planet, Aries and Moon increments and v/d proportional corrections;</li>
+  <li>dip, refraction, atmospheric and Moon limb/parallax correction tables;</li>
+  <li>half-minute Ageton log-cosecant/log-secant tables for universal calculator-free Hc/Zn reduction;</li>
+  <li>optional precomputed direct Hc/Zn tables for the selected latitude and date/body scope;</li>
+  <li>procedures, worked workflow and plotting/record forms.</li>
+</ul>
+<p>The cover must state <strong>COMPLETE: CALCULATOR-FREE</strong> before the
+document is treated as a paper-only backup. A sextant, accurate watch, pencil,
+ruler/dividers, plotting sheets, training and judgement are still required.</p>
+
+<h3>Direct and universal reduction tables</h3>
+<p>The direct Hc/Zn option precomputes whole-degree latitude, declination and
+meridian-angle solutions. It is the quickest and least error-prone paper
+workflow within the chosen scope: enter the nearest rows and interpolate.
+Voyage/date-aware mode includes declinations actually occupied by selected
+bodies and latitude implied by a fixed position, band or route corridor.</p>
+<p><strong>Direct tables for every declination</strong> deliberately expands
+the output and can create tens of thousands of pages with global latitude
+coverage. The live estimate makes this cost visible. Direct-table pruning is
+never a safety dependency: calculator-free output also retains the compact
+universal Ageton tables, so an off-track navigator can reduce a sight without
+extrapolating a route-specific direct table.</p>
+<p>The tables are newly computed, not reproduced pages. The universal compact
+method follows Arthur A. Ageton's public 1931 secant-cosecant construction;
+the direct Hc/Zn layer serves the practical purpose of NGA Pub. 229 in a
+voyage-aware layout. Hourly quantities and v/d notation follow conventional
+Nautical Almanac practice. The generated document remains an independent,
+non-official publication.</p>
+
+<h3>Planning cadence and visual aids</h3>
+<p>Hourly body ephemerides remain daily. The planning-page cadence can be
+daily, every 2/7/14/30 days, or disabled; this is a safe way to compact a long
+edition because it removes only duplicated location-aware planning material.
+Optional curves show expected body altitude, lunar distance and rate through
+the day, plus dip/refraction sensitivity. Curves are planning and gross-error
+aids. Wherever tenths of a minute matter, the familiar printed table remains
+authoritative.</p>
 
 <h3>Coverage</h3>
 <p>The hourly geocentric ephemeris for every included body remains usable
@@ -491,7 +532,7 @@ needed if the vessel leaves the expected track:</p>
 <ul>
   <li><strong>Planned OpenCPN route:</strong> begins at the first waypoint on the From date and advances along cumulative route distance at the selected fallback speed. The corridor states the planning uncertainty; it does not alter universal GHA/declination data.</li>
   <li><strong>Fixed position:</strong> produces events and recommendations for one latitude/longitude.</li>
-  <li><strong>Latitude band:</strong> uses the middle of the band for the present Gate-6 planning page while retaining the band on the manifest. Do not interpret that sample as valid at every longitude.</li>
+  <li><strong>Latitude band:</strong> uses the middle of the band for sample planning pages while direct reduction tables span the selected integer latitudes. Do not interpret the planning sample as valid at every longitude.</li>
   <li><strong>Global:</strong> retains universal ephemeris and uses 0° N, 0° E only as a clearly labelled planning example.</li>
 </ul>
 
@@ -509,6 +550,11 @@ the cover, manifest and opening pages from the same semantic document model
 used by the PDF renderer. Output is first completed as a sibling temporary
 file and then renamed, so a failed calculation does not leave a plausible but
 partial final PDF.</p>
+<p><strong>Booklet imposition</strong> places two logical pages on each
+landscape PDF page and orders them in independently foldable signatures of
+4-64 logical pages. The summary distinguishes logical pages, physical PDF
+pages and printed sheets. Print a trial signature and confirm the printer's
+duplex flip-edge setting before relying on a long run.</p>
 
 <div class="warning"><strong>Check before departure.</strong> Generate the
 actual voyage PDF, open it independently, inspect several daily pages and
@@ -882,6 +928,7 @@ celestial-navigation fix.</p>
 <section>
 <h1 id="glossary">Appendix B — Glossary</h1>
 <dl>
+<dt><strong>Ageton table</strong></dt><dd>A compact universal sight-reduction table using precomputed logarithms of cosecants and secants. It converts spherical-triangle reduction into lookup plus addition/subtraction and provides the off-track fallback when a tailored direct Hc/Zn table does not cover the actual geometry.</dd>
 <dt><strong>Almanac</strong></dt><dd>Tabulation or computation of celestial coordinates and supporting navigation data for stated times.</dd>
 <dt><strong>Altitude</strong></dt><dd>Angular height of a body above the observer's horizon, measured along a vertical circle.</dd>
 <dt><strong>Apparent altitude (Ha)</strong></dt><dd>In this manual, Hs after index and dip/horizon correction, before the main body/atmospheric corrections.</dd>
@@ -890,7 +937,8 @@ celestial-navigation fix.</p>
 <dt><strong>Azimuth</strong></dt><dd>Horizontal direction of a body. Zn is true azimuth clockwise from true north; a raw compass bearing is not Zn until corrected.</dd>
 <dt><strong>Back sight</strong></dt><dd>A sextant observation made with geometry opposite the normal forward observation, requiring correct interpretation of the angle and horizon.</dd>
 <dt><strong>Calculated altitude (Hc)</strong></dt><dd>The altitude predicted for the selected body, time and AP.</dd>
-<dt><strong>Calculator-complete backup</strong></dt><dd>A document containing the ephemeris, corrections, formulae and procedures required to reduce its supported sights using a scientific calculator. It is not calculator-free and does not replace observation instruments, timekeeping, plotting tools or training.</dd>
+<dt><strong>Calculator-complete backup</strong></dt><dd>A document containing the ephemeris, corrections, formulae and procedures required to reduce its supported sights using a scientific calculator.</dd>
+<dt><strong>Calculator-free backup</strong></dt><dd>A dependency-checked paper document containing ephemeris, interpolation, altitude-correction and universal sight-reduction lookup tables, procedures and forms. Once printed, it requires no computer, internet connection, scientific calculator or external almanac, but still requires observation instruments, accurate time, plotting tools, competence and judgement.</dd>
 <dt><strong>Celestial equator</strong></dt><dd>Earth's equatorial plane extended to the celestial sphere.</dd>
 <dt><strong>Celestial sphere</strong></dt><dd>A conceptual sphere on which directions to celestial bodies are represented. Distance to the body is irrelevant to the angular coordinate construction.</dd>
 <dt><strong>Centering error</strong></dt><dd>Sextant arc error caused when the index-arm pivot is not exactly at the geometric centre of the graduated arc; it may vary with measured angle.</dd>
