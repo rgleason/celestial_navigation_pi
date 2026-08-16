@@ -243,15 +243,22 @@ void AlmanacDialog::BuildInterface() {
   body->Add(m_notebook, 1, wxEXPAND | wxALL, 8);
   wxStaticBoxSizer* summaryBox =
       new wxStaticBoxSizer(wxVERTICAL, this, _("Output summary"));
-  m_summary = new wxStaticText(this, wxID_ANY, "", wxDefaultPosition,
-                               wxSize(285, 260));
+  m_summaryPanel = new wxScrolledWindow(
+      this, wxID_ANY, wxDefaultPosition, wxSize(300, 220),
+      wxVSCROLL | wxBORDER_NONE);
+  m_summaryPanel->SetScrollRate(0, 10);
+  wxBoxSizer* summaryContent = new wxBoxSizer(wxVERTICAL);
+  m_summary = new wxStaticText(m_summaryPanel, wxID_ANY, "",
+                               wxDefaultPosition, wxSize(275, -1));
   m_summary->Wrap(275);
-  summaryBox->Add(m_summary, 1, wxEXPAND | wxALL, 8);
-  m_warning = new wxStaticText(this, wxID_ANY, "", wxDefaultPosition,
-                               wxSize(285, 120));
+  summaryContent->Add(m_summary, 0, wxEXPAND | wxALL, 8);
+  m_warning = new wxStaticText(m_summaryPanel, wxID_ANY, "",
+                               wxDefaultPosition, wxSize(275, -1));
   m_warning->SetForegroundColour(wxColour(160, 80, 0));
   m_warning->Wrap(275);
-  summaryBox->Add(m_warning, 0, wxEXPAND | wxALL, 8);
+  summaryContent->Add(m_warning, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
+  m_summaryPanel->SetSizer(summaryContent);
+  summaryBox->Add(m_summaryPanel, 1, wxEXPAND | wxALL, 2);
   wxButton* preview = new wxButton(this, wxID_ANY, _("Preview first pages"));
   summaryBox->Add(preview, 0, wxEXPAND | wxALL, 8);
   body->Add(summaryBox, 0, wxEXPAND | wxTOP | wxBOTTOM | wxRIGHT, 8);
@@ -459,6 +466,8 @@ void AlmanacDialog::UpdateSummary() {
   if (!error.empty()) {
     m_summary->SetLabel(_("The output cannot yet be estimated."));
     m_warning->SetLabel(error);
+    m_summaryPanel->Layout();
+    m_summaryPanel->FitInside();
     return;
   }
   wxBusyCursor busy;
@@ -484,6 +493,8 @@ void AlmanacDialog::UpdateSummary() {
   m_summary->Wrap(275);
   m_warning->SetLabel(document.warnings.empty() ? wxString() : document.warnings.front());
   m_warning->Wrap(275);
+  m_summaryPanel->Layout();
+  m_summaryPanel->FitInside();
   Layout();
 }
 

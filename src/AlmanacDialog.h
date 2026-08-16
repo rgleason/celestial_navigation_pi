@@ -14,6 +14,7 @@ class wxFilePickerCtrl;
 class wxNotebook;
 class wxSpinCtrl;
 class wxSpinCtrlDouble;
+class wxScrolledWindow;
 class wxStaticText;
 class wxTextCtrl;
 
@@ -90,6 +91,7 @@ private:
   wxCheckBox* m_booklet;
   wxSpinCtrl* m_signaturePages;
   wxFilePickerCtrl* m_output;
+  wxScrolledWindow* m_summaryPanel;
   wxStaticText* m_summary;
   wxStaticText* m_warning;
   std::vector<wxString> m_routeGuids;
