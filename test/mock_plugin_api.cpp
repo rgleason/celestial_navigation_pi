@@ -62,7 +62,12 @@ wxWindow* GetOCPNCanvasWindow() { return 0; }
 
 DECL_EXP void PushNMEABuffer(wxString str) {}
 
+int AddCanvasMenuItem(wxMenuItem*, opencpn_plugin*, const char*) { return 73; }
+void RemoveCanvasMenuItem(int, const char*) {}
+
 }  // extern "C"
+
+wxString GetSelectedRouteGUID_Plugin() { return wxString(); }
 
 void RemovePlugInTool(int tool_id) {}
 DECL_EXP int InsertPlugInToolSVG(wxString label, wxString SVGfile,
@@ -313,4 +318,3 @@ extern DECL_EXP wxString GetLocaleCanonicalName() {
 extern "C" DECL_EXP void toSM_Plugin(double lat, double lon, double lat0,
                                      double lon0, double *x, double *y) {
 }
-

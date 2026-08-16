@@ -60,6 +60,7 @@ extern "C" DECL_EXP void destroy_pi(opencpn_plugin* p) { delete p; }
 
 celestial_navigation_pi::celestial_navigation_pi(void* ppimgr)
     : opencpn_plugin_118(ppimgr),
+      m_route_almanac_menu_id(-1),
       m_hasPositionFix(false),
       m_hasCursorPosition(false),
       m_cursorLatitude(0.0),
@@ -124,6 +125,12 @@ int celestial_navigation_pi::Init(void) {
 
   m_pCelestialNavigationDialog = NULL;
 
+  wxMenu routeMenu;
+  m_route_almanac_menu_id = AddCanvasMenuItem(
+      new wxMenuItem(&routeMenu, wxID_ANY,
+                     _("Generate fallback almanac...")),
+      this, "Route");
+
 #ifdef CELESTIAL_ECLIPSE_INTEGRATION_TEST
   wxTheApp->CallAfter([this]() {
     OnToolbarToolCallback(m_leftclick_tool_id);
@@ -153,6 +160,10 @@ int celestial_navigation_pi::Init(void) {
 }
 
 bool celestial_navigation_pi::DeInit(void) {
+  if (m_route_almanac_menu_id >= 0) {
+    RemoveCanvasMenuItem(m_route_almanac_menu_id, "Route");
+    m_route_almanac_menu_id = -1;
+  }
   RemovePlugInTool(m_leftclick_tool_id);
 
   if (m_pCelestialNavigationDialog) {
@@ -161,6 +172,18 @@ bool celestial_navigation_pi::DeInit(void) {
     m_pCelestialNavigationDialog = NULL;
   }
   return true;
+}
+
+void celestial_navigation_pi::OnContextMenuItemCallback(int id) {
+  if (id != m_route_almanac_menu_id) return;
+  const wxString routeGuid = GetSelectedRouteGUID_Plugin();
+  if (routeGuid.empty()) return;
+  if (!m_pCelestialNavigationDialog)
+    OnToolbarToolCallback(m_leftclick_tool_id);
+  if (!m_pCelestialNavigationDialog) return;
+  m_pCelestialNavigationDialog->Show();
+  m_pCelestialNavigationDialog->Raise();
+  m_pCelestialNavigationDialog->OpenAlmanacForRoute(routeGuid);
 }
 
 int celestial_navigation_pi::GetAPIVersionMajor() {

@@ -202,6 +202,8 @@ SET(SRCS
         src/LunarSessionEngine.cpp
         src/SextantCalibrationEngine.cpp
         src/LunarToolsDialog.cpp
+        src/AlmanacGenerator.cpp
+        src/AlmanacDialog.cpp
         src/CoastalNavigationEngine.cpp
         src/CoastalNavigationDialog.cpp
         src/icons.cpp
@@ -240,6 +242,8 @@ SET(HDRS
         src/LunarSessionEngine.h
         src/SextantCalibrationEngine.h
         src/LunarToolsDialog.h
+        src/AlmanacGenerator.h
+        src/AlmanacDialog.h
         src/CoastalNavigationEngine.h
         src/CoastalNavigationDialog.h
         src/SightDialog.h

@@ -12,6 +12,13 @@ This maintained fork adds:
 * a fully offline Sun, Moon and sight planner with twilight/rise/set/transit
   tables, Moon phase information, navigational-body sky plot, best pair/triad
   ranking and CSV almanac export;
+* a **Generate Almanac…** workflow which creates a route- or position-aware,
+  completely offline voyage PDF with hourly Sun/Moon/Aries and navigational-
+  planet ephemerides, all 57 navigational stars, sight recommendations,
+  lunar opportunities, correction/reduction references and working forms. A
+  saved route can be selected in the generator, or the same workflow can be
+  opened pre-populated using **Generate fallback almanac…** on an OpenCPN
+  route's context menu;
 * a time-tagged numerical running fix which advances each observation through
   a COG/SOG motion model to a common epoch;
 * a sight-sequence analyzer for residuals, scatter, robust outliers, trend and
@@ -52,6 +59,13 @@ The separate
 explains the simultaneous and sequential observation models,
 unknown-watch-offset workflow, genuine position ambiguity, controls and
 limitations.
+
+The Gate-6 voyage PDF is explicitly **calculator-complete**, not yet
+calculator-free: it is intended for a sextant, watch, plotting tools and an
+ordinary scientific calculator. See
+[the Gate-6 implementation and performance note](docs/ALMANAC_GATE6.md) for
+the exact safety boundary, baseline timings and the planned route to a
+paper-only tabular edition.
 
 Maintained fork: https://github.com/pob220/celestial_navigation_pi
 

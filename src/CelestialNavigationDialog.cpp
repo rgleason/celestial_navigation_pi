@@ -45,6 +45,7 @@
 #include "PlannerDialog.h"
 #include "SightAnalysisDialog.h"
 #include "LunarToolsDialog.h"
+#include "AlmanacDialog.h"
 #include "HtmlHelp.h"
 #include "CelestialNavigationDialog.h"
 #include "UtcDateTime.h"
@@ -126,6 +127,7 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       m_plannerButton(NULL),
       m_analyzeButton(NULL),
       m_coastalButton(NULL),
+      m_almanacButton(NULL),
       m_eclipseDialog(NULL),
       m_coastalDialog(NULL),
       m_chronyPollTicks(0),
@@ -183,6 +185,12 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   actionButtons->Insert(5, m_lunarToolsButton, 0, wxALL | wxEXPAND, 5);
   m_lunarToolsButton->Bind(wxEVT_BUTTON,
                            &CelestialNavigationDialog::OnLunarTools, this);
+  m_almanacButton = new wxButton(this, wxID_ANY, _("Generate Almanac..."));
+  m_almanacButton->SetToolTip(
+      _("Build a tailored, completely offline voyage almanac PDF"));
+  actionButtons->Insert(6, m_almanacButton, 0, wxALL | wxEXPAND, 5);
+  m_almanacButton->Bind(wxEVT_BUTTON,
+                        &CelestialNavigationDialog::OnGenerateAlmanac, this);
   m_coastalButton = new wxButton(this, wxID_ANY, _("Coastal Sextant..."));
   m_coastalButton->SetToolTip(
       _("Vertical-angle ranges and horizontal-sextant-angle fixes"));
@@ -1069,6 +1077,16 @@ void CelestialNavigationDialog::OnLunarTools(wxCommandEvent&) {
   dialog.ShowModal();
 }
 
+void CelestialNavigationDialog::OnGenerateAlmanac(wxCommandEvent&) {
+  OpenAlmanacForRoute();
+}
+
+void CelestialNavigationDialog::OpenAlmanacForRoute(
+    const wxString& routeGuid) {
+  AlmanacDialog dialog(this, routeGuid);
+  dialog.ShowModal();
+}
+
 void CelestialNavigationDialog::RunPlannerIntegrationScenario() {
   wxString scenario;
   wxGetEnv("CELESTIAL_GUI_TEST_DIALOG", &scenario);
@@ -1088,6 +1106,33 @@ void CelestialNavigationDialog::RunPlannerIntegrationScenario() {
     SightAnalysisDialog* dialog = new SightAnalysisDialog(this);
     dialog->Show();
     dialog->Raise();
+    return;
+  }
+
+  if (scenario == "almanac") {
+    wxString preferredRoute;
+#ifndef UNIT_TESTS
+    wxString useFirstRoute;
+    if (wxGetEnv("CELESTIAL_GUI_TEST_FIRST_ROUTE", &useFirstRoute) &&
+        useFirstRoute == "1") {
+      const wxArrayString routes = GetRouteGUIDArray();
+      if (!routes.IsEmpty()) preferredRoute = routes[0];
+    }
+#endif
+    AlmanacDialog* dialog = new AlmanacDialog(this, preferredRoute);
+    wxString pageText;
+    long page = 0;
+    if (wxGetEnv("CELESTIAL_GUI_TEST_PAGE", &pageText))
+      pageText.ToLong(&page);
+    dialog->SelectIntegrationPage(static_cast<int>(page));
+    dialog->Show();
+    dialog->Raise();
+    wxTheApp->CallAfter([dialog]() {
+      if (dialog) {
+        dialog->Raise();
+        dialog->SetFocus();
+      }
+    });
     return;
   }
 

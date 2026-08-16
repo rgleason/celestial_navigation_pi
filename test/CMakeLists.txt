@@ -33,6 +33,7 @@ set(SRC
     coastal_navigation_tests.cpp
     horizon_event_tests.cpp
     navigation_algorithms_tests.cpp
+    almanac_generator_tests.cpp
     time_status_tests.cpp
     common.cpp
     mock_plugin_api.cpp
@@ -46,6 +47,8 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/CoastalNavigationDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/BodyCatalog.cpp
     ${CMAKE_SOURCE_DIR}/src/NavigationAlgorithms.cpp
+    ${CMAKE_SOURCE_DIR}/src/AlmanacGenerator.cpp
+    ${CMAKE_SOURCE_DIR}/src/AlmanacDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/PlannerDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/SightAnalysisDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/TimeStatus.cpp
@@ -116,7 +119,7 @@ target_link_libraries(celestial_tests
 )
 
 # Set optimization level for debug builds
-if (NOT MSVC)
+if (NOT MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(celestial_tests PUBLIC "-O0")
 endif()
 

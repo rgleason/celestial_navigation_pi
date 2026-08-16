@@ -71,6 +71,7 @@ public:
                           double drLat, double drLon);
   int GetClockCorrection() const { return m_ClockCorrection; }
   void ApplyClockCorrection(int correction_seconds);
+  void OpenAlmanacForRoute(const wxString& routeGuid = wxString());
 
 private:
   bool OpenXML(bool reportfailure);
@@ -94,6 +95,7 @@ private:
   void OnAnalyze(wxCommandEvent& event);
   void OnCoastal(wxCommandEvent& event);
   void OnLunarTools(wxCommandEvent& event);
+  void OnGenerateAlmanac(wxCommandEvent& event);
   void OnDuplicate(wxCommandEvent& event);
   void OnEdit();
   void OnEditMouse(wxMouseEvent& event) { OnEdit(); }
@@ -140,6 +142,7 @@ private:
   wxButton* m_analyzeButton;
   wxButton* m_coastalButton;
   wxButton* m_lunarToolsButton;
+  wxButton* m_almanacButton;
   EclipseDialog* m_eclipseDialog;
   CoastalNavigationDialog* m_coastalDialog;
   wxTimer m_timeTimer;

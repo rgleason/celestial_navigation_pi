@@ -80,6 +80,7 @@ public:
   wxBitmap m_panelBitmap;
 
   void OnToolbarToolCallback(int id);
+  void OnContextMenuItemCallback(int id) override;
 
   int GetToolbarToolCount(void);
   void SetColorScheme(PI_ColorScheme cs);
@@ -102,6 +103,7 @@ public:
 private:
   wxWindow* m_parent_window;
   int m_leftclick_tool_id;
+  int m_route_almanac_menu_id;
 
   CelestialNavigationDialog* m_pCelestialNavigationDialog;
   GnssTimeMonitor m_gnssTime;
