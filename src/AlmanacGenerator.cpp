@@ -326,6 +326,23 @@ void PdfText(std::ostringstream& stream, double x, double y, double size,
          << " Td (" << PdfEscape(text) << ") Tj ET\n";
 }
 
+void PdfSeriesDash(std::ostringstream& stream, size_t seriesIndex) {
+  switch (seriesIndex % 4) {
+    case 1:
+      stream << "[5 3] 0 d\n";
+      break;
+    case 2:
+      stream << "[2 2] 0 d\n";
+      break;
+    case 3:
+      stream << "[8 2 2 2] 0 d\n";
+      break;
+    default:
+      stream << "[] 0 d\n";
+      break;
+  }
+}
+
 std::string RenderPage(const AlmanacPage& page, double width, double height,
                        unsigned pageNumber, unsigned totalPages,
                        bool compact) {
@@ -428,11 +445,16 @@ std::string RenderPage(const AlmanacPage& page, double width, double height,
       for (const AlmanacPlotSeries& series : plot.series) {
         const size_t count = std::min(series.x.size(), series.y.size());
         if (count < 2) continue;
-        const unsigned dash = static_cast<unsigned>(seriesIndex % 4);
-        if (dash == 1) stream << "[5 3] 0 d\n";
-        else if (dash == 2) stream << "[2 2] 0 d\n";
-        else if (dash == 3) stream << "[8 2 2 2] 0 d\n";
-        else stream << "[] 0 d\n";
+        PdfSeriesDash(stream, seriesIndex);
+        const double legendSlot =
+            (x1 - x0) / std::max<size_t>(1, plot.series.size());
+        const double legendX = x0 + seriesIndex * legendSlot;
+        const double legendY = top + 7.0;
+        stream << "0.70 w " << legendX << " " << legendY << " m "
+               << legendX + 28.0 << " " << legendY << " l S\n";
+        PdfText(stream, legendX + 33.0, top + 4.0, 7.0, series.label);
+
+        stream << "0.70 w\n";
         bool started = false;
         for (size_t point = 0; point < count; ++point) {
           const double px = x0 + (series.x[point] - plot.xMinimum) /
@@ -448,8 +470,6 @@ std::string RenderPage(const AlmanacPage& page, double width, double height,
           started = true;
         }
         if (started) stream << "S\n";
-        PdfText(stream, x0 + seriesIndex * 78.0, top + 4.0, 6.5,
-                series.label);
         ++seriesIndex;
       }
       stream << "[] 0 d\n";
