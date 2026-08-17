@@ -22,9 +22,13 @@ sudo service docker restart
 sleep 5;
 
 if [ "$BUILD_ENV" = "raspbian" ]; then
-    docker run --rm --privileged multiarch/qemu-user-static:register --reset
+    if ! docker run --rm --privileged multiarch/qemu-user-static:register --reset; then
+        echo "QEMU registration image is unavailable on this host; using preconfigured binfmt support."
+    fi
 else
-    docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    if ! docker run --rm --privileged multiarch/qemu-user-static --reset -p yes; then
+        echo "QEMU registration image is unavailable on this host; using preconfigured binfmt support."
+    fi
 fi
 
 docker run --privileged -d -ti -e "container=docker"  \
