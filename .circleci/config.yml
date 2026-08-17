@@ -167,19 +167,27 @@ commands:
                 destination="retained-artifacts/${CIRCLE_JOB}"
                 mkdir -p "$destination"
                 if test -d build; then
-                  find build -maxdepth 3 -type f \
-                    \( -name '*.tar.gz' -o -name '*.xml' \
-                       -o -name '*.exe' -o -name '*.dmg' \
-                       -o -name 'pkg_version.sh' \
-                       -o -name 'cloudsmith-upload.sh' \) \
-                    -exec cp -f '{}' "$destination"/ \;
+                  for candidate in build/* build/*/* build/*/*/*; do
+                    if test -f "$candidate"; then
+                      case "$candidate" in
+                        *.tar.gz|*.xml|*.exe|*.dmg|*/pkg_version.sh|*/cloudsmith-upload.sh)
+                          cp -f "$candidate" "$destination"/
+                          ;;
+                      esac
+                    fi
+                  done
                 fi
+                : > "$destination/SHA256SUMS"
                 if command -v sha256sum >/dev/null 2>&1; then
-                  find "$destination" -type f ! -name SHA256SUMS \
-                    -exec sha256sum '{}' \; > "$destination/SHA256SUMS"
+                  for candidate in "$destination"/*; do
+                    test "$candidate" = "$destination/SHA256SUMS" || \
+                      sha256sum "$candidate" >> "$destination/SHA256SUMS"
+                  done
                 else
-                  find "$destination" -type f ! -name SHA256SUMS \
-                    -exec shasum -a 256 '{}' \; > "$destination/SHA256SUMS"
+                  for candidate in "$destination"/*; do
+                    test "$candidate" = "$destination/SHA256SUMS" || \
+                      shasum -a 256 "$candidate" >> "$destination/SHA256SUMS"
+                  done
                 fi
           - store_artifacts:
               path: retained-artifacts

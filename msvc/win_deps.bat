@@ -54,8 +54,8 @@ if errorlevel 1 (
 ::
 choco install gettext --version 1.0.0.20260310 -y --no-progress
 if errorlevel 1 exit /b 1
-set "GETTEXT_HOME=C:\ProgramData\chocolatey\bin"
-set "EXTRA_PATH=%GETTEXT_HOME%;%EXTRA_PATH%"
+set "GETTEXT_HOME=C:\Program Files\gettext-iconv"
+set "EXTRA_PATH=%GETTEXT_HOME%\bin;%EXTRA_PATH%"
 set "PATH=%EXTRA_PATH%;%PATH%"
 where msgfmt
 if errorlevel 1 exit /b 1

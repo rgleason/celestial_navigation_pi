@@ -5,6 +5,10 @@
 #
 set -xe
 
+# Hosted mirrors occasionally reset long dependency downloads. Let apt retry
+# these transient transfers instead of failing an otherwise healthy target.
+echo 'Acquire::Retries "5";' | sudo tee /etc/apt/apt.conf.d/80-ci-retries
+
 if [ "${CIRCLECI_LOCAL,,}" = "true" ]; then
     if [[ -d ~/circleci-cache ]]; then
         if [[ -f ~/circleci-cache/apt-proxy ]]; then

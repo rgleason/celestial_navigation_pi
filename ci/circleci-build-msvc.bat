@@ -16,6 +16,7 @@ dir %SCRIPTDIR%
 dir %SCRIPTDIR%..
 dir %SCRIPTDIR%..\msvc
 call %SCRIPTDIR%..\msvc\win_deps.bat %wx_vers%
+if errorlevel 1 exit /b 1
 path %SCRIPTDIR%.local\bin;%PATH%;"C:\Program Files\CMake\bin"
 call "%SCRIPTDIR%..\cache\wx-config.bat"
 set PATH=%EXTRA_PATH%;%PATH%
