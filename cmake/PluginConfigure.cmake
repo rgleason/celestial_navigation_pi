@@ -462,6 +462,19 @@ if (OCPN_FLATPAK_CONFIG)
   message(STATUS "${CMLOC}FLATPAK_BRANCH: ${FLATPAK_BRANCH}")
   set(RUNTIME_VERSION ${FLATPAK_BRANCH})
 
+  # Pull-request branch names such as pull/255 are not refs in a fresh clone.
+  # CircleCI provides the exact tested commit, which also makes the Flatpak
+  # source deterministic.  Keep the branch/tag fallback for local builds.
+  if (DEFINED ENV{CIRCLE_SHA1} AND NOT "$ENV{CIRCLE_SHA1}" STREQUAL "")
+    set(flatpak_plugin_source
+        "       - type: git\n         url: https://${GIT_REPOSITORY_SERVER}/${GIT_REPOSITORY}\n         commit: $ENV{CIRCLE_SHA1}"
+    )
+  else()
+    set(flatpak_plugin_source
+        "       - type: git\n         url: https://${GIT_REPOSITORY_SERVER}/${GIT_REPOSITORY}\n         ${GIT_BRANCH_OR_TAG}: ${GIT_REPOSITORY_ITEM}"
+    )
+  endif()
+
   message(
     STATUS
       "${CMLOC}Checking OCPN_FLATPAK_CONFIG: ${OCPN_FLATPAK_CONFIG}, SDK_VER: ${SDK_VER}, WX_VER: $ENV{WX_VER}"

@@ -44,8 +44,11 @@ wget https://download.opencpn.org/s/oibxM3kzfzKcSc3/download/OpenCPN_buildwin-4.
 wget https://download.opencpn.org/s/54HsBDLNzRZLL6i/download/nsis-3.04-setup.exe
 nsis-3.04-setup.exe /S
 
-echo Check if poedit has been installed
-poedit -version
+echo Check if GNU gettext tools have been installed
+msgfmt --version
+if errorlevel 1 exit /b 1
+msgmerge --version
+if errorlevel 1 exit /b 1
 echo Done check
 
 echo Create build environment

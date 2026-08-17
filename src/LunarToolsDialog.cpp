@@ -491,8 +491,9 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
   m_sequenceResiduals->DeleteAllItems();
   m_applySequence->Enable(false);
   if (!m_sequenceResult.valid) {
-    m_sequenceSummary->SetLabel(_("No solution: ") +
-                                wxString::FromUTF8(m_sequenceResult.error));
+    m_sequenceSummary->SetLabel(
+        _("No solution: ") +
+        wxString::FromUTF8(m_sequenceResult.error.c_str()));
     return;
   }
   for (std::size_t index = 0; index < m_sequenceResult.candidates.size();
@@ -525,14 +526,14 @@ void LunarToolsDialog::ShowCandidate(std::size_t index) {
     summary += wxString::Format(_("; common index bias %+0.2f′"),
                                 candidate.common_index_bias_arcmin);
   for (const auto& warning : m_sequenceResult.warnings)
-    summary += _(" — ") + wxString::FromUTF8(warning);
+    summary += _(" — ") + wxString::FromUTF8(warning.c_str());
   m_sequenceSummary->SetLabel(summary);
   m_sequenceSummary->Wrap(1000);
   m_sequenceResiduals->DeleteAllItems();
   for (std::size_t row = 0; row < candidate.residuals.size(); ++row) {
     const auto& residual = candidate.residuals[row];
     const long item = m_sequenceResiduals->InsertItem(
-        static_cast<long>(row), wxString::FromUTF8(residual.label));
+        static_cast<long>(row), wxString::FromUTF8(residual.label.c_str()));
     m_sequenceResiduals->SetItem(
         item, 1, wxString::Format("%+0.2f'", residual.distance_arcmin));
     m_sequenceResiduals->SetItem(
@@ -712,7 +713,7 @@ void LunarToolsDialog::PredictCalibrationPair(wxCommandEvent&) {
       SampleBody(m_calSecondBody->GetStringSelection(), utc), environment);
   if (!result.valid) {
     m_calPrediction->SetLabel(_("Unavailable: ") +
-                              wxString::FromUTF8(result.error));
+                              wxString::FromUTF8(result.error.c_str()));
     m_lastPredictionDeg = NAN;
     return;
   }
@@ -758,7 +759,7 @@ void LunarToolsDialog::AddCalibrationReading(wxCommandEvent&) {
                        (reading.predicted_deg - reading.observed_deg) * 60.0));
   m_calReadings->SetItem(
       row, 3, wxString::Format("±%.2f'", reading.uncertainty_arcmin));
-  m_calReadings->SetItem(row, 4, wxString::FromUTF8(reading.note));
+  m_calReadings->SetItem(row, 4, wxString::FromUTF8(reading.note.c_str()));
 }
 
 void LunarToolsDialog::RemoveCalibrationReading(wxCommandEvent&) {
@@ -791,7 +792,7 @@ void LunarToolsDialog::SaveCalibrationProfile(wxCommandEvent&) {
     *existing = profile;
   m_profileChoice->Clear();
   for (const auto& saved : m_profiles)
-    m_profileChoice->Append(wxString::FromUTF8(saved.name));
+    m_profileChoice->Append(wxString::FromUTF8(saved.name.c_str()));
   const auto selected =
       std::find_if(m_profiles.begin(), m_profiles.end(),
                    [&name](const sextant_calibration::Profile& value) {
@@ -811,9 +812,9 @@ void LunarToolsDialog::SaveCalibrationProfile(wxCommandEvent&) {
       _("Saved profile “%s” (%s). Add the interpolated correction to a raw "
         "sextant reading. Repeatability %.2f′. Points: %s. Never extrapolate "
         "this table as evidence that mechanical adjustment is unnecessary."),
-      wxString::FromUTF8(profile.name),
-      wxString::FromUTF8(profile.serial_number), profile.repeatability_arcmin,
-      points));
+      wxString::FromUTF8(profile.name.c_str()),
+      wxString::FromUTF8(profile.serial_number.c_str()),
+      profile.repeatability_arcmin, points));
   m_profileSummary->Wrap(1000);
   UpdateProfileCorrection();
 }
@@ -823,13 +824,14 @@ void LunarToolsDialog::SelectCalibrationProfile(wxCommandEvent&) {
   if (selected < 0 || static_cast<std::size_t>(selected) >= m_profiles.size())
     return;
   const auto& profile = m_profiles[static_cast<std::size_t>(selected)];
-  m_profileName->SetValue(wxString::FromUTF8(profile.name));
-  m_profileSerial->SetValue(wxString::FromUTF8(profile.serial_number));
+  m_profileName->SetValue(wxString::FromUTF8(profile.name.c_str()));
+  m_profileSerial->SetValue(wxString::FromUTF8(profile.serial_number.c_str()));
   m_profileSummary->SetLabel(wxString::Format(
       _("Profile “%s”: %zu correction points; repeatability %.2f′; created %s. "
         "Corrections are advisory and never rewrite observations."),
-      wxString::FromUTF8(profile.name), profile.points.size(),
-      profile.repeatability_arcmin, wxString::FromUTF8(profile.created_utc)));
+      wxString::FromUTF8(profile.name.c_str()), profile.points.size(),
+      profile.repeatability_arcmin,
+      wxString::FromUTF8(profile.created_utc.c_str())));
   m_profileSummary->Wrap(1000);
   UpdateProfileCorrection();
 }
@@ -890,15 +892,16 @@ void LunarToolsDialog::LoadProfiles() {
   config->SetPath(_("/PlugIns/CelestialNavigation"));
   if (!m_profiles.empty()) {
     for (const auto& profile : m_profiles)
-      m_profileChoice->Append(wxString::FromUTF8(profile.name));
+      m_profileChoice->Append(wxString::FromUTF8(profile.name.c_str()));
     m_profileChoice->SetSelection(static_cast<int>(m_profiles.size() - 1));
     const auto& profile = m_profiles.back();
-    m_profileName->SetValue(wxString::FromUTF8(profile.name));
-    m_profileSerial->SetValue(wxString::FromUTF8(profile.serial_number));
+    m_profileName->SetValue(wxString::FromUTF8(profile.name.c_str()));
+    m_profileSerial->SetValue(
+        wxString::FromUTF8(profile.serial_number.c_str()));
     m_profileSummary->SetLabel(wxString::Format(
         _("Loaded %zu saved profile(s); active “%s”, %zu correction points, "
           "repeatability %.2f′."),
-        m_profiles.size(), wxString::FromUTF8(profile.name),
+        m_profiles.size(), wxString::FromUTF8(profile.name.c_str()),
         profile.points.size(), profile.repeatability_arcmin));
     UpdateProfileCorrection();
   }
@@ -915,11 +918,11 @@ void LunarToolsDialog::PersistProfiles() {
   for (std::size_t index = 0; index < m_profiles.size(); ++index) {
     const auto& profile = m_profiles[index];
     const wxString prefix = wxString::Format("P%zu_", index);
-    config->Write(prefix + _("Name"), wxString::FromUTF8(profile.name));
+    config->Write(prefix + _("Name"), wxString::FromUTF8(profile.name.c_str()));
     config->Write(prefix + _("Serial"),
-                  wxString::FromUTF8(profile.serial_number));
+                  wxString::FromUTF8(profile.serial_number.c_str()));
     config->Write(prefix + _("Created"),
-                  wxString::FromUTF8(profile.created_utc));
+                  wxString::FromUTF8(profile.created_utc.c_str()));
     config->Write(prefix + _("Repeatability"), profile.repeatability_arcmin);
     wxString points;
     for (const auto& point : profile.points) {

@@ -10,8 +10,9 @@ git submodule update --init opencpn-libs
 
 ls -la ~/project
 
-# bailout on errors and echo commands.
-set -x
+# Bail out on errors and echo commands.  Without -e, a failed container build
+# could be hidden by the later container-cleanup commands succeeding.
+set -ex
 sudo apt-get -y --allow-unauthenticated update
 
 DOCKER_SOCK="unix:///var/run/docker.sock"
@@ -37,6 +38,7 @@ docker run --privileged -d -ti -e "container=docker"  \
     -e "BUILD_GTK3=$BUILD_GTK3" \
     -e "WX_VER=$WX_VER" \
     -e "BUILD_ENV=$BUILD_ENV" \
+    -e "RUN_DATA_TESTS=${RUN_DATA_TESTS:-false}" \
     -e "TZ=$TZ" \
     -e "DEBIAN_FRONTEND=$DEBIAN_FRONTEND" \
     -v $(pwd):/ci-source:rw -v ~/source_top:/source_top $DOCKER_IMAGE /bin/bash
@@ -187,16 +189,31 @@ fi
 
 cat build.sh
 
+TEST_CMAKE_ARGS=""
+TEST_COMMANDS=""
+if [ "${RUN_DATA_TESTS:-false}" = "true" ]; then
+    cat >> build.sh << 'EOF'
+apt-get install -y --no-install-recommends curl libgtest-dev
+mkdir -p /ci-source/eclipse/data
+curl --fail --location --retry 3 \
+  --output /ci-source/eclipse/data/de440s.bsp \
+  https://singe.media/celestial-navigation/eclipse-data/de440s.bsp
+echo "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2  /ci-source/eclipse/data/de440s.bsp" \
+  | sha256sum --check --strict
+EOF
+    TEST_CMAKE_ARGS="-DOCPN_BUILD_TEST=ON"
+    TEST_COMMANDS="ctest --output-on-failure; cd ..; cmake -S eclipse -B build-eclipse-ci -DCMAKE_BUILD_TYPE=Release; cmake --build build-eclipse-ci --parallel 2; ECLIPSE_DE440_PATH=/ci-source/eclipse/data/de440s.bsp ctest --test-dir build-eclipse-ci --output-on-failure; cd build;"
+fi
+
 if type nproc &> /dev/null
 then
     BUILD_FLAGS="-j"$(nproc)
 fi
 
 docker exec -ti \
-    $DOCKER_CONTAINER_ID /bin/bash -xec "bash -xe ci-source/build.sh; rm -rf ci-source/build; mkdir ci-source/build; cd ci-source/build; cmake ..; make $BUILD_FLAGS; make package; chmod -R a+rw ../build;"
+    $DOCKER_CONTAINER_ID /bin/bash -xec "bash -xe ci-source/build.sh; rm -rf ci-source/build; mkdir ci-source/build; cd ci-source/build; cmake $TEST_CMAKE_ARGS ..; make $BUILD_FLAGS; make package; $TEST_COMMANDS chmod -R a+rw ../build;"
 
 echo "Stopping"
 docker ps -a
 docker stop $DOCKER_CONTAINER_ID
 docker rm -v $DOCKER_CONTAINER_ID
-

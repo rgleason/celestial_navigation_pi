@@ -48,12 +48,19 @@ if errorlevel 1 (
   set "EXTRA_PATH=%CMAKE_HOME%\bin;%EXTRA_PATH%"
 )
 
-:: Install choco poedit and add it's persistent user path element
+:: Install GNU gettext command-line tools.  Current Poedit packages no longer
+:: provide the GettextTools directory used by older plugin build scripts.
+:: Pin the package so hosted builds remain reproducible.
 ::
-set "POEDIT_HOME=C:\Program Files (x86)\Poedit\GettextTools"
-if not exist "%POEDIT_HOME%" (choco install -y poedit)
-dir "%POEDIT_HOME%"
-set "EXTRA_PATH=%POEDIT_HOME%\bin;%EXTRA_PATH%"
+choco install gettext --version 1.0.0.20260310 -y --no-progress
+if errorlevel 1 exit /b 1
+set "GETTEXT_HOME=C:\ProgramData\chocolatey\bin"
+set "EXTRA_PATH=%GETTEXT_HOME%;%EXTRA_PATH%"
+set "PATH=%EXTRA_PATH%;%PATH%"
+where msgfmt
+if errorlevel 1 exit /b 1
+where msgmerge
+if errorlevel 1 exit /b 1
 
 :: Update required python stuff
 ::
