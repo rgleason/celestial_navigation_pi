@@ -4,9 +4,12 @@ The required base pack is the official JPL/NAIF `de440s.bsp` kernel plus the
 small text manifest in `data/de440s.manifest`. Despite its name, `de440s` is
 already the short DE440 subset: it covers 1850–2150 and is 32,726,016 bytes
 (31.21 MiB). Creating another bespoke SPK subset would save little while
-introducing avoidable provenance and interpolation risk. The kernel and both
-optional runtime packs are versioned in this repository with Git LFS, so a
-Git-LFS-enabled clone contains everything needed for completely offline use.
+introducing avoidable provenance and interpolation risk. Their manifests are
+versioned with the source contribution. The kernel and both optional runtime
+packs are maintained with Git LFS in the full development repository at
+`https://github.com/pob220/celestial_navigation_pi`; they are omitted from the
+upstream contribution fork to avoid imposing large-file storage and bandwidth
+on the upstream GitHub fork network.
 
 At runtime the engine never connects to a network. A user or package builder
 imports `data/de440s.bsp` into the plugin's private eclipse-data directory.
@@ -58,8 +61,8 @@ eclipse-cli verify-lola lola64-pa.bin
 The netCDF source and converter are not installed with OpenCPN. The runtime
 pack remains a deliberately separate optional data store at installation time
 because it is useful only for terrain-sensitive contact refinements and is
-much larger than the 31 MiB base ephemeris. It is included in the source
-repository so an offline source build does not depend on a later download.
+much larger than the 31 MiB base ephemeris. It is available from the full
+development repository for offline preparation and installation.
 
 The kernel's authoritative source is NASA's Navigation and Ancillary
 Information Facility (NAIF):

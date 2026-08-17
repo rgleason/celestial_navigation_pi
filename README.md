@@ -3,7 +3,7 @@ Celestial Navigation Plugin for OpenCPN
 
 Perform sight reductions and plot positions from celestial observations.
 
-This maintained fork adds:
+This contribution adds:
 
 * a time-integrity panel showing local, UTC, GNSS/NMEA and chrony status;
 * an optional persistent show/hide control for the time panel; and
@@ -44,12 +44,12 @@ This maintained fork adds:
   refinement.
 
 The eclipse planner is opened with **Eclipses…** on the plugin's main window.
-Its astronomical data is deliberately separate from the plugin binary. The
-complete runtime data set is kept in `eclipse/data` using Git LFS: the DE440s
-base kernel and the optional lunar-orientation and converted LOLA packs. Use
-the three **Import** buttons once to copy these checksum-verified files from
-the checkout into OpenCPN's private plugin-data directory. No eclipse
-calculation or UI action performs network access. See
+Its astronomical data is deliberately separate from the plugin binary and
+source contribution: the DE440s base kernel and the optional lunar-orientation
+and converted LOLA packs are distributed separately. Use the three **Import**
+buttons once to copy the checksum-verified files into OpenCPN's private
+plugin-data directory. No eclipse calculation or UI action performs network
+access. See
 [eclipse/DATA.md](eclipse/DATA.md) for exact files, provenance, checksums and
 storage sizes.
 
@@ -72,10 +72,11 @@ pencil and plotting tools, without a computer, internet connection,
 scientific calculator or external almanac. The cover carries a machine-checked
 dependency manifest. See [the implementation and performance note](docs/ALMANAC_GATE6.md).
 
-Maintained fork: https://github.com/pob220/celestial_navigation_pi
-
-Upstream maintenance repository:
+Maintenance repository:
 https://github.com/rgleason/celestial_navigation_pi
+
+Full development repository and Git LFS eclipse data:
+https://github.com/pob220/celestial_navigation_pi
 
 Original source repository:
 https://github.com/seandepagnier/celestial_navigation_pi
@@ -83,15 +84,10 @@ https://github.com/seandepagnier/celestial_navigation_pi
 Compiling
 =========
 
-Install Git LFS before cloning so the offline eclipse data is checked out as
-real binary files rather than small LFS pointer files.
-
-* `git lfs install`
-* `git clone --recurse-submodules https://github.com/pob220/celestial_navigation_pi.git`
+* `git clone --recurse-submodules https://github.com/rgleason/celestial_navigation_pi.git`
 * `cd celestial_navigation_pi`
-* `git lfs pull`
 
-The three eclipse files should then be present at:
+The three separately distributed eclipse files are:
 
 * `eclipse/data/de440s.bsp`
 * `eclipse/data/moon_pa_de440_200625.bpc`
@@ -111,7 +107,7 @@ Build as normally:
 * `cmake --install build`
 
 After installing or loading the plugin, open **Eclipses…** and import the
-three files from `eclipse/data`. This is a local copy operation and requires no
+separately obtained files. This is a local copy operation and requires no
 network access.
 
 Tests
