@@ -230,7 +230,9 @@ void AlmanacDialog::BuildInterface() {
       _("Booklet imposition (two logical pages per PDF page)"));
   m_signaturePages = new wxSpinCtrl(forms, wxID_ANY, "16", wxDefaultPosition,
       wxDefaultSize, wxSP_ARROW_KEYS, 4, 64, 16);
+#if wxCHECK_VERSION(3, 1, 6)
   m_signaturePages->SetIncrement(4);
+#endif
   AddLabelled(formSizer, forms, _("Booklet signature pages"), m_signaturePages);
   m_output = new wxFilePickerCtrl(
       forms, wxID_ANY, wxEmptyString, _("Choose output PDF"),
