@@ -75,8 +75,11 @@ dependency manifest. See [the implementation and performance note](docs/ALMANAC_
 Maintenance repository:
 https://github.com/rgleason/celestial_navigation_pi
 
-Full development repository and Git LFS eclipse data:
+Full development repository:
 https://github.com/pob220/celestial_navigation_pi
+
+Public eclipse-data downloads:
+https://singe.media/celestial-navigation/eclipse-data/
 
 Original source repository:
 https://github.com/seandepagnier/celestial_navigation_pi
@@ -89,9 +92,12 @@ Compiling
 
 The three separately distributed eclipse files are:
 
-* `eclipse/data/de440s.bsp`
-* `eclipse/data/moon_pa_de440_200625.bpc`
-* `eclipse/data/lola64-pa.bin`
+* [`de440s.bsp`](https://singe.media/celestial-navigation/eclipse-data/de440s.bsp)
+  (required for the eclipse planner);
+* [`moon_pa_de440_200625.bpc`](https://singe.media/celestial-navigation/eclipse-data/moon_pa_de440_200625.bpc)
+  (optional lunar-orientation refinement); and
+* [`lola64-pa.bin`](https://singe.media/celestial-navigation/eclipse-data/lola64-pa.bin)
+  (optional lunar-limb terrain refinement).
 
 Their sizes and SHA-256 digests are pinned in the adjacent manifests. The
 normal celestial-navigation, planning and almanac features do not require

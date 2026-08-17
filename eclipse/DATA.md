@@ -1,15 +1,15 @@
 # Offline eclipse data
 
-The required base pack is the official JPL/NAIF `de440s.bsp` kernel plus the
-small text manifest in `data/de440s.manifest`. Despite its name, `de440s` is
+The required base pack is the official JPL/NAIF [`de440s.bsp`](https://singe.media/celestial-navigation/eclipse-data/de440s.bsp)
+kernel plus the small text manifest in `data/de440s.manifest`. Despite its name, `de440s` is
 already the short DE440 subset: it covers 1850–2150 and is 32,726,016 bytes
 (31.21 MiB). Creating another bespoke SPK subset would save little while
 introducing avoidable provenance and interpolation risk. Their manifests are
 versioned with the source contribution. The kernel and both optional runtime
-packs are maintained with Git LFS in the full development repository at
-`https://github.com/pob220/celestial_navigation_pi`; they are omitted from the
-upstream contribution fork to avoid imposing large-file storage and bandwidth
-on the upstream GitHub fork network.
+packs are hosted separately at
+[`https://singe.media/celestial-navigation/eclipse-data/`](https://singe.media/celestial-navigation/eclipse-data/);
+they are omitted from the upstream contribution fork to avoid imposing
+large-file storage and bandwidth on the upstream GitHub fork network.
 
 At runtime the engine never connects to a network. A user or package builder
 imports `data/de440s.bsp` into the plugin's private eclipse-data directory.
@@ -43,13 +43,22 @@ Exact optional pack inputs
 --------------------------
 
 The lunar-orientation file is NAIF's
-`moon_pa_de440_200625.bpc` (12,863,488 bytes). The terrain source is NASA
+[`moon_pa_de440_200625.bpc`](https://singe.media/celestial-navigation/eclipse-data/moon_pa_de440_200625.bpc)
+(12,863,488 bytes). The terrain source is NASA
 Goddard PGDA's `LDEM64_PA_pixel_202405.grd` (735,220,834 bytes), a
 23,040 × 11,520 netCDF pixel grid in the same Moon principal-axes frame. The
-developer-side converter produces `lola64-pa.bin` (530,841,624 bytes) as
+developer-side converter produces
+[`lola64-pa.bin`](https://singe.media/celestial-navigation/eclipse-data/lola64-pa.bin)
+(530,841,624 bytes) as
 signed one-metre offsets from a 1737.4 km lunar radius. Exact source and output
 SHA-256 values are pinned in `data/*.manifest`; the plugin rejects any other
 byte stream.
+
+| Runtime file | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `de440s.bsp` | 32,726,016 | `c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2` |
+| `moon_pa_de440_200625.bpc` | 12,863,488 | `60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f` |
+| `lola64-pa.bin` | 530,841,624 | `f59edf8437442b05525345b3c29b65f0f31af8fc96420abf2dd18af3480f7ff4` |
 
 The source grid can be converted with:
 
@@ -61,8 +70,8 @@ eclipse-cli verify-lola lola64-pa.bin
 The netCDF source and converter are not installed with OpenCPN. The runtime
 pack remains a deliberately separate optional data store at installation time
 because it is useful only for terrain-sensitive contact refinements and is
-much larger than the 31 MiB base ephemeris. It is available from the full
-development repository for offline preparation and installation.
+much larger than the 31 MiB base ephemeris. It is available from the public
+eclipse-data download directory for offline preparation and installation.
 
 The kernel's authoritative source is NASA's Navigation and Ancillary
 Information Facility (NAIF):
