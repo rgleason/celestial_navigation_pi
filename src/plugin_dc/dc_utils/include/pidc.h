@@ -48,6 +48,9 @@ typedef void (*_GLUfuncptr)();
 // The Windows OpenGL headers require APIENTRY and WINGDIAPI from windows.h.
 // Do this here so pidc.h is safe even when a caller has included only the
 // narrower wxWidgets headers rather than wx/wx.h.
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
