@@ -49,12 +49,7 @@ rm -f ./*all.deb
 TEST_CMAKE_ARGS=""
 if [ "${RUN_DATA_TESTS:-false}" = "true" ]; then
   sudo apt-get install -y libgtest-dev
-  mkdir -p eclipse/data
-  curl --fail --location --retry 3 \
-    --output eclipse/data/de440s.bsp \
-    https://singe.media/celestial-navigation/eclipse-data/de440s.bsp
-  echo "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2  eclipse/data/de440s.bsp" \
-    | sha256sum --check --strict
+  ci/fetch-eclipse-data.sh eclipse/data --all
   TEST_CMAKE_ARGS="-DOCPN_BUILD_TEST=ON"
 fi
 
@@ -82,6 +77,8 @@ if [ "${RUN_DATA_TESTS:-false}" = "true" ]; then
   cmake -S eclipse -B build-eclipse-ci -DCMAKE_BUILD_TYPE=Release
   cmake --build build-eclipse-ci --parallel 2
   ECLIPSE_DE440_PATH="$PWD/eclipse/data/de440s.bsp" \
+  ECLIPSE_LUNAR_PCK_PATH="$PWD/eclipse/data/moon_pa_de440_200625.bpc" \
+  ECLIPSE_LOLA_PATH="$PWD/eclipse/data/lola64-pa.bin" \
     ctest --test-dir build-eclipse-ci --output-on-failure
   cd build
 fi

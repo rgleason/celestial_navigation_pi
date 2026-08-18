@@ -79,7 +79,7 @@ Full development repository:
 https://github.com/pob220/celestial_navigation_pi
 
 Public eclipse-data downloads:
-https://singe.media/celestial-navigation/eclipse-data/
+https://github.com/pob220/celestial_navigation_pi/releases/tag/eclipse-data-2026.1
 
 Original source repository:
 https://github.com/seandepagnier/celestial_navigation_pi
@@ -92,11 +92,11 @@ Compiling
 
 The three separately distributed eclipse files are:
 
-* [`de440s.bsp`](https://singe.media/celestial-navigation/eclipse-data/de440s.bsp)
+* [`de440s.bsp`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/de440s.bsp)
   (required for the eclipse planner);
-* [`moon_pa_de440_200625.bpc`](https://singe.media/celestial-navigation/eclipse-data/moon_pa_de440_200625.bpc)
+* [`moon_pa_de440_200625.bpc`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/moon_pa_de440_200625.bpc)
   (optional lunar-orientation refinement); and
-* [`lola64-pa.bin`](https://singe.media/celestial-navigation/eclipse-data/lola64-pa.bin)
+* [`lola64-pa.bin`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/lola64-pa.bin)
   (optional lunar-limb terrain refinement).
 
 Their sizes and SHA-256 digests are pinned in the adjacent manifests. The

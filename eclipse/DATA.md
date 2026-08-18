@@ -1,13 +1,13 @@
 # Offline eclipse data
 
-The required base pack is the official JPL/NAIF [`de440s.bsp`](https://singe.media/celestial-navigation/eclipse-data/de440s.bsp)
+The required base pack is the official JPL/NAIF [`de440s.bsp`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/de440s.bsp)
 kernel plus the small text manifest in `data/de440s.manifest`. Despite its name, `de440s` is
 already the short DE440 subset: it covers 1850–2150 and is 32,726,016 bytes
 (31.21 MiB). Creating another bespoke SPK subset would save little while
 introducing avoidable provenance and interpolation risk. Their manifests are
 versioned with the source contribution. The kernel and both optional runtime
-packs are hosted separately at
-[`https://singe.media/celestial-navigation/eclipse-data/`](https://singe.media/celestial-navigation/eclipse-data/);
+packs are hosted separately in the immutable
+[`eclipse-data-2026.1` GitHub release](https://github.com/pob220/celestial_navigation_pi/releases/tag/eclipse-data-2026.1);
 they are omitted from the upstream contribution fork to avoid imposing
 large-file storage and bandwidth on the upstream GitHub fork network.
 
@@ -43,12 +43,12 @@ Exact optional pack inputs
 --------------------------
 
 The lunar-orientation file is NAIF's
-[`moon_pa_de440_200625.bpc`](https://singe.media/celestial-navigation/eclipse-data/moon_pa_de440_200625.bpc)
+[`moon_pa_de440_200625.bpc`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/moon_pa_de440_200625.bpc)
 (12,863,488 bytes). The terrain source is NASA
 Goddard PGDA's `LDEM64_PA_pixel_202405.grd` (735,220,834 bytes), a
 23,040 × 11,520 netCDF pixel grid in the same Moon principal-axes frame. The
 developer-side converter produces
-[`lola64-pa.bin`](https://singe.media/celestial-navigation/eclipse-data/lola64-pa.bin)
+[`lola64-pa.bin`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/lola64-pa.bin)
 (530,841,624 bytes) as
 signed one-metre offsets from a 1737.4 km lunar radius. Exact source and output
 SHA-256 values are pinned in `data/*.manifest`; the plugin rejects any other

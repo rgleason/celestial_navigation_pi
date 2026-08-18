@@ -201,15 +201,10 @@ TEST_COMMANDS=""
 if [ "${RUN_DATA_TESTS:-false}" = "true" ]; then
     cat >> build.sh << 'EOF'
 apt-get install -y --no-install-recommends curl libgtest-dev
-mkdir -p /ci-source/eclipse/data
-curl --fail --location --retry 3 \
-  --output /ci-source/eclipse/data/de440s.bsp \
-  https://singe.media/celestial-navigation/eclipse-data/de440s.bsp
-echo "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2  /ci-source/eclipse/data/de440s.bsp" \
-  | sha256sum --check --strict
+/ci-source/ci/fetch-eclipse-data.sh /ci-source/eclipse/data --all
 EOF
     TEST_CMAKE_ARGS="-DOCPN_BUILD_TEST=ON"
-    TEST_COMMANDS="ctest --output-on-failure; cd ..; cmake -S eclipse -B build-eclipse-ci -DCMAKE_BUILD_TYPE=Release; cmake --build build-eclipse-ci --parallel 2; ECLIPSE_DE440_PATH=/ci-source/eclipse/data/de440s.bsp ctest --test-dir build-eclipse-ci --output-on-failure; cd build;"
+    TEST_COMMANDS="ctest --output-on-failure; cd ..; cmake -S eclipse -B build-eclipse-ci -DCMAKE_BUILD_TYPE=Release; cmake --build build-eclipse-ci --parallel 2; ECLIPSE_DE440_PATH=/ci-source/eclipse/data/de440s.bsp ECLIPSE_LUNAR_PCK_PATH=/ci-source/eclipse/data/moon_pa_de440_200625.bpc ECLIPSE_LOLA_PATH=/ci-source/eclipse/data/lola64-pa.bin ctest --test-dir build-eclipse-ci --output-on-failure; cd build;"
 fi
 
 if type nproc &> /dev/null

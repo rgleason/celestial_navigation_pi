@@ -5,8 +5,10 @@ The default CircleCI workflow is validation-only. It builds every platform in
 CircleCI artifact, and never requests a Cloudsmith credential.
 
 The Debian 12 x86_64 job also runs the plugin tests and the standalone eclipse
-engine tests. It downloads `de440s.bsp` from the project's external data host
-and accepts it only when this SHA-256 matches:
+engine tests. It downloads the three data packs from the immutable
+[`eclipse-data-2026.1` GitHub release](https://github.com/pob220/celestial_navigation_pi/releases/tag/eclipse-data-2026.1)
+and accepts them only when their pinned SHA-256 values match. The required
+DE440s digest is:
 
 ```
 c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2
