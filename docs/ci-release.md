@@ -11,8 +11,8 @@ and accepts them only when their pinned SHA-256 values match:
 
 ```
 c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2  de440s.bsp
-60cd550b18e6c60b735bf36c596bcae12f429a4588302ee88546414280087658  moon_pa_de440_200625.bpc
-f59edf4eedc4f20ef67b37eb6f174def31007597d35c8249a8c5f389f4f05187  lola64-pa.bin
+60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f  moon_pa_de440_200625.bpc
+f59edf8437442b05525345b3c29b65f0f31af8fc96420abf2dd18af3480f7ff4  lola64-pa.bin
 ```
 
 The downloader writes to a temporary file, verifies it, and then renames it
