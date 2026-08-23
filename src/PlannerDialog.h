@@ -2,8 +2,10 @@
 #define CELESTIAL_NAVIGATION_PLANNER_DIALOG_H
 
 #include "NavigationAlgorithms.h"
+#include "WaypointPositionSource.h"
 
 #include <wx/dialog.h>
+#include <wx/timer.h>
 
 class CelestialNavigationDialog;
 class SkyPlotPanel;
@@ -21,6 +23,9 @@ public:
   explicit PlannerDialog(CelestialNavigationDialog* parent);
   ~PlannerDialog();
   void SelectPageForIntegration(unsigned page);
+#ifdef CELESTIAL_PLANNER_INTEGRATION_TEST
+  void ScheduleWaypointIntegration(const wxString& name);
+#endif
 
 private:
   ObserverMotion ReadMotion(bool showErrors);
@@ -29,6 +34,13 @@ private:
   void ChangeInputTimeBasis(wxCommandEvent& event);
   void UpdateInputTimeLabels();
   void ApplyPositionSource();
+  void ApplyPositionSourceAndRefresh();
+  void ChangePositionSource(wxCommandEvent& event);
+  bool UpdateCursorPosition();
+  void OnCursorTimer(wxTimerEvent& event);
+  bool ChooseWaypoint();
+  std::vector<WaypointPosition> LoadWaypoints() const;
+  bool ResolveSelectedWaypoint(WaypointPosition* waypoint) const;
   void ApplyTimeSource();
   wxString DisplayTime(const wxDateTime& utc) const;
   void RefreshAll(wxCommandEvent& event);
@@ -39,6 +51,10 @@ private:
   void ExportAlmanac(wxCommandEvent& event);
   void CreateSelectedSight(wxCommandEvent& event);
   void SolveSpecialLatitude(wxCommandEvent& event);
+#ifdef CELESTIAL_PLANNER_INTEGRATION_TEST
+  bool SelectWaypointForIntegration(const wxString& name);
+  void OnWaypointIntegrationTimer(wxTimerEvent& event);
+#endif
 
   CelestialNavigationDialog* m_parent;
   wxChoice* m_positionSource;
@@ -68,6 +84,15 @@ private:
   wxSpinCtrlDouble* m_specialAltitude;
   wxStaticText* m_specialSummary;
   int m_lastInputTimeBasis;
+  int m_lastPositionSource;
+  wxString m_waypointGuid;
+  wxString m_waypointName;
+  wxTimer m_cursorTimer;
+#ifdef CELESTIAL_PLANNER_INTEGRATION_TEST
+  wxTimer m_waypointIntegrationTimer;
+  wxString m_waypointIntegrationName;
+  int m_waypointIntegrationAttempts;
+#endif
   std::vector<RankedBody> m_rankedBodies;
   std::vector<AlmanacRow> m_almanacRows;
 };

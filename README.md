@@ -11,7 +11,7 @@ This contribution adds:
   bearing, magnetic variation, compass deviation and uncertainty estimates;
 * a fully offline Sun, Moon and sight planner with twilight/rise/set/transit
   tables, Moon phase information, navigational-body sky plot, best pair/triad
-  ranking and CSV almanac export;
+  ranking, CSV almanac export and searchable OpenCPN waypoint/place positions;
 * a **Generate Almanac…** workflow which creates a route- or position-aware,
   completely offline voyage PDF with hourly Sun/Moon/Aries and navigational-
   planet ephemerides, all 57 navigational stars, sight recommendations,

@@ -190,6 +190,7 @@ SET(SRCS
         src/BodyCatalog.cpp
         src/NavigationAlgorithms.cpp
         src/PlannerDialog.cpp
+        src/WaypointPositionSource.cpp
         src/SightAnalysisDialog.cpp
         src/HorizonEventDialog.cpp
         src/HtmlHelp.cpp
@@ -226,6 +227,7 @@ SET(HDRS
         src/BodyCatalog.h
         src/NavigationAlgorithms.h
         src/PlannerDialog.h
+        src/WaypointPositionSource.h
         src/SightAnalysisDialog.h
         src/UtcDateTime.h
         src/HorizonEventDialog.h

@@ -11,7 +11,13 @@ Open *Sun & Moon…* on the main Celestial Navigation window. The common header
 selects both a position and a UTC. A completely manual position and time are
 always available. Current boat position, chart cursor, selected-sight DR and
 the most recent calculated fix are conveniences and are used only when the
-corresponding source is available.
+corresponding source is available. While *Chart cursor* is selected,
+the position and results follow the OpenCPN chart cursor at a throttled rate;
+select *Manual* to freeze that position for planning. *Waypoint or place...*
+opens a searchable list of OpenCPN marks, waypoints and named route points. The
+selected item's stable identifier is saved; the planner resolves its current
+coordinates each time it is opened and falls back to the retained manual
+position if the item has since been deleted.
 
 Date and time are entered with separate calendar and clock controls. The input
 can be interpreted as UTC or as the computer's local civil time; changing that

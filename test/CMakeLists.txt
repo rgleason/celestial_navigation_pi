@@ -33,6 +33,7 @@ set(SRC
     coastal_navigation_tests.cpp
     horizon_event_tests.cpp
     navigation_algorithms_tests.cpp
+    waypoint_position_source_tests.cpp
     almanac_generator_tests.cpp
     time_status_tests.cpp
     common.cpp
@@ -51,6 +52,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/AlmanacPaperTables.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/PlannerDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/WaypointPositionSource.cpp
     ${CMAKE_SOURCE_DIR}/src/SightAnalysisDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/TimeStatus.cpp
     ${CMAKE_SOURCE_DIR}/src/astrolabe/calendar.cpp

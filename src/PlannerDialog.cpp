@@ -14,6 +14,7 @@
 #include <wx/ffile.h>
 #include <wx/listctrl.h>
 #include <wx/notebook.h>
+#include <wx/srchctrl.h>
 #include <wx/spinctrl.h>
 #include <wx/statline.h>
 #include <wx/stattext.h>
@@ -95,6 +96,103 @@ private:
   }
   std::vector<RankedBody> m_bodies;
 };
+
+class WaypointPickerDialog : public wxDialog {
+public:
+  WaypointPickerDialog(wxWindow* parent,
+                       const std::vector<WaypointPosition>& waypoints,
+                       const wxString& selectedGuid)
+      : wxDialog(parent, wxID_ANY, _("Select waypoint or place"),
+                 wxDefaultPosition, wxSize(700, 500),
+                 wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
+        m_waypoints(waypoints),
+        m_selectedGuid(selectedGuid),
+        m_selectedIndex(-1) {
+    wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
+    root->Add(new wxStaticText(
+                  this, wxID_ANY,
+                  _("Choose an OpenCPN mark, waypoint or named route point.")),
+              0, wxALL | wxEXPAND, 8);
+    m_filter = new wxSearchCtrl(this, wxID_ANY);
+    m_filter->SetDescriptiveText(_("Filter by name or coordinates"));
+    root->Add(m_filter, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 8);
+
+    m_list = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+                            wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES);
+    AddColumn(m_list, 0, _("Name"), 300);
+    AddColumn(m_list, 1, _("Latitude"), 130);
+    AddColumn(m_list, 2, _("Longitude"), 130);
+    root->Add(m_list, 1, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 8);
+
+    wxStdDialogButtonSizer* buttons = new wxStdDialogButtonSizer();
+    m_ok = new wxButton(this, wxID_OK);
+    m_ok->Enable(false);
+    buttons->AddButton(m_ok);
+    buttons->AddButton(new wxButton(this, wxID_CANCEL));
+    buttons->Realize();
+    root->Add(buttons, 0, wxALL | wxEXPAND, 8);
+    SetSizer(root);
+
+    m_filter->Bind(wxEVT_TEXT,
+                   [this](wxCommandEvent&) { RebuildList(); });
+    m_list->Bind(wxEVT_LIST_ITEM_SELECTED, [this](wxListEvent& event) {
+      m_selectedIndex = static_cast<long>(event.GetData());
+      m_ok->Enable(m_selectedIndex >= 0);
+    });
+    m_list->Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](wxListEvent& event) {
+      m_selectedIndex = static_cast<long>(event.GetData());
+      if (m_selectedIndex >= 0) EndModal(wxID_OK);
+    });
+    RebuildList();
+    m_filter->SetFocus();
+  }
+
+  const WaypointPosition* GetSelectedWaypoint() const {
+    if (m_selectedIndex < 0 ||
+        static_cast<size_t>(m_selectedIndex) >= m_waypoints.size())
+      return NULL;
+    return &m_waypoints[static_cast<size_t>(m_selectedIndex)];
+  }
+
+private:
+  void RebuildList() {
+    const wxString filter = m_filter->GetValue().Lower();
+    m_list->DeleteAllItems();
+    m_selectedIndex = -1;
+    m_ok->Enable(false);
+    long selectedRow = -1;
+    for (size_t index = 0; index < m_waypoints.size(); ++index) {
+      const WaypointPosition& waypoint = m_waypoints[index];
+      const wxString name = waypoint.name.empty() ? _("(Unnamed waypoint)")
+                                                   : waypoint.name;
+      const wxString latitude = wxString::Format("%.5f", waypoint.latitude);
+      const wxString longitude = wxString::Format("%.5f", waypoint.longitude);
+      const wxString searchable =
+          (name + " " + latitude + " " + longitude).Lower();
+      if (!filter.empty() && searchable.Find(filter) == wxNOT_FOUND) continue;
+      const long row = m_list->InsertItem(m_list->GetItemCount(), name);
+      m_list->SetItem(row, 1, latitude);
+      m_list->SetItem(row, 2, longitude);
+      m_list->SetItemData(row, static_cast<long>(index));
+      if (waypoint.guid == m_selectedGuid) selectedRow = row;
+    }
+    if (selectedRow >= 0) {
+      m_selectedIndex = static_cast<long>(m_list->GetItemData(selectedRow));
+      m_ok->Enable(true);
+      m_list->SetItemState(selectedRow,
+                           wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED,
+                           wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED);
+      m_list->EnsureVisible(selectedRow);
+    }
+  }
+
+  std::vector<WaypointPosition> m_waypoints;
+  wxString m_selectedGuid;
+  wxSearchCtrl* m_filter;
+  wxListCtrl* m_list;
+  wxButton* m_ok;
+  long m_selectedIndex;
+};
 }  // namespace
 
 class SkyPlotPanel : public SkyPlotPanelImpl {
@@ -131,6 +229,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_positionSource->Append(_("Chart cursor"));
   m_positionSource->Append(_("Selected sight DR"));
   m_positionSource->Append(_("Last calculated fix"));
+  m_positionSource->Append(_("Waypoint or place..."));
   m_positionSource->SetSelection(1);
   grid->Add(m_positionSource, 0, wxEXPAND);
   grid->Add(new wxStaticText(this, wxID_ANY, _("Latitude")), 0,
@@ -337,7 +436,11 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   SetSizer(root);
 
   m_positionSource->Bind(wxEVT_CHOICE,
-                         [this](wxCommandEvent&) { ApplyPositionSource(); });
+                         &PlannerDialog::ChangePositionSource, this);
+  m_cursorTimer.SetOwner(this);
+  Bind(wxEVT_TIMER, &PlannerDialog::OnCursorTimer, this,
+       m_cursorTimer.GetId());
+  m_cursorTimer.Start(500);
   m_timeSource->Bind(wxEVT_CHOICE,
                      [this](wxCommandEvent&) { ApplyTimeSource(); });
   m_inputTimeBasis->Bind(wxEVT_CHOICE,
@@ -370,8 +473,11 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   config->Read(_T("SpeedKnots"), &speed, 0.0);
   config->Read(_T("EyeHeight"), &eyeHeight, 2.0);
   config->Read(_T("FixedOffset"), &fixedOffset, 0.0);
+  config->Read(_T("WaypointGuid"), &m_waypointGuid, wxEmptyString);
+  config->Read(_T("WaypointName"), &m_waypointName, wxEmptyString);
   m_positionSource->SetSelection(
-      std::max(0L, std::min(positionSource, 4L)));
+      std::max(0L, std::min(positionSource, 5L)));
+  m_lastPositionSource = m_positionSource->GetSelection();
   m_inputTimeBasis->SetSelection(
       std::max(0L, std::min(inputTimeBasis, 1L)));
   m_lastInputTimeBasis = m_inputTimeBasis->GetSelection();
@@ -386,6 +492,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_fixedOffset->SetValue(fixedOffset);
   SetUtcControls(wxDateTime::UNow());
   ApplyPositionSource();
+  m_lastPositionSource = m_positionSource->GetSelection();
   ApplyTimeSource();
   wxCommandEvent dummy;
   RefreshAll(dummy);
@@ -393,6 +500,9 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
 }
 
 PlannerDialog::~PlannerDialog() {
+  m_cursorTimer.Stop();
+  Unbind(wxEVT_TIMER, &PlannerDialog::OnCursorTimer, this,
+         m_cursorTimer.GetId());
   wxFileConfig* config = GetOCPNConfigObject();
   config->SetPath(_T("/PlugIns/CelestialNavigation/Planner"));
   config->Write(_T("PositionSource"),
@@ -408,6 +518,8 @@ PlannerDialog::~PlannerDialog() {
   config->Write(_T("SpeedKnots"), m_speed->GetValue());
   config->Write(_T("EyeHeight"), m_eyeHeight->GetValue());
   config->Write(_T("FixedOffset"), m_fixedOffset->GetValue());
+  config->Write(_T("WaypointGuid"), m_waypointGuid);
+  config->Write(_T("WaypointName"), m_waypointName);
 }
 
 wxDateTime PlannerDialog::ReadUtc(bool showErrors) {
@@ -495,15 +607,216 @@ void PlannerDialog::ApplyPositionSource() {
     }
   } else if (source == 4) {
     available = m_parent->GetLastFix(&lat, &lon);
+  } else if (source == 5) {
+    WaypointPosition waypoint;
+    available = ResolveSelectedWaypoint(&waypoint);
+    if (available) {
+      lat = waypoint.latitude;
+      lon = waypoint.longitude;
+      m_waypointName = waypoint.name;
+    }
   }
   if (available) {
     m_latitude->SetValue(lat);
     m_longitude->SetValue(lon);
-    m_status->SetLabel(_("Position source applied; calculations remain fully offline."));
+    if (source == 5) {
+      const wxString name = m_waypointName.empty()
+                                ? _("Unnamed waypoint")
+                                : m_waypointName;
+      m_status->SetLabel(wxString::Format(
+          _("Waypoint/place \"%s\" applied; calculations remain fully offline."),
+          name.c_str()));
+    } else {
+      m_status->SetLabel(
+          _("Position source applied; calculations remain fully offline."));
+    }
   } else {
     m_positionSource->SetSelection(0);
-    m_status->SetLabel(_("Requested position is unavailable; retained manual position."));
+    m_status->SetLabel(source == 5
+                           ? _("The selected waypoint/place is unavailable; retained manual position.")
+                           : _("Requested position is unavailable; retained manual position."));
   }
+}
+
+void PlannerDialog::ChangePositionSource(wxCommandEvent&) {
+  if (m_positionSource->GetSelection() == 5 && !ChooseWaypoint()) {
+    m_positionSource->SetSelection(m_lastPositionSource);
+    return;
+  }
+  ApplyPositionSourceAndRefresh();
+}
+
+void PlannerDialog::ApplyPositionSourceAndRefresh() {
+  ApplyPositionSource();
+  m_lastPositionSource = m_positionSource->GetSelection();
+  wxCommandEvent refresh;
+  RefreshAll(refresh);
+}
+
+bool PlannerDialog::UpdateCursorPosition() {
+  if (m_positionSource->GetSelection() != 2) return false;
+  double latitude = 0.0;
+  double longitude = 0.0;
+  if (!m_parent->GetPlugin()->GetCursorPosition(&latitude, &longitude))
+    return false;
+  if (std::fabs(m_latitude->GetValue() - latitude) < 0.0001 &&
+      std::fabs(m_longitude->GetValue() - longitude) < 0.0001)
+    return false;
+  m_latitude->SetValue(latitude);
+  m_longitude->SetValue(longitude);
+  wxCommandEvent refresh;
+  RefreshAll(refresh);
+  m_status->SetLabel(
+      _("Chart cursor position updated; calculations remain fully offline."));
+  return true;
+}
+
+void PlannerDialog::OnCursorTimer(wxTimerEvent&) {
+  UpdateCursorPosition();
+}
+
+#ifdef CELESTIAL_PLANNER_INTEGRATION_TEST
+void PlannerDialog::ScheduleWaypointIntegration(const wxString& name) {
+  m_waypointIntegrationName = name;
+  m_waypointIntegrationAttempts = 0;
+  m_waypointIntegrationTimer.SetOwner(this);
+  Bind(wxEVT_TIMER, &PlannerDialog::OnWaypointIntegrationTimer, this,
+       m_waypointIntegrationTimer.GetId());
+  m_waypointIntegrationTimer.Start(500);
+}
+
+void PlannerDialog::OnWaypointIntegrationTimer(wxTimerEvent&) {
+  ++m_waypointIntegrationAttempts;
+  const bool passed =
+      SelectWaypointForIntegration(m_waypointIntegrationName);
+  if (!passed && m_waypointIntegrationAttempts < 10) return;
+  m_waypointIntegrationTimer.Stop();
+  Unbind(wxEVT_TIMER, &PlannerDialog::OnWaypointIntegrationTimer, this,
+         m_waypointIntegrationTimer.GetId());
+  wxLogMessage("Celestial waypoint integration result: %s",
+               passed ? "PASS" : "FAIL");
+}
+
+bool PlannerDialog::SelectWaypointForIntegration(const wxString& name) {
+  m_positionSource->SetSelection(0);
+  m_latitude->SetValue(0.0);
+  m_longitude->SetValue(0.0);
+  ApplyPositionSourceAndRefresh();
+
+  wxString previousSunset;
+  for (long row = 0; row < m_events->GetItemCount(); ++row) {
+    if (m_events->GetItemText(row) == _("Sunset"))
+      previousSunset = m_events->GetItemText(row, 1);
+  }
+
+  const std::vector<WaypointPosition> waypoints = LoadWaypoints();
+  const WaypointPosition* selected = NULL;
+  for (size_t index = 0; index < waypoints.size(); ++index) {
+    if (waypoints[index].name.Lower().Find(name.Lower()) != wxNOT_FOUND) {
+      selected = &waypoints[index];
+      break;
+    }
+  }
+  if (!selected) {
+    return false;
+  }
+
+  m_waypointGuid = selected->guid;
+  m_waypointName = selected->name;
+  m_positionSource->SetSelection(5);
+  ApplyPositionSourceAndRefresh();
+
+  wxString currentSunset;
+  for (long row = 0; row < m_events->GetItemCount(); ++row) {
+    if (m_events->GetItemText(row) == _("Sunset"))
+      currentSunset = m_events->GetItemText(row, 1);
+  }
+  const bool coordinatesApplied =
+      std::fabs(m_latitude->GetValue() - selected->latitude) < 0.0001 &&
+      std::fabs(m_longitude->GetValue() - selected->longitude) < 0.0001;
+  const bool eventsRefreshed = !previousSunset.empty() &&
+                               !currentSunset.empty() &&
+                               previousSunset != currentSunset;
+  wxLogMessage(
+      "Celestial waypoint integration: name=%s lat=%.5f lon=%.5f "
+      "sunset_before=%s sunset_after=%s coordinates=%d refreshed=%d",
+      selected->name, m_latitude->GetValue(), m_longitude->GetValue(),
+      previousSunset, currentSunset, coordinatesApplied, eventsRefreshed);
+
+  m_parent->GetPlugin()->SetCursorLatLon(10.0, 20.0);
+  m_positionSource->SetSelection(2);
+  UpdateCursorPosition();
+  wxString cursorSunset;
+  for (long row = 0; row < m_events->GetItemCount(); ++row) {
+    if (m_events->GetItemText(row) == _("Sunset"))
+      cursorSunset = m_events->GetItemText(row, 1);
+  }
+  const bool cursorApplied =
+      std::fabs(m_latitude->GetValue() - 10.0) < 0.0001 &&
+      std::fabs(m_longitude->GetValue() - 20.0) < 0.0001;
+  const bool cursorEventsRefreshed =
+      !currentSunset.empty() && !cursorSunset.empty() &&
+      currentSunset != cursorSunset;
+  wxLogMessage(
+      "Celestial chart cursor integration: lat=%.5f lon=%.5f "
+      "sunset_before=%s sunset_after=%s coordinates=%d refreshed=%d",
+      m_latitude->GetValue(), m_longitude->GetValue(), currentSunset,
+      cursorSunset, cursorApplied, cursorEventsRefreshed);
+  return coordinatesApplied && eventsRefreshed && cursorApplied &&
+         cursorEventsRefreshed;
+}
+#endif
+
+bool PlannerDialog::ChooseWaypoint() {
+  const std::vector<WaypointPosition> waypoints = LoadWaypoints();
+  if (waypoints.empty()) {
+    wxMessageBox(_("No OpenCPN waypoints or marks are available."),
+                 _("Select waypoint or place"), wxOK | wxICON_INFORMATION,
+                 this);
+    return false;
+  }
+  WaypointPickerDialog dialog(this, waypoints, m_waypointGuid);
+  if (dialog.ShowModal() != wxID_OK) return false;
+  const WaypointPosition* waypoint = dialog.GetSelectedWaypoint();
+  if (!waypoint) return false;
+  m_waypointGuid = waypoint->guid;
+  m_waypointName = waypoint->name;
+  return true;
+}
+
+std::vector<WaypointPosition> PlannerDialog::LoadWaypoints() const {
+  std::vector<WaypointPosition> waypoints;
+#ifndef UNIT_TESTS
+  const wxArrayString guids = GetWaypointGUIDArray();
+  for (size_t index = 0; index < guids.size(); ++index) {
+    PlugIn_Waypoint waypoint;
+    if (!GetSingleWaypoint(guids[index], &waypoint)) continue;
+    WaypointPosition position;
+    position.guid = guids[index];
+    position.name = waypoint.m_MarkName;
+    position.latitude = waypoint.m_lat;
+    position.longitude = waypoint.m_lon;
+    waypoints.push_back(position);
+  }
+#endif
+  return WaypointPositionSource::Normalize(waypoints);
+}
+
+bool PlannerDialog::ResolveSelectedWaypoint(WaypointPosition* waypoint) const {
+  if (!waypoint || m_waypointGuid.empty()) return false;
+#ifndef UNIT_TESTS
+  PlugIn_Waypoint current;
+  if (!GetSingleWaypoint(m_waypointGuid, &current)) return false;
+  WaypointPosition candidate;
+  candidate.guid = m_waypointGuid;
+  candidate.name = current.m_MarkName;
+  candidate.latitude = current.m_lat;
+  candidate.longitude = current.m_lon;
+  if (!WaypointPositionSource::IsUsable(candidate)) return false;
+  *waypoint = candidate;
+  return true;
+#endif
+  return false;
 }
 
 void PlannerDialog::ApplyTimeSource() {

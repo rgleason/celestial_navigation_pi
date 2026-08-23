@@ -1188,6 +1188,13 @@ void CelestialNavigationDialog::RunPlannerIntegrationScenario() {
   dialog->SelectPageForIntegration(page < 0 ? 0 : static_cast<unsigned>(page));
   dialog->Show();
   dialog->Raise();
+#ifdef CELESTIAL_PLANNER_INTEGRATION_TEST
+  wxString waypointName;
+  if (wxGetEnv("CELESTIAL_GUI_TEST_WAYPOINT", &waypointName) &&
+      !waypointName.empty()) {
+    dialog->ScheduleWaypointIntegration(waypointName);
+  }
+#endif
 }
 
 void CelestialNavigationDialog::OnAnalyze(wxCommandEvent&) {
