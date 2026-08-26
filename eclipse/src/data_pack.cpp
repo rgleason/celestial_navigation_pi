@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <vector>
 
 namespace eclipse {
 namespace {
@@ -137,12 +138,16 @@ DataPackStatus ReadDigest(const std::string& path, const std::string& label) {
     return status;
   }
   Sha256 digest;
-  unsigned char buffer[1024 * 1024];
+  // Windows 32-bit UI threads commonly have a 1 MiB stack.  Keeping this
+  // 1 MiB read buffer on the stack exhausted it when the eclipse dialog
+  // verified DE440s.  The buffer is working storage, so keep it on the heap.
+  std::vector<unsigned char> buffer(1024 * 1024);
   while (input) {
-    input.read(reinterpret_cast<char*>(buffer), sizeof(buffer));
+    input.read(reinterpret_cast<char*>(buffer.data()),
+               static_cast<std::streamsize>(buffer.size()));
     const std::streamsize count = input.gcount();
     if (count > 0) {
-      digest.Update(buffer, static_cast<std::size_t>(count));
+      digest.Update(buffer.data(), static_cast<std::size_t>(count));
       status.bytes += static_cast<std::uint64_t>(count);
     }
   }
