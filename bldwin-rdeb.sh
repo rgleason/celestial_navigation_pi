@@ -34,10 +34,10 @@ else
 fi
 
 # wxWidgets settings 
-set "wxDIR=C:\Users\fcgle\source\opencpn\..\ocpn_wxWidgets" 
-set "wxWIN=C:\Users\fcgle\source\opencpn\..\ocpn_wxWidgets" 
-set "wxWidgets_ROOT_DIR=C:\Users\fcgle\source\opencpn\..\ocpn_wxWidgets" 
-set "wxWidgets_LIB_DIR=C:\Users\fcgle\source\opencpn\..\ocpn_wxWidgets\lib\vc_dll" 
+set "wxDIR=C:\Users\fcgle\source\ocpn_wxWidgets" 
+set "wxWIN=C:\Users\fcgle\source\ocpn_wxWidgets" 
+set "wxWidgets_ROOT_DIR=C:\Users\fcgle\source\ocpn_wxWidgets" 
+set "wxWidgets_LIB_DIR=C:\Users\fcgle\source\ocpn_wxWidgets\lib\vc_dll" 
 set "VCver=17" 
 set "VCstr=Visual Studio 17" 
 
@@ -49,7 +49,7 @@ set "VCstr=Visual Studio 17"
 # build the plugin with cmake
 
 cd build
-cmake -T v143 -A Win32 -DOCPN_TARGET=MSVC ..
+cmake -T v143 -A Win32 -DwxWidgets_ROOT_DIR=/c/Users/fcgle/source/ocpn_wxWidgets/lib/mswud  -DwxWidgets_ROOT_DIR=/c/Users/fcgle/source/ocpn_wxWidgets -DOCPN_TARGET=MSVC ..
 cmake --build . --target package --config relwithdebinfo >output.txt
 	
 # Bash script completes tarball prep adding metadata into it.
