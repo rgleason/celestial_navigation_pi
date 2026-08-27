@@ -167,9 +167,15 @@ bool celestial_navigation_pi::DeInit(void) {
   RemovePlugInTool(m_leftclick_tool_id);
 
   if (m_pCelestialNavigationDialog) {
-    m_pCelestialNavigationDialog->Close();
-    delete m_pCelestialNavigationDialog;
+    // Do not route application shutdown through the normal window-close
+    // handler.  OnDialogClose() uses wxWindow::Destroy(), which is deferred;
+    // once OpenCPN's main event loop is stopping that deferred destruction can
+    // leave this top-level dialog alive and keep the process running.  Clear
+    // the plugin pointer first and destroy the owned dialog synchronously.
+    CelestialNavigationDialog* dialog = m_pCelestialNavigationDialog;
     m_pCelestialNavigationDialog = NULL;
+    dialog->Hide();
+    delete dialog;
   }
   return true;
 }
@@ -429,9 +435,11 @@ void celestial_navigation_pi::SetPluginMessage(wxString& message_id,
 }
 
 void celestial_navigation_pi::OnDialogClose() {
-  m_pCelestialNavigationDialog->Hide();
-  m_pCelestialNavigationDialog->Destroy();
+  CelestialNavigationDialog* dialog = m_pCelestialNavigationDialog;
   m_pCelestialNavigationDialog = NULL;
+  if (!dialog) return;
+  dialog->Hide();
+  dialog->Destroy();
 }
 
 double celestial_navigation_pi_GetWMM(double lat, double lon, double altitude,

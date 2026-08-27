@@ -118,7 +118,6 @@ target_link_libraries(celestial_tests
         ocpn::wxjson
         ocpn::plugin-dc
         celestial::eclipse_core
-        ${OPENGL_LIBRARIES}
 )
 
 # Set optimization level for debug builds
