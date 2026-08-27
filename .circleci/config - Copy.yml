@@ -1,3 +1,4 @@
+---
 version: 2.1
 
 parameters:
@@ -70,7 +71,6 @@ workflows:
     deploy_reviewed_alpha:
         when: << pipeline.parameters.run_workflow_deploy >>
         jobs:
-          # All builds still run, but do NOT block deployment
           - build-android-arm64:
               name: release-android-arm64
               <<: *std-filters
@@ -122,19 +122,15 @@ workflows:
           - build-ubuntu-x86_64-2204-jammy:
               name: release-ubuntu-x86_64-2204-jammy
               <<: *std-filters
-          # ⭐ Fast-deploy trigger job    
           - build-macos-universal:
               name: release-macos-universal
               <<: *std-filters
-          
           - build-msvc-2022:
               name: release-msvc-2022
               <<: *std-filters
-
-         
-        #  - hold-for-alpha-approval:
-        #      type: approval
-        #      requires:
+          - hold-for-alpha-approval:
+              type: approval
+              requires:
               #  - release-android-arm64
               #  - release-android-armhf
               #  - release-flatpak-aarch64-2208
@@ -152,14 +148,11 @@ workflows:
               #  - release-debian-arm64-11-bullseye
               #  - release-debian-x86_64-11-bullseye
               #  - release-ubuntu-x86_64-2204-jammy
-              #  - release-macos-universal
+                - release-macos-universal
               #  - release-msvc-2022
-          # ⭐ Deploy as soon as macOS succeeds        
           - deploy-alpha:
               context: celestial-navigation-deployment
-              requires:
-                - release-macos-universal
-           #   requires: [hold-for-alpha-approval]
+              requires: [hold-for-alpha-approval]
 
 orbs:
     win: circleci/windows@5.1.0
