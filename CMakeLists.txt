@@ -75,7 +75,7 @@ set(LONG_DESCRIPTION
 
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "7")
-set(VERSION_PATCH "4")
+set(VERSION_PATCH "5")
 set(VERSION_TWEAK "0")
 set(VERSION_DATE  "26/08/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
@@ -84,7 +84,7 @@ set(OCPN_API_VERSION_MAJOR "1")
 set(OCPN_API_VERSION_MINOR "18")
 set(TP_COMMENT "  * Release using CI")
 
-set(PARENT "opencpn")2
+set(PARENT "opencpn")
 
 # Use to set up a local webserver with git installed. Default is github.com.
 # Now set in PluginSetup.cmake set(GIT_REPOSITORY_SERVER "github.com")
