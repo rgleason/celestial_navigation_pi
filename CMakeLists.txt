@@ -72,10 +72,9 @@ set(SHORT_DESCRIPTION
 set(LONG_DESCRIPTION
 	"Offline nautical almanac, sight planning and ranking, time-tagged running fixes, sequence analysis, horizon events, time integrity and a DE440 solar-eclipse planner."
 )
-
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "7")
-set(VERSION_PATCH "6")
+set(VERSION_PATCH "7")
 set(VERSION_TWEAK "0")
 set(VERSION_DATE  "27/08/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
