@@ -373,8 +373,14 @@ void CelestialNavigationDialog::BuildTimeIntegrityPanel(bool visible) {
   header->Add(m_timeIntegrityToggle, 0, wxRIGHT, 4);
   box->Add(header, 0, wxEXPAND | wxTOP | wxBOTTOM, 3);
 
-  m_timeIntegrityPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition,
-                                     wxDefaultSize, wxTAB_TRAVERSAL);
+  m_timeIntegrityPanel =
+      new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+                           wxTAB_TRAVERSAL | wxVSCROLL);
+  m_timeIntegrityPanel->SetScrollRate(0, FromDIP(10));
+  // Keep the sight list useful when the saved dialog height or available
+  // desktop work area is small.  The complete time-status content remains
+  // available through this panel's vertical scrollbar.
+  m_timeIntegrityPanel->SetMinSize(wxSize(-1, FromDIP(220)));
   wxBoxSizer* panelSizer = new wxBoxSizer(wxVERTICAL);
   wxFlexGridSizer* grid = new wxFlexGridSizer(0, 2, 4, 10);
   grid->AddGrowableCol(1);
@@ -445,6 +451,7 @@ void CelestialNavigationDialog::BuildTimeIntegrityPanel(bool visible) {
   note->SetFont(noteFont);
   panelSizer->Add(note, 0, wxLEFT | wxRIGHT | wxBOTTOM, 7);
   m_timeIntegrityPanel->SetSizer(panelSizer);
+  m_timeIntegrityPanel->FitInside();
   box->Add(m_timeIntegrityPanel, 0, wxEXPAND);
 
   GetSizer()->Add(box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
@@ -474,6 +481,7 @@ void CelestialNavigationDialog::SetTimeIntegrityVisible(bool visible,
   m_timeIntegrityToggle->SetValue(visible);
   m_timeIntegrityToggle->SetLabel(visible ? _("Hide") : _("Show"));
   m_timeIntegrityPanel->Show(visible);
+  if (visible) m_timeIntegrityPanel->FitInside();
   Layout();
 
   SetMinSize(wxDefaultSize);
@@ -517,6 +525,7 @@ void CelestialNavigationDialog::OnMarkTime(wxCommandEvent&) {
         _("Local and UTC clocks held at the marked instant"));
   }
   UpdateTimeIntegrityPanel();
+  m_timeIntegrityPanel->FitInside();
   Layout();
 }
 
@@ -528,6 +537,7 @@ void CelestialNavigationDialog::OnCopyMarkedUtc(wxCommandEvent&) {
   wxTheClipboard->SetData(new wxTextDataObject(text));
   wxTheClipboard->Close();
   m_markedTimeStatus->SetLabel(_("Marked UTC copied: ") + text);
+  m_timeIntegrityPanel->FitInside();
   Layout();
 }
 

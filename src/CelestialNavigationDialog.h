@@ -133,7 +133,7 @@ private:
 
   wxStaticText* m_localTime;
   wxStaticText* m_utcTime;
-  wxPanel* m_timeIntegrityPanel;
+  wxScrolledWindow* m_timeIntegrityPanel;
   wxToggleButton* m_timeIntegrityToggle;
   wxStaticText* m_gnssTime;
   wxStaticText* m_gnssDifference;
