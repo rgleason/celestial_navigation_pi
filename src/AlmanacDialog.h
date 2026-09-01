@@ -6,6 +6,7 @@
 #include <wx/dialog.h>
 
 class CelestialNavigationDialog;
+class NavigationAngleCtrl;
 class wxCheckBox;
 class wxChoice;
 class wxDatePickerCtrl;
@@ -47,10 +48,10 @@ private:
   wxChoice* m_coverage;
   wxChoice* m_route;
   wxTextCtrl* m_voyageName;
-  wxSpinCtrlDouble* m_latitude;
-  wxSpinCtrlDouble* m_longitude;
-  wxSpinCtrlDouble* m_latSouth;
-  wxSpinCtrlDouble* m_latNorth;
+  NavigationAngleCtrl* m_latitude;
+  NavigationAngleCtrl* m_longitude;
+  NavigationAngleCtrl* m_latSouth;
+  NavigationAngleCtrl* m_latNorth;
   wxSpinCtrlDouble* m_corridor;
   wxSpinCtrlDouble* m_speed;
   wxSpinCtrlDouble* m_dut1;

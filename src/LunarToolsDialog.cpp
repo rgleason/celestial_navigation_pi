@@ -2,6 +2,8 @@
 
 #include "BodyCatalog.h"
 #include "CelestialNavigationDialog.h"
+#include "NavigationAlgorithms.h"
+#include "NavigationUIUtils.h"
 #include "OcpnApiCompat.h"
 #include "Sight.h"
 #include "UtcDateTime.h"
@@ -101,8 +103,8 @@ void LunarToolsDialog::SelectPageForIntegration(unsigned page) {
   if (page == 1) CalculatePlanner(event);
   if (page == 2) {
     sextant_calibration::Environment environment;
-    environment.observer = {m_calLatitude->GetValue(),
-                            m_calLongitude->GetValue()};
+    environment.observer = {m_calLatitude->GetAngleOr(0.0),
+                            m_calLongitude->GetAngleOr(0.0)};
     const wxDateTime utc = CalibrationUtc();
     bool found = false;
     for (unsigned first = 0; first < m_calFirstBody->GetCount() && !found;
@@ -148,9 +150,9 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
     if (sight.m_Type != Sight::LUNAR) continue;
     m_lunarIndices.push_back(index);
     m_sequenceSights->Append(wxString::Format(
-        _("%s  Moon–%s  %.3f°"),
+        _("%s  Moon–%s  %s"),
         UtcDateTime::FormatUtc(sight.m_DateTime, "%Y-%m-%d %H:%M:%S"),
-        sight.m_Body, sight.m_Measurement));
+        sight.m_Body, FormatNavigationAngle(sight.m_Measurement).c_str()));
     m_sequenceSights->Check(m_sequenceSights->GetCount() - 1, true);
   }
   upper->Add(m_sequenceSights, 1, wxEXPAND | wxALL, 5);
@@ -168,8 +170,12 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
     latitude = sight.m_DRLat;
     longitude = sight.m_DRLon;
   }
-  m_sequenceLatitude = Spin(page, -89.8, 89.8, latitude, 0.1, 4);
-  m_sequenceLongitude = Spin(page, -180.0, 180.0, longitude, 0.1, 4);
+  m_sequenceLatitude =
+      new NavigationAngleCtrl(page, NavigationAngleKind::Latitude, latitude,
+                              -90.0, 90.0, wxSize(155, -1));
+  m_sequenceLongitude =
+      new NavigationAngleCtrl(page, NavigationAngleKind::Longitude, longitude,
+                              -180.0, 180.0, wxSize(165, -1));
   settings->Add(
       LabelControl(page, _("Initial / known latitude"), m_sequenceLatitude), 0,
       wxEXPAND | wxALL, 3);
@@ -245,11 +251,15 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
         "judgement."));
   note->Wrap(1000);
   top->Add(note, 0, wxEXPAND | wxALL, 8);
-  double latitude = m_sequenceLatitude->GetValue();
-  double longitude = m_sequenceLongitude->GetValue();
+  double latitude = m_sequenceLatitude->GetAngleOr(0.0);
+  double longitude = m_sequenceLongitude->GetAngleOr(0.0);
   auto* controls = new wxBoxSizer(wxHORIZONTAL);
-  m_plannerLatitude = Spin(page, -89.8, 89.8, latitude, 0.1, 4);
-  m_plannerLongitude = Spin(page, -180.0, 180.0, longitude, 0.1, 4);
+  m_plannerLatitude =
+      new NavigationAngleCtrl(page, NavigationAngleKind::Latitude, latitude,
+                              -90.0, 90.0, wxSize(155, -1));
+  m_plannerLongitude =
+      new NavigationAngleCtrl(page, NavigationAngleKind::Longitude, longitude,
+                              -180.0, 180.0, wxSize(165, -1));
   // The controls are deliberately UTC-entry fields.  Supplying a real
   // instant here would make wxWidgets display local clock fields and repeat
   // the exact local/UTC ambiguity the planner is intended to avoid.
@@ -271,10 +281,12 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
   m_plannerList = new wxListCtrl(page, wxID_ANY, wxDefaultPosition,
                                  wxDefaultSize, wxLC_REPORT | wxBORDER_SUNKEN);
   const wxString columns[] = {
-      _("Body"), _("Moon altitude"), _("Body altitude"), _("Distance"),
-      _("Rate"), _("0.1′ time"),     _("Quality")};
-  const int widths[] = {170, 125, 125, 110, 125, 115, 250};
-  for (int index = 0; index < 7; ++index) {
+      _("Body"),          _("Moon altitude"), _("Moon Zn true"),
+      _("Body altitude"), _("Body Zn true"),  _("Distance"),
+      _("Rate"),          _("0.1′ time"),     _("Moon illum."),
+      _("Magnitude"),     _("Quality")};
+  const int widths[] = {150, 145, 105, 145, 105, 125, 125, 115, 105, 95, 230};
+  for (int index = 0; index < 11; ++index) {
     m_plannerList->InsertColumn(index, columns[index]);
     m_plannerList->SetColumnWidth(index, widths[index]);
   }
@@ -298,10 +310,12 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
   auto* prediction =
       new wxStaticBoxSizer(wxVERTICAL, page, _("Offline pair prediction"));
   auto* row1 = new wxBoxSizer(wxHORIZONTAL);
-  m_calLatitude =
-      Spin(page, -89.8, 89.8, m_sequenceLatitude->GetValue(), 0.1, 4);
-  m_calLongitude =
-      Spin(page, -180.0, 180.0, m_sequenceLongitude->GetValue(), 0.1, 4);
+  m_calLatitude = new NavigationAngleCtrl(page, NavigationAngleKind::Latitude,
+                                          m_sequenceLatitude->GetAngleOr(0.0),
+                                          -90.0, 90.0, wxSize(155, -1));
+  m_calLongitude = new NavigationAngleCtrl(page, NavigationAngleKind::Longitude,
+                                           m_sequenceLongitude->GetAngleOr(0.0),
+                                           -180.0, 180.0, wxSize(165, -1));
   const wxDateTime utcNow = UtcDateTime::Now();
   m_calDate = new wxDatePickerCtrl(page, wxID_ANY, utcNow);
   m_calTime = new wxTimePickerCtrl(page, wxID_ANY, utcNow);
@@ -331,8 +345,10 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
   row2->Add(predict, 0);
   prediction->Add(row2, 0, wxEXPAND | wxALL, 3);
   auto* row3 = new wxBoxSizer(wxHORIZONTAL);
-  m_calPressure = Spin(page, 0.0, 1100.0, 1013.0, 1.0, 1);
-  m_calTemperature = Spin(page, -60.0, 60.0, 10.0, 1.0, 1);
+  const CelestialNavigationDefaults defaults =
+      LoadCelestialNavigationDefaults();
+  m_calPressure = Spin(page, 0.0, 1100.0, defaults.pressure, 1.0, 1);
+  m_calTemperature = Spin(page, -60.0, 60.0, defaults.temperature, 1.0, 1);
   row3->Add(LabelControl(page, _("Pressure hPa"), m_calPressure), 0, wxRIGHT,
             8);
   row3->Add(LabelControl(page, _("Temperature °C"), m_calTemperature), 0,
@@ -344,14 +360,12 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
   top->Add(prediction, 0, wxEXPAND | wxALL, 5);
 
   auto* entry = new wxBoxSizer(wxHORIZONTAL);
-  m_calObservedDegrees = Spin(page, 0.0, 180.0, 0.0, 1.0, 0);
-  m_calObservedMinutes = Spin(page, 0.0, 59.99, 0.0, 0.1, 2);
+  m_calObservedAngle = new NavigationAngleCtrl(
+      page, NavigationAngleKind::Generic, 0.0, 0.0, 180.0, wxSize(165, -1));
   m_calUncertainty = Spin(page, 0.05, 10.0, 0.2, 0.05, 2);
   m_calNote = new wxTextCtrl(page, wxID_ANY);
-  entry->Add(LabelControl(page, _("Observed degrees"), m_calObservedDegrees), 1,
+  entry->Add(LabelControl(page, _("Observed angle"), m_calObservedAngle), 2,
              wxRIGHT, 5);
-  entry->Add(LabelControl(page, _("minutes"), m_calObservedMinutes), 1, wxRIGHT,
-             5);
   entry->Add(LabelControl(page, _("uncertainty ±′"), m_calUncertainty), 1,
              wxRIGHT, 5);
   entry->Add(LabelControl(page, _("note / shade"), m_calNote), 2, wxRIGHT, 5);
@@ -398,12 +412,8 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
                          "readings; the plugin never rewrites observations."));
   m_profileSummary->Wrap(1000);
   top->Add(m_profileSummary, 0, wxEXPAND | wxALL, 6);
-  m_calObservedDegrees->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) {
-    UpdateProfileCorrection();
-  });
-  m_calObservedMinutes->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) {
-    UpdateProfileCorrection();
-  });
+  m_calObservedAngle->Bind(
+      wxEVT_TEXT, [this](wxCommandEvent&) { UpdateProfileCorrection(); });
   page->SetSizer(top);
 }
 
@@ -416,6 +426,16 @@ void LunarToolsDialog::PopulateBodies(wxChoice* choice, bool includeMoon) {
 }
 
 void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
+  double sequenceLatitude = 0.0;
+  double sequenceLongitude = 0.0;
+  if (!m_sequenceLatitude->GetAngle(&sequenceLatitude) ||
+      !m_sequenceLongitude->GetAngle(&sequenceLongitude)) {
+    wxMessageBox(_("Enter a valid initial or known position."),
+                 _("Lunar sequence"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+  m_sequenceLatitude->Normalize();
+  m_sequenceLongitude->Normalize();
   std::vector<lunar_session::SessionObservation> entries;
   wxDateTime reference;
   for (unsigned list = 0; list < m_sequenceSights->GetCount(); ++list) {
@@ -433,10 +453,8 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
   }
   lunar_session::Options options;
   options.solve_position = m_sequenceMode->GetSelection() == 0;
-  options.known_or_initial_position = {m_sequenceLatitude->GetValue(),
-                                       m_sequenceLongitude->GetValue()};
-  options.position_seeds.push_back(
-      {m_sequenceLatitude->GetValue(), m_sequenceLongitude->GetValue()});
+  options.known_or_initial_position = {sequenceLatitude, sequenceLongitude};
+  options.position_seeds.push_back({sequenceLatitude, sequenceLongitude});
   options.robust_fit = m_sequenceRobust->GetValue();
   options.estimate_common_index_bias = m_sequenceBias->GetValue();
   const double span = m_sequenceSearchHours->GetValue() * 3600.0;
@@ -569,6 +587,16 @@ void LunarToolsDialog::ApplySequenceCorrection(wxCommandEvent&) {
 
 void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
   m_plannerList->DeleteAllItems();
+  double observerLatitude = 0.0;
+  double observerLongitude = 0.0;
+  if (!m_plannerLatitude->GetAngle(&observerLatitude) ||
+      !m_plannerLongitude->GetAngle(&observerLongitude)) {
+    wxMessageBox(_("Enter a valid planner latitude and longitude."),
+                 _("Lunar planner"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+  m_plannerLatitude->Normalize();
+  m_plannerLongitude->Normalize();
   const wxDateTime utc = PickerUtc(m_plannerDate, m_plannerTime);
   Sight sky;
   sky.m_CorrectedDateTime = utc;
@@ -582,26 +610,30 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
   struct Row {
     wxString body;
     double moon_alt;
+    double moon_az;
     double body_alt;
+    double body_az;
     double distance;
     double rate;
     double sensitivity;
+    double illumination;
+    double magnitude;
     double score;
     wxString quality;
   };
+  const MoonInformation moonInformation =
+      CalculateMoonInformation(utc, observerLatitude, observerLongitude);
   std::vector<Row> rows;
   for (const auto& info : BodyCatalog::All()) {
     if (info.kind == CelestialBodyKind::Moon) continue;
     double body_lat = 0.0, body_lon = 0.0;
     sky.m_Body = info.name;
     sky.BodyLocation(utc, &body_lat, &body_lon, nullptr, nullptr, nullptr);
-    double moon_alt = 0.0, ignored = 0.0, body_alt = 0.0;
-    sky.AltitudeAzimuth(m_plannerLatitude->GetValue(),
-                        m_plannerLongitude->GetValue(), moon_lat, moon_lon,
-                        &moon_alt, &ignored);
-    sky.AltitudeAzimuth(m_plannerLatitude->GetValue(),
-                        m_plannerLongitude->GetValue(), body_lat, body_lon,
-                        &body_alt, &ignored);
+    double moon_alt = 0.0, moon_az = 0.0, body_alt = 0.0, body_az = 0.0;
+    sky.AltitudeAzimuth(observerLatitude, observerLongitude, moon_lat, moon_lon,
+                        &moon_alt, &moon_az);
+    sky.AltitudeAzimuth(observerLatitude, observerLongitude, body_lat, body_lon,
+                        &body_alt, &body_az);
     const double distance =
         AngularDistance(moon_lat, moon_lon, body_lat, body_lon);
     double body_lat_later = 0.0, body_lon_later = 0.0;
@@ -632,23 +664,30 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
     }
     score -= std::min(25.0, std::fabs(moon_alt - body_alt) * 0.4);
     score -= std::max(0.0, info.visualMagnitude - 1.5) * 4.0;
-    rows.push_back({info.name, moon_alt, body_alt, distance, rate, sensitivity,
-                    score, quality});
+    rows.push_back({info.name, moon_alt, moon_az, body_alt, body_az, distance,
+                    rate, sensitivity,
+                    moonInformation.illuminatedFraction * 100.0,
+                    info.visualMagnitude, score, quality});
   }
   std::sort(rows.begin(), rows.end(),
             [](const Row& a, const Row& b) { return a.score > b.score; });
   for (std::size_t index = 0; index < rows.size(); ++index) {
     const Row& row = rows[index];
     long item = m_plannerList->InsertItem(index, row.body);
-    m_plannerList->SetItem(item, 1, wxString::Format("%.1f°", row.moon_alt));
-    m_plannerList->SetItem(item, 2, wxString::Format("%.1f°", row.body_alt));
-    m_plannerList->SetItem(item, 3, wxString::Format("%.2f°", row.distance));
-    m_plannerList->SetItem(item, 4, wxString::Format("%+.1f′/h", row.rate));
-    m_plannerList->SetItem(item, 5,
+    m_plannerList->SetItem(item, 1, FormatNavigationAngle(row.moon_alt));
+    m_plannerList->SetItem(item, 2, wxString::Format("%.1f°", row.moon_az));
+    m_plannerList->SetItem(item, 3, FormatNavigationAngle(row.body_alt));
+    m_plannerList->SetItem(item, 4, wxString::Format("%.1f°", row.body_az));
+    m_plannerList->SetItem(item, 5, FormatNavigationAngle(row.distance));
+    m_plannerList->SetItem(item, 6, wxString::Format("%+.1f′/h", row.rate));
+    m_plannerList->SetItem(item, 7,
                            std::isfinite(row.sensitivity)
                                ? wxString::Format("%.1f s", row.sensitivity)
                                : _("—"));
-    m_plannerList->SetItem(item, 6, row.quality);
+    m_plannerList->SetItem(item, 8,
+                           wxString::Format("%.1f%%", row.illumination));
+    m_plannerList->SetItem(item, 9, wxString::Format("%.1f", row.magnitude));
+    m_plannerList->SetItem(item, 10, row.quality);
   }
 }
 
@@ -702,9 +741,18 @@ void LunarToolsDialog::PredictCalibrationPair(wxCommandEvent&) {
     m_lastPredictionDeg = NAN;
     return;
   }
+  double latitude = 0.0;
+  double longitude = 0.0;
+  if (!m_calLatitude->GetAngle(&latitude) ||
+      !m_calLongitude->GetAngle(&longitude)) {
+    m_calPrediction->SetLabel(_("Enter a valid latitude and longitude."));
+    m_lastPredictionDeg = NAN;
+    return;
+  }
+  m_calLatitude->Normalize();
+  m_calLongitude->Normalize();
   sextant_calibration::Environment environment;
-  environment.observer = {m_calLatitude->GetValue(),
-                          m_calLongitude->GetValue()};
+  environment.observer = {latitude, longitude};
   environment.pressure_hpa = m_calPressure->GetValue();
   environment.temperature_c = m_calTemperature->GetValue();
   const wxDateTime utc = CalibrationUtc();
@@ -723,16 +771,17 @@ void LunarToolsDialog::PredictCalibrationPair(wxCommandEvent&) {
                    : (contact == 2 ? result.apparent_far_contact_distance_deg
                                    : result.apparent_center_distance_deg);
   m_calPrediction->SetLabel(wxString::Format(
-      _("%s %.5f°; centre %.5f°; altitudes %.1f° / %.1f° (Δ %.1f°)%s"),
-      m_calContact->GetStringSelection(), m_lastPredictionDeg,
-      result.apparent_center_distance_deg, result.first_altitude_deg,
-      result.second_altitude_deg, result.altitude_difference_deg,
+      _("%s %s; centre %s; altitudes %s / %s (Δ %s)%s"),
+      m_calContact->GetStringSelection(),
+      FormatNavigationAngle(m_lastPredictionDeg).c_str(),
+      FormatNavigationAngle(result.apparent_center_distance_deg).c_str(),
+      FormatNavigationAngle(result.first_altitude_deg).c_str(),
+      FormatNavigationAngle(result.second_altitude_deg).c_str(),
+      FormatNavigationAngle(result.altitude_difference_deg).c_str(),
       result.altitude_difference_deg > 15.0
           ? _(" — prefer a more equal-altitude star pair")
           : wxString()));
-  m_calObservedDegrees->SetValue(std::floor(m_lastPredictionDeg));
-  m_calObservedMinutes->SetValue(
-      (m_lastPredictionDeg - std::floor(m_lastPredictionDeg)) * 60.0);
+  m_calObservedAngle->SetAngle(m_lastPredictionDeg);
 }
 
 void LunarToolsDialog::AddCalibrationReading(wxCommandEvent&) {
@@ -743,16 +792,19 @@ void LunarToolsDialog::AddCalibrationReading(wxCommandEvent&) {
   }
   sextant_calibration::CheckReading reading;
   reading.predicted_deg = m_lastPredictionDeg;
-  reading.observed_deg = m_calObservedDegrees->GetValue() +
-                         m_calObservedMinutes->GetValue() / 60.0;
+  if (!m_calObservedAngle->GetAngle(&reading.observed_deg)) {
+    wxMessageBox(_("Enter a valid observed angle."), _("Sextant check"),
+                 wxOK | wxICON_ERROR, this);
+    return;
+  }
+  m_calObservedAngle->Normalize();
   reading.uncertainty_arcmin = m_calUncertainty->GetValue();
   reading.note = m_calNote->GetValue().ToStdString();
   m_calibrationReadings.push_back(reading);
-  const long row = m_calReadings->InsertItem(
-      m_calReadings->GetItemCount(),
-      wxString::Format("%.5f°", reading.predicted_deg));
-  m_calReadings->SetItem(row, 1,
-                         wxString::Format("%.5f°", reading.observed_deg));
+  const long row =
+      m_calReadings->InsertItem(m_calReadings->GetItemCount(),
+                                FormatNavigationAngle(reading.predicted_deg));
+  m_calReadings->SetItem(row, 1, FormatNavigationAngle(reading.observed_deg));
   m_calReadings->SetItem(
       row, 2,
       wxString::Format("%+0.2f'",
@@ -804,7 +856,8 @@ void LunarToolsDialog::SaveCalibrationProfile(wxCommandEvent&) {
   wxString points;
   for (const auto& point : profile.points) {
     if (!points.empty()) points += _("; ");
-    points += wxString::Format(_("%.1f°: %+0.2f′ ±%.2f′ (%d)"), point.angle_deg,
+    points += wxString::Format(_("%s: %+0.2f′ ±%.2f′ (%d)"),
+                               FormatNavigationAngle(point.angle_deg).c_str(),
                                point.correction_arcmin,
                                point.uncertainty_arcmin, point.reading_count);
   }
@@ -844,16 +897,20 @@ void LunarToolsDialog::UpdateProfileCorrection() {
     return;
   }
   const auto& profile = m_profiles[static_cast<std::size_t>(selected)];
-  const double angle = m_calObservedDegrees->GetValue() +
-                       m_calObservedMinutes->GetValue() / 60.0;
+  double angle = 0.0;
+  if (!m_calObservedAngle->GetAngle(&angle)) {
+    m_profileCorrection->SetLabel(
+        _("Active-profile correction: enter a valid observed angle."));
+    return;
+  }
   double uncertainty = 0.0;
   const double correction =
       sextant_calibration::CorrectionAt(profile, angle, &uncertainty);
   const bool outside = angle < profile.points.front().angle_deg ||
                        angle > profile.points.back().angle_deg;
   m_profileCorrection->SetLabel(wxString::Format(
-      _("Active-profile correction at %.3f°: %+0.2f′ ±%.2f′%s"), angle,
-      correction, uncertainty,
+      _("Active-profile correction at %s: %+0.2f′ ±%.2f′%s"),
+      FormatNavigationAngle(angle).c_str(), correction, uncertainty,
       outside ? _(" — outside tested range; nearest endpoint only")
               : wxString()));
 }

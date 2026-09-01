@@ -221,6 +221,7 @@ SET(SRCS
 
 SET(HDRS
         src/OcpnApiCompat.h
+        src/NavigationUIUtils.h
         src/celestial_navigation_pi.h
         src/CelestialNavigationDialog.h
         src/BodyCatalog.h

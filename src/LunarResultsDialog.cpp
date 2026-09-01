@@ -3,6 +3,7 @@
 #include "Sight.h"
 #include "SightDialog.h"
 #include "CelestialNavigationDialog.h"
+#include "NavigationUIUtils.h"
 #include "UtcDateTime.h"
 
 #include <wx/button.h>
@@ -144,8 +145,7 @@ void LunarResultsDialog::UpdateResults() {
         row, 1,
         wxString::Format("%+.1f s", candidate.offset_seconds));
     m_candidates->SetItem(
-        row, 2,
-        wxString::Format("%.6f%c", candidate.cleared_distance_deg, 0x00B0));
+        row, 2, FormatNavigationAngle(candidate.cleared_distance_deg));
     m_candidates->SetItem(
         row, 3, wxString::Format("%.3f", candidate.slope_arcmin_per_hour));
     m_candidates->SetItem(
@@ -200,12 +200,14 @@ void LunarResultsDialog::UpdatePositions(long candidate_index) {
           index == nearest
               ? wxString::Format(_("%zu (nearest DR)"), index + 1)
               : wxString::Format(_("%zu"), index + 1));
-      m_positions->SetItem(row, 1,
-                           wxString::Format("%.6f%c", position.latitude_deg,
-                                            0x00B0));
-      m_positions->SetItem(row, 2,
-                           wxString::Format("%.6f%c", position.longitude_deg,
-                                            0x00B0));
+      m_positions->SetItem(
+          row, 1,
+          FormatNavigationAngle(position.latitude_deg,
+                                NavigationAngleKind::Latitude, true));
+      m_positions->SetItem(
+          row, 2,
+          FormatNavigationAngle(position.longitude_deg,
+                                NavigationAngleKind::Longitude, true));
       m_positions->SetItem(
           row, 3,
           wxString::Format("%.1f NM",

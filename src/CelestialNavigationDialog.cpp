@@ -26,6 +26,7 @@
  */
 
 #include <wx/wx.h>
+#include <wx/clipbrd.h>
 #include <wx/fileconf.h>
 
 #include <wx/filename.h>
@@ -122,6 +123,9 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       m_gnssDifference(NULL),
       m_systemTimeStatus(NULL),
       m_sightCorrection(NULL),
+      m_markTimeButton(NULL),
+      m_copyMarkedUtcButton(NULL),
+      m_markedTimeStatus(NULL),
       m_horizonEventButton(NULL),
       m_eclipseButton(NULL),
       m_plannerButton(NULL),
@@ -380,8 +384,9 @@ void CelestialNavigationDialog::BuildTimeIntegrityPanel(bool visible) {
   clockFont.SetPointSize(wxMax(14, GetFont().GetPointSize() + 3));
   clockFont.SetWeight(wxFONTWEIGHT_BOLD);
 
-  grid->Add(new wxStaticText(m_timeIntegrityPanel, wxID_ANY, _("Local")), 0,
-            wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
+  grid->Add(
+      new wxStaticText(m_timeIntegrityPanel, wxID_ANY, _("Computer local")), 0,
+      wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
   m_localTime = new wxStaticText(m_timeIntegrityPanel, wxID_ANY, "--:--:--.-");
   m_localTime->SetFont(clockFont);
   grid->Add(m_localTime, 1, wxEXPAND | wxRIGHT, 4);
@@ -419,6 +424,18 @@ void CelestialNavigationDialog::BuildTimeIntegrityPanel(bool visible) {
   grid->Add(m_sightCorrection, 1, wxEXPAND | wxRIGHT | wxBOTTOM, 4);
 
   panelSizer->Add(grid, 0, wxEXPAND | wxALL, 3);
+  wxBoxSizer* markRow = new wxBoxSizer(wxHORIZONTAL);
+  m_markTimeButton =
+      new wxButton(m_timeIntegrityPanel, wxID_ANY, _("Mark time"));
+  m_copyMarkedUtcButton =
+      new wxButton(m_timeIntegrityPanel, wxID_ANY, _("Copy marked UTC"));
+  m_copyMarkedUtcButton->Enable(false);
+  m_markedTimeStatus =
+      new wxStaticText(m_timeIntegrityPanel, wxID_ANY, _("Clock is live"));
+  markRow->Add(m_markTimeButton, 0, wxRIGHT, 5);
+  markRow->Add(m_copyMarkedUtcButton, 0, wxRIGHT, 8);
+  markRow->Add(m_markedTimeStatus, 1, wxALIGN_CENTER_VERTICAL);
+  panelSizer->Add(markRow, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 7);
   wxStaticText* note = new wxStaticText(
       m_timeIntegrityPanel, wxID_ANY,
       _("GNSS comparison is informational; it never changes sight times or "
@@ -434,6 +451,10 @@ void CelestialNavigationDialog::BuildTimeIntegrityPanel(bool visible) {
   m_timeIntegrityToggle->Bind(wxEVT_TOGGLEBUTTON,
                               &CelestialNavigationDialog::OnTimeIntegrityToggle,
                               this);
+  m_markTimeButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnMarkTime,
+                         this);
+  m_copyMarkedUtcButton->Bind(
+      wxEVT_BUTTON, &CelestialNavigationDialog::OnCopyMarkedUtc, this);
   SetTimeIntegrityVisible(visible, true);
 
   m_gnssTime->SetToolTip(
@@ -482,6 +503,40 @@ void CelestialNavigationDialog::OnTimeIntegrityToggle(wxCommandEvent& event) {
   config->Write(_T("ShowTimeIntegrity"), visible);
 }
 
+void CelestialNavigationDialog::OnMarkTime(wxCommandEvent&) {
+  if (m_markedTime.IsValid()) {
+    m_markedTime = wxDateTime();
+    m_markTimeButton->SetLabel(_("Mark time"));
+    m_copyMarkedUtcButton->Enable(false);
+    m_markedTimeStatus->SetLabel(_("Clock is live"));
+  } else {
+    m_markedTime = wxDateTime::UNow();
+    m_markTimeButton->SetLabel(_("Release"));
+    m_copyMarkedUtcButton->Enable(true);
+    m_markedTimeStatus->SetLabel(
+        _("Local and UTC clocks held at the marked instant"));
+  }
+  UpdateTimeIntegrityPanel();
+  Layout();
+}
+
+void CelestialNavigationDialog::OnCopyMarkedUtc(wxCommandEvent&) {
+  if (!m_markedTime.IsValid() || !wxTheClipboard->Open()) return;
+  const wxString text =
+      m_markedTime.Format("%Y-%m-%dT%H:%M:%S", wxDateTime::UTC) +
+      wxString::Format(".%03dZ", m_markedTime.GetMillisecond());
+  wxTheClipboard->SetData(new wxTextDataObject(text));
+  wxTheClipboard->Close();
+  m_markedTimeStatus->SetLabel(_("Marked UTC copied: ") + text);
+  Layout();
+}
+
+bool CelestialNavigationDialog::GetMarkedUtc(wxDateTime* utcFields) const {
+  if (!utcFields || !m_markedTime.IsValid()) return false;
+  *utcFields = UtcDateTime::FromInstant(m_markedTime);
+  return true;
+}
+
 void CelestialNavigationDialog::QueryChrony() {
 #if defined(__UNIX__) && !defined(__OCPN__ANDROID__)
   wxArrayString output;
@@ -498,7 +553,8 @@ void CelestialNavigationDialog::QueryChrony() {
 }
 
 void CelestialNavigationDialog::UpdateTimeIntegrityPanel() {
-  const wxDateTime now = wxDateTime::UNow();
+  const wxDateTime systemNow = wxDateTime::UNow();
+  const wxDateTime now = m_markedTime.IsValid() ? m_markedTime : systemNow;
   wxString abbreviation = now.Format("%Z", wxDateTime::Local);
   wxString numericZone = now.Format("%z", wxDateTime::Local);
   if (numericZone.length() == 5)
@@ -524,8 +580,8 @@ void CelestialNavigationDialog::UpdateTimeIntegrityPanel() {
       m_gnssTime->SetLabel(FormatClock(live, wxDateTime::UTC, "UTC") + " · " +
                            gnss.source + " age " + FormatAge(ageSeconds));
       SetStatusColour(m_gnssTime, 1);
-      const long long difference =
-          static_cast<long long>((now - live).GetMilliseconds().GetValue());
+      const long long difference = static_cast<long long>(
+          (systemNow - live).GetMilliseconds().GetValue());
       m_gnssDifference->SetLabel(wxString::Format(
           "%+lld ms · includes NMEA delivery latency", difference));
       SetStatusColour(m_gnssDifference, 1);
@@ -996,12 +1052,14 @@ void CelestialNavigationDialog::OnNew(wxCommandEvent& event) {
   wxDateTime now = wxDateTime::Now().ToUTC();
 
   Sight ns(Sight::ALTITUDE, _("Sun"), Sight::LOWER, now, 0, 0, 10);
-  SightDialog dialog(this, ns, m_ClockCorrection);
+  wxDateTime markedUtc;
+  GetMarkedUtc(&markedUtc);
+  SightDialog dialog(this, ns, m_ClockCorrection, markedUtc);
 
   dialog.ShowModal();
   if (dialog.GetReturnCode() == wxID_OK) {
+    dialog.Recompute();
     if (ns.m_bVisible) {
-      dialog.Recompute();
       ns.RebuildPolygons();
     }
     ns.SetSelected(true);
@@ -1233,10 +1291,12 @@ void CelestialNavigationDialog::CreatePlannedSight(const wxString& body,
   sight.m_DRBoatPosition = false;
   sight.m_DRLat = drLat;
   sight.m_DRLon = drLon;
-  SightDialog dialog(this, sight, m_ClockCorrection);
+  wxDateTime markedUtc;
+  GetMarkedUtc(&markedUtc);
+  SightDialog dialog(this, sight, m_ClockCorrection, markedUtc);
   if (dialog.ShowModal() != wxID_OK) return;
+  dialog.Recompute();
   if (sight.m_bVisible) {
-    dialog.Recompute();
     sight.RebuildPolygons();
   }
   for (Sight& existing : m_Sights) existing.SetSelected(false);
@@ -1303,12 +1363,14 @@ void CelestialNavigationDialog::OnEdit() {
     return;
   }
 
-  SightDialog dialog(this, s, m_ClockCorrection);
+  wxDateTime markedUtc;
+  GetMarkedUtc(&markedUtc);
+  SightDialog dialog(this, s, m_ClockCorrection, markedUtc);
 
   dialog.ShowModal();
   if (dialog.GetReturnCode() == wxID_OK) {
+    dialog.Recompute();
     if (s.m_bVisible) {
-      dialog.Recompute();
       s.RebuildPolygons();
     }
     UpdateSight(selectedIndex);

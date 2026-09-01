@@ -7,6 +7,7 @@
 #include <wx/dialog.h>
 
 class CelestialNavigationDialog;
+class NavigationAngleCtrl;
 class wxButton;
 class wxCheckBox;
 class wxCheckListBox;
@@ -50,8 +51,8 @@ private:
 
   wxCheckListBox* m_sequenceSights;
   wxChoice* m_sequenceMode;
-  wxSpinCtrlDouble* m_sequenceLatitude;
-  wxSpinCtrlDouble* m_sequenceLongitude;
+  NavigationAngleCtrl* m_sequenceLatitude;
+  NavigationAngleCtrl* m_sequenceLongitude;
   wxSpinCtrlDouble* m_sequenceSearchHours;
   wxCheckBox* m_sequenceRobust;
   wxCheckBox* m_sequenceBias;
@@ -65,14 +66,14 @@ private:
   std::vector<std::size_t> m_lunarIndices;
   lunar_session::Result m_sequenceResult;
 
-  wxSpinCtrlDouble* m_plannerLatitude;
-  wxSpinCtrlDouble* m_plannerLongitude;
+  NavigationAngleCtrl* m_plannerLatitude;
+  NavigationAngleCtrl* m_plannerLongitude;
   wxDatePickerCtrl* m_plannerDate;
   wxTimePickerCtrl* m_plannerTime;
   wxListCtrl* m_plannerList;
 
-  wxSpinCtrlDouble* m_calLatitude;
-  wxSpinCtrlDouble* m_calLongitude;
+  NavigationAngleCtrl* m_calLatitude;
+  NavigationAngleCtrl* m_calLongitude;
   wxDatePickerCtrl* m_calDate;
   wxTimePickerCtrl* m_calTime;
   wxChoice* m_calFirstBody;
@@ -81,8 +82,7 @@ private:
   wxSpinCtrlDouble* m_calPressure;
   wxSpinCtrlDouble* m_calTemperature;
   wxStaticText* m_calPrediction;
-  wxSpinCtrlDouble* m_calObservedDegrees;
-  wxSpinCtrlDouble* m_calObservedMinutes;
+  NavigationAngleCtrl* m_calObservedAngle;
   wxSpinCtrlDouble* m_calUncertainty;
   wxTextCtrl* m_calNote;
   wxListCtrl* m_calReadings;

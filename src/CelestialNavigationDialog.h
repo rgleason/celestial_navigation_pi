@@ -72,6 +72,7 @@ public:
   int GetClockCorrection() const { return m_ClockCorrection; }
   void ApplyClockCorrection(int correction_seconds);
   void OpenAlmanacForRoute(const wxString& routeGuid = wxString());
+  bool GetMarkedUtc(wxDateTime* utcFields) const;
 
 private:
   bool OpenXML(bool reportfailure);
@@ -86,6 +87,8 @@ private:
   void QueryChrony();
   void OnTimeTimer(wxTimerEvent& event);
   void OnTimeIntegrityToggle(wxCommandEvent& event);
+  void OnMarkTime(wxCommandEvent& event);
+  void OnCopyMarkedUtc(wxCommandEvent& event);
 
   // event handlers
   void OnNew(wxCommandEvent& event);
@@ -136,6 +139,10 @@ private:
   wxStaticText* m_gnssDifference;
   wxStaticText* m_systemTimeStatus;
   wxStaticText* m_sightCorrection;
+  wxButton* m_markTimeButton;
+  wxButton* m_copyMarkedUtcButton;
+  wxStaticText* m_markedTimeStatus;
+  wxDateTime m_markedTime;
   wxButton* m_horizonEventButton;
   wxButton* m_eclipseButton;
   wxButton* m_plannerButton;

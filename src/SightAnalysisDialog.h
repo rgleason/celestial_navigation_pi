@@ -6,6 +6,7 @@
 class CelestialNavigationDialog;
 class wxCheckBox;
 class wxListCtrl;
+class NavigationAngleCtrl;
 class wxSpinCtrlDouble;
 class wxStaticText;
 class ResidualPlotPanel;
@@ -20,8 +21,8 @@ private:
   CelestialNavigationDialog* m_parent;
   wxCheckBox* m_onlySelectedBody;
   wxCheckBox* m_moving;
-  wxSpinCtrlDouble* m_latitude;
-  wxSpinCtrlDouble* m_longitude;
+  NavigationAngleCtrl* m_latitude;
+  NavigationAngleCtrl* m_longitude;
   wxSpinCtrlDouble* m_course;
   wxSpinCtrlDouble* m_speed;
   wxStaticText* m_summary;

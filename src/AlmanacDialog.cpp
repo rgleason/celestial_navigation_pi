@@ -1,6 +1,7 @@
 #include "AlmanacDialog.h"
 
 #include "CelestialNavigationDialog.h"
+#include "NavigationUIUtils.h"
 #include "UtcDateTime.h"
 #include "celestial_navigation_pi.h"
 
@@ -64,8 +65,8 @@ AlmanacDialog::AlmanacDialog(CelestialNavigationDialog* parent,
   double lat = 0.0, lon = 0.0;
   if (parent && parent->GetPlugin() &&
       parent->GetPlugin()->GetBoatPosition(&lat, &lon)) {
-    m_latitude->SetValue(lat);
-    m_longitude->SetValue(lon);
+    m_latitude->SetAngle(lat);
+    m_longitude->SetAngle(lon);
   }
   m_preset->SetSelection(1);
   ApplyPresetSelection();
@@ -123,12 +124,16 @@ void AlmanacDialog::BuildInterface() {
   m_speed = Coordinate(setup, 0.1, 100, 6);
   m_speed->SetDigits(1);
   AddLabelled(setupSizer, setup, _("Fallback speed (kn)"), m_speed);
-  m_latitude = Coordinate(setup, -90, 90, 0);
-  m_longitude = Coordinate(setup, -180, 180, 0);
+  m_latitude = new NavigationAngleCtrl(setup, NavigationAngleKind::Latitude,
+                                       0.0, -90.0, 90.0);
+  m_longitude = new NavigationAngleCtrl(setup, NavigationAngleKind::Longitude,
+                                        0.0, -180.0, 180.0);
   AddLabelled(setupSizer, setup, _("Latitude"), m_latitude);
   AddLabelled(setupSizer, setup, _("Longitude"), m_longitude);
-  m_latSouth = Coordinate(setup, -90, 90, -60);
-  m_latNorth = Coordinate(setup, -90, 90, 60);
+  m_latSouth = new NavigationAngleCtrl(setup, NavigationAngleKind::Latitude,
+                                       -60.0, -90.0, 90.0);
+  m_latNorth = new NavigationAngleCtrl(setup, NavigationAngleKind::Latitude,
+                                       60.0, -90.0, 90.0);
   AddLabelled(setupSizer, setup, _("Latitude-band south"), m_latSouth);
   AddLabelled(setupSizer, setup, _("Latitude-band north"), m_latNorth);
   m_dut1Known = new wxCheckBox(setup, wxID_ANY,
@@ -387,10 +392,20 @@ AlmanacRequest AlmanacDialog::ReadRequest(wxString* error,
   request.toUtc = UtcDateTime::CopyFields(m_to->GetValue());
   request.coverage = static_cast<AlmanacCoverage>(std::max(0, m_coverage->GetSelection()));
   request.routeName = m_route->GetStringSelection();
-  request.latitude = m_latitude->GetValue();
-  request.longitude = m_longitude->GetValue();
-  request.latitudeSouth = m_latSouth->GetValue();
-  request.latitudeNorth = m_latNorth->GetValue();
+  if (!m_latitude->GetAngle(&request.latitude) ||
+      !m_longitude->GetAngle(&request.longitude)) {
+    if (error)
+      *error =
+          _("Enter a valid latitude and longitude. Decimal degrees, "
+            "degrees and minutes, and degrees/minutes/seconds are "
+            "accepted.");
+    return request;
+  }
+  if (!m_latSouth->GetAngle(&request.latitudeSouth) ||
+      !m_latNorth->GetAngle(&request.latitudeNorth)) {
+    if (error) *error = _("Enter valid latitude-band limits.");
+    return request;
+  }
   request.routeCorridorNm = m_corridor->GetValue();
   request.routeSpeedKnots = m_speed->GetValue();
   request.dut1Known = m_dut1Known->GetValue();

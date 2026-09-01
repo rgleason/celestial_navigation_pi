@@ -1,5 +1,7 @@
 #include "EclipseDialog.h"
 
+#include "NavigationUIUtils.h"
+
 #include "celestial_navigation_pi.h"
 
 #include "eclipse/data_pack.h"
@@ -40,10 +42,11 @@ wxString FormatDateTime(double tt_jd, double delta_t_seconds,
 }
 
 wxString FormatLocation(const eclipse::GeoPoint& point) {
-  return wxString::Format("%.3f%c, %.3f%c", std::fabs(point.latitude_deg),
-                          point.latitude_deg >= 0.0 ? 'N' : 'S',
-                          std::fabs(point.longitude_deg),
-                          point.longitude_deg >= 0.0 ? 'E' : 'W');
+  return FormatNavigationAngle(point.latitude_deg,
+                               NavigationAngleKind::Latitude, true) +
+         ", " +
+         FormatNavigationAngle(point.longitude_deg,
+                               NavigationAngleKind::Longitude, true);
 }
 
 wxString FormatOverlayTime(double tt_jd, double delta_t_seconds) {
@@ -184,13 +187,17 @@ void EclipseDialog::BuildInterface() {
   wxBoxSizer* coordinates = new wxBoxSizer(wxHORIZONTAL);
   coordinates->Add(new wxStaticText(this, wxID_ANY, _("Latitude")), 0,
                    wxALIGN_CENTER_VERTICAL | wxRIGHT, 4);
-  m_latitude = new wxTextCtrl(this, wxID_ANY, "0.000000", wxDefaultPosition,
-                              wxSize(105, -1));
+  m_latitude = new wxTextCtrl(
+      this, wxID_ANY,
+      FormatNavigationAngle(0.0, NavigationAngleKind::Latitude, true),
+      wxDefaultPosition, wxSize(150, -1));
   coordinates->Add(m_latitude, 0, wxRIGHT, 8);
   coordinates->Add(new wxStaticText(this, wxID_ANY, _("Longitude")), 0,
                    wxALIGN_CENTER_VERTICAL | wxRIGHT, 4);
-  m_longitude = new wxTextCtrl(this, wxID_ANY, "0.000000", wxDefaultPosition,
-                               wxSize(105, -1));
+  m_longitude = new wxTextCtrl(
+      this, wxID_ANY,
+      FormatNavigationAngle(0.0, NavigationAngleKind::Longitude, true),
+      wxDefaultPosition, wxSize(160, -1));
   coordinates->Add(m_longitude, 0, wxRIGHT, 8);
   wxButton* boat = new wxButton(this, wxID_ANY, _("Use boat position"));
   coordinates->Add(boat, 0);
@@ -442,16 +449,21 @@ void EclipseDialog::OnBoatPosition(wxCommandEvent&) {
           "longitude manually."));
     return;
   }
-  m_latitude->SetValue(wxString::Format("%.6f", latitude));
-  m_longitude->SetValue(wxString::Format("%.6f", longitude));
+  m_latitude->SetValue(
+      FormatNavigationAngle(latitude, NavigationAngleKind::Latitude, true));
+  m_longitude->SetValue(
+      FormatNavigationAngle(longitude, NavigationAngleKind::Longitude, true));
 }
 
 bool EclipseDialog::Observer(eclipse::GeoPoint* observer) const {
   if (!observer) return false;
   double latitude = 0.0, longitude = 0.0;
-  if (!m_latitude->GetValue().ToDouble(&latitude) ||
-      !m_longitude->GetValue().ToDouble(&longitude) || latitude < -90.0 ||
-      latitude > 90.0 || longitude < -180.0 || longitude > 180.0)
+  if (!ParseNavigationAngle(m_latitude->GetValue(),
+                            NavigationAngleKind::Latitude, -90.0, 90.0,
+                            &latitude) ||
+      !ParseNavigationAngle(m_longitude->GetValue(),
+                            NavigationAngleKind::Longitude, -180.0, 180.0,
+                            &longitude))
     return false;
   *observer = eclipse::GeoPoint(latitude, longitude);
   return true;
@@ -465,6 +477,10 @@ void EclipseDialog::OnLocal(wxCommandEvent&) {
                  _("Local circumstances"), wxOK | wxICON_WARNING, this);
     return;
   }
+  m_latitude->ChangeValue(FormatNavigationAngle(
+      observer.latitude_deg, NavigationAngleKind::Latitude, true));
+  m_longitude->ChangeValue(FormatNavigationAngle(
+      observer.longitude_deg, NavigationAngleKind::Longitude, true));
   std::string error;
   eclipse::LocalContacts contacts;
   wxBusyCursor busy;
@@ -495,15 +511,14 @@ void EclipseDialog::OnLocal(wxCommandEvent&) {
                                          &contacts.c4};
   const char* names[] = {"C1", "C2", "MAX", "C3", "C4"};
   wxString text;
-  text << wxString::Format("Observer: %.5f, %.5f\n", observer.latitude_deg,
-                           observer.longitude_deg);
+  text << "Observer: " << FormatLocation(observer) << "\n";
   for (int index = 0; index < 5; ++index) {
     if (!times[index]->valid) continue;
     text << wxString::Format(
-        "%-3s  %s   Sun alt %7.3f%c  az %7.3f%c\n", names[index],
+        "%-3s  %s   Sun alt %s  az %7.3f%c\n", names[index],
         FormatDateTime(times[index]->tt_jd, event.delta_t_seconds, false),
-        times[index]->sun_altitude_deg, 0x00b0, times[index]->sun_azimuth_deg,
-        0x00b0);
+        FormatNavigationAngle(times[index]->sun_altitude_deg).c_str(),
+        times[index]->sun_azimuth_deg, 0x00b0);
   }
   text << wxString::Format(
       "\nType: %s   magnitude %.5f   obscuration %.3f%%\n",
@@ -535,8 +550,10 @@ void EclipseDialog::RunIntegrationScenario2027() {
     break;
   }
   OnPlot(command);
-  m_latitude->SetValue("25.505000");
-  m_longitude->SetValue("33.183333");
+  m_latitude->SetValue(
+      FormatNavigationAngle(25.505, NavigationAngleKind::Latitude, true));
+  m_longitude->SetValue(
+      FormatNavigationAngle(33.183333, NavigationAngleKind::Longitude, true));
   m_use_lola->SetValue(m_use_lola->IsEnabled());
   OnLocal(command);
   wxLogMessage(

@@ -37,6 +37,7 @@
 
 #include "Sight.h"
 #include "SightDialog.h"
+#include "UtcDateTime.h"
 #include "FindBodyDialog.h"
 #include "LunarResultsDialog.h"
 #include "celestial_navigation_pi.h"
@@ -50,7 +51,8 @@
 #include <wx/qt/private/wxQtGesture.h>
 #endif
 
-SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
+SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
+                         const wxDateTime& markedUtc)
     : SightDialogBase(parent),
       m_Sight(s),
       m_clock_offset(clock_offset),
@@ -126,6 +128,16 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   m_tDipShortDistance->SetValue(
       wxString::Format(_T("%.4f"), m_Sight.m_DipShortDistance));
   m_cbArtificialHorizon->SetValue(m_Sight.m_ArtificialHorizon);
+  m_cbDipShort->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent&) {
+    if (m_cbDipShort->GetValue()) m_cbArtificialHorizon->SetValue(false);
+    Recompute();
+  });
+  m_tDipShortDistance->Bind(wxEVT_TEXT,
+                            [this](wxCommandEvent&) { Recompute(); });
+  m_cbArtificialHorizon->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent&) {
+    if (m_cbArtificialHorizon->GetValue()) m_cbDipShort->SetValue(false);
+    Recompute();
+  });
 
   m_tShiftNm->SetValue(wxString::Format(_T("%.2f"), m_Sight.m_ShiftNm));
   m_tShiftBearing->SetValue(
@@ -279,6 +291,21 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset)
   if (m_Sight.m_Type == Sight::LUNAR && m_Sight.m_TimeCertainty <= 0.0) {
     m_Sight.m_TimeCertainty = 86400.0;
     m_sCertaintySeconds->SetValue(86400);
+  }
+
+  if (markedUtc.IsValid()) {
+    wxButton* applyMarked = new wxButton(
+        m_panel2, wxID_ANY,
+        _("Use marked UTC: ") +
+            UtcDateTime::FormatUtc(markedUtc, "%Y-%m-%d %H:%M:%S"));
+    m_panel2->GetSizer()->Add(applyMarked, 0, wxLEFT | wxRIGHT | wxBOTTOM, 8);
+    applyMarked->Bind(wxEVT_BUTTON, [this, markedUtc](wxCommandEvent&) {
+      m_Calendar->SetDate(markedUtc);
+      m_sHours->SetValue(markedUtc.GetHour());
+      m_sMinutes->SetValue(markedUtc.GetMinute());
+      m_sSeconds->SetValue(markedUtc.GetSecond());
+      Recompute();
+    });
   }
 
   int x, y;
@@ -510,6 +537,9 @@ void SightDialog::RecomputeDMM() {
 void SightDialog::Recompute() {
   m_cbMagneticAzimuth->Enable(m_cType->GetSelection() == AZIMUTH);
   m_cLimb->Enable(m_cType->GetSelection() != AZIMUTH);
+  m_cbDipShort->Enable(!m_cbArtificialHorizon->GetValue());
+  m_tDipShortDistance->Enable(m_cbDipShort->GetValue() &&
+                              !m_cbArtificialHorizon->GetValue());
 
   m_fgSizerLunar->Show(m_cType->GetSelection() == LUNAR);
   if (m_cType->GetSelection() == LUNAR) {
