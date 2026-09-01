@@ -1,6 +1,7 @@
 #include "CoastalNavigationDialog.h"
 
 #include "CelestialNavigationDialog.h"
+#include "NavigationUIUtils.h"
 #include "OcpnApiCompat.h"
 #include "celestial_navigation_pi.h"
 #include "plugin_dc/dc_utils/include/pidc.h"
@@ -28,10 +29,14 @@ CoastalNavigationDialog::CoastalNavigationDialog(
       m_parent(parent),
       m_hasVerticalPosition(false),
       m_hasHorizontalFix(false) {
+  const CelestialNavigationDefaults defaults =
+      LoadCelestialNavigationDefaults();
   double boatLat = 0.0, boatLon = 0.0;
   celestial_navigation_pi_BoatPos(boatLat, boatLon);
-  const wxString lat = wxString::Format("%.6f", boatLat);
-  const wxString lon = wxString::Format("%.6f", boatLon);
+  const wxString lat =
+      FormatNavigationAngle(boatLat, NavigationAngleKind::Latitude, true);
+  const wxString lon =
+      FormatNavigationAngle(boatLon, NavigationAngleKind::Longitude, true);
 
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
   wxStaticText* intro = new wxStaticText(
@@ -58,28 +63,31 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   m_verticalMode->SetSelection(0);
   verticalGrid->Add(m_verticalMode, 1, wxEXPAND);
   verticalGrid->AddSpacer(1);
-  m_verticalTargetLat = AddField(verticalGrid, vertical, _("Target latitude"), lat,
-                                 _("decimal degrees"));
-  m_verticalTargetLon = AddField(verticalGrid, vertical, _("Target longitude"), lon,
-                                 _("decimal degrees"));
-  m_verticalAngle = AddField(verticalGrid, vertical, _("Observed vertical angle"),
-                             _("0° 30.000'"), _("angle or decimal degrees"));
-  m_verticalIndexError = AddField(verticalGrid, vertical, _("Index error (on the arc +)"),
-                                  _("0.0"), _("arcmin"));
+  m_verticalTargetLat =
+      AddField(verticalGrid, vertical, _("Target latitude"), lat, _("angle"));
+  m_verticalTargetLon =
+      AddField(verticalGrid, vertical, _("Target longitude"), lon, _("angle"));
+  m_verticalAngle =
+      AddField(verticalGrid, vertical, _("Observed vertical angle"),
+               _("0° 30.000'"), _("angle or decimal degrees"));
+  m_verticalIndexError =
+      AddField(verticalGrid, vertical, _("Index error (on the arc +)"),
+               wxString::Format("%.2f", defaults.indexError), _("arcmin"));
   m_verticalHeight = AddField(verticalGrid, vertical, _("Charted top height"),
                               _("30.0"), _("m above height datum"));
-  m_verticalWaterLevel = AddField(verticalGrid, vertical,
-                                  _("Water level above height datum"), _("0.0"),
-                                  _("m (tide included)"));
-  m_verticalEyeHeight = AddField(verticalGrid, vertical, _("Height of eye"),
-                                 _("2.0"), _("m"));
+  m_verticalWaterLevel =
+      AddField(verticalGrid, vertical, _("Water level above height datum"),
+               _("0.0"), _("m (tide included)"));
+  m_verticalEyeHeight =
+      AddField(verticalGrid, vertical, _("Height of eye"),
+               wxString::Format("%.1f", defaults.eyeHeight), _("m"));
   verticalRoot->Add(verticalGrid, 0, wxALL | wxEXPAND, 10);
 
   wxStaticBoxSizer* bearingBox =
       new wxStaticBoxSizer(wxVERTICAL, vertical, _("Optional bearing fix"));
-  m_includeBearing = new wxCheckBox(
-      bearingBox->GetStaticBox(), wxID_ANY,
-      _("Include observed bearing from vessel to target"));
+  m_includeBearing =
+      new wxCheckBox(bearingBox->GetStaticBox(), wxID_ANY,
+                     _("Include observed bearing from vessel to target"));
   bearingBox->Add(m_includeBearing, 0, wxALL, 5);
   wxStaticText* bearingTiming = new wxStaticText(
       bearingBox->GetStaticBox(), wxID_ANY,
@@ -95,19 +103,20 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   wxArrayString references;
   references.Add(_("True"));
   references.Add(_("Magnetic compass"));
-  m_bearingReference = new wxChoice(bearingBox->GetStaticBox(), wxID_ANY,
-                                    wxDefaultPosition, wxDefaultSize, references);
+  m_bearingReference =
+      new wxChoice(bearingBox->GetStaticBox(), wxID_ANY, wxDefaultPosition,
+                   wxDefaultSize, references);
   m_bearingReference->SetSelection(0);
   bearingGrid->Add(m_bearingReference, 1, wxEXPAND);
   bearingGrid->AddSpacer(1);
   m_observedBearing = AddField(bearingGrid, bearingBox->GetStaticBox(),
                                _("Observed bearing"), _("0.0"), _("degrees"));
-  m_variation = AddField(bearingGrid, bearingBox->GetStaticBox(),
-                         _("Magnetic variation (E + / W -)"), _("0.0"),
-                         _("degrees"));
-  m_deviation = AddField(bearingGrid, bearingBox->GetStaticBox(),
-                         _("Compass deviation (E + / W -)"), _("0.0"),
-                         _("degrees"));
+  m_variation =
+      AddField(bearingGrid, bearingBox->GetStaticBox(),
+               _("Magnetic variation (E + / W -)"), _("0.0"), _("degrees"));
+  m_deviation =
+      AddField(bearingGrid, bearingBox->GetStaticBox(),
+               _("Compass deviation (E + / W -)"), _("0.0"), _("degrees"));
   bearingBox->Add(bearingGrid, 0, wxALL | wxEXPAND, 5);
   verticalRoot->Add(bearingBox, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
   wxButton* calculateVertical =
@@ -134,51 +143,48 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   horizontalRoot->Add(hsaHelp, 0, wxALL | wxEXPAND, 10);
   wxFlexGridSizer* horizontalGrid = new wxFlexGridSizer(0, 3, 6, 8);
   horizontalGrid->AddGrowableCol(1, 1);
-  m_leftLat = AddField(horizontalGrid, horizontal, _("Left object latitude"), lat,
-                       _("decimal degrees"));
-  m_leftLon = AddField(horizontalGrid, horizontal, _("Left object longitude"), lon,
-                       _("decimal degrees"));
-  m_centreLat = AddField(horizontalGrid, horizontal, _("Centre object latitude"), lat,
-                         _("decimal degrees"));
-  m_centreLon = AddField(horizontalGrid, horizontal, _("Centre object longitude"), lon,
-                         _("decimal degrees"));
-  m_rightLat = AddField(horizontalGrid, horizontal, _("Right object latitude"), lat,
-                        _("decimal degrees"));
-  m_rightLon = AddField(horizontalGrid, horizontal, _("Right object longitude"), lon,
-                        _("decimal degrees"));
+  m_leftLat = AddField(horizontalGrid, horizontal, _("Left object latitude"),
+                       lat, _("angle"));
+  m_leftLon = AddField(horizontalGrid, horizontal, _("Left object longitude"),
+                       lon, _("angle"));
+  m_centreLat = AddField(horizontalGrid, horizontal,
+                         _("Centre object latitude"), lat, _("angle"));
+  m_centreLon = AddField(horizontalGrid, horizontal,
+                         _("Centre object longitude"), lon, _("angle"));
+  m_rightLat = AddField(horizontalGrid, horizontal, _("Right object latitude"),
+                        lat, _("angle"));
+  m_rightLon = AddField(horizontalGrid, horizontal, _("Right object longitude"),
+                        lon, _("angle"));
   m_firstAngle = AddField(horizontalGrid, horizontal, _("Left-centre angle"),
                           _("30.0"), _("degrees"));
   m_secondAngle = AddField(horizontalGrid, horizontal, _("Centre-right angle"),
                            _("30.0"), _("degrees"));
-  m_angleUncertainty = AddField(horizontalGrid, horizontal,
-                                _("Angle uncertainty (1-sigma)"), _("0.2"),
-                                _("arcmin"));
+  m_angleUncertainty =
+      AddField(horizontalGrid, horizontal, _("Angle uncertainty (1-sigma)"),
+               _("0.2"), _("arcmin"));
   m_initialLat = AddField(horizontalGrid, horizontal,
-                          _("Approximate vessel latitude"), lat,
-                          _("decimal degrees"));
+                          _("Approximate vessel latitude"), lat, _("angle"));
   m_initialLon = AddField(horizontalGrid, horizontal,
-                          _("Approximate vessel longitude"), lon,
-                          _("decimal degrees"));
+                          _("Approximate vessel longitude"), lon, _("angle"));
   horizontalRoot->Add(horizontalGrid, 0, wxALL | wxEXPAND, 10);
 
   wxStaticBoxSizer* sequence = new wxStaticBoxSizer(
       wxVERTICAL, horizontal, _("Sequential angle readings"));
-  m_advanceHorizontalObserver = new wxCheckBox(
-      sequence->GetStaticBox(), wxID_ANY,
-      _("Advance the vessel between the two HSA readings"));
+  m_advanceHorizontalObserver =
+      new wxCheckBox(sequence->GetStaticBox(), wxID_ANY,
+                     _("Advance the vessel between the two HSA readings"));
   sequence->Add(m_advanceHorizontalObserver, 0, wxALL, 5);
   wxFlexGridSizer* sequenceGrid = new wxFlexGridSizer(0, 3, 6, 8);
   sequenceGrid->AddGrowableCol(1, 1);
-  m_horizontalInterval = AddField(
-      sequenceGrid, sequence->GetStaticBox(),
-      _("Second-angle interval from first"), _("0"), _("seconds"));
+  m_horizontalInterval =
+      AddField(sequenceGrid, sequence->GetStaticBox(),
+               _("Second-angle interval from first"), _("0"), _("seconds"));
   m_horizontalCourse = AddField(sequenceGrid, sequence->GetStaticBox(),
                                 _("COG true"), _("0.0"), _("degrees"));
-  m_horizontalSpeed = AddField(sequenceGrid, sequence->GetStaticBox(),
-                               _("SOG"), _("0.0"), _("kn"));
+  m_horizontalSpeed = AddField(sequenceGrid, sequence->GetStaticBox(), _("SOG"),
+                               _("0.0"), _("kn"));
   sequence->Add(sequenceGrid, 0, wxALL | wxEXPAND, 5);
-  horizontalRoot->Add(sequence, 0,
-                      wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
+  horizontalRoot->Add(sequence, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
   auto updateSequence = [this]() {
     const bool enabled = m_advanceHorizontalObserver->GetValue();
     m_horizontalInterval->Enable(enabled);
@@ -186,8 +192,7 @@ CoastalNavigationDialog::CoastalNavigationDialog(
     m_horizontalSpeed->Enable(enabled);
   };
   m_advanceHorizontalObserver->Bind(
-      wxEVT_CHECKBOX,
-      [updateSequence](wxCommandEvent&) { updateSequence(); });
+      wxEVT_CHECKBOX, [updateSequence](wxCommandEvent&) { updateSequence(); });
   updateSequence();
   wxBoxSizer* horizontalButtons = new wxBoxSizer(wxHORIZONTAL);
   wxButton* boat = new wxButton(horizontal, wxID_ANY, _("Use boat position"));
@@ -196,7 +201,8 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   horizontalButtons->Add(boat, 0, wxRIGHT, 8);
   horizontalButtons->Add(calculateHorizontal, 0);
   horizontalRoot->Add(horizontalButtons, 0, wxLEFT | wxRIGHT | wxBOTTOM, 10);
-  m_horizontalResult = new wxStaticText(horizontal, wxID_ANY, _("No result yet."));
+  m_horizontalResult =
+      new wxStaticText(horizontal, wxID_ANY, _("No result yet."));
   m_horizontalResult->Wrap(690);
   horizontalRoot->Add(m_horizontalResult, 0,
                       wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
@@ -222,9 +228,10 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   CentreOnParent();
 }
 
-wxTextCtrl* CoastalNavigationDialog::AddField(
-    wxSizer* sizer, wxWindow* parent, const wxString& label,
-    const wxString& value, const wxString& units) {
+wxTextCtrl* CoastalNavigationDialog::AddField(wxSizer* sizer, wxWindow* parent,
+                                              const wxString& label,
+                                              const wxString& value,
+                                              const wxString& units) {
   sizer->Add(new wxStaticText(parent, wxID_ANY, label), 0,
              wxALIGN_CENTER_VERTICAL);
   wxTextCtrl* control = new wxTextCtrl(parent, wxID_ANY, value);
@@ -235,26 +242,58 @@ wxTextCtrl* CoastalNavigationDialog::AddField(
 }
 
 bool CoastalNavigationDialog::ReadDouble(wxTextCtrl* control,
-                                         const wxString& label,
-                                         double* value) {
+                                         const wxString& label, double* value) {
   if (control->GetValue().ToDouble(value) && std::isfinite(*value)) return true;
   wxMessageBox(label + _(" is not a valid number."), _("Coastal navigation"),
                wxOK | wxICON_ERROR, this);
   return false;
 }
 
+bool CoastalNavigationDialog::ReadAngle(wxTextCtrl* control,
+                                        const wxString& label, double minimum,
+                                        double maximum, double* value) {
+  if (ParseNavigationAngle(control->GetValue(), NavigationAngleKind::Generic,
+                           minimum, maximum, value)) {
+    control->ChangeValue(FormatNavigationAngle(*value));
+    return true;
+  }
+  wxMessageBox(
+      label + _(" is not a valid angle. Decimal degrees, degrees and minutes, "
+                "and degrees/minutes/seconds are accepted."),
+      _("Coastal navigation"), wxOK | wxICON_ERROR, this);
+  return false;
+}
+
 cn::GeoPoint CoastalNavigationDialog::ReadPoint(wxTextCtrl* latitude,
-                                                 wxTextCtrl* longitude,
-                                                 const wxString& label,
-                                                 bool* ok) {
+                                                wxTextCtrl* longitude,
+                                                const wxString& label,
+                                                bool* ok) {
   cn::GeoPoint point;
-  *ok = ReadDouble(latitude, label + _(" latitude"), &point.latitude_deg) &&
-        ReadDouble(longitude, label + _(" longitude"), &point.longitude_deg);
+  *ok =
+      ParseNavigationAngle(latitude->GetValue(), NavigationAngleKind::Latitude,
+                           -90.0, 90.0, &point.latitude_deg) &&
+      ParseNavigationAngle(longitude->GetValue(),
+                           NavigationAngleKind::Longitude, -180.0, 180.0,
+                           &point.longitude_deg);
+  if (!*ok) {
+    wxMessageBox(
+        label + _(" must contain a valid latitude and longitude. Decimal "
+                  "degrees, degrees and minutes, and degrees/minutes/seconds "
+                  "are accepted."),
+        _("Coastal navigation"), wxOK | wxICON_ERROR, this);
+    return point;
+  }
   if (*ok && (point.latitude_deg <= -90.0 || point.latitude_deg >= 90.0 ||
               point.longitude_deg < -180.0 || point.longitude_deg > 180.0)) {
     wxMessageBox(label + _(" is outside the valid latitude/longitude range."),
                  _("Coastal navigation"), wxOK | wxICON_ERROR, this);
     *ok = false;
+  }
+  if (*ok) {
+    latitude->ChangeValue(FormatNavigationAngle(
+        point.latitude_deg, NavigationAngleKind::Latitude, true));
+    longitude->ChangeValue(FormatNavigationAngle(
+        point.longitude_deg, NavigationAngleKind::Longitude, true));
   }
   return point;
 }
@@ -268,8 +307,9 @@ void CoastalNavigationDialog::CalculateVertical(wxCommandEvent&) {
   observation.mode = m_verticalMode->GetSelection() == 0
                          ? cn::VerticalAngleMode::WaterlineToTop
                          : cn::VerticalAngleMode::SeaHorizonToTopBeyondHorizon;
-  observation.angle_deg = fromDMM_Plugin(m_verticalAngle->GetValue());
-  if (!ReadDouble(m_verticalIndexError, _("Index error"),
+  if (!ReadAngle(m_verticalAngle, _("Observed vertical angle"), 0.0, 180.0,
+                 &observation.angle_deg) ||
+      !ReadDouble(m_verticalIndexError, _("Index error"),
                   &observation.index_error_arcmin) ||
       !ReadDouble(m_verticalHeight, _("Charted top height"),
                   &observation.charted_top_height_m) ||
@@ -288,8 +328,9 @@ void CoastalNavigationDialog::CalculateVertical(wxCommandEvent&) {
     return;
   }
   wxString text = wxString::Format(
-      _("Range %.3f NM; corrected angle %.6f%c; effective target height %.2f m."),
-      result.range_nm, result.corrected_angle_deg, 0x00B0,
+      _("Range %.3f NM; corrected angle %s; effective target height %.2f m."),
+      result.range_nm,
+      FormatNavigationAngle(result.corrected_angle_deg).c_str(),
       result.effective_height_m);
   for (const std::string& warning : result.warnings)
     text += _("\nWarning: ") + wxString::FromUTF8(warning.c_str());
@@ -305,15 +346,22 @@ void CoastalNavigationDialog::CalculateVertical(wxCommandEvent&) {
       return;
     if (m_bearingReference->GetSelection() == 1)
       bearing += variation + deviation;
-    m_verticalPosition = cn::Destination(target, bearing + 180.0, result.range_nm);
+    m_verticalPosition =
+        cn::Destination(target, bearing + 180.0, result.range_nm);
     m_hasVerticalPosition = true;
     text += wxString::Format(
-        _("\nBearing/range estimate: %.6f%c, %.6f%c (true bearing %.2f%c)."),
-        m_verticalPosition.latitude_deg, 0x00B0,
-        m_verticalPosition.longitude_deg, 0x00B0, std::fmod(bearing + 360.0, 360.0),
-        0x00B0);
+        _("\nBearing/range estimate: %s, %s (true bearing %.2f%c)."),
+        FormatNavigationAngle(m_verticalPosition.latitude_deg,
+                              NavigationAngleKind::Latitude, true)
+            .c_str(),
+        FormatNavigationAngle(m_verticalPosition.longitude_deg,
+                              NavigationAngleKind::Longitude, true)
+            .c_str(),
+        std::fmod(bearing + 360.0, 360.0), 0x00B0);
   } else {
-    text += _("\nThis is a range circle, not a fix. Add a bearing or another independent observation.");
+    text +=
+        _("\nThis is a range circle, not a fix. Add a bearing or another "
+          "independent observation.");
   }
   m_verticalResult->SetLabel(text);
   RefreshChart();
@@ -332,10 +380,10 @@ void CoastalNavigationDialog::CalculateHorizontal(wxCommandEvent&) {
   const cn::GeoPoint initial =
       ReadPoint(m_initialLat, m_initialLon, _("Approximate position"), &ok);
   if (!ok) return;
-  if (!ReadDouble(m_firstAngle, _("Left-centre angle"),
-                  &observation.left_centre_angle_deg) ||
-      !ReadDouble(m_secondAngle, _("Centre-right angle"),
-                  &observation.centre_right_angle_deg) ||
+  if (!ReadAngle(m_firstAngle, _("Left-centre angle"), 0.0, 180.0,
+                 &observation.left_centre_angle_deg) ||
+      !ReadAngle(m_secondAngle, _("Centre-right angle"), 0.0, 180.0,
+                 &observation.centre_right_angle_deg) ||
       !ReadDouble(m_angleUncertainty, _("Angle uncertainty"),
                   &observation.angle_uncertainty_arcmin))
     return;
@@ -345,28 +393,26 @@ void CoastalNavigationDialog::CalculateHorizontal(wxCommandEvent&) {
                    &observation.second_time_offset_seconds) ||
        !ReadDouble(m_horizontalCourse, _("COG true"),
                    &observation.course_true_deg) ||
-       !ReadDouble(m_horizontalSpeed, _("SOG"),
-                   &observation.speed_knots)))
+       !ReadDouble(m_horizontalSpeed, _("SOG"), &observation.speed_knots)))
     return;
   const cn::HorizontalFixResult result =
       cn::SolveHorizontalThreePointFix(observation, initial);
   m_hsaLoci = cn::BuildHorizontalAngleLocus(
-      observation.left, observation.centre,
-      observation.left_centre_angle_deg);
-  const auto second = cn::BuildHorizontalAngleLocus(
-      observation.centre, observation.right,
-      observation.centre_right_angle_deg);
+      observation.left, observation.centre, observation.left_centre_angle_deg);
+  const auto second =
+      cn::BuildHorizontalAngleLocus(observation.centre, observation.right,
+                                    observation.centre_right_angle_deg);
   if (observation.moving_observer && observation.speed_knots != 0.0) {
     const double signed_distance = observation.speed_knots *
                                    observation.second_time_offset_seconds /
                                    3600.0;
-    const double reverse_course = observation.course_true_deg +
-                                  (signed_distance >= 0.0 ? 180.0 : 0.0);
+    const double reverse_course =
+        observation.course_true_deg + (signed_distance >= 0.0 ? 180.0 : 0.0);
     for (const auto& branch : second) {
       std::vector<cn::GeoPoint> propagated;
       for (const cn::GeoPoint& point : branch)
-        propagated.push_back(cn::Destination(
-            point, reverse_course, std::fabs(signed_distance)));
+        propagated.push_back(
+            cn::Destination(point, reverse_course, std::fabs(signed_distance)));
       m_hsaLoci.push_back(std::move(propagated));
     }
   } else {
@@ -376,18 +422,26 @@ void CoastalNavigationDialog::CalculateHorizontal(wxCommandEvent&) {
     m_hasHorizontalFix = false;
     m_horizontalResult->SetLabel(
         _("No fix: ") + wxString::FromUTF8(result.error.c_str()) +
-        _("\nThe individual HSA loci are plotted where their coastal-scale chart construction is valid."));
+        _("\nThe individual HSA loci are plotted where their coastal-scale "
+          "chart construction is valid."));
   } else {
     m_hasHorizontalFix = true;
     m_horizontalFix = result.position;
     wxString resultText = wxString::Format(
-        _("Fix %.6f%c, %.6f%c; residuals %+.4f' / %+.4f'; estimated 1-sigma geometry uncertainty %.3f NM; condition %.1f."),
-        result.position.latitude_deg, 0x00B0, result.position.longitude_deg,
-        0x00B0, result.first_residual_arcmin, result.second_residual_arcmin,
+        _("Fix %s, %s; residuals %+.4f' / %+.4f'; estimated 1-sigma geometry "
+          "uncertainty %.3f NM; condition %.1f."),
+        FormatNavigationAngle(result.position.latitude_deg,
+                              NavigationAngleKind::Latitude, true)
+            .c_str(),
+        FormatNavigationAngle(result.position.longitude_deg,
+                              NavigationAngleKind::Longitude, true)
+            .c_str(),
+        result.first_residual_arcmin, result.second_residual_arcmin,
         result.estimated_uncertainty_nm, result.geometry_condition);
     if (observation.moving_observer)
-      resultText += _(" The fix and both plotted loci are reduced to the "
-                      "first-angle reference epoch.");
+      resultText +=
+          _(" The fix and both plotted loci are reduced to the "
+            "first-angle reference epoch.");
     m_horizontalResult->SetLabel(resultText);
   }
   RefreshChart();
@@ -396,8 +450,10 @@ void CoastalNavigationDialog::CalculateHorizontal(wxCommandEvent&) {
 void CoastalNavigationDialog::UseBoatPosition(wxCommandEvent&) {
   double latitude = 0.0, longitude = 0.0;
   celestial_navigation_pi_BoatPos(latitude, longitude);
-  m_initialLat->SetValue(wxString::Format("%.6f", latitude));
-  m_initialLon->SetValue(wxString::Format("%.6f", longitude));
+  m_initialLat->SetValue(
+      FormatNavigationAngle(latitude, NavigationAngleKind::Latitude, true));
+  m_initialLon->SetValue(
+      FormatNavigationAngle(longitude, NavigationAngleKind::Longitude, true));
 }
 
 void CoastalNavigationDialog::ClearPlots(wxCommandEvent&) {
@@ -433,9 +489,8 @@ bool CoastalNavigationDialog::Render(piDC* dc, PlugIn_ViewPort* viewport) {
   };
   drawLine(m_rangeCircle, wxColour(0, 180, 255), 2);
   for (std::size_t index = 0; index < m_hsaLoci.size(); ++index)
-    drawLine(m_hsaLoci[index], index % 2 ? wxColour(255, 80, 210)
-                                        : wxColour(255, 180, 0),
-             2);
+    drawLine(m_hsaLoci[index],
+             index % 2 ? wxColour(255, 80, 210) : wxColour(255, 180, 0), 2);
   auto marker = [&](const cn::GeoPoint& point, const wxColour& colour) {
     wxPoint pixel;
     GetCanvasPixLL(viewport, &pixel, point.latitude_deg, point.longitude_deg);

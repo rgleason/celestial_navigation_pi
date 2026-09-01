@@ -44,6 +44,7 @@ src/epv00.cpp
 src/celestial_navigation_pi.cpp
 src/moon.cpp
 src/OcpnApiCompat.h
+src/NavigationUIUtils.h
 src/celestial_navigation_pi.h
 src/CelestialNavigationDialog.h
 src/BodyCatalog.h

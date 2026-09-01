@@ -1,6 +1,7 @@
 #include "PlannerDialog.h"
 
 #include "CelestialNavigationDialog.h"
+#include "NavigationUIUtils.h"
 #include "Sight.h"
 #include "UtcDateTime.h"
 #include "celestial_navigation_pi.h"
@@ -165,8 +166,10 @@ private:
       const WaypointPosition& waypoint = m_waypoints[index];
       const wxString name = waypoint.name.empty() ? _("(Unnamed waypoint)")
                                                    : waypoint.name;
-      const wxString latitude = wxString::Format("%.5f", waypoint.latitude);
-      const wxString longitude = wxString::Format("%.5f", waypoint.longitude);
+      const wxString latitude = FormatNavigationAngle(
+          waypoint.latitude, NavigationAngleKind::Latitude, true);
+      const wxString longitude = FormatNavigationAngle(
+          waypoint.longitude, NavigationAngleKind::Longitude, true);
       const wxString searchable =
           (name + " " + latitude + " " + longitude).Lower();
       if (!filter.empty() && searchable.Find(filter) == wxNOT_FOUND) continue;
@@ -215,6 +218,8 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
                wxDefaultPosition, wxSize(1120, 720),
                wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
       m_parent(parent) {
+  const CelestialNavigationDefaults defaults =
+      LoadCelestialNavigationDefaults();
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
   wxStaticBoxSizer* context =
       new wxStaticBoxSizer(wxVERTICAL, this, _("Planning context"));
@@ -234,17 +239,13 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   grid->Add(m_positionSource, 0, wxEXPAND);
   grid->Add(new wxStaticText(this, wxID_ANY, _("Latitude")), 0,
             wxALIGN_CENTER_VERTICAL);
-  m_latitude = new wxSpinCtrlDouble(this, wxID_ANY, "0", wxDefaultPosition,
-                                    wxSize(125, -1), wxSP_ARROW_KEYS, -90, 90,
-                                    0, 0.0001);
-  m_latitude->SetDigits(4);
+  m_latitude = new NavigationAngleCtrl(this, NavigationAngleKind::Latitude, 0.0,
+                                       -90.0, 90.0, wxSize(145, -1));
   grid->Add(m_latitude);
   grid->Add(new wxStaticText(this, wxID_ANY, _("Longitude")), 0,
             wxALIGN_CENTER_VERTICAL);
-  m_longitude = new wxSpinCtrlDouble(this, wxID_ANY, "0", wxDefaultPosition,
-                                     wxSize(125, -1), wxSP_ARROW_KEYS, -180,
-                                     180, 0, 0.0001);
-  m_longitude->SetDigits(4);
+  m_longitude = new NavigationAngleCtrl(this, NavigationAngleKind::Longitude,
+                                        0.0, -180.0, 180.0, wxSize(145, -1));
   grid->Add(m_longitude);
 
   grid->Add(new wxStaticText(this, wxID_ANY, _("Time")), 0,
@@ -313,9 +314,9 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
 
   grid->Add(new wxStaticText(this, wxID_ANY, _("Eye height (m)")), 0,
             wxALIGN_CENTER_VERTICAL);
-  m_eyeHeight = new wxSpinCtrlDouble(this, wxID_ANY, "2", wxDefaultPosition,
-                                     wxDefaultSize, wxSP_ARROW_KEYS, 0, 100,
-                                     2, 0.1);
+  m_eyeHeight = new wxSpinCtrlDouble(
+      this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
+      wxSP_ARROW_KEYS, 0, 100, defaults.eyeHeight, 0.1);
   m_eyeHeight->SetDigits(1);
   grid->Add(m_eyeHeight);
   wxButton* calculate = new wxButton(this, wxID_ANY, _("Calculate / refresh"));
@@ -340,7 +341,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   AddColumn(m_events, 1, _("UTC"), 190);
   AddColumn(m_events, 2, _("Selected display time"), 235);
   AddColumn(m_events, 3, _("Bearing true"), 105);
-  AddColumn(m_events, 4, _("Observer position"), 190);
+  AddColumn(m_events, 4, _("Observer position"), 300);
   eventsSizer->Add(m_events, 1, wxALL | wxEXPAND, 5);
   m_moonSummary = new wxStaticText(eventsPage, wxID_ANY, wxEmptyString);
   eventsSizer->Add(m_moonSummary, 0, wxALL | wxEXPAND, 6);
@@ -354,10 +355,10 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
                             wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL |
                                                wxLC_HRULES);
   AddColumn(m_bodies, 0, _("Body"), 115);
-  AddColumn(m_bodies, 1, _("Hc"), 75);
+  AddColumn(m_bodies, 1, _("Hc"), 115);
   AddColumn(m_bodies, 2, _("Zn true"), 80);
-  AddColumn(m_bodies, 3, _("GHA"), 75);
-  AddColumn(m_bodies, 4, _("Dec"), 75);
+  AddColumn(m_bodies, 3, _("GHA"), 115);
+  AddColumn(m_bodies, 4, _("Dec"), 125);
   AddColumn(m_bodies, 5, _("Mag"), 55);
   AddColumn(m_bodies, 6, _("Score"), 60);
   AddColumn(m_bodies, 7, _("Why"), 260);
@@ -387,10 +388,10 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
                              wxDefaultSize, wxLC_REPORT | wxLC_HRULES);
   AddColumn(m_almanac, 0, _("UTC"), 155);
   AddColumn(m_almanac, 1, _("Body"), 90);
-  AddColumn(m_almanac, 2, _("GHA"), 90);
-  AddColumn(m_almanac, 3, _("SHA"), 90);
-  AddColumn(m_almanac, 4, _("Declination"), 100);
-  AddColumn(m_almanac, 5, _("Hc"), 90);
+  AddColumn(m_almanac, 2, _("GHA"), 120);
+  AddColumn(m_almanac, 3, _("SHA"), 120);
+  AddColumn(m_almanac, 4, _("Declination"), 130);
+  AddColumn(m_almanac, 5, _("Hc"), 120);
   AddColumn(m_almanac, 6, _("Zn true"), 90);
   almanacSizer->Add(m_almanac, 1, wxALL | wxEXPAND, 5);
   wxButton* exportButton = new wxButton(almanacPage, wxID_ANY, _("Export CSV..."));
@@ -415,10 +416,8 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   specialGrid->Add(new wxStaticText(specialPage, wxID_ANY,
                                     _("Corrected observed altitude Ho")),
                    0, wxALIGN_CENTER_VERTICAL);
-  m_specialAltitude = new wxSpinCtrlDouble(
-      specialPage, wxID_ANY, "45", wxDefaultPosition, wxDefaultSize,
-      wxSP_ARROW_KEYS, -10, 90, 45, 0.01);
-  m_specialAltitude->SetDigits(2);
+  m_specialAltitude = new NavigationAngleCtrl(
+      specialPage, NavigationAngleKind::Generic, 45.0, -10.0, 90.0);
   specialGrid->Add(m_specialAltitude);
   wxButton* solve = new wxButton(specialPage, wxID_ANY, _("Solve latitude"));
   specialGrid->Add(solve);
@@ -462,7 +461,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   long positionSource = 1, inputTimeBasis = 0, displayTime = 0;
   bool moving = false;
   double latitude = 0.0, longitude = 0.0, course = 0.0, speed = 0.0,
-         eyeHeight = 2.0, fixedOffset = 0.0;
+         eyeHeight = defaults.eyeHeight, fixedOffset = 0.0;
   config->Read(_T("PositionSource"), &positionSource, 1L);
   config->Read(_T("InputTimeBasis"), &inputTimeBasis, 0L);
   config->Read(_T("DisplayTime"), &displayTime, 0L);
@@ -471,7 +470,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   config->Read(_T("Moving"), &moving, false);
   config->Read(_T("CourseTrue"), &course, 0.0);
   config->Read(_T("SpeedKnots"), &speed, 0.0);
-  config->Read(_T("EyeHeight"), &eyeHeight, 2.0);
+  config->Read(_T("EyeHeight"), &eyeHeight, defaults.eyeHeight);
   config->Read(_T("FixedOffset"), &fixedOffset, 0.0);
   config->Read(_T("WaypointGuid"), &m_waypointGuid, wxEmptyString);
   config->Read(_T("WaypointName"), &m_waypointName, wxEmptyString);
@@ -483,8 +482,8 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_lastInputTimeBasis = m_inputTimeBasis->GetSelection();
   UpdateInputTimeLabels();
   m_displayTime->SetSelection(std::max(0L, std::min(displayTime, 3L)));
-  m_latitude->SetValue(latitude);
-  m_longitude->SetValue(longitude);
+  m_latitude->SetAngle(latitude);
+  m_longitude->SetAngle(longitude);
   m_moving->SetValue(moving);
   m_course->SetValue(course);
   m_speed->SetValue(speed);
@@ -511,8 +510,8 @@ PlannerDialog::~PlannerDialog() {
                 static_cast<long>(m_inputTimeBasis->GetSelection()));
   config->Write(_T("DisplayTime"),
                 static_cast<long>(m_displayTime->GetSelection()));
-  config->Write(_T("Latitude"), m_latitude->GetValue());
-  config->Write(_T("Longitude"), m_longitude->GetValue());
+  config->Write(_T("Latitude"), m_latitude->GetAngleOr(0.0));
+  config->Write(_T("Longitude"), m_longitude->GetAngleOr(0.0));
   config->Write(_T("Moving"), m_moving->GetValue());
   config->Write(_T("CourseTrue"), m_course->GetValue());
   config->Write(_T("SpeedKnots"), m_speed->GetValue());
@@ -576,8 +575,16 @@ void PlannerDialog::UpdateInputTimeLabels() {
 ObserverMotion PlannerDialog::ReadMotion(bool showErrors) {
   ObserverMotion motion;
   motion.referenceUtc = ReadUtc(showErrors);
-  motion.latitude = m_latitude->GetValue();
-  motion.longitude = m_longitude->GetValue();
+  if (!m_latitude->GetAngle(&motion.latitude) ||
+      !m_longitude->GetAngle(&motion.longitude)) {
+    if (showErrors)
+      wxMessageBox(
+          _("Enter a valid latitude and longitude. Decimal degrees, degrees "
+            "and minutes, and degrees/minutes/seconds are accepted."),
+          _("Invalid position"), wxOK | wxICON_ERROR, this);
+    motion.referenceUtc = wxDateTime();
+    return motion;
+  }
   motion.courseTrue = m_course->GetValue();
   motion.speedKnots = m_speed->GetValue();
   motion.moving = m_moving->GetValue();
@@ -585,7 +592,8 @@ ObserverMotion PlannerDialog::ReadMotion(bool showErrors) {
 }
 
 void PlannerDialog::ApplyPositionSource() {
-  double lat = m_latitude->GetValue(), lon = m_longitude->GetValue();
+  double lat = m_latitude->GetAngleOr(0.0);
+  double lon = m_longitude->GetAngleOr(0.0);
   bool available = true;
   const int source = m_positionSource->GetSelection();
   if (source == 1) {
@@ -617,8 +625,8 @@ void PlannerDialog::ApplyPositionSource() {
     }
   }
   if (available) {
-    m_latitude->SetValue(lat);
-    m_longitude->SetValue(lon);
+    m_latitude->SetAngle(lat);
+    m_longitude->SetAngle(lon);
     if (source == 5) {
       const wxString name = m_waypointName.empty()
                                 ? _("Unnamed waypoint")
@@ -659,11 +667,11 @@ bool PlannerDialog::UpdateCursorPosition() {
   double longitude = 0.0;
   if (!m_parent->GetPlugin()->GetCursorPosition(&latitude, &longitude))
     return false;
-  if (std::fabs(m_latitude->GetValue() - latitude) < 0.0001 &&
-      std::fabs(m_longitude->GetValue() - longitude) < 0.0001)
+  if (std::fabs(m_latitude->GetAngleOr(latitude) - latitude) < 0.0001 &&
+      std::fabs(m_longitude->GetAngleOr(longitude) - longitude) < 0.0001)
     return false;
-  m_latitude->SetValue(latitude);
-  m_longitude->SetValue(longitude);
+  m_latitude->SetAngle(latitude);
+  m_longitude->SetAngle(longitude);
   wxCommandEvent refresh;
   RefreshAll(refresh);
   m_status->SetLabel(
@@ -699,8 +707,8 @@ void PlannerDialog::OnWaypointIntegrationTimer(wxTimerEvent&) {
 
 bool PlannerDialog::SelectWaypointForIntegration(const wxString& name) {
   m_positionSource->SetSelection(0);
-  m_latitude->SetValue(0.0);
-  m_longitude->SetValue(0.0);
+  m_latitude->SetAngle(0.0);
+  m_longitude->SetAngle(0.0);
   ApplyPositionSourceAndRefresh();
 
   wxString previousSunset;
@@ -732,15 +740,15 @@ bool PlannerDialog::SelectWaypointForIntegration(const wxString& name) {
       currentSunset = m_events->GetItemText(row, 1);
   }
   const bool coordinatesApplied =
-      std::fabs(m_latitude->GetValue() - selected->latitude) < 0.0001 &&
-      std::fabs(m_longitude->GetValue() - selected->longitude) < 0.0001;
+      std::fabs(m_latitude->GetAngleOr(0.0) - selected->latitude) < 0.0001 &&
+      std::fabs(m_longitude->GetAngleOr(0.0) - selected->longitude) < 0.0001;
   const bool eventsRefreshed = !previousSunset.empty() &&
                                !currentSunset.empty() &&
                                previousSunset != currentSunset;
   wxLogMessage(
       "Celestial waypoint integration: name=%s lat=%.5f lon=%.5f "
       "sunset_before=%s sunset_after=%s coordinates=%d refreshed=%d",
-      selected->name, m_latitude->GetValue(), m_longitude->GetValue(),
+      selected->name, m_latitude->GetAngleOr(0.0), m_longitude->GetAngleOr(0.0),
       previousSunset, currentSunset, coordinatesApplied, eventsRefreshed);
 
   m_parent->GetPlugin()->SetCursorLatLon(10.0, 20.0);
@@ -752,15 +760,15 @@ bool PlannerDialog::SelectWaypointForIntegration(const wxString& name) {
       cursorSunset = m_events->GetItemText(row, 1);
   }
   const bool cursorApplied =
-      std::fabs(m_latitude->GetValue() - 10.0) < 0.0001 &&
-      std::fabs(m_longitude->GetValue() - 20.0) < 0.0001;
+      std::fabs(m_latitude->GetAngleOr(0.0) - 10.0) < 0.0001 &&
+      std::fabs(m_longitude->GetAngleOr(0.0) - 20.0) < 0.0001;
   const bool cursorEventsRefreshed =
       !currentSunset.empty() && !cursorSunset.empty() &&
       currentSunset != cursorSunset;
   wxLogMessage(
       "Celestial chart cursor integration: lat=%.5f lon=%.5f "
       "sunset_before=%s sunset_after=%s coordinates=%d refreshed=%d",
-      m_latitude->GetValue(), m_longitude->GetValue(), currentSunset,
+      m_latitude->GetAngleOr(0.0), m_longitude->GetAngleOr(0.0), currentSunset,
       cursorSunset, cursorApplied, cursorEventsRefreshed);
   return coordinatesApplied && eventsRefreshed && cursorApplied &&
          cursorEventsRefreshed;
@@ -839,7 +847,8 @@ wxString PlannerDialog::DisplayTime(const wxDateTime& utc) const {
   long offset = 0;
   wxString suffix = "UTC";
   if (m_displayTime->GetSelection() == 2) {
-    offset = static_cast<long>(std::lround(m_longitude->GetValue() * 240.0));
+    offset =
+        static_cast<long>(std::lround(m_longitude->GetAngleOr(0.0) * 240.0));
     suffix = "LMT";
   } else if (m_displayTime->GetSelection() == 3) {
     offset = static_cast<long>(std::lround(m_fixedOffset->GetValue() * 3600.0));
@@ -853,7 +862,10 @@ wxString PlannerDialog::DisplayTime(const wxDateTime& utc) const {
 void PlannerDialog::RefreshAll(wxCommandEvent&) {
   ApplyPositionSource();
   ApplyTimeSource();
-  if (!ReadUtc(true).IsValid()) return;
+  const ObserverMotion motion = ReadMotion(true);
+  if (!motion.referenceUtc.IsValid()) return;
+  m_latitude->Normalize();
+  m_longitude->Normalize();
   RefreshEvents();
   RefreshBodies();
   RefreshAlmanac();
@@ -873,9 +885,13 @@ void PlannerDialog::RefreshEvents() {
     m_events->SetItem(row, 2, DisplayTime(event.utc));
     m_events->SetItem(row, 3,
                       wxString::Format("%.1f%c", event.bearingTrue, 0x00b0));
-    m_events->SetItem(row, 4,
-                      wxString::Format("%.4f, %.4f", event.observerLatitude,
-                                       event.observerLongitude));
+    m_events->SetItem(
+        row, 4,
+        FormatNavigationAngle(event.observerLatitude,
+                              NavigationAngleKind::Latitude, true) +
+            ", " +
+            FormatNavigationAngle(event.observerLongitude,
+                                  NavigationAngleKind::Longitude, true));
   }
   for (const auto& phase : NextPrincipalMoonPhases(
            motion.referenceUtc, motion.latitude, motion.longitude)) {
@@ -898,11 +914,13 @@ void PlannerDialog::RefreshEvents() {
   if (table.moonAlwaysBelow) polar += _(" Moon below the horizon all day.");
   const wxString direction = moon.waxing ? _("waxing") : _("waning");
   m_moonSummary->SetLabel(wxString::Format(
-      _("Moon: %s, %.1f%% illuminated, %s, age %.1f days; altitude %.1f%c, azimuth %.1f%c, Sun separation %.1f%c.%s"),
+      _("Moon: %s, %.1f%% illuminated, %s, age %.1f days; altitude %s, azimuth "
+        "%.1f%c, Sun separation %s.%s"),
       moon.phaseName.c_str(), moon.illuminatedFraction * 100.0,
-      direction.c_str(), moon.ageDays, moonState.geometricAltitude, 0x00b0,
-      moonState.azimuthTrue, 0x00b0, moon.elongationDegrees, 0x00b0,
-      polar.c_str()));
+      direction.c_str(), moon.ageDays,
+      FormatNavigationAngle(moonState.geometricAltitude).c_str(),
+      moonState.azimuthTrue, 0x00b0,
+      FormatNavigationAngle(moon.elongationDegrees).c_str(), polar.c_str()));
 }
 
 void PlannerDialog::RefreshBodies() {
@@ -915,14 +933,14 @@ void PlannerDialog::RefreshBodies() {
     const long row = m_bodies->InsertItem(m_bodies->GetItemCount(),
                                          body.state.body);
     m_bodies->SetItem(row, 1,
-                      wxString::Format("%.2f%c", body.state.geometricAltitude,
-                                       0x00b0));
+                      FormatNavigationAngle(body.state.geometricAltitude));
     m_bodies->SetItem(row, 2,
                       wxString::Format("%.1f%c", body.state.azimuthTrue,
                                        0x00b0));
-    m_bodies->SetItem(row, 3, wxString::Format("%.2f", body.state.gha));
+    m_bodies->SetItem(row, 3, FormatNavigationAngle(body.state.gha));
     m_bodies->SetItem(row, 4,
-                      wxString::Format("%+.2f", body.state.declination));
+                      FormatNavigationAngle(body.state.declination,
+                                            NavigationAngleKind::Latitude));
     m_bodies->SetItem(row, 5,
                       wxString::Format("%.1f", body.state.visualMagnitude));
     m_bodies->SetItem(row, 6, wxString::Format("%.0f", body.score));
@@ -956,10 +974,12 @@ void PlannerDialog::RefreshAlmanac() {
         m_almanac->GetItemCount(),
         item.utc.Format("%m-%d %H:%M", wxDateTime::UTC));
     m_almanac->SetItem(row, 1, item.body);
-    m_almanac->SetItem(row, 2, wxString::Format("%.3f", item.gha));
-    m_almanac->SetItem(row, 3, wxString::Format("%.3f", item.sha));
-    m_almanac->SetItem(row, 4, wxString::Format("%+.3f", item.declination));
-    m_almanac->SetItem(row, 5, wxString::Format("%.2f", item.altitude));
+    m_almanac->SetItem(row, 2, FormatNavigationAngle(item.gha));
+    m_almanac->SetItem(row, 3, FormatNavigationAngle(item.sha));
+    m_almanac->SetItem(
+        row, 4,
+        FormatNavigationAngle(item.declination, NavigationAngleKind::Latitude));
+    m_almanac->SetItem(row, 5, FormatNavigationAngle(item.altitude));
     m_almanac->SetItem(row, 6, wxString::Format("%.1f", item.azimuth));
   }
 }
@@ -971,10 +991,16 @@ void PlannerDialog::RefreshSpecial() {
   for (const auto& event : events.events) {
     if (event.kind == HorizonEventKind::UpperTransit) {
       m_specialSummary->SetLabel(wxString::Format(
-          _("Local apparent noon: %s UTC at observer position %.4f, %.4f.\n"
-            "Enter corrected Ho above to estimate latitude; longitude comes primarily from noon timing."),
+          _("Local apparent noon: %s UTC at observer position %s, %s.\n"
+            "Enter corrected Ho above to estimate latitude; longitude comes "
+            "primarily from noon timing."),
           event.utc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC).c_str(),
-          event.observerLatitude, event.observerLongitude));
+          FormatNavigationAngle(event.observerLatitude,
+                                NavigationAngleKind::Latitude, true)
+              .c_str(),
+          FormatNavigationAngle(event.observerLongitude,
+                                NavigationAngleKind::Longitude, true)
+              .c_str()));
       break;
     }
   }
@@ -1000,8 +1026,8 @@ void PlannerDialog::CreateSelectedSight(wxCommandEvent&) {
     return;
   }
   m_parent->CreatePlannedSight(m_rankedBodies[selected].state.body,
-                               ReadUtc(false), m_latitude->GetValue(),
-                               m_longitude->GetValue());
+                               ReadUtc(false), m_latitude->GetAngleOr(0.0),
+                               m_longitude->GetAngleOr(0.0));
 }
 
 void PlannerDialog::SolveSpecialLatitude(wxCommandEvent&) {
@@ -1013,15 +1039,24 @@ void PlannerDialog::SolveSpecialLatitude(wxCommandEvent&) {
     for (const auto& event : events)
       if (event.kind == HorizonEventKind::UpperTransit) time = event.utc;
   }
+  double observedAltitude = 0.0;
+  if (!m_specialAltitude->GetAngle(&observedAltitude)) {
+    wxMessageBox(_("Enter a valid corrected observed altitude."),
+                 _("Invalid altitude"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+  m_specialAltitude->Normalize();
   const double latitude = SolveLatitudeFromAltitude(
-      body, time, motion.longitude, m_specialAltitude->GetValue(),
-      motion.latitude);
+      body, time, motion.longitude, observedAltitude, motion.latitude);
   const BodyState state = CelestialEphemeris::Evaluate(
       body, time, latitude, motion.longitude);
   m_specialSummary->SetLabel(wxString::Format(
-      _("%s solution: latitude %.5f%c at %s UTC. Calculated azimuth %.2f%c.\n"
-        "Treat this as a workflow aid: uncertainty still depends on Ho, time, horizon and DR errors."),
-      body.c_str(), latitude, 0x00b0,
+      _("%s solution: latitude %s at %s UTC. Zn true (azimuth) %.2f%c.\n"
+        "Treat this as a workflow aid: uncertainty still depends on Ho, time, "
+        "horizon and DR errors."),
+      body.c_str(),
+      FormatNavigationAngle(latitude, NavigationAngleKind::Latitude, true)
+          .c_str(),
       time.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC).c_str(),
       state.azimuthTrue, 0x00b0));
 }

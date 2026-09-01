@@ -1,6 +1,7 @@
 #include "SightAnalysisDialog.h"
 
 #include "CelestialNavigationDialog.h"
+#include "NavigationUIUtils.h"
 #include "NavigationAlgorithms.h"
 #include "Sight.h"
 #include "UtcDateTime.h"
@@ -41,32 +42,45 @@ private:
     if (!m_analysis.valid || m_analysis.residuals.empty()) return;
     wxDateTime first = m_analysis.residuals.front().utc;
     wxDateTime last = first;
-    double extent = 2.0;
+    double minimum = m_analysis.residuals.front().interceptMinutes;
+    double maximum = minimum;
     for (const auto& residual : m_analysis.residuals) {
       if (residual.utc.IsEarlierThan(first)) first = residual.utc;
       if (residual.utc.IsLaterThan(last)) last = residual.utc;
-      extent = std::max(extent, std::abs(residual.interceptMinutes));
+      minimum = std::min(minimum, residual.interceptMinutes);
+      maximum = std::max(maximum, residual.interceptMinutes);
     }
-    extent *= 1.15;
+    const double rawSpan = maximum - minimum;
+    const double padding = std::max(0.5, rawSpan * 0.15);
+    if (rawSpan < 1.0) {
+      const double centre = (minimum + maximum) / 2.0;
+      minimum = centre - 1.0;
+      maximum = centre + 1.0;
+    } else {
+      minimum -= padding;
+      maximum += padding;
+    }
     const double seconds = std::max(
         1.0, static_cast<double>((last - first).GetMilliseconds().GetValue()) /
                  1000.0);
     auto point = [&](const FixResidual& residual) {
       const double x =
-          static_cast<double>((residual.utc - first)
-                                  .GetMilliseconds()
-                                  .GetValue()) /
+          static_cast<double>(
+              (residual.utc - first).GetMilliseconds().GetValue()) /
           1000.0 / seconds;
-      const double y = residual.interceptMinutes / extent;
+      const double y =
+          (maximum - residual.interceptMinutes) / (maximum - minimum);
       return wxPoint(left + static_cast<int>(x * (right - left)),
-                     (top + bottom) / 2 -
-                         static_cast<int>(y * (bottom - top) / 2));
+                     top + static_cast<int>(y * (bottom - top)));
     };
-    const int zero = (top + bottom) / 2;
-    dc.SetPen(wxPen(wxColour(160, 160, 160), 1, wxPENSTYLE_DOT));
-    dc.DrawLine(left, zero, right, zero);
-    dc.DrawText(wxString::Format("%+.1f'", extent), 2, top - 3);
-    dc.DrawText(wxString::Format("%+.1f'", -extent), 2, bottom - 10);
+    if (minimum <= 0.0 && maximum >= 0.0) {
+      const int zero = top + static_cast<int>(maximum / (maximum - minimum) *
+                                              (bottom - top));
+      dc.SetPen(wxPen(wxColour(160, 160, 160), 1, wxPENSTYLE_DOT));
+      dc.DrawLine(left, zero, right, zero);
+    }
+    dc.DrawText(wxString::Format("%+.1f'", maximum), 2, top - 3);
+    dc.DrawText(wxString::Format("%+.1f'", minimum), 2, bottom - 10);
     wxPoint previous;
     bool havePrevious = false;
     for (const auto& residual : m_analysis.residuals) {
@@ -87,20 +101,29 @@ private:
 };
 
 SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
-    : wxDialog(parent, wxID_ANY, _("Sight Sequence Analyzer"), wxDefaultPosition,
-               wxSize(820, 540),
+    : wxDialog(parent, wxID_ANY, _("Sight Sequence Analyzer"),
+               wxDefaultPosition, wxSize(820, 540),
                wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
       m_parent(parent) {
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
   wxStaticText* introduction = new wxStaticText(
       this, wxID_ANY,
-      _("Compare visible altitude sights with a known/DR track to reveal scatter, outliers, trend and personal bias."));
+      _("Compare visible altitude sights with a known/DR track to reveal "
+        "scatter, outliers, trend and personal bias."));
   introduction->Wrap(780);
   root->Add(introduction, 0, wxALL | wxEXPAND, 8);
 
   wxBoxSizer* options = new wxBoxSizer(wxHORIZONTAL);
   m_onlySelectedBody =
       new wxCheckBox(this, wxID_ANY, _("Only the selected sight's body"));
+  if (const Sight* selected = m_parent->GetSelectedSight()) {
+    m_onlySelectedBody->SetLabel(wxString::Format(
+        _("Only highlighted body (%s)"), selected->m_Body.c_str()));
+  } else {
+    m_onlySelectedBody->Enable(false);
+    m_onlySelectedBody->SetToolTip(
+        _("Highlight a sight in the main list to enable this filter."));
+  }
   options->Add(m_onlySelectedBody, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 16);
   m_moving = new wxCheckBox(this, wxID_ANY, _("Moving observer"));
   options->Add(m_moving, 0, wxALIGN_CENTER_VERTICAL);
@@ -109,33 +132,29 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   wxBoxSizer* position = new wxBoxSizer(wxHORIZONTAL);
   position->Add(new wxStaticText(this, wxID_ANY, _("Track latitude")), 0,
                 wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-  m_latitude = new wxSpinCtrlDouble(this, wxID_ANY, "0", wxDefaultPosition,
-                                    wxSize(125, -1), wxSP_ARROW_KEYS, -90, 90, 0,
-                                    0.0001);
-  m_latitude->SetDigits(4);
+  m_latitude = new NavigationAngleCtrl(this, NavigationAngleKind::Latitude, 0.0,
+                                       -90.0, 90.0, wxSize(155, -1));
   position->Add(m_latitude, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 18);
   position->Add(new wxStaticText(this, wxID_ANY, _("Track longitude")), 0,
                 wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-  m_longitude = new wxSpinCtrlDouble(this, wxID_ANY, "0", wxDefaultPosition,
-                                     wxSize(125, -1), wxSP_ARROW_KEYS, -180, 180,
-                                     0, 0.0001);
-  m_longitude->SetDigits(4);
+  m_longitude = new NavigationAngleCtrl(this, NavigationAngleKind::Longitude,
+                                        0.0, -180.0, 180.0, wxSize(165, -1));
   position->Add(m_longitude, 0, wxALIGN_CENTER_VERTICAL);
   root->Add(position, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 8);
 
   wxBoxSizer* motion = new wxBoxSizer(wxHORIZONTAL);
   motion->Add(new wxStaticText(this, wxID_ANY, _("COG true")), 0,
               wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-  m_course = new wxSpinCtrlDouble(this, wxID_ANY, "0", wxDefaultPosition,
-                                  wxSize(110, -1), wxSP_ARROW_KEYS, 0, 359.9, 0,
-                                  0.1);
+  m_course =
+      new wxSpinCtrlDouble(this, wxID_ANY, "0", wxDefaultPosition,
+                           wxSize(110, -1), wxSP_ARROW_KEYS, 0, 359.9, 0, 0.1);
   m_course->SetDigits(1);
   motion->Add(m_course, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 18);
   motion->Add(new wxStaticText(this, wxID_ANY, _("SOG kn")), 0,
               wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-  m_speed = new wxSpinCtrlDouble(this, wxID_ANY, "0", wxDefaultPosition,
-                                 wxSize(110, -1), wxSP_ARROW_KEYS, 0, 100, 0,
-                                 0.1);
+  m_speed =
+      new wxSpinCtrlDouble(this, wxID_ANY, "0", wxDefaultPosition,
+                           wxSize(110, -1), wxSP_ARROW_KEYS, 0, 100, 0, 0.1);
   m_speed->SetDigits(1);
   motion->Add(m_speed, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 18);
   wxButton* analyze = new wxButton(this, wxID_ANY, _("Analyze visible sights"));
@@ -149,9 +168,10 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
                              wxLC_REPORT | wxLC_HRULES);
   m_results->InsertColumn(0, _("UTC"), wxLIST_FORMAT_LEFT, 160);
   m_results->InsertColumn(1, _("Body"), wxLIST_FORMAT_LEFT, 110);
-  m_results->InsertColumn(2, _("Hc"), wxLIST_FORMAT_LEFT, 85);
-  m_results->InsertColumn(3, _("Ho-Hc"), wxLIST_FORMAT_LEFT, 90);
-  m_results->InsertColumn(4, _("Assessment"), wxLIST_FORMAT_LEFT, 220);
+  m_results->InsertColumn(2, _("Ho"), wxLIST_FORMAT_LEFT, 115);
+  m_results->InsertColumn(3, _("Hc"), wxLIST_FORMAT_LEFT, 115);
+  m_results->InsertColumn(4, _("Ho-Hc"), wxLIST_FORMAT_LEFT, 90);
+  m_results->InsertColumn(5, _("Assessment"), wxLIST_FORMAT_LEFT, 220);
   root->Add(m_results, 1, wxALL | wxEXPAND, 8);
   wxStdDialogButtonSizer* buttons = new wxStdDialogButtonSizer();
   buttons->AddButton(new wxButton(this, wxID_CLOSE));
@@ -159,21 +179,30 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   root->Add(buttons, 0, wxALL | wxEXPAND, 6);
   SetSizer(root);
 
+  const Sight* earliest = nullptr;
+  for (const Sight& sight : m_parent->m_Sights) {
+    if (!sight.IsVisible() || !sight.IsCalculated() ||
+        sight.m_Type != Sight::ALTITUDE)
+      continue;
+    if (!earliest ||
+        UtcDateTime::IsEarlier(sight.m_DateTime, earliest->m_DateTime))
+      earliest = &sight;
+  }
   double lat = 0.0, lon = 0.0;
-  if (m_parent->GetPlugin()->GetBoatPosition(&lat, &lon)) {
-    m_latitude->SetValue(lat);
-    m_longitude->SetValue(lon);
+  if (earliest) {
+    lat = earliest->m_DRLat;
+    lon = earliest->m_DRLon;
   } else if (const Sight* selected = m_parent->GetSelectedSight()) {
-    m_latitude->SetValue(selected->m_DRLat);
-    m_longitude->SetValue(selected->m_DRLon);
+    lat = selected->m_DRLat;
+    lon = selected->m_DRLon;
+  } else {
+    m_parent->GetPlugin()->GetBoatPosition(&lat, &lon);
   }
-  const BoatNavigationSnapshot boat =
-      m_parent->GetPlugin()->GetBoatNavigationSnapshot();
-  if (boat.valid) {
-    m_course->SetValue(boat.cogTrue);
-    m_speed->SetValue(boat.sogKnots);
-  }
+  m_latitude->SetAngle(lat);
+  m_longitude->SetAngle(lon);
   analyze->Bind(wxEVT_BUTTON, &SightAnalysisDialog::Analyze, this);
+  m_onlySelectedBody->Bind(wxEVT_CHECKBOX, &SightAnalysisDialog::Analyze, this);
+  m_moving->Bind(wxEVT_CHECKBOX, &SightAnalysisDialog::Analyze, this);
   Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { Close(); }, wxID_CLOSE);
   wxCommandEvent dummy;
   Analyze(dummy);
@@ -201,14 +230,27 @@ void SightAnalysisDialog::Analyze(wxCommandEvent&) {
   }
   m_results->DeleteAllItems();
   if (observations.size() < 2) {
+    m_plot->SetAnalysis(SequenceStatistics());
     m_summary->SetLabel(
         _("At least two visible, calculated altitude sights are required."));
     return;
   }
+  std::sort(observations.begin(), observations.end(),
+            [](const FixObservation& first, const FixObservation& second) {
+              return first.utc.IsEarlierThan(second.utc);
+            });
+  double latitude = 0.0, longitude = 0.0;
+  if (!m_latitude->GetAngle(&latitude) || !m_longitude->GetAngle(&longitude)) {
+    m_plot->SetAnalysis(SequenceStatistics());
+    m_summary->SetLabel(_("Enter a valid track latitude and longitude."));
+    return;
+  }
+  m_latitude->Normalize();
+  m_longitude->Normalize();
   ObserverMotion motion;
   motion.referenceUtc = observations.front().utc;
-  motion.latitude = m_latitude->GetValue();
-  motion.longitude = m_longitude->GetValue();
+  motion.latitude = latitude;
+  motion.longitude = longitude;
   motion.courseTrue = m_course->GetValue();
   motion.speedKnots = m_speed->GetValue();
   motion.moving = m_moving->GetValue();
@@ -220,8 +262,10 @@ void SightAnalysisDialog::Analyze(wxCommandEvent&) {
   }
   m_plot->SetAnalysis(analysis);
   m_summary->SetLabel(wxString::Format(
-      _("%u sights  |  mean %+.2f'  SD %.2f'  |  median/personal bias %+.2f'  MAD %.2f'  |  trend %+.2f' per hour\n"
-        "Bias is reported, not silently applied. Review flagged sights before choosing any correction."),
+      _("%u sights  |  mean %+.2f'  SD %.2f'  |  median/personal bias %+.2f'  "
+        "MAD %.2f'  |  trend %+.2f' per hour\n"
+        "Bias is reported, not silently applied. Review flagged sights before "
+        "choosing any correction."),
       analysis.count, analysis.meanMinutes, analysis.standardDeviationMinutes,
       analysis.personalBiasMinutes, analysis.madMinutes,
       analysis.trendMinutesPerHour));
@@ -231,11 +275,13 @@ void SightAnalysisDialog::Analyze(wxCommandEvent&) {
         residual.utc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
     m_results->SetItem(row, 1, residual.body);
     m_results->SetItem(row, 2,
-                       wxString::Format("%.3f%c", residual.calculatedAltitude,
-                                        0x00b0));
+                       FormatNavigationAngle(residual.calculatedAltitude +
+                                             residual.interceptMinutes / 60.0));
     m_results->SetItem(row, 3,
-                       wxString::Format("%+.2f'", residual.interceptMinutes));
+                       FormatNavigationAngle(residual.calculatedAltitude));
     m_results->SetItem(row, 4,
+                       wxString::Format("%+.2f'", residual.interceptMinutes));
+    m_results->SetItem(row, 5,
                        residual.outlier ? _("Possible outlier — inspect")
                                         : _("Within robust sequence spread"));
     if (residual.outlier)

@@ -30,6 +30,7 @@
 #include "FixDialog.h"
 
 #include "OcpnApiCompat.h"
+#include "NavigationUIUtils.h"
 #include "Sight.h"
 #include "UtcDateTime.h"
 #include "celestial_navigation_pi.h"
@@ -551,9 +552,8 @@ void FixDialog::UpdateRunningFix(int clock_offset) {
         m_residuals->GetItemCount(),
         residual.utc.Format("%m-%d %H:%M:%S", wxDateTime::UTC));
     m_residuals->SetItem(row, 1, residual.body);
-    m_residuals->SetItem(
-        row, 2,
-        wxString::Format("%.3f%c", residual.calculatedAltitude, 0x00b0));
+    m_residuals->SetItem(row, 2,
+                         FormatNavigationAngle(residual.calculatedAltitude));
     m_residuals->SetItem(
         row, 3, wxString::Format("%+.2f'", residual.interceptMinutes));
   }

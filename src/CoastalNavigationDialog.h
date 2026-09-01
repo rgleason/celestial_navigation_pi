@@ -26,6 +26,8 @@ private:
   wxTextCtrl* AddField(wxSizer* sizer, wxWindow* parent, const wxString& label,
                        const wxString& value, const wxString& units = wxEmptyString);
   bool ReadDouble(wxTextCtrl* control, const wxString& label, double* value);
+  bool ReadAngle(wxTextCtrl* control, const wxString& label, double minimum,
+                 double maximum, double* value);
   coastal_navigation::GeoPoint ReadPoint(wxTextCtrl* latitude,
                                          wxTextCtrl* longitude,
                                          const wxString& label, bool* ok);

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "BodyCatalog.h"
+#include "NavigationUIUtils.h"
 #include "NavigationAlgorithms.h"
 #include "UtcDateTime.h"
 #include "geodesic.h"
@@ -75,6 +76,28 @@ TEST(UtcDateTime, CurrentUtcFieldsRepresentTheCurrentInstant) {
   const wxDateTime instant = UtcDateTime::ToInstant(utcFields);
   EXPECT_FALSE(instant.IsEarlierThan(before - wxTimeSpan::Seconds(1)));
   EXPECT_FALSE(instant.IsLaterThan(after + wxTimeSpan::Seconds(1)));
+}
+
+TEST(NavigationAngles, AcceptsDecimalDegreesMinutesAndSeconds) {
+  double value = 0.0;
+  EXPECT_TRUE(ParseNavigationAngle("43.236698 N", NavigationAngleKind::Latitude,
+                                   -90.0, 90.0, &value));
+  EXPECT_NEAR(43.236698, value, 1e-6);
+  EXPECT_TRUE(ParseNavigationAngle("-58.4699", NavigationAngleKind::Generic,
+                                   -180.0, 180.0, &value));
+  EXPECT_NEAR(-58.4699, value, 1e-6);
+  EXPECT_TRUE(ParseNavigationAngle(
+      "43 14.2019 N", NavigationAngleKind::Latitude, -90.0, 90.0, &value));
+  EXPECT_NEAR(43.2366983, value, 1e-6);
+  EXPECT_TRUE(ParseNavigationAngle("-58 28.2", NavigationAngleKind::Generic,
+                                   -180.0, 180.0, &value));
+  EXPECT_NEAR(-58.47, value, 1e-6);
+  EXPECT_TRUE(ParseNavigationAngle("077 31 18.114 W",
+                                   NavigationAngleKind::Longitude, -180.0,
+                                   180.0, &value));
+  EXPECT_NEAR(-77.5216983, value, 1e-6);
+  EXPECT_FALSE(ParseNavigationAngle("91 N", NavigationAngleKind::Latitude,
+                                    -90.0, 90.0, &value));
 }
 
 TEST(BodyCatalog, UsesUniqueNamesUnderstoodByEphemeris) {
@@ -295,6 +318,24 @@ TEST(SequenceAnalyzer, FindsBiasTrendAndGrossOutlier) {
   EXPECT_NEAR(1.9, analysis.personalBiasMinutes, 0.5);
   EXPECT_NEAR(1.2, analysis.trendMinutesPerHour, 0.5);
   EXPECT_TRUE(analysis.residuals[3].outlier);
+}
+
+TEST(SequenceAnalyzer, MatchesBobBossertHistoricalSunSightHc) {
+  ObserverMotion track;
+  track.referenceUtc = Utc("2024-11-13T20:24:27");
+  track.latitude = 43.2366983;
+  track.longitude = -77.5216983;
+  FixObservation observation;
+  observation.label = "Sun";
+  observation.body = "Sun";
+  observation.utc = track.referenceUtc;
+  observation.observedAltitude = 11.95556;
+  const SequenceStatistics analysis = SightSequenceAnalyzer::Analyze(
+      {observation, observation}, track, track.latitude, track.longitude);
+  ASSERT_TRUE(analysis.valid);
+  ASSERT_EQ(2u, analysis.residuals.size());
+  EXPECT_NEAR(11.92667, analysis.residuals.front().calculatedAltitude, 0.01);
+  EXPECT_NEAR(1.73, analysis.residuals.front().interceptMinutes, 0.7);
 }
 
 TEST(Almanac, ExportsAStableOfflineCsvTable) {

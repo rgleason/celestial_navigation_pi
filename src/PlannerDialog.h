@@ -8,6 +8,7 @@
 #include <wx/timer.h>
 
 class CelestialNavigationDialog;
+class NavigationAngleCtrl;
 class SkyPlotPanel;
 class wxCheckBox;
 class wxChoice;
@@ -58,8 +59,8 @@ private:
 
   CelestialNavigationDialog* m_parent;
   wxChoice* m_positionSource;
-  wxSpinCtrlDouble* m_latitude;
-  wxSpinCtrlDouble* m_longitude;
+  NavigationAngleCtrl* m_latitude;
+  NavigationAngleCtrl* m_longitude;
   wxChoice* m_timeSource;
   wxChoice* m_inputTimeBasis;
   wxStaticText* m_dateLabel;
@@ -81,7 +82,7 @@ private:
   SkyPlotPanel* m_skyPlot;
   wxListCtrl* m_almanac;
   wxChoice* m_specialBody;
-  wxSpinCtrlDouble* m_specialAltitude;
+  NavigationAngleCtrl* m_specialAltitude;
   wxStaticText* m_specialSummary;
   int m_lastInputTimeBasis;
   int m_lastPositionSource;

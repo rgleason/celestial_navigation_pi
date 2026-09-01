@@ -46,7 +46,8 @@ class SightDialog : public SightDialogBase {
 public:
   enum { ALTITUDE, AZIMUTH, LUNAR };
 
-  SightDialog(wxWindow* parent, Sight& sight, int clock_offset);
+  SightDialog(wxWindow* parent, Sight& sight, int clock_offset,
+              const wxDateTime& markedUtc = wxDateTime());
   ~SightDialog();
 
   //    void SetColorScheme(ColorScheme cs);
