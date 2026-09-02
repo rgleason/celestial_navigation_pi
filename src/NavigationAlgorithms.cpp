@@ -196,6 +196,22 @@ double Hc(const FixObservation& observation, const ObserverMotion& baseMotion,
       .geometricAltitude;
 }
 
+double SequenceHc(const FixObservation& observation,
+                  const ObserverMotion& motion, double epochLat,
+                  double epochLon) {
+  // A stationary sequence is fundamentally a comparison of each observation
+  // with the known/DR position recorded for it.  A shared position made sights
+  // from another place appear to have an Hc error.  Moving-observer analysis
+  // deliberately retains the common epoch, course and speed model.
+  if (!motion.moving && observation.hasObserverPosition) {
+    return CelestialEphemeris::Evaluate(observation.body, observation.utc,
+                                        observation.observerLatitude,
+                                        observation.observerLongitude)
+        .geometricAltitude;
+  }
+  return Hc(observation, motion, epochLat, epochLon);
+}
+
 }  // namespace
 
 void ObserverMotion::PositionAt(const wxDateTime& utc, double* lat,
@@ -705,7 +721,7 @@ SequenceStatistics SightSequenceAnalyzer::Analyze(
     residual.label = sight.label;
     residual.body = sight.body;
     residual.utc = sight.utc;
-    residual.calculatedAltitude = Hc(sight, motion, knownLat, knownLon);
+    residual.calculatedAltitude = SequenceHc(sight, motion, knownLat, knownLon);
     residual.interceptMinutes =
         60.0 * (sight.observedAltitude - residual.calculatedAltitude);
     values.push_back(residual.interceptMinutes);

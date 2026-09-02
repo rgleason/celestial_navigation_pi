@@ -161,6 +161,12 @@ struct FixObservation {
   wxDateTime utc;
   double observedAltitude = 0.0;
   double uncertaintyMinutes = 1.0;
+  // Sequence analysis can compare a sight at the DR position saved with that
+  // sight.  Running-fix observations leave this false because their position
+  // is supplied by the common motion model instead.
+  bool hasObserverPosition = false;
+  double observerLatitude = 0.0;
+  double observerLongitude = 0.0;
 };
 
 struct FixResidual {
