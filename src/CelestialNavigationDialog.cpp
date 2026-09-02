@@ -132,6 +132,7 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       m_analyzeButton(NULL),
       m_coastalButton(NULL),
       m_almanacButton(NULL),
+      m_pdfDocumentationButton(NULL),
       m_eclipseDialog(NULL),
       m_coastalDialog(NULL),
       m_chronyPollTicks(0),
@@ -207,6 +208,14 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   actionButtons->Insert(5, m_eclipseButton, 0, wxALL | wxEXPAND, 5);
   m_eclipseButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnEclipse,
                         this);
+  m_pdfDocumentationButton =
+      new wxButton(this, wxID_ANY, _("PDF Documentation"));
+  m_pdfDocumentationButton->SetToolTip(
+      _("Open the fixed-layout manual in the system PDF viewer"));
+  actionButtons->Insert(actionButtons->GetItemCount() - 1,
+                        m_pdfDocumentationButton, 0, wxALL | wxEXPAND, 5);
+  m_pdfDocumentationButton->Bind(
+      wxEVT_BUTTON, &CelestialNavigationDialog::OnPdfDocumentation, this);
 
   m_lSights->InsertColumn(rmVISIBLE, wxT(""));
   for (int i = 1; i < rmMAX; i++) {
@@ -376,11 +385,14 @@ void CelestialNavigationDialog::BuildTimeIntegrityPanel(bool visible) {
   m_timeIntegrityPanel =
       new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
                            wxTAB_TRAVERSAL | wxVSCROLL);
-  m_timeIntegrityPanel->SetScrollRate(0, FromDIP(10));
+  // Keep this compatible with wxWidgets 3.0 and the Android wxQt port, where
+  // wxWindow::FromDIP() is unavailable.  Other plugin scrollers use the same
+  // portable pixel sizing convention.
+  m_timeIntegrityPanel->SetScrollRate(0, 10);
   // Keep the sight list useful when the saved dialog height or available
   // desktop work area is small.  The complete time-status content remains
   // available through this panel's vertical scrollbar.
-  m_timeIntegrityPanel->SetMinSize(wxSize(-1, FromDIP(220)));
+  m_timeIntegrityPanel->SetMinSize(wxSize(-1, 220));
   wxBoxSizer* panelSizer = new wxBoxSizer(wxVERTICAL);
   wxFlexGridSizer* grid = new wxFlexGridSizer(0, 2, 4, 10);
   grid->AddGrowableCol(1);
@@ -1482,6 +1494,14 @@ void CelestialNavigationDialog::ApplyClockCorrection(int correction_seconds) {
 void CelestialNavigationDialog::OnDocumentation(wxCommandEvent& event) {
   ShowBundledHtmlHelp(this, _("Celestial Navigation Documentation"),
                       _T("Celestial_Navigation_Information.html"));
+}
+
+void CelestialNavigationDialog::OnPdfDocumentation(wxCommandEvent& event) {
+  if (!OpenBundledDocumentExternally(
+          _T("Celestial_Navigation_Manual_v2.pdf"))) {
+    ShowBundledHtmlHelp(this, _("Celestial Navigation Documentation"),
+                        _T("Celestial_Navigation_Information.html"));
+  }
 }
 
 void CelestialNavigationDialog::OnHide(wxCommandEvent& event) {

@@ -2,6 +2,7 @@
 
 #include "BodyCatalog.h"
 #include "Sight.h"
+#include "UtcDateTime.h"
 #include "geodesic.h"
 #include "moon.h"
 
@@ -65,10 +66,10 @@ bool RefineRoot(const wxString& body, const ObserverMotion& observer,
                 double threshold, bool limbEvent, double dipDegrees,
                 wxDateTime* root, BodyState* rootState) {
   wxDateTime lo = left, hi = right;
-  double flo = EventValue(body, lo, observer, threshold, limbEvent, dipDegrees,
-                          nullptr);
-  double fhi = EventValue(body, hi, observer, threshold, limbEvent, dipDegrees,
-                          nullptr);
+  double flo =
+      EventValue(body, lo, observer, threshold, limbEvent, dipDegrees, nullptr);
+  double fhi =
+      EventValue(body, hi, observer, threshold, limbEvent, dipDegrees, nullptr);
   if (!std::isfinite(flo) || !std::isfinite(fhi) || flo * fhi > 0.0)
     return false;
   for (int i = 0; i < 20 && std::abs(SecondsBetween(hi, lo)) > 1.0; ++i) {
@@ -95,8 +96,8 @@ void FindCrossings(const wxString& body, const wxDateTime& start,
                    const ObserverMotion& observer, double threshold,
                    bool limbEvent, double dipDegrees,
                    HorizonEventKind risingKind, HorizonEventKind settingKind,
-                   std::vector<HorizonEventResult>* events,
-                   bool* alwaysAbove, bool* alwaysBelow) {
+                   std::vector<HorizonEventResult>* events, bool* alwaysAbove,
+                   bool* alwaysBelow) {
   const int stepSeconds = 300;
   wxDateTime previousTime = start;
   double previous = EventValue(body, previousTime, observer, threshold,
@@ -191,7 +192,7 @@ double Hc(const FixObservation& observation, const ObserverMotion& baseMotion,
   double lat, lon;
   motion.PositionAt(observation.utc, &lat, &lon);
   return CelestialEphemeris::Evaluate(observation.body, observation.utc, lat,
-                                     lon)
+                                      lon)
       .geometricAltitude;
 }
 
@@ -216,8 +217,7 @@ double CelestialEphemeris::RefractionDegrees(double altitudeDeg,
                                              double pressureMb,
                                              double temperatureC) {
   if (altitudeDeg < -1.2 || altitudeDeg > 89.9) return 0.0;
-  const double argument =
-      (altitudeDeg + 10.3 / (altitudeDeg + 5.11)) * kDeg;
+  const double argument = (altitudeDeg + 10.3 / (altitudeDeg + 5.11)) * kDeg;
   if (std::abs(std::tan(argument)) < 1e-8) return 0.0;
   return (1.02 / std::tan(argument)) / 60.0 * (pressureMb / 1010.0) *
          (283.0 / (273.0 + temperatureC));
@@ -225,9 +225,8 @@ double CelestialEphemeris::RefractionDegrees(double altitudeDeg,
 
 BodyState CelestialEphemeris::Evaluate(const wxString& body,
                                        const wxDateTime& utc,
-                                       double observerLat,
-                                       double observerLon, double pressureMb,
-                                       double temperatureC) {
+                                       double observerLat, double observerLon,
+                                       double pressureMb, double temperatureC) {
   BodyState result;
   result.body = body;
   result.utc = utc;
@@ -239,8 +238,8 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
 
   Sight sight(Sight::ALTITUDE, info->name, Sight::CENTER, utc, 0.0, 0.0, 1.0);
   double ghaast = 0.0, radius = 0.0, distance = 0.0;
-  sight.BodyLocation(utc, &result.latitude, &result.longitude, &ghaast,
-                     &radius, &distance, true);
+  sight.BodyLocation(utc, &result.latitude, &result.longitude, &ghaast, &radius,
+                     &distance, true);
   sight.AltitudeAzimuth(observerLat, observerLon, result.latitude,
                         result.longitude, &result.geometricAltitude,
                         &result.azimuthTrue);
@@ -258,10 +257,8 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
     result.semidiameter = 0.266564 / radius;
     result.horizontalParallax = 0.002442 / radius;
   } else if (info->kind == CelestialBodyKind::Moon && radius > EARTH_RADIUS) {
-    result.horizontalParallax =
-        std::asin(EARTH_RADIUS / radius) / kDeg;
-    result.semidiameter =
-        std::asin(MOON_MEAN_RADIUS / radius) / kDeg;
+    result.horizontalParallax = std::asin(EARTH_RADIUS / radius) / kDeg;
+    result.semidiameter = std::asin(MOON_MEAN_RADIUS / radius) / kDeg;
   } else if (info->kind == CelestialBodyKind::Planet && distance > 0.0) {
     // Planet distance is in AU; equatorial horizontal parallax at 1 AU.
     result.horizontalParallax = 0.002442 / distance;
@@ -270,8 +267,8 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
     topocentricAltitude -=
         result.horizontalParallax * std::cos(result.geometricAltitude * kDeg);
   result.apparentAltitude =
-      topocentricAltitude + RefractionDegrees(topocentricAltitude, pressureMb,
-                                              temperatureC);
+      topocentricAltitude +
+      RefractionDegrees(topocentricAltitude, pressureMb, temperatureC);
   result.valid = std::isfinite(result.geometricAltitude) &&
                  std::isfinite(result.azimuthTrue);
   if (!result.valid) result.error = "Ephemeris calculation failed";
@@ -294,24 +291,22 @@ DailyEventsResult HorizonEventCalculator::Calculate(
                 HorizonEventKind::AstronomicalDusk, &result.events, nullptr,
                 nullptr);
   FindCrossings("Sun", start, observer, -12.0, false, 0.0,
-                HorizonEventKind::NauticalDawn,
-                HorizonEventKind::NauticalDusk, &result.events, nullptr,
-                nullptr);
+                HorizonEventKind::NauticalDawn, HorizonEventKind::NauticalDusk,
+                &result.events, nullptr, nullptr);
   FindCrossings("Sun", start, observer, -6.0, false, 0.0,
                 HorizonEventKind::CivilDawn, HorizonEventKind::CivilDusk,
                 &result.events, nullptr, nullptr);
   FindCrossings("Sun", start, observer, 0.0, true, dip,
                 HorizonEventKind::Sunrise, HorizonEventKind::Sunset,
-                &result.events, &result.sunAlwaysAbove,
-                &result.sunAlwaysBelow);
+                &result.events, &result.sunAlwaysAbove, &result.sunAlwaysBelow);
   FindCrossings("Moon", start, observer, 0.0, true, dip,
                 HorizonEventKind::Moonrise, HorizonEventKind::Moonset,
                 &result.events, &result.moonAlwaysAbove,
                 &result.moonAlwaysBelow);
-  result.events.push_back(FindTransit("Sun", start, observer,
-                                      HorizonEventKind::UpperTransit));
-  result.events.push_back(FindTransit("Moon", start, observer,
-                                      HorizonEventKind::MoonTransit));
+  result.events.push_back(
+      FindTransit("Sun", start, observer, HorizonEventKind::UpperTransit));
+  result.events.push_back(
+      FindTransit("Moon", start, observer, HorizonEventKind::MoonTransit));
   std::sort(result.events.begin(), result.events.end(),
             [](const HorizonEventResult& a, const HorizonEventResult& b) {
               return a.utc.IsEarlierThan(b.utc);
@@ -350,8 +345,8 @@ wxString HorizonEventCalculator::Name(HorizonEventKind kind) {
 }
 
 MoonInformation CalculateMoonInformation(const wxDateTime& utc,
-                                          double observerLat,
-                                          double observerLon) {
+                                         double observerLat,
+                                         double observerLon) {
   const BodyState sun =
       CelestialEphemeris::Evaluate("Sun", utc, observerLat, observerLon);
   const BodyState moon =
@@ -362,8 +357,8 @@ MoonInformation CalculateMoonInformation(const wxDateTime& utc,
   const BodyState laterMoon =
       CelestialEphemeris::Evaluate("Moon", later, observerLat, observerLon);
   MoonInformation result;
-  result.elongationDegrees = AngularSeparation(
-      sun.latitude, sun.longitude, moon.latitude, moon.longitude);
+  result.elongationDegrees = AngularSeparation(sun.latitude, sun.longitude,
+                                               moon.latitude, moon.longitude);
   result.illuminatedFraction =
       (1.0 - std::cos(result.elongationDegrees * kDeg)) / 2.0;
   const double laterElongation =
@@ -371,9 +366,8 @@ MoonInformation CalculateMoonInformation(const wxDateTime& utc,
                         laterMoon.latitude, laterMoon.longitude);
   const double laterFraction = (1.0 - std::cos(laterElongation * kDeg)) / 2.0;
   result.waxing = laterFraction >= result.illuminatedFraction;
-  const double phaseDegrees = result.waxing
-                                  ? result.elongationDegrees
-                                  : 360.0 - result.elongationDegrees;
+  const double phaseDegrees = result.waxing ? result.elongationDegrees
+                                            : 360.0 - result.elongationDegrees;
   result.ageDays = phaseDegrees / 360.0 * 29.530588853;
   if (result.illuminatedFraction < 0.02)
     result.phaseName = "New Moon";
@@ -396,11 +390,11 @@ std::vector<MoonPhaseEvent> NextPrincipalMoonPhases(const wxDateTime& utc,
     double age;
     double elongation;
   };
-  static const Target targets[] = {{"New Moon", 0.0, 0.0},
-                                   {"First quarter", 29.530588853 / 4.0, 90.0},
-                                   {"Full Moon", 29.530588853 / 2.0, 180.0},
-                                   {"Last quarter", 3.0 * 29.530588853 / 4.0,
-                                    90.0}};
+  static const Target targets[] = {
+      {"New Moon", 0.0, 0.0},
+      {"First quarter", 29.530588853 / 4.0, 90.0},
+      {"Full Moon", 29.530588853 / 2.0, 180.0},
+      {"Last quarter", 3.0 * 29.530588853 / 4.0, 90.0}};
   const MoonInformation current =
       CalculateMoonInformation(utc, observerLat, observerLon);
   std::vector<MoonPhaseEvent> result;
@@ -424,14 +418,16 @@ std::vector<MoonPhaseEvent> NextPrincipalMoonPhases(const wxDateTime& utc,
     for (int i = 0; i < 20; ++i) {
       const double a = lo + (hi - lo) / 3.0;
       const double b = hi - (hi - lo) / 3.0;
-      const double ea = std::abs(
-          CalculateMoonInformation(AddSeconds(best, a), observerLat, observerLon)
-              .elongationDegrees -
-          target.elongation);
-      const double eb = std::abs(
-          CalculateMoonInformation(AddSeconds(best, b), observerLat, observerLon)
-              .elongationDegrees -
-          target.elongation);
+      const double ea =
+          std::abs(CalculateMoonInformation(AddSeconds(best, a), observerLat,
+                                            observerLon)
+                       .elongationDegrees -
+                   target.elongation);
+      const double eb =
+          std::abs(CalculateMoonInformation(AddSeconds(best, b), observerLat,
+                                            observerLon)
+                       .elongationDegrees -
+                   target.elongation);
       if (ea > eb)
         lo = a;
       else
@@ -449,13 +445,16 @@ std::vector<MoonPhaseEvent> NextPrincipalMoonPhases(const wxDateTime& utc,
   return result;
 }
 
-std::vector<RankedBody> SightRanker::VisibleBodies(
-    const wxDateTime& utc, double lat, double lon, double minAltitude,
-    double maxAltitude, double maxMagnitude) {
+std::vector<RankedBody> SightRanker::VisibleBodies(const wxDateTime& utc,
+                                                   double lat, double lon,
+                                                   double minAltitude,
+                                                   double maxAltitude,
+                                                   double maxMagnitude) {
   std::vector<RankedBody> result;
   const BodyState sun = CelestialEphemeris::Evaluate("Sun", utc, lat, lon);
   for (const auto& info : BodyCatalog::All()) {
-    const BodyState state = CelestialEphemeris::Evaluate(info.name, utc, lat, lon);
+    const BodyState state =
+        CelestialEphemeris::Evaluate(info.name, utc, lat, lon);
     if (!state.valid || state.geometricAltitude < minAltitude ||
         state.geometricAltitude > maxAltitude ||
         (info.kind != CelestialBodyKind::Sun &&
@@ -475,10 +474,9 @@ std::vector<RankedBody> SightRanker::VisibleBodies(
         100.0 * Clamp(0.65 * altitudeScore + 0.35 * brightnessScore -
                           0.55 * twilightPenalty,
                       0.0, 1.0);
-    candidate.reason = wxString::Format("Hc %.1f%c, Zn %.0f%c, mag %.1f",
-                                        state.geometricAltitude, 0x00b0,
-                                        state.azimuthTrue, 0x00b0,
-                                        info.visualMagnitude);
+    candidate.reason = wxString::Format(
+        "Hc %.1f%c, Zn %.0f%c, mag %.1f", state.geometricAltitude, 0x00b0,
+        state.azimuthTrue, 0x00b0, info.visualMagnitude);
     result.push_back(candidate);
   }
   std::sort(result.begin(), result.end(),
@@ -496,8 +494,8 @@ std::vector<RankedCombination> SightRanker::BestCombinations(
   const size_t limit = std::min<size_t>(bodies.size(), 18);
   for (size_t i = 0; i < limit; ++i) {
     for (size_t j = i + 1; j < limit; ++j) {
-      const double d1 = std::abs(Wrap180(bodies[i].state.azimuthTrue -
-                                         bodies[j].state.azimuthTrue));
+      const double d1 = std::abs(
+          Wrap180(bodies[i].state.azimuthTrue - bodies[j].state.azimuthTrue));
       if (count == 2) {
         RankedCombination c;
         c.bodies = {bodies[i], bodies[j]};
@@ -526,11 +524,13 @@ std::vector<RankedCombination> SightRanker::BestCombinations(
           const double geometry = Clamp((xx * yy - xy * xy) / 2.25, 0.0, 1.0);
           RankedCombination c;
           c.bodies = {bodies[i], bodies[j], bodies[k]};
-          c.score = 0.5 * (bodies[i].score + bodies[j].score + bodies[k].score) /
+          c.score = 0.5 *
+                        (bodies[i].score + bodies[j].score + bodies[k].score) /
                         3.0 +
                     50.0 * geometry;
-          c.reason = wxString::Format("Geometry %.0f%%; closest bearings %.0f%c",
-                                      geometry * 100.0, smallest, 0x00b0);
+          c.reason =
+              wxString::Format("Geometry %.0f%%; closest bearings %.0f%c",
+                               geometry * 100.0, smallest, 0x00b0);
           combinations.push_back(c);
         }
       }
@@ -540,9 +540,73 @@ std::vector<RankedCombination> SightRanker::BestCombinations(
             [](const RankedCombination& a, const RankedCombination& b) {
               return a.score > b.score;
             });
-  if (combinations.size() > maximumResults)
-    combinations.resize(maximumResults);
+  if (combinations.size() > maximumResults) combinations.resize(maximumResults);
   return combinations;
+}
+
+wxDateTime PlannerFieldsToUtc(const wxDateTime& fields, PlannerTimeBasis basis,
+                              double zoneOffsetHours) {
+  if (!fields.IsValid()) return wxDateTime();
+  if (basis == PlannerTimeBasis::ComputerLocal) return fields;
+  wxDateTime utc = UtcDateTime::ToInstant(fields);
+  if (basis == PlannerTimeBasis::ZoneTime)
+    utc -= wxTimeSpan::Seconds(
+        static_cast<long>(std::lround(zoneOffsetHours * 3600.0)));
+  return utc;
+}
+
+wxDateTime UtcToPlannerFields(const wxDateTime& utc, PlannerTimeBasis basis,
+                              double zoneOffsetHours) {
+  if (!utc.IsValid()) return wxDateTime();
+  if (basis == PlannerTimeBasis::ComputerLocal) return utc;
+  wxDateTime adjusted = utc;
+  if (basis == PlannerTimeBasis::ZoneTime)
+    adjusted += wxTimeSpan::Seconds(
+        static_cast<long>(std::lround(zoneOffsetHours * 3600.0)));
+  return UtcDateTime::CopyFields(adjusted.ToUTC());
+}
+
+double SuggestedZoneOffsetHours(double longitude) {
+  if (!std::isfinite(longitude)) return 0.0;
+  return Clamp(std::round(longitude / 15.0), -12.0, 14.0);
+}
+
+wxString FormatNauticalPlannerDate(const wxDateTime& fields) {
+  return fields.IsValid() ? fields.Format("%Y-%m-%d") : wxString();
+}
+
+wxString FormatNauticalPlannerTime(const wxDateTime& fields) {
+  return fields.IsValid() ? fields.Format("%H:%M:%S") : wxString();
+}
+
+bool ParseNauticalPlannerDateTime(const wxString& dateText,
+                                  const wxString& timeText,
+                                  wxDateTime* fields) {
+  if (!fields) return false;
+  long year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0;
+  if (dateText.length() != 10 || dateText[4] != '-' || dateText[7] != '-' ||
+      timeText.length() != 8 || timeText[2] != ':' || timeText[5] != ':' ||
+      !dateText.Mid(0, 4).ToLong(&year) || !dateText.Mid(5, 2).ToLong(&month) ||
+      !dateText.Mid(8, 2).ToLong(&day) || !timeText.Mid(0, 2).ToLong(&hour) ||
+      !timeText.Mid(3, 2).ToLong(&minute) ||
+      !timeText.Mid(6, 2).ToLong(&second) || year < 1900 || year > 2100 ||
+      month < 1 || month > 12 || day < 1 || day > 31 || hour < 0 || hour > 23 ||
+      minute < 0 || minute > 59 || second < 0 || second > 59)
+    return false;
+  const wxDateTime::Month dateMonth = static_cast<wxDateTime::Month>(month - 1);
+  if (day > wxDateTime::GetNumberOfDays(dateMonth, static_cast<int>(year)))
+    return false;
+  wxDateTime value(static_cast<wxDateTime::wxDateTime_t>(day), dateMonth,
+                   static_cast<int>(year),
+                   static_cast<wxDateTime::wxDateTime_t>(hour),
+                   static_cast<wxDateTime::wxDateTime_t>(minute),
+                   static_cast<wxDateTime::wxDateTime_t>(second));
+  if (!value.IsValid() || value.GetDay() != day ||
+      static_cast<long>(value.GetMonth()) + 1 != month ||
+      value.GetYear() != year)
+    return false;
+  *fields = value;
+  return true;
 }
 
 RunningFixResult RunningFixSolver::Solve(
@@ -579,7 +643,8 @@ RunningFixResult RunningFixSolver::Solve(
     }
     const double determinant = normal00 * normal11 - normal01 * normal01;
     if (std::abs(determinant) < 1e-12) {
-      result.error = "Sight geometry is singular; choose better-spaced azimuths";
+      result.error =
+          "Sight geometry is singular; choose better-spaced azimuths";
       return result;
     }
     const double deltaLat = (normal11 * rhs0 - normal01 * rhs1) / determinant;
@@ -587,8 +652,7 @@ RunningFixResult RunningFixSolver::Solve(
     lat = Clamp(lat + deltaLat, -89.9, 89.9);
     lon = Wrap180(lon + deltaLon);
     result.iterations = iteration + 1;
-    if (std::hypot(deltaLat, deltaLon * std::cos(lat * kDeg)) * 60.0 <
-        0.001)
+    if (std::hypot(deltaLat, deltaLon * std::cos(lat * kDeg)) * 60.0 < 0.001)
       break;
   }
 
@@ -614,17 +678,17 @@ RunningFixResult RunningFixSolver::Solve(
     const double variance =
         sights.size() > 2 ? sumSquares / (sights.size() - 2) / 3600.0 : 1.0;
     const double c00 = variance * normal11 / determinant * 3600.0;
-    const double c01 = -variance * normal01 / determinant * 3600.0 *
-                       std::cos(lat * kDeg);
+    const double c01 =
+        -variance * normal01 / determinant * 3600.0 * std::cos(lat * kDeg);
     const double c11 = variance * normal00 / determinant * 3600.0 *
                        std::pow(std::cos(lat * kDeg), 2);
     const double trace = c00 + c11;
-    const double disc = std::sqrt(std::max(
-        0.0, (c00 - c11) * (c00 - c11) + 4.0 * c01 * c01));
+    const double disc =
+        std::sqrt(std::max(0.0, (c00 - c11) * (c00 - c11) + 4.0 * c01 * c01));
     result.semiMajorNm = std::sqrt(std::max(0.0, (trace + disc) / 2.0));
     result.semiMinorNm = std::sqrt(std::max(0.0, (trace - disc) / 2.0));
-    result.ellipseBearing = Wrap360(
-        0.5 * std::atan2(2.0 * c01, c00 - c11) / kDeg);
+    result.ellipseBearing =
+        Wrap360(0.5 * std::atan2(2.0 * c01, c00 - c11) / kDeg);
   }
   result.valid = true;
   return result;
@@ -679,7 +743,8 @@ SequenceStatistics SightSequenceAnalyzer::Analyze(
   double covariance = 0.0, timeVariance = 0.0;
   for (size_t i = 0; i < sights.size(); ++i) {
     if (result.residuals[i].outlier) continue;
-    const double t = SecondsBetween(sights[i].utc, motion.referenceUtc) / 3600.0;
+    const double t =
+        SecondsBetween(sights[i].utc, motion.referenceUtc) / 3600.0;
     covariance += (t - meanTime) * (values[i] - inlierMean);
     timeVariance += (t - meanTime) * (t - meanTime);
   }
@@ -690,8 +755,7 @@ SequenceStatistics SightSequenceAnalyzer::Analyze(
   return result;
 }
 
-std::vector<AlmanacRow> BuildAlmanac(const wxDateTime& startUtc,
-                                     unsigned hours,
+std::vector<AlmanacRow> BuildAlmanac(const wxDateTime& startUtc, unsigned hours,
                                      const std::vector<wxString>& bodies,
                                      const ObserverMotion& observer) {
   std::vector<AlmanacRow> rows;
@@ -717,15 +781,14 @@ std::vector<AlmanacRow> BuildAlmanac(const wxDateTime& startUtc,
 }
 
 wxString AlmanacToCsv(const std::vector<AlmanacRow>& rows) {
-  wxString result = "UTC,Body,GHA_deg,SHA_deg,Declination_deg,Hc_deg,Zn_true_deg\n";
+  wxString result =
+      "UTC,Body,GHA_deg,SHA_deg,Declination_deg,Hc_deg,Zn_true_deg\n";
   for (const auto& row : rows)
-    result += wxString::Format("%s,%s,%.6f,%.6f,%.6f,%.6f,%.6f\n",
-                               row.utc.Format("%Y-%m-%dT%H:%M:%SZ",
-                                              wxDateTime::UTC)
-                                   .c_str(),
-                               row.body.c_str(),
-                               row.gha, row.sha, row.declination, row.altitude,
-                               row.azimuth);
+    result += wxString::Format(
+        "%s,%s,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+        row.utc.Format("%Y-%m-%dT%H:%M:%SZ", wxDateTime::UTC).c_str(),
+        row.body.c_str(), row.gha, row.sha, row.declination, row.altitude,
+        row.azimuth);
   return result;
 }
 
@@ -734,10 +797,10 @@ double SolveLatitudeFromAltitude(const wxString& body, const wxDateTime& utc,
                                  double initialLatitude) {
   double latitude = Clamp(initialLatitude, -89.0, 89.0);
   for (int i = 0; i < 20; ++i) {
-    const double value = CelestialEphemeris::Evaluate(body, utc, latitude,
-                                                      longitude)
-                             .geometricAltitude -
-                         observedAltitude;
+    const double value =
+        CelestialEphemeris::Evaluate(body, utc, latitude, longitude)
+            .geometricAltitude -
+        observedAltitude;
     const double epsilon = 1e-4;
     const double derivative =
         (CelestialEphemeris::Evaluate(body, utc, latitude + epsilon, longitude)

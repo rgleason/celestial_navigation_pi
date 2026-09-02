@@ -25,4 +25,9 @@ class wxWindow;
 bool ShowBundledHtmlHelp(wxWindow* parent, const wxString& title,
                          const wxString& filename);
 
+// Ask the operating system to open a bundled document in its associated
+// application. Returns false when the file or a suitable external viewer is
+// unavailable, allowing callers to fall back to the internal HTML help.
+bool OpenBundledDocumentExternally(const wxString& filename);
+
 #endif  // CELESTIAL_NAVIGATION_HTML_HELP_H

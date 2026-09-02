@@ -16,14 +16,22 @@
 
 #include <wx/filename.h>
 #include <wx/msgdlg.h>
+#include <wx/utils.h>
 
 #include "CelestialNavigationUI.h"
 #include "celestial_navigation_pi.h"
 
+namespace {
+
+wxString BundledDataPath(const wxString& filename) {
+  return celestial_navigation_pi_DataDir() + _T("/data/") + filename;
+}
+
+}  // namespace
+
 bool ShowBundledHtmlHelp(wxWindow* parent, const wxString& title,
                          const wxString& filename) {
-  const wxString path = celestial_navigation_pi_DataDir() + _T("/data/") +
-                        filename;
+  const wxString path = BundledDataPath(filename);
   if (!wxFileName::FileExists(path)) {
     wxMessageBox(wxString::Format(
                      _("The documentation file could not be found:\n%s"), path),
@@ -42,4 +50,9 @@ bool ShowBundledHtmlHelp(wxWindow* parent, const wxString& title,
 
   dialog.ShowModal();
   return true;
+}
+
+bool OpenBundledDocumentExternally(const wxString& filename) {
+  const wxString path = BundledDataPath(filename);
+  return wxFileName::FileExists(path) && wxLaunchDefaultApplication(path);
 }

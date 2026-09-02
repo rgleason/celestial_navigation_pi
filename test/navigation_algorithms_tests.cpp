@@ -27,8 +27,7 @@ FixObservation Synthetic(const wxString& body, const wxDateTime& utc,
   observation.label = body;
   observation.body = body;
   observation.utc = utc;
-  observation.observedAltitude =
-      state.geometricAltitude + noiseMinutes / 60.0;
+  observation.observedAltitude = state.geometricAltitude + noiseMinutes / 60.0;
   observation.uncertaintyMinutes = 1.0;
   return observation;
 }
@@ -53,14 +52,12 @@ TEST(UtcDateTime, FormatsPluginUtcFieldsWithoutApplyingLocalOffsetTwice) {
   EXPECT_EQ("2026-08-13 04:48:12",
             UtcDateTime::FormatUtc(utc, "%Y-%m-%d %H:%M:%S"));
   EXPECT_EQ("2026-08-13 05:48:12",
-            UtcDateTime::FormatOffset(utc, 3600,
-                                      "%Y-%m-%d %H:%M:%S"));
+            UtcDateTime::FormatOffset(utc, 3600, "%Y-%m-%d %H:%M:%S"));
   EXPECT_EQ("2026-08-13T04:48:12Z", UtcDateTime::FormatIsoUtc(utc));
 }
 
 TEST(UtcDateTime, LegacyUtcFieldsRoundTripInWinterAndSummer) {
-  for (const char* text : {"2026-01-13T12:34:56",
-                           "2026-08-13T12:34:56"}) {
+  for (const char* text : {"2026-01-13T12:34:56", "2026-08-13T12:34:56"}) {
     const wxDateTime utc = UtcFields(text);
     const wxDateTime roundTrip =
         UtcDateTime::FromLocalFields(UtcDateTime::ToLocalFields(utc));
@@ -76,6 +73,48 @@ TEST(UtcDateTime, CurrentUtcFieldsRepresentTheCurrentInstant) {
   const wxDateTime instant = UtcDateTime::ToInstant(utcFields);
   EXPECT_FALSE(instant.IsEarlierThan(before - wxTimeSpan::Seconds(1)));
   EXPECT_FALSE(instant.IsLaterThan(after + wxTimeSpan::Seconds(1)));
+}
+
+TEST(PlannerTime, NauticalFormatIsUnambiguousAndStrict) {
+  wxDateTime fields;
+  ASSERT_TRUE(ParseNauticalPlannerDateTime("2026-11-16", "03:04:05", &fields));
+  EXPECT_EQ("2026-11-16", FormatNauticalPlannerDate(fields));
+  EXPECT_EQ("03:04:05", FormatNauticalPlannerTime(fields));
+  EXPECT_FALSE(ParseNauticalPlannerDateTime("11/16/2026", "3:04 AM", &fields));
+  EXPECT_FALSE(ParseNauticalPlannerDateTime("2026-02-29", "03:04:05", &fields));
+}
+
+TEST(PlannerTime, ConvertsEasternZoneTimeAcrossTheDateBoundary) {
+  wxDateTime fields;
+  ASSERT_TRUE(ParseNauticalPlannerDateTime("2026-11-16", "03:00:00", &fields));
+  const wxDateTime utc =
+      PlannerFieldsToUtc(fields, PlannerTimeBasis::ZoneTime, 10.0);
+  EXPECT_EQ("2026-11-15 17:00:00",
+            utc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
+  const wxDateTime roundTrip =
+      UtcToPlannerFields(utc, PlannerTimeBasis::ZoneTime, 10.0);
+  EXPECT_EQ("2026-11-16", FormatNauticalPlannerDate(roundTrip));
+  EXPECT_EQ("03:00:00", FormatNauticalPlannerTime(roundTrip));
+}
+
+TEST(PlannerTime, ConvertsWesternAndInternationalDateLineOffsets) {
+  wxDateTime fields;
+  ASSERT_TRUE(ParseNauticalPlannerDateTime("2027-01-01", "01:15:00", &fields));
+  const wxDateTime western =
+      PlannerFieldsToUtc(fields, PlannerTimeBasis::ZoneTime, -5.0);
+  EXPECT_EQ("2027-01-01 06:15:00",
+            western.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
+  const wxDateTime line =
+      PlannerFieldsToUtc(fields, PlannerTimeBasis::ZoneTime, 14.0);
+  EXPECT_EQ("2026-12-31 11:15:00",
+            line.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
+}
+
+TEST(PlannerTime, SuggestsWholeHourShipZonesFromLongitude) {
+  EXPECT_DOUBLE_EQ(-5.0, SuggestedZoneOffsetHours(-75.0));
+  EXPECT_DOUBLE_EQ(10.0, SuggestedZoneOffsetHours(150.5));
+  EXPECT_DOUBLE_EQ(0.0, SuggestedZoneOffsetHours(7.4));
+  EXPECT_DOUBLE_EQ(1.0, SuggestedZoneOffsetHours(7.6));
 }
 
 TEST(NavigationAngles, AcceptsDecimalDegreesMinutesAndSeconds) {
@@ -125,7 +164,8 @@ TEST(Ephemeris, OrdinaryPlannerCoversDocumented1900To2100Range) {
   for (const char* text : {"1900-01-01T00:00:00", "2100-12-31T23:00:00"}) {
     EXPECT_TRUE(CelestialEphemeris::Evaluate("Sun", Utc(text), 0, 0).valid);
     EXPECT_TRUE(CelestialEphemeris::Evaluate("Moon", Utc(text), 0, 0).valid);
-    EXPECT_TRUE(CelestialEphemeris::Evaluate("Polaris", Utc(text), 50, 0).valid);
+    EXPECT_TRUE(
+        CelestialEphemeris::Evaluate("Polaris", Utc(text), 50, 0).valid);
   }
 }
 
@@ -147,8 +187,8 @@ TEST(HorizonEvents, GivesChronologicalOfflineTwilightAndRiseSetTable) {
   observer.referenceUtc = Utc("2026-08-13T00:00:00");
   observer.latitude = 54.6;
   observer.longitude = -5.9;
-  const DailyEventsResult events = HorizonEventCalculator::Calculate(
-      observer.referenceUtc, observer, 2.0);
+  const DailyEventsResult events =
+      HorizonEventCalculator::Calculate(observer.referenceUtc, observer, 2.0);
   ASSERT_GE(events.events.size(), 10u);
   for (size_t i = 1; i < events.events.size(); ++i)
     EXPECT_FALSE(events.events[i].utc.IsEarlierThan(events.events[i - 1].utc));
@@ -161,6 +201,32 @@ TEST(HorizonEvents, GivesChronologicalOfflineTwilightAndRiseSetTable) {
   EXPECT_TRUE(sunrise);
   EXPECT_TRUE(sunset);
   EXPECT_TRUE(noon);
+}
+
+TEST(HorizonEvents, EyeHeightChangesHorizonEventsButNotPlannedHc) {
+  ObserverMotion observer;
+  observer.referenceUtc = Utc("2026-11-15T12:00:00");
+  observer.latitude = 45.0;
+  observer.longitude = -75.0;
+  const BodyState before = CelestialEphemeris::Evaluate(
+      "Moon", observer.referenceUtc, observer.latitude, observer.longitude);
+  const DailyEventsResult seaLevel =
+      HorizonEventCalculator::Calculate(observer.referenceUtc, observer, 0.0);
+  const DailyEventsResult highEye =
+      HorizonEventCalculator::Calculate(observer.referenceUtc, observer, 9.0);
+  const BodyState after = CelestialEphemeris::Evaluate(
+      "Moon", observer.referenceUtc, observer.latitude, observer.longitude);
+  ASSERT_TRUE(before.valid);
+  ASSERT_TRUE(after.valid);
+  EXPECT_DOUBLE_EQ(before.geometricAltitude, after.geometricAltitude);
+  wxDateTime seaLevelSunrise, highEyeSunrise;
+  for (const auto& event : seaLevel.events)
+    if (event.kind == HorizonEventKind::Sunrise) seaLevelSunrise = event.utc;
+  for (const auto& event : highEye.events)
+    if (event.kind == HorizonEventKind::Sunrise) highEyeSunrise = event.utc;
+  ASSERT_TRUE(seaLevelSunrise.IsValid());
+  ASSERT_TRUE(highEyeSunrise.IsValid());
+  EXPECT_NE(seaLevelSunrise.GetTicks(), highEyeSunrise.GetTicks());
 }
 
 TEST(HorizonEvents, ReportsPolarDayWithoutInventingSunrise) {
@@ -220,8 +286,8 @@ TEST(HorizonEvents, PublishedUtcTimesAcrossLongitudesAndHemispheres) {
     observer.referenceUtc = Utc("2026-08-13T00:00:00");
     observer.latitude = location.latitude;
     observer.longitude = location.longitude;
-    const DailyEventsResult events = HorizonEventCalculator::Calculate(
-        observer.referenceUtc, observer, 0.0);
+    const DailyEventsResult events =
+        HorizonEventCalculator::Calculate(observer.referenceUtc, observer, 0.0);
     EXPECT_NEAR(location.sunriseUtcMinute,
                 EventMinute(events, HorizonEventKind::Sunrise), 6)
         << location.name;
@@ -292,7 +358,8 @@ TEST(RunningFix, RecoversACommonEpochPositionFromTimeTaggedSights) {
       Synthetic("Sun", truth.referenceUtc - wxTimeSpan::Minutes(35), truth),
       Synthetic("Moon", truth.referenceUtc - wxTimeSpan::Minutes(5), truth),
       Synthetic("Venus", truth.referenceUtc + wxTimeSpan::Minutes(25), truth),
-      Synthetic("Arcturus", truth.referenceUtc + wxTimeSpan::Minutes(45), truth)};
+      Synthetic("Arcturus", truth.referenceUtc + wxTimeSpan::Minutes(45),
+                truth)};
   const RunningFixResult fix =
       RunningFixSolver::Solve(observations, truth, 43.0, -17.5);
   ASSERT_TRUE(fix.valid) << fix.error;
@@ -356,8 +423,7 @@ TEST(Almanac, ExportsAStableOfflineCsvTable) {
 TEST(Almanac, HourlyUtcRowsDoNotSkipAtComputerDstBoundary) {
   ObserverMotion observer;
   observer.referenceUtc = Utc("2026-03-29T00:00:00");
-  const auto rows =
-      BuildAlmanac(observer.referenceUtc, 3, {"Sun"}, observer);
+  const auto rows = BuildAlmanac(observer.referenceUtc, 3, {"Sun"}, observer);
   ASSERT_EQ(4u, rows.size());
   EXPECT_EQ("2026-03-29T00:00:00Z",
             rows[0].utc.Format("%Y-%m-%dT%H:%M:%SZ", wxDateTime::UTC));

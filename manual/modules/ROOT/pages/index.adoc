@@ -179,6 +179,10 @@ helpers and almanac CSV export. See
 xref:offline-planning.adoc[Offline planning, running fixes and sight analysis]
 for controls, algorithms, limitations and safety notes.
 
+Creating a sight selects it and clears the previous selection. Deleting the
+selected sight moves selection to an adjacent sight when one remains; there is
+therefore no unselected state while the sight list is non-empty.
+
 The old manual DR Shift and visual-fix process remains available. Alternatively,
 *Fix…* can now propagate visible observations along a COG/SOG model to a common
 epoch and solve them numerically without changing the stored raw sight times.
