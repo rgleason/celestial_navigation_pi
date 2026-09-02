@@ -112,3 +112,28 @@ TEST(AtomicXmlFile, FailedFirstWriteDoesNotPublishAPartialFile) {
       }));
   EXPECT_FALSE(wxFileExists(path));
 }
+
+TEST(AtomicXmlFile, CopiesValidatedInputWithoutExposingAPartialDestination) {
+  TemporaryDirectory directory;
+  const wxString source = directory.File("verified-download.bin");
+  const wxString destination = directory.File("installed.bin");
+  {
+    wxFile file(source, wxFile::write);
+    ASSERT_TRUE(file.IsOpened());
+    ASSERT_TRUE(file.Write("verified astronomy data", 23));
+  }
+  {
+    wxFile file(destination, wxFile::write);
+    ASSERT_TRUE(file.IsOpened());
+    ASSERT_TRUE(file.Write("old", 3));
+  }
+
+  wxString error;
+  ASSERT_TRUE(
+      celestial_navigation::CopyFileAtomically(source, destination, &error))
+      << error;
+  wxFile installed(destination);
+  wxString contents;
+  ASSERT_TRUE(installed.ReadAll(&contents, wxConvUTF8));
+  EXPECT_EQ("verified astronomy data", contents);
+}

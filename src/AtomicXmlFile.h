@@ -22,6 +22,11 @@ bool ReplaceFileAtomically(const wxString& destination,
                            const TemporaryFileWriter& writer,
                            wxString* error = nullptr);
 
+// Copy an already validated file through a same-directory temporary file so
+// interruption cannot expose a partial destination.
+bool CopyFileAtomically(const wxString& source, const wxString& destination,
+                        wxString* error = nullptr);
+
 // Serialize a TinyXML document and safely replace destination.
 bool SaveXmlDocumentAtomically(const TiXmlDocument& document,
                                const wxString& destination,

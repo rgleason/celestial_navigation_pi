@@ -195,6 +195,7 @@ SET(SRCS
         src/HorizonEventDialog.cpp
         src/HtmlHelp.cpp
         src/EclipseDialog.cpp
+        src/EclipseDataFiles.cpp
         src/TimeStatus.cpp
         src/CelestialNavigationUI.cpp
         src/SightDialog.cpp
@@ -235,6 +236,7 @@ SET(HDRS
         src/HorizonEventDialog.h
         src/HtmlHelp.h
         src/EclipseDialog.h
+        src/EclipseDataFiles.h
         src/TimeStatus.h
         src/CelestialNavigationUI.h
         src/ClockCorrectionDialog.h

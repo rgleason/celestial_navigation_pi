@@ -859,8 +859,9 @@ interval, true COG and SOG. This is distinct from the celestial
 <h1 id="eclipses">15. Offline solar-eclipse planner</h1>
 
 <p>The eclipse planner is a separate specialist module within the plugin. It
-uses a locally imported JPL DE440s ephemeris to search events and calculate
-geometry without network access.</p>
+uses a locally installed JPL DE440s ephemeris to search events and calculate
+geometry without network access. The data can be downloaded on an explicit
+user request or imported from a local copy.</p>
 
 <h2>15.1 Data</h2>
 <ul>
@@ -868,6 +869,21 @@ geometry without network access.</p>
   <li><strong>Lunar orientation:</strong> optional orientation support for refined limb work.</li>
   <li><strong>LOLA pack:</strong> optional lunar-topography refinement of contact timing; not required for ordinary eclipse use.</li>
 </ul>
+
+<p>Select <strong>Download and install DE440s… (31.2 MiB)</strong> for the
+base eclipse data. The download is staged, checked for its exact size and
+SHA-256 digest, inspected for the expected SPK structure and then installed
+atomically. If a source fails, the plugin tries another trusted project or
+NASA/JPL source. <strong>Import DE440s…</strong> applies the same verification
+and safe-installation process to a local file.</p>
+
+<p><strong>Optional lunar data…</strong> opens a separate explanation and
+separate download/import controls for the 12.3 MiB lunar-orientation kernel and
+the 506 MiB LOLA terrain pack. Neither is downloaded when DE440s is installed.
+If LOLA is selected without lunar orientation already installed, the plugin
+shows the combined download and temporary disk-space requirement and asks for
+confirmation before downloading either file. Downloads can be cancelled; a
+partial or unverified file is never installed.</p>
 
 <h2>15.2 Find and plot an eclipse</h2>
 <ol class="steps">
@@ -907,7 +923,7 @@ celestial-navigation fix.</p>
 <tr><td>Sextant check predicts “unavailable”</td><td>One body is below the usable horizon, the bodies are identical, or the entered UTC/position is wrong. Select another pair/time and check UTC rather than local civil time.</td></tr>
 <tr><td>Correction profile varies unexpectedly</td><td>Repeat the check, use similar-altitude star pairs, keep shades/technique identified, verify mechanical adjustment and compare only within the measured angular range.</td></tr>
 <tr><td>Running fix is poor</td><td>Check the reference epoch, COG/SOG, set and drift, leeway, course alterations and observation geometry.</td></tr>
-<tr><td>Eclipse controls unavailable</td><td>Import DE440s and recheck data status. LOLA is optional and should not block ordinary eclipse plotting.</td></tr>
+<tr><td>Eclipse controls unavailable</td><td>Select <strong>Download and install DE440s…</strong>, or import a local DE440s copy, and wait for verification to complete. LOLA and lunar orientation are optional and should not block ordinary eclipse plotting.</td></tr>
 </table>
 
 <h2>16.1 Independent checks</h2>

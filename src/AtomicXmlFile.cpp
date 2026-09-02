@@ -2,6 +2,8 @@
 
 #include <wx/filename.h>
 
+#include <vector>
+
 #include "tinyxml.h"
 
 namespace celestial_navigation {
@@ -64,6 +66,28 @@ bool SaveXmlDocumentAtomically(const TiXmlDocument& document,
       destination,
       [&printer](wxTempFile& temporary) {
         return temporary.Write(printer.CStr(), printer.Size());
+      },
+      error);
+}
+
+bool CopyFileAtomically(const wxString& source, const wxString& destination,
+                        wxString* error) {
+  wxFile input(source, wxFile::read);
+  if (!input.IsOpened()) {
+    SetError(error, "The source file could not be opened.");
+    return false;
+  }
+  return ReplaceFileAtomically(
+      destination,
+      [&input](wxTempFile& temporary) {
+        std::vector<unsigned char> buffer(1024 * 1024);
+        for (;;) {
+          const wxFileOffset count = input.Read(buffer.data(), buffer.size());
+          if (count == wxInvalidOffset) return false;
+          if (count == 0) return true;
+          if (!temporary.Write(buffer.data(), static_cast<size_t>(count)))
+            return false;
+        }
       },
       error);
 }

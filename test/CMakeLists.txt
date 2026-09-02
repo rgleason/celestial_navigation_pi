@@ -24,6 +24,7 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml ${CMAKE_CURRENT_BINARY
 
 set(SRC
     atomic_xml_file_tests.cpp
+    eclipse_data_files_tests.cpp
     altitude_tests.cpp
     azimuth_tests.cpp
     lunar_tests.cpp
@@ -43,6 +44,7 @@ set(SRC
     mock_plugin_impl.cpp
     ${CMAKE_SOURCE_DIR}/src/Sight.cpp
     ${CMAKE_SOURCE_DIR}/src/AtomicXmlFile.cpp
+    ${CMAKE_SOURCE_DIR}/src/EclipseDataFiles.cpp
     ${CMAKE_SOURCE_DIR}/src/LunarDistanceEngine.cpp
     ${CMAKE_SOURCE_DIR}/src/LunarSessionEngine.cpp
     ${CMAKE_SOURCE_DIR}/src/SextantCalibrationEngine.cpp

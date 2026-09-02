@@ -311,6 +311,16 @@ void DimeWindow(wxWindow* win) {}
 void GetCanvasPixLL(PlugIn_ViewPort* vp, wxPoint* pp, double lat, double lon) {}
 void RequestRefresh(wxWindow* window) {}
 
+wxEventType wxEVT_DOWNLOAD_EVENT = wxNewEventType();
+
+OCPN_DLStatus OCPN_downloadFileBackground(const wxString&, const wxString&,
+                                           wxEvtHandler*, long* handle) {
+  if (handle) *handle = 0;
+  return OCPN_DL_FAILED;
+}
+
+void OCPN_cancelDownloadFileBackground(long) {}
+
 extern DECL_EXP wxString GetLocaleCanonicalName() {
   return "";
 }

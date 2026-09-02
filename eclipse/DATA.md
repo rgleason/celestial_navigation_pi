@@ -11,12 +11,22 @@ packs are hosted separately in the immutable
 they are omitted from the upstream contribution fork to avoid imposing
 large-file storage and bandwidth on the upstream GitHub fork network.
 
-At runtime the engine never connects to a network. A user or package builder
-imports `data/de440s.bsp` into the plugin's private eclipse-data directory.
-The plugin checks its byte count, SHA-256 digest, DAF/SPK structure and segment
-count before it is accepted. A truncated, modified or substituted file is
-rejected. The same local import workflow applies to the optional PCK and LOLA
-files.
+The planner can download DE440s on an explicit user request, or a user or
+package builder can import a local copy into the plugin's private eclipse-data
+directory. Optional lunar-orientation and LOLA downloads are separate choices
+behind the **Optional lunar data…** dialog. The plugin shows their sizes and
+never downloads them as a side effect of installing DE440s. Selecting LOLA
+without the orientation kernel installed requires a second confirmation which
+states that both files and approximately 518 MiB must be downloaded.
+
+Every download is written to a staging file. The plugin checks byte count,
+SHA-256 digest and file structure off the GUI thread, then publishes it through
+an atomic replacement. A truncated, modified or substituted file is rejected
+and the next trusted source is tried. Local imports use the same verifier and
+atomic installation path. A verification record avoids repeatedly hashing the
+506 MiB LOLA file; any size or modification-time change invalidates that
+record. Once the data is installed, the eclipse engine performs no network
+access.
 
 The base installation budget is therefore approximately:
 
@@ -76,10 +86,11 @@ eclipse-data download directory for offline preparation and installation.
 The kernel's authoritative source is NASA's Navigation and Ancillary
 Information Facility (NAIF):
 `https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp`.
+The downloader first uses the pinned project release, then this generic NAIF
+source and an official NAIF/PDS mission-archive copy. Each must pass the same
+pinned digest and structure checks.
 The optional PCK is published at
 `https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/moon_pa_de440_200625.bpc`,
 and the LOLA source at
 `https://pgda.gsfc.nasa.gov/data/LOLA_PA/LDEM64_PA_pixel_202405.grd`.
-This URL is a packaging/provenance reference only; the application contains
-no downloader and is fully functional with its installed data pack while
-offline.
+The application is fully functional with its installed data while offline.
