@@ -405,6 +405,65 @@ TEST(SequenceAnalyzer, MatchesBobBossertHistoricalSunSightHc) {
   EXPECT_NEAR(1.73, analysis.residuals.front().interceptMinutes, 0.7);
 }
 
+TEST(SequenceAnalyzer, UsesEachSavedDrPositionForStationaryComparison) {
+  ObserverMotion sharedTrack;
+  sharedTrack.referenceUtc = Utc("2026-09-02T15:51:08");
+  // This is the older Rochester DR which previously got applied to every row.
+  sharedTrack.latitude = 43.2366983;
+  sharedTrack.longitude = -77.5216983;
+
+  FixObservation first;
+  first.label = "Sun";
+  first.body = "Sun";
+  first.utc = sharedTrack.referenceUtc;
+  first.observedAltitude = 53.935405;
+  first.hasObserverPosition = true;
+  // The saved DR for Bob's newer Connecticut sight.
+  first.observerLatitude = 41.5552;
+  first.observerLongitude = -72.0797;
+
+  FixObservation second = first;
+  second.utc = Utc("2026-09-02T16:33:48");
+  second.observedAltitude = 56.046207;
+
+  const SequenceStatistics analysis = SightSequenceAnalyzer::Analyze(
+      {first, second}, sharedTrack, sharedTrack.latitude,
+      sharedTrack.longitude);
+  ASSERT_TRUE(analysis.valid);
+  ASSERT_EQ(2u, analysis.residuals.size());
+  EXPECT_NEAR(53.920373, analysis.residuals[0].calculatedAltitude, 0.01);
+  EXPECT_NEAR(56.032477, analysis.residuals[1].calculatedAltitude, 0.01);
+  EXPECT_NEAR(0.90, analysis.residuals[0].interceptMinutes, 0.1);
+  EXPECT_NEAR(0.82, analysis.residuals[1].interceptMinutes, 0.1);
+}
+
+TEST(SequenceAnalyzer, MovingObserverUsesSharedTrackInsteadOfSavedDr) {
+  ObserverMotion track;
+  track.referenceUtc = Utc("2026-09-02T15:51:08");
+  track.latitude = 43.2366983;
+  track.longitude = -77.5216983;
+  track.moving = true;
+
+  FixObservation observation;
+  observation.label = "Sun";
+  observation.body = "Sun";
+  observation.utc = track.referenceUtc;
+  observation.observedAltitude = 53.935405;
+  observation.hasObserverPosition = true;
+  observation.observerLatitude = 41.5552;
+  observation.observerLongitude = -72.0797;
+
+  const SequenceStatistics analysis = SightSequenceAnalyzer::Analyze(
+      {observation, observation}, track, track.latitude, track.longitude);
+  ASSERT_TRUE(analysis.valid);
+  const double expected =
+      CelestialEphemeris::Evaluate("Sun", observation.utc, track.latitude,
+                                   track.longitude)
+          .geometricAltitude;
+  EXPECT_NEAR(expected, analysis.residuals.front().calculatedAltitude, 1e-8);
+  EXPECT_GT(std::abs(expected - 53.920373), 1.0);
+}
+
 TEST(Almanac, ExportsAStableOfflineCsvTable) {
   ObserverMotion observer;
   observer.referenceUtc = Utc("2027-01-01T00:00:00");

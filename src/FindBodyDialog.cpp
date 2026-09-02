@@ -43,6 +43,11 @@
 
 FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
     : FindBodyDialogBase(parent), m_Sight(sight) {
+  m_cbBoatPosition->SetLabel(_("Current boat position (live)"));
+  m_cbBoatPosition->SetToolTip(
+      _("Uses OpenCPN's current boat position, not the boat position at the "
+        "sight's UTC. For a historical sight, clear this option and enter the "
+        "DR position at the sight time."));
   if (!sight.m_DRBoatPosition) {
     m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_Sight.m_DRLat, true));
     m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_Sight.m_DRLon, true));

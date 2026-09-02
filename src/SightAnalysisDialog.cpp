@@ -108,8 +108,9 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
   wxStaticText* introduction = new wxStaticText(
       this, wxID_ANY,
-      _("Compare visible altitude sights with a known/DR track to reveal "
-        "scatter, outliers, trend and personal bias."));
+      _("Compare visible altitude sights at their saved DR positions to "
+        "reveal scatter, outliers, trend and personal bias. Enable Moving "
+        "observer to use one course/speed track instead."));
   introduction->Wrap(780);
   root->Add(introduction, 0, wxALL | wxEXPAND, 8);
 
@@ -130,12 +131,12 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   root->Add(options, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 8);
 
   wxBoxSizer* position = new wxBoxSizer(wxHORIZONTAL);
-  position->Add(new wxStaticText(this, wxID_ANY, _("Track latitude")), 0,
+  position->Add(new wxStaticText(this, wxID_ANY, _("Track start latitude")), 0,
                 wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
   m_latitude = new NavigationAngleCtrl(this, NavigationAngleKind::Latitude, 0.0,
                                        -90.0, 90.0, wxSize(155, -1));
   position->Add(m_latitude, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 18);
-  position->Add(new wxStaticText(this, wxID_ANY, _("Track longitude")), 0,
+  position->Add(new wxStaticText(this, wxID_ANY, _("Track start longitude")), 0,
                 wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
   m_longitude = new NavigationAngleCtrl(this, NavigationAngleKind::Longitude,
                                         0.0, -180.0, 180.0, wxSize(165, -1));
@@ -200,9 +201,20 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   }
   m_latitude->SetAngle(lat);
   m_longitude->SetAngle(lon);
+  m_latitude->Enable(false);
+  m_longitude->Enable(false);
+  m_course->Enable(false);
+  m_speed->Enable(false);
   analyze->Bind(wxEVT_BUTTON, &SightAnalysisDialog::Analyze, this);
   m_onlySelectedBody->Bind(wxEVT_CHECKBOX, &SightAnalysisDialog::Analyze, this);
-  m_moving->Bind(wxEVT_CHECKBOX, &SightAnalysisDialog::Analyze, this);
+  m_moving->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& event) {
+    const bool moving = m_moving->GetValue();
+    m_latitude->Enable(moving);
+    m_longitude->Enable(moving);
+    m_course->Enable(moving);
+    m_speed->Enable(moving);
+    Analyze(event);
+  });
   Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { Close(); }, wxID_CLOSE);
   wxCommandEvent dummy;
   Analyze(dummy);
@@ -211,6 +223,7 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
 
 void SightAnalysisDialog::Analyze(wxCommandEvent&) {
   std::vector<FixObservation> observations;
+  unsigned liveBoatPositionSights = 0;
   const Sight* selected = m_parent->GetSelectedSight();
   for (const Sight& sight : m_parent->m_Sights) {
     if (!sight.IsVisible() || !sight.IsCalculated() ||
@@ -226,6 +239,10 @@ void SightAnalysisDialog::Analyze(wxCommandEvent&) {
     observation.observedAltitude = sight.m_ObservedAltitude;
     observation.uncertaintyMinutes =
         std::max(0.1, sight.m_MeasurementCertainty);
+    observation.hasObserverPosition = true;
+    observation.observerLatitude = sight.m_DRLat;
+    observation.observerLongitude = sight.m_DRLon;
+    if (sight.m_DRBoatPosition) ++liveBoatPositionSights;
     observations.push_back(observation);
   }
   m_results->DeleteAllItems();
@@ -261,14 +278,22 @@ void SightAnalysisDialog::Analyze(wxCommandEvent&) {
     return;
   }
   m_plot->SetAnalysis(analysis);
-  m_summary->SetLabel(wxString::Format(
+  wxString summary = wxString::Format(
       _("%u sights  |  mean %+.2f'  SD %.2f'  |  median/personal bias %+.2f'  "
         "MAD %.2f'  |  trend %+.2f' per hour\n"
         "Bias is reported, not silently applied. Review flagged sights before "
         "choosing any correction."),
       analysis.count, analysis.meanMinutes, analysis.standardDeviationMinutes,
       analysis.personalBiasMinutes, analysis.madMinutes,
-      analysis.trendMinutesPerHour));
+      analysis.trendMinutesPerHour);
+  if (!motion.moving && liveBoatPositionSights) {
+    summary += wxString::Format(
+        _("\nWarning: %u sight(s) have Current boat position enabled. For "
+          "historical analysis, edit each sight, clear that option, and enter "
+          "the DR position at the sight time."),
+        liveBoatPositionSights);
+  }
+  m_summary->SetLabel(summary);
   for (const auto& residual : analysis.residuals) {
     const long row = m_results->InsertItem(
         m_results->GetItemCount(),
