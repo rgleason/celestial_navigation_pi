@@ -12,6 +12,7 @@ src/astrolabe/util.cpp
 src/astrolabe/vsop87d.cpp
 src/geomag/geomag.c
 src/CelestialNavigationDialog.cpp
+src/AtomicXmlFile.cpp
 src/BodyCatalog.cpp
 src/NavigationAlgorithms.cpp
 src/PlannerDialog.cpp
@@ -47,6 +48,7 @@ src/OcpnApiCompat.h
 src/NavigationUIUtils.h
 src/celestial_navigation_pi.h
 src/CelestialNavigationDialog.h
+src/AtomicXmlFile.h
 src/BodyCatalog.h
 src/NavigationAlgorithms.h
 src/PlannerDialog.h

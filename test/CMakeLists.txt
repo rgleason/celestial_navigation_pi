@@ -23,6 +23,7 @@ find_package(wxWidgets COMPONENTS core base net html REQUIRED)
 add_subdirectory(${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml ${CMAKE_CURRENT_BINARY_DIR}/tinyxml)
 
 set(SRC
+    atomic_xml_file_tests.cpp
     altitude_tests.cpp
     azimuth_tests.cpp
     lunar_tests.cpp
@@ -41,6 +42,7 @@ set(SRC
     mock_plugin_api.cpp
     mock_plugin_impl.cpp
     ${CMAKE_SOURCE_DIR}/src/Sight.cpp
+    ${CMAKE_SOURCE_DIR}/src/AtomicXmlFile.cpp
     ${CMAKE_SOURCE_DIR}/src/LunarDistanceEngine.cpp
     ${CMAKE_SOURCE_DIR}/src/LunarSessionEngine.cpp
     ${CMAKE_SOURCE_DIR}/src/SextantCalibrationEngine.cpp

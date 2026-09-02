@@ -117,6 +117,51 @@ TEST(PlannerTime, SuggestsWholeHourShipZonesFromLongitude) {
   EXPECT_DOUBLE_EQ(1.0, SuggestedZoneOffsetHours(7.6));
 }
 
+TEST(ObserverMotion, SupportsCourseAndLoggedDistanceLegs) {
+  ObserverMotion motion;
+  motion.referenceUtc = Utc("2026-09-02T12:00:00");
+  motion.latitude = 50.0;
+  motion.longitude = -5.0;
+  ObserverTrackLeg leg;
+  leg.startUtc = Utc("2026-09-02T10:00:00");
+  leg.endUtc = motion.referenceUtc;
+  leg.method = ObserverMotionMethod::CourseAndLog;
+  leg.courseTrue = 90.0;
+  leg.distanceThroughWaterNm = 12.0;
+  motion.track.push_back(leg);
+  double lat = 0.0, lon = 0.0;
+  motion.PositionAt(leg.startUtc, &lat, &lon);
+  double bearing = 0.0, distance = 0.0;
+  ll_gc_ll_reverse(lat, lon, motion.latitude, motion.longitude, &bearing,
+                   &distance);
+  EXPECT_NEAR(12.0, distance, 0.02);
+  // The leg is advanced on an east-going parallel while the verification
+  // uses the initial great-circle bearing; at 50 N these differ slightly.
+  EXPECT_NEAR(90.0, bearing, 0.3);
+}
+
+TEST(ObserverMotion, CombinesWaterTrackWithSetAndDrift) {
+  ObserverMotion motion;
+  motion.referenceUtc = Utc("2026-09-02T10:00:00");
+  motion.latitude = 0.0;
+  motion.longitude = 0.0;
+  ObserverTrackLeg leg;
+  leg.startUtc = motion.referenceUtc;
+  leg.endUtc = Utc("2026-09-02T11:00:00");
+  leg.method = ObserverMotionMethod::CourseSpeedSetDrift;
+  leg.courseTrue = 0.0;
+  leg.speedThroughWaterKnots = 4.0;
+  leg.setTrue = 90.0;
+  leg.driftKnots = 3.0;
+  motion.track.push_back(leg);
+  double lat = 0.0, lon = 0.0;
+  motion.PositionAt(leg.endUtc, &lat, &lon);
+  double bearing = 0.0, distance = 0.0;
+  ll_gc_ll_reverse(0.0, 0.0, lat, lon, &bearing, &distance);
+  EXPECT_NEAR(5.0, distance, 0.02);
+  EXPECT_NEAR(36.87, bearing, 0.2);
+}
+
 TEST(NavigationAngles, AcceptsDecimalDegreesMinutesAndSeconds) {
   double value = 0.0;
   EXPECT_TRUE(ParseNavigationAngle("43.236698 N", NavigationAngleKind::Latitude,

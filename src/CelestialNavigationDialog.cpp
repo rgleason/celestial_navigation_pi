@@ -37,6 +37,7 @@
 
 #include "tinyxml.h"
 
+#include "AtomicXmlFile.h"
 #include "OcpnApiCompat.h"
 
 #include "celestial_navigation_pi.h"
@@ -916,7 +917,8 @@ void CelestialNavigationDialog::SaveXML() {
     root->LinkEndChild(c);
   }
 
-  if (!doc.SaveFile(m_sights_path.mb_str())) {
+  if (!celestial_navigation::SaveXmlDocumentAtomically(
+          doc, m_sights_path)) {
     wxMessageDialog mdlg(this, _("Failed to save xml file: ") + m_sights_path,
                          _("Celestial Navigation"), wxOK | wxICON_ERROR);
     mdlg.ShowModal();
