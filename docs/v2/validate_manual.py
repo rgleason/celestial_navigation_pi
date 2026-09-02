@@ -9,6 +9,8 @@ import sys
 import zipfile
 from pathlib import Path
 
+from PIL import Image
+
 
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "Celestial_Navigation_Manual_v2.html"
@@ -57,8 +59,29 @@ def main() -> None:
 
     output_html = OUTPUT / "Celestial_Navigation_Information.html"
     plugin_html = PLUGIN_DATA / "Celestial_Navigation_Information.html"
-    require(output_html.read_bytes() == SOURCE.read_bytes(), "output HTML is stale")
-    require(plugin_html.read_bytes() == SOURCE.read_bytes(), "plugin Documentation HTML is stale")
+    require(
+        output_html.read_bytes() == plugin_html.read_bytes(),
+        "plugin Documentation HTML is stale",
+    )
+
+    prepared = output_html.read_text(encoding="utf-8")
+    prepared_images = re.findall(
+        r'<img\b[^>]*\bsrc="([^"]+)"[^>]*\bwidth="(\d+)"[^>]*\bheight="(\d+)"',
+        prepared,
+    )
+    require(
+        len(prepared_images) == 10,
+        f"expected 10 explicitly sized HTML diagrams, found {len(prepared_images)}",
+    )
+    for name, width_text, height_text in prepared_images:
+        expected = (int(width_text), int(height_text))
+        plugin_image = PLUGIN_DATA / name
+        require(plugin_image.is_file(), f"missing plugin image: {name}")
+        with Image.open(plugin_image) as image:
+            require(
+                image.size == expected,
+                f"plugin image {name} is {image.size}, expected {expected}",
+            )
 
     docx = OUTPUT / "Celestial_Navigation_Manual_v2.docx"
     with zipfile.ZipFile(docx) as package:
@@ -72,9 +95,15 @@ def main() -> None:
 
     pdf = OUTPUT / "Celestial_Navigation_Manual_v2.pdf"
     require(pdf.is_file() and pdf.stat().st_size > 100_000, "printable PDF is missing or empty")
+    bundled_pdf = PLUGIN_DATA / "Celestial_Navigation_Manual_v2.pdf"
+    require(
+        bundled_pdf.is_file() and bundled_pdf.read_bytes() == pdf.read_bytes(),
+        "bundled PDF is missing or stale",
+    )
     print(
         f"Validated 10 figures, {len(abbreviations)} abbreviations, "
-        f"{len(glossary)} glossary terms, embedded DOCX images and offline HTML."
+        f"{len(glossary)} glossary terms, embedded DOCX images, scaled offline "
+        "HTML and bundled PDF."
     )
 
 

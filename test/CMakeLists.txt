@@ -32,6 +32,7 @@ set(SRC
     lunar_de440_tests.cpp
     coastal_navigation_tests.cpp
     horizon_event_tests.cpp
+    html_help_tests.cpp
     navigation_algorithms_tests.cpp
     waypoint_position_source_tests.cpp
     almanac_generator_tests.cpp

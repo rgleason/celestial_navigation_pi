@@ -159,7 +159,7 @@ the observer's zenith and the body is the <strong>zenith distance z</strong>.</p
 <div class="formula">z = 90° − Ho</div>
 
 <figure>
-<img src="images/01_geographic_position_and_altitude.png" width="620" alt="Side view of Earth showing the observer, body geographic position, local horizontal, observed altitude and zenith distance.">
+<img src="images/01_geographic_position_and_altitude.png" width="620" height="604" alt="Side view of Earth showing the observer, body geographic position, local horizontal, observed altitude and zenith distance.">
 <figcaption>Figure 1. Altitude and zenith distance are complementary. The central angle from the observer to the body's GP equals the zenith distance.</figcaption>
 </figure>
 
@@ -181,7 +181,7 @@ corrected altitude at that instant. This is the <strong>Circle of Equal
 Altitude</strong>, a type of Circle of Position.</p>
 
 <figure>
-<img src="images/02_circle_of_equal_altitude.png" width="620" alt="View centred on a celestial body's GP, surrounded by a Circle of Equal Altitude with an observer on the circle.">
+<img src="images/02_circle_of_equal_altitude.png" width="620" height="505" alt="View centred on a celestial body's GP, surrounded by a Circle of Equal Altitude with an observer on the circle.">
 <figcaption>Figure 2. One corrected altitude defines a complete circle, not a unique position.</figcaption>
 </figure>
 
@@ -202,7 +202,7 @@ A DR position, hemisphere, third body or other evidence selects the intended
 one. A third independent circle also checks the consistency of the observations.</p>
 
 <figure>
-<img src="images/03_intersecting_altitude_circles.png" width="620" alt="Two altitude circles creating two candidate positions, followed by a third circle selecting and checking the fix.">
+<img src="images/03_intersecting_altitude_circles.png" width="620" height="343" alt="Two altitude circles creating two candidate positions, followed by a third circle selecting and checking the fix.">
 <figcaption>Figure 3. Two circles normally leave an ambiguity; a third sight resolves and checks it.</figcaption>
 </figure>
 
@@ -237,7 +237,7 @@ is the intercept.</p>
 </ul>
 
 <figure>
-<img src="images/04_intercept_method.png" width="620" alt="Intercept construction showing the assumed position, azimuth, computed LOP, intercept and observed LOP.">
+<img src="images/04_intercept_method.png" width="620" height="416" alt="Intercept construction showing the assumed position, azimuth, computed LOP, intercept and observed LOP.">
 <figcaption>Figure 4. The observed LOP is perpendicular to Zn at a distance |Ho − Hc| from the AP.</figcaption>
 </figure>
 
@@ -256,7 +256,7 @@ The plugin applies corrections appropriate to the body, limb, instrument,
 horizon and atmospheric conditions.</p>
 
 <figure>
-<img src="images/05_altitude_correction_pipeline.png" width="620" alt="Pipeline from sextant reading through index, dip, refraction, semidiameter and parallax corrections to observed altitude.">
+<img src="images/05_altitude_correction_pipeline.png" width="620" height="185" alt="Pipeline from sextant reading through index, dip, refraction, semidiameter and parallax corrections to observed altitude.">
 <figcaption>Figure 5. Conceptual correction sequence. The Calculations tab records the terms actually applied.</figcaption>
 </figure>
 
@@ -323,7 +323,7 @@ error depends on latitude, body motion, azimuth and the other sights—it is not
 always a simple one-for-one longitude correction.</p>
 
 <figure>
-<img src="images/06_time_and_longitude.png" width="620" alt="Two globes comparing the predicted geographic position with correct UTC and a watch twenty minutes slow.">
+<img src="images/06_time_and_longitude.png" width="620" height="317" alt="Two globes comparing the predicted geographic position with correct UTC and a watch twenty minutes slow.">
 <figcaption>Figure 6. An uncorrected watch error displaces the predicted GP and every position circle derived from it.</figcaption>
 </figure>
 
@@ -344,7 +344,7 @@ where Hc and Zn come from, but table manipulation is not required to use the
 plugin.</p>
 
 <figure>
-<img src="images/07_navigational_spherical_triangle.png" width="620" alt="The navigational spherical triangle joining the elevated pole, assumed position and celestial body's geographic position.">
+<img src="images/07_navigational_spherical_triangle.png" width="620" height="425" alt="The navigational spherical triangle joining the elevated pole, assumed position and celestial body's geographic position.">
 <figcaption>Figure 7. The navigational triangle names the three great-circle sides and the LHA and azimuth angles used to calculate Hc and Zn.</figcaption>
 </figure>
 
@@ -375,7 +375,8 @@ sight is plotted and included where a workflow uses visible sights.</p>
 <tr><td>Duplicate / Edit / Delete</td><td>Manage a selected stored sight. Duplicate is useful for a run of sights.</td></tr>
 <tr><td>Clock Offset</td><td>Apply a common correction to stored sight times.</td></tr>
 <tr><td>Hide</td><td>Collapse or restore the sight list and controls.</td></tr>
-<tr><td>Documentation</td><td>Open this completely offline manual.</td></tr>
+<tr><td>Documentation</td><td>Open this completely offline manual in the plugin's internal viewer.</td></tr>
+<tr><td>PDF Documentation</td><td>Open the fixed-layout manual in the system PDF viewer. If no external viewer is available, the plugin safely opens the internal HTML manual instead.</td></tr>
 </table>
 
 <p>Creating a sight selects it and clears the previous selection. Deleting a
@@ -625,7 +626,7 @@ LOP by the vessel displacement from its observation time to a common reference
 epoch.</p>
 
 <figure>
-<img src="images/08_running_fix.png" width="620" alt="An earlier line of position advanced by vessel motion to intersect a second observation at a common epoch.">
+<img src="images/08_running_fix.png" width="620" height="418" alt="An earlier line of position advanced by vessel motion to intersect a second observation at a common epoch.">
 <figcaption>Figure 8. A numerical running fix advances the observation, not the celestial body, to a common vessel epoch.</figcaption>
 </figure>
 
@@ -683,7 +684,7 @@ source used. DE440s is optional for ordinary navigation, no calculation
 downloads data, and LOLA terrain is unrelated to lunar-distance clearing.</p>
 
 <figure>
-<img src="images/09_lunar_distance_observations.png" width="620" alt="Moon, second body, visible horizon and observer showing lunar distance and the separate altitudes of both bodies.">
+<img src="images/09_lunar_distance_observations.png" width="620" height="388" alt="Moon, second body, visible horizon and observer showing lunar distance and the separate altitudes of both bodies.">
 <figcaption>Figure 9. The three angles may be taken sequentially. Each retains its own watch time while sharing one unknown constant watch correction.</figcaption>
 </figure>
 
@@ -830,7 +831,7 @@ evidence—not as a sextant-quality fix.</p>
 <h1 id="coastal">14. Coastal sextant methods</h1>
 
 <figure>
-<img src="images/10_coastal_sextant_methods.png" width="620" alt="Two coastal methods: vertical angle to a charted object for range, and two horizontal angles between three objects for a fix.">
+<img src="images/10_coastal_sextant_methods.png" width="620" height="313" alt="Two coastal methods: vertical angle to a charted object for range, and two horizontal angles between three objects for a fix.">
 <figcaption>Figure 10. Coastal methods use charted terrestrial objects and different geometry from celestial altitude or azimuth sights.</figcaption>
 </figure>
 

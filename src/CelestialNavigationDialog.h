@@ -109,6 +109,7 @@ private:
   void OnDRShift(wxCommandEvent& event);
   void OnClockOffset(wxCommandEvent& event);
   void OnDocumentation(wxCommandEvent& event);
+  void OnPdfDocumentation(wxCommandEvent& event);
   void OnHide(wxCommandEvent& event);
   void OnClose(wxCloseEvent& event);
 
@@ -150,6 +151,7 @@ private:
   wxButton* m_coastalButton;
   wxButton* m_lunarToolsButton;
   wxButton* m_almanacButton;
+  wxButton* m_pdfDocumentationButton;
   EclipseDialog* m_eclipseDialog;
   CoastalNavigationDialog* m_coastalDialog;
   wxTimer m_timeTimer;

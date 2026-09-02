@@ -12,10 +12,13 @@ manual.
   contributor-editable edition. All diagrams are embedded.
 - `output/Celestial_Navigation_Manual_v2.pdf` is the fixed-layout A4 display
   and printable edition generated from the DOCX.
+- `data/Celestial_Navigation_Manual_v2.pdf` is the offline copy opened by the
+  plugin's PDF Documentation button.
 
 Run `./build_manual.sh` to regenerate diagrams, synchronise the plugin HTML,
-embed images in the DOCX, produce the PDF and run structural/portability
-checks. LibreOffice, Python 3 and Matplotlib are required.
+embed images in the DOCX, produce and bundle the PDF, prepare aspect-ratio-safe
+images for wxHTML and run structural/portability checks. LibreOffice, Python 3,
+Matplotlib and Pillow are required.
 
 The DOCX is deliberately provided so contributors can review and suggest
 changes using ordinary word-processing tools. Accepted content changes should
@@ -36,5 +39,6 @@ The concepts and notation were checked against:
 
 The figure masters should be regenerated and visually inspected after any
 geometry, label or font-size change. `validate_manual.py` checks structure,
-links, figure numbering, glossary ordering and DOCX portability, but it cannot
-replace visual or navigational review.
+links, figure numbering, glossary ordering, exact wxHTML image dimensions,
+bundled-PDF freshness and DOCX portability, but it cannot replace visual or
+navigational review.

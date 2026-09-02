@@ -132,6 +132,7 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       m_analyzeButton(NULL),
       m_coastalButton(NULL),
       m_almanacButton(NULL),
+      m_pdfDocumentationButton(NULL),
       m_eclipseDialog(NULL),
       m_coastalDialog(NULL),
       m_chronyPollTicks(0),
@@ -207,6 +208,14 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   actionButtons->Insert(5, m_eclipseButton, 0, wxALL | wxEXPAND, 5);
   m_eclipseButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnEclipse,
                         this);
+  m_pdfDocumentationButton =
+      new wxButton(this, wxID_ANY, _("PDF Documentation"));
+  m_pdfDocumentationButton->SetToolTip(
+      _("Open the fixed-layout manual in the system PDF viewer"));
+  actionButtons->Insert(actionButtons->GetItemCount() - 1,
+                        m_pdfDocumentationButton, 0, wxALL | wxEXPAND, 5);
+  m_pdfDocumentationButton->Bind(
+      wxEVT_BUTTON, &CelestialNavigationDialog::OnPdfDocumentation, this);
 
   m_lSights->InsertColumn(rmVISIBLE, wxT(""));
   for (int i = 1; i < rmMAX; i++) {
@@ -1485,6 +1494,14 @@ void CelestialNavigationDialog::ApplyClockCorrection(int correction_seconds) {
 void CelestialNavigationDialog::OnDocumentation(wxCommandEvent& event) {
   ShowBundledHtmlHelp(this, _("Celestial Navigation Documentation"),
                       _T("Celestial_Navigation_Information.html"));
+}
+
+void CelestialNavigationDialog::OnPdfDocumentation(wxCommandEvent& event) {
+  if (!OpenBundledDocumentExternally(
+          _T("Celestial_Navigation_Manual_v2.pdf"))) {
+    ShowBundledHtmlHelp(this, _("Celestial Navigation Documentation"),
+                        _T("Celestial_Navigation_Information.html"));
+  }
 }
 
 void CelestialNavigationDialog::OnHide(wxCommandEvent& event) {
