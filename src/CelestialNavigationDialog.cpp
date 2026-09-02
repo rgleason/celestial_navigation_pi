@@ -376,11 +376,21 @@ void CelestialNavigationDialog::BuildTimeIntegrityPanel(bool visible) {
   m_timeIntegrityPanel =
       new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
                            wxTAB_TRAVERSAL | wxVSCROLL);
-  m_timeIntegrityPanel->SetScrollRate(0, FromDIP(10));
+#if wxCHECK_VERSION(3, 1, 0)
+  const int timePanelScrollRate = FromDIP(10);
+  const int timePanelMinHeight = FromDIP(220);
+#else
+  // wxWindow::FromDIP() was added after wxWidgets 3.0, which is still used
+  // by supported Bullseye builds.  These values preserve the original size
+  // on that platform while newer wxWidgets versions remain DPI-aware.
+  const int timePanelScrollRate = 10;
+  const int timePanelMinHeight = 220;
+#endif
+  m_timeIntegrityPanel->SetScrollRate(0, timePanelScrollRate);
   // Keep the sight list useful when the saved dialog height or available
   // desktop work area is small.  The complete time-status content remains
   // available through this panel's vertical scrollbar.
-  m_timeIntegrityPanel->SetMinSize(wxSize(-1, FromDIP(220)));
+  m_timeIntegrityPanel->SetMinSize(wxSize(-1, timePanelMinHeight));
   wxBoxSizer* panelSizer = new wxBoxSizer(wxVERTICAL);
   wxFlexGridSizer* grid = new wxFlexGridSizer(0, 2, 4, 10);
   grid->AddGrowableCol(1);
