@@ -55,9 +55,10 @@ storage sizes.
 
 The ordinary navigation planner is independent of the eclipse data packs. It
 uses the plugin's bundled VSOP87D, ELP2000 and navigational-star data, works
-without DE440 or LOLA, and never requires a network connection. Lunar
-distances use the locally installed DE440s kernel when it is present and fall
-back to the bundled analytical catalogue otherwise; LOLA is never required.
+without DE440 or LOLA, and never requires a network connection. Moon–Sun lunar
+distances use the locally installed DE440s kernel when it is present;
+Moon–planet, Moon–star and installations without DE440s use the bundled
+analytical catalogue. LOLA is never required for lunar-distance work.
 See the
 [offline planning and running-fix guide](manual/modules/ROOT/pages/offline-planning.adoc).
 The separate

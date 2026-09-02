@@ -35,6 +35,10 @@ tr:nth-child(even) td { background: #f4f7fa; }
 .toc ol { margin-top: .25rem; }
 .toc li { margin: .18rem 0; }
 .quick td:first-child, .abbr td:first-child { white-space: nowrap; font-weight: bold; color: #17365d; }
+.troubleshooting { width: 650px; max-width: 100%; table-layout: fixed; }
+.troubleshooting th:first-child, .troubleshooting td:first-child { width: 30%; }
+.troubleshooting th:last-child, .troubleshooting td:last-child { width: 70%; }
+.troubleshooting td { overflow-wrap: anywhere; }
 .steps li { margin-bottom: .45rem; }
 .small { color: #606770; font-size: 9.2pt; }
 .new-page { page-break-before: always; }
@@ -49,7 +53,7 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
   <p style="text-align: center;"><strong>Experimental v2 documentation</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.6 development fork<br>Documentation revision 15 August 2026</p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.7.9 development fork<br>Documentation revision 2 September 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -374,6 +378,10 @@ sight is plotted and included where a workflow uses visible sights.</p>
 <tr><td>Documentation</td><td>Open this completely offline manual.</td></tr>
 </table>
 
+<p>Creating a sight selects it and clears the previous selection. Deleting a
+selected sight moves the selection to an adjacent sight when one remains, so
+there is deliberately no unselected state while the list is non-empty.</p>
+
 <h2>7.2 Time integrity panel</h2>
 <p>The panel displays computer local time with time zone, UTC, GNSS/NMEA UTC
 when valid RMC or ZDA sentences have been received, the system-to-GNSS
@@ -434,10 +442,34 @@ select <strong>Calculate / refresh</strong>.</p>
 
 <h2>9.1 Position and time context</h2>
 <p>Position can be manual, current boat position, chart cursor, selected sight
-DR or last calculated fix. Time can be now, the selected sight, or a manual
-date/time. Manual entry may be UTC or computer local time; displayed event
-times may independently be UTC, computer local time or a fixed offset. The
-calculation itself uses the correct internal time scale.</p>
+DR, last calculated fix, or an OpenCPN waypoint/place selected from the
+searchable list. Time can be now, the selected sight, or a manual date/time.</p>
+
+<p>Manual input can be interpreted as UTC, computer local civil time, or ship
+zone time. Ship zone defaults to the conventional whole-hour offset suggested
+by longitude; disable <strong>Auto zone from longitude</strong> to select a
+manual offset in half-hour increments. East offsets are positive, west offsets
+negative. Conversion across midnight changes the UTC date correctly.</p>
+
+<p>The default entry presentation is the unambiguous nautical form
+<strong>YYYY-MM-DD</strong> and <strong>HH:MM:SS</strong>. Select
+<strong>OpenCPN / platform format</strong> to use the operating system's native
+date and time controls instead. This changes presentation only, not the
+instant. Displayed event times may independently be UTC, computer local time,
+local mean time, or a fixed offset. The calculation itself is normalized to
+UTC.</p>
+
+<p>Editing latitude or longitude switches the position source to
+<strong>Manual</strong>; editing date or time switches the time source to
+<strong>Manual date/time</strong>. Valid edits to position, time, COG, SOG,
+zone offset or eye height automatically refresh the results after a short
+pause. <strong>Calculate / refresh</strong> remains available for an explicit
+update. Planner choices including COG/SOG and entry/display formats persist,
+but a newly opened planner starts its date/time at <strong>Now</strong>. Eye
+height is reloaded from the main plugin defaults each time.</p>
+
+<p>Eye height affects dip of the visible horizon used for rise and set. It does
+not alter the geometric body-centre Hc shown in the body table.</p>
 
 <h2>9.2 Events tab</h2>
 <p>Lists astronomical, nautical and civil dawn/dusk, sunrise, sunset, Moonrise,
@@ -447,11 +479,26 @@ may legitimately omit an event because the body does not cross the chosen
 altitude threshold.</p>
 
 <h2>9.3 Bodies &amp; Best Sights</h2>
-<p>The body list and sky plot show altitude, azimuth and usability. Suggested
-pairs and triads rank geometry and visibility; they are aids, not commands.
-Weather, deck obstruction, brightness, horizon quality and a navigator's
-ability to identify a body remain decisive. <strong>Create selected
-sight…</strong> transfers the body and planning context to sight entry.</p>
+<p>The body list shows bodies between 10° and 75° geometric Hc with catalogue
+magnitude 3 or brighter. Click any column heading to sort the table; click it
+again to reverse the order. The individual score gives 65% weight to altitude
+near 40° and 35% to brightness, with a daylight/twilight penalty for stars.
+Planets currently receive no equivalent twilight penalty, so the score is not
+by itself a guarantee that Mercury or another planet is practically
+observable. Suggested pairs additionally favour a crossing angle near 90°;
+triads rank their two-dimensional bearing geometry separately.</p>
+
+<p>The polar sky plot has independent magnitude limits of 1, 2 or 3 and can
+optionally show bodies below the horizon. Sun symbols are yellow, the Moon is
+blue, planets are red, stars rendered during daylight are grey, and
+below-horizon bodies are hollow. Labels are attempted only for the first 14
+score-ranked bodies and are suppressed when they would overlap; an unlabeled
+dot does not mean the body is absent from the catalogue.</p>
+
+<p>These rankings and the sky plot are planning aids, not commands. Weather,
+deck obstruction, glare, horizon quality and a navigator's ability to identify
+a body remain decisive. <strong>Create selected sight…</strong> transfers the
+body and planning context to sight entry.</p>
 
 <h2>9.4 Almanac</h2>
 <p>Provides hourly GHA, SHA, declination, Hc and true Zn for the selected
@@ -627,6 +674,13 @@ that Ho equals latitude exactly. Polaris is a northern-hemisphere workflow.</p>
 stars as a celestial clock. The observed Moon-to-body angular distance is
 corrected (“cleared”) for limb, refraction and parallax, then compared with the
 geocentric ephemeris over a search interval.</p>
+
+<p>For a Moon–Sun calculation, the solver uses the checksum-verified local JPL
+DE440s kernel when it has already been imported for the eclipse module. A
+Moon–planet or Moon–star calculation, or any installation without DE440s,
+uses the bundled analytical ephemeris. The result identifies the ephemeris
+source used. DE440s is optional for ordinary navigation, no calculation
+downloads data, and LOLA terrain is unrelated to lunar-distance clearing.</p>
 
 <figure>
 <img src="images/09_lunar_distance_observations.png" width="620" alt="Moon, second body, visible horizon and observer showing lunar distance and the separate altitudes of both bodies.">
@@ -833,12 +887,16 @@ celestial-navigation fix.</p>
 <section>
 <h1 id="troubleshooting">16. Troubleshooting and validation</h1>
 
-<table>
+<table class="troubleshooting" width="650" style="width: 650px; table-layout: fixed;">
+<colgroup><col width="195"><col width="455"></colgroup>
 <tr><th>Symptom</th><th>Checks</th></tr>
 <tr><td>No COP is visible</td><td>Confirm the eye icon is enabled; zoom out; check UTC/date, body, Hs and limb; increase plotted certainty temporarily; verify the circle is not far from the current viewport.</td></tr>
 <tr><td>Hc or Zn is implausible</td><td>Check AP/DR latitude and longitude signs, UTC conversion, selected body, and whether “boat position” moved after the sight.</td></tr>
 <tr><td>Intercept is enormous</td><td>Check degrees/minutes entry, west/east longitude, upper/lower limb, time zone/date rollover and double-applied clock correction.</td></tr>
 <tr><td>Sunrise/sunset differs by about an hour</td><td>Distinguish UTC from local civil time and daylight-saving time. Verify the planner's independent entry-time and display-time selectors.</td></tr>
+<tr><td>Planner date appears in an unexpected order or uses AM/PM</td><td>Select <strong>Nautical: YYYY-MM-DD, 24-hour</strong>. The alternative OpenCPN/platform format intentionally follows the native operating-system controls.</td></tr>
+<tr><td>Editing a live position or “Now” time stops following it</td><td>This is intentional: a direct edit changes that source to Manual so an automatic update cannot immediately overwrite the entered value. Reselect the live source to follow it again.</td></tr>
+<tr><td>A body dot has no sky-plot label</td><td>Only the first 14 score-ranked bodies are considered for labels, and overlapping labels are suppressed. Use the sortable body table to identify and inspect all listed bodies.</td></tr>
 <tr><td>GNSS UTC unavailable</td><td>Confirm a valid NMEA RMC or ZDA sentence is reaching OpenCPN. The plugin does not infer GNSS time from position alone.</td></tr>
 <tr><td>Chrony status unavailable</td><td>The computer may use another synchronisation service, chrony may not be installed, or its query interface may be unavailable. UTC display still uses the system clock.</td></tr>
 <tr><td>Lunar solver finds several times</td><td>Narrow the search only when justified; check contact/limbs and altitudes; use DR/hemisphere or another sight to resolve candidates.</td></tr>

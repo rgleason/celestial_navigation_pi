@@ -20,13 +20,30 @@ coordinates each time it is opened and falls back to the retained manual
 position if the item has since been deleted.
 
 Date and time are entered with separate calendar and clock controls. The input
-can be interpreted as UTC or as the computer's local civil time; changing that
-choice preserves the instant and all calculations are normalized to UTC. Event
-times can independently be displayed as UTC, the computer's local civil time
-and zone, local mean time derived from longitude, or a fixed UTC offset. The
+can be interpreted as UTC, the computer's local civil time, or ship zone time;
+changing that choice preserves the instant and all calculations are normalized
+to UTC. Ship zone time defaults to the conventional whole-hour offset suggested
+by longitude. Disable *Auto zone from longitude* to select a manual offset in
+half-hour increments; UTC date rollover is handled automatically.
+
+The default entry presentation is unambiguous nautical `YYYY-MM-DD` and
+24-hour `HH:MM:SS`. *OpenCPN / platform format* instead uses the operating
+system's native controls without changing the represented instant. Event times
+can independently be displayed as UTC, the computer's local civil time and
+zone, local mean time derived from longitude, or a fixed UTC offset. The
 computer-local display observes the operating system's daylight-saving rules
 for the event date. The ordinary planner validates dates from 1900 through
 2100.
+
+Editing an automatically supplied latitude/longitude changes the position
+source to *Manual*. Editing an automatically supplied date/time changes the
+time source to *Manual date/time*. Valid context, motion, zone-offset and
+eye-height edits refresh the calculations after a short debounce; *Calculate /
+refresh* remains available for an explicit update. Planner choices such as
+COG/SOG and entry/display formats persist. A newly opened planner starts at
+*Now*, and its eye height is initialized from the main plugin defaults. Eye
+height affects visible-horizon dip for rise/set, not the geometric body-centre
+Hc in the table.
 
 Enable *Time-tagged moving observer* to define the position at the displayed
 reference UTC and propagate it along COG (true) and SOG. Each event row then
@@ -54,12 +71,22 @@ Sun.
 === Bodies and best sights
 
 The body table reports Hc, Zn true, GHA, declination, approximate visual
-magnitude and a planning score. The score favours usable mid-altitudes,
-brightness and suitable twilight. Recommended pairs additionally favour a
+magnitude and a planning score for bodies between 10 and 75 degrees Hc with
+magnitude 3 or brighter. Click a heading to sort that column and again to
+reverse it. The individual score gives 65% weight to altitude near 40 degrees
+and 35% to brightness, with a daylight/twilight penalty for stars. Planets do
+not currently receive an equivalent twilight penalty, so score alone is not a
+guarantee of practical visibility. Recommended pairs additionally favour a
 near-right-angle crossing; triads use the determinant of their two-dimensional
-bearing information matrix. The explanation and polar sky plot are intended
-to make the recommendation auditable. They do not replace the navigator's
-assessment of cloud, horizon and identification risk.
+bearing information matrix.
+
+The polar sky plot has independent magnitude limits of 1, 2 or 3 and can show
+bodies below the horizon. The Sun is yellow, Moon blue, planets red, daylight
+stars grey and below-horizon bodies hollow. Only the first 14 score-ranked
+bodies are considered for labels, and overlapping labels are suppressed. An
+unlabeled dot does not mean that the body is missing. The explanation and plot
+make the recommendation auditable but do not replace the navigator's assessment
+of cloud, glare, horizon and identification risk.
 
 Select a row and use *Create selected sight…* to open the normal Sight dialog
 with body, time and DR already filled. No zero-altitude observation is silently
