@@ -25,8 +25,8 @@ struct BodyState {
   bool valid = false;
   wxString body;
   wxDateTime utc;
-  double latitude = 0.0;       // geographic position (declination)
-  double longitude = 0.0;      // geographic position
+  double latitude = 0.0;   // geographic position (declination)
+  double longitude = 0.0;  // geographic position
   double gha = 0.0;
   double sha = 0.0;
   double declination = 0.0;
@@ -100,8 +100,8 @@ struct MoonInformation {
 };
 
 MoonInformation CalculateMoonInformation(const wxDateTime& utc,
-                                          double observerLat,
-                                          double observerLon);
+                                         double observerLat,
+                                         double observerLon);
 
 struct MoonPhaseEvent {
   wxString name;
@@ -135,6 +135,25 @@ public:
       const std::vector<RankedBody>& bodies, unsigned count,
       unsigned maximumResults = 10);
 };
+
+enum class PlannerTimeBasis {
+  Utc = 0,
+  ComputerLocal = 1,
+  ZoneTime = 2,
+};
+
+// Convert between the wall-clock fields shown by the planner and an absolute
+// instant.  Zone time is deliberately a fixed nautical offset: it does not
+// inherit the computer timezone or daylight-saving rules.
+wxDateTime PlannerFieldsToUtc(const wxDateTime& fields, PlannerTimeBasis basis,
+                              double zoneOffsetHours);
+wxDateTime UtcToPlannerFields(const wxDateTime& utc, PlannerTimeBasis basis,
+                              double zoneOffsetHours);
+double SuggestedZoneOffsetHours(double longitude);
+wxString FormatNauticalPlannerDate(const wxDateTime& fields);
+wxString FormatNauticalPlannerTime(const wxDateTime& fields);
+bool ParseNauticalPlannerDateTime(const wxString& dateText,
+                                  const wxString& timeText, wxDateTime* fields);
 
 struct FixObservation {
   wxString label;
@@ -170,8 +189,8 @@ struct RunningFixResult {
 class RunningFixSolver {
 public:
   static RunningFixResult Solve(const std::vector<FixObservation>& sights,
-                                const ObserverMotion& motion,
-                                double initialLat, double initialLon);
+                                const ObserverMotion& motion, double initialLat,
+                                double initialLon);
 };
 
 struct SequenceStatistics {
@@ -203,8 +222,7 @@ struct AlmanacRow {
   double azimuth = 0.0;
 };
 
-std::vector<AlmanacRow> BuildAlmanac(const wxDateTime& startUtc,
-                                     unsigned hours,
+std::vector<AlmanacRow> BuildAlmanac(const wxDateTime& startUtc, unsigned hours,
                                      const std::vector<wxString>& bodies,
                                      const ObserverMotion& observer);
 wxString AlmanacToCsv(const std::vector<AlmanacRow>& rows);

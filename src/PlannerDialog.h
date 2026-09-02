@@ -14,9 +14,12 @@ class wxCheckBox;
 class wxChoice;
 class wxDatePickerCtrl;
 class wxListCtrl;
+class wxListEvent;
 class wxNotebook;
+class wxPanel;
 class wxSpinCtrlDouble;
 class wxStaticText;
+class wxTextCtrl;
 class wxTimePickerCtrl;
 
 class PlannerDialog : public wxDialog {
@@ -31,9 +34,17 @@ public:
 private:
   ObserverMotion ReadMotion(bool showErrors);
   wxDateTime ReadUtc(bool showErrors);
+  wxDateTime ReadEntryFields(int format, bool showErrors);
   void SetUtcControls(const wxDateTime& utc);
   void ChangeInputTimeBasis(wxCommandEvent& event);
+  void ChangeEntryFormat(wxCommandEvent& event);
   void UpdateInputTimeLabels();
+  void UpdateEntryFormatControls();
+  void UpdateAutomaticZoneOffset();
+  void ContextPositionEdited(wxCommandEvent& event);
+  void ContextTimeEdited(wxCommandEvent& event);
+  void ScheduleRefresh();
+  void OnRefreshTimer(wxTimerEvent& event);
   void ApplyPositionSource();
   void ApplyPositionSourceAndRefresh();
   void ChangePositionSource(wxCommandEvent& event);
@@ -47,6 +58,9 @@ private:
   void RefreshAll(wxCommandEvent& event);
   void RefreshEvents();
   void RefreshBodies();
+  void RebuildBodyList();
+  void RefreshSkyPlot();
+  void SortBodies(wxListEvent& event);
   void RefreshAlmanac();
   void RefreshSpecial();
   void ExportAlmanac(wxCommandEvent& event);
@@ -67,8 +81,14 @@ private:
   wxStaticText* m_timeLabel;
   wxDatePickerCtrl* m_utcDate;
   wxTimePickerCtrl* m_utcTime;
+  wxPanel* m_dateContainer;
+  wxPanel* m_timeContainer;
+  wxTextCtrl* m_nauticalDate;
+  wxTextCtrl* m_nauticalTime;
+  wxChoice* m_entryFormat;
   wxChoice* m_displayTime;
   wxSpinCtrlDouble* m_fixedOffset;
+  wxCheckBox* m_autoZoneOffset;
   wxCheckBox* m_moving;
   wxSpinCtrlDouble* m_course;
   wxSpinCtrlDouble* m_speed;
@@ -80,15 +100,21 @@ private:
   wxListCtrl* m_bodies;
   wxListCtrl* m_combinations;
   SkyPlotPanel* m_skyPlot;
+  wxChoice* m_plotMagnitude;
+  wxCheckBox* m_plotBelowHorizon;
   wxListCtrl* m_almanac;
   wxChoice* m_specialBody;
   NavigationAngleCtrl* m_specialAltitude;
   wxStaticText* m_specialSummary;
   int m_lastInputTimeBasis;
+  int m_lastEntryFormat;
   int m_lastPositionSource;
+  int m_bodySortColumn;
+  bool m_bodySortAscending;
   wxString m_waypointGuid;
   wxString m_waypointName;
   wxTimer m_cursorTimer;
+  wxTimer m_refreshTimer;
 #ifdef CELESTIAL_PLANNER_INTEGRATION_TEST
   wxTimer m_waypointIntegrationTimer;
   wxString m_waypointIntegrationName;
