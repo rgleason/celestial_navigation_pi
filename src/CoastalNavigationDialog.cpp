@@ -3,6 +3,7 @@
 #include "CelestialNavigationDialog.h"
 #include "NavigationUIUtils.h"
 #include "OcpnApiCompat.h"
+#include "UtcDateTime.h"
 #include "celestial_navigation_pi.h"
 #include "plugin_dc/dc_utils/include/pidc.h"
 
@@ -37,10 +38,8 @@ CoastalNavigationDialog::CoastalNavigationDialog(
       FormatNavigationAngle(boatLat, NavigationAngleKind::Latitude, true);
   const wxString lon =
       FormatNavigationAngle(boatLon, NavigationAngleKind::Longitude, true);
-  const wxString unknownLat =
-      FormatNavigationAngle(0.0, NavigationAngleKind::Latitude, true);
-  const wxString unknownLon =
-      FormatNavigationAngle(0.0, NavigationAngleKind::Longitude, true);
+  const wxString unknownLat;
+  const wxString unknownLon;
 
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
   wxStaticText* intro = new wxStaticText(
@@ -113,8 +112,9 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   m_bearingReference->SetSelection(0);
   bearingGrid->Add(m_bearingReference, 1, wxEXPAND);
   bearingGrid->AddSpacer(1);
-  m_observedBearing = AddField(bearingGrid, bearingBox->GetStaticBox(),
-                               _("Observed bearing"), _("0.0"), _("degrees"));
+  m_observedBearing =
+      AddField(bearingGrid, bearingBox->GetStaticBox(), _("Observed bearing"),
+               wxEmptyString, _("degrees"));
   m_variation =
       AddField(bearingGrid, bearingBox->GetStaticBox(),
                _("Magnetic variation (E + / W -)"), _("0.0"), _("degrees"));
@@ -122,6 +122,16 @@ CoastalNavigationDialog::CoastalNavigationDialog(
       AddField(bearingGrid, bearingBox->GetStaticBox(),
                _("Compass deviation (E + / W -)"), _("0.0"), _("degrees"));
   bearingBox->Add(bearingGrid, 0, wxALL | wxEXPAND, 5);
+  auto* variationRow = new wxBoxSizer(wxHORIZONTAL);
+  m_useWmmVariation = new wxButton(bearingBox->GetStaticBox(), wxID_ANY,
+                                   _("Use WMM at current boat/time"));
+  m_variationSource = new wxStaticText(
+      bearingBox->GetStaticBox(), wxID_ANY,
+      _("Variation is ignored when the bearing reference is True."));
+  m_variationSource->Wrap(520);
+  variationRow->Add(m_useWmmVariation, 0, wxRIGHT, 8);
+  variationRow->Add(m_variationSource, 1, wxALIGN_CENTER_VERTICAL);
+  bearingBox->Add(variationRow, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
   verticalRoot->Add(bearingBox, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
   wxButton* calculateVertical =
       new wxButton(vertical, wxID_ANY, _("Calculate and plot range"));
@@ -161,10 +171,10 @@ CoastalNavigationDialog::CoastalNavigationDialog(
                         unknownLon, _("angle"));
   m_firstAngle =
       AddField(horizontalGrid, horizontal, _("Left-centre measurement"),
-               _("30.0"), _("degrees"));
+               wxEmptyString, _("degrees"));
   m_secondAngle =
       AddField(horizontalGrid, horizontal, _("Centre-right measurement"),
-               _("30.0"), _("degrees"));
+               wxEmptyString, _("degrees"));
   m_horizontalIndexError =
       AddField(horizontalGrid, horizontal, _("Index error (on the arc +)"),
                wxString::Format("%.2f", defaults.indexError), _("arcmin"));
@@ -223,14 +233,33 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   root->Add(notebook, 1, wxLEFT | wxRIGHT | wxEXPAND, 10);
 
   wxBoxSizer* bottom = new wxBoxSizer(wxHORIZONTAL);
+  wxButton* newObservation =
+      new wxButton(this, wxID_ANY, _("New / clear observation"));
   wxButton* clear = new wxButton(this, wxID_ANY, _("Clear chart plots"));
   wxButton* close = new wxButton(this, wxID_CLOSE, _("Close"));
+  bottom->Add(newObservation, 0, wxRIGHT, 8);
   bottom->Add(clear, 0, wxRIGHT, 8);
   bottom->Add(close, 0);
   root->Add(bottom, 0, wxALL | wxALIGN_RIGHT, 10);
+  auto* retention = new wxStaticText(
+      this, wxID_ANY,
+      _("Entries are retained when this window is closed. Use New / clear "
+        "observation before starting a different observation."));
+  retention->Wrap(690);
+  root->Insert(root->GetItemCount() - 1, retention, 0,
+               wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 10);
+  newObservation->Bind(wxEVT_BUTTON, &CoastalNavigationDialog::NewObservation,
+                       this);
   clear->Bind(wxEVT_BUTTON, &CoastalNavigationDialog::ClearPlots, this);
   close->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { Hide(); });
   Bind(wxEVT_CLOSE_WINDOW, [this](wxCloseEvent&) { Hide(); });
+  m_includeBearing->Bind(wxEVT_CHECKBOX,
+                         [this](wxCommandEvent&) { UpdateBearingControls(); });
+  m_bearingReference->Bind(
+      wxEVT_CHOICE, [this](wxCommandEvent&) { UpdateBearingControls(); });
+  m_useWmmVariation->Bind(wxEVT_BUTTON,
+                          &CoastalNavigationDialog::UseWmmVariation, this);
+  UpdateBearingControls();
 
   SetSizer(root);
   SetMinSize(wxSize(720, 500));
@@ -468,6 +497,97 @@ void CoastalNavigationDialog::UseBoatPosition(wxCommandEvent&) {
       FormatNavigationAngle(latitude, NavigationAngleKind::Latitude, true));
   m_initialLon->SetValue(
       FormatNavigationAngle(longitude, NavigationAngleKind::Longitude, true));
+}
+
+void CoastalNavigationDialog::UseWmmVariation(wxCommandEvent&) {
+  double latitude = 0.0, longitude = 0.0;
+  celestial_navigation_pi_BoatPos(latitude, longitude);
+  const wxDateTime utc = UtcDateTime::Now();
+  const double variation =
+      celestial_navigation_pi_GetWMM(latitude, longitude, 0.0, utc);
+  m_variation->ChangeValue(wxString::Format("%.2f", variation));
+  m_variationSource->SetLabel(wxString::Format(
+      _("WMM estimate for current boat position at %s UTC; editable."),
+      UtcDateTime::FormatUtc(utc, "%Y-%m-%d %H:%M")));
+  m_variationSource->Wrap(520);
+  Layout();
+}
+
+void CoastalNavigationDialog::UpdateBearingControls() {
+  const bool included = m_includeBearing->GetValue();
+  const bool magnetic = included && m_bearingReference->GetSelection() == 1;
+  m_bearingReference->Enable(included);
+  m_observedBearing->Enable(included);
+  m_variation->Enable(magnetic);
+  m_deviation->Enable(magnetic);
+  m_useWmmVariation->Enable(magnetic);
+  if (!magnetic) {
+    m_variationSource->SetLabel(
+        _("Variation and deviation are ignored for True bearings."));
+  } else if (!m_variationSource->GetLabel().StartsWith(_("WMM estimate"))) {
+    m_variationSource->SetLabel(
+        _("Enter variation manually or use the current-position WMM estimate; "
+          "compass deviation remains manual."));
+  }
+  m_variationSource->Wrap(520);
+  Layout();
+}
+
+void CoastalNavigationDialog::NewObservation(wxCommandEvent&) {
+  if (wxMessageBox(
+          _("Clear the retained coastal-observation entries and chart plots?"),
+          _("New coastal observation"),
+          wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION, this) != wxYES)
+    return;
+  const CelestialNavigationDefaults defaults =
+      LoadCelestialNavigationDefaults();
+  double boatLatitude = 0.0, boatLongitude = 0.0;
+  celestial_navigation_pi_BoatPos(boatLatitude, boatLongitude);
+  m_verticalMode->SetSelection(0);
+  m_verticalTargetLat->Clear();
+  m_verticalTargetLon->Clear();
+  m_verticalAngle->Clear();
+  m_verticalIndexError->ChangeValue(
+      wxString::Format("%.2f", defaults.indexError));
+  m_verticalHeight->ChangeValue(_("30.0"));
+  m_verticalWaterLevel->ChangeValue(_("0.0"));
+  m_verticalEyeHeight->ChangeValue(
+      wxString::Format("%.1f", defaults.eyeHeight));
+  m_includeBearing->SetValue(false);
+  m_bearingReference->SetSelection(0);
+  m_observedBearing->Clear();
+  m_variation->ChangeValue(_("0.0"));
+  m_deviation->ChangeValue(_("0.0"));
+  m_leftLat->Clear();
+  m_leftLon->Clear();
+  m_centreLat->Clear();
+  m_centreLon->Clear();
+  m_rightLat->Clear();
+  m_rightLon->Clear();
+  m_firstAngle->Clear();
+  m_secondAngle->Clear();
+  m_horizontalIndexError->ChangeValue(
+      wxString::Format("%.2f", defaults.indexError));
+  m_angleUncertainty->ChangeValue(_("0.2"));
+  m_advanceHorizontalObserver->SetValue(false);
+  m_horizontalInterval->ChangeValue(_("0"));
+  m_horizontalCourse->ChangeValue(_("0.0"));
+  m_horizontalSpeed->ChangeValue(_("0.0"));
+  m_horizontalInterval->Enable(false);
+  m_horizontalCourse->Enable(false);
+  m_horizontalSpeed->Enable(false);
+  m_initialLat->ChangeValue(
+      FormatNavigationAngle(boatLatitude, NavigationAngleKind::Latitude, true));
+  m_initialLon->ChangeValue(FormatNavigationAngle(
+      boatLongitude, NavigationAngleKind::Longitude, true));
+  m_verticalResult->SetLabel(_("No result yet."));
+  m_horizontalResult->SetLabel(_("No result yet."));
+  m_variationSource->SetLabel(
+      _("Variation and deviation are ignored for True bearings."));
+  m_variationSource->Wrap(520);
+  wxCommandEvent unused;
+  ClearPlots(unused);
+  UpdateBearingControls();
 }
 
 void CoastalNavigationDialog::ClearPlots(wxCommandEvent&) {

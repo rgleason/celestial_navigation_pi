@@ -3,6 +3,8 @@
 
 #include "LunarDistanceEngine.h"
 
+#include <cstddef>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -39,6 +41,16 @@ struct Options {
   bool robust_fit = true;
   bool estimate_common_index_bias = false;
   int maximum_iterations = 80;
+  std::size_t maximum_observations = 12;
+  double maximum_session_span_seconds = 86400.0;
+  // Multi-start fitting is useful for ambiguous lunar solutions, but saved
+  // sight files can contain hundreds of historic candidates.  Keep the work
+  // deterministic and bounded rather than multiplying every historic seed by
+  // every position seed.
+  std::size_t maximum_correction_seeds = 24;
+  std::size_t maximum_position_seeds = 6;
+  std::function<bool()> cancel_requested;
+  std::function<void(std::size_t completed, std::size_t total)> progress;
 };
 
 struct ReadingResidual {

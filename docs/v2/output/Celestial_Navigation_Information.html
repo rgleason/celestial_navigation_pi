@@ -53,7 +53,7 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
   <p style="text-align: center;"><strong>Experimental v2 documentation</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.1<br>Documentation revision 3 September 2026</p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.2<br>Documentation revision 3 September 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -763,12 +763,18 @@ or a reading that disagrees with the others.</p>
 
 <ol class="steps">
   <li>Save at least two complete <strong>Lunar</strong> sights. Use each sight's separate-time controls whenever the three angles were not simultaneous.</li>
-  <li>Select <strong>Lunar Tools… → Lunar sequence</strong> and tick the observations belonging to one watch/session.</li>
+  <li>Highlight one of the sights in the main list, then select <strong>Lunar Tools… → Lunar sequence</strong>. The highlighted sight and observations within six hours are initially ticked; adjust the selection so it contains only one watch/session. <strong>Select visible sights</strong> is an explicit convenience, not an assertion that every visible sight belongs to one session.</li>
   <li>Choose <strong>Recover time and position</strong>, or <strong>Recover time at known position</strong> for a clock check at a trustworthy position.</li>
-  <li>Enter an initial/known position and a physically justified watch-correction search span. If the vessel moved over the session, enter true COG and SOG.</li>
+  <li>The initial position comes from the earliest selected sight's DR and can be edited or restored with <strong>Use earliest selected DR</strong>. Do not replace a useful DR with 0° N, 0° E: the triple includes two altitude constraints and the position is also the joint solver's convergence seed.</li>
+  <li>Enter a physically justified <strong>Additional watch correction search ±</strong>. Every row already retains its own recorded UTC; this control searches a correction either side of the correction already applied, rather than defining a new observation start time. If the vessel moved over the session, enter true COG and SOG.</li>
   <li>Normally retain <strong>Robust fit</strong>. It reduces the leverage of a discrepant reading but still displays and flags every residual; it never deletes evidence.</li>
-  <li>Solve, inspect all competitive candidates, angular and weighted RMS, formal uncertainties and every component residual before applying a watch correction.</li>
+  <li>Solve, inspect all competitive candidates, angular and weighted RMS, formal uncertainties and every component residual before applying a watch correction. The bounded multi-start fit runs away from the GUI thread and has progress and cancellation.</li>
 </ol>
+
+<p>A sequence is limited to 12 observations spanning no more than 24 hours.
+These are deliberate session-integrity and fail-safe limits: split a historic
+archive into the watches during which one clock correction and one motion
+model were physically meaningful.</p>
 
 <p>The reported correction is additional to the correction already displayed
 by the plugin. <strong>Apply watch correction</strong> explicitly shows the
@@ -809,6 +815,10 @@ far contact to match what was actually observed; limb contacts include the
 applicable semidiameters. Record repeated sextant readings, their uncertainty
 and any shade/note. The displayed correction is
 <em>predicted minus observed</em>: add it to the raw reading.</p>
+
+<p>The current sight index-error default is displayed for comparison but is
+not applied to this check. Applying a pre-existing correction while measuring
+the instrument's correction would make the calibration circular.</p>
 
 <p>For checking scale or centering behaviour, prefer well-identified stars at
 similar, comfortable altitudes and away from the horizon. Star–star checks
@@ -876,11 +886,23 @@ charted top height, water level above the height datum and height of eye.
 Optionally add a corrected bearing observed at effectively the same epoch.
 Select <strong>Calculate and plot range</strong>.</p>
 
+<p>Observation coordinates and measured angles start blank. Closing the
+window temporarily retains an unfinished observation; the window says so.
+Select <strong>New / clear observation</strong> before a different observation
+to clear all entries, results and plots and reload the current central index-
+error and eye-height defaults.</p>
+
+<p>For a true bearing, magnetic variation and compass deviation are disabled
+and ignored. For a magnetic compass bearing they remain editable. <strong>Use
+WMM at current boat/time</strong> obtains a clearly labelled estimate for the
+current boat position and UTC; compass deviation always remains a manual
+instrument/vessel input.</p>
+
 <h2>14.2 Horizontal sextant angles</h2>
 <p>Select <strong>Horizontal angles / fix</strong>. Enter three charted objects
 in left–centre–right visual order and the included left-centre and centre-right
-measurements. Landmark coordinates start at 0° N, 0° E so stale vessel
-coordinates cannot be mistaken for targets. The central sextant index-error
+measurements. Landmark coordinates and the two measurements start blank so
+plausible-looking defaults cannot be mistaken for observations. The central sextant index-error
 default is applied to both angle measurements and remains editable. Enter
 uncertainty and an approximate vessel position to choose among ambiguous
 solutions. Select <strong>Solve and plot HSA fix</strong>.</p>

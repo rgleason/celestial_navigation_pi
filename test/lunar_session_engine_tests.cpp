@@ -2,6 +2,7 @@
 
 #include "LunarSessionEngine.h"
 
+#include <atomic>
 #include <cmath>
 
 namespace {
@@ -196,6 +197,70 @@ TEST(LunarSessionEngine, RejectsExactlyDeterminedBiasFit) {
   const auto result = lunar_session::Solve(observations, options);
   EXPECT_FALSE(result.valid);
   EXPECT_NE(result.error.find("not overdetermined"), std::string::npos);
+}
+
+TEST(LunarSessionEngine, BoundsHistoricMultiStartSeeds) {
+  const lunar_distance::GeographicPoint truth(32.4, -48.7);
+  auto observations = MakeSession(900.0, truth);
+  lunar_session::Options options;
+  options.start_correction_seconds = -6.0 * 3600.0;
+  options.end_correction_seconds = 6.0 * 3600.0;
+  options.correction_seed_step_seconds = 300.0;
+  for (int index = -100; index <= 100; ++index)
+    options.correction_seeds.push_back(index * 180.0);
+  for (int index = 0; index < 20; ++index)
+    options.position_seeds.push_back({30.0 + index, -45.0 + index});
+  options.maximum_correction_seeds = 7;
+  options.maximum_position_seeds = 3;
+  std::size_t reported_total = 0;
+  std::size_t reported_complete = 0;
+  options.progress = [&](std::size_t complete, std::size_t total) {
+    reported_complete = complete;
+    reported_total = total;
+  };
+  const auto result = lunar_session::Solve(observations, options);
+  EXPECT_LE(reported_total, 21u);
+  EXPECT_EQ(reported_complete, reported_total);
+  EXPECT_TRUE(result.valid) << result.error;
+}
+
+TEST(LunarSessionEngine, CancellationStopsMultiStartFit) {
+  const lunar_distance::GeographicPoint truth(32.4, -48.7);
+  auto observations = MakeSession(900.0, truth, 8);
+  lunar_session::Options options;
+  options.start_correction_seconds = -12.0 * 3600.0;
+  options.end_correction_seconds = 12.0 * 3600.0;
+  options.correction_seed_step_seconds = 300.0;
+  options.position_seeds = {{30.0, -45.0}, {35.0, -50.0}};
+  std::atomic<bool> cancel(false);
+  options.cancel_requested = [&]() { return cancel.load(); };
+  options.progress = [&](std::size_t complete, std::size_t) {
+    if (complete >= 1) cancel.store(true);
+  };
+  const auto result = lunar_session::Solve(observations, options);
+  EXPECT_FALSE(result.valid);
+  EXPECT_NE(result.error.find("cancelled"), std::string::npos);
+}
+
+TEST(LunarSessionEngine, RejectsAnUnboundedHistoricArchiveAsOneSession) {
+  const lunar_distance::GeographicPoint truth(32.4, -48.7);
+  auto observations = MakeSession(900.0, truth, 13);
+  lunar_session::Options options;
+  options.known_or_initial_position = truth;
+  const auto result = lunar_session::Solve(observations, options);
+  EXPECT_FALSE(result.valid);
+  EXPECT_NE(result.error.find("Too many observations"), std::string::npos);
+}
+
+TEST(LunarSessionEngine, RejectsObservationsSpanningMultipleDays) {
+  const lunar_distance::GeographicPoint truth(32.4, -48.7);
+  auto observations = MakeSession(900.0, truth, 3);
+  observations.back().epoch_offset_seconds = 2.0 * 86400.0;
+  lunar_session::Options options;
+  options.known_or_initial_position = truth;
+  const auto result = lunar_session::Solve(observations, options);
+  EXPECT_FALSE(result.valid);
+  EXPECT_NE(result.error.find("span more"), std::string::npos);
 }
 
 }  // namespace

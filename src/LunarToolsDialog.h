@@ -40,6 +40,10 @@ private:
   void BuildPlannerPage(wxWindow* parent);
   void BuildCalibrationPage(wxWindow* parent);
   void PopulateBodies(wxChoice* choice, bool includeMoon);
+  void UpdateSequenceSelection(bool refreshAutomaticPosition = true);
+  void SelectVisibleSequence(wxCommandEvent& event);
+  void ClearSequenceSelection(wxCommandEvent& event);
+  void UseEarliestSequencePosition(wxCommandEvent& event);
   void SolveSequence(wxCommandEvent& event);
   void SelectCandidate(wxCommandEvent& event);
   void ApplySequenceCorrection(wxCommandEvent& event);
@@ -76,6 +80,8 @@ private:
   NavigationAngleCtrl* m_sequenceLatitude;
   NavigationAngleCtrl* m_sequenceLongitude;
   wxSpinCtrlDouble* m_sequenceSearchHours;
+  wxStaticText* m_sequenceReference;
+  wxStaticText* m_sequencePositionSource;
   wxCheckBox* m_sequenceRobust;
   wxCheckBox* m_sequenceBias;
   wxCheckBox* m_sequenceMotion;
@@ -87,6 +93,7 @@ private:
   wxButton* m_applySequence;
   std::vector<std::size_t> m_lunarIndices;
   lunar_session::Result m_sequenceResult;
+  bool m_sequencePositionAutomatic;
 
   NavigationAngleCtrl* m_plannerLatitude;
   NavigationAngleCtrl* m_plannerLongitude;
