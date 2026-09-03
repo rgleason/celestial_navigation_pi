@@ -47,6 +47,7 @@ src/celestial_navigation_pi.cpp
 src/moon.cpp
 src/OcpnApiCompat.h
 src/NavigationUIUtils.h
+src/Utf8Translation.h
 src/celestial_navigation_pi.h
 src/CelestialNavigationDialog.h
 src/AtomicXmlFile.h
