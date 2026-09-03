@@ -62,6 +62,10 @@ Evaluation Evaluate(const std::vector<SessionObservation>& observations,
                     const Options& options, const Parameters& parameters) {
   Evaluation result;
   for (std::size_t index = 0; index < observations.size(); ++index) {
+    if (options.cancel_requested && options.cancel_requested()) {
+      result.error = "The lunar-sequence calculation was cancelled";
+      return result;
+    }
     const SessionObservation& entry = observations[index];
     if (!entry.enabled) continue;
     lunar_distance::GeographicPoint position(parameters.latitude,
@@ -233,12 +237,14 @@ Fit Optimise(const std::vector<SessionObservation>& observations,
                  : std::vector<double>{1.0 / 3600.0});
 
   for (int iteration = 0; iteration < options.maximum_iterations; ++iteration) {
+    if (options.cancel_requested && options.cancel_requested()) return Fit();
     const int rows = static_cast<int>(current.residuals.size());
     const int columns = static_cast<int>(values.size());
     std::vector<std::vector<double>> jacobian(rows,
                                               std::vector<double>(columns));
     bool derivative_ok = true;
     for (int column = 0; column < columns; ++column) {
+      if (options.cancel_requested && options.cancel_requested()) return Fit();
       std::vector<double> perturbed = values;
       perturbed[column] += finite_step[column];
       const Evaluation next =
@@ -379,9 +385,33 @@ Candidate MakeCandidate(const Fit& fit, const Options& options,
 Result Solve(const std::vector<SessionObservation>& observations,
              const Options& options) {
   Result result;
+  if (options.cancel_requested && options.cancel_requested()) {
+    result.error = "The lunar-sequence calculation was cancelled";
+    return result;
+  }
   int enabled = 0;
-  for (const auto& observation : observations)
-    if (observation.enabled) ++enabled;
+  double earliest_offset = std::numeric_limits<double>::infinity();
+  double latest_offset = -std::numeric_limits<double>::infinity();
+  for (const auto& observation : observations) {
+    if (!observation.enabled) continue;
+    ++enabled;
+    earliest_offset =
+        std::min(earliest_offset, observation.epoch_offset_seconds);
+    latest_offset = std::max(latest_offset, observation.epoch_offset_seconds);
+  }
+  if (options.maximum_observations > 0 &&
+      static_cast<std::size_t>(enabled) > options.maximum_observations) {
+    result.error =
+        "Too many observations for one lunar watch/session; select a coherent "
+        "subset";
+    return result;
+  }
+  if (enabled > 0 && options.maximum_session_span_seconds > 0.0 &&
+      latest_offset - earliest_offset > options.maximum_session_span_seconds) {
+    result.error =
+        "The lunar observations span more than one permitted watch/session";
+    return result;
+  }
   const int unknowns = 1 + (options.solve_position ? 2 : 0) +
                        (options.estimate_common_index_bias ? 1 : 0);
   if (enabled * 3 <= unknowns) {
@@ -399,6 +429,9 @@ Result Solve(const std::vector<SessionObservation>& observations,
   if (position_seeds.empty())
     position_seeds.push_back({options.known_or_initial_position.latitude_deg,
                               options.known_or_initial_position.longitude_deg});
+  if (options.maximum_position_seeds > 0 &&
+      position_seeds.size() > options.maximum_position_seeds)
+    position_seeds.resize(options.maximum_position_seeds);
   std::vector<Fit> fits;
   const double seed_step =
       std::max(300.0, options.correction_seed_step_seconds);
@@ -414,16 +447,52 @@ Result Solve(const std::vector<SessionObservation>& observations,
                     return std::fabs(first - second) < 30.0;
                   }),
       correction_seeds.end());
+  correction_seeds.erase(
+      std::remove_if(correction_seeds.begin(), correction_seeds.end(),
+                     [&options](double correction) {
+                       return correction < options.start_correction_seconds ||
+                              correction > options.end_correction_seconds;
+                     }),
+      correction_seeds.end());
+  if (options.maximum_correction_seeds > 0 &&
+      correction_seeds.size() > options.maximum_correction_seeds) {
+    std::vector<double> bounded;
+    bounded.reserve(options.maximum_correction_seeds);
+    if (options.maximum_correction_seeds == 1) {
+      bounded.push_back(correction_seeds[correction_seeds.size() / 2]);
+    } else {
+      for (std::size_t index = 0; index < options.maximum_correction_seeds;
+           ++index) {
+        const std::size_t source = static_cast<std::size_t>(std::lround(
+            static_cast<double>(index) *
+            static_cast<double>(correction_seeds.size() - 1) /
+            static_cast<double>(options.maximum_correction_seeds - 1)));
+        bounded.push_back(correction_seeds[source]);
+      }
+    }
+    correction_seeds.swap(bounded);
+  }
+  const std::size_t total_starts =
+      correction_seeds.size() * position_seeds.size();
+  std::size_t completed_starts = 0;
+  if (options.progress) options.progress(0, total_starts);
   for (double correction : correction_seeds) {
-    if (correction < options.start_correction_seconds ||
-        correction > options.end_correction_seconds)
-      continue;
     for (const auto& position : position_seeds) {
+      if (options.cancel_requested && options.cancel_requested()) {
+        result.error = "The lunar-sequence calculation was cancelled";
+        return result;
+      }
       Parameters seed;
       seed.correction = correction;
       seed.latitude = position.latitude_deg;
       seed.longitude = position.longitude_deg;
       const Fit fit = Optimise(observations, options, seed);
+      ++completed_starts;
+      if (options.progress) options.progress(completed_starts, total_starts);
+      if (options.cancel_requested && options.cancel_requested()) {
+        result.error = "The lunar-sequence calculation was cancelled";
+        return result;
+      }
       if (!fit.valid ||
           fit.parameters.correction < options.start_correction_seconds - 1.0 ||
           fit.parameters.correction > options.end_correction_seconds + 1.0)

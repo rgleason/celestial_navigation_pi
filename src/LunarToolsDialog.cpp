@@ -18,13 +18,18 @@
 #include <wx/fileconf.h>
 #include <wx/listctrl.h>
 #include <wx/notebook.h>
+#include <wx/progdlg.h>
 #include <wx/spinctrl.h>
 #include <wx/statbox.h>
 #include <wx/timectrl.h>
 #include <wx/wx.h>
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <cmath>
+#include <future>
+#include <memory>
 #include <sstream>
 
 namespace {
@@ -74,6 +79,7 @@ LunarToolsDialog::LunarToolsDialog(CelestialNavigationDialog* parent)
       m_activeEntryFormat(0),
       m_defaultLatitude(0.0),
       m_defaultLongitude(0.0),
+      m_sequencePositionAutomatic(true),
       m_lastPredictionDeg(NAN) {
   auto* top = new wxBoxSizer(wxVERTICAL);
   m_parentDialog->GetPlugin()->GetBoatPosition(&m_defaultLatitude,
@@ -264,6 +270,10 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
   top->Add(explanation, 0, wxEXPAND | wxALL, 8);
   auto* upper = new wxBoxSizer(wxHORIZONTAL);
   m_sequenceSights = new wxCheckListBox(page, wxID_ANY);
+  const Sight* highlighted = m_parentDialog->GetSelectedSight();
+  wxDateTime highlightedUtc;
+  if (highlighted && highlighted->m_Type == Sight::LUNAR)
+    highlightedUtc = highlighted->m_DateTime;
   for (std::size_t index = 0; index < m_parentDialog->m_Sights.size();
        ++index) {
     const Sight& sight = m_parentDialog->m_Sights[index];
@@ -273,9 +283,24 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
         _("%s  Moon–%s  %s"),
         UtcDateTime::FormatUtc(sight.m_DateTime, "%Y-%m-%d %H:%M:%S"),
         sight.m_Body, FormatNavigationAngle(sight.m_Measurement).c_str()));
-    m_sequenceSights->Check(m_sequenceSights->GetCount() - 1, true);
+    if (highlightedUtc.IsValid() &&
+        std::fabs(UtcDateTime::SecondsBetween(sight.m_DateTime,
+                                              highlightedUtc)) <= 6.0 * 3600.0)
+      m_sequenceSights->Check(m_sequenceSights->GetCount() - 1, true);
   }
-  upper->Add(m_sequenceSights, 1, wxEXPAND | wxALL, 5);
+  auto* sightColumn = new wxBoxSizer(wxVERTICAL);
+  sightColumn->Add(m_sequenceSights, 1, wxEXPAND | wxALL, 5);
+  auto* selectionButtons = new wxBoxSizer(wxHORIZONTAL);
+  auto* selectVisible =
+      new wxButton(page, wxID_ANY, _("Select visible sights"));
+  auto* clearSelection = new wxButton(page, wxID_ANY, _("Clear selection"));
+  selectionButtons->Add(selectVisible, 0, wxRIGHT, 6);
+  selectionButtons->Add(clearSelection, 0);
+  sightColumn->Add(selectionButtons, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
+  m_sequenceReference = new wxStaticText(page, wxID_ANY, wxEmptyString);
+  sightColumn->Add(m_sequenceReference, 0,
+                   wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+  upper->Add(sightColumn, 1, wxEXPAND);
   auto* settings = new wxStaticBoxSizer(wxVERTICAL, page, _("Solution"));
   m_sequenceMode = new wxChoice(page, wxID_ANY);
   m_sequenceMode->Append(_("Recover time and position"));
@@ -283,18 +308,8 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
   m_sequenceMode->SetSelection(0);
   settings->Add(LabelControl(page, _("Mode"), m_sequenceMode), 0,
                 wxEXPAND | wxALL, 3);
-  double latitude = m_defaultLatitude, longitude = m_defaultLongitude;
-  const Sight* earliest = nullptr;
-  for (std::size_t index : m_lunarIndices) {
-    const Sight& sight = m_parentDialog->m_Sights[index];
-    if (!earliest ||
-        UtcDateTime::IsEarlier(sight.m_DateTime, earliest->m_DateTime))
-      earliest = &sight;
-  }
-  if (earliest) {
-    latitude = earliest->m_DRLat;
-    longitude = earliest->m_DRLon;
-  }
+  const double latitude = m_defaultLatitude;
+  const double longitude = m_defaultLongitude;
   m_sequenceLatitude =
       new NavigationAngleCtrl(page, NavigationAngleKind::Latitude, latitude,
                               -90.0, 90.0, wxSize(155, -1));
@@ -307,9 +322,21 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
   settings->Add(
       LabelControl(page, _("Initial / known longitude"), m_sequenceLongitude),
       0, wxEXPAND | wxALL, 3);
+  auto* positionRow = new wxBoxSizer(wxHORIZONTAL);
+  m_sequencePositionSource = new wxStaticText(page, wxID_ANY, wxEmptyString);
+  auto* useEarliest =
+      new wxButton(page, wxID_ANY, _("Use earliest selected DR"));
+  positionRow->Add(m_sequencePositionSource, 1,
+                   wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
+  positionRow->Add(useEarliest, 0);
+  settings->Add(positionRow, 0, wxEXPAND | wxALL, 3);
   m_sequenceSearchHours = Spin(page, 0.25, 24.0, 12.0, 0.5, 1);
-  settings->Add(LabelControl(page, _("Search ± hours"), m_sequenceSearchHours),
+  settings->Add(LabelControl(page, _("Additional watch correction search ±"),
+                             m_sequenceSearchHours),
                 0, wxEXPAND | wxALL, 3);
+  m_sequenceSearchHours->SetToolTip(
+      _("Search this many hours either side of the correction already applied "
+        "to each sight. This is not an observation start time."));
   m_sequenceRobust =
       new wxCheckBox(page, wxID_ANY, _("Robust fit; retain and flag outliers"));
   m_sequenceRobust->SetValue(true);
@@ -364,6 +391,25 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
   }
   top->Add(m_sequenceResiduals, 1, wxEXPAND | wxALL, 6);
   page->SetSizer(top);
+
+  m_sequenceSights->Bind(wxEVT_CHECKLISTBOX, [this](wxCommandEvent&) {
+    UpdateSequenceSelection();
+  });
+  selectVisible->Bind(wxEVT_BUTTON, &LunarToolsDialog::SelectVisibleSequence,
+                      this);
+  clearSelection->Bind(wxEVT_BUTTON, &LunarToolsDialog::ClearSequenceSelection,
+                       this);
+  useEarliest->Bind(wxEVT_BUTTON,
+                    &LunarToolsDialog::UseEarliestSequencePosition, this);
+  m_sequenceLatitude->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
+    m_sequencePositionAutomatic = false;
+    m_sequencePositionSource->SetLabel(_("Manual position"));
+  });
+  m_sequenceLongitude->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
+    m_sequencePositionAutomatic = false;
+    m_sequencePositionSource->SetLabel(_("Manual position"));
+  });
+  UpdateSequenceSelection();
 }
 
 void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
@@ -482,6 +528,14 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
   row3->Add(LabelControl(page, _("Temperature °C"), m_calTemperature), 0,
             wxRIGHT, 12);
   prediction->Add(row3, 0, wxEXPAND | wxALL, 3);
+  auto* configuredIndex = new wxStaticText(
+      page, wxID_ANY,
+      wxString::Format(
+          _("Configured sight index error: %+.2f′ (reference only; not applied "
+            "to this sextant calibration check)."),
+          defaults.indexError));
+  prediction->Add(configuredIndex, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,
+                  6);
   m_calPrediction = new wxStaticText(page, wxID_ANY, _("Not calculated"));
   prediction->Add(m_calPrediction, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,
                   6);
@@ -553,6 +607,60 @@ void LunarToolsDialog::PopulateBodies(wxChoice* choice, bool includeMoon) {
   if (choice->GetCount()) choice->SetSelection(0);
 }
 
+void LunarToolsDialog::UpdateSequenceSelection(bool refreshAutomaticPosition) {
+  const Sight* earliest = nullptr;
+  const Sight* latest = nullptr;
+  unsigned selected = 0;
+  for (unsigned list = 0; list < m_sequenceSights->GetCount(); ++list) {
+    if (!m_sequenceSights->IsChecked(list)) continue;
+    const Sight& sight = m_parentDialog->m_Sights[m_lunarIndices[list]];
+    ++selected;
+    if (!earliest ||
+        UtcDateTime::IsEarlier(sight.m_DateTime, earliest->m_DateTime))
+      earliest = &sight;
+    if (!latest || UtcDateTime::IsLater(sight.m_DateTime, latest->m_DateTime))
+      latest = &sight;
+  }
+  if (!earliest) {
+    m_sequenceReference->SetLabel(
+        _("No observations selected. Select one watch/session."));
+    m_sequencePositionSource->SetLabel(m_sequencePositionAutomatic
+                                           ? _("Boat position (no selected DR)")
+                                           : _("Manual position"));
+    return;
+  }
+  m_sequenceReference->SetLabel(wxString::Format(
+      _("%u selected; recorded UTC %s to %s"), selected,
+      UtcDateTime::FormatUtc(earliest->m_DateTime, "%Y-%m-%d %H:%M:%S"),
+      UtcDateTime::FormatUtc(latest->m_DateTime, "%Y-%m-%d %H:%M:%S")));
+  if (refreshAutomaticPosition && m_sequencePositionAutomatic) {
+    m_sequenceLatitude->SetAngle(earliest->m_DRLat);
+    m_sequenceLongitude->SetAngle(earliest->m_DRLon);
+  }
+  m_sequencePositionSource->SetLabel(m_sequencePositionAutomatic
+                                         ? _("Earliest selected sight DR")
+                                         : _("Manual position"));
+}
+
+void LunarToolsDialog::SelectVisibleSequence(wxCommandEvent&) {
+  for (unsigned list = 0; list < m_sequenceSights->GetCount(); ++list) {
+    const Sight& sight = m_parentDialog->m_Sights[m_lunarIndices[list]];
+    m_sequenceSights->Check(list, sight.IsVisible());
+  }
+  UpdateSequenceSelection();
+}
+
+void LunarToolsDialog::ClearSequenceSelection(wxCommandEvent&) {
+  for (unsigned list = 0; list < m_sequenceSights->GetCount(); ++list)
+    m_sequenceSights->Check(list, false);
+  UpdateSequenceSelection();
+}
+
+void LunarToolsDialog::UseEarliestSequencePosition(wxCommandEvent&) {
+  m_sequencePositionAutomatic = true;
+  UpdateSequenceSelection();
+}
+
 void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
   double sequenceLatitude = 0.0;
   double sequenceLongitude = 0.0;
@@ -564,20 +672,54 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
   }
   m_sequenceLatitude->Normalize();
   m_sequenceLongitude->Normalize();
-  std::vector<lunar_session::SessionObservation> entries;
+  std::vector<unsigned> selectedLists;
   wxDateTime reference;
+  wxDateTime latest;
   for (unsigned list = 0; list < m_sequenceSights->GetCount(); ++list) {
     if (!m_sequenceSights->IsChecked(list)) continue;
-    Sight& sight = m_parentDialog->m_Sights[m_lunarIndices[list]];
-    sight.Recompute(m_parentDialog->GetClockCorrection());
+    selectedLists.push_back(list);
+    const Sight& sight = m_parentDialog->m_Sights[m_lunarIndices[list]];
     if (!reference.IsValid() ||
-        UtcDateTime::IsEarlier(sight.m_CorrectedDateTime, reference))
-      reference = sight.m_CorrectedDateTime;
+        UtcDateTime::IsEarlier(sight.m_DateTime, reference))
+      reference = sight.m_DateTime;
+    if (!latest.IsValid() || UtcDateTime::IsLater(sight.m_DateTime, latest))
+      latest = sight.m_DateTime;
   }
-  if (!reference.IsValid()) {
+  if (selectedLists.size() < 2) {
     wxMessageBox(_("Select at least two lunar observations."),
                  _("Lunar sequence"), wxOK | wxICON_INFORMATION, this);
     return;
+  }
+  if (selectedLists.size() > 12) {
+    wxMessageBox(
+        _("A lunar sequence is one watch/session. Select no more than 12 "
+          "observations; use Clear selection or Select visible sights to "
+          "choose a coherent group."),
+        _("Lunar sequence"), wxOK | wxICON_WARNING, this);
+    return;
+  }
+  const double sessionSpan =
+      std::fabs(UtcDateTime::SecondsBetween(latest, reference));
+  if (sessionSpan > 24.0 * 3600.0) {
+    wxMessageBox(
+        _("The selected observations span more than 24 hours. They do not "
+          "represent one watch/session; select a coherent group before "
+          "solving."),
+        _("Lunar sequence"), wxOK | wxICON_WARNING, this);
+    return;
+  }
+
+  std::vector<lunar_session::SessionObservation> entries;
+  std::vector<std::shared_ptr<Sight> > snapshots;
+  reference = wxDateTime();
+  for (unsigned list : selectedLists) {
+    std::shared_ptr<Sight> snapshot(
+        new Sight(m_parentDialog->m_Sights[m_lunarIndices[list]]));
+    snapshot->Recompute(m_parentDialog->GetClockCorrection());
+    if (!reference.IsValid() ||
+        UtcDateTime::IsEarlier(snapshot->m_CorrectedDateTime, reference))
+      reference = snapshot->m_CorrectedDateTime;
+    snapshots.push_back(snapshot);
   }
   lunar_session::Options options;
   options.solve_position = m_sequenceMode->GetSelection() == 0;
@@ -593,9 +735,8 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
   options.moving_observer = m_sequenceMotion->GetValue();
   options.course_true_deg = m_sequenceCog->GetValue();
   options.speed_knots = m_sequenceSog->GetValue();
-  for (unsigned list = 0; list < m_sequenceSights->GetCount(); ++list) {
-    if (!m_sequenceSights->IsChecked(list)) continue;
-    Sight& sight = m_parentDialog->m_Sights[m_lunarIndices[list]];
+  for (const std::shared_ptr<Sight>& snapshot : snapshots) {
+    Sight& sight = *snapshot;
     lunar_session::SessionObservation entry;
     entry.label = wxString::Format(_("%s Moon–%s"),
                                    UtcDateTime::FormatUtc(
@@ -607,10 +748,11 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
         UtcDateTime::SecondsBetween(sight.m_CorrectedDateTime, reference);
     const auto sight_ephemeris = sight.LunarEphemeris();
     const double epoch = entry.epoch_offset_seconds;
-    entry.ephemeris = [sight_ephemeris, epoch](
+    entry.ephemeris = [snapshot, sight_ephemeris, epoch](
                           double seconds,
                           lunar_distance::EphemerisSample* sample,
                           std::string* error) {
+      (void)snapshot;
       return sight_ephemeris(seconds - epoch, sample, error);
     };
     entries.push_back(entry);
@@ -631,15 +773,56 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
       }
     }
   }
-  wxBusyCursor busy;
-  m_sequenceResult = lunar_session::Solve(entries, options);
+  std::atomic<bool> cancelRequested(false);
+  std::atomic<std::size_t> completedStarts(0);
+  std::atomic<std::size_t> totalStarts(0);
+  options.cancel_requested = [&cancelRequested]() {
+    return cancelRequested.load();
+  };
+  options.progress = [&completedStarts, &totalStarts](std::size_t completed,
+                                                      std::size_t total) {
+    completedStarts.store(completed);
+    totalStarts.store(total);
+  };
+  std::future<lunar_session::Result> future = std::async(
+      std::launch::async,
+      [entries, options]() { return lunar_session::Solve(entries, options); });
+  wxProgressDialog progress(
+      _("Lunar sequence"), _("Preparing bounded multi-start solution…"), 100,
+      this,
+      wxPD_APP_MODAL | wxPD_CAN_ABORT | wxPD_ELAPSED_TIME |
+          wxPD_REMAINING_TIME | wxPD_SMOOTH | wxPD_AUTO_HIDE);
+  bool userCancelled = false;
+  while (future.wait_for(std::chrono::milliseconds(75)) !=
+         std::future_status::ready) {
+    const std::size_t total = totalStarts.load();
+    const std::size_t completed = completedStarts.load();
+    const int percent =
+        total > 0 ? std::min(99, static_cast<int>(completed * 100 / total)) : 0;
+    const std::size_t displayed =
+        total > 0 ? std::min(total, completed + 1) : 0;
+    if (!userCancelled &&
+        !progress.Update(
+            percent,
+            total > 0
+                ? wxString::Format(_("Testing bounded solution %zu of %zu"),
+                                   displayed, total)
+                : _("Preparing bounded multi-start solution…"))) {
+      userCancelled = true;
+      cancelRequested.store(true);
+    }
+  }
+  m_sequenceResult = future.get();
+  if (!userCancelled) progress.Update(100, _("Lunar sequence complete."));
   m_sequenceCandidate->Clear();
   m_sequenceResiduals->DeleteAllItems();
   m_applySequence->Enable(false);
   if (!m_sequenceResult.valid) {
     m_sequenceSummary->SetLabel(
-        _("No solution: ") +
-        wxString::FromUTF8(m_sequenceResult.error.c_str()));
+        userCancelled
+            ? _("Calculation cancelled; saved sights were not changed.")
+            : _("No solution: ") +
+                  wxString::FromUTF8(m_sequenceResult.error.c_str()));
     return;
   }
   for (std::size_t index = 0; index < m_sequenceResult.candidates.size();

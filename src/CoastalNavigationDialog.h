@@ -11,6 +11,7 @@ class CelestialNavigationDialog;
 class piDC;
 class PlugIn_ViewPort;
 class wxCheckBox;
+class wxButton;
 class wxChoice;
 class wxStaticText;
 class wxTextCtrl;
@@ -35,6 +36,9 @@ private:
   void CalculateVertical(wxCommandEvent& event);
   void CalculateHorizontal(wxCommandEvent& event);
   void UseBoatPosition(wxCommandEvent& event);
+  void UseWmmVariation(wxCommandEvent& event);
+  void UpdateBearingControls();
+  void NewObservation(wxCommandEvent& event);
   void ClearPlots(wxCommandEvent& event);
   void RefreshChart();
 
@@ -52,6 +56,8 @@ private:
   wxTextCtrl* m_observedBearing;
   wxTextCtrl* m_variation;
   wxTextCtrl* m_deviation;
+  wxButton* m_useWmmVariation;
+  wxStaticText* m_variationSource;
   wxStaticText* m_verticalResult;
 
   wxTextCtrl* m_leftLat;

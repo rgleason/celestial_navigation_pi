@@ -112,6 +112,31 @@ Simultaneous results show the altitude-circle crossing angle. A shallow
 crossing is weak positional geometry and magnifies observational error.
 Separate-time results instead show the numerical joint position uncertainty.
 
+== Joint lunar-sequence workflow
+
+The Lunar Sequence page is not a second planner with one start time. Every
+listed lunar retains its own recorded UTC. *Additional watch correction search
+±* searches either side of the correction already applied to those timestamps.
+The displayed reference UTC is the earliest selected observation.
+
+When a lunar is highlighted in the main sight list, that observation and
+lunars within six hours are initially selected. Review the checkboxes so the
+set represents one physical watch/session. *Select visible sights* is an
+explicit convenience; chart visibility is not treated as proof of session
+membership. The solver accepts at most 12 observations spanning no more than
+24 hours, bounds its correction and position starts, runs away from the GUI
+thread and reports progress with a Cancel control.
+
+The initial position comes from the earliest selected sight's DR and remains
+editable. It should not normally be replaced by 0° N, 0° E: the sequence fits
+Moon altitude and body altitude as well as lunar distance, and the position is
+also a convergence seed when position is unknown.
+
+The Sextant Check page shows the configured sight index error for comparison
+but deliberately does not apply it. The purpose of that workflow is to measure
+an instrument correction; pre-applying the assumed correction would make the
+calibration circular.
+
 == Coastal sextant navigation
 
 Open *Coastal Sextant...* from the main plugin window. These methods use
@@ -137,11 +162,23 @@ and deviation. Its accuracy is limited by the bearing as well as the vertical
 angle. Record the bearing at effectively the same instant as the vertical
 angle, or reduce it to that position epoch before entry.
 
+Target coordinates and measured angles start blank. Closing the window retains
+an unfinished observation; choose *New / clear observation* before starting a
+different one. That action also clears results and plots and reloads the
+current central index-error and eye-height defaults.
+
+Variation and deviation are disabled and ignored for true bearings. For a
+magnetic compass bearing they are editable, and *Use WMM at current boat/time*
+can fill a clearly labelled variation estimate for the current boat position
+and UTC. Compass deviation remains a manual vessel/instrument input.
+
 === Horizontal sextant angles
 
 One included angle between two charted objects defines a curved line of
 position. Enter three objects in their observed left-centre-right order and
 the left-centre and centre-right measurements to obtain two independent loci.
+Landmark positions and measurements initially remain blank so plausible
+defaults cannot be mistaken for observations.
 The central sextant index-error default is applied to both measurements. The
 plugin solves their intersection on the sphere from the supplied approximate
 position and reports residuals, a geometry condition indicator and an
