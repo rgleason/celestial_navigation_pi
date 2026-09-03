@@ -24,117 +24,173 @@
 
 class LunarTest : public ::testing::Test {
 protected:
-    void SetUp() override {
-        const char* datadir = TESTDATA;
-        if (!datadir) {
-            std::cout << "TESTDATA not defined in CMake" << std::endl;
-            return;
-        }
-        std::cout << "Using plugin data directory: " << datadir << std::endl;
+  void SetUp() override {
+    const char* datadir = TESTDATA;
+    if (!datadir) {
+      std::cout << "TESTDATA not defined in CMake" << std::endl;
+      return;
     }
+    std::cout << "Using plugin data directory: " << datadir << std::endl;
+  }
 };
 
 static int error_ldc;
 static int error_timechange;
 
-static void commontest(Sight &sight, wxDateTime &datetime,
-                       const char *body, int line, const char *date,
-                       double expected_ldc, long expected_timechange,
-                       double distance_epsilon, double time_epsilon) {
+static void commontest(Sight& sight, wxDateTime& datetime, const char* body,
+                       int line, const char* date, double expected_ldc,
+                       long expected_timechange, double distance_epsilon,
+                       double time_epsilon) {
+  sight.Recompute(0);  // 0 = no clock offset
 
-    sight.Recompute(0);  // 0 = no clock offset
+  std::cout << "=== " << body << " (line " << line << ", date " << date
+            << ") ===" << std::endl
+            << std::endl;
 
-    std::cout << "=== " << body << " (line " << line << ", date " << date << ") ==="
-              << std::endl << std::endl;
+  // Test LDC
+  error_ldc = sight.m_LDC - expected_ldc;
+  EXPECT_NEAR(sight.m_LDC, expected_ldc, distance_epsilon)
+      << "LDC differs from test sample by " << error_ldc << std::endl;
 
-    // Test LDC
-    error_ldc = sight.m_LDC - expected_ldc;
-    EXPECT_NEAR(sight.m_LDC, expected_ldc, distance_epsilon)
-        << "LDC differs from test sample by "
-        << error_ldc << std::endl;
+  // Test timechange
+  error_timechange = sight.m_TimeCorrection - expected_timechange;
+  EXPECT_NEAR(sight.m_TimeCorrection, expected_timechange, time_epsilon)
+      << "Time correction differs from test sample by " << error_timechange
+      << std::endl;
 
-    // Test timechange
-    error_timechange = sight.m_TimeCorrection - expected_timechange;
-    EXPECT_NEAR(sight.m_TimeCorrection, expected_timechange, time_epsilon)
-        << "Time correction differs from test sample by "
-        << error_timechange << std::endl;
-
-    // Print calculation string
-    std::cout << "Detailed Calculation String:" << std::endl;
-    std::cout << sight.m_CalcStr << std::endl;
+  // Print calculation string
+  std::cout << "Detailed Calculation String:" << std::endl;
+  std::cout << sight.m_CalcStr << std::endl;
+  EXPECT_NE(sight.m_CalcStr.Find("Direct Triangle"), wxNOT_FOUND);
+  EXPECT_NE(sight.m_CalcStr.Find("INSTRUMENT AND HORIZON CORRECTIONS"),
+            wxNOT_FOUND);
+  EXPECT_NE(sight.m_CalcStr.Find("LIMB-TO-CENTRE REDUCTIONS"), wxNOT_FOUND);
+  EXPECT_NE(sight.m_CalcStr.Find("DIRECT SPHERICAL-TRIANGLE CLEARING"),
+            wxNOT_FOUND);
+  EXPECT_NE(sight.m_CalcStr.Find("COARSE SCAN (every evaluated point)"),
+            wxNOT_FOUND);
+  EXPECT_NE(sight.m_CalcStr.Find("ROOT REFINEMENT"), wxNOT_FOUND);
+  EXPECT_NE(sight.m_CalcStr.Find("POSITION INTERSECTION AND WARNINGS"),
+            wxNOT_FOUND);
+  EXPECT_GT(sight.m_CalcStr.length(), 10000u);
 }
 
 struct lunarsightdata {
-    const char *date;
-    const char *body;
-    Sight::BodyLimb limb;
-    double temp;
-    double pres;
-    double ie;
-    double eye;
-    struct degmin ld;
-    Sight::BodyLimb limb_moon;
-    struct degmin hs_moon;
-    Sight::BodyLimb limb_body;
-    struct degmin hs_body;
-    double expected_ldc;
-    long expected_timechange;
+  const char* date;
+  const char* body;
+  Sight::BodyLimb limb;
+  double temp;
+  double pres;
+  double ie;
+  double eye;
+  struct degmin ld;
+  Sight::BodyLimb limb_moon;
+  struct degmin hs_moon;
+  Sight::BodyLimb limb_body;
+  struct degmin hs_body;
+  double expected_ldc;
+  long expected_timechange;
 };
 
 struct lunarsightdata LUNAR_SIGHTS[] = {
     /* case 1 */
-    { "2025-08-18 11:58:00", "Sun", Sight::LUNAR_NEAR, 17, 1013, -0.8, 2.4, { 59, 18.8 }, Sight::LOWER, { 70, 4 }, Sight::LOWER, { 17, 1}, 60.104126, -63 },
+    {"2025-08-18 11:58:00",
+     "Sun",
+     Sight::LUNAR_NEAR,
+     17,
+     1013,
+     -0.8,
+     2.4,
+     {59, 18.8},
+     Sight::LOWER,
+     {70, 4},
+     Sight::LOWER,
+     {17, 1},
+     60.104126,
+     -63},
     /* case 2 */
-    { "2025-08-18 11:58:00", "Sun", Sight::LUNAR_NEAR, 17, 1013, -0.8, 2.4, { 59, 18.0 }, Sight::LOWER, { 70, 4 }, Sight::LOWER, { 17, 1}, 60.091036, 24 },
+    {"2025-08-18 11:58:00",
+     "Sun",
+     Sight::LUNAR_NEAR,
+     17,
+     1013,
+     -0.8,
+     2.4,
+     {59, 18.0},
+     Sight::LOWER,
+     {70, 4},
+     Sight::LOWER,
+     {17, 1},
+     60.091036,
+     24},
     /* case 5 */
-//    { "2025-08-09 07:00:00", "Saturn", Sight::LUNAR_NEAR, 10, 1010, 0.1, 2.4, { 45, 2.8 }, Sight::LOWER, { 22, 53 }, Sight::CENTER, { 42, 11 }, 44.800810, -3 },
+    //    { "2025-08-09 07:00:00", "Saturn", Sight::LUNAR_NEAR, 10, 1010,
+    //    0.1, 2.4, { 45, 2.8 }, Sight::LOWER, { 22, 53 }, Sight::CENTER, { 42,
+    //    11 }, 44.800810, -3 },
     /* case 6 */
-    { "2025-08-09 07:00:00", "Saturn", Sight::LUNAR_NEAR, 10, 1010, 0.1, 2.4, { 44, 56.5 }, Sight::LOWER, { 63, 59 }, Sight::CENTER, { 70, 38 }, 44.800810, -2 },
+    {"2025-08-09 07:00:00",
+     "Saturn",
+     Sight::LUNAR_NEAR,
+     10,
+     1010,
+     0.1,
+     2.4,
+     {44, 56.5},
+     Sight::LOWER,
+     {63, 59},
+     Sight::CENTER,
+     {70, 38},
+     44.800810,
+     -2},
 };
 
 TEST_F(LunarTest, Sight) {
-    std::vector<int> lunar_ldc;
-    std::vector<int> lunar_timechange;
+  std::vector<int> lunar_ldc;
+  std::vector<int> lunar_timechange;
 
-    int count = (int)(sizeof(LUNAR_SIGHTS) / sizeof(LUNAR_SIGHTS[0]));
-    for (int i = 0; i < count; i++) {
-        struct lunarsightdata data = LUNAR_SIGHTS[i];
+  int count = (int)(sizeof(LUNAR_SIGHTS) / sizeof(LUNAR_SIGHTS[0]));
+  for (int i = 0; i < count; i++) {
+    struct lunarsightdata data = LUNAR_SIGHTS[i];
 
-        wxDateTime datetime;
-        ASSERT_TRUE(datetime.ParseDateTime(data.date)) << "Failed to parse datetime";
+    wxDateTime datetime;
+    ASSERT_TRUE(datetime.ParseDateTime(data.date))
+        << "Failed to parse datetime";
 
-        Sight sight(Sight::LUNAR, data.body, data.limb, datetime, 0,
-                    DegMin2DecDeg(data.ld.deg, data.ld.min), 1);
-        sight.m_IndexError = data.ie;
-        sight.m_EyeHeight = data.eye;
-        sight.m_Temperature = data.temp;
-        sight.m_Pressure = data.pres;
-        sight.m_LunarMoonLimb = data.limb_moon;
-        sight.m_LunarMoonAltitude = DegMin2DecDeg(data.hs_moon.deg, data.hs_moon.min);
-        sight.m_LunarBodyLimb = data.limb_body;
-        sight.m_LunarBodyAltitude = DegMin2DecDeg(data.hs_body.deg, data.hs_body.min);
-        sight.m_TimeCertainty = 10800;
+    Sight sight(Sight::LUNAR, data.body, data.limb, datetime, 0,
+                DegMin2DecDeg(data.ld.deg, data.ld.min), 1);
+    sight.m_IndexError = data.ie;
+    sight.m_EyeHeight = data.eye;
+    sight.m_Temperature = data.temp;
+    sight.m_Pressure = data.pres;
+    sight.m_LunarMoonLimb = data.limb_moon;
+    sight.m_LunarMoonAltitude =
+        DegMin2DecDeg(data.hs_moon.deg, data.hs_moon.min);
+    sight.m_LunarBodyLimb = data.limb_body;
+    sight.m_LunarBodyAltitude =
+        DegMin2DecDeg(data.hs_body.deg, data.hs_body.min);
+    sight.m_TimeCertainty = 10800;
 
-        // The source worksheet rounds sextant inputs and intermediate values.
-        // Its Sun time solutions used the former analytical ephemeris and are
-        // 28 seconds behind DE440 at this epoch; the expected values above are
-        // the roots obtained with DE440.  Keep the cleared distance within
-        // 0.06' and recovered UTC within five seconds, while the pure solver
-        // tests exercise sub-second convergence against unrounded truth.
-        const double DISTANCE_EPSILON = 0.001;
-        const double TIME_EPSILON = 5.0;
-        commontest(sight, datetime, data.body, i, data.date,
-                   data.expected_ldc, data.expected_timechange,
-                   DISTANCE_EPSILON, TIME_EPSILON);
+    // The source worksheet rounds sextant inputs and intermediate values.
+    // Its Sun time solutions used the former analytical ephemeris and are
+    // 28 seconds behind DE440 at this epoch; the expected values above are
+    // the roots obtained with DE440.  Keep the cleared distance within
+    // 0.06' and recovered UTC within five seconds, while the pure solver
+    // tests exercise sub-second convergence against unrounded truth.
+    const double DISTANCE_EPSILON = 0.001;
+    const double TIME_EPSILON = 5.0;
+    commontest(sight, datetime, data.body, i, data.date, data.expected_ldc,
+               data.expected_timechange, DISTANCE_EPSILON, TIME_EPSILON);
 
-        lunar_ldc.push_back(error_ldc);
-        lunar_timechange.push_back(error_timechange);
-    }
+    lunar_ldc.push_back(error_ldc);
+    lunar_timechange.push_back(error_timechange);
+  }
 
-    std::cout << "============================================================================="
-              << std::endl;
-    report("Lunar", "LDC", lunar_ldc);
-    report("Lunar", "Time change", lunar_timechange);
-    std::cout << "============================================================================="
-              << std::endl;
+  std::cout << "==============================================================="
+               "=============="
+            << std::endl;
+  report("Lunar", "LDC", lunar_ldc);
+  report("Lunar", "Time change", lunar_timechange);
+  std::cout << "==============================================================="
+               "=============="
+            << std::endl;
 }

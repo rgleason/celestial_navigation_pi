@@ -38,7 +38,11 @@ lunar-distance reference epoch. This is a constant-course/constant-speed
 model; use representative motion for the short observation sequence and do
 not enable it merely to force a result.
 
-Press *Time*. In simultaneous mode the traditional clearing solver:
+Press *Time*. The result window opens on *Results*, the concise operational
+view of UTC candidates, watch correction, lunar-distance rate, uncertainty,
+position candidates and warnings. Select *Calculations* to inspect the full
+auditable working. In simultaneous mode the direct spherical-triangle clearing
+method:
 
 . converts the measured limbs to apparent centres;
 . applies index correction, dip, refraction, semidiameter and parallax;
@@ -47,6 +51,17 @@ Press *Time*. In simultaneous mode the traditional clearing solver:
   and
 . reports the UTC candidate, constant watch correction, lunar-distance rate
   and propagated time uncertainty.
+
+The *Calculations* page identifies this method and prints the raw inputs and
+conventions; index and dip arithmetic; every limb/contact and semidiameter
+correction; refraction, parallax and corrected altitudes; both spherical-
+triangle formulae with numerical substitutions; every coarse UTC scan point
+and bisection refinement; converged roots and uncertainty components; then the
+altitude-circle construction, position candidates and warnings. This is the
+trail actually used by the modern solver, not the former two-endpoint
+interpolation. The uncertainty values are shown separately and are not
+additional corrections: the solver propagates them through the clearing
+geometry and local lunar-distance rate to estimate recovered-UTC uncertainty.
 
 In separate-time mode the mathematical problem is a coupled three-equation
 solution. For each trial clock correction the plugin evaluates the Moon and
@@ -126,7 +141,8 @@ angle, or reduce it to that position epoch before entry.
 
 One included angle between two charted objects defines a curved line of
 position. Enter three objects in their observed left-centre-right order and
-the left-centre and centre-right angles to obtain two independent loci. The
+the left-centre and centre-right measurements to obtain two independent loci.
+The central sextant index-error default is applied to both measurements. The
 plugin solves their intersection on the sphere from the supplied approximate
 position and reports residuals, a geometry condition indicator and an
 estimated one-sigma uncertainty.

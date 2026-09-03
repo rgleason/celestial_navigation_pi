@@ -1,8 +1,14 @@
 #ifndef CELESTIAL_NAVIGATION_ECLIPSE_DIALOG_H
 #define CELESTIAL_NAVIGATION_ECLIPSE_DIALOG_H
 
-#include <wx/dialog.h>
+#include <future>
+#include <string>
+#include <vector>
 
+#include <wx/dialog.h>
+#include <wx/timer.h>
+
+#include "EclipseDataFiles.h"
 #include "eclipse/engine.h"
 
 class piDC;
@@ -20,6 +26,7 @@ class celestial_navigation_pi;
 class EclipseDialog : public wxDialog {
 public:
   EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin);
+  ~EclipseDialog() override;
   bool Render(piDC* dc, PlugIn_ViewPort* viewport);
   bool HasPlot() const { return !m_path.empty() || !m_contours.empty(); }
   void RunIntegrationScenario2027();
@@ -29,8 +36,24 @@ private:
   void UpdateDataStatus();
   bool OpenEngine(bool report_error);
   void OnImportDe440(wxCommandEvent& event);
-  void OnImportPck(wxCommandEvent& event);
-  void OnImportLola(wxCommandEvent& event);
+  void OnDownloadDe440(wxCommandEvent& event);
+  void OnOptionalData(wxCommandEvent& event);
+  void OnCancelInstall(wxCommandEvent& event);
+  void OnDownloadEvent(wxEvent& event);
+  void OnVerificationTimer(wxTimerEvent& event);
+  void BeginInstall(celestial_navigation::EclipseDataKind requested);
+  void StartNextDownload();
+  void TryCurrentSource();
+  void BeginVerification(celestial_navigation::EclipseDataKind kind,
+                         const wxString& path, int purpose);
+  void FinishDownloadedVerification(bool valid, const wxString& error);
+  void StartInstalledDataCheck();
+  void StartNextInstalledDataCheck();
+  void FinishInstallation(bool success, const wxString& message);
+  void SetInstallationControls(bool busy);
+  bool EnsureInstallationSpace(
+      const std::vector<celestial_navigation::EclipseDataKind>& plan);
+  void SelectAndImport(celestial_navigation::EclipseDataKind kind);
   void OnFind(wxCommandEvent& event);
   void OnSelection(wxListEvent& event);
   void OnPlot(wxCommandEvent& event);
@@ -45,7 +68,13 @@ private:
   wxString De440Path() const;
   wxString PckPath() const;
   wxString LolaPath() const;
-  bool ImportFile(const wxString& title, const wxString& destination, int kind);
+  wxString DataPath(celestial_navigation::EclipseDataKind kind) const;
+  bool DataVerified(celestial_navigation::EclipseDataKind kind) const;
+
+  struct VerificationResult {
+    bool valid;
+    std::string error;
+  };
 
   celestial_navigation_pi* m_plugin;
   eclipse::EclipseEngine m_engine;
@@ -67,6 +96,29 @@ private:
   wxTextCtrl* m_local_results;
   wxButton* m_plot_button;
   wxButton* m_local_button;
+  wxButton* m_import_de;
+  wxButton* m_download_de;
+  wxButton* m_optional_data;
+  wxButton* m_cancel_install;
+
+  std::vector<celestial_navigation::EclipseDataKind> m_install_queue;
+  std::vector<std::string> m_download_sources;
+  std::size_t m_install_index;
+  std::size_t m_source_index;
+  int m_download_kind;
+  long m_download_handle;
+  wxString m_download_temp;
+  bool m_cancel_requested;
+
+  wxTimer m_verification_timer;
+  std::future<VerificationResult> m_verification_future;
+  bool m_verifying;
+  int m_verification_purpose;
+  celestial_navigation::EclipseDataKind m_verification_kind;
+  wxString m_verification_path;
+  std::vector<celestial_navigation::EclipseDataKind> m_installed_check_queue;
+  std::size_t m_installed_check_index;
+  bool m_invalid_data[3];
 };
 
 #endif

@@ -167,6 +167,18 @@ const char* ExpectedDe440sSha256() {
 
 std::uint64_t ExpectedDe440sBytes() { return 32726016u; }
 
+const char* ExpectedLunarOrientationSha256() {
+  return "60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f";
+}
+
+std::uint64_t ExpectedLunarOrientationBytes() { return 12863488u; }
+
+const char* ExpectedLola64PaSha256() {
+  return "f59edf8437442b05525345b3c29b65f0f31af8fc96420abf2dd18af3480f7ff4";
+}
+
+std::uint64_t ExpectedLola64PaBytes() { return 530841624u; }
+
 DataPackStatus VerifyDe440s(const std::string& path) {
   DataPackStatus status = ReadDigest(path, "DE440s");
   if (!status.error.empty()) return status;
@@ -197,10 +209,8 @@ DataPackStatus VerifyDe440s(const std::string& path) {
 DataPackStatus VerifyLunarOrientationPck(const std::string& path) {
   DataPackStatus status = ReadDigest(path, "DE440 lunar orientation");
   if (!status.error.empty()) return status;
-  const std::uint64_t expected_bytes = 12863488u;
-  const char* expected_sha =
-      "60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f";
-  if (status.bytes != expected_bytes || status.sha256 != expected_sha) {
+  if (status.bytes != ExpectedLunarOrientationBytes() ||
+      status.sha256 != ExpectedLunarOrientationSha256()) {
     status.error = "Lunar orientation kernel size or SHA-256 mismatch";
     return status;
   }
@@ -217,10 +227,8 @@ DataPackStatus VerifyLunarOrientationPck(const std::string& path) {
 DataPackStatus VerifyLola64Pa(const std::string& path) {
   DataPackStatus status = ReadDigest(path, "LOLA principal-axes limb");
   if (!status.error.empty()) return status;
-  const std::uint64_t expected_bytes = 530841624u;
-  const char* expected_sha =
-      "f59edf8437442b05525345b3c29b65f0f31af8fc96420abf2dd18af3480f7ff4";
-  if (status.bytes != expected_bytes || status.sha256 != expected_sha) {
+  if (status.bytes != ExpectedLola64PaBytes() ||
+      status.sha256 != ExpectedLola64PaSha256()) {
     status.error = "LOLA limb-pack size or SHA-256 mismatch";
     return status;
   }

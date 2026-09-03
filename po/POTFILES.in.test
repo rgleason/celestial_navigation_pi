@@ -12,6 +12,7 @@ src/astrolabe/util.cpp
 src/astrolabe/vsop87d.cpp
 src/geomag/geomag.c
 src/CelestialNavigationDialog.cpp
+src/AtomicXmlFile.cpp
 src/BodyCatalog.cpp
 src/NavigationAlgorithms.cpp
 src/PlannerDialog.cpp
@@ -20,6 +21,7 @@ src/SightAnalysisDialog.cpp
 src/HorizonEventDialog.cpp
 src/HtmlHelp.cpp
 src/EclipseDialog.cpp
+src/EclipseDataFiles.cpp
 src/TimeStatus.cpp
 src/CelestialNavigationUI.cpp
 src/SightDialog.cpp
@@ -47,6 +49,7 @@ src/OcpnApiCompat.h
 src/NavigationUIUtils.h
 src/celestial_navigation_pi.h
 src/CelestialNavigationDialog.h
+src/AtomicXmlFile.h
 src/BodyCatalog.h
 src/NavigationAlgorithms.h
 src/PlannerDialog.h
@@ -56,6 +59,7 @@ src/UtcDateTime.h
 src/HorizonEventDialog.h
 src/HtmlHelp.h
 src/EclipseDialog.h
+src/EclipseDataFiles.h
 src/TimeStatus.h
 src/CelestialNavigationUI.h
 src/ClockCorrectionDialog.h

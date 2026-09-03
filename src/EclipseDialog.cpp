@@ -1,5 +1,6 @@
 #include "EclipseDialog.h"
 
+#include "AtomicXmlFile.h"
 #include "NavigationUIUtils.h"
 
 #include "celestial_navigation_pi.h"
@@ -23,11 +24,109 @@
 #include <wx/utils.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <future>
 #include <iomanip>
 #include <sstream>
 
 namespace {
+
+using celestial_navigation::EclipseDataKind;
+using celestial_navigation::InstalledDataState;
+
+enum OptionalDataAction {
+  ID_DOWNLOAD_PCK = wxID_HIGHEST + 410,
+  ID_IMPORT_PCK,
+  ID_DOWNLOAD_LOLA,
+  ID_IMPORT_LOLA
+};
+
+enum VerificationPurpose {
+  VERIFY_NONE = 0,
+  VERIFY_INSTALLED = 1,
+  VERIFY_DOWNLOAD = 2,
+  VERIFY_LOCAL_IMPORT = 3
+};
+
+wxString MiB(std::uint64_t bytes) {
+  return wxString::Format("%.1f MiB", bytes / (1024.0 * 1024.0));
+}
+
+wxString OptionalStateLabel(InstalledDataState state) {
+  if (state == InstalledDataState::Verified) return _("Installed and verified");
+  if (state == InstalledDataState::VerificationRequired)
+    return _("Installed; verification required");
+  return _("Not installed");
+}
+
+class OptionalLunarDataDialog : public wxDialog {
+public:
+  OptionalLunarDataDialog(wxWindow* parent, InstalledDataState pck_state,
+                          InstalledDataState lola_state)
+      : wxDialog(parent, wxID_ANY,
+                 _("Advanced Eclipse Data — Optional Lunar Refinement"),
+                 wxDefaultPosition, wxDefaultSize,
+                 wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER) {
+    wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
+    wxStaticText* introduction = new wxStaticText(
+        this, wxID_ANY,
+        _("These files are optional. They are not required for ordinary "
+          "celestial navigation or standard eclipse calculations. They "
+          "refine lunar contact timing by modelling the Moon's orientation "
+          "and irregular surface."));
+    introduction->Wrap(690);
+    root->Add(introduction, 0, wxEXPAND | wxALL, 12);
+
+    AddDataSection(
+        root, _("Lunar orientation — 12.3 MiB"),
+        _("Provides the Moon's physical orientation relative to the DE440 "
+          "ephemeris. It is required when LOLA limb refinement is used."),
+        pck_state, ID_DOWNLOAD_PCK, ID_IMPORT_PCK);
+    AddDataSection(
+        root, _("LOLA lunar limb — 506 MiB"),
+        _("Adds high-resolution lunar topography so mountains and valleys "
+          "can refine eclipse contact times. It requires the lunar-"
+          "orientation file above."),
+        lola_state, ID_DOWNLOAD_LOLA, ID_IMPORT_LOLA);
+
+    wxBoxSizer* footer = new wxBoxSizer(wxHORIZONTAL);
+    footer->AddStretchSpacer();
+    wxButton* close = new wxButton(this, wxID_CANCEL, _("Close"));
+    footer->Add(close, 0);
+    root->Add(footer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+    SetSizerAndFit(root);
+    SetMinSize(wxSize(700, GetSize().GetHeight()));
+    CentreOnParent();
+  }
+
+private:
+  void AddDataSection(wxBoxSizer* root, const wxString& title,
+                      const wxString& description, InstalledDataState state,
+                      int download_id, int import_id) {
+    wxStaticBoxSizer* box = new wxStaticBoxSizer(wxVERTICAL, this, title);
+    wxStaticText* explanation = new wxStaticText(this, wxID_ANY, description);
+    explanation->Wrap(660);
+    box->Add(explanation, 0, wxEXPAND | wxALL, 7);
+    wxBoxSizer* actions = new wxBoxSizer(wxHORIZONTAL);
+    wxStaticText* status = new wxStaticText(
+        this, wxID_ANY, _("Status: ") + OptionalStateLabel(state));
+    actions->Add(status, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+    wxButton* download =
+        new wxButton(this, download_id, _("Download and install…"));
+    download->Enable(state != InstalledDataState::Verified);
+    wxButton* import = new wxButton(this, import_id, _("Import local file…"));
+    actions->Add(download, 0, wxRIGHT, 5);
+    actions->Add(import, 0);
+    box->Add(actions, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 7);
+    root->Add(box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+    download->Bind(wxEVT_BUTTON, [this, download_id](wxCommandEvent&) {
+      EndModal(download_id);
+    });
+    import->Bind(wxEVT_BUTTON,
+                 [this, import_id](wxCommandEvent&) { EndModal(import_id); });
+  }
+};
 
 wxString FormatDateTime(double tt_jd, double delta_t_seconds,
                         bool include_date) {
@@ -92,11 +191,42 @@ EclipseDialog::EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin)
       m_use_lola(NULL),
       m_local_results(NULL),
       m_plot_button(NULL),
-      m_local_button(NULL) {
+      m_local_button(NULL),
+      m_import_de(NULL),
+      m_download_de(NULL),
+      m_optional_data(NULL),
+      m_cancel_install(NULL),
+      m_install_index(0),
+      m_source_index(0),
+      m_download_kind(-1),
+      m_download_handle(0),
+      m_cancel_requested(false),
+      m_verification_timer(this),
+      m_verifying(false),
+      m_verification_purpose(VERIFY_NONE),
+      m_verification_kind(EclipseDataKind::De440s),
+      m_installed_check_index(0) {
+  m_invalid_data[0] = m_invalid_data[1] = m_invalid_data[2] = false;
   BuildInterface();
   UpdateDataStatus();
+  StartInstalledDataCheck();
   wxCommandEvent initial_position;
   OnBoatPosition(initial_position);
+}
+
+EclipseDialog::~EclipseDialog() {
+  m_verification_timer.Stop();
+  Unbind(wxEVT_TIMER, &EclipseDialog::OnVerificationTimer, this,
+         m_verification_timer.GetId());
+  Disconnect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
+             wxEventHandler(EclipseDialog::OnDownloadEvent), NULL, this);
+  if (m_download_handle) {
+    OCPN_cancelDownloadFileBackground(m_download_handle);
+    m_download_handle = 0;
+  }
+  if (m_verification_future.valid()) m_verification_future.wait();
+  if (!m_download_temp.empty() && wxFileExists(m_download_temp))
+    wxRemoveFile(m_download_temp);
 }
 
 wxString EclipseDialog::DataDirectory() const {
@@ -118,20 +248,29 @@ wxString EclipseDialog::LolaPath() const {
 
 void EclipseDialog::BuildInterface() {
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
-  wxStaticBoxSizer* data = new wxStaticBoxSizer(
-      wxVERTICAL, this, _("Offline data (no network access)"));
+  wxStaticBoxSizer* data =
+      new wxStaticBoxSizer(wxVERTICAL, this, _("Eclipse astronomy data"));
   m_data_status = new wxStaticText(this, wxID_ANY, _("Checking data..."));
   data->Add(m_data_status, 0, wxEXPAND | wxALL, 5);
+  wxStaticText* data_note = new wxStaticText(
+      this, wxID_ANY,
+      _("DE440s is required only for the eclipse planner. Lunar-orientation "
+        "and LOLA terrain files are optional refinements."));
+  data_note->Wrap(880);
+  data->Add(data_note, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
   wxBoxSizer* imports = new wxBoxSizer(wxHORIZONTAL);
-  wxButton* import_de = new wxButton(this, wxID_ANY, _("Import DE440s..."));
-  wxButton* import_pck =
-      new wxButton(this, wxID_ANY, _("Import lunar orientation..."));
-  wxButton* import_lola =
-      new wxButton(this, wxID_ANY, _("Import LOLA pack..."));
-  imports->Add(import_de, 0, wxRIGHT, 5);
-  imports->Add(import_pck, 0, wxRIGHT, 5);
-  imports->Add(import_lola, 0);
+  m_download_de = new wxButton(this, wxID_ANY,
+                               _("Download and install DE440s… (31.2 MiB)"));
+  m_import_de = new wxButton(this, wxID_ANY, _("Import DE440s…"));
+  m_optional_data = new wxButton(this, wxID_ANY, _("Optional lunar data…"));
+  m_cancel_install =
+      new wxButton(this, wxID_ANY, _("Cancel data installation"));
+  m_cancel_install->Hide();
+  imports->Add(m_download_de, 0, wxRIGHT, 5);
+  imports->Add(m_import_de, 0, wxRIGHT, 5);
+  imports->Add(m_optional_data, 0);
   data->Add(imports, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
+  data->Add(m_cancel_install, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
   root->Add(data, 0, wxEXPAND | wxALL, 6);
 
   wxBoxSizer* search = new wxBoxSizer(wxHORIZONTAL);
@@ -236,9 +375,14 @@ void EclipseDialog::BuildInterface() {
   SetSizer(root);
   SetMinSize(wxSize(760, 600));
 
-  import_de->Bind(wxEVT_BUTTON, &EclipseDialog::OnImportDe440, this);
-  import_pck->Bind(wxEVT_BUTTON, &EclipseDialog::OnImportPck, this);
-  import_lola->Bind(wxEVT_BUTTON, &EclipseDialog::OnImportLola, this);
+  m_import_de->Bind(wxEVT_BUTTON, &EclipseDialog::OnImportDe440, this);
+  m_download_de->Bind(wxEVT_BUTTON, &EclipseDialog::OnDownloadDe440, this);
+  m_optional_data->Bind(wxEVT_BUTTON, &EclipseDialog::OnOptionalData, this);
+  m_cancel_install->Bind(wxEVT_BUTTON, &EclipseDialog::OnCancelInstall, this);
+  Connect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
+          wxEventHandler(EclipseDialog::OnDownloadEvent), NULL, this);
+  Bind(wxEVT_TIMER, &EclipseDialog::OnVerificationTimer, this,
+       m_verification_timer.GetId());
   find->Bind(wxEVT_BUTTON, &EclipseDialog::OnFind, this);
   m_event_list->Bind(wxEVT_LIST_ITEM_SELECTED, &EclipseDialog::OnSelection,
                      this);
@@ -270,83 +414,426 @@ bool EclipseDialog::OpenEngine(bool report_error) {
 }
 
 void EclipseDialog::UpdateDataStatus() {
-  const eclipse::DataPackStatus de =
-      eclipse::VerifyDe440s(De440Path().ToStdString());
-  const bool pck_ok =
-      eclipse::VerifyLunarOrientationPck(PckPath().ToStdString()).valid;
-  const bool lola_ok = eclipse::VerifyLola64Pa(LolaPath().ToStdString()).valid;
+  const EclipseDataKind kinds[] = {EclipseDataKind::De440s,
+                                   EclipseDataKind::LunarOrientation,
+                                   EclipseDataKind::LolaLimb};
+  wxString labels[3];
+  for (int index = 0; index < 3; ++index) {
+    const InstalledDataState state = celestial_navigation::InspectInstalledData(
+        kinds[index], DataPath(kinds[index]));
+    if (m_invalid_data[index])
+      labels[index] = _("invalid");
+    else if (state == InstalledDataState::Verified)
+      labels[index] = _("verified");
+    else if (state == InstalledDataState::VerificationRequired)
+      labels[index] = _("checking");
+    else
+      labels[index] = _("not installed");
+  }
   m_data_status->SetLabel(wxString::Format(
       "DE440s: %s   |   Lunar orientation: %s   |   LOLA limb: %s",
-      de.valid ? _("verified") : _("not installed"),
-      pck_ok ? _("installed") : _("not installed"),
-      lola_ok ? _("installed") : _("not installed")));
+      labels[0].c_str(), labels[1].c_str(), labels[2].c_str()));
+  const bool de_ok = DataVerified(EclipseDataKind::De440s);
+  const bool pck_ok = DataVerified(EclipseDataKind::LunarOrientation);
+  const bool lola_ok = DataVerified(EclipseDataKind::LolaLimb);
   m_use_lola->Enable(pck_ok && lola_ok);
   if (!(pck_ok && lola_ok)) m_use_lola->SetValue(false);
-  m_plot_button->Enable(de.valid);
-  m_local_button->Enable(de.valid);
-  if (!de.valid) m_engine_ready = false;
+  m_plot_button->Enable(de_ok);
+  m_local_button->Enable(de_ok);
+  if (!de_ok) m_engine_ready = false;
+  SetInstallationControls(m_download_kind >= 0 || m_verifying);
   Layout();
 }
 
-bool EclipseDialog::ImportFile(const wxString& title,
-                               const wxString& destination, int kind) {
+wxString EclipseDialog::DataPath(EclipseDataKind kind) const {
+  if (kind == EclipseDataKind::LunarOrientation) return PckPath();
+  if (kind == EclipseDataKind::LolaLimb) return LolaPath();
+  return De440Path();
+}
+
+bool EclipseDialog::DataVerified(EclipseDataKind kind) const {
+  const int index = static_cast<int>(kind);
+  return !m_invalid_data[index] &&
+         celestial_navigation::InspectInstalledData(kind, DataPath(kind)) ==
+             InstalledDataState::Verified;
+}
+
+void EclipseDialog::SetInstallationControls(bool busy) {
+  if (!m_download_de) return;
+  m_download_de->Enable(!busy && !DataVerified(EclipseDataKind::De440s));
+  m_import_de->Enable(!busy);
+  m_optional_data->Enable(!busy);
+  const bool cancellable = busy && m_verification_purpose != VERIFY_INSTALLED;
+  m_cancel_install->Show(cancellable);
+  m_cancel_install->Enable(cancellable && !m_cancel_requested);
+  Layout();
+}
+
+void EclipseDialog::SelectAndImport(EclipseDataKind kind) {
+  if (m_download_kind >= 0 || m_verifying) return;
+  wxString title;
+  if (kind == EclipseDataKind::De440s)
+    title = _("Select official de440s.bsp");
+  else if (kind == EclipseDataKind::LunarOrientation)
+    title = _("Select moon_pa_de440_200625.bpc");
+  else
+    title = _("Select converted LOLA principal-axes limb pack");
   wxFileDialog dialog(this, title, wxEmptyString, wxEmptyString,
                       _("All files (*.*)|*.*"),
                       wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-  if (dialog.ShowModal() != wxID_OK) return false;
-  std::string error;
-  bool valid = false;
-  if (kind == 0) {
-    const eclipse::DataPackStatus status =
-        eclipse::VerifyDe440s(dialog.GetPath().ToStdString());
-    valid = status.valid;
-    error = status.error;
-  } else if (kind == 1) {
-    const eclipse::DataPackStatus status =
-        eclipse::VerifyLunarOrientationPck(dialog.GetPath().ToStdString());
-    valid = status.valid;
-    error = status.error;
-  } else {
-    const eclipse::DataPackStatus status =
-        eclipse::VerifyLola64Pa(dialog.GetPath().ToStdString());
-    valid = status.valid;
-    error = status.error;
-  }
-  if (!valid) {
-    wxMessageBox(wxString::FromUTF8(error.c_str()), _("Invalid eclipse data"),
-                 wxOK | wxICON_ERROR, this);
-    return false;
-  }
+  if (dialog.ShowModal() != wxID_OK) return;
   if (!wxFileName::Mkdir(DataDirectory(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL) &&
       !wxFileName::DirExists(DataDirectory())) {
     wxMessageBox(_("Unable to create the private eclipse-data directory."),
                  _("Import failed"), wxOK | wxICON_ERROR, this);
-    return false;
+    return;
   }
-  if (!wxCopyFile(dialog.GetPath(), destination, true)) {
-    wxMessageBox(_("Unable to copy the selected data file."),
-                 _("Import failed"), wxOK | wxICON_ERROR, this);
-    return false;
-  }
-  return true;
+  const std::vector<EclipseDataKind> plan(1, kind);
+  if (!EnsureInstallationSpace(plan)) return;
+  m_cancel_requested = false;
+  m_download_kind = static_cast<int>(kind);
+  m_download_temp.clear();
+  BeginVerification(kind, dialog.GetPath(), VERIFY_LOCAL_IMPORT);
 }
 
 void EclipseDialog::OnImportDe440(wxCommandEvent&) {
-  if (ImportFile(_("Select official de440s.bsp"), De440Path(), 0)) {
-    m_engine_ready = false;
-    UpdateDataStatus();
+  SelectAndImport(EclipseDataKind::De440s);
+}
+
+void EclipseDialog::OnDownloadDe440(wxCommandEvent&) {
+  BeginInstall(EclipseDataKind::De440s);
+}
+
+void EclipseDialog::OnOptionalData(wxCommandEvent&) {
+  OptionalLunarDataDialog dialog(
+      this,
+      celestial_navigation::InspectInstalledData(
+          EclipseDataKind::LunarOrientation, PckPath()),
+      celestial_navigation::InspectInstalledData(EclipseDataKind::LolaLimb,
+                                                 LolaPath()));
+  const int action = dialog.ShowModal();
+  if (action == ID_DOWNLOAD_PCK)
+    BeginInstall(EclipseDataKind::LunarOrientation);
+  else if (action == ID_IMPORT_PCK)
+    SelectAndImport(EclipseDataKind::LunarOrientation);
+  else if (action == ID_DOWNLOAD_LOLA)
+    BeginInstall(EclipseDataKind::LolaLimb);
+  else if (action == ID_IMPORT_LOLA)
+    SelectAndImport(EclipseDataKind::LolaLimb);
+}
+
+bool EclipseDialog::EnsureInstallationSpace(
+    const std::vector<EclipseDataKind>& plan) {
+  wxDiskspaceSize_t free_space;
+  if (!wxGetDiskSpace(DataDirectory(), NULL, &free_space)) return true;
+#if wxUSE_LONGLONG
+  const double available = free_space.ToDouble();
+#else
+  const double available = static_cast<double>(free_space);
+#endif
+  const std::uint64_t required =
+      celestial_navigation::RequiredWorkingSpaceBytes(plan);
+  if (available >= static_cast<double>(required)) return true;
+  wxMessageBox(
+      wxString::Format(
+          _("This verified installation needs approximately %s of free "
+            "working space, but only %s is available."),
+          MiB(required).c_str(),
+          MiB(static_cast<std::uint64_t>(std::max(0.0, available))).c_str()),
+      _("Not enough disk space"), wxOK | wxICON_ERROR, this);
+  return false;
+}
+
+void EclipseDialog::BeginInstall(EclipseDataKind requested) {
+  if (m_download_kind >= 0 || m_verifying) return;
+  if (DataVerified(requested)) {
+    wxMessageBox(_("That astronomy data file is already installed and "
+                   "verified."),
+                 _("Astronomy data"), wxOK | wxICON_INFORMATION, this);
+    return;
+  }
+  const bool pck_ok = DataVerified(EclipseDataKind::LunarOrientation);
+  std::vector<EclipseDataKind> plan =
+      celestial_navigation::BuildEclipseDataInstallPlan(requested, pck_ok);
+  if (requested == EclipseDataKind::LolaLimb && !pck_ok) {
+    const int answer = wxMessageBox(
+        wxString::Format(
+            _("LOLA refinement also requires the 12.3 MiB lunar-orientation "
+              "file. Download and verify both files?\n\nTotal download: "
+              "%s\nTemporary working-space requirement: approximately "
+              "%s"),
+            MiB(celestial_navigation::DownloadBytes(plan)).c_str(),
+            MiB(celestial_navigation::RequiredWorkingSpaceBytes(plan)).c_str()),
+        _("Install optional lunar data"),
+        wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION, this);
+    if (answer != wxYES) return;
+  }
+  if (!wxFileName::Mkdir(DataDirectory(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL) &&
+      !wxFileName::DirExists(DataDirectory())) {
+    wxMessageBox(_("Unable to create the private astronomy-data directory."),
+                 _("Installation failed"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+  if (!EnsureInstallationSpace(plan)) return;
+  m_install_queue = plan;
+  m_install_index = 0;
+  m_source_index = 0;
+  m_cancel_requested = false;
+  m_download_kind = static_cast<int>(m_install_queue.front());
+  SetInstallationControls(true);
+  StartNextDownload();
+}
+
+void EclipseDialog::StartNextDownload() {
+  if (m_cancel_requested) {
+    FinishInstallation(false, _("Astronomy-data installation was cancelled."));
+    return;
+  }
+  while (m_install_index < m_install_queue.size() &&
+         DataVerified(m_install_queue[m_install_index]))
+    ++m_install_index;
+  if (m_install_index >= m_install_queue.size()) {
+    FinishInstallation(
+        true, _("The requested astronomy data was downloaded, verified and "
+                "installed."));
+    return;
+  }
+  const EclipseDataKind kind = m_install_queue[m_install_index];
+  m_download_kind = static_cast<int>(kind);
+  m_download_sources =
+      celestial_navigation::GetEclipseDataFileSpec(kind).sources;
+  m_source_index = 0;
+  TryCurrentSource();
+}
+
+void EclipseDialog::TryCurrentSource() {
+  if (m_cancel_requested) {
+    FinishInstallation(false, _("Astronomy-data installation was cancelled."));
+    return;
+  }
+  const EclipseDataKind kind = static_cast<EclipseDataKind>(m_download_kind);
+  const celestial_navigation::EclipseDataFileSpec& spec =
+      celestial_navigation::GetEclipseDataFileSpec(kind);
+  if (m_source_index >= m_download_sources.size()) {
+    FinishInstallation(
+        false,
+        wxString::Format(
+            _("None of the trusted download sources supplied a valid %s "
+              "file. You can still use Import local file with a verified "
+              "copy."),
+            wxString::FromUTF8(spec.display_name).c_str()));
+    return;
+  }
+  m_download_temp = DataPath(kind) + ".download";
+  if (wxFileExists(m_download_temp)) wxRemoveFile(m_download_temp);
+  celestial_navigation::ForgetVerifiedDataFile(m_download_temp);
+  m_data_status->SetLabel(
+      wxString::Format(_("Downloading %s: source %lu of %lu…"),
+                       wxString::FromUTF8(spec.display_name).c_str(),
+                       static_cast<unsigned long>(m_source_index + 1),
+                       static_cast<unsigned long>(m_download_sources.size())));
+  const OCPN_DLStatus status = OCPN_downloadFileBackground(
+      wxString::FromUTF8(m_download_sources[m_source_index].c_str()),
+      m_download_temp, this, &m_download_handle);
+  if (status != OCPN_DL_STARTED && status != OCPN_DL_NO_ERROR) {
+    m_download_handle = 0;
+    ++m_source_index;
+    TryCurrentSource();
   }
 }
 
-void EclipseDialog::OnImportPck(wxCommandEvent&) {
-  if (ImportFile(_("Select moon_pa_de440_200625.bpc"), PckPath(), 1))
-    UpdateDataStatus();
+void EclipseDialog::OnDownloadEvent(wxEvent& raw) {
+  OCPN_downloadEvent& event = static_cast<OCPN_downloadEvent&>(raw);
+  if (m_download_kind < 0) return;
+  if (event.getDLEventCondition() == OCPN_DL_EVENT_TYPE_PROGRESS) {
+    const long total = event.getTotal();
+    const int percent =
+        total > 0 ? static_cast<int>(100.0 * event.getTransferred() / total)
+                  : 0;
+    const EclipseDataKind kind = static_cast<EclipseDataKind>(m_download_kind);
+    m_data_status->SetLabel(wxString::Format(
+        _("Downloading %s: %d%% (source %lu of %lu)…"),
+        wxString::FromUTF8(
+            celestial_navigation::GetEclipseDataFileSpec(kind).display_name)
+            .c_str(),
+        percent, static_cast<unsigned long>(m_source_index + 1),
+        static_cast<unsigned long>(m_download_sources.size())));
+    return;
+  }
+  if (event.getDLEventCondition() != OCPN_DL_EVENT_TYPE_END) return;
+  m_download_handle = 0;
+  if (m_cancel_requested) {
+    if (wxFileExists(m_download_temp)) wxRemoveFile(m_download_temp);
+    FinishInstallation(false, _("Astronomy-data installation was cancelled."));
+    return;
+  }
+  if (event.getDLEventStatus() != OCPN_DL_NO_ERROR) {
+    if (wxFileExists(m_download_temp)) wxRemoveFile(m_download_temp);
+    ++m_source_index;
+    TryCurrentSource();
+    return;
+  }
+  BeginVerification(static_cast<EclipseDataKind>(m_download_kind),
+                    m_download_temp, VERIFY_DOWNLOAD);
 }
 
-void EclipseDialog::OnImportLola(wxCommandEvent&) {
-  if (ImportFile(_("Select converted LOLA principal-axes limb pack"),
-                 LolaPath(), 2))
+void EclipseDialog::BeginVerification(EclipseDataKind kind,
+                                      const wxString& path, int purpose) {
+  m_verifying = true;
+  m_verification_kind = kind;
+  m_verification_path = path;
+  m_verification_purpose = purpose;
+  SetInstallationControls(true);
+  const std::string native_path = path.ToStdString();
+  m_data_status->SetLabel(wxString::Format(
+      _("Verifying %s size, SHA-256 and file structure…"),
+      wxString::FromUTF8(
+          celestial_navigation::GetEclipseDataFileSpec(kind).display_name)
+          .c_str()));
+  m_verification_future = std::async(std::launch::async, [kind, native_path]() {
+    const eclipse::DataPackStatus status =
+        celestial_navigation::VerifyEclipseDataFile(kind, native_path);
+    VerificationResult result;
+    result.valid = status.valid;
+    result.error = status.error;
+    return result;
+  });
+  m_verification_timer.Start(100);
+}
+
+void EclipseDialog::OnVerificationTimer(wxTimerEvent&) {
+  if (!m_verifying || !m_verification_future.valid()) return;
+  if (m_verification_future.wait_for(std::chrono::milliseconds(0)) !=
+      std::future_status::ready)
+    return;
+  const VerificationResult result = m_verification_future.get();
+  m_verification_timer.Stop();
+  m_verifying = false;
+  if (m_verification_purpose == VERIFY_INSTALLED) {
+    const int index = static_cast<int>(m_verification_kind);
+    m_invalid_data[index] = !result.valid;
+    if (result.valid) {
+      wxString record_error;
+      if (!celestial_navigation::RecordVerifiedDataFile(
+              m_verification_kind, m_verification_path, &record_error))
+        m_invalid_data[index] = true;
+    } else {
+      celestial_navigation::ForgetVerifiedDataFile(m_verification_path);
+    }
+    m_verification_purpose = VERIFY_NONE;
+    ++m_installed_check_index;
+    StartNextInstalledDataCheck();
+    return;
+  }
+  FinishDownloadedVerification(result.valid,
+                               wxString::FromUTF8(result.error.c_str()));
+}
+
+void EclipseDialog::FinishDownloadedVerification(bool valid,
+                                                 const wxString& error) {
+  const int purpose = m_verification_purpose;
+  const EclipseDataKind kind = m_verification_kind;
+  const wxString source = m_verification_path;
+  m_verification_purpose = VERIFY_NONE;
+  if (m_cancel_requested) {
+    if (purpose == VERIFY_DOWNLOAD && wxFileExists(source))
+      wxRemoveFile(source);
+    FinishInstallation(false, _("Astronomy-data installation was cancelled."));
+    return;
+  }
+  if (!valid) {
+    if (purpose == VERIFY_DOWNLOAD) {
+      if (wxFileExists(source)) wxRemoveFile(source);
+      ++m_source_index;
+      TryCurrentSource();
+    } else {
+      FinishInstallation(
+          false,
+          error.empty() ? _("The selected file failed verification.") : error);
+    }
+    return;
+  }
+
+  const wxString destination = DataPath(kind);
+  wxString install_error;
+  bool installed = false;
+  if (wxFileName(source).GetFullPath() == wxFileName(destination).GetFullPath())
+    installed = true;
+  else
+    installed = celestial_navigation::CopyFileAtomically(source, destination,
+                                                         &install_error);
+  if (purpose == VERIFY_DOWNLOAD && wxFileExists(source)) wxRemoveFile(source);
+  if (!installed || !celestial_navigation::RecordVerifiedDataFile(
+                        kind, destination, &install_error)) {
+    FinishInstallation(
+        false, install_error.empty()
+                   ? _("The verified file could not be installed atomically.")
+                   : install_error);
+    return;
+  }
+  m_invalid_data[static_cast<int>(kind)] = false;
+  if (kind == EclipseDataKind::De440s) m_engine_ready = false;
+  if (purpose == VERIFY_DOWNLOAD) {
+    ++m_install_index;
+    StartNextDownload();
+  } else {
+    FinishInstallation(
+        true,
+        _("The selected astronomy data file was verified and installed."));
+  }
+}
+
+void EclipseDialog::OnCancelInstall(wxCommandEvent&) {
+  if (m_download_kind < 0 && !m_verifying) return;
+  m_cancel_requested = true;
+  m_cancel_install->Disable();
+  m_data_status->SetLabel(
+      _("Cancelling safely; a verification already in progress may finish "
+        "first…"));
+  if (m_download_handle) OCPN_cancelDownloadFileBackground(m_download_handle);
+}
+
+void EclipseDialog::FinishInstallation(bool success, const wxString& message) {
+  m_download_handle = 0;
+  m_download_kind = -1;
+  m_download_sources.clear();
+  m_install_queue.clear();
+  m_install_index = 0;
+  m_source_index = 0;
+  m_cancel_requested = false;
+  m_download_temp.clear();
+  UpdateDataStatus();
+  SetInstallationControls(false);
+  if (!message.empty())
+    wxMessageBox(
+        message,
+        success ? _("Astronomy data ready") : _("Astronomy-data installation"),
+        wxOK | (success ? wxICON_INFORMATION : wxICON_WARNING), this);
+}
+
+void EclipseDialog::StartInstalledDataCheck() {
+  m_installed_check_queue.clear();
+  const EclipseDataKind kinds[] = {EclipseDataKind::De440s,
+                                   EclipseDataKind::LunarOrientation,
+                                   EclipseDataKind::LolaLimb};
+  for (int index = 0; index < 3; ++index) {
+    if (celestial_navigation::InspectInstalledData(kinds[index],
+                                                   DataPath(kinds[index])) ==
+        InstalledDataState::VerificationRequired)
+      m_installed_check_queue.push_back(kinds[index]);
+  }
+  m_installed_check_index = 0;
+  StartNextInstalledDataCheck();
+}
+
+void EclipseDialog::StartNextInstalledDataCheck() {
+  if (m_installed_check_index >= m_installed_check_queue.size()) {
+    m_verification_purpose = VERIFY_NONE;
     UpdateDataStatus();
+    return;
+  }
+  const EclipseDataKind kind = m_installed_check_queue[m_installed_check_index];
+  BeginVerification(kind, DataPath(kind), VERIFY_INSTALLED);
 }
 
 void EclipseDialog::OnFind(wxCommandEvent&) {

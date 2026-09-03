@@ -19,6 +19,10 @@ struct DataPackStatus {
 // this module. Verification is deliberately local and performs no downloads.
 const char* ExpectedDe440sSha256();
 std::uint64_t ExpectedDe440sBytes();
+const char* ExpectedLunarOrientationSha256();
+std::uint64_t ExpectedLunarOrientationBytes();
+const char* ExpectedLola64PaSha256();
+std::uint64_t ExpectedLola64PaBytes();
 DataPackStatus VerifyDe440s(const std::string& path);
 DataPackStatus VerifyLunarOrientationPck(const std::string& path);
 DataPackStatus VerifyLola64Pa(const std::string& path);

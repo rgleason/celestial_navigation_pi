@@ -37,6 +37,10 @@ CoastalNavigationDialog::CoastalNavigationDialog(
       FormatNavigationAngle(boatLat, NavigationAngleKind::Latitude, true);
   const wxString lon =
       FormatNavigationAngle(boatLon, NavigationAngleKind::Longitude, true);
+  const wxString unknownLat =
+      FormatNavigationAngle(0.0, NavigationAngleKind::Latitude, true);
+  const wxString unknownLon =
+      FormatNavigationAngle(0.0, NavigationAngleKind::Longitude, true);
 
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
   wxStaticText* intro = new wxStaticText(
@@ -63,10 +67,10 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   m_verticalMode->SetSelection(0);
   verticalGrid->Add(m_verticalMode, 1, wxEXPAND);
   verticalGrid->AddSpacer(1);
-  m_verticalTargetLat =
-      AddField(verticalGrid, vertical, _("Target latitude"), lat, _("angle"));
-  m_verticalTargetLon =
-      AddField(verticalGrid, vertical, _("Target longitude"), lon, _("angle"));
+  m_verticalTargetLat = AddField(verticalGrid, vertical, _("Target latitude"),
+                                 unknownLat, _("angle"));
+  m_verticalTargetLon = AddField(verticalGrid, vertical, _("Target longitude"),
+                                 unknownLon, _("angle"));
   m_verticalAngle =
       AddField(verticalGrid, vertical, _("Observed vertical angle"),
                _("0° 30.000'"), _("angle or decimal degrees"));
@@ -144,21 +148,26 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   wxFlexGridSizer* horizontalGrid = new wxFlexGridSizer(0, 3, 6, 8);
   horizontalGrid->AddGrowableCol(1, 1);
   m_leftLat = AddField(horizontalGrid, horizontal, _("Left object latitude"),
-                       lat, _("angle"));
+                       unknownLat, _("angle"));
   m_leftLon = AddField(horizontalGrid, horizontal, _("Left object longitude"),
-                       lon, _("angle"));
+                       unknownLon, _("angle"));
   m_centreLat = AddField(horizontalGrid, horizontal,
-                         _("Centre object latitude"), lat, _("angle"));
+                         _("Centre object latitude"), unknownLat, _("angle"));
   m_centreLon = AddField(horizontalGrid, horizontal,
-                         _("Centre object longitude"), lon, _("angle"));
+                         _("Centre object longitude"), unknownLon, _("angle"));
   m_rightLat = AddField(horizontalGrid, horizontal, _("Right object latitude"),
-                        lat, _("angle"));
+                        unknownLat, _("angle"));
   m_rightLon = AddField(horizontalGrid, horizontal, _("Right object longitude"),
-                        lon, _("angle"));
-  m_firstAngle = AddField(horizontalGrid, horizontal, _("Left-centre angle"),
-                          _("30.0"), _("degrees"));
-  m_secondAngle = AddField(horizontalGrid, horizontal, _("Centre-right angle"),
-                           _("30.0"), _("degrees"));
+                        unknownLon, _("angle"));
+  m_firstAngle =
+      AddField(horizontalGrid, horizontal, _("Left-centre measurement"),
+               _("30.0"), _("degrees"));
+  m_secondAngle =
+      AddField(horizontalGrid, horizontal, _("Centre-right measurement"),
+               _("30.0"), _("degrees"));
+  m_horizontalIndexError =
+      AddField(horizontalGrid, horizontal, _("Index error (on the arc +)"),
+               wxString::Format("%.2f", defaults.indexError), _("arcmin"));
   m_angleUncertainty =
       AddField(horizontalGrid, horizontal, _("Angle uncertainty (1-sigma)"),
                _("0.2"), _("arcmin"));
@@ -384,6 +393,8 @@ void CoastalNavigationDialog::CalculateHorizontal(wxCommandEvent&) {
                  &observation.left_centre_angle_deg) ||
       !ReadAngle(m_secondAngle, _("Centre-right angle"), 0.0, 180.0,
                  &observation.centre_right_angle_deg) ||
+      !ReadDouble(m_horizontalIndexError, _("Index error"),
+                  &observation.index_error_arcmin) ||
       !ReadDouble(m_angleUncertainty, _("Angle uncertainty"),
                   &observation.angle_uncertainty_arcmin))
     return;
@@ -397,11 +408,14 @@ void CoastalNavigationDialog::CalculateHorizontal(wxCommandEvent&) {
     return;
   const cn::HorizontalFixResult result =
       cn::SolveHorizontalThreePointFix(observation, initial);
-  m_hsaLoci = cn::BuildHorizontalAngleLocus(
-      observation.left, observation.centre, observation.left_centre_angle_deg);
+  m_hsaLoci =
+      cn::BuildHorizontalAngleLocus(observation.left, observation.centre,
+                                    observation.left_centre_angle_deg -
+                                        observation.index_error_arcmin / 60.0);
   const auto second =
       cn::BuildHorizontalAngleLocus(observation.centre, observation.right,
-                                    observation.centre_right_angle_deg);
+                                    observation.centre_right_angle_deg -
+                                        observation.index_error_arcmin / 60.0);
   if (observation.moving_observer && observation.speed_knots != 0.0) {
     const double signed_distance = observation.speed_knots *
                                    observation.second_time_offset_seconds /

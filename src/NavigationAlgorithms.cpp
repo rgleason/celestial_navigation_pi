@@ -218,6 +218,67 @@ void ObserverMotion::PositionAt(const wxDateTime& utc, double* lat,
                                 double* lon) const {
   *lat = latitude;
   *lon = longitude;
+  if (!track.empty() && referenceUtc.IsValid() && utc.IsValid()) {
+    const bool forwards = !utc.IsEarlierThan(referenceUtc);
+    const wxDateTime intervalStart = forwards ? referenceUtc : utc;
+    const wxDateTime intervalEnd = forwards ? utc : referenceUtc;
+    auto apply = [&](const ObserverTrackLeg& leg) {
+      if (!leg.startUtc.IsValid() || !leg.endUtc.IsValid() ||
+          !leg.endUtc.IsLaterThan(leg.startUtc))
+        return;
+      const wxDateTime overlapStart = leg.startUtc.IsLaterThan(intervalStart)
+                                          ? leg.startUtc
+                                          : intervalStart;
+      const wxDateTime overlapEnd =
+          leg.endUtc.IsEarlierThan(intervalEnd) ? leg.endUtc : intervalEnd;
+      if (!overlapEnd.IsLaterThan(overlapStart)) return;
+      const double overlapHours =
+          SecondsBetween(overlapEnd, overlapStart) / 3600.0;
+      const double legHours = SecondsBetween(leg.endUtc, leg.startUtc) / 3600.0;
+      double north = 0.0, east = 0.0;
+      const auto vectorFor = [&](double bearing, double distance) {
+        const double radians = bearing * kDeg;
+        north += distance * std::cos(radians);
+        east += distance * std::sin(radians);
+      };
+      switch (leg.method) {
+        case ObserverMotionMethod::Stationary:
+          break;
+        case ObserverMotionMethod::CogSog:
+          vectorFor(leg.cogTrue, leg.sogKnots * overlapHours);
+          break;
+        case ObserverMotionMethod::CourseAndLog:
+          vectorFor(leg.courseTrue,
+                    leg.distanceThroughWaterNm * overlapHours / legHours);
+          break;
+        case ObserverMotionMethod::CourseSpeedSetDrift:
+          vectorFor(leg.courseTrue + leg.leewayDegrees,
+                    leg.speedThroughWaterKnots * overlapHours);
+          vectorFor(leg.setTrue, leg.driftKnots * overlapHours);
+          break;
+        case ObserverMotionMethod::ManualDisplacement:
+          north += leg.northDisplacementNm * overlapHours / legHours;
+          east += leg.eastDisplacementNm * overlapHours / legHours;
+          break;
+      }
+      if (!forwards) {
+        north = -north;
+        east = -east;
+      }
+      const double distance = std::hypot(north, east);
+      if (distance <= 0.0) return;
+      const double bearing = Wrap360(std::atan2(east, north) / kDeg);
+      ll_gc_ll(*lat, *lon, bearing, distance, lat, lon);
+      *lon = Wrap180(*lon);
+    };
+    if (forwards) {
+      for (const auto& leg : track) apply(leg);
+    } else {
+      for (auto iterator = track.rbegin(); iterator != track.rend(); ++iterator)
+        apply(*iterator);
+    }
+    return;
+  }
   if (!moving || speedKnots == 0.0 || !referenceUtc.IsValid()) return;
   double distance = speedKnots * SecondsBetween(utc, referenceUtc) / 3600.0;
   double course = courseTrue;

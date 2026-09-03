@@ -53,7 +53,7 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
   <p style="text-align: center;"><strong>Experimental v2 documentation</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.7.9 development fork<br>Documentation revision 2 September 2026</p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.1<br>Documentation revision 3 September 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -654,6 +654,12 @@ possible outliers and estimated personal bias. A trend can indicate changing
 conditions, vessel motion, a systematic timing error or poor technique; it is
 not automatically a sextant error.</p>
 
+<p>In stationary mode each sight retains its own saved DR position. In moving
+observer mode one COG/SOG track is fitted across the selected observations.
+The analyzer warns when that constant-motion model spans more than 24 hours;
+split unrelated sessions rather than treating months of observations as one
+continuous vessel track.</p>
+
 <h2>11.2 Local apparent noon</h2>
 <p>The planner predicts meridian passage. Around that time, observe a series of
 Sun altitudes and identify the maximum or fit the sequence. Enter the corrected
@@ -714,9 +720,26 @@ preserved.</p>
   <li>Enter LDOpc, near/centre/far contact and both body altitudes with correct limbs.</li>
   <li>Enter one time or enable separate times as actually observed.</li>
   <li>Set a plausible total UTC search span around the watch time.</li>
-  <li>Select <strong>Time</strong>. Review all matching time candidates, clock correction, uncertainty and position candidates.</li>
+  <li>Select <strong>Time</strong>. Use <strong>Results</strong> for the operational candidates and <strong>Calculations</strong> for the complete auditable working.</li>
   <li>Use rough DR, hemisphere, an additional altitude sight or independent evidence to select the physical solution.</li>
 </ol>
+
+<p>The lunar result window deliberately has two pages. <strong>Results</strong>
+is the concise operational view: possible UTC values, watch correction,
+lunar-distance rate, estimated UTC uncertainty, position candidates and
+warnings. <strong>Calculations</strong> preserves the educational and auditable
+working. In simultaneous mode it shows the raw observations and conventions;
+index and dip arithmetic; every limb/contact and semidiameter correction;
+refraction, parallax and corrected altitudes; both direct spherical-triangle
+formulae with their numerical substitutions; every coarse UTC scan point;
+every bisection refinement; converged roots; uncertainty components; altitude-
+circle construction, position candidates and warnings. It records the
+calculations actually used by the modern solver rather than the former
+two-endpoint interpolation.</p>
+
+<p>Entered one-sigma angle uncertainties are shown separately: they are
+propagated through the clearing geometry and local lunar-distance rate to
+estimate UTC uncertainty, not applied as additional corrections.</p>
 
 <div class="warning"><strong>Lunar accuracy is demanding.</strong> A lunar
 distance changes slowly enough that a small angular error can become a large
@@ -767,6 +790,12 @@ time change corresponding to 0.1′ of distance. A small time value means useful
 time sensitivity. The quality text also penalises hidden/low bodies, awkward
 sextant angles, very unequal altitudes and faint stars.</p>
 
+<p>Lunar Tools defaults to <strong>Nautical: YYYY-MM-DD, 24-hour</strong> UTC
+entry for an unambiguous cross-platform display. Select
+<strong>OpenCPN / platform format</strong> when the native operating-system
+date/time controls are preferred. Changing presentation preserves the entered
+instant.</p>
+
 <p>The ranking is a planning aid, not a visibility guarantee. Cloud, Moon
 phase/glare, twilight, haze, telescope field, the chosen limb/contact and the
 observer's ability remain decisive. Recalculate at candidate times and choose
@@ -811,6 +840,10 @@ that software must not conceal.</div>
 or final upper-limb disappearance at sunset. Timing gives an approximate
 altitude constraint. An optional bearing adds a rough directional constraint.</p>
 
+<p>The UTC observation schedule remains fixed at the top of the dialog. On a
+short display, scroll only the lower bearing, horizon-condition and result
+section, so the event date and 24-hour UTC time remain visible.</p>
+
 <ol class="steps">
   <li>Select sunrise or sunset and enter/capture the UTC date and time.</li>
   <li>Record time uncertainty and identify the time source.</li>
@@ -846,8 +879,11 @@ Select <strong>Calculate and plot range</strong>.</p>
 <h2>14.2 Horizontal sextant angles</h2>
 <p>Select <strong>Horizontal angles / fix</strong>. Enter three charted objects
 in left–centre–right visual order and the included left-centre and centre-right
-angles. Enter uncertainty and an approximate vessel position to choose among
-ambiguous solutions. Select <strong>Solve and plot HSA fix</strong>.</p>
+measurements. Landmark coordinates start at 0° N, 0° E so stale vessel
+coordinates cannot be mistaken for targets. The central sextant index-error
+default is applied to both angle measurements and remains editable. Enter
+uncertainty and an approximate vessel position to choose among ambiguous
+solutions. Select <strong>Solve and plot HSA fix</strong>.</p>
 
 <p>If the two angles were taken sequentially while underway, enable
 <strong>Advance the vessel between the two HSA readings</strong> and enter the
@@ -859,8 +895,9 @@ interval, true COG and SOG. This is distinct from the celestial
 <h1 id="eclipses">15. Offline solar-eclipse planner</h1>
 
 <p>The eclipse planner is a separate specialist module within the plugin. It
-uses a locally imported JPL DE440s ephemeris to search events and calculate
-geometry without network access.</p>
+uses a locally installed JPL DE440s ephemeris to search events and calculate
+geometry without network access. The data can be downloaded on an explicit
+user request or imported from a local copy.</p>
 
 <h2>15.1 Data</h2>
 <ul>
@@ -868,6 +905,21 @@ geometry without network access.</p>
   <li><strong>Lunar orientation:</strong> optional orientation support for refined limb work.</li>
   <li><strong>LOLA pack:</strong> optional lunar-topography refinement of contact timing; not required for ordinary eclipse use.</li>
 </ul>
+
+<p>Select <strong>Download and install DE440s… (31.2 MiB)</strong> for the
+base eclipse data. The download is staged, checked for its exact size and
+SHA-256 digest, inspected for the expected SPK structure and then installed
+atomically. If a source fails, the plugin tries another trusted project or
+NASA/JPL source. <strong>Import DE440s…</strong> applies the same verification
+and safe-installation process to a local file.</p>
+
+<p><strong>Optional lunar data…</strong> opens a separate explanation and
+separate download/import controls for the 12.3 MiB lunar-orientation kernel and
+the 506 MiB LOLA terrain pack. Neither is downloaded when DE440s is installed.
+If LOLA is selected without lunar orientation already installed, the plugin
+shows the combined download and temporary disk-space requirement and asks for
+confirmation before downloading either file. Downloads can be cancelled; a
+partial or unverified file is never installed.</p>
 
 <h2>15.2 Find and plot an eclipse</h2>
 <ol class="steps">
@@ -895,7 +947,7 @@ celestial-navigation fix.</p>
 <tr><td>Hc or Zn is implausible</td><td>Check AP/DR latitude and longitude signs, UTC conversion, selected body, and whether “boat position” moved after the sight.</td></tr>
 <tr><td>Intercept is enormous</td><td>Check degrees/minutes entry, west/east longitude, upper/lower limb, time zone/date rollover and double-applied clock correction.</td></tr>
 <tr><td>Sunrise/sunset differs by about an hour</td><td>Distinguish UTC from local civil time and daylight-saving time. Verify the planner's independent entry-time and display-time selectors.</td></tr>
-<tr><td>Planner date appears in an unexpected order or uses AM/PM</td><td>Select <strong>Nautical: YYYY-MM-DD, 24-hour</strong>. The alternative OpenCPN/platform format intentionally follows the native operating-system controls.</td></tr>
+<tr><td>Planner or Lunar Tools date appears in an unexpected order or uses AM/PM</td><td>Select <strong>Nautical: YYYY-MM-DD, 24-hour</strong>. The alternative OpenCPN/platform format intentionally follows the native operating-system controls.</td></tr>
 <tr><td>Editing a live position or “Now” time stops following it</td><td>This is intentional: a direct edit changes that source to Manual so an automatic update cannot immediately overwrite the entered value. Reselect the live source to follow it again.</td></tr>
 <tr><td>A body dot has no sky-plot label</td><td>Only the first 14 score-ranked bodies are considered for labels, and overlapping labels are suppressed. Use the sortable body table to identify and inspect all listed bodies.</td></tr>
 <tr><td>GNSS UTC unavailable</td><td>Confirm a valid NMEA RMC or ZDA sentence is reaching OpenCPN. The plugin does not infer GNSS time from position alone.</td></tr>
@@ -907,7 +959,7 @@ celestial-navigation fix.</p>
 <tr><td>Sextant check predicts “unavailable”</td><td>One body is below the usable horizon, the bodies are identical, or the entered UTC/position is wrong. Select another pair/time and check UTC rather than local civil time.</td></tr>
 <tr><td>Correction profile varies unexpectedly</td><td>Repeat the check, use similar-altitude star pairs, keep shades/technique identified, verify mechanical adjustment and compare only within the measured angular range.</td></tr>
 <tr><td>Running fix is poor</td><td>Check the reference epoch, COG/SOG, set and drift, leeway, course alterations and observation geometry.</td></tr>
-<tr><td>Eclipse controls unavailable</td><td>Import DE440s and recheck data status. LOLA is optional and should not block ordinary eclipse plotting.</td></tr>
+<tr><td>Eclipse controls unavailable</td><td>Select <strong>Download and install DE440s…</strong>, or import a local DE440s copy, and wait for verification to complete. LOLA and lunar orientation are optional and should not block ordinary eclipse plotting.</td></tr>
 </table>
 
 <h2>16.1 Independent checks</h2>

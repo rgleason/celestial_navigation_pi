@@ -46,10 +46,14 @@ This contribution adds:
 The eclipse planner is opened with **Eclipses…** on the plugin's main window.
 Its astronomical data is deliberately separate from the plugin binary and
 source contribution: the DE440s base kernel and the optional lunar-orientation
-and converted LOLA packs are distributed separately. Use the three **Import**
-buttons once to copy the checksum-verified files into OpenCPN's private
-plugin-data directory. No eclipse calculation or UI action performs network
-access. See
+and converted LOLA packs are distributed separately. Select **Download and
+install DE440s… (31.2 MiB)** for ordinary eclipse planning, or use **Import
+DE440s…** with a local copy. **Optional lunar data…** explains and separately
+offers the 12.3 MiB orientation kernel and 506 MiB LOLA terrain pack; neither
+is downloaded without an explicit user choice. Downloads are staged,
+checksum- and structure-verified, and atomically installed in OpenCPN's
+private plugin-data directory. Once installed, all calculations remain
+offline. See
 [eclipse/DATA.md](eclipse/DATA.md) for exact files, provenance, checksums and
 storage sizes.
 

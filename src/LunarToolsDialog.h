@@ -14,6 +14,7 @@ class wxCheckListBox;
 class wxChoice;
 class wxDatePickerCtrl;
 class wxListCtrl;
+class wxPanel;
 class wxSpinCtrlDouble;
 class wxStaticText;
 class wxTextCtrl;
@@ -22,9 +23,19 @@ class wxTimePickerCtrl;
 class LunarToolsDialog : public wxDialog {
 public:
   LunarToolsDialog(CelestialNavigationDialog* parent);
+  ~LunarToolsDialog() override;
   void SelectPageForIntegration(unsigned page);
 
 private:
+  struct UtcEntryControls {
+    wxPanel* dateContainer = nullptr;
+    wxPanel* timeContainer = nullptr;
+    wxDatePickerCtrl* nativeDate = nullptr;
+    wxTimePickerCtrl* nativeTime = nullptr;
+    wxTextCtrl* nauticalDate = nullptr;
+    wxTextCtrl* nauticalTime = nullptr;
+  };
+
   void BuildSequencePage(wxWindow* parent);
   void BuildPlannerPage(wxWindow* parent);
   void BuildCalibrationPage(wxWindow* parent);
@@ -42,12 +53,23 @@ private:
   void LoadProfiles();
   void PersistProfiles();
   void ShowCandidate(std::size_t index);
+  void CreateUtcEntry(wxWindow* parent, UtcEntryControls* controls,
+                      const wxDateTime& utc);
+  void SetUtcEntry(UtcEntryControls* controls, const wxDateTime& utc);
+  wxDateTime ReadUtcEntry(const UtcEntryControls& controls, int format,
+                          bool showErrors, const wxString& title) const;
+  void ChangeUtcEntryFormat(wxCommandEvent& event);
+  void UpdateUtcEntryVisibility();
   wxDateTime CalibrationUtc() const;
   sextant_calibration::BodySample SampleBody(const wxString& body,
                                              const wxDateTime& utc);
 
   CelestialNavigationDialog* m_parentDialog;
   class wxNotebook* m_notebook;
+  wxChoice* m_entryFormat;
+  int m_activeEntryFormat;
+  double m_defaultLatitude;
+  double m_defaultLongitude;
 
   wxCheckListBox* m_sequenceSights;
   wxChoice* m_sequenceMode;
@@ -68,14 +90,12 @@ private:
 
   NavigationAngleCtrl* m_plannerLatitude;
   NavigationAngleCtrl* m_plannerLongitude;
-  wxDatePickerCtrl* m_plannerDate;
-  wxTimePickerCtrl* m_plannerTime;
+  UtcEntryControls m_plannerUtc;
   wxListCtrl* m_plannerList;
 
   NavigationAngleCtrl* m_calLatitude;
   NavigationAngleCtrl* m_calLongitude;
-  wxDatePickerCtrl* m_calDate;
-  wxTimePickerCtrl* m_calTime;
+  UtcEntryControls m_calUtc;
   wxChoice* m_calFirstBody;
   wxChoice* m_calSecondBody;
   wxChoice* m_calContact;

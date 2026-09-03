@@ -48,15 +48,49 @@ TEST(LunarDistanceEngine, ExplicitDistanceContactsHaveCorrectSigns) {
   ASSERT_TRUE(far_far.valid) << far_far.error;
 
   EXPECT_GT(near_near.apparent_distance_deg, far_far.apparent_distance_deg);
-  EXPECT_NEAR(near_near.apparent_distance_deg -
-                  far_far.apparent_distance_deg,
-              2.0 * (sample.moon_semidiameter_deg *
-                         (1.0 +
-                          std::sin(observation.moon_altitude_deg * M_PI / 180.0) *
-                              std::sin(sample.moon_horizontal_parallax_deg *
-                                       M_PI / 180.0)) +
-                     sample.body_semidiameter_deg),
-              0.002);
+  EXPECT_NEAR(
+      near_near.apparent_distance_deg - far_far.apparent_distance_deg,
+      2.0 * (sample.moon_semidiameter_deg *
+                 (1.0 + std::sin(observation.moon_altitude_deg * M_PI / 180.0) *
+                            std::sin(sample.moon_horizontal_parallax_deg *
+                                     M_PI / 180.0)) +
+             sample.body_semidiameter_deg),
+      0.002);
+}
+
+TEST(LunarDistanceEngine, ExposesDirectTriangleReductionDetails) {
+  const ld::Observation observation = TypicalObservation();
+  const ld::EphemerisSample sample = TypicalSample();
+  const ld::Clearance result = ld::ClearDistance(observation, sample);
+  ASSERT_TRUE(result.valid) << result.error;
+
+  EXPECT_NEAR(result.index_correction_deg,
+              observation.index_error_arcmin / 60.0, 1e-12);
+  EXPECT_GT(result.dip_correction_deg, 0.0);
+  EXPECT_GT(result.moon_topocentric_semidiameter_deg,
+            sample.moon_semidiameter_deg);
+  EXPECT_DOUBLE_EQ(result.body_semidiameter_deg, sample.body_semidiameter_deg);
+  EXPECT_TRUE(std::isfinite(result.moon_refraction_deg));
+  EXPECT_TRUE(std::isfinite(result.body_refraction_deg));
+  EXPECT_GT(result.moon_parallax_in_altitude_deg, 0.0);
+  EXPECT_GT(result.body_parallax_in_altitude_deg, 0.0);
+  EXPECT_TRUE(std::isfinite(result.relative_azimuth_deg));
+  EXPECT_TRUE(std::isfinite(result.cleared_distance_deg));
+  EXPECT_NEAR(result.moon_apparent_center_altitude_deg,
+              result.moon_apparent_limb_altitude_deg +
+                  result.moon_altitude_limb_correction_deg,
+              1e-12);
+  EXPECT_NEAR(result.body_apparent_center_altitude_deg,
+              result.body_apparent_limb_altitude_deg +
+                  result.body_altitude_limb_correction_deg,
+              1e-12);
+  EXPECT_NEAR(result.moon_topocentric_altitude_deg,
+              result.moon_apparent_center_altitude_deg -
+                  result.moon_refraction_deg,
+              1e-12);
+  EXPECT_NEAR(result.cleared_distance_deg,
+              std::acos(result.cleared_distance_cosine) * 180.0 / M_PI,
+              1e-12);
 }
 
 TEST(LunarDistanceEngine, RejectsInconsistentSphericalGeometry) {
@@ -86,13 +120,31 @@ TEST(LunarDistanceEngine, FindsRootToSubSecondPrecision) {
   options.start_offset_seconds = -10000.0;
   options.end_offset_seconds = 10000.0;
   options.scan_step_seconds = 600.0;
-  const ld::SolveResult result =
-      ld::SolveTime(observation, ephemeris, options);
+  const ld::SolveResult result = ld::SolveTime(observation, ephemeris, options);
   ASSERT_TRUE(result.valid) << result.error;
   ASSERT_EQ(result.candidates.size(), 1u);
   EXPECT_NEAR(result.candidates[0].offset_seconds, expected, 0.1);
   EXPECT_NEAR(result.candidates[0].slope_arcmin_per_hour, 30.0, 0.01);
   EXPECT_GT(result.candidates[0].time_uncertainty_seconds, 0.0);
+  EXPECT_GT(result.candidates[0].angular_uncertainty_arcmin, 0.0);
+  EXPECT_GT(result.candidates[0].distance_uncertainty_contribution_arcmin,
+            0.0);
+  EXPECT_NEAR(result.candidates[0].distance_uncertainty_contribution_arcmin,
+              observation.distance_uncertainty_arcmin, 0.01);
+
+  std::size_t scans = 0;
+  std::size_t refinements = 0;
+  std::size_t roots = 0;
+  for (const ld::MatchTraceEntry& entry : result.match_trace) {
+    if (entry.phase == ld::MatchTracePhase::Scan) ++scans;
+    if (entry.phase == ld::MatchTracePhase::Refinement) ++refinements;
+    if (entry.phase == ld::MatchTracePhase::Candidate) ++roots;
+    EXPECT_NEAR((entry.model_distance_deg - entry.target_distance_deg) * 60.0,
+                entry.residual_arcmin, 1e-10);
+  }
+  EXPECT_EQ(scans, 35u);
+  EXPECT_GT(refinements, 0u);
+  EXPECT_EQ(roots, 1u);
 }
 
 TEST(LunarDistanceEngine, ReportsMultipleTimeCandidates) {
@@ -103,17 +155,15 @@ TEST(LunarDistanceEngine, ReportsMultipleTimeCandidates) {
   auto ephemeris = [=](double seconds, ld::EphemerisSample* sample,
                        std::string*) {
     *sample = base;
-    sample->predicted_distance_deg =
-        clearance.cleared_distance_deg +
-        0.5 * std::sin(seconds * M_PI / 21600.0);
+    sample->predicted_distance_deg = clearance.cleared_distance_deg +
+                                     0.5 * std::sin(seconds * M_PI / 21600.0);
     return true;
   };
   ld::SolveOptions options;
   options.start_offset_seconds = -43000.0;
   options.end_offset_seconds = 43000.0;
   options.scan_step_seconds = 300.0;
-  const ld::SolveResult result =
-      ld::SolveTime(observation, ephemeris, options);
+  const ld::SolveResult result = ld::SolveTime(observation, ephemeris, options);
   ASSERT_TRUE(result.valid) << result.error;
   EXPECT_GE(result.candidates.size(), 3u);
   EXPECT_FALSE(result.warnings.empty());
@@ -155,9 +205,9 @@ TEST(LunarDistanceEngine, TwoCorrectedAltitudesRecoverPositionAndLongitude) {
 }
 
 TEST(LunarDistanceEngine, InconsistentAltitudesDoNotInventLongitude) {
-  const ld::PositionResult result = ld::IntersectAltitudeCircles(
-      ld::GeographicPoint{0.0, 0.0}, 89.0,
-      ld::GeographicPoint{0.0, 90.0}, 89.0);
+  const ld::PositionResult result =
+      ld::IntersectAltitudeCircles(ld::GeographicPoint{0.0, 0.0}, 89.0,
+                                   ld::GeographicPoint{0.0, 90.0}, 89.0);
   EXPECT_FALSE(result.valid);
   EXPECT_NE(result.error.find("do not intersect"), std::string::npos);
 }
@@ -212,16 +262,15 @@ TEST(LunarDistanceEngine,
   options.start_offset_seconds = -86400.0;
   options.end_offset_seconds = 86400.0;
   options.scan_step_seconds = 300.0;
-  const ld::SolveResult time =
-      ld::SolveTime(observation, ephemeris, options);
+  const ld::SolveResult time = ld::SolveTime(observation, ephemeris, options);
   ASSERT_TRUE(time.valid) << time.error;
   ASSERT_EQ(time.candidates.size(), 1u);
   EXPECT_NEAR(time.candidates[0].offset_seconds, watch_offset_seconds, 0.1);
 
   ld::EphemerisSample recovered_sample;
   std::string error;
-  ASSERT_TRUE(ephemeris(time.candidates[0].offset_seconds, &recovered_sample,
-                        &error));
+  ASSERT_TRUE(
+      ephemeris(time.candidates[0].offset_seconds, &recovered_sample, &error));
   const ld::Clearance recovered =
       ld::ClearDistance(observation, recovered_sample);
   ASSERT_TRUE(recovered.valid) << recovered.error;
@@ -237,8 +286,7 @@ TEST(LunarDistanceEngine,
 
 TEST(LunarDistanceEngine,
      SeparateWatchTimesRecoverClockAndMovingReferencePosition) {
-  const double truth_correction =
-      4.0 * 3600.0 + 17.0 * 60.0 + 23.4;
+  const double truth_correction = 4.0 * 3600.0 + 17.0 * 60.0 + 23.4;
   const ld::GeographicPoint truth{28.75, -41.125};
 
   ld::Observation observation;
@@ -260,10 +308,9 @@ TEST(LunarDistanceEngine,
   observation.moon_altitude_uncertainty_arcmin = 0.3;
   observation.body_altitude_uncertainty_arcmin = 0.3;
 
-  auto ephemeris = [=](double candidate_correction,
-                       ld::EphemerisSample* sample, std::string*) {
-    const double hours =
-        (candidate_correction - truth_correction) / 3600.0;
+  auto ephemeris = [=](double candidate_correction, ld::EphemerisSample* sample,
+                       std::string*) {
+    const double hours = (candidate_correction - truth_correction) / 3600.0;
     sample->moon_geographic_latitude_deg = 18.0 + 0.05 * hours;
     sample->moon_geographic_longitude_deg = 36.0 - 14.45 * hours;
     sample->body_geographic_latitude_deg = -12.5 + 0.01 * hours;
@@ -273,18 +320,16 @@ TEST(LunarDistanceEngine,
     sample->body_semidiameter_deg = 0.266;
     sample->body_horizontal_parallax_deg = 0.0024;
     sample->predicted_distance_deg =
-        ld::GreatCircleDistanceNm(
-            {sample->moon_geographic_latitude_deg,
-             sample->moon_geographic_longitude_deg},
-            {sample->body_geographic_latitude_deg,
-             sample->body_geographic_longitude_deg}) /
+        ld::GreatCircleDistanceNm({sample->moon_geographic_latitude_deg,
+                                   sample->moon_geographic_longitude_deg},
+                                  {sample->body_geographic_latitude_deg,
+                                   sample->body_geographic_longitude_deg}) /
         60.0;
     return true;
   };
 
-  const ld::PredictedObservation generated =
-      ld::PredictTimeTaggedObservation(observation, ephemeris,
-                                       truth_correction, truth);
+  const ld::PredictedObservation generated = ld::PredictTimeTaggedObservation(
+      observation, ephemeris, truth_correction, truth);
   ASSERT_TRUE(generated.valid) << generated.error;
   observation.raw_distance_deg = generated.raw_distance_deg;
   observation.moon_altitude_deg = generated.moon_altitude_deg;
@@ -311,8 +356,7 @@ TEST(LunarDistanceEngine,
       best_position_uncertainty = candidate.position_uncertainty_nm;
       for (const ld::GeographicPoint& position : candidate.positions)
         best_position_error = std::min(
-            best_position_error,
-            ld::GreatCircleDistanceNm(position, truth));
+            best_position_error, ld::GreatCircleDistanceNm(position, truth));
     }
   }
   EXPECT_LT(best_time_error, 0.1)

@@ -8,8 +8,9 @@
 
 #include <wx/button.h>
 #include <wx/listctrl.h>
+#include <wx/notebook.h>
+#include <wx/panel.h>
 #include <wx/sizer.h>
-#include <wx/statline.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 
@@ -17,12 +18,15 @@
 
 LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
     : wxDialog(parent, wxID_ANY, _("Lunar-distance UTC recovery"),
-               wxDefaultPosition, wxSize(790, 620),
+               wxDefaultPosition, wxSize(940, 700),
                wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
       m_sight(sight) {
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
+  wxNotebook* pages = new wxNotebook(this, wxID_ANY);
+  wxPanel* resultsPage = new wxPanel(pages);
+  wxBoxSizer* results = new wxBoxSizer(wxVERTICAL);
   wxStaticText* explanation = new wxStaticText(
-      this, wxID_ANY,
+      resultsPage, wxID_ANY,
       m_sight.m_LunarSeparateTimes
           ? _("The lunar distance and the two altitudes are evaluated at "
               "their individual watch times. Their shared constant watch "
@@ -32,13 +36,13 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
               "refraction, semidiameter and parallax, then matched against "
               "the offline ephemeris."));
   explanation->Wrap(740);
-  root->Add(explanation, 0, wxALL | wxEXPAND, 10);
+  results->Add(explanation, 0, wxALL | wxEXPAND, 10);
 
-  m_status = new wxStaticText(this, wxID_ANY, wxEmptyString);
+  m_status = new wxStaticText(resultsPage, wxID_ANY, wxEmptyString);
   m_status->Wrap(740);
-  root->Add(m_status, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
+  results->Add(m_status, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
 
-  m_candidates = new wxListCtrl(this, wxID_ANY, wxDefaultPosition,
+  m_candidates = new wxListCtrl(resultsPage, wxID_ANY, wxDefaultPosition,
                                 wxDefaultSize,
                                 wxLC_REPORT | wxLC_SINGLE_SEL);
   m_candidates->InsertColumn(0, _("UTC candidate"));
@@ -48,15 +52,15 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
                                       : _("LD cleared"));
   m_candidates->InsertColumn(3, _("Rate (arcmin/h)"));
   m_candidates->InsertColumn(4, _("Estimated UTC uncertainty"));
-  root->Add(m_candidates, 1, wxLEFT | wxRIGHT | wxEXPAND, 10);
+  results->Add(m_candidates, 1, wxLEFT | wxRIGHT | wxEXPAND, 10);
 
-  root->Add(new wxStaticText(
-                this, wxID_ANY,
+  results->Add(new wxStaticText(
+                resultsPage, wxID_ANY,
                 m_sight.m_LunarSeparateTimes
                     ? _("Position at the lunar-distance reading time")
                     : _("Position from the two measured altitudes")),
             0, wxLEFT | wxRIGHT | wxTOP, 10);
-  m_positions = new wxListCtrl(this, wxID_ANY, wxDefaultPosition,
+  m_positions = new wxListCtrl(resultsPage, wxID_ANY, wxDefaultPosition,
                                wxSize(-1, 105),
                                wxLC_REPORT | wxLC_SINGLE_SEL);
   m_positions->InsertColumn(0, _("Candidate"));
@@ -64,10 +68,10 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
   m_positions->InsertColumn(2, _("Longitude"));
   m_positions->InsertColumn(3, _("Distance from DR/boat"));
   m_positions->InsertColumn(4, _("Estimated position uncertainty"));
-  root->Add(m_positions, 0, wxLEFT | wxRIGHT | wxEXPAND, 10);
+  results->Add(m_positions, 0, wxLEFT | wxRIGHT | wxEXPAND, 10);
 
   wxStaticText* warning = new wxStaticText(
-      this, wxID_ANY,
+      resultsPage, wxID_ANY,
       m_sight.m_LunarSeparateTimes
           ? _("All three watch readings retain their measured intervals and "
               "receive the same recovered UTC correction. If motion is "
@@ -79,15 +83,33 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
               "give position and longitude; a rough DR/hemisphere chooses "
               "between the two mathematical intersections."));
   warning->Wrap(740);
-  root->Add(warning, 0, wxALL | wxEXPAND, 10);
+  results->Add(warning, 0, wxALL | wxEXPAND, 10);
+  resultsPage->SetSizer(results);
+  pages->AddPage(resultsPage, _("Results"), true);
 
-  root->Add(new wxStaticLine(this), 0, wxLEFT | wxRIGHT | wxEXPAND, 10);
-  root->Add(new wxStaticText(this, wxID_ANY, _("Calculation details")), 0,
-            wxLEFT | wxRIGHT | wxTOP, 10);
-  m_details = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
-                             wxSize(-1, 190),
-                             wxTE_MULTILINE | wxTE_READONLY | wxTE_RICH2);
-  root->Add(m_details, 0, wxALL | wxEXPAND, 10);
+  wxPanel* calculationsPage = new wxPanel(pages);
+  wxBoxSizer* calculations = new wxBoxSizer(wxVERTICAL);
+  wxStaticText* calculationNote = new wxStaticText(
+      calculationsPage, wxID_ANY,
+      m_sight.m_LunarSeparateTimes
+          ? _("Auditable time-tagged UTC/position working. This page shows "
+              "the observations, forward-model evaluations, root refinement, "
+              "position solutions and warnings used to produce Results.")
+          : _("Auditable Direct Triangle working. This page shows the "
+              "observation reductions, formula substitutions, ephemeris "
+              "scan, root refinement, position intersections and warnings "
+              "used to produce Results."));
+  calculationNote->Wrap(740);
+  calculations->Add(calculationNote, 0, wxALL | wxEXPAND, 10);
+  m_details = new wxTextCtrl(
+      calculationsPage, wxID_ANY, wxEmptyString, wxDefaultPosition,
+      wxDefaultSize,
+      wxTE_MULTILINE | wxTE_READONLY | wxTE_RICH2 | wxHSCROLL);
+  m_details->SetFont(wxFontInfo(10).Family(wxFONTFAMILY_TELETYPE));
+  calculations->Add(m_details, 1, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
+  calculationsPage->SetSizer(calculations);
+  pages->AddPage(calculationsPage, _("Calculations"), false);
+  root->Add(pages, 1, wxEXPAND | wxALL, 6);
 
   wxStdDialogButtonSizer* buttons = new wxStdDialogButtonSizer();
   m_applyOffset = new wxButton(this, wxID_ANY,

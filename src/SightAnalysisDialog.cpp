@@ -293,6 +293,20 @@ void SightAnalysisDialog::Analyze(wxCommandEvent&) {
           "the DR position at the sight time."),
         liveBoatPositionSights);
   }
+  if (motion.moving) {
+    const double spanHours =
+        std::fabs(UtcDateTime::SecondsBetween(observations.back().utc,
+                                              observations.front().utc)) /
+        3600.0;
+    if (spanHours > 24.0) {
+      summary += wxString::Format(
+          _("\nWarning: the selected sights span %.1f days. One constant "
+            "COG/SOG track over a long interval is unlikely to represent a "
+            "valid DR; split the sights into navigational sessions or use "
+            "their individually saved DR positions."),
+          spanHours / 24.0);
+    }
+  }
   m_summary->SetLabel(summary);
   for (const auto& residual : analysis.residuals) {
     const long row = m_results->InsertItem(

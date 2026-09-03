@@ -10,6 +10,30 @@
 
 #include <vector>
 
+enum class ObserverMotionMethod {
+  Stationary = 0,
+  CogSog = 1,
+  CourseAndLog = 2,
+  CourseSpeedSetDrift = 3,
+  ManualDisplacement = 4
+};
+
+struct ObserverTrackLeg {
+  wxDateTime startUtc;
+  wxDateTime endUtc;
+  ObserverMotionMethod method = ObserverMotionMethod::Stationary;
+  double courseTrue = 0.0;
+  double speedThroughWaterKnots = 0.0;
+  double distanceThroughWaterNm = 0.0;
+  double cogTrue = 0.0;
+  double sogKnots = 0.0;
+  double setTrue = 0.0;
+  double driftKnots = 0.0;
+  double leewayDegrees = 0.0;
+  double northDisplacementNm = 0.0;
+  double eastDisplacementNm = 0.0;
+};
+
 struct ObserverMotion {
   wxDateTime referenceUtc;
   double latitude = 0.0;
@@ -17,6 +41,7 @@ struct ObserverMotion {
   double courseTrue = 0.0;
   double speedKnots = 0.0;
   bool moving = false;
+  std::vector<ObserverTrackLeg> track;
 
   void PositionAt(const wxDateTime& utc, double* lat, double* lon) const;
 };

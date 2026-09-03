@@ -73,10 +73,10 @@ set(LONG_DESCRIPTION
 	"Offline nautical almanac, sight planning and ranking, time-tagged running fixes, sequence analysis, horizon events, time integrity and a DE440 solar-eclipse planner."
 )
 set(VERSION_MAJOR "2")
-set(VERSION_MINOR "7")
-set(VERSION_PATCH "9")
-set(VERSION_TWEAK "1")
-set(VERSION_DATE  "02/09/2026" )# DD/MM/YYYY format
+set(VERSION_MINOR "8")
+set(VERSION_PATCH "1")
+set(VERSION_TWEAK "0")
+set(VERSION_DATE  "03/09/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -186,6 +186,7 @@ SET(SRCS
         src/astrolabe/vsop87d.cpp
         src/geomag/geomag.c
         src/CelestialNavigationDialog.cpp
+        src/AtomicXmlFile.cpp
         src/BodyCatalog.cpp
         src/NavigationAlgorithms.cpp
         src/PlannerDialog.cpp
@@ -194,6 +195,7 @@ SET(SRCS
         src/HorizonEventDialog.cpp
         src/HtmlHelp.cpp
         src/EclipseDialog.cpp
+        src/EclipseDataFiles.cpp
         src/TimeStatus.cpp
         src/CelestialNavigationUI.cpp
         src/SightDialog.cpp
@@ -224,6 +226,7 @@ SET(HDRS
         src/NavigationUIUtils.h
         src/celestial_navigation_pi.h
         src/CelestialNavigationDialog.h
+        src/AtomicXmlFile.h
         src/BodyCatalog.h
         src/NavigationAlgorithms.h
         src/PlannerDialog.h
@@ -233,6 +236,7 @@ SET(HDRS
         src/HorizonEventDialog.h
         src/HtmlHelp.h
         src/EclipseDialog.h
+        src/EclipseDataFiles.h
         src/TimeStatus.h
         src/CelestialNavigationUI.h
         src/ClockCorrectionDialog.h
