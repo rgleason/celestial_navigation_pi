@@ -61,11 +61,18 @@ static void commontest(Sight& sight, wxDateTime& datetime, const char* body,
   // Print calculation string
   std::cout << "Detailed Calculation String:" << std::endl;
   std::cout << sight.m_CalcStr << std::endl;
-  EXPECT_NE(sight.m_CalcStr.Find("direct spherical-triangle method"),
+  EXPECT_NE(sight.m_CalcStr.Find("Direct Triangle"), wxNOT_FOUND);
+  EXPECT_NE(sight.m_CalcStr.Find("INSTRUMENT AND HORIZON CORRECTIONS"),
             wxNOT_FOUND);
-  EXPECT_NE(sight.m_CalcStr.Find("Instrument, horizon and limb reductions"),
+  EXPECT_NE(sight.m_CalcStr.Find("LIMB-TO-CENTRE REDUCTIONS"), wxNOT_FOUND);
+  EXPECT_NE(sight.m_CalcStr.Find("DIRECT SPHERICAL-TRIANGLE CLEARING"),
             wxNOT_FOUND);
-  EXPECT_NE(sight.m_CalcStr.Find("Ephemeris matching"), wxNOT_FOUND);
+  EXPECT_NE(sight.m_CalcStr.Find("COARSE SCAN (every evaluated point)"),
+            wxNOT_FOUND);
+  EXPECT_NE(sight.m_CalcStr.Find("ROOT REFINEMENT"), wxNOT_FOUND);
+  EXPECT_NE(sight.m_CalcStr.Find("POSITION INTERSECTION AND WARNINGS"),
+            wxNOT_FOUND);
+  EXPECT_GT(sight.m_CalcStr.length(), 10000u);
 }
 
 struct lunarsightdata {

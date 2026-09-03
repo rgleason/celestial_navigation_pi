@@ -720,17 +720,26 @@ preserved.</p>
   <li>Enter LDOpc, near/centre/far contact and both body altitudes with correct limbs.</li>
   <li>Enter one time or enable separate times as actually observed.</li>
   <li>Set a plausible total UTC search span around the watch time.</li>
-  <li>Select <strong>Time</strong>. Review all matching time candidates, clock correction, uncertainty and position candidates.</li>
+  <li>Select <strong>Time</strong>. Use <strong>Results</strong> for the operational candidates and <strong>Calculations</strong> for the complete auditable working.</li>
   <li>Use rough DR, hemisphere, an additional altitude sight or independent evidence to select the physical solution.</li>
 </ol>
 
-<p>The simultaneous solver uses the direct spherical-triangle clearing
-method. Its calculation detail shows the instrument, horizon and limb
-reductions; refraction and parallax in altitude; the two spherical-cosine
-steps; and the ephemeris matching. Entered one-sigma angle uncertainties are
-shown separately: they are propagated through the clearing geometry and local
-lunar-distance rate to estimate UTC uncertainty, not applied as additional
-corrections.</p>
+<p>The lunar result window deliberately has two pages. <strong>Results</strong>
+is the concise operational view: possible UTC values, watch correction,
+lunar-distance rate, estimated UTC uncertainty, position candidates and
+warnings. <strong>Calculations</strong> preserves the educational and auditable
+working. In simultaneous mode it shows the raw observations and conventions;
+index and dip arithmetic; every limb/contact and semidiameter correction;
+refraction, parallax and corrected altitudes; both direct spherical-triangle
+formulae with their numerical substitutions; every coarse UTC scan point;
+every bisection refinement; converged roots; uncertainty components; altitude-
+circle construction, position candidates and warnings. It records the
+calculations actually used by the modern solver rather than the former
+two-endpoint interpolation.</p>
+
+<p>Entered one-sigma angle uncertainties are shown separately: they are
+propagated through the clearing geometry and local lunar-distance rate to
+estimate UTC uncertainty, not applied as additional corrections.</p>
 
 <div class="warning"><strong>Lunar accuracy is demanding.</strong> A lunar
 distance changes slowly enough that a small angular error can become a large

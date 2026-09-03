@@ -62,7 +62,7 @@ double AltitudeLimbSign(AltitudeLimb limb) {
 bool Finite(double value) { return std::isfinite(value); }
 
 double RefractionDegrees(double apparent_altitude_deg, double pressure_hpa,
-                         double temperature_c) {
+                         double temperature_c, double* refraction_x = nullptr) {
   // Same Bennett/Saemundsson form used by the rest of the plugin. It is not
   // reliable at or below the astronomical horizon.
   const double altitude = ToRadians(apparent_altitude_deg);
@@ -72,6 +72,7 @@ double RefractionDegrees(double apparent_altitude_deg, double pressure_hpa,
   const double x = std::tan(altitude + ToRadians(0.04848) / denominator);
   if (!Finite(x) || std::fabs(x) < 1e-12 || temperature_c <= -273.15)
     return std::numeric_limits<double>::quiet_NaN();
+  if (refraction_x) *refraction_x = x;
   return 0.267 * pressure_hpa / (x * (temperature_c + 273.15)) / 60.0;
 }
 
@@ -102,15 +103,20 @@ bool EvaluateResidual(const Observation& observation,
 
 double AngularUncertainty(const Observation& observation,
                           const EphemerisSample& sample,
-                          const Clearance& nominal) {
+                          const Clearance& nominal,
+                          double contributions_arcmin[3] = nullptr) {
   const double inputs[3] = {observation.distance_uncertainty_arcmin,
                             observation.moon_altitude_uncertainty_arcmin,
                             observation.body_altitude_uncertainty_arcmin};
   double variance = 0.0;
   for (int index = 0; index < 3; ++index) {
+    if (contributions_arcmin) contributions_arcmin[index] = 0.0;
     if (!(inputs[index] > 0.0)) continue;
     Observation perturbed = observation;
-    const double step_deg = std::max(1e-5, inputs[index] / 60.0);
+    // Estimate the local derivative with a small angular step, then scale it
+    // by the user's uncertainty.  Perturbing by the full sigma can cross a
+    // spherical-geometry boundary and incorrectly discard that contribution.
+    const double step_deg = 1e-5;
     if (index == 0)
       perturbed.raw_distance_deg += step_deg;
     else if (index == 1)
@@ -122,7 +128,9 @@ double AngularUncertainty(const Observation& observation,
     const double sensitivity =
         (changed.cleared_distance_deg - nominal.cleared_distance_deg) /
         step_deg;
-    variance += sensitivity * sensitivity * inputs[index] * inputs[index];
+    const double contribution = std::fabs(sensitivity) * inputs[index];
+    if (contributions_arcmin) contributions_arcmin[index] = contribution;
+    variance += contribution * contribution;
   }
   return std::sqrt(variance);
 }
@@ -631,18 +639,28 @@ Clearance ClearDistance(const Observation& observation,
       apparent_limb_altitude(observation.moon_altitude_deg);
   const double body_limb_alt =
       apparent_limb_altitude(observation.body_altitude_deg);
+  result.moon_apparent_limb_altitude_deg = moon_limb_alt;
+  result.body_apparent_limb_altitude_deg = body_limb_alt;
+  result.moon_semidiameter_deg = ephemeris.moon_semidiameter_deg;
+  result.moon_horizontal_parallax_deg =
+      ephemeris.moon_horizontal_parallax_deg;
+  result.body_horizontal_parallax_deg =
+      ephemeris.body_horizontal_parallax_deg;
   const double moon_topocentric_sd =
       ephemeris.moon_semidiameter_deg *
       (1.0 + std::sin(ToRadians(moon_limb_alt)) *
                  std::sin(ToRadians(ephemeris.moon_horizontal_parallax_deg)));
   result.moon_topocentric_semidiameter_deg = moon_topocentric_sd;
   result.body_semidiameter_deg = ephemeris.body_semidiameter_deg;
-  result.moon_apparent_center_altitude_deg =
-      moon_limb_alt +
+  result.moon_altitude_limb_correction_deg =
       AltitudeLimbSign(observation.moon_altitude_limb) * moon_topocentric_sd;
+  result.body_altitude_limb_correction_deg =
+      AltitudeLimbSign(observation.body_altitude_limb) *
+      ephemeris.body_semidiameter_deg;
+  result.moon_apparent_center_altitude_deg =
+      moon_limb_alt + result.moon_altitude_limb_correction_deg;
   result.body_apparent_center_altitude_deg =
-      body_limb_alt + AltitudeLimbSign(observation.body_altitude_limb) *
-                          ephemeris.body_semidiameter_deg;
+      body_limb_alt + result.body_altitude_limb_correction_deg;
 
   if (result.moon_apparent_center_altitude_deg <= -1.0 ||
       result.body_apparent_center_altitude_deg <= -1.0 ||
@@ -653,10 +671,14 @@ Clearance ClearDistance(const Observation& observation,
     return result;
   }
 
-  result.apparent_distance_deg =
-      observation.raw_distance_deg - index_correction_deg +
-      ContactSign(observation.moon_contact) * moon_topocentric_sd +
+  result.moon_distance_limb_correction_deg =
+      ContactSign(observation.moon_contact) * moon_topocentric_sd;
+  result.body_distance_limb_correction_deg =
       ContactSign(observation.body_contact) * ephemeris.body_semidiameter_deg;
+  result.apparent_distance_deg = observation.raw_distance_deg -
+                                 index_correction_deg +
+                                 result.moon_distance_limb_correction_deg +
+                                 result.body_distance_limb_correction_deg;
   if (observation.artificial_horizon) {
     // The artificial horizon doubles altitudes, not the inter-body distance.
   }
@@ -685,14 +707,17 @@ Clearance ClearDistance(const Observation& observation,
     return result;
   }
   const double cos_azimuth = ClampUnit(raw_cos_azimuth);
+  result.relative_azimuth_cosine = cos_azimuth;
   result.relative_azimuth_deg = ToDegrees(std::acos(cos_azimuth));
 
   const double moon_refraction =
       RefractionDegrees(result.moon_apparent_center_altitude_deg,
-                        observation.pressure_hpa, observation.temperature_c);
+                        observation.pressure_hpa, observation.temperature_c,
+                        &result.moon_refraction_x);
   const double body_refraction =
       RefractionDegrees(result.body_apparent_center_altitude_deg,
-                        observation.pressure_hpa, observation.temperature_c);
+                        observation.pressure_hpa, observation.temperature_c,
+                        &result.body_refraction_x);
   if (!Finite(moon_refraction) || !Finite(body_refraction)) {
     result.error = "Atmospheric refraction could not be evaluated";
     return result;
@@ -703,6 +728,8 @@ Clearance ClearDistance(const Observation& observation,
       result.moon_apparent_center_altitude_deg - moon_refraction;
   const double body_refracted =
       result.body_apparent_center_altitude_deg - body_refraction;
+  result.moon_topocentric_altitude_deg = moon_refracted;
+  result.body_topocentric_altitude_deg = body_refracted;
   result.moon_parallax_in_altitude_deg = ParallaxInAltitude(
       ephemeris.moon_horizontal_parallax_deg, moon_refracted);
   result.body_parallax_in_altitude_deg = ParallaxInAltitude(
@@ -716,7 +743,9 @@ Clearance ClearDistance(const Observation& observation,
   const double hob = ToRadians(result.body_geocentric_altitude_deg);
   const double cos_cleared = std::sin(hom) * std::sin(hob) +
                              std::cos(hom) * std::cos(hob) * cos_azimuth;
-  result.cleared_distance_deg = ToDegrees(std::acos(ClampUnit(cos_cleared)));
+  result.cleared_distance_cosine = ClampUnit(cos_cleared);
+  result.cleared_distance_deg =
+      ToDegrees(std::acos(result.cleared_distance_cosine));
   result.valid = Finite(result.cleared_distance_deg);
   if (!result.valid) result.error = "Cleared lunar distance is not finite";
   return result;
@@ -746,13 +775,19 @@ SolveResult SolveTime(const Observation& observation,
   for (double t = options.start_offset_seconds; t < options.end_offset_seconds;
        t += options.scan_step_seconds) {
     double residual = 0.0;
+    Clearance clearance;
+    EphemerisSample sample;
     std::string error;
-    if (!EvaluateResidual(observation, ephemeris, t, &residual, nullptr,
-                          nullptr, &error)) {
+    if (!EvaluateResidual(observation, ephemeris, t, &residual, &clearance,
+                          &sample, &error)) {
       result.error = error;
       return result;
     }
     points.push_back({t, residual});
+    result.match_trace.push_back(
+        {MatchTracePhase::Scan, 0, static_cast<int>(points.size() - 1), t, t,
+         t, sample.predicted_distance_deg, clearance.cleared_distance_deg,
+         residual * 60.0});
     if (std::fabs(residual) < closest_abs) {
       closest_abs = std::fabs(residual);
       result.closest_offset_seconds = t;
@@ -760,31 +795,49 @@ SolveResult SolveTime(const Observation& observation,
     }
   }
   double end_residual = 0.0;
+  Clearance end_clearance;
+  EphemerisSample end_sample;
   std::string endpoint_error;
   if (!EvaluateResidual(observation, ephemeris, options.end_offset_seconds,
-                        &end_residual, nullptr, nullptr, &endpoint_error)) {
+                        &end_residual, &end_clearance, &end_sample,
+                        &endpoint_error)) {
     result.error = endpoint_error;
     return result;
   }
   points.push_back({options.end_offset_seconds, end_residual});
+  result.match_trace.push_back(
+      {MatchTracePhase::Scan, 0, static_cast<int>(points.size() - 1),
+       options.end_offset_seconds, options.end_offset_seconds,
+       options.end_offset_seconds, end_sample.predicted_distance_deg,
+       end_clearance.cleared_distance_deg, end_residual * 60.0});
 
+  int bracket_number = 0;
   for (std::size_t index = 1; index < points.size(); ++index) {
     Point left = points[index - 1];
     Point right = points[index];
     if (left.residual != 0.0 && right.residual != 0.0 &&
         std::signbit(left.residual) == std::signbit(right.residual))
       continue;
+    ++bracket_number;
+    int refinement_iteration = 0;
     for (int iteration = 0;
          iteration < 80 && right.t - left.t > options.root_tolerance_seconds;
          ++iteration) {
       const double middle_t = 0.5 * (left.t + right.t);
       double middle_residual = 0.0;
+      Clearance middle_clearance;
+      EphemerisSample middle_sample;
       std::string error;
       if (!EvaluateResidual(observation, ephemeris, middle_t, &middle_residual,
-                            nullptr, nullptr, &error)) {
+                            &middle_clearance, &middle_sample, &error)) {
         result.error = error;
         return result;
       }
+      refinement_iteration = iteration + 1;
+      result.match_trace.push_back(
+          {MatchTracePhase::Refinement, bracket_number, refinement_iteration,
+           middle_t, left.t, right.t, middle_sample.predicted_distance_deg,
+           middle_clearance.cleared_distance_deg, middle_residual * 60.0});
       if (middle_residual == 0.0 ||
           std::signbit(middle_residual) == std::signbit(left.residual)) {
         left = {middle_t, middle_residual};
@@ -805,6 +858,11 @@ SolveResult SolveTime(const Observation& observation,
       result.error = error;
       return result;
     }
+    result.match_trace.push_back(
+        {MatchTracePhase::Candidate, bracket_number,
+         refinement_iteration + 1, root, left.t, right.t,
+         sample.predicted_distance_deg, clearance.cleared_distance_deg,
+         residual * 60.0});
     const double derivative_interval = 30.0;
     double before = 0.0, after = 0.0;
     if (!EvaluateResidual(observation, ephemeris, root - derivative_interval,
@@ -820,8 +878,15 @@ SolveResult SolveTime(const Observation& observation,
     candidate.predicted_distance_deg = sample.predicted_distance_deg;
     candidate.slope_arcmin_per_hour =
         (after - before) * 60.0 * 3600.0 / (2.0 * derivative_interval);
-    candidate.angular_uncertainty_arcmin =
-        AngularUncertainty(observation, sample, clearance);
+    double uncertainty_contributions[3] = {};
+    candidate.angular_uncertainty_arcmin = AngularUncertainty(
+        observation, sample, clearance, uncertainty_contributions);
+    candidate.distance_uncertainty_contribution_arcmin =
+        uncertainty_contributions[0];
+    candidate.moon_altitude_uncertainty_contribution_arcmin =
+        uncertainty_contributions[1];
+    candidate.body_altitude_uncertainty_contribution_arcmin =
+        uncertainty_contributions[2];
     const double slope_arcmin_per_second =
         std::fabs(candidate.slope_arcmin_per_hour) / 3600.0;
     candidate.time_uncertainty_seconds =
@@ -910,7 +975,14 @@ SolveResult SolveTimeTagged(const Observation& observation,
     TaggedEvaluation evaluation =
         EvaluateTagged(observation, ephemeris, correction);
     if (evaluation.valid) {
-      for (double residual : evaluation.residuals) {
+      for (std::size_t branch = 0; branch < evaluation.residuals.size();
+           ++branch) {
+        const double residual = evaluation.residuals[branch];
+        result.match_trace.push_back(
+            {MatchTracePhase::Scan, static_cast<int>(branch + 1),
+             static_cast<int>(points.size()), correction, correction,
+             correction, observation.raw_distance_deg + residual,
+             observation.raw_distance_deg, residual * 60.0});
         if (std::fabs(residual) < closest) {
           closest = std::fabs(residual);
           found_closest = true;
@@ -924,7 +996,20 @@ SolveResult SolveTimeTagged(const Observation& observation,
   points.push_back(
       {options.end_offset_seconds,
        EvaluateTagged(observation, ephemeris, options.end_offset_seconds)});
+  if (points.back().evaluation.valid) {
+    for (std::size_t branch = 0;
+         branch < points.back().evaluation.residuals.size(); ++branch) {
+      const double residual = points.back().evaluation.residuals[branch];
+      result.match_trace.push_back(
+          {MatchTracePhase::Scan, static_cast<int>(branch + 1),
+           static_cast<int>(points.size() - 1), options.end_offset_seconds,
+           options.end_offset_seconds, options.end_offset_seconds,
+           observation.raw_distance_deg + residual,
+           observation.raw_distance_deg, residual * 60.0});
+    }
+  }
 
+  int bracket_number = 0;
   for (std::size_t index = 1; index < points.size(); ++index) {
     if (!points[index - 1].evaluation.valid || !points[index].evaluation.valid)
       continue;
@@ -939,7 +1024,9 @@ SolveResult SolveTimeTagged(const Observation& observation,
       if (fleft != 0.0 && fright != 0.0 &&
           std::signbit(fleft) == std::signbit(fright))
         continue;
+      ++bracket_number;
       bool bracket_valid = true;
+      int refinement_iteration = 0;
       for (int iteration = 0;
            iteration < 80 && right - left > options.root_tolerance_seconds;
            ++iteration) {
@@ -951,6 +1038,12 @@ SolveResult SolveTimeTagged(const Observation& observation,
           break;
         }
         const double fmiddle = evaluation.residuals[branch];
+        refinement_iteration = iteration + 1;
+        result.match_trace.push_back(
+            {MatchTracePhase::Refinement, bracket_number,
+             refinement_iteration, middle, left, right,
+             observation.raw_distance_deg + fmiddle,
+             observation.raw_distance_deg, fmiddle * 60.0});
         if (fmiddle == 0.0 || std::signbit(fmiddle) == std::signbit(fleft)) {
           left = middle;
           fleft = fmiddle;
@@ -965,6 +1058,12 @@ SolveResult SolveTimeTagged(const Observation& observation,
           EvaluateTagged(observation, ephemeris, root);
       if (!root_evaluation.valid || branch >= root_evaluation.positions.size())
         continue;
+      const double root_residual = root_evaluation.residuals[branch];
+      result.match_trace.push_back(
+          {MatchTracePhase::Candidate, bracket_number,
+           refinement_iteration + 1, root, left, right,
+           observation.raw_distance_deg + root_residual,
+           observation.raw_distance_deg, root_residual * 60.0});
       const double derivative_interval = 30.0;
       const TaggedEvaluation before =
           EvaluateTagged(observation, ephemeris, root - derivative_interval);

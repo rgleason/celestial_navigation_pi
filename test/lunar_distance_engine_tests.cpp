@@ -76,6 +76,21 @@ TEST(LunarDistanceEngine, ExposesDirectTriangleReductionDetails) {
   EXPECT_GT(result.body_parallax_in_altitude_deg, 0.0);
   EXPECT_TRUE(std::isfinite(result.relative_azimuth_deg));
   EXPECT_TRUE(std::isfinite(result.cleared_distance_deg));
+  EXPECT_NEAR(result.moon_apparent_center_altitude_deg,
+              result.moon_apparent_limb_altitude_deg +
+                  result.moon_altitude_limb_correction_deg,
+              1e-12);
+  EXPECT_NEAR(result.body_apparent_center_altitude_deg,
+              result.body_apparent_limb_altitude_deg +
+                  result.body_altitude_limb_correction_deg,
+              1e-12);
+  EXPECT_NEAR(result.moon_topocentric_altitude_deg,
+              result.moon_apparent_center_altitude_deg -
+                  result.moon_refraction_deg,
+              1e-12);
+  EXPECT_NEAR(result.cleared_distance_deg,
+              std::acos(result.cleared_distance_cosine) * 180.0 / M_PI,
+              1e-12);
 }
 
 TEST(LunarDistanceEngine, RejectsInconsistentSphericalGeometry) {
@@ -111,6 +126,25 @@ TEST(LunarDistanceEngine, FindsRootToSubSecondPrecision) {
   EXPECT_NEAR(result.candidates[0].offset_seconds, expected, 0.1);
   EXPECT_NEAR(result.candidates[0].slope_arcmin_per_hour, 30.0, 0.01);
   EXPECT_GT(result.candidates[0].time_uncertainty_seconds, 0.0);
+  EXPECT_GT(result.candidates[0].angular_uncertainty_arcmin, 0.0);
+  EXPECT_GT(result.candidates[0].distance_uncertainty_contribution_arcmin,
+            0.0);
+  EXPECT_NEAR(result.candidates[0].distance_uncertainty_contribution_arcmin,
+              observation.distance_uncertainty_arcmin, 0.01);
+
+  std::size_t scans = 0;
+  std::size_t refinements = 0;
+  std::size_t roots = 0;
+  for (const ld::MatchTraceEntry& entry : result.match_trace) {
+    if (entry.phase == ld::MatchTracePhase::Scan) ++scans;
+    if (entry.phase == ld::MatchTracePhase::Refinement) ++refinements;
+    if (entry.phase == ld::MatchTracePhase::Candidate) ++roots;
+    EXPECT_NEAR((entry.model_distance_deg - entry.target_distance_deg) * 60.0,
+                entry.residual_arcmin, 1e-10);
+  }
+  EXPECT_EQ(scans, 35u);
+  EXPECT_GT(refinements, 0u);
+  EXPECT_EQ(roots, 1u);
 }
 
 TEST(LunarDistanceEngine, ReportsMultipleTimeCandidates) {
