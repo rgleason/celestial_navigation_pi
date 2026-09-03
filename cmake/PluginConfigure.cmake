@@ -565,6 +565,10 @@ if (MSVC)
   add_definitions(-D__MSVC__)
   add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_SECURE_NO_DEPRECATE)
   add_definitions(-D HAVE_SNPRINTF)
+  # ocpn_plugin.h uses MAKING_PLUGIN to import host-owned symbols such as
+  # wxEVT_DOWNLOAD_EVENT.  Without it MSVC expects the plugin DLL to provide
+  # a local definition and fails to link the background-download support.
+  target_compile_definitions(${PACKAGE_NAME} PRIVATE MAKING_PLUGIN)
   message(STATUS "${CMLOC}Set SNPRINTF")
 else (MSVC)
   if (NOT APPLE)
