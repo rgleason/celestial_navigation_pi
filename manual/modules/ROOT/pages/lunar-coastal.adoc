@@ -38,7 +38,8 @@ lunar-distance reference epoch. This is a constant-course/constant-speed
 model; use representative motion for the short observation sequence and do
 not enable it merely to force a result.
 
-Press *Time*. In simultaneous mode the traditional clearing solver:
+Press *Time*. In simultaneous mode the direct spherical-triangle clearing
+method:
 
 . converts the measured limbs to apparent centres;
 . applies index correction, dip, refraction, semidiameter and parallax;
@@ -47,6 +48,12 @@ Press *Time*. In simultaneous mode the traditional clearing solver:
   and
 . reports the UTC candidate, constant watch correction, lunar-distance rate
   and propagated time uncertainty.
+
+The calculation detail identifies this method and shows the entered
+one-sigma angle uncertainties separately from the instrument, horizon, limb,
+refraction and parallax reductions. The uncertainty values are not additional
+corrections: the solver propagates them through the clearing geometry and the
+local lunar-distance rate to estimate the uncertainty of recovered UTC.
 
 In separate-time mode the mathematical problem is a coupled three-equation
 solution. For each trial clock correction the plugin evaluates the Moon and
@@ -126,7 +133,8 @@ angle, or reduce it to that position epoch before entry.
 
 One included angle between two charted objects defines a curved line of
 position. Enter three objects in their observed left-centre-right order and
-the left-centre and centre-right angles to obtain two independent loci. The
+the left-centre and centre-right measurements to obtain two independent loci.
+The central sextant index-error default is applied to both measurements. The
 plugin solves their intersection on the sphere from the supplied approximate
 position and reports residuals, a geometry condition indicator and an
 estimated one-sigma uncertainty.

@@ -65,12 +65,20 @@ struct PositionResult {
 struct Clearance {
   bool valid = false;
   std::string error;
+  double index_correction_deg = 0.0;
+  double dip_correction_deg = 0.0;
   double apparent_distance_deg = 0.0;
   double cleared_distance_deg = 0.0;
+  double moon_topocentric_semidiameter_deg = 0.0;
+  double body_semidiameter_deg = 0.0;
   double moon_apparent_center_altitude_deg = 0.0;
   double body_apparent_center_altitude_deg = 0.0;
   double moon_geocentric_altitude_deg = 0.0;
   double body_geocentric_altitude_deg = 0.0;
+  double moon_refraction_deg = 0.0;
+  double body_refraction_deg = 0.0;
+  double moon_parallax_in_altitude_deg = 0.0;
+  double body_parallax_in_altitude_deg = 0.0;
   double relative_azimuth_deg = 0.0;
 };
 
@@ -109,9 +117,8 @@ struct PredictedObservation {
   double body_altitude_deg = 0.0;
 };
 
-using EphemerisFunction =
-    std::function<bool(double offset_seconds, EphemerisSample* sample,
-                       std::string* error)>;
+using EphemerisFunction = std::function<bool(
+    double offset_seconds, EphemerisSample* sample, std::string* error)>;
 
 Clearance ClearDistance(const Observation& observation,
                         const EphemerisSample& ephemeris);
@@ -134,8 +141,7 @@ SolveResult SolveTimeTagged(const Observation& observation,
 // regression fixtures. The supplied position is at the lunar-distance epoch.
 PredictedObservation PredictTimeTaggedObservation(
     const Observation& settings, const EphemerisFunction& ephemeris,
-    double clock_correction_seconds,
-    const GeographicPoint& reference_position);
+    double clock_correction_seconds, const GeographicPoint& reference_position);
 
 PositionResult IntersectAltitudeCircles(
     const GeographicPoint& moon_geographic_position,

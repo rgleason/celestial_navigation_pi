@@ -46,6 +46,9 @@ void BuildStableSightsDocument(TiXmlDocument* document, const char* body) {
   sight->SetAttribute("Date", "2026-09-02");
   sight->SetAttribute("Time", "12:34:56");
   sight->SetDoubleAttribute("Measurement", 42.25);
+  sight->SetAttribute("DipShort", 1);
+  sight->SetDoubleAttribute("DipShortDistance", 2.75);
+  sight->SetAttribute("ArtificialHorizon", 0);
   root->LinkEndChild(sight);
 }
 
@@ -76,6 +79,17 @@ TEST(AtomicXmlFile, SavesAndLoadsTheExistingStableSchema) {
   EXPECT_STREQ("Sun", sight->Attribute("Body"));
   EXPECT_STREQ("2026-09-02", sight->Attribute("Date"));
   EXPECT_STREQ("12:34:56", sight->Attribute("Time"));
+  int dipShort = 0;
+  int artificialHorizon = 1;
+  double dipShortDistance = 0.0;
+  ASSERT_EQ(TIXML_SUCCESS, sight->QueryIntAttribute("DipShort", &dipShort));
+  ASSERT_EQ(TIXML_SUCCESS, sight->QueryDoubleAttribute("DipShortDistance",
+                                                       &dipShortDistance));
+  ASSERT_EQ(TIXML_SUCCESS,
+            sight->QueryIntAttribute("ArtificialHorizon", &artificialHorizon));
+  EXPECT_EQ(1, dipShort);
+  EXPECT_DOUBLE_EQ(2.75, dipShortDistance);
+  EXPECT_EQ(0, artificialHorizon);
 }
 
 TEST(AtomicXmlFile, FailedWriteLeavesThePreviousFileLoadableAndUnchanged) {

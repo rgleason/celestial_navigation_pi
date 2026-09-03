@@ -13,10 +13,7 @@ struct GeoPoint {
       : latitude_deg(latitude), longitude_deg(longitude) {}
 };
 
-enum class VerticalAngleMode {
-  WaterlineToTop,
-  SeaHorizonToTopBeyondHorizon
-};
+enum class VerticalAngleMode { WaterlineToTop, SeaHorizonToTopBeyondHorizon };
 
 struct VerticalAngleObservation {
   VerticalAngleMode mode = VerticalAngleMode::WaterlineToTop;
@@ -43,6 +40,7 @@ struct HorizontalAngleObservation {
   GeoPoint right;
   double left_centre_angle_deg = 0.0;
   double centre_right_angle_deg = 0.0;
+  double index_error_arcmin = 0.0;
   double angle_uncertainty_arcmin = 0.2;
   bool moving_observer = false;
   double first_time_offset_seconds = 0.0;

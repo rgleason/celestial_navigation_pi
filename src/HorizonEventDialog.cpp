@@ -56,70 +56,63 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
       m_systemTimeSummary(systemTimeSummary),
       m_scroller(NULL) {
   wxBoxSizer* dialogRoot = new wxBoxSizer(wxVERTICAL);
-  m_scroller =
-      new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-                           wxVSCROLL | wxTAB_TRAVERSAL | wxBORDER_NONE);
-  m_scroller->SetScrollRate(0, 12);
-  m_scroller->SetBackgroundColour(GetBackgroundColour());
-  wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
 
   wxStaticText* explanation = new wxStaticText(
-      m_scroller, wxID_ANY,
+      this, wxID_ANY,
       _("Record first upper-limb appearance at sunrise or final upper-limb "
         "disappearance at sunset. The result is an approximate navigation "
         "constraint, not a sextant-quality fix."));
   explanation->Wrap(590);
-  root->Add(explanation, 0, wxEXPAND | wxALL, 8);
+  dialogRoot->Add(explanation, 0, wxEXPAND | wxALL, 8);
 
   wxStaticBoxSizer* observation =
-      new wxStaticBoxSizer(wxVERTICAL, m_scroller, _("Observation"));
+      new wxStaticBoxSizer(wxVERTICAL, this, _("Observation — always visible"));
   wxFlexGridSizer* obsGrid = new wxFlexGridSizer(0, 2, 5, 10);
   obsGrid->AddGrowableCol(1);
 
-  obsGrid->Add(new wxStaticText(m_scroller, wxID_ANY, _("Event")), 0,
+  obsGrid->Add(new wxStaticText(this, wxID_ANY, _("Event")), 0,
                wxALIGN_CENTER_VERTICAL);
-  m_event = new wxChoice(m_scroller, wxID_ANY);
+  m_event = new wxChoice(this, wxID_ANY);
   m_event->Append(_("Sunrise — first upper limb"));
   m_event->Append(_("Sunset — last upper limb"));
   m_event->SetSelection(static_cast<int>(sight.m_HorizonEvent));
   obsGrid->Add(m_event, 1, wxEXPAND);
 
-  obsGrid->Add(new wxStaticText(m_scroller, wxID_ANY, _("UTC date")), 0,
+  obsGrid->Add(new wxStaticText(this, wxID_ANY, _("UTC date")), 0,
                wxALIGN_CENTER_VERTICAL);
-  m_calendar = new wxCalendarCtrl(m_scroller, wxID_ANY, sight.m_DateTime);
+  m_calendar = new wxCalendarCtrl(this, wxID_ANY, sight.m_DateTime);
   obsGrid->Add(m_calendar, 1, wxEXPAND);
 
-  obsGrid->Add(new wxStaticText(m_scroller, wxID_ANY, _("UTC time")), 0,
+  obsGrid->Add(new wxStaticText(this, wxID_ANY, _("UTC time (24-hour)")), 0,
                wxALIGN_CENTER_VERTICAL);
   wxBoxSizer* timeRow = new wxBoxSizer(wxHORIZONTAL);
-  m_hours = new wxSpinCtrl(m_scroller, wxID_ANY, wxEmptyString,
-                           wxDefaultPosition, wxSize(65, -1), wxSP_ARROW_KEYS,
-                           0, 23, sight.m_DateTime.GetHour());
-  m_minutes = new wxSpinCtrl(m_scroller, wxID_ANY, wxEmptyString,
-                             wxDefaultPosition, wxSize(65, -1), wxSP_ARROW_KEYS,
-                             0, 59, sight.m_DateTime.GetMinute());
-  m_seconds = new wxSpinCtrl(m_scroller, wxID_ANY, wxEmptyString,
-                             wxDefaultPosition, wxSize(65, -1), wxSP_ARROW_KEYS,
-                             0, 59, sight.m_DateTime.GetSecond());
+  m_hours = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
+                           wxSize(65, -1), wxSP_ARROW_KEYS, 0, 23,
+                           sight.m_DateTime.GetHour());
+  m_minutes = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
+                             wxSize(65, -1), wxSP_ARROW_KEYS, 0, 59,
+                             sight.m_DateTime.GetMinute());
+  m_seconds = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
+                             wxSize(65, -1), wxSP_ARROW_KEYS, 0, 59,
+                             sight.m_DateTime.GetSecond());
   timeRow->Add(m_hours);
-  timeRow->Add(new wxStaticText(m_scroller, wxID_ANY, ":"), 0,
+  timeRow->Add(new wxStaticText(this, wxID_ANY, ":"), 0,
                wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 3);
   timeRow->Add(m_minutes);
-  timeRow->Add(new wxStaticText(m_scroller, wxID_ANY, ":"), 0,
+  timeRow->Add(new wxStaticText(this, wxID_ANY, ":"), 0,
                wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 3);
   timeRow->Add(m_seconds);
-  wxButton* capture =
-      new wxButton(m_scroller, wxID_ANY, _("Capture current UTC"));
+  wxButton* capture = new wxButton(this, wxID_ANY, _("Capture current UTC"));
   timeRow->Add(capture, 0, wxLEFT, 10);
   obsGrid->Add(timeRow, 1, wxEXPAND);
 
   m_timeUncertainty =
-      AddNumber(m_scroller, obsGrid, _("Time uncertainty"),
-                sight.m_TimeCertainty, 0, 600, 1, 1, _("seconds"));
+      AddNumber(this, obsGrid, _("Time uncertainty"), sight.m_TimeCertainty, 0,
+                600, 1, 1, _("seconds"));
 
-  obsGrid->Add(new wxStaticText(m_scroller, wxID_ANY, _("Time source")), 0,
+  obsGrid->Add(new wxStaticText(this, wxID_ANY, _("Time source")), 0,
                wxALIGN_CENTER_VERTICAL);
-  m_timeSource = new wxChoice(m_scroller, wxID_ANY);
+  m_timeSource = new wxChoice(this, wxID_ANY);
   m_timeSource->Append(_("System UTC capture"));
   m_timeSource->Append(_("Synchronised watch / manual entry"));
   m_timeSource->Append(_("Other manual entry"));
@@ -130,10 +123,23 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   obsGrid->Add(m_timeSource, 1, wxEXPAND);
   observation->Add(obsGrid, 0, wxEXPAND | wxALL, 6);
   wxStaticText* clock = new wxStaticText(
-      m_scroller, wxID_ANY, _("Current system timing: ") + m_systemTimeSummary);
+      this, wxID_ANY, _("Current system timing: ") + m_systemTimeSummary);
   clock->Wrap(590);
   observation->Add(clock, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 6);
-  root->Add(observation, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
+  dialogRoot->Add(observation, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
+
+  wxStaticText* lowerHint = new wxStaticText(
+      this, wxID_ANY,
+      _("Bearing, horizon conditions and the result are below; scroll this "
+        "lower section when necessary."));
+  dialogRoot->Add(lowerHint, 0, wxLEFT | wxRIGHT | wxBOTTOM, 8);
+
+  m_scroller =
+      new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+                           wxVSCROLL | wxTAB_TRAVERSAL | wxBORDER_NONE);
+  m_scroller->SetScrollRate(0, 12);
+  m_scroller->SetBackgroundColour(GetBackgroundColour());
+  wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
 
   wxStaticBoxSizer* bearingBox =
       new wxStaticBoxSizer(wxVERTICAL, m_scroller, _("Bearing (optional)"));
@@ -218,7 +224,7 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   dialogRoot->Add(buttons, 0, wxEXPAND | wxALL, 8);
 
   SetSizer(dialogRoot);
-  SetMinSize(wxSize(600, 420));
+  SetMinSize(wxSize(600, 540));
   wxRect displayArea(0, 0, 700, 760);
   const int displayIndex = wxDisplay::GetFromWindow(parent);
   if (displayIndex != wxNOT_FOUND)
@@ -227,7 +233,7 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   else if (wxDisplay::GetCount() > 0)
     displayArea = wxDisplay(static_cast<unsigned int>(0)).GetClientArea();
   const int width = std::max(600, std::min(700, displayArea.GetWidth() - 40));
-  const int height = std::max(420, std::min(760, displayArea.GetHeight() - 80));
+  const int height = std::max(540, std::min(760, displayArea.GetHeight() - 80));
   SetSize(wxSize(width, height));
   CentreOnParent();
 

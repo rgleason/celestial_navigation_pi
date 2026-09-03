@@ -12,9 +12,7 @@ constexpr double kPi = 3.1415926535897932384626433832795;
 
 double ToRadians(double degrees) { return degrees * kPi / 180.0; }
 double ToDegrees(double radians) { return radians * 180.0 / kPi; }
-double ClampUnit(double value) {
-  return std::max(-1.0, std::min(1.0, value));
-}
+double ClampUnit(double value) { return std::max(-1.0, std::min(1.0, value)); }
 
 struct Vector3 {
   double x;
@@ -32,8 +30,7 @@ double Dot(const Vector3& a, const Vector3& b) {
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 Vector3 Cross(const Vector3& a, const Vector3& b) {
-  return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z,
-          a.x * b.y - a.y * b.x};
+  return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
 }
 double Norm(const Vector3& value) { return std::sqrt(Dot(value, value)); }
 Vector3 Unit(const GeographicPoint& point) {
@@ -44,7 +41,8 @@ Vector3 Unit(const GeographicPoint& point) {
 }
 GeographicPoint Geographic(const Vector3& value) {
   GeographicPoint point;
-  point.latitude_deg = ToDegrees(std::atan2(value.z, std::hypot(value.x, value.y)));
+  point.latitude_deg =
+      ToDegrees(std::atan2(value.z, std::hypot(value.x, value.y)));
   point.longitude_deg = ToDegrees(std::atan2(value.y, value.x));
   return point;
 }
@@ -68,20 +66,19 @@ double RefractionDegrees(double apparent_altitude_deg, double pressure_hpa,
   // Same Bennett/Saemundsson form used by the rest of the plugin. It is not
   // reliable at or below the astronomical horizon.
   const double altitude = ToRadians(apparent_altitude_deg);
-  const double denominator =
-      std::tan(altitude) + 0.028;
-  if (std::fabs(denominator) < 1e-12) return std::numeric_limits<double>::quiet_NaN();
+  const double denominator = std::tan(altitude) + 0.028;
+  if (std::fabs(denominator) < 1e-12)
+    return std::numeric_limits<double>::quiet_NaN();
   const double x = std::tan(altitude + ToRadians(0.04848) / denominator);
   if (!Finite(x) || std::fabs(x) < 1e-12 || temperature_c <= -273.15)
     return std::numeric_limits<double>::quiet_NaN();
   return 0.267 * pressure_hpa / (x * (temperature_c + 273.15)) / 60.0;
 }
 
-double ParallaxInAltitude(double horizontal_parallax_deg,
-                          double altitude_deg) {
-  return ToDegrees(std::asin(ClampUnit(
-      std::sin(ToRadians(horizontal_parallax_deg)) *
-      std::cos(ToRadians(altitude_deg)))));
+double ParallaxInAltitude(double horizontal_parallax_deg, double altitude_deg) {
+  return ToDegrees(
+      std::asin(ClampUnit(std::sin(ToRadians(horizontal_parallax_deg)) *
+                          std::cos(ToRadians(altitude_deg)))));
 }
 
 bool EvaluateResidual(const Observation& observation,
@@ -146,8 +143,8 @@ bool CorrectObservedAltitude(const Observation& observation,
                              std::string* error) {
   const double raw =
       moon ? observation.moon_altitude_deg : observation.body_altitude_deg;
-  const AltitudeLimb limb = moon ? observation.moon_altitude_limb
-                                 : observation.body_altitude_limb;
+  const AltitudeLimb limb =
+      moon ? observation.moon_altitude_limb : observation.body_altitude_limb;
   const double hp = moon ? sample.moon_horizontal_parallax_deg
                          : sample.body_horizontal_parallax_deg;
   const double nominal_sd =
@@ -159,13 +156,11 @@ bool CorrectObservedAltitude(const Observation& observation,
   double limb_altitude =
       raw - observation.index_error_arcmin / 60.0 - DipDegrees(observation);
   if (observation.artificial_horizon) limb_altitude *= 0.5;
-  const double sd = moon
-                        ? nominal_sd *
-                              (1.0 + std::sin(ToRadians(limb_altitude)) *
-                                         std::sin(ToRadians(hp)))
-                        : nominal_sd;
-  const double apparent_center =
-      limb_altitude + AltitudeLimbSign(limb) * sd;
+  const double sd =
+      moon ? nominal_sd * (1.0 + std::sin(ToRadians(limb_altitude)) *
+                                     std::sin(ToRadians(hp)))
+           : nominal_sd;
+  const double apparent_center = limb_altitude + AltitudeLimbSign(limb) * sd;
   const double refraction = RefractionDegrees(
       apparent_center, observation.pressure_hpa, observation.temperature_c);
   if (!Finite(refraction) || apparent_center <= -1.0 ||
@@ -174,8 +169,7 @@ bool CorrectObservedAltitude(const Observation& observation,
     return false;
   }
   const double topocentric = apparent_center - refraction;
-  *geocentric_altitude_deg =
-      topocentric + ParallaxInAltitude(hp, topocentric);
+  *geocentric_altitude_deg = topocentric + ParallaxInAltitude(hp, topocentric);
   return Finite(*geocentric_altitude_deg);
 }
 
@@ -191,9 +185,9 @@ GeographicPoint Destination(const GeographicPoint& start, double bearing_deg,
   const double bearing = ToRadians(bearing_deg);
   const double latitude = ToRadians(start.latitude_deg);
   const double longitude = ToRadians(start.longitude_deg);
-  const double destination_latitude = std::asin(ClampUnit(
-      std::sin(latitude) * std::cos(angular) +
-      std::cos(latitude) * std::sin(angular) * std::cos(bearing)));
+  const double destination_latitude = std::asin(
+      ClampUnit(std::sin(latitude) * std::cos(angular) +
+                std::cos(latitude) * std::sin(angular) * std::cos(bearing)));
   const double destination_longitude =
       longitude +
       std::atan2(std::sin(bearing) * std::sin(angular) * std::cos(latitude),
@@ -225,10 +219,9 @@ void AltitudeAzimuth(const GeographicPoint& observer,
   const double declination = ToRadians(geographic_position.latitude_deg);
   const double longitude_difference =
       ToRadians(geographic_position.longitude_deg - observer.longitude_deg);
-  const double sine_altitude =
-      std::sin(latitude) * std::sin(declination) +
-      std::cos(latitude) * std::cos(declination) *
-          std::cos(longitude_difference);
+  const double sine_altitude = std::sin(latitude) * std::sin(declination) +
+                               std::cos(latitude) * std::cos(declination) *
+                                   std::cos(longitude_difference);
   *altitude_deg = ToDegrees(std::asin(ClampUnit(sine_altitude)));
   const double y = std::sin(longitude_difference) * std::cos(declination);
   const double x = std::cos(latitude) * std::sin(declination) -
@@ -272,28 +265,23 @@ double PredictedRawAltitude(const Observation& observation,
                          : sample.body_horizontal_parallax_deg;
   const double nominal_sd =
       moon ? sample.moon_semidiameter_deg : sample.body_semidiameter_deg;
-  const AltitudeLimb limb = moon ? observation.moon_altitude_limb
-                                 : observation.body_altitude_limb;
+  const AltitudeLimb limb =
+      moon ? observation.moon_altitude_limb : observation.body_altitude_limb;
   const double topocentric = TopocentricFromGeocentric(geocentric, hp);
   const double apparent_center =
       ApparentFromTopocentric(topocentric, observation);
-  if (!Finite(apparent_center))
-    return std::numeric_limits<double>::quiet_NaN();
-  double limb_altitude =
-      apparent_center - AltitudeLimbSign(limb) * nominal_sd;
+  if (!Finite(apparent_center)) return std::numeric_limits<double>::quiet_NaN();
+  double limb_altitude = apparent_center - AltitudeLimbSign(limb) * nominal_sd;
   if (moon) {
     for (int iteration = 0; iteration < 5; ++iteration) {
       const double topocentric_sd =
           nominal_sd *
-          (1.0 + std::sin(ToRadians(limb_altitude)) *
-                     std::sin(ToRadians(hp)));
-      limb_altitude =
-          apparent_center - AltitudeLimbSign(limb) * topocentric_sd;
+          (1.0 + std::sin(ToRadians(limb_altitude)) * std::sin(ToRadians(hp)));
+      limb_altitude = apparent_center - AltitudeLimbSign(limb) * topocentric_sd;
     }
   }
-  const double corrected = observation.artificial_horizon
-                               ? 2.0 * limb_altitude
-                               : limb_altitude;
+  const double corrected =
+      observation.artificial_horizon ? 2.0 * limb_altitude : limb_altitude;
   return corrected + observation.index_error_arcmin / 60.0 +
          DipDegrees(observation);
 }
@@ -323,18 +311,16 @@ double PredictedRawDistance(const Observation& observation,
     return std::numeric_limits<double>::quiet_NaN();
   const double azimuth_difference = ToRadians(moon_azimuth - body_azimuth);
   const double apparent_distance = ToDegrees(std::acos(ClampUnit(
-      std::sin(ToRadians(moon_apparent)) *
-          std::sin(ToRadians(body_apparent)) +
-      std::cos(ToRadians(moon_apparent)) *
-          std::cos(ToRadians(body_apparent)) * std::cos(azimuth_difference))));
+      std::sin(ToRadians(moon_apparent)) * std::sin(ToRadians(body_apparent)) +
+      std::cos(ToRadians(moon_apparent)) * std::cos(ToRadians(body_apparent)) *
+          std::cos(azimuth_difference))));
   const double moon_sd =
       sample.moon_semidiameter_deg *
       (1.0 + std::sin(ToRadians(moon_apparent)) *
                  std::sin(ToRadians(sample.moon_horizontal_parallax_deg)));
   return apparent_distance + observation.index_error_arcmin / 60.0 -
          ContactSign(observation.moon_contact) * moon_sd -
-         ContactSign(observation.body_contact) *
-             sample.body_semidiameter_deg;
+         ContactSign(observation.body_contact) * sample.body_semidiameter_deg;
 }
 
 double CalculatedGeocentricAltitude(const GeographicPoint& observer,
@@ -349,11 +335,11 @@ std::vector<GeographicPoint> SolveReferencePositions(
     const EphemerisSample& body_sample, double moon_altitude,
     double body_altitude, std::string* error) {
   const GeographicPoint moon_gp{moon_sample.moon_geographic_latitude_deg,
-                                 moon_sample.moon_geographic_longitude_deg};
+                                moon_sample.moon_geographic_longitude_deg};
   const GeographicPoint body_gp{body_sample.body_geographic_latitude_deg,
-                                 body_sample.body_geographic_longitude_deg};
-  PositionResult seeds = IntersectAltitudeCircles(
-      moon_gp, moon_altitude, body_gp, body_altitude);
+                                body_sample.body_geographic_longitude_deg};
+  PositionResult seeds =
+      IntersectAltitudeCircles(moon_gp, moon_altitude, body_gp, body_altitude);
   if (!seeds.valid) {
     if (error) *error = seeds.error;
     return {};
@@ -415,8 +401,7 @@ std::vector<GeographicPoint> SolveReferencePositions(
       position.latitude_deg += dlat / damping;
       position.longitude_deg =
           NormalizeLongitude(position.longitude_deg + dlon / damping);
-      if (position.latitude_deg <= -89.999 ||
-          position.latitude_deg >= 89.999)
+      if (position.latitude_deg <= -89.999 || position.latitude_deg >= 89.999)
         break;
     }
     if (!converged) continue;
@@ -458,9 +443,9 @@ TaggedEvaluation EvaluateTagged(const Observation& observation,
       !CorrectObservedAltitude(observation, body_sample, false, &body_altitude,
                                &result.error))
     return result;
-  result.positions = SolveReferencePositions(
-      observation, moon_sample, body_sample, moon_altitude, body_altitude,
-      &result.error);
+  result.positions =
+      SolveReferencePositions(observation, moon_sample, body_sample,
+                              moon_altitude, body_altitude, &result.error);
   for (const GeographicPoint& position : result.positions) {
     const double predicted =
         PredictedRawDistance(observation, result.distance_sample, position);
@@ -489,8 +474,7 @@ bool InvertThreeByThree(const double input[3][3], double inverse[3][3]) {
   for (int pivot = 0; pivot < 3; ++pivot) {
     int best = pivot;
     for (int row = pivot + 1; row < 3; ++row)
-      if (std::fabs(augmented[row][pivot]) >
-          std::fabs(augmented[best][pivot]))
+      if (std::fabs(augmented[row][pivot]) > std::fabs(augmented[best][pivot]))
         best = row;
     if (std::fabs(augmented[best][pivot]) < 1e-12) return false;
     if (best != pivot)
@@ -538,8 +522,7 @@ TaggedUncertainty EstimateTaggedUncertainty(
               after))
     return result;
   const double time_step_hours = time_step_seconds / 3600.0;
-  for (int observation_index = 0; observation_index < 3;
-       ++observation_index)
+  for (int observation_index = 0; observation_index < 3; ++observation_index)
     jacobian[observation_index][0] =
         (after[observation_index] - before[observation_index]) /
         (2.0 * time_step_hours);
@@ -557,8 +540,7 @@ TaggedUncertainty EstimateTaggedUncertainty(
     if (!values(correction_seconds, lower, before) ||
         !values(correction_seconds, upper, after))
       return result;
-    for (int observation_index = 0; observation_index < 3;
-         ++observation_index)
+    for (int observation_index = 0; observation_index < 3; ++observation_index)
       jacobian[observation_index][coordinate + 1] =
           (after[observation_index] - before[observation_index]) /
           (2.0 * coordinate_step_deg);
@@ -597,14 +579,12 @@ Clearance ClearDistance(const Observation& observation,
                         const EphemerisSample& ephemeris) {
   Clearance result;
   const double values[] = {
-      observation.raw_distance_deg, observation.moon_altitude_deg,
-      observation.body_altitude_deg, observation.index_error_arcmin,
-      observation.eye_height_m, observation.pressure_hpa,
-      observation.temperature_c, ephemeris.predicted_distance_deg,
-      ephemeris.moon_semidiameter_deg,
-      ephemeris.moon_horizontal_parallax_deg,
-      ephemeris.body_semidiameter_deg,
-      ephemeris.body_horizontal_parallax_deg};
+      observation.raw_distance_deg,    observation.moon_altitude_deg,
+      observation.body_altitude_deg,   observation.index_error_arcmin,
+      observation.eye_height_m,        observation.pressure_hpa,
+      observation.temperature_c,       ephemeris.predicted_distance_deg,
+      ephemeris.moon_semidiameter_deg, ephemeris.moon_horizontal_parallax_deg,
+      ephemeris.body_semidiameter_deg, ephemeris.body_horizontal_parallax_deg};
   for (double value : values) {
     if (!Finite(value)) {
       result.error = "A lunar-distance input is not finite";
@@ -613,12 +593,14 @@ Clearance ClearDistance(const Observation& observation,
   }
   if (observation.raw_distance_deg <= 0.0 ||
       observation.raw_distance_deg >= 180.0) {
-    result.error = "The measured lunar distance must be between 0 and 180 degrees";
+    result.error =
+        "The measured lunar distance must be between 0 and 180 degrees";
     return result;
   }
   if (observation.eye_height_m < 0.0 || observation.pressure_hpa <= 0.0 ||
       observation.temperature_c <= -100.0) {
-    result.error = "Eye height, pressure or temperature is outside a usable range";
+    result.error =
+        "Eye height, pressure or temperature is outside a usable range";
     return result;
   }
   if (observation.dip_short && observation.dip_short_distance_m <= 0.0) {
@@ -627,6 +609,7 @@ Clearance ClearDistance(const Observation& observation,
   }
 
   const double index_correction_deg = observation.index_error_arcmin / 60.0;
+  result.index_correction_deg = index_correction_deg;
   double dip_deg = 0.0;
   if (!observation.artificial_horizon) {
     dip_deg = observation.dip_short
@@ -636,6 +619,7 @@ Clearance ClearDistance(const Observation& observation,
                         60.0
                   : 1.758 * std::sqrt(observation.eye_height_m) / 60.0;
   }
+  result.dip_correction_deg = dip_deg;
 
   auto apparent_limb_altitude = [&](double hs) {
     double value = hs - index_correction_deg - dip_deg;
@@ -651,9 +635,11 @@ Clearance ClearDistance(const Observation& observation,
       ephemeris.moon_semidiameter_deg *
       (1.0 + std::sin(ToRadians(moon_limb_alt)) *
                  std::sin(ToRadians(ephemeris.moon_horizontal_parallax_deg)));
+  result.moon_topocentric_semidiameter_deg = moon_topocentric_sd;
+  result.body_semidiameter_deg = ephemeris.body_semidiameter_deg;
   result.moon_apparent_center_altitude_deg =
-      moon_limb_alt + AltitudeLimbSign(observation.moon_altitude_limb) *
-                          moon_topocentric_sd;
+      moon_limb_alt +
+      AltitudeLimbSign(observation.moon_altitude_limb) * moon_topocentric_sd;
   result.body_apparent_center_altitude_deg =
       body_limb_alt + AltitudeLimbSign(observation.body_altitude_limb) *
                           ephemeris.body_semidiameter_deg;
@@ -670,14 +656,14 @@ Clearance ClearDistance(const Observation& observation,
   result.apparent_distance_deg =
       observation.raw_distance_deg - index_correction_deg +
       ContactSign(observation.moon_contact) * moon_topocentric_sd +
-      ContactSign(observation.body_contact) *
-          ephemeris.body_semidiameter_deg;
+      ContactSign(observation.body_contact) * ephemeris.body_semidiameter_deg;
   if (observation.artificial_horizon) {
     // The artificial horizon doubles altitudes, not the inter-body distance.
   }
   if (result.apparent_distance_deg <= 0.0 ||
       result.apparent_distance_deg >= 180.0) {
-    result.error = "The selected distance limbs produce an invalid centre distance";
+    result.error =
+        "The selected distance limbs produce an invalid centre distance";
     return result;
   }
 
@@ -694,40 +680,42 @@ Clearance ClearDistance(const Observation& observation,
       denominator;
   if (raw_cos_azimuth < -1.000001 || raw_cos_azimuth > 1.000001) {
     result.error =
-        "The distance and altitudes are geometrically inconsistent (check limbs and index error)";
+        "The distance and altitudes are geometrically inconsistent (check "
+        "limbs and index error)";
     return result;
   }
   const double cos_azimuth = ClampUnit(raw_cos_azimuth);
   result.relative_azimuth_deg = ToDegrees(std::acos(cos_azimuth));
 
-  const double moon_refraction = RefractionDegrees(
-      result.moon_apparent_center_altitude_deg, observation.pressure_hpa,
-      observation.temperature_c);
-  const double body_refraction = RefractionDegrees(
-      result.body_apparent_center_altitude_deg, observation.pressure_hpa,
-      observation.temperature_c);
+  const double moon_refraction =
+      RefractionDegrees(result.moon_apparent_center_altitude_deg,
+                        observation.pressure_hpa, observation.temperature_c);
+  const double body_refraction =
+      RefractionDegrees(result.body_apparent_center_altitude_deg,
+                        observation.pressure_hpa, observation.temperature_c);
   if (!Finite(moon_refraction) || !Finite(body_refraction)) {
     result.error = "Atmospheric refraction could not be evaluated";
     return result;
   }
+  result.moon_refraction_deg = moon_refraction;
+  result.body_refraction_deg = body_refraction;
   const double moon_refracted =
       result.moon_apparent_center_altitude_deg - moon_refraction;
   const double body_refracted =
       result.body_apparent_center_altitude_deg - body_refraction;
+  result.moon_parallax_in_altitude_deg = ParallaxInAltitude(
+      ephemeris.moon_horizontal_parallax_deg, moon_refracted);
+  result.body_parallax_in_altitude_deg = ParallaxInAltitude(
+      ephemeris.body_horizontal_parallax_deg, body_refracted);
   result.moon_geocentric_altitude_deg =
-      moon_refracted + ParallaxInAltitude(
-                           ephemeris.moon_horizontal_parallax_deg,
-                           moon_refracted);
+      moon_refracted + result.moon_parallax_in_altitude_deg;
   result.body_geocentric_altitude_deg =
-      body_refracted + ParallaxInAltitude(
-                           ephemeris.body_horizontal_parallax_deg,
-                           body_refracted);
+      body_refracted + result.body_parallax_in_altitude_deg;
 
   const double hom = ToRadians(result.moon_geocentric_altitude_deg);
   const double hob = ToRadians(result.body_geocentric_altitude_deg);
-  const double cos_cleared =
-      std::sin(hom) * std::sin(hob) +
-      std::cos(hom) * std::cos(hob) * cos_azimuth;
+  const double cos_cleared = std::sin(hom) * std::sin(hob) +
+                             std::cos(hom) * std::cos(hob) * cos_azimuth;
   result.cleared_distance_deg = ToDegrees(std::acos(ClampUnit(cos_cleared)));
   result.valid = Finite(result.cleared_distance_deg);
   if (!result.valid) result.error = "Cleared lunar distance is not finite";
@@ -755,8 +743,8 @@ SolveResult SolveTime(const Observation& observation,
   };
   std::vector<Point> points;
   double closest_abs = std::numeric_limits<double>::infinity();
-  for (double t = options.start_offset_seconds;
-       t < options.end_offset_seconds; t += options.scan_step_seconds) {
+  for (double t = options.start_offset_seconds; t < options.end_offset_seconds;
+       t += options.scan_step_seconds) {
     double residual = 0.0;
     std::string error;
     if (!EvaluateResidual(observation, ephemeris, t, &residual, nullptr,
@@ -792,8 +780,8 @@ SolveResult SolveTime(const Observation& observation,
       const double middle_t = 0.5 * (left.t + right.t);
       double middle_residual = 0.0;
       std::string error;
-      if (!EvaluateResidual(observation, ephemeris, middle_t,
-                            &middle_residual, nullptr, nullptr, &error)) {
+      if (!EvaluateResidual(observation, ephemeris, middle_t, &middle_residual,
+                            nullptr, nullptr, &error)) {
         result.error = error;
         return result;
       }
@@ -853,11 +841,13 @@ SolveResult SolveTime(const Observation& observation,
   }
   if (result.candidates.size() > 1)
     result.warnings.push_back(
-        "More than one time matches this observation; use the approximate date/time or a second lunar to resolve the ambiguity");
+        "More than one time matches this observation; use the approximate "
+        "date/time or a second lunar to resolve the ambiguity");
   for (const TimeCandidate& candidate : result.candidates) {
     if (std::fabs(candidate.slope_arcmin_per_hour) < 10.0) {
       result.warnings.push_back(
-          "The lunar distance is changing slowly, so this geometry gives a weak time determination");
+          "The lunar distance is changing slowly, so this geometry gives a "
+          "weak time determination");
       break;
     }
   }
@@ -869,7 +859,8 @@ SolveResult SolveTimeTagged(const Observation& observation,
                             const EphemerisFunction& ephemeris,
                             const SolveOptions& options) {
   SolveResult result;
-  if (!ephemeris || !(options.end_offset_seconds > options.start_offset_seconds) ||
+  if (!ephemeris ||
+      !(options.end_offset_seconds > options.start_offset_seconds) ||
       !(options.scan_step_seconds > 0.0) ||
       !(options.root_tolerance_seconds > 0.0)) {
     result.error = "Invalid time-tagged lunar-distance search";
@@ -900,9 +891,9 @@ SolveResult SolveTimeTagged(const Observation& observation,
       observation.distance_uncertainty_arcmin < 0.0 ||
       observation.moon_altitude_uncertainty_arcmin < 0.0 ||
       observation.body_altitude_uncertainty_arcmin < 0.0 ||
-      (observation.dip_short &&
-       observation.dip_short_distance_m <= 0.0)) {
-    result.error = "A time-tagged lunar observation input is outside its usable range";
+      (observation.dip_short && observation.dip_short_distance_m <= 0.0)) {
+    result.error =
+        "A time-tagged lunar observation input is outside its usable range";
     return result;
   }
 
@@ -930,13 +921,12 @@ SolveResult SolveTimeTagged(const Observation& observation,
     }
     points.push_back({correction, std::move(evaluation)});
   }
-  points.push_back({options.end_offset_seconds,
-                    EvaluateTagged(observation, ephemeris,
-                                   options.end_offset_seconds)});
+  points.push_back(
+      {options.end_offset_seconds,
+       EvaluateTagged(observation, ephemeris, options.end_offset_seconds)});
 
   for (std::size_t index = 1; index < points.size(); ++index) {
-    if (!points[index - 1].evaluation.valid ||
-        !points[index].evaluation.valid)
+    if (!points[index - 1].evaluation.valid || !points[index].evaluation.valid)
       continue;
     const std::size_t branches =
         std::min(points[index - 1].evaluation.residuals.size(),
@@ -961,8 +951,7 @@ SolveResult SolveTimeTagged(const Observation& observation,
           break;
         }
         const double fmiddle = evaluation.residuals[branch];
-        if (fmiddle == 0.0 ||
-            std::signbit(fmiddle) == std::signbit(fleft)) {
+        if (fmiddle == 0.0 || std::signbit(fmiddle) == std::signbit(fleft)) {
           left = middle;
           fleft = fmiddle;
         } else {
@@ -977,20 +966,20 @@ SolveResult SolveTimeTagged(const Observation& observation,
       if (!root_evaluation.valid || branch >= root_evaluation.positions.size())
         continue;
       const double derivative_interval = 30.0;
-      const TaggedEvaluation before = EvaluateTagged(
-          observation, ephemeris, root - derivative_interval);
-      const TaggedEvaluation after = EvaluateTagged(
-          observation, ephemeris, root + derivative_interval);
-      if (!before.valid || !after.valid ||
-          branch >= before.residuals.size() || branch >= after.residuals.size())
+      const TaggedEvaluation before =
+          EvaluateTagged(observation, ephemeris, root - derivative_interval);
+      const TaggedEvaluation after =
+          EvaluateTagged(observation, ephemeris, root + derivative_interval);
+      if (!before.valid || !after.valid || branch >= before.residuals.size() ||
+          branch >= after.residuals.size())
         continue;
       const double slope_arcmin_per_hour =
-          (after.residuals[branch] - before.residuals[branch]) * 60.0 *
-          3600.0 / (2.0 * derivative_interval);
-      const double angular_uncertainty = std::hypot(
-          observation.distance_uncertainty_arcmin,
-          std::hypot(observation.moon_altitude_uncertainty_arcmin,
-                     observation.body_altitude_uncertainty_arcmin));
+          (after.residuals[branch] - before.residuals[branch]) * 60.0 * 3600.0 /
+          (2.0 * derivative_interval);
+      const double angular_uncertainty =
+          std::hypot(observation.distance_uncertainty_arcmin,
+                     std::hypot(observation.moon_altitude_uncertainty_arcmin,
+                                observation.body_altitude_uncertainty_arcmin));
       const double slope_arcmin_per_second =
           std::fabs(slope_arcmin_per_hour) / 3600.0;
 
@@ -1019,8 +1008,8 @@ SolveResult SolveTimeTagged(const Observation& observation,
             2.0 * options.root_tolerance_seconds) {
           bool duplicate_position = false;
           for (const GeographicPoint& position : existing.positions)
-            if (ToDegrees(std::acos(ClampUnit(Dot(
-                    Unit(position), Unit(candidate.positions.front()))))) <
+            if (ToDegrees(std::acos(ClampUnit(
+                    Dot(Unit(position), Unit(candidate.positions.front()))))) <
                 1e-5)
               duplicate_position = true;
           if (!duplicate_position)
@@ -1048,7 +1037,8 @@ SolveResult SolveTimeTagged(const Observation& observation,
   }
   if (result.candidates.size() > 1)
     result.warnings.push_back(
-        "More than one joint time/position solution exists; use DR, hemisphere, another altitude or a second lunar to resolve it");
+        "More than one joint time/position solution exists; use DR, "
+        "hemisphere, another altitude or a second lunar to resolve it");
   result.valid = true;
   return result;
 }
@@ -1075,8 +1065,8 @@ PredictedObservation PredictTimeTaggedObservation(
       reference_position, settings, settings.moon_time_offset_seconds);
   const GeographicPoint body_observer = ObserverAt(
       reference_position, settings, settings.body_time_offset_seconds);
-  result.raw_distance_deg = PredictedRawDistance(
-      settings, distance_sample, reference_position);
+  result.raw_distance_deg =
+      PredictedRawDistance(settings, distance_sample, reference_position);
   result.moon_altitude_deg =
       PredictedRawAltitude(settings, moon_sample, moon_observer, true);
   result.body_altitude_deg =
@@ -1102,8 +1092,10 @@ PositionResult IntersectAltitudeCircles(
       !Finite(body_observed_altitude_deg) ||
       std::fabs(moon_geographic_position.latitude_deg) > 90.0 ||
       std::fabs(body_geographic_position.latitude_deg) > 90.0 ||
-      moon_observed_altitude_deg <= -90.0 || moon_observed_altitude_deg >= 90.0 ||
-      body_observed_altitude_deg <= -90.0 || body_observed_altitude_deg >= 90.0) {
+      moon_observed_altitude_deg <= -90.0 ||
+      moon_observed_altitude_deg >= 90.0 ||
+      body_observed_altitude_deg <= -90.0 ||
+      body_observed_altitude_deg >= 90.0) {
     result.error = "Invalid altitude-circle input";
     return result;
   }
@@ -1112,7 +1104,8 @@ PositionResult IntersectAltitudeCircles(
   const double dot = ClampUnit(Dot(moon, body));
   const double denominator = 1.0 - dot * dot;
   if (denominator < 1e-12) {
-    result.error = "The two celestial geographic positions are coincident or antipodal";
+    result.error =
+        "The two celestial geographic positions are coincident or antipodal";
     return result;
   }
   const double moon_plane = std::sin(ToRadians(moon_observed_altitude_deg));
@@ -1123,7 +1116,8 @@ PositionResult IntersectAltitudeCircles(
   const double remaining = 1.0 - Dot(base, base);
   if (remaining < -1e-10) {
     result.error =
-        "The corrected Moon and body altitude circles do not intersect; check observations and limb corrections";
+        "The corrected Moon and body altitude circles do not intersect; check "
+        "observations and limb corrections";
     return result;
   }
   Vector3 normal = Cross(moon, body);
@@ -1140,8 +1134,8 @@ PositionResult IntersectAltitudeCircles(
   const Vector3 body_tangent = body + (-body_plane) * observer;
   const double tangent_denominator = Norm(moon_tangent) * Norm(body_tangent);
   if (tangent_denominator > 0.0) {
-    double angle = ToDegrees(std::acos(ClampUnit(
-        Dot(moon_tangent, body_tangent) / tangent_denominator)));
+    double angle = ToDegrees(std::acos(
+        ClampUnit(Dot(moon_tangent, body_tangent) / tangent_denominator)));
     if (angle > 90.0) angle = 180.0 - angle;
     result.circle_crossing_angle_deg = angle;
   }
@@ -1157,14 +1151,15 @@ double GreatCircleDistanceNm(const GeographicPoint& first,
       ToRadians(second.longitude_deg - first.longitude_deg);
   const double first_latitude = ToRadians(first.latitude_deg);
   const double second_latitude = ToRadians(second.latitude_deg);
-  const double haversine =
-      std::sin(latitude_difference / 2.0) *
-          std::sin(latitude_difference / 2.0) +
-      std::cos(first_latitude) * std::cos(second_latitude) *
-          std::sin(longitude_difference / 2.0) *
-          std::sin(longitude_difference / 2.0);
-  return ToDegrees(2.0 * std::atan2(std::sqrt(std::max(0.0, haversine)),
-                                    std::sqrt(std::max(0.0, 1.0 - haversine)))) *
+  const double haversine = std::sin(latitude_difference / 2.0) *
+                               std::sin(latitude_difference / 2.0) +
+                           std::cos(first_latitude) *
+                               std::cos(second_latitude) *
+                               std::sin(longitude_difference / 2.0) *
+                               std::sin(longitude_difference / 2.0);
+  return ToDegrees(2.0 *
+                   std::atan2(std::sqrt(std::max(0.0, haversine)),
+                              std::sqrt(std::max(0.0, 1.0 - haversine)))) *
          60.0;
 }
 

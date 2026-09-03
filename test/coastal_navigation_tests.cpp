@@ -35,8 +35,7 @@ TEST(CoastalNavigation, TideChangesEffectiveTargetHeightAndRange) {
 
 TEST(CoastalNavigation, BowditchBeyondHorizonMatchesTableFormula) {
   cn::VerticalAngleObservation observation;
-  observation.mode =
-      cn::VerticalAngleMode::SeaHorizonToTopBeyondHorizon;
+  observation.mode = cn::VerticalAngleMode::SeaHorizonToTopBeyondHorizon;
   observation.angle_deg = 10.0 / 60.0;
   observation.charted_top_height_m = 100.0 * 0.3048;
   observation.eye_height_m = 0.0;
@@ -55,12 +54,33 @@ TEST(CoastalNavigation, ThreePointHorizontalFixRecoversKnownPosition) {
       truth, observation.left, observation.centre);
   observation.centre_right_angle_deg = cn::IncludedHorizontalAngleDeg(
       truth, observation.centre, observation.right);
-  const cn::HorizontalFixResult result = cn::SolveHorizontalThreePointFix(
-      observation, cn::GeoPoint{49.96, -1.01});
+  const cn::HorizontalFixResult result =
+      cn::SolveHorizontalThreePointFix(observation, cn::GeoPoint{49.96, -1.01});
   ASSERT_TRUE(result.valid) << result.error;
   EXPECT_LT(cn::GreatCircleDistanceNm(result.position, truth), 0.001);
   EXPECT_LT(std::fabs(result.first_residual_arcmin), 0.001);
   EXPECT_LT(std::fabs(result.second_residual_arcmin), 0.001);
+}
+
+TEST(CoastalNavigation, HorizontalIndexErrorCorrectsBothMeasurements) {
+  cn::HorizontalAngleObservation observation;
+  observation.left = {50.02, -1.05};
+  observation.centre = {50.08, -0.98};
+  observation.right = {50.00, -0.90};
+  const cn::GeoPoint truth{49.95, -1.00};
+  observation.index_error_arcmin = 1.5;
+  observation.left_centre_angle_deg =
+      cn::IncludedHorizontalAngleDeg(truth, observation.left,
+                                     observation.centre) +
+      observation.index_error_arcmin / 60.0;
+  observation.centre_right_angle_deg =
+      cn::IncludedHorizontalAngleDeg(truth, observation.centre,
+                                     observation.right) +
+      observation.index_error_arcmin / 60.0;
+  const cn::HorizontalFixResult result =
+      cn::SolveHorizontalThreePointFix(observation, cn::GeoPoint{49.96, -1.01});
+  ASSERT_TRUE(result.valid) << result.error;
+  EXPECT_LT(cn::GreatCircleDistanceNm(result.position, truth), 0.001);
 }
 
 TEST(CoastalNavigation, SequentialAnglesRecoverMovingReferencePosition) {
@@ -74,16 +94,16 @@ TEST(CoastalNavigation, SequentialAnglesRecoverMovingReferencePosition) {
   observation.second_time_offset_seconds = 45.0;
   observation.course_true_deg = 80.0;
   observation.speed_knots = 18.0;
-  const cn::GeoPoint second_position = cn::Destination(
-      truth, observation.course_true_deg,
-      observation.speed_knots * observation.second_time_offset_seconds /
-          3600.0);
+  const cn::GeoPoint second_position =
+      cn::Destination(truth, observation.course_true_deg,
+                      observation.speed_knots *
+                          observation.second_time_offset_seconds / 3600.0);
   observation.left_centre_angle_deg = cn::IncludedHorizontalAngleDeg(
       truth, observation.left, observation.centre);
   observation.centre_right_angle_deg = cn::IncludedHorizontalAngleDeg(
       second_position, observation.centre, observation.right);
-  const cn::HorizontalFixResult result = cn::SolveHorizontalThreePointFix(
-      observation, cn::GeoPoint{49.96, -1.01});
+  const cn::HorizontalFixResult result =
+      cn::SolveHorizontalThreePointFix(observation, cn::GeoPoint{49.96, -1.01});
   ASSERT_TRUE(result.valid) << result.error;
   EXPECT_LT(cn::GreatCircleDistanceNm(result.position, truth), 0.001);
   EXPECT_TRUE(std::isfinite(result.estimated_uncertainty_nm));
@@ -93,8 +113,7 @@ TEST(CoastalNavigation, SequentialAnglesRecoverMovingReferencePosition) {
 TEST(CoastalNavigation, SingleHorizontalAngleProducesChartableLocus) {
   const cn::GeoPoint first{53.0, -3.1};
   const cn::GeoPoint second{53.0, -2.9};
-  const auto branches =
-      cn::BuildHorizontalAngleLocus(first, second, 40.0, 720);
+  const auto branches = cn::BuildHorizontalAngleLocus(first, second, 40.0, 720);
   ASSERT_FALSE(branches.empty());
   std::size_t points = 0;
   for (const auto& branch : branches) {

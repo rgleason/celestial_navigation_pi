@@ -70,8 +70,36 @@ LunarToolsDialog::LunarToolsDialog(CelestialNavigationDialog* parent)
                wxDefaultPosition, wxSize(1120, 780),
                wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
       m_parentDialog(parent),
+      m_entryFormat(nullptr),
+      m_activeEntryFormat(0),
+      m_defaultLatitude(0.0),
+      m_defaultLongitude(0.0),
       m_lastPredictionDeg(NAN) {
   auto* top = new wxBoxSizer(wxVERTICAL);
+  m_parentDialog->GetPlugin()->GetBoatPosition(&m_defaultLatitude,
+                                               &m_defaultLongitude);
+
+  wxFileConfig* config = GetOCPNConfigObject();
+  long entryFormat = 0;
+  if (config) {
+    config->SetPath(_T("/PlugIns/CelestialNavigation/Planner"));
+    config->Read(_T("EntryFormat"), &entryFormat, 0L);
+    config->SetPath(_T("/PlugIns/CelestialNavigation/LunarTools"));
+    config->Read(_T("EntryFormat"), &entryFormat, entryFormat);
+  }
+  m_activeEntryFormat = std::max(0L, std::min(entryFormat, 1L));
+  auto* formatRow = new wxBoxSizer(wxHORIZONTAL);
+  formatRow->Add(new wxStaticText(this, wxID_ANY, _("UTC date/time entry")), 0,
+                 wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
+  m_entryFormat = new wxChoice(this, wxID_ANY);
+  m_entryFormat->Append(_("Nautical: YYYY-MM-DD, 24-hour"));
+  m_entryFormat->Append(_("OpenCPN / platform format"));
+  m_entryFormat->SetSelection(m_activeEntryFormat);
+  m_entryFormat->SetToolTip(
+      _("Nautical format avoids ambiguous dates and AM/PM."));
+  formatRow->Add(m_entryFormat, 0, wxEXPAND);
+  top->Add(formatRow, 0, wxLEFT | wxRIGHT | wxTOP, 10);
+
   m_notebook = new wxNotebook(this, wxID_ANY);
   auto* sequence = new wxPanel(m_notebook);
   auto* planner = new wxPanel(m_notebook);
@@ -82,6 +110,9 @@ LunarToolsDialog::LunarToolsDialog(CelestialNavigationDialog* parent)
   m_notebook->AddPage(sequence, _("Lunar sequence"));
   m_notebook->AddPage(planner, _("Lunar planner"));
   m_notebook->AddPage(calibration, _("Sextant check"));
+  UpdateUtcEntryVisibility();
+  m_entryFormat->Bind(wxEVT_CHOICE, &LunarToolsDialog::ChangeUtcEntryFormat,
+                      this);
   top->Add(m_notebook, 1, wxEXPAND | wxALL, 8);
   auto* close = new wxButton(this, wxID_CLOSE, _("Close"));
   close->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { EndModal(wxID_CLOSE); });
@@ -93,6 +124,95 @@ LunarToolsDialog::LunarToolsDialog(CelestialNavigationDialog* parent)
   SetMinSize(wxSize(880, 650));
   CentreOnParent();
   LoadProfiles();
+}
+
+LunarToolsDialog::~LunarToolsDialog() {
+  wxFileConfig* config = GetOCPNConfigObject();
+  if (!config || !m_entryFormat) return;
+  config->SetPath(_T("/PlugIns/CelestialNavigation/LunarTools"));
+  config->Write(_T("EntryFormat"),
+                static_cast<long>(m_entryFormat->GetSelection()));
+}
+
+void LunarToolsDialog::CreateUtcEntry(wxWindow* parent,
+                                      UtcEntryControls* controls,
+                                      const wxDateTime& utc) {
+  controls->dateContainer = new wxPanel(parent);
+  auto* dateSizer = new wxBoxSizer(wxVERTICAL);
+  controls->nativeDate =
+      new wxDatePickerCtrl(controls->dateContainer, wxID_ANY);
+  controls->nauticalDate =
+      new wxTextCtrl(controls->dateContainer, wxID_ANY, wxEmptyString,
+                     wxDefaultPosition, wxSize(145, -1), wxTE_PROCESS_ENTER);
+  controls->nauticalDate->SetHint(_("YYYY-MM-DD"));
+  dateSizer->Add(controls->nativeDate, 0, wxEXPAND);
+  dateSizer->Add(controls->nauticalDate, 0, wxEXPAND);
+  controls->dateContainer->SetSizer(dateSizer);
+
+  controls->timeContainer = new wxPanel(parent);
+  auto* timeSizer = new wxBoxSizer(wxVERTICAL);
+  controls->nativeTime =
+      new wxTimePickerCtrl(controls->timeContainer, wxID_ANY);
+  controls->nauticalTime =
+      new wxTextCtrl(controls->timeContainer, wxID_ANY, wxEmptyString,
+                     wxDefaultPosition, wxSize(145, -1), wxTE_PROCESS_ENTER);
+  controls->nauticalTime->SetHint(_("HH:MM:SS"));
+  timeSizer->Add(controls->nativeTime, 0, wxEXPAND);
+  timeSizer->Add(controls->nauticalTime, 0, wxEXPAND);
+  controls->timeContainer->SetSizer(timeSizer);
+  SetUtcEntry(controls, utc);
+}
+
+void LunarToolsDialog::SetUtcEntry(UtcEntryControls* controls,
+                                   const wxDateTime& utc) {
+  if (!controls || !utc.IsValid()) return;
+  controls->nativeDate->SetValue(utc);
+  controls->nativeTime->SetValue(utc);
+  controls->nauticalDate->ChangeValue(FormatNauticalPlannerDate(utc));
+  controls->nauticalTime->ChangeValue(FormatNauticalPlannerTime(utc));
+}
+
+wxDateTime LunarToolsDialog::ReadUtcEntry(const UtcEntryControls& controls,
+                                          int format, bool showErrors,
+                                          const wxString& title) const {
+  if (format == 0) {
+    wxDateTime utc;
+    if (ParseNauticalPlannerDateTime(controls.nauticalDate->GetValue(),
+                                     controls.nauticalTime->GetValue(), &utc))
+      return utc;
+    if (showErrors)
+      wxMessageBox(_("Enter UTC date as YYYY-MM-DD and 24-hour time as "
+                     "HH:MM:SS."),
+                   title, wxOK | wxICON_ERROR,
+                   const_cast<LunarToolsDialog*>(this));
+    return wxDateTime();
+  }
+  return PickerUtc(controls.nativeDate, controls.nativeTime);
+}
+
+void LunarToolsDialog::ChangeUtcEntryFormat(wxCommandEvent&) {
+  const wxDateTime planner =
+      ReadUtcEntry(m_plannerUtc, m_activeEntryFormat, false, wxEmptyString);
+  const wxDateTime calibration =
+      ReadUtcEntry(m_calUtc, m_activeEntryFormat, false, wxEmptyString);
+  if (planner.IsValid()) SetUtcEntry(&m_plannerUtc, planner);
+  if (calibration.IsValid()) SetUtcEntry(&m_calUtc, calibration);
+  m_activeEntryFormat = m_entryFormat->GetSelection();
+  UpdateUtcEntryVisibility();
+}
+
+void LunarToolsDialog::UpdateUtcEntryVisibility() {
+  const bool nautical = m_entryFormat && m_entryFormat->GetSelection() == 0;
+  for (UtcEntryControls* controls : {&m_plannerUtc, &m_calUtc}) {
+    if (!controls->dateContainer) continue;
+    controls->nauticalDate->Show(nautical);
+    controls->nauticalTime->Show(nautical);
+    controls->nativeDate->Show(!nautical);
+    controls->nativeTime->Show(!nautical);
+    controls->dateContainer->Layout();
+    controls->timeContainer->Layout();
+  }
+  Layout();
 }
 
 void LunarToolsDialog::SelectPageForIntegration(unsigned page) {
@@ -163,12 +283,17 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
   m_sequenceMode->SetSelection(0);
   settings->Add(LabelControl(page, _("Mode"), m_sequenceMode), 0,
                 wxEXPAND | wxALL, 3);
-  double latitude = 0.0, longitude = 0.0;
-  if (!m_parentDialog->GetLastFix(&latitude, &longitude) &&
-      !m_lunarIndices.empty()) {
-    const Sight& sight = m_parentDialog->m_Sights[m_lunarIndices.front()];
-    latitude = sight.m_DRLat;
-    longitude = sight.m_DRLon;
+  double latitude = m_defaultLatitude, longitude = m_defaultLongitude;
+  const Sight* earliest = nullptr;
+  for (std::size_t index : m_lunarIndices) {
+    const Sight& sight = m_parentDialog->m_Sights[index];
+    if (!earliest ||
+        UtcDateTime::IsEarlier(sight.m_DateTime, earliest->m_DateTime))
+      earliest = &sight;
+  }
+  if (earliest) {
+    latitude = earliest->m_DRLat;
+    longitude = earliest->m_DRLon;
   }
   m_sequenceLatitude =
       new NavigationAngleCtrl(page, NavigationAngleKind::Latitude, latitude,
@@ -251,32 +376,33 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
         "judgement."));
   note->Wrap(1000);
   top->Add(note, 0, wxEXPAND | wxALL, 8);
-  double latitude = m_sequenceLatitude->GetAngleOr(0.0);
-  double longitude = m_sequenceLongitude->GetAngleOr(0.0);
-  auto* controls = new wxBoxSizer(wxHORIZONTAL);
+  auto* controls = new wxBoxSizer(wxVERTICAL);
+  auto* positionRow = new wxBoxSizer(wxHORIZONTAL);
   m_plannerLatitude =
-      new NavigationAngleCtrl(page, NavigationAngleKind::Latitude, latitude,
-                              -90.0, 90.0, wxSize(155, -1));
-  m_plannerLongitude =
-      new NavigationAngleCtrl(page, NavigationAngleKind::Longitude, longitude,
-                              -180.0, 180.0, wxSize(165, -1));
+      new NavigationAngleCtrl(page, NavigationAngleKind::Latitude,
+                              m_defaultLatitude, -90.0, 90.0, wxSize(155, -1));
+  m_plannerLongitude = new NavigationAngleCtrl(
+      page, NavigationAngleKind::Longitude, m_defaultLongitude, -180.0, 180.0,
+      wxSize(165, -1));
   // The controls are deliberately UTC-entry fields.  Supplying a real
   // instant here would make wxWidgets display local clock fields and repeat
   // the exact local/UTC ambiguity the planner is intended to avoid.
   const wxDateTime utcNow = UtcDateTime::Now();
-  m_plannerDate = new wxDatePickerCtrl(page, wxID_ANY, utcNow);
-  m_plannerTime = new wxTimePickerCtrl(page, wxID_ANY, utcNow);
-  controls->Add(LabelControl(page, _("Latitude"), m_plannerLatitude), 1,
-                wxRIGHT, 6);
-  controls->Add(LabelControl(page, _("Longitude"), m_plannerLongitude), 1,
-                wxRIGHT, 6);
-  controls->Add(LabelControl(page, _("UTC date"), m_plannerDate), 1, wxRIGHT,
-                6);
-  controls->Add(LabelControl(page, _("UTC time"), m_plannerTime), 1, wxRIGHT,
-                6);
+  CreateUtcEntry(page, &m_plannerUtc, utcNow);
+  positionRow->Add(LabelControl(page, _("Latitude"), m_plannerLatitude), 1,
+                   wxRIGHT, 6);
+  positionRow->Add(LabelControl(page, _("Longitude"), m_plannerLongitude), 1,
+                   wxRIGHT, 6);
   auto* calculate = new wxButton(page, wxID_ANY, _("Rank pairs"));
   calculate->Bind(wxEVT_BUTTON, &LunarToolsDialog::CalculatePlanner, this);
-  controls->Add(calculate, 0);
+  positionRow->Add(calculate, 0);
+  controls->Add(positionRow, 0, wxEXPAND | wxBOTTOM, 5);
+  auto* timeRow = new wxBoxSizer(wxHORIZONTAL);
+  timeRow->Add(LabelControl(page, _("UTC date"), m_plannerUtc.dateContainer), 1,
+               wxRIGHT, 6);
+  timeRow->Add(LabelControl(page, _("UTC time"), m_plannerUtc.timeContainer), 1,
+               wxRIGHT, 6);
+  controls->Add(timeRow, 0, wxEXPAND);
   top->Add(controls, 0, wxEXPAND | wxALL, 6);
   m_plannerList = new wxListCtrl(page, wxID_ANY, wxDefaultPosition,
                                  wxDefaultSize, wxLC_REPORT | wxBORDER_SUNKEN);
@@ -310,20 +436,22 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
   auto* prediction =
       new wxStaticBoxSizer(wxVERTICAL, page, _("Offline pair prediction"));
   auto* row1 = new wxBoxSizer(wxHORIZONTAL);
-  m_calLatitude = new NavigationAngleCtrl(page, NavigationAngleKind::Latitude,
-                                          m_sequenceLatitude->GetAngleOr(0.0),
-                                          -90.0, 90.0, wxSize(155, -1));
+  m_calLatitude =
+      new NavigationAngleCtrl(page, NavigationAngleKind::Latitude,
+                              m_defaultLatitude, -90.0, 90.0, wxSize(155, -1));
   m_calLongitude = new NavigationAngleCtrl(page, NavigationAngleKind::Longitude,
-                                           m_sequenceLongitude->GetAngleOr(0.0),
-                                           -180.0, 180.0, wxSize(165, -1));
+                                           m_defaultLongitude, -180.0, 180.0,
+                                           wxSize(165, -1));
   const wxDateTime utcNow = UtcDateTime::Now();
-  m_calDate = new wxDatePickerCtrl(page, wxID_ANY, utcNow);
-  m_calTime = new wxTimePickerCtrl(page, wxID_ANY, utcNow);
+  CreateUtcEntry(page, &m_calUtc, utcNow);
   row1->Add(LabelControl(page, _("Latitude"), m_calLatitude), 1, wxRIGHT, 5);
   row1->Add(LabelControl(page, _("Longitude"), m_calLongitude), 1, wxRIGHT, 5);
-  row1->Add(LabelControl(page, _("UTC date"), m_calDate), 1, wxRIGHT, 5);
-  row1->Add(LabelControl(page, _("UTC time"), m_calTime), 1);
   prediction->Add(row1, 0, wxEXPAND | wxALL, 3);
+  auto* utcRow = new wxBoxSizer(wxHORIZONTAL);
+  utcRow->Add(LabelControl(page, _("UTC date"), m_calUtc.dateContainer), 1,
+              wxRIGHT, 5);
+  utcRow->Add(LabelControl(page, _("UTC time"), m_calUtc.timeContainer), 1);
+  prediction->Add(utcRow, 0, wxEXPAND | wxALL, 3);
   auto* row2 = new wxBoxSizer(wxHORIZONTAL);
   m_calFirstBody = new wxChoice(page, wxID_ANY);
   m_calSecondBody = new wxChoice(page, wxID_ANY);
@@ -597,7 +725,9 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
   }
   m_plannerLatitude->Normalize();
   m_plannerLongitude->Normalize();
-  const wxDateTime utc = PickerUtc(m_plannerDate, m_plannerTime);
+  const wxDateTime utc = ReadUtcEntry(
+      m_plannerUtc, m_entryFormat->GetSelection(), true, _("Lunar planner"));
+  if (!utc.IsValid()) return;
   Sight sky;
   sky.m_CorrectedDateTime = utc;
   double moon_lat = 0.0, moon_lon = 0.0;
@@ -692,7 +822,8 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
 }
 
 wxDateTime LunarToolsDialog::CalibrationUtc() const {
-  return PickerUtc(m_calDate, m_calTime);
+  return ReadUtcEntry(m_calUtc, m_entryFormat->GetSelection(), true,
+                      _("Sextant check"));
 }
 
 sextant_calibration::BodySample LunarToolsDialog::SampleBody(
@@ -756,6 +887,11 @@ void LunarToolsDialog::PredictCalibrationPair(wxCommandEvent&) {
   environment.pressure_hpa = m_calPressure->GetValue();
   environment.temperature_c = m_calTemperature->GetValue();
   const wxDateTime utc = CalibrationUtc();
+  if (!utc.IsValid()) {
+    m_calPrediction->SetLabel(_("Enter a valid UTC date and time."));
+    m_lastPredictionDeg = NAN;
+    return;
+  }
   const auto result = sextant_calibration::PredictApparentCenterDistance(
       SampleBody(m_calFirstBody->GetStringSelection(), utc),
       SampleBody(m_calSecondBody->GetStringSelection(), utc), environment);

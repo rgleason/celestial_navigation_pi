@@ -24,7 +24,8 @@ public:
 
 private:
   wxTextCtrl* AddField(wxSizer* sizer, wxWindow* parent, const wxString& label,
-                       const wxString& value, const wxString& units = wxEmptyString);
+                       const wxString& value,
+                       const wxString& units = wxEmptyString);
   bool ReadDouble(wxTextCtrl* control, const wxString& label, double* value);
   bool ReadAngle(wxTextCtrl* control, const wxString& label, double minimum,
                  double maximum, double* value);
@@ -61,6 +62,7 @@ private:
   wxTextCtrl* m_rightLon;
   wxTextCtrl* m_firstAngle;
   wxTextCtrl* m_secondAngle;
+  wxTextCtrl* m_horizontalIndexError;
   wxTextCtrl* m_angleUncertainty;
   wxCheckBox* m_advanceHorizontalObserver;
   wxTextCtrl* m_horizontalInterval;
