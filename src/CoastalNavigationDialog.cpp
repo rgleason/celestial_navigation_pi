@@ -62,9 +62,9 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   verticalModes.Add(_("Waterline to top (waterline visible)"));
   verticalModes.Add(_("Sea horizon to top (object beyond horizon)"));
   m_verticalMode = new wxChoice(vertical, wxID_ANY, wxDefaultPosition,
-                                wxDefaultSize, verticalModes);
+                                wxSize(340, -1), verticalModes);
   m_verticalMode->SetSelection(0);
-  verticalGrid->Add(m_verticalMode, 1, wxEXPAND);
+  verticalGrid->Add(m_verticalMode, 0);
   verticalGrid->AddSpacer(1);
   m_verticalTargetLat = AddField(verticalGrid, vertical, _("Target latitude"),
                                  unknownLat, _("angle"));
@@ -72,7 +72,7 @@ CoastalNavigationDialog::CoastalNavigationDialog(
                                  unknownLon, _("angle"));
   m_verticalAngle =
       AddField(verticalGrid, vertical, _("Observed vertical angle"),
-               _("0° 30.000'"), _("angle or decimal degrees"));
+               wxEmptyString, _("angle or decimal degrees"));
   m_verticalIndexError =
       AddField(verticalGrid, vertical, _("Index error (on the arc +)"),
                wxString::Format("%.2f", defaults.indexError), _("arcmin"));
@@ -272,8 +272,9 @@ wxTextCtrl* CoastalNavigationDialog::AddField(wxSizer* sizer, wxWindow* parent,
                                               const wxString& units) {
   sizer->Add(new wxStaticText(parent, wxID_ANY, label), 0,
              wxALIGN_CENTER_VERTICAL);
-  wxTextCtrl* control = new wxTextCtrl(parent, wxID_ANY, value);
-  sizer->Add(control, 1, wxEXPAND);
+  wxTextCtrl* control = new wxTextCtrl(parent, wxID_ANY, value,
+                                       wxDefaultPosition, wxSize(260, -1));
+  sizer->Add(control, 0);
   sizer->Add(new wxStaticText(parent, wxID_ANY, units), 0,
              wxALIGN_CENTER_VERTICAL);
   return control;

@@ -7,6 +7,7 @@
 #include "OcpnApiCompat.h"
 #include "Sight.h"
 #include "UtcDateTime.h"
+#include "Utf8Translation.h"
 #include "astrolabe/astrolabe.hpp"
 #include "moon.h"
 
@@ -280,7 +281,7 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
     if (sight.m_Type != Sight::LUNAR) continue;
     m_lunarIndices.push_back(index);
     m_sequenceSights->Append(wxString::Format(
-        _("%s  Moon–%s  %s"),
+        CN_UTF8_("%s  Moon–%s  %s"),
         UtcDateTime::FormatUtc(sight.m_DateTime, "%Y-%m-%d %H:%M:%S"),
         sight.m_Body, FormatNavigationAngle(sight.m_Measurement).c_str()));
     if (highlightedUtc.IsValid() &&
@@ -331,9 +332,10 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
   positionRow->Add(useEarliest, 0);
   settings->Add(positionRow, 0, wxEXPAND | wxALL, 3);
   m_sequenceSearchHours = Spin(page, 0.25, 24.0, 12.0, 0.5, 1);
-  settings->Add(LabelControl(page, _("Additional watch correction search ±"),
-                             m_sequenceSearchHours),
-                0, wxEXPAND | wxALL, 3);
+  settings->Add(
+      LabelControl(page, CN_UTF8_("Additional watch correction search ±"),
+                   m_sequenceSearchHours),
+      0, wxEXPAND | wxALL, 3);
   m_sequenceSearchHours->SetToolTip(
       _("Search this many hours either side of the correction already applied "
         "to each sight. This is not an observation start time."));
@@ -416,10 +418,10 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
   auto* top = new wxBoxSizer(wxVERTICAL);
   auto* note = new wxStaticText(
       page, wxID_ANY,
-      _("Rank fully offline Moon–body pairs. The time sensitivity is the "
-        "approximate UTC change corresponding to 0.1′ of distance; visibility "
-        "and a comfortable sextant angle still require the navigator's "
-        "judgement."));
+      CN_UTF8_("Rank fully offline Moon–body pairs. The time sensitivity is "
+               "the approximate UTC change corresponding to 0.1′ of distance; "
+               "visibility and a comfortable sextant angle still require the "
+               "navigator's judgement."));
   note->Wrap(1000);
   top->Add(note, 0, wxEXPAND | wxALL, 8);
   auto* controls = new wxBoxSizer(wxVERTICAL);
@@ -453,9 +455,9 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
   m_plannerList = new wxListCtrl(page, wxID_ANY, wxDefaultPosition,
                                  wxDefaultSize, wxLC_REPORT | wxBORDER_SUNKEN);
   const wxString columns[] = {
-      _("Body"),          _("Moon altitude"), _("Moon Zn true"),
-      _("Body altitude"), _("Body Zn true"),  _("Distance"),
-      _("Rate"),          _("0.1′ time"),     _("Moon illum."),
+      _("Body"),          _("Moon altitude"),    _("Moon Zn true"),
+      _("Body altitude"), _("Body Zn true"),     _("Distance"),
+      _("Rate"),          CN_UTF8_("0.1′ time"), _("Moon illum."),
       _("Magnitude"),     _("Quality")};
   const int widths[] = {150, 145, 105, 145, 105, 125, 125, 115, 105, 95, 230};
   for (int index = 0; index < 11; ++index) {
@@ -470,13 +472,12 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
   auto* top = new wxBoxSizer(wxVERTICAL);
   auto* note = new wxStaticText(
       page, wxID_ANY,
-      _("This is an observational check, not a substitute for mechanical "
-        "adjustment. First remove perpendicularity, side, collimation and "
-        "index "
-        "errors in the instrument's specified order. Star–star pairs at "
-        "similar "
-        "comfortable altitudes are best for scale/centering checks; Moon pairs "
-        "are end-to-end validation and depend strongly on UTC and position."));
+      CN_UTF8_("This is an observational check, not a substitute for "
+               "mechanical adjustment. First remove perpendicularity, side, "
+               "collimation and index errors in the instrument's specified "
+               "order. Star–star pairs at similar comfortable altitudes are "
+               "best for scale/centering checks; Moon pairs are end-to-end "
+               "validation and depend strongly on UTC and position."));
   note->Wrap(1000);
   top->Add(note, 0, wxEXPAND | wxALL, 8);
   auto* prediction =
@@ -525,14 +526,14 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
   m_calTemperature = Spin(page, -60.0, 60.0, defaults.temperature, 1.0, 1);
   row3->Add(LabelControl(page, _("Pressure hPa"), m_calPressure), 0, wxRIGHT,
             8);
-  row3->Add(LabelControl(page, _("Temperature °C"), m_calTemperature), 0,
+  row3->Add(LabelControl(page, CN_UTF8_("Temperature °C"), m_calTemperature), 0,
             wxRIGHT, 12);
   prediction->Add(row3, 0, wxEXPAND | wxALL, 3);
   auto* configuredIndex = new wxStaticText(
       page, wxID_ANY,
       wxString::Format(
-          _("Configured sight index error: %+.2f′ (reference only; not applied "
-            "to this sextant calibration check)."),
+          CN_UTF8_("Configured sight index error: %+.2f′ (reference only; not "
+                   "applied to this sextant calibration check)."),
           defaults.indexError));
   prediction->Add(configuredIndex, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,
                   6);
@@ -548,8 +549,8 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
   m_calNote = new wxTextCtrl(page, wxID_ANY);
   entry->Add(LabelControl(page, _("Observed angle"), m_calObservedAngle), 2,
              wxRIGHT, 5);
-  entry->Add(LabelControl(page, _("uncertainty ±′"), m_calUncertainty), 1,
-             wxRIGHT, 5);
+  entry->Add(LabelControl(page, CN_UTF8_("uncertainty ±′"), m_calUncertainty),
+             1, wxRIGHT, 5);
   entry->Add(LabelControl(page, _("note / shade"), m_calNote), 2, wxRIGHT, 5);
   auto* add = new wxButton(page, wxID_ANY, _("Add repeat"));
   add->Bind(wxEVT_BUTTON, &LunarToolsDialog::AddCalibrationReading, this);
@@ -586,7 +587,7 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
   top->Add(profile, 0, wxEXPAND | wxALL, 5);
   m_profileCorrection = new wxStaticText(
       page, wxID_ANY,
-      _("Active-profile correction at the entered observed angle: —"));
+      CN_UTF8_("Active-profile correction at the entered observed angle: —"));
   top->Add(m_profileCorrection, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 6);
   m_profileSummary =
       new wxStaticText(page, wxID_ANY,
@@ -738,7 +739,7 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
   for (const std::shared_ptr<Sight>& snapshot : snapshots) {
     Sight& sight = *snapshot;
     lunar_session::SessionObservation entry;
-    entry.label = wxString::Format(_("%s Moon–%s"),
+    entry.label = wxString::Format(CN_UTF8_("%s Moon–%s"),
                                    UtcDateTime::FormatUtc(
                                        sight.m_CorrectedDateTime, "%H:%M:%S"),
                                    sight.m_Body)
@@ -788,8 +789,8 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
       std::launch::async,
       [entries, options]() { return lunar_session::Solve(entries, options); });
   wxProgressDialog progress(
-      _("Lunar sequence"), _("Preparing bounded multi-start solution…"), 100,
-      this,
+      _("Lunar sequence"), CN_UTF8_("Preparing bounded multi-start solution…"),
+      100, this,
       wxPD_APP_MODAL | wxPD_CAN_ABORT | wxPD_ELAPSED_TIME |
           wxPD_REMAINING_TIME | wxPD_SMOOTH | wxPD_AUTO_HIDE);
   bool userCancelled = false;
@@ -807,7 +808,7 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
             total > 0
                 ? wxString::Format(_("Testing bounded solution %zu of %zu"),
                                    displayed, total)
-                : _("Preparing bounded multi-start solution…"))) {
+                : CN_UTF8_("Preparing bounded multi-start solution…"))) {
       userCancelled = true;
       cancelRequested.store(true);
     }
@@ -844,18 +845,19 @@ void LunarToolsDialog::ShowCandidate(std::size_t index) {
   if (index >= m_sequenceResult.candidates.size()) return;
   const auto& candidate = m_sequenceResult.candidates[index];
   wxString summary = wxString::Format(
-      _("Additional watch correction %+0.1f s; reference position %.5f, %.5f; "
-        "RMS %.2f′ (weighted %.2f); σtime %.1f s; σposition %.1f NM"),
+      CN_UTF8_(
+          "Additional watch correction %+0.1f s; reference position %.5f, "
+          "%.5f; RMS %.2f′ (weighted %.2f); σtime %.1f s; σposition %.1f NM"),
       candidate.clock_correction_seconds,
       candidate.reference_position.latitude_deg,
       candidate.reference_position.longitude_deg, candidate.angular_rms_arcmin,
       candidate.weighted_rms, candidate.time_uncertainty_seconds,
       candidate.position_uncertainty_nm);
   if (m_sequenceBias->GetValue())
-    summary += wxString::Format(_("; common index bias %+0.2f′"),
+    summary += wxString::Format(CN_UTF8_("; common index bias %+0.2f′"),
                                 candidate.common_index_bias_arcmin);
   for (const auto& warning : m_sequenceResult.warnings)
-    summary += _(" — ") + wxString::FromUTF8(warning.c_str());
+    summary += CN_UTF8_(" — ") + wxString::FromUTF8(warning.c_str());
   m_sequenceSummary->SetLabel(summary);
   m_sequenceSummary->Wrap(1000);
   m_sequenceResiduals->DeleteAllItems();
@@ -871,9 +873,9 @@ void LunarToolsDialog::ShowCandidate(std::size_t index) {
         item, 3, wxString::Format("%+0.2f'", residual.body_altitude_arcmin));
     m_sequenceResiduals->SetItem(
         item, 4,
-        residual.possible_outlier
-            ? wxString::Format(_("Inspect: %.1fσ"), residual.standardized_max)
-            : _("Consistent"));
+        residual.possible_outlier ? wxString::Format(CN_UTF8_("Inspect: %.1fσ"),
+                                                     residual.standardized_max)
+                                  : _("Consistent"));
   }
 }
 
@@ -988,15 +990,18 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
     const Row& row = rows[index];
     long item = m_plannerList->InsertItem(index, row.body);
     m_plannerList->SetItem(item, 1, FormatNavigationAngle(row.moon_alt));
-    m_plannerList->SetItem(item, 2, wxString::Format("%.1f°", row.moon_az));
+    m_plannerList->SetItem(item, 2,
+                           wxString::Format(CN_UTF8_("%.1f°"), row.moon_az));
     m_plannerList->SetItem(item, 3, FormatNavigationAngle(row.body_alt));
-    m_plannerList->SetItem(item, 4, wxString::Format("%.1f°", row.body_az));
+    m_plannerList->SetItem(item, 4,
+                           wxString::Format(CN_UTF8_("%.1f°"), row.body_az));
     m_plannerList->SetItem(item, 5, FormatNavigationAngle(row.distance));
-    m_plannerList->SetItem(item, 6, wxString::Format("%+.1f′/h", row.rate));
+    m_plannerList->SetItem(item, 6,
+                           wxString::Format(CN_UTF8_("%+.1f′/h"), row.rate));
     m_plannerList->SetItem(item, 7,
                            std::isfinite(row.sensitivity)
                                ? wxString::Format("%.1f s", row.sensitivity)
-                               : _("—"));
+                               : CN_UTF8_("—"));
     m_plannerList->SetItem(item, 8,
                            wxString::Format("%.1f%%", row.illumination));
     m_plannerList->SetItem(item, 9, wxString::Format("%.1f", row.magnitude));
@@ -1090,7 +1095,7 @@ void LunarToolsDialog::PredictCalibrationPair(wxCommandEvent&) {
                    : (contact == 2 ? result.apparent_far_contact_distance_deg
                                    : result.apparent_center_distance_deg);
   m_calPrediction->SetLabel(wxString::Format(
-      _("%s %s; centre %s; altitudes %s / %s (Δ %s)%s"),
+      CN_UTF8_("%s %s; centre %s; altitudes %s / %s (Δ %s)%s"),
       m_calContact->GetStringSelection(),
       FormatNavigationAngle(m_lastPredictionDeg).c_str(),
       FormatNavigationAngle(result.apparent_center_distance_deg).c_str(),
@@ -1098,7 +1103,7 @@ void LunarToolsDialog::PredictCalibrationPair(wxCommandEvent&) {
       FormatNavigationAngle(result.second_altitude_deg).c_str(),
       FormatNavigationAngle(result.altitude_difference_deg).c_str(),
       result.altitude_difference_deg > 15.0
-          ? _(" — prefer a more equal-altitude star pair")
+          ? CN_UTF8_(" — prefer a more equal-altitude star pair")
           : wxString()));
   m_calObservedAngle->SetAngle(m_lastPredictionDeg);
 }
@@ -1129,7 +1134,7 @@ void LunarToolsDialog::AddCalibrationReading(wxCommandEvent&) {
       wxString::Format("%+0.2f'",
                        (reading.predicted_deg - reading.observed_deg) * 60.0));
   m_calReadings->SetItem(
-      row, 3, wxString::Format("±%.2f'", reading.uncertainty_arcmin));
+      row, 3, wxString::Format(CN_UTF8_("±%.2f'"), reading.uncertainty_arcmin));
   m_calReadings->SetItem(row, 4, wxString::FromUTF8(reading.note.c_str()));
 }
 
@@ -1175,15 +1180,16 @@ void LunarToolsDialog::SaveCalibrationProfile(wxCommandEvent&) {
   wxString points;
   for (const auto& point : profile.points) {
     if (!points.empty()) points += _("; ");
-    points += wxString::Format(_("%s: %+0.2f′ ±%.2f′ (%d)"),
+    points += wxString::Format(CN_UTF8_("%s: %+0.2f′ ±%.2f′ (%d)"),
                                FormatNavigationAngle(point.angle_deg).c_str(),
                                point.correction_arcmin,
                                point.uncertainty_arcmin, point.reading_count);
   }
   m_profileSummary->SetLabel(wxString::Format(
-      _("Saved profile “%s” (%s). Add the interpolated correction to a raw "
-        "sextant reading. Repeatability %.2f′. Points: %s. Never extrapolate "
-        "this table as evidence that mechanical adjustment is unnecessary."),
+      CN_UTF8_("Saved profile “%s” (%s). Add the interpolated correction to "
+               "a raw sextant reading. Repeatability %.2f′. Points: %s. Never "
+               "extrapolate this table as evidence that mechanical adjustment "
+               "is unnecessary."),
       wxString::FromUTF8(profile.name.c_str()),
       wxString::FromUTF8(profile.serial_number.c_str()),
       profile.repeatability_arcmin, points));
@@ -1199,8 +1205,9 @@ void LunarToolsDialog::SelectCalibrationProfile(wxCommandEvent&) {
   m_profileName->SetValue(wxString::FromUTF8(profile.name.c_str()));
   m_profileSerial->SetValue(wxString::FromUTF8(profile.serial_number.c_str()));
   m_profileSummary->SetLabel(wxString::Format(
-      _("Profile “%s”: %zu correction points; repeatability %.2f′; created %s. "
-        "Corrections are advisory and never rewrite observations."),
+      CN_UTF8_("Profile “%s”: %zu correction points; repeatability %.2f′; "
+               "created %s. Corrections are advisory and never rewrite "
+               "observations."),
       wxString::FromUTF8(profile.name.c_str()), profile.points.size(),
       profile.repeatability_arcmin,
       wxString::FromUTF8(profile.created_utc.c_str())));
@@ -1212,7 +1219,7 @@ void LunarToolsDialog::UpdateProfileCorrection() {
   const int selected = m_profileChoice->GetSelection();
   if (selected < 0 || static_cast<std::size_t>(selected) >= m_profiles.size()) {
     m_profileCorrection->SetLabel(
-        _("Active-profile correction at the entered observed angle: —"));
+        CN_UTF8_("Active-profile correction at the entered observed angle: —"));
     return;
   }
   const auto& profile = m_profiles[static_cast<std::size_t>(selected)];
@@ -1228,9 +1235,9 @@ void LunarToolsDialog::UpdateProfileCorrection() {
   const bool outside = angle < profile.points.front().angle_deg ||
                        angle > profile.points.back().angle_deg;
   m_profileCorrection->SetLabel(wxString::Format(
-      _("Active-profile correction at %s: %+0.2f′ ±%.2f′%s"),
+      CN_UTF8_("Active-profile correction at %s: %+0.2f′ ±%.2f′%s"),
       FormatNavigationAngle(angle).c_str(), correction, uncertainty,
-      outside ? _(" — outside tested range; nearest endpoint only")
+      outside ? CN_UTF8_(" — outside tested range; nearest endpoint only")
               : wxString()));
 }
 
@@ -1275,8 +1282,8 @@ void LunarToolsDialog::LoadProfiles() {
     m_profileSerial->SetValue(
         wxString::FromUTF8(profile.serial_number.c_str()));
     m_profileSummary->SetLabel(wxString::Format(
-        _("Loaded %zu saved profile(s); active “%s”, %zu correction points, "
-          "repeatability %.2f′."),
+        CN_UTF8_("Loaded %zu saved profile(s); active “%s”, %zu correction "
+                 "points, repeatability %.2f′."),
         m_profiles.size(), wxString::FromUTF8(profile.name.c_str()),
         profile.points.size(), profile.repeatability_arcmin));
     UpdateProfileCorrection();

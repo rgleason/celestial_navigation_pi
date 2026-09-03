@@ -19,6 +19,7 @@ endif()
 # Find required packages
 find_package(GTest REQUIRED)
 find_package(wxWidgets COMPONENTS core base net html REQUIRED)
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml ${CMAKE_CURRENT_BINARY_DIR}/tinyxml)
 
@@ -39,6 +40,7 @@ set(SRC
     waypoint_position_source_tests.cpp
     almanac_generator_tests.cpp
     time_status_tests.cpp
+    utf8_translation_tests.cpp
     common.cpp
     mock_plugin_api.cpp
     mock_plugin_impl.cpp
@@ -132,6 +134,12 @@ endif()
 
 # Add the test
 add_test(NAME celestial_tests COMMAND celestial_tests)
+add_test(
+    NAME ui_utf8_literals
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/check_utf8_ui_literals.py
+            ${CMAKE_SOURCE_DIR}/src
+)
 
 # Add a custom target to run tests with more details
 add_custom_target(run-tests
