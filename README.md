@@ -10,7 +10,7 @@ Please make PR's to both repositories. Thank you.
 Compiling
 =========
 
-* git clone git://github.com/seandepagnier/celestial_navigation_pi.git
+* git clone git://github.com/seandepagnier/celestial_navigation_pi.git 
 
 Under windows, you must find the file "opencpn.lib" (Visual Studio) or "libopencpn.dll.a" (mingw) which is built in the build directory after compiling opencpn.  This file must be copied to the plugin directory.
 
