@@ -244,7 +244,12 @@ void celestial_navigation_pi::OnToolbarToolCallback(int id) {
     /* load the geographical magnetic table */
     wxString geomag_text_path = celestial_navigation_pi_DataDir();
     geomag_text_path.Append(_T("/data/IGRF11.COF"));
+
+    wxLogMessage("Celestial: OnToolbarToolCallback enter");
+    wxLogMessage("Celestial: geomag path = %s", geomag_text_path);
+
     if ((ret = geomag_load(geomag_text_path.mb_str())) < 0) {
+      wxLogWarning("Celestial: geomag_load returned %d", ret);
       wxString message = _("Failed to load file: ") + geomag_text_path + "\n";
       switch (ret) {
         case -1:
@@ -262,10 +267,24 @@ void celestial_navigation_pi::OnToolbarToolCallback(int id) {
                                        "for the celestial navigation plugin."),
                            wxString(_("OpenCPN Alert"), wxOK | wxICON_ERROR));
       mdlg.ShowModal();
+    } else {
+      wxLogMessage("Celestial: geomag_load succeeded (ret=%d)", ret);
     }
 
+    // Defensive: ensure parent window valid
+    if (!m_parent_window) {
+      wxLogWarning("Celestial: m_parent_window is NULL; calling GetOCPNCanvasWindow()");
+      m_parent_window = GetOCPNCanvasWindow();
+      if (!m_parent_window) {
+        wxLogError("Celestial: Cannot obtain parent window; aborting dialog creation");
+        return;
+      }
+    }
+
+    wxLogMessage("Celestial: Creating CelestialNavigationDialog");
     m_pCelestialNavigationDialog =
         new CelestialNavigationDialog(m_parent_window, this);
+    wxLogMessage("Celestial: CelestialNavigationDialog constructed at %p", (void*)m_pCelestialNavigationDialog);
   }
 
   m_pCelestialNavigationDialog->Show(!m_pCelestialNavigationDialog->IsShown());
