@@ -1,60 +1,65 @@
-REM!/bin/bash   NOW a Batch file
+@echo on
+setlocal
 
-REM FE2 Testplugin
-REM REKWITHDEBINFO VERSION
-REM Use "./build-win.sh" to run cmake.
-REM Adjust this command for your setup and Plugin.
-REM Requires wxWidgets setup
-REM - /home/fcgle/source/ocpn-wxWidgets
-REM - /home/fcgle/source/ where all the plugins and OpenCPN repos are kept.
-REM --------------------------------------
-REM For Opencpn using MS Visual Studio 2022
-REM --------------------------------------
-REM Used for local builds and testing.
-REM Create an empty "[plugin]/build" directory
-REM Use Bash Prompt from the [plugin] root directory: "bash ./bldwin-rdeb.sh"
-REM Find any errors in the build/output.txt file
-REM Then use bash prompt to run cloudsmith-upload.sh command: "bash ./bldwin-rdeb.sh"
-REM Which adds the metadata file to the tarball gz file.
-REM Set local environment to find and use wxWidgets
+REM ------------------------------------------------------------
+REM 1. Define paths
+REM ------------------------------------------------------------
+set PLUGIN_ROOT=%cd%
+set BUILD_DIR=%PLUGIN_ROOT%\build
+set PLUGIN_BUILD=%BUILD_DIR%\RelWithDebInfo
 
-REM Enable command tracing
+set OCPN_ROOT=C:\Users\fcgle\source\opencpn
+set OCPN_BUILD=%OCPN_ROOT%\build-win32\RelWithDebInfo
+set OCPN_SOLUTION=%OCPN_ROOT%\build-win32\OpenCPN.sln
 
-set -x 
+REM wxWidgets (used by CMake)
+set wxDIR=C:\Users\fcgle\source\ocpn_wxWidgets
+set wxWIN=C:\Users\fcgle\source\ocpn_wxWidgets
+set wxWidgets_ROOT_DIR=%wxWIN%
+set wxWidgets_LIB_DIR=%wxWIN%\lib\vc_dll
 
-REM Confirm build exists and empty it and if no build directory create it.
+REM ------------------------------------------------------------
+REM 2. Remove build directory if it exists
+REM ------------------------------------------------------------
+if exist "%BUILD_DIR%" (
+    echo Removing existing build directory...
+    rmdir /S /Q "%BUILD_DIR%"
+)
 
-REM if [ -d "build" ]; then
-REM    echo "The 'build' direcREMtory exists, remove all build dir files."
-REM    rm -rf build/*
-	
-REM else
-REM    echo "The 'build' directory does not exist. Create the build directory"
-REM	mkdir build
-REM   fi
+echo Creating fresh build directory...
+mkdir "%BUILD_DIR%"
 
-REM wxWidgets settings 
-set "wxDIR=C:\Users\fcgle\source\opencpn\..\ocpn_wxWidgets" 
-set "wxWIN=C:\Users\fcgle\source\opencpn\..\ocpn_wxWidgets" 
-set "wxWidgets_ROOT_DIR=C:\Users\fcgle\source\opencpn\..\ocpn_wxWidgets" 
-set "wxWidgets_LIB_DIR=C:\Users\fcgle\source\opencpn\..\ocpn_wxWidgets\lib\vc_dll" 
-set "VCver=17" 
-set "VCstr=Visual Studio 17" 
+REM ------------------------------------------------------------
+REM 3. Run CMake configure + build
+REM ------------------------------------------------------------
+cd "%BUILD_DIR%"
 
-REM wxDIR=$WXWIN
-REM wxWidgets_ROOT_DIR=$WXWIN
-REM wxWidgets_LIB_DIR="$WXWIN/lib/vc14x_dll"
-REM WXWIN="/home/fcgle/source/wxWidgets-3.2.2"
-
-REM build the plugin with cmake
-
-cd build
+echo Configuring plugin build...
 cmake -T v143 -A Win32 -DOCPN_TARGET=MSVC ..
-cmake --build . --target package --config relwithdebinfo > output.txt
-	
-REM Bash script completes tarball prep adding metadata into it.
 
-bash ../cloudsmith-upload2.sh
+echo Building plugin (RelWithDebInfo)...
+cmake --build . --config RelWithDebInfo
 
-REM Find ${bold}"build/output.txt"${normal} file if the build is not successful.
-REM Other examples below.
+REM ------------------------------------------------------------
+REM 4. Copy plugin DLL + PDB into OpenCPN plugin folder
+REM ------------------------------------------------------------
+echo Deploying plugin DLL and PDB into OpenCPN plugin directory...
+
+copy /Y "%PLUGIN_BUILD%\celestial_navigation_pi.dll" "%OCPN_BUILD%\plugins\"
+copy /Y "%PLUGIN_BUILD%\celestial_navigation_pi.pdb" "%OCPN_BUILD%\plugins\"
+
+echo Plugin deployed successfully.
+
+REM ------------------------------------------------------------
+REM 5. Launch Visual Studio with OpenCPN solution
+REM ------------------------------------------------------------
+echo Launching Visual Studio for debugging...
+
+start "" "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\devenv.exe" "%OCPN_SOLUTION%"
+
+echo.
+echo Visual Studio is now open.
+echo Select RelWithDebInfo and press F5 to debug OpenCPN with your plugin.
+echo.
+
+endlocal
