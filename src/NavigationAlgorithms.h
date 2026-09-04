@@ -159,6 +159,11 @@ public:
   static std::vector<RankedCombination> BestCombinations(
       const std::vector<RankedBody>& bodies, unsigned count,
       unsigned maximumResults = 10);
+  static std::vector<RankedBody> RecommendationCandidates(
+      const std::vector<RankedBody>& bodies, bool limitAltitude,
+      double minimumAltitude, double maximumAltitude);
+  static std::vector<size_t> SkyLabelPriority(
+      const std::vector<RankedBody>& bodies);
 };
 
 enum class PlannerTimeBasis {

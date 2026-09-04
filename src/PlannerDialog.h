@@ -56,6 +56,7 @@ private:
   void ApplyTimeSource();
   wxString DisplayTime(const wxDateTime& utc) const;
   void RefreshAll(wxCommandEvent& event);
+  void ClearCalculatedResults(const wxString& status);
   void RefreshEvents();
   void RefreshBodies();
   void RebuildBodyList();
@@ -99,6 +100,9 @@ private:
   wxStaticText* m_moonSummary;
   wxListCtrl* m_bodies;
   wxListCtrl* m_combinations;
+  wxCheckBox* m_limitRecommendationAltitude;
+  wxSpinCtrlDouble* m_recommendationMinAltitude;
+  wxSpinCtrlDouble* m_recommendationMaxAltitude;
   SkyPlotPanel* m_skyPlot;
   wxChoice* m_plotMagnitude;
   wxCheckBox* m_plotBelowHorizon;
