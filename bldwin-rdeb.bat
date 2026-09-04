@@ -54,7 +54,7 @@ cmake --build . --target package --config relwithdebinfo > output.txt
 	
 REM Bash script completes tarball prep adding metadata into it.
 
-bash ./cloudsmith-upload.sh
+bash ../cloudsmith-upload2.sh
 
 REM Find ${bold}"build/output.txt"${normal} file if the build is not successful.
 REM Other examples below.
