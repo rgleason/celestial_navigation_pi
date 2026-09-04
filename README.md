@@ -24,4 +24,4 @@ Build as normally:
 
 License
 =======
-The plugin code is licensed under the terms of the GPL v3 or, at your will, later.
+The plugin code is licensed under the terms of the GPL v3 or, at your will, later. 
