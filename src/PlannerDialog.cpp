@@ -25,7 +25,9 @@
 #include <wx/timectrl.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <limits>
 
 namespace {
 void AddColumn(wxListCtrl* list, int column, const wxString& title,
@@ -65,8 +67,12 @@ private:
     dc.DrawText("E", center.x + radius + 4, center.y - 8);
     dc.DrawText("S", center.x - 5, center.y + radius + 2);
     dc.DrawText("W", center.x - radius - 18, center.y - 8);
-    std::vector<wxRect> labels;
-    size_t rank = 0;
+    struct PlottedBody {
+      wxPoint point;
+      wxColour colour;
+    };
+    std::vector<PlottedBody> plotted;
+    plotted.reserve(m_bodies.size());
     for (const auto& body : m_bodies) {
       const bool belowHorizon = body.state.geometricAltitude < 0.0;
       const double plotAltitude =
@@ -87,7 +93,24 @@ private:
       dc.SetPen(wxPen(colour));
       dc.SetBrush(belowHorizon ? *wxTRANSPARENT_BRUSH : wxBrush(colour));
       dc.DrawCircle(p, belowHorizon ? 4 : 3);
-      if (rank++ >= 14) continue;
+      plotted.push_back({p, colour});
+    }
+
+    // Label the brightest bodies first, while reserving a fair share of the
+    // available space for each compass quadrant. Collision suppression still
+    // has final authority on compact displays.
+    std::vector<wxRect> labels;
+    std::array<unsigned, 4> quadrantLabels = {{0, 0, 0, 0}};
+    const unsigned labelsPerQuadrant = static_cast<unsigned>(
+        std::max(3, std::min(5, std::min(size.x, size.y) / 65)));
+    for (const size_t index : SightRanker::SkyLabelPriority(m_bodies)) {
+      const RankedBody& body = m_bodies[index];
+      const wxPoint& p = plotted[index].point;
+      double azimuth = std::fmod(body.state.azimuthTrue, 360.0);
+      if (azimuth < 0.0) azimuth += 360.0;
+      const unsigned quadrant =
+          static_cast<unsigned>((azimuth + 45.0) / 90.0) % 4;
+      if (quadrantLabels[quadrant] >= labelsPerQuadrant) continue;
       const wxSize extent = dc.GetTextExtent(body.state.body);
       int labelX = p.x + 5;
       if (labelX + extent.x > size.x - 3) labelX = p.x - extent.x - 5;
@@ -103,9 +126,10 @@ private:
           break;
         }
       if (!overlaps) {
-        dc.SetTextForeground(colour);
+        dc.SetTextForeground(plotted[index].colour);
         dc.DrawText(body.state.body, label.GetPosition());
         labels.push_back(padded);
+        ++quadrantLabels[quadrant];
       }
     }
   }
@@ -401,6 +425,42 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   wxPanel* bodiesPage = new wxPanel(m_notebook);
   wxBoxSizer* bodiesRoot = new wxBoxSizer(wxHORIZONTAL);
   wxBoxSizer* bodiesLeft = new wxBoxSizer(wxVERTICAL);
+  wxBoxSizer* recommendationControls = new wxBoxSizer(wxHORIZONTAL);
+  m_limitRecommendationAltitude =
+      new wxCheckBox(bodiesPage, wxID_ANY, _("Limit recommendations by Hc"));
+  m_limitRecommendationAltitude->SetValue(true);
+  recommendationControls->Add(m_limitRecommendationAltitude, 0,
+                              wxRIGHT | wxALIGN_CENTER_VERTICAL, 10);
+  recommendationControls->Add(
+      new wxStaticText(bodiesPage, wxID_ANY, _("Minimum")), 0,
+      wxRIGHT | wxALIGN_CENTER_VERTICAL, 4);
+  m_recommendationMinAltitude = new wxSpinCtrlDouble(
+      bodiesPage, wxID_ANY, "10", wxDefaultPosition, wxSize(80, -1),
+      wxSP_ARROW_KEYS, 0.0, 90.0, 10.0, 1.0);
+  m_recommendationMinAltitude->SetDigits(1);
+  recommendationControls->Add(m_recommendationMinAltitude, 0,
+                              wxRIGHT | wxALIGN_CENTER_VERTICAL, 8);
+  recommendationControls->Add(
+      new wxStaticText(bodiesPage, wxID_ANY, _("Maximum")), 0,
+      wxRIGHT | wxALIGN_CENTER_VERTICAL, 4);
+  m_recommendationMaxAltitude = new wxSpinCtrlDouble(
+      bodiesPage, wxID_ANY, "75", wxDefaultPosition, wxSize(80, -1),
+      wxSP_ARROW_KEYS, 0.0, 90.0, 75.0, 1.0);
+  m_recommendationMaxAltitude->SetDigits(1);
+  recommendationControls->Add(m_recommendationMaxAltitude, 0,
+                              wxRIGHT | wxALIGN_CENTER_VERTICAL, 4);
+  recommendationControls->Add(
+      new wxStaticText(bodiesPage, wxID_ANY, CN_UTF8_("°")), 0,
+      wxALIGN_CENTER_VERTICAL);
+  bodiesLeft->Add(recommendationControls, 0,
+                  wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 6);
+  wxStaticText* recommendationNote = new wxStaticText(
+      bodiesPage, wxID_ANY,
+      _("All catalogued bodies above the horizon remain listed; these limits "
+        "affect recommended pairs and triads only."));
+  recommendationNote->Wrap(650);
+  bodiesLeft->Add(recommendationNote, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND,
+                  6);
   m_bodies =
       new wxListCtrl(bodiesPage, wxID_ANY, wxDefaultPosition, wxDefaultSize,
                      wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES);
@@ -551,6 +611,16 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
                 [this](wxSpinDoubleEvent&) { ScheduleRefresh(); });
   m_eyeHeight->Bind(wxEVT_SPINCTRLDOUBLE,
                     [this](wxSpinDoubleEvent&) { ScheduleRefresh(); });
+  m_limitRecommendationAltitude->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent&) {
+    const bool enabled = m_limitRecommendationAltitude->GetValue();
+    m_recommendationMinAltitude->Enable(enabled);
+    m_recommendationMaxAltitude->Enable(enabled);
+    ScheduleRefresh();
+  });
+  m_recommendationMinAltitude->Bind(
+      wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) { ScheduleRefresh(); });
+  m_recommendationMaxAltitude->Bind(
+      wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) { ScheduleRefresh(); });
   m_bodies->Bind(wxEVT_LIST_COL_CLICK, &PlannerDialog::SortBodies, this);
   m_plotMagnitude->Bind(wxEVT_CHOICE,
                         [this](wxCommandEvent&) { RefreshSkyPlot(); });
@@ -568,9 +638,11 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   wxFileConfig* config = GetOCPNConfigObject();
   config->SetPath(_T("/PlugIns/CelestialNavigation/Planner"));
   long positionSource = 1, inputTimeBasis = 0, displayTime = 0, entryFormat = 0;
-  bool moving = false, autoZoneOffset = true;
+  bool moving = false, autoZoneOffset = true,
+       limitRecommendationAltitude = true;
   double latitude = 0.0, longitude = 0.0, course = 0.0, speed = 0.0,
-         eyeHeight = defaults.eyeHeight, fixedOffset = 0.0;
+         eyeHeight = defaults.eyeHeight, fixedOffset = 0.0,
+         recommendationMinAltitude = 10.0, recommendationMaxAltitude = 75.0;
   config->Read(_T("PositionSource"), &positionSource, 1L);
   config->Read(_T("InputTimeBasis"), &inputTimeBasis, 0L);
   config->Read(_T("DisplayTime"), &displayTime, 0L);
@@ -582,6 +654,12 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   config->Read(_T("SpeedKnots"), &speed, 0.0);
   config->Read(_T("FixedOffset"), &fixedOffset, 0.0);
   config->Read(_T("AutoZoneOffset"), &autoZoneOffset, true);
+  config->Read(_T("LimitRecommendationAltitude"), &limitRecommendationAltitude,
+               true);
+  config->Read(_T("RecommendationMinAltitude"), &recommendationMinAltitude,
+               10.0);
+  config->Read(_T("RecommendationMaxAltitude"), &recommendationMaxAltitude,
+               75.0);
   config->Read(_T("WaypointGuid"), &m_waypointGuid, wxEmptyString);
   config->Read(_T("WaypointName"), &m_waypointName, wxEmptyString);
   m_positionSource->SetSelection(std::max(0L, std::min(positionSource, 5L)));
@@ -601,6 +679,19 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_eyeHeight->SetValue(eyeHeight);
   m_fixedOffset->SetValue(fixedOffset);
   m_autoZoneOffset->SetValue(autoZoneOffset);
+  recommendationMinAltitude =
+      std::max(0.0, std::min(90.0, recommendationMinAltitude));
+  recommendationMaxAltitude =
+      std::max(0.0, std::min(90.0, recommendationMaxAltitude));
+  if (recommendationMinAltitude >= recommendationMaxAltitude) {
+    recommendationMinAltitude = 10.0;
+    recommendationMaxAltitude = 75.0;
+  }
+  m_limitRecommendationAltitude->SetValue(limitRecommendationAltitude);
+  m_recommendationMinAltitude->SetValue(recommendationMinAltitude);
+  m_recommendationMaxAltitude->SetValue(recommendationMaxAltitude);
+  m_recommendationMinAltitude->Enable(limitRecommendationAltitude);
+  m_recommendationMaxAltitude->Enable(limitRecommendationAltitude);
   UpdateAutomaticZoneOffset();
   SetUtcControls(wxDateTime::UNow());
   ApplyPositionSource();
@@ -635,6 +726,12 @@ PlannerDialog::~PlannerDialog() {
   config->Write(_T("SpeedKnots"), m_speed->GetValue());
   config->Write(_T("FixedOffset"), m_fixedOffset->GetValue());
   config->Write(_T("AutoZoneOffset"), m_autoZoneOffset->GetValue());
+  config->Write(_T("LimitRecommendationAltitude"),
+                m_limitRecommendationAltitude->GetValue());
+  config->Write(_T("RecommendationMinAltitude"),
+                m_recommendationMinAltitude->GetValue());
+  config->Write(_T("RecommendationMaxAltitude"),
+                m_recommendationMaxAltitude->GetValue());
   config->Write(_T("WaypointGuid"), m_waypointGuid);
   config->Write(_T("WaypointName"), m_waypointName);
 }
@@ -762,7 +859,11 @@ void PlannerDialog::ScheduleRefresh() { m_refreshTimer.StartOnce(350); }
 void PlannerDialog::OnRefreshTimer(wxTimerEvent&) {
   UpdateAutomaticZoneOffset();
   const ObserverMotion motion = ReadMotion(false);
-  if (!motion.referenceUtc.IsValid()) return;
+  if (!motion.referenceUtc.IsValid()) {
+    ClearCalculatedResults(
+        _("Results cleared: enter a valid supported date, time and position."));
+    return;
+  }
   RefreshEvents();
   RefreshBodies();
   RefreshAlmanac();
@@ -1061,13 +1162,30 @@ void PlannerDialog::RefreshAll(wxCommandEvent&) {
   UpdateAutomaticZoneOffset();
   ApplyTimeSource();
   const ObserverMotion motion = ReadMotion(true);
-  if (!motion.referenceUtc.IsValid()) return;
+  if (!motion.referenceUtc.IsValid()) {
+    ClearCalculatedResults(
+        _("Results cleared: enter a valid supported date, time and position."));
+    return;
+  }
   m_latitude->Normalize();
   m_longitude->Normalize();
   RefreshEvents();
   RefreshBodies();
   RefreshAlmanac();
   RefreshSpecial();
+}
+
+void PlannerDialog::ClearCalculatedResults(const wxString& status) {
+  m_events->DeleteAllItems();
+  m_moonSummary->SetLabel(wxEmptyString);
+  m_rankedBodies.clear();
+  m_bodies->DeleteAllItems();
+  m_combinations->DeleteAllItems();
+  m_skyPlot->SetBodies({}, false);
+  m_almanacRows.clear();
+  m_almanac->DeleteAllItems();
+  m_specialSummary->SetLabel(wxEmptyString);
+  m_status->SetLabel(status);
 }
 
 void PlannerDialog::RefreshEvents() {
@@ -1125,10 +1243,23 @@ void PlannerDialog::RefreshBodies() {
   m_combinations->DeleteAllItems();
   const ObserverMotion motion = ReadMotion(false);
   m_rankedBodies = SightRanker::VisibleBodies(
-      motion.referenceUtc, motion.latitude, motion.longitude);
+      motion.referenceUtc, motion.latitude, motion.longitude, 0.0, 90.0,
+      std::numeric_limits<double>::infinity());
   RebuildBodyList();
-  auto pairs = SightRanker::BestCombinations(m_rankedBodies, 2, 5);
-  auto triads = SightRanker::BestCombinations(m_rankedBodies, 3, 5);
+  const bool limitAltitude = m_limitRecommendationAltitude->GetValue();
+  const double minimumAltitude = m_recommendationMinAltitude->GetValue();
+  const double maximumAltitude = m_recommendationMaxAltitude->GetValue();
+  const std::vector<RankedBody> candidates =
+      SightRanker::RecommendationCandidates(m_rankedBodies, limitAltitude,
+                                            minimumAltitude, maximumAltitude);
+  if (limitAltitude && minimumAltitude >= maximumAltitude) {
+    m_combinations->InsertItem(
+        0, _("Set the minimum recommended Hc below the maximum."));
+    RefreshSkyPlot();
+    return;
+  }
+  auto pairs = SightRanker::BestCombinations(candidates, 2, 5);
+  auto triads = SightRanker::BestCombinations(candidates, 3, 5);
   pairs.insert(pairs.end(), triads.begin(), triads.end());
   for (const auto& combination : pairs) {
     wxString names;
@@ -1215,7 +1346,17 @@ void PlannerDialog::RebuildBodyList() {
     m_bodies->SetItem(row, 5,
                       wxString::Format("%.1f", body.state.visualMagnitude));
     m_bodies->SetItem(row, 6, wxString::Format("%.0f", body.score));
-    m_bodies->SetItem(row, 7, body.reason);
+    wxString reason = body.reason;
+    if (m_limitRecommendationAltitude->GetValue()) {
+      if (body.state.geometricAltitude <
+          m_recommendationMinAltitude->GetValue())
+        reason += _("; below preferred Hc");
+      else if (body.state.geometricAltitude >
+               m_recommendationMaxAltitude->GetValue())
+        reason += _("; above preferred Hc");
+    }
+    if (daylight && body.state.isStar) reason += _("; star in daylight");
+    m_bodies->SetItem(row, 7, reason);
     if (daylight && body.state.isStar)
       m_bodies->SetItemTextColour(row, wxColour(150, 150, 150));
   }
