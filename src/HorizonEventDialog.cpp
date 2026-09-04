@@ -21,6 +21,7 @@
 
 #include "OcpnApiCompat.h"
 #include "UtcDateTime.h"
+#include "Utf8Translation.h"
 
 namespace {
 
@@ -33,10 +34,10 @@ wxSpinCtrlDouble* AddNumber(wxWindow* parent, wxFlexGridSizer* grid,
   wxBoxSizer* row = new wxBoxSizer(wxHORIZONTAL);
   wxSpinCtrlDouble* control = new wxSpinCtrlDouble(
       parent, wxID_ANY, wxString::Format("%.*f", digits, value),
-      wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, min, max, value,
+      wxDefaultPosition, wxSize(145, -1), wxSP_ARROW_KEYS, min, max, value,
       increment);
   control->SetDigits(digits);
-  row->Add(control, 1, wxEXPAND);
+  row->Add(control, 0);
   if (!units.empty())
     row->Add(new wxStaticText(parent, wxID_ANY, units), 0,
              wxALIGN_CENTER_VERTICAL | wxLEFT, 5);
@@ -65,23 +66,23 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   explanation->Wrap(590);
   dialogRoot->Add(explanation, 0, wxEXPAND | wxALL, 8);
 
-  wxStaticBoxSizer* observation =
-      new wxStaticBoxSizer(wxVERTICAL, this, _("Observation — always visible"));
+  wxStaticBoxSizer* observation = new wxStaticBoxSizer(
+      wxVERTICAL, this, CN_UTF8_("Observation — always visible"));
   wxFlexGridSizer* obsGrid = new wxFlexGridSizer(0, 2, 5, 10);
   obsGrid->AddGrowableCol(1);
 
   obsGrid->Add(new wxStaticText(this, wxID_ANY, _("Event")), 0,
                wxALIGN_CENTER_VERTICAL);
-  m_event = new wxChoice(this, wxID_ANY);
-  m_event->Append(_("Sunrise — first upper limb"));
-  m_event->Append(_("Sunset — last upper limb"));
+  m_event = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxSize(310, -1));
+  m_event->Append(CN_UTF8_("Sunrise — first upper limb"));
+  m_event->Append(CN_UTF8_("Sunset — last upper limb"));
   m_event->SetSelection(static_cast<int>(sight.m_HorizonEvent));
-  obsGrid->Add(m_event, 1, wxEXPAND);
+  obsGrid->Add(m_event, 0);
 
   obsGrid->Add(new wxStaticText(this, wxID_ANY, _("UTC date")), 0,
                wxALIGN_CENTER_VERTICAL);
   m_calendar = new wxCalendarCtrl(this, wxID_ANY, sight.m_DateTime);
-  obsGrid->Add(m_calendar, 1, wxEXPAND);
+  obsGrid->Add(m_calendar, 0);
 
   obsGrid->Add(new wxStaticText(this, wxID_ANY, _("UTC time (24-hour)")), 0,
                wxALIGN_CENTER_VERTICAL);
@@ -104,7 +105,7 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   timeRow->Add(m_seconds);
   wxButton* capture = new wxButton(this, wxID_ANY, _("Capture current UTC"));
   timeRow->Add(capture, 0, wxLEFT, 10);
-  obsGrid->Add(timeRow, 1, wxEXPAND);
+  obsGrid->Add(timeRow, 0);
 
   m_timeUncertainty =
       AddNumber(this, obsGrid, _("Time uncertainty"), sight.m_TimeCertainty, 0,
@@ -112,7 +113,8 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
 
   obsGrid->Add(new wxStaticText(this, wxID_ANY, _("Time source")), 0,
                wxALIGN_CENTER_VERTICAL);
-  m_timeSource = new wxChoice(this, wxID_ANY);
+  m_timeSource =
+      new wxChoice(this, wxID_ANY, wxDefaultPosition, wxSize(310, -1));
   m_timeSource->Append(_("System UTC capture"));
   m_timeSource->Append(_("Synchronised watch / manual entry"));
   m_timeSource->Append(_("Other manual entry"));
@@ -120,7 +122,7 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
       sight.m_HorizonTimeSource.StartsWith("System")         ? 0
       : sight.m_HorizonTimeSource.StartsWith("Synchronised") ? 1
                                                              : 2);
-  obsGrid->Add(m_timeSource, 1, wxEXPAND);
+  obsGrid->Add(m_timeSource, 0);
   observation->Add(obsGrid, 0, wxEXPAND | wxALL, 6);
   wxStaticText* clock = new wxStaticText(
       this, wxID_ANY, _("Current system timing: ") + m_systemTimeSummary);

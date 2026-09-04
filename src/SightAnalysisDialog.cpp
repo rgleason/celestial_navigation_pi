@@ -5,11 +5,13 @@
 #include "NavigationAlgorithms.h"
 #include "Sight.h"
 #include "UtcDateTime.h"
+#include "Utf8Translation.h"
 #include "celestial_navigation_pi.h"
 
 #include <wx/checkbox.h>
 #include <wx/dcbuffer.h>
 #include <wx/listctrl.h>
+#include <wx/settings.h>
 #include <wx/spinctrl.h>
 #include <wx/stattext.h>
 
@@ -21,6 +23,7 @@ public:
   explicit ResidualPlotPanel(wxWindow* parent)
       : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(-1, 150)) {
     SetBackgroundStyle(wxBG_STYLE_PAINT);
+    SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
     Bind(wxEVT_PAINT, &ResidualPlotPanel::OnPaint, this);
   }
   void SetAnalysis(const SequenceStatistics& analysis) {
@@ -34,12 +37,22 @@ private:
     dc.SetBackground(wxBrush(GetBackgroundColour()));
     dc.Clear();
     const wxSize size = GetClientSize();
+    if (!m_analysis.valid || m_analysis.residuals.size() < 2) {
+      dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
+      dc.DrawLabel(
+          CN_UTF8_(
+              "No sequence plot — at least two usable sights are required."),
+          wxRect(wxPoint(8, 8),
+                 wxSize(std::max(0, size.x - 16), std::max(0, size.y - 16))),
+          wxALIGN_CENTER);
+      return;
+    }
+    if (size.x < 80 || size.y < 60) return;
     const int left = 48, right = size.x - 12, top = 12, bottom = size.y - 28;
     dc.SetPen(wxPen(wxColour(110, 110, 110)));
     dc.DrawLine(left, top, left, bottom);
     dc.DrawLine(left, bottom, right, bottom);
     dc.DrawText(_("UTC sequence"), std::max(left, right - 95), bottom + 5);
-    if (!m_analysis.valid || m_analysis.residuals.empty()) return;
     wxDateTime first = m_analysis.residuals.front().utc;
     wxDateTime last = first;
     double minimum = m_analysis.residuals.front().interceptMinutes;
@@ -321,7 +334,7 @@ void SightAnalysisDialog::Analyze(wxCommandEvent&) {
     m_results->SetItem(row, 4,
                        wxString::Format("%+.2f'", residual.interceptMinutes));
     m_results->SetItem(row, 5,
-                       residual.outlier ? _("Possible outlier — inspect")
+                       residual.outlier ? CN_UTF8_("Possible outlier — inspect")
                                         : _("Within robust sequence spread"));
     if (residual.outlier)
       m_results->SetItemBackgroundColour(row, wxColour(255, 225, 210));

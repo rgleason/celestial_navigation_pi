@@ -2,6 +2,7 @@
 
 #include "AtomicXmlFile.h"
 #include "NavigationUIUtils.h"
+#include "Utf8Translation.h"
 
 #include "celestial_navigation_pi.h"
 
@@ -65,7 +66,7 @@ public:
   OptionalLunarDataDialog(wxWindow* parent, InstalledDataState pck_state,
                           InstalledDataState lola_state)
       : wxDialog(parent, wxID_ANY,
-                 _("Advanced Eclipse Data — Optional Lunar Refinement"),
+                 CN_UTF8_("Advanced Eclipse Data — Optional Lunar Refinement"),
                  wxDefaultPosition, wxDefaultSize,
                  wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER) {
     wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
@@ -79,12 +80,12 @@ public:
     root->Add(introduction, 0, wxEXPAND | wxALL, 12);
 
     AddDataSection(
-        root, _("Lunar orientation — 12.3 MiB"),
+        root, CN_UTF8_("Lunar orientation — 12.3 MiB"),
         _("Provides the Moon's physical orientation relative to the DE440 "
           "ephemeris. It is required when LOLA limb refinement is used."),
         pck_state, ID_DOWNLOAD_PCK, ID_IMPORT_PCK);
     AddDataSection(
-        root, _("LOLA lunar limb — 506 MiB"),
+        root, CN_UTF8_("LOLA lunar limb — 506 MiB"),
         _("Adds high-resolution lunar topography so mountains and valleys "
           "can refine eclipse contact times. It requires the lunar-"
           "orientation file above."),
@@ -113,9 +114,10 @@ private:
         this, wxID_ANY, _("Status: ") + OptionalStateLabel(state));
     actions->Add(status, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
     wxButton* download =
-        new wxButton(this, download_id, _("Download and install…"));
+        new wxButton(this, download_id, CN_UTF8_("Download and install…"));
     download->Enable(state != InstalledDataState::Verified);
-    wxButton* import = new wxButton(this, import_id, _("Import local file…"));
+    wxButton* import =
+        new wxButton(this, import_id, CN_UTF8_("Import local file…"));
     actions->Add(download, 0, wxRIGHT, 5);
     actions->Add(import, 0);
     box->Add(actions, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 7);
@@ -259,10 +261,11 @@ void EclipseDialog::BuildInterface() {
   data_note->Wrap(880);
   data->Add(data_note, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
   wxBoxSizer* imports = new wxBoxSizer(wxHORIZONTAL);
-  m_download_de = new wxButton(this, wxID_ANY,
-                               _("Download and install DE440s… (31.2 MiB)"));
-  m_import_de = new wxButton(this, wxID_ANY, _("Import DE440s…"));
-  m_optional_data = new wxButton(this, wxID_ANY, _("Optional lunar data…"));
+  m_download_de = new wxButton(
+      this, wxID_ANY, CN_UTF8_("Download and install DE440s… (31.2 MiB)"));
+  m_import_de = new wxButton(this, wxID_ANY, CN_UTF8_("Import DE440s…"));
+  m_optional_data =
+      new wxButton(this, wxID_ANY, CN_UTF8_("Optional lunar data…"));
   m_cancel_install =
       new wxButton(this, wxID_ANY, _("Cancel data installation"));
   m_cancel_install->Hide();
@@ -365,8 +368,9 @@ void EclipseDialog::BuildInterface() {
   wxBoxSizer* footer = new wxBoxSizer(wxHORIZONTAL);
   wxStaticText* note = new wxStaticText(
       this, wxID_ANY,
-      _("DE440 coverage: 1850–2150. Planner intentionally limits searches "
-        "to 2100. ΔT is modelled unless a reference event supplies it."));
+      CN_UTF8_("DE440 coverage: 1850–2150. Planner intentionally limits "
+               "searches to 2100. ΔT is modelled unless a reference event "
+               "supplies it."));
   note->Wrap(800);
   footer->Add(note, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
   wxButton* close = new wxButton(this, wxID_CLOSE, _("Close"));
@@ -628,7 +632,7 @@ void EclipseDialog::TryCurrentSource() {
   if (wxFileExists(m_download_temp)) wxRemoveFile(m_download_temp);
   celestial_navigation::ForgetVerifiedDataFile(m_download_temp);
   m_data_status->SetLabel(
-      wxString::Format(_("Downloading %s: source %lu of %lu…"),
+      wxString::Format(CN_UTF8_("Downloading %s: source %lu of %lu…"),
                        wxString::FromUTF8(spec.display_name).c_str(),
                        static_cast<unsigned long>(m_source_index + 1),
                        static_cast<unsigned long>(m_download_sources.size())));
@@ -652,7 +656,7 @@ void EclipseDialog::OnDownloadEvent(wxEvent& raw) {
                   : 0;
     const EclipseDataKind kind = static_cast<EclipseDataKind>(m_download_kind);
     m_data_status->SetLabel(wxString::Format(
-        _("Downloading %s: %d%% (source %lu of %lu)…"),
+        CN_UTF8_("Downloading %s: %d%% (source %lu of %lu)…"),
         wxString::FromUTF8(
             celestial_navigation::GetEclipseDataFileSpec(kind).display_name)
             .c_str(),
@@ -686,7 +690,7 @@ void EclipseDialog::BeginVerification(EclipseDataKind kind,
   SetInstallationControls(true);
   const std::string native_path = path.ToStdString();
   m_data_status->SetLabel(wxString::Format(
-      _("Verifying %s size, SHA-256 and file structure…"),
+      CN_UTF8_("Verifying %s size, SHA-256 and file structure…"),
       wxString::FromUTF8(
           celestial_navigation::GetEclipseDataFileSpec(kind).display_name)
           .c_str()));
@@ -788,8 +792,8 @@ void EclipseDialog::OnCancelInstall(wxCommandEvent&) {
   m_cancel_requested = true;
   m_cancel_install->Disable();
   m_data_status->SetLabel(
-      _("Cancelling safely; a verification already in progress may finish "
-        "first…"));
+      CN_UTF8_("Cancelling safely; a verification already in progress may "
+               "finish first…"));
   if (m_download_handle) OCPN_cancelDownloadFileBackground(m_download_handle);
 }
 
@@ -1014,9 +1018,10 @@ void EclipseDialog::OnLocal(wxCommandEvent&) {
   if (contacts.c2.valid && contacts.c3.valid)
     text << wxString::Format("Central duration: %.2f seconds\n",
                              contacts.central_duration_seconds);
-  text << wxString::Format("ΔT model: %.2f seconds", event.delta_t_seconds);
+  text << wxString::Format(CN_UTF8_("ΔT model: %.2f seconds"),
+                           event.delta_t_seconds);
   if (contacts.limb_adjusted)
-    text << _("   |   C1–C4 refined from LOLA terrain");
+    text << CN_UTF8_("   |   C1–C4 refined from LOLA terrain");
   m_local_results->SetValue(text);
 }
 

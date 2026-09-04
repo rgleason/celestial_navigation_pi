@@ -74,9 +74,9 @@ set(LONG_DESCRIPTION
 )
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "8")
-set(VERSION_PATCH "1")
-set(VERSION_TWEAK "0")
-set(VERSION_DATE  "03/09/2026" )# DD/MM/YYYY format
+set(VERSION_PATCH "2")
+set(VERSION_TWEAK "1")
+set(VERSION_DATE  "04/09/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -224,6 +224,7 @@ SET(SRCS
 SET(HDRS
         src/OcpnApiCompat.h
         src/NavigationUIUtils.h
+        src/Utf8Translation.h
         src/celestial_navigation_pi.h
         src/CelestialNavigationDialog.h
         src/AtomicXmlFile.h

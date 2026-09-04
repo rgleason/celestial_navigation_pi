@@ -4,6 +4,7 @@
 #include "NavigationUIUtils.h"
 #include "Sight.h"
 #include "UtcDateTime.h"
+#include "Utf8Translation.h"
 #include "celestial_navigation_pi.h"
 
 #include <wx/checkbox.h>
@@ -1097,7 +1098,7 @@ void PlannerDialog::RefreshEvents() {
     m_events->SetItem(row, 1,
                       phase.utc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
     m_events->SetItem(row, 2, DisplayTime(phase.utc));
-    m_events->SetItem(row, 3, _("—"));
+    m_events->SetItem(row, 3, CN_UTF8_("—"));
     m_events->SetItem(row, 4, _("Geocentric phase"));
   }
   const MoonInformation moon = CalculateMoonInformation(
