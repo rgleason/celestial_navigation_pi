@@ -53,7 +53,7 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
   <p style="text-align: center;"><strong>Experimental v2 documentation</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.2<br>Documentation revision 3 September 2026</p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.3<br>Documentation revision 4 September 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -480,21 +480,28 @@ may legitimately omit an event because the body does not cross the chosen
 altitude threshold.</p>
 
 <h2>9.3 Bodies &amp; Best Sights</h2>
-<p>The body list shows bodies between 10° and 75° geometric Hc with catalogue
-magnitude 3 or brighter. Click any column heading to sort the table; click it
-again to reverse the order. The individual score gives 65% weight to altitude
-near 40° and 35% to brightness, with a daylight/twilight penalty for stars.
-Planets currently receive no equivalent twilight penalty, so the score is not
-by itself a guarantee that Mercury or another planet is practically
-observable. Suggested pairs additionally favour a crossing angle near 90°;
-triads rank their two-dimensional bearing geometry separately.</p>
+<p>The body list shows every catalogued body whose geometric Hc is at or above
+the horizon. Click any column heading to sort the table; click it again to
+reverse the order. <strong>Limit recommendations by Hc</strong> optionally
+applies the adjacent, editable minimum and maximum only to suggested pairs and
+triads. The initial preferred range is 10°–75°. Bodies outside it remain in the
+table and are marked below or above the preferred Hc; disabling the option
+makes every listed body eligible for recommendations.</p>
+
+<p>The individual score gives 65% weight to altitude near 40° and 35% to
+brightness, with a daylight/twilight penalty for stars. Planets currently
+receive no equivalent twilight penalty, so the score is not by itself a
+guarantee that Mercury or another planet is practically observable. Suggested
+pairs additionally favour a crossing angle near 90°; triads rank their
+two-dimensional bearing geometry separately.</p>
 
 <p>The polar sky plot has independent magnitude limits of 1, 2 or 3 and can
 optionally show bodies below the horizon. Sun symbols are yellow, the Moon is
 blue, planets are red, stars rendered during daylight are grey, and
-below-horizon bodies are hollow. Labels are attempted only for the first 14
-score-ranked bodies and are suppressed when they would overlap; an unlabeled
-dot does not mean the body is absent from the catalogue.</p>
+below-horizon bodies are hollow. Labels favour the brightest bodies and share
+the available label allowance across the four compass quadrants. The allowance
+adapts to the plot size, and labels are still suppressed when they would
+overlap; an unlabeled dot does not mean the body is absent from the catalogue.</p>
 
 <p>These rankings and the sky plot are planning aids, not commands. Weather,
 deck obstruction, glare, horizon quality and a navigator's ability to identify
@@ -971,7 +978,9 @@ celestial-navigation fix.</p>
 <tr><td>Sunrise/sunset differs by about an hour</td><td>Distinguish UTC from local civil time and daylight-saving time. Verify the planner's independent entry-time and display-time selectors.</td></tr>
 <tr><td>Planner or Lunar Tools date appears in an unexpected order or uses AM/PM</td><td>Select <strong>Nautical: YYYY-MM-DD, 24-hour</strong>. The alternative OpenCPN/platform format intentionally follows the native operating-system controls.</td></tr>
 <tr><td>Editing a live position or “Now” time stops following it</td><td>This is intentional: a direct edit changes that source to Manual so an automatic update cannot immediately overwrite the entered value. Reselect the live source to follow it again.</td></tr>
-<tr><td>A body dot has no sky-plot label</td><td>Only the first 14 score-ranked bodies are considered for labels, and overlapping labels are suppressed. Use the sortable body table to identify and inspect all listed bodies.</td></tr>
+<tr><td>A body dot has no sky-plot label</td><td>Labels favour bright bodies, are shared across compass quadrants and are suppressed when they would overlap. Enlarge the planner or use the sortable body table to identify and inspect every listed body.</td></tr>
+<tr><td>A body is listed but absent from the recommended pairs or triads</td><td>Check <strong>Limit recommendations by Hc</strong> and its preferred minimum and maximum. Bodies outside the range remain available in the table but are deliberately excluded from recommendations while the limit is enabled.</td></tr>
+<tr><td>An invalid planner date or time leaves no results</td><td>This is intentional: the plugin clears previously calculated events, bodies, almanac and helper results so stale output cannot be mistaken for the invalid planning context. Correct the entry using YYYY-MM-DD and HH:MM:SS.</td></tr>
 <tr><td>GNSS UTC unavailable</td><td>Confirm a valid NMEA RMC or ZDA sentence is reaching OpenCPN. The plugin does not infer GNSS time from position alone.</td></tr>
 <tr><td>Chrony status unavailable</td><td>The computer may use another synchronisation service, chrony may not be installed, or its query interface may be unavailable. UTC display still uses the system clock.</td></tr>
 <tr><td>Lunar solver finds several times</td><td>Narrow the search only when justified; check contact/limbs and altitudes; use DR/hemisphere or another sight to resolve candidates.</td></tr>

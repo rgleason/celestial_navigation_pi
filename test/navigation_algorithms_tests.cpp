@@ -391,6 +391,56 @@ TEST(SightRanking, PrefersNearOrthogonalPairGeometry) {
   EXPECT_EQ("East", pairs.front().bodies[1].state.body);
 }
 
+TEST(SightRanking, RecommendationAltitudeLimitsDoNotRemoveTableBodies) {
+  RankedBody low, preferred, high;
+  low.state.body = "Low";
+  low.state.geometricAltitude = 6.0;
+  preferred.state.body = "Preferred";
+  preferred.state.geometricAltitude = 40.0;
+  high.state.body = "High";
+  high.state.geometricAltitude = 82.0;
+  const std::vector<RankedBody> table = {low, preferred, high};
+
+  const auto limited =
+      SightRanker::RecommendationCandidates(table, true, 10.0, 75.0);
+  ASSERT_EQ(1u, limited.size());
+  EXPECT_EQ("Preferred", limited.front().state.body);
+  EXPECT_EQ(3u, table.size());
+
+  const auto unlimited =
+      SightRanker::RecommendationCandidates(table, false, 10.0, 75.0);
+  EXPECT_EQ(3u, unlimited.size());
+}
+
+TEST(SightRanking, RejectsAnInvalidRecommendationAltitudeRange) {
+  RankedBody body;
+  body.state.geometricAltitude = 40.0;
+  EXPECT_TRUE(
+      SightRanker::RecommendationCandidates({body}, true, 75.0, 10.0).empty());
+  EXPECT_TRUE(
+      SightRanker::RecommendationCandidates({body}, true, 40.0, 40.0).empty());
+}
+
+TEST(SightRanking, SkyLabelsPrioritiseBrightnessWithoutChangingScores) {
+  RankedBody dim, bright, medium;
+  dim.state.body = "Dim";
+  dim.state.visualMagnitude = 2.0;
+  dim.score = 99.0;
+  bright.state.body = "Bright";
+  bright.state.visualMagnitude = -1.0;
+  bright.score = 10.0;
+  medium.state.body = "Medium";
+  medium.state.visualMagnitude = 0.5;
+  medium.score = 50.0;
+  const std::vector<RankedBody> bodies = {dim, bright, medium};
+  const auto order = SightRanker::SkyLabelPriority(bodies);
+  ASSERT_EQ(3u, order.size());
+  EXPECT_EQ("Bright", bodies[order[0]].state.body);
+  EXPECT_EQ("Medium", bodies[order[1]].state.body);
+  EXPECT_EQ("Dim", bodies[order[2]].state.body);
+  EXPECT_DOUBLE_EQ(99.0, bodies[0].score);
+}
+
 TEST(RunningFix, RecoversACommonEpochPositionFromTimeTaggedSights) {
   ObserverMotion truth;
   truth.referenceUtc = Utc("2027-06-01T12:00:00");

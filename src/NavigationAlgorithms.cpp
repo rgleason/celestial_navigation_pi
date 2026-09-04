@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <limits>
 #include <numeric>
 
@@ -619,6 +620,36 @@ std::vector<RankedCombination> SightRanker::BestCombinations(
             });
   if (combinations.size() > maximumResults) combinations.resize(maximumResults);
   return combinations;
+}
+
+std::vector<RankedBody> SightRanker::RecommendationCandidates(
+    const std::vector<RankedBody>& bodies, bool limitAltitude,
+    double minimumAltitude, double maximumAltitude) {
+  if (!limitAltitude) return bodies;
+  std::vector<RankedBody> candidates;
+  if (minimumAltitude >= maximumAltitude) return candidates;
+  std::copy_if(bodies.begin(), bodies.end(), std::back_inserter(candidates),
+               [minimumAltitude, maximumAltitude](const RankedBody& body) {
+                 return body.state.geometricAltitude >= minimumAltitude &&
+                        body.state.geometricAltitude <= maximumAltitude;
+               });
+  return candidates;
+}
+
+std::vector<size_t> SightRanker::SkyLabelPriority(
+    const std::vector<RankedBody>& bodies) {
+  std::vector<size_t> order(bodies.size());
+  std::iota(order.begin(), order.end(), 0);
+  std::stable_sort(order.begin(), order.end(),
+                   [&bodies](size_t left, size_t right) {
+                     const RankedBody& a = bodies[left];
+                     const RankedBody& b = bodies[right];
+                     if (a.state.visualMagnitude != b.state.visualMagnitude)
+                       return a.state.visualMagnitude < b.state.visualMagnitude;
+                     if (a.score != b.score) return a.score > b.score;
+                     return a.state.body.CmpNoCase(b.state.body) < 0;
+                   });
+  return order;
 }
 
 wxDateTime PlannerFieldsToUtc(const wxDateTime& fields, PlannerTimeBasis basis,
