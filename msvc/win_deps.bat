@@ -48,19 +48,12 @@ if errorlevel 1 (
   set "EXTRA_PATH=%CMAKE_HOME%\bin;%EXTRA_PATH%"
 )
 
-:: Install GNU gettext command-line tools.  Current Poedit packages no longer
-:: provide the GettextTools directory used by older plugin build scripts.
-:: Pin the package so hosted builds remain reproducible.
+:: Install choco poedit and add it's persistent user path element
 ::
-choco install gettext --version 1.0.0.20260310 -y --no-progress
-if errorlevel 1 exit /b 1
-set "GETTEXT_HOME=C:\Program Files\gettext-iconv"
-set "EXTRA_PATH=%GETTEXT_HOME%\bin;%EXTRA_PATH%"
-set "PATH=%EXTRA_PATH%;%PATH%"
-where msgfmt
-if errorlevel 1 exit /b 1
-where msgmerge
-if errorlevel 1 exit /b 1
+set "POEDIT_HOME=C:\Program Files\Poedit\GettextTools"
+if not exist "%POEDIT_HOME%" (choco install -y poedit)
+dir "%POEDIT_HOME%"
+set "EXTRA_PATH=%POEDIT_HOME%\bin;%EXTRA_PATH%"
 
 :: Update required python stuff
 ::
@@ -103,13 +96,13 @@ if not exist "%WXWIN%" (
           mkdir %SCRIPTDIR%..\cache\wxWidgets-3.2.1
       )
       set "GITHUB_DL=https://github.com/wxWidgets/wxWidgets/releases/download"
-      wget -nv !GITHUB_DL!/v3.2.1/wxMSW-3.2.1_vc14x_Dev.7z
+      wget -nv --no-check-certificate !GITHUB_DL!/v3.2.1/wxMSW-3.2.1_vc14x_Dev.7z
       7z x -o%SCRIPTDIR%..\cache\wxWidgets-3.2.1 wxMSW-3.2.1_vc14x_Dev.7z
-      wget -nv !GITHUB_DL!/v3.2.1/wxWidgets-3.2.1-headers.7z
+      wget -nv --no-check-certificate !GITHUB_DL!/v3.2.1/wxWidgets-3.2.1-headers.7z
       7z x -o%SCRIPTDIR%..\cache\wxWidgets-3.2.1 wxWidgets-3.2.1-headers.7z
   ) else (
       echo Downloading 3.1.2
-      wget -O wxWidgets-3.1.2.7z -nv ^
+      wget -O wxWidgets-3.1.2.7z -nv --no-check-certificate ^
         https://download.opencpn.org/s/E2p4nLDzeqx4SdX/download
       7z i > nul 2>&1 || choco install -y 7zip
       7z x wxWidgets-3.1.2.7z -o%WXWIN%

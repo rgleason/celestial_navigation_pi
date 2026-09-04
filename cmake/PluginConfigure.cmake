@@ -462,19 +462,6 @@ if (OCPN_FLATPAK_CONFIG)
   message(STATUS "${CMLOC}FLATPAK_BRANCH: ${FLATPAK_BRANCH}")
   set(RUNTIME_VERSION ${FLATPAK_BRANCH})
 
-  # Pull-request branch names such as pull/255 are not refs in a fresh clone.
-  # CircleCI provides the exact tested commit, which also makes the Flatpak
-  # source deterministic.  Keep the branch/tag fallback for local builds.
-  if (DEFINED ENV{CIRCLE_SHA1} AND NOT "$ENV{CIRCLE_SHA1}" STREQUAL "")
-    set(flatpak_plugin_source
-        "       - type: git\n         url: https://${GIT_REPOSITORY_SERVER}/${GIT_REPOSITORY}\n         commit: $ENV{CIRCLE_SHA1}"
-    )
-  else()
-    set(flatpak_plugin_source
-        "       - type: git\n         url: https://${GIT_REPOSITORY_SERVER}/${GIT_REPOSITORY}\n         ${GIT_BRANCH_OR_TAG}: ${GIT_REPOSITORY_ITEM}"
-    )
-  endif()
-
   message(
     STATUS
       "${CMLOC}Checking OCPN_FLATPAK_CONFIG: ${OCPN_FLATPAK_CONFIG}, SDK_VER: ${SDK_VER}, WX_VER: $ENV{WX_VER}"
@@ -565,10 +552,6 @@ if (MSVC)
   add_definitions(-D__MSVC__)
   add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_SECURE_NO_DEPRECATE)
   add_definitions(-D HAVE_SNPRINTF)
-  # ocpn_plugin.h uses MAKING_PLUGIN to import host-owned symbols such as
-  # wxEVT_DOWNLOAD_EVENT.  Without it MSVC expects the plugin DLL to provide
-  # a local definition and fails to link the background-download support.
-  target_compile_definitions(${PACKAGE_NAME} PRIVATE MAKING_PLUGIN)
   message(STATUS "${CMLOC}Set SNPRINTF")
 else (MSVC)
   if (NOT APPLE)
@@ -585,20 +568,20 @@ set(BUILD_SHARED_LIBS TRUE)
 
 # Allow multiprocess compile
 if (MSVC)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP /utf-8")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /utf-8")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 endif (MSVC)
 
 if (WIN32)
   if (MSVC)
-    set(CMAKE_C_FLAGS_DEBUG "/MP /utf-8 /MDd /Ob0 /Od  /D_DEBUG  /Zi /RTC1")
-    set(CMAKE_C_FLAGS_MINSIZEREL "/MP /utf-8 /MD  /O1  /Ob1 /D NDEBUG")
-    set(CMAKE_C_FLAGS_RELEASE "/MP /utf-8 /MD  /O2  /Ob2 /D NDEBUG /Zi")
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO "/MP /utf-8 /MD  /O2  /Ob1 /D NDEBUG /Zi")
-    set(CMAKE_CXX_FLAGS_DEBUG "/MP /utf-8 /MDd /Ob0 /Od  /D_DEBUG  /Zi /RTC1 /EHa")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL "/MP /utf-8 /MD  /O1  /Ob1 /D NDEBUG /EHa")
-    set(CMAKE_CXX_FLAGS_RELEASE "/MP /utf-8 /MD  /O2  /Ob2 /D NDEBUG /Zi /EHa")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MP /utf-8 /MD  /O2  /Ob1 /D NDEBUG /Zi /EHa")
+    set(CMAKE_C_FLAGS_DEBUG "/MP /MDd /Ob0 /Od  /D_DEBUG  /Zi /RTC1")
+    set(CMAKE_C_FLAGS_MINSIZEREL "/MP /MD  /O1  /Ob1 /D NDEBUG")
+    set(CMAKE_C_FLAGS_RELEASE "/MP /MD  /O2  /Ob2 /D NDEBUG /Zi")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO "/MP /MD  /O2  /Ob1 /D NDEBUG /Zi")
+    set(CMAKE_CXX_FLAGS_DEBUG "/MP /MDd /Ob0 /Od  /D_DEBUG  /Zi /RTC1 /EHa")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "/MP /MD  /O1  /Ob1 /D NDEBUG /EHa")
+    set(CMAKE_CXX_FLAGS_RELEASE "/MP /MD  /O2  /Ob2 /D NDEBUG /Zi /EHa")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MP /MD  /O2  /Ob1 /D NDEBUG /Zi /EHa")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG")
   endif (MSVC)
 endif (WIN32)

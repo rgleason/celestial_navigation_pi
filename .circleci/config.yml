@@ -81,21 +81,6 @@ commands:
                 type: boolean
                 default: true
         steps:
-            - run:
-                name: Skip deployment for pull request builds
-                command: |
-                  case "${CIRCLE_BRANCH:-}" in
-                    pull/*)
-                      echo "Build complete; Cloudsmith deployment is disabled for pull requests."
-                      circleci-agent step halt
-                      exit 0
-                      ;;
-                  esac
-                  if [ -n "${CIRCLE_PULL_REQUEST:-}" ]; then
-                    echo "Build complete; Cloudsmith deployment is disabled for pull requests."
-                    circleci-agent step halt
-                    exit 0
-                  fi
             - when:
                 condition: <<pipeline.parameters.run_workflow_deploy>>
                 steps:
@@ -507,4 +492,5 @@ jobs:
             command: ci\circleci-build-msvc.bat
         - deploy-code:
             deploy_use_orb: false
+
 

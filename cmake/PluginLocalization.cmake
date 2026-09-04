@@ -49,9 +49,9 @@ if (GETTEXT_XGETTEXT_EXECUTABLE)
   add_custom_command(
     OUTPUT po/${PACKAGE_NAME}.pot.dummy
     COMMAND
-      ${GETTEXT_XGETTEXT_EXECUTABLE} --force-po -F --from-code=UTF-8
+      ${GETTEXT_XGETTEXT_EXECUTABLE} --force-po -F
       --package-name=${PACKAGE_NAME} --package-version="${PACKAGE_VERSION}"
-      --output=po/${PACKAGE_NAME}.pot --keyword=_ --keyword=CN_UTF8_ --width=80
+      --output=po/${PACKAGE_NAME}.pot --keyword=_ --width=80
       --files-from=${CMAKE_CURRENT_SOURCE_DIR}/po/POTFILES.in
     DEPENDS po/POTFILES.in po/${PACKAGE_NAME}.pot
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

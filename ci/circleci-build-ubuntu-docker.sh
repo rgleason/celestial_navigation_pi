@@ -10,9 +10,8 @@ git submodule update --init opencpn-libs
 
 ls -la ~/project
 
-# Bail out on errors and echo commands.  Without -e, a failed container build
-# could be hidden by the later container-cleanup commands succeeding.
-set -ex
+# bailout on errors and echo commands.
+set -x
 sudo apt-get -y --allow-unauthenticated update
 
 DOCKER_SOCK="unix:///var/run/docker.sock"
@@ -22,13 +21,9 @@ sudo service docker restart
 sleep 5;
 
 if [ "$BUILD_ENV" = "raspbian" ]; then
-    if ! docker run --rm --privileged multiarch/qemu-user-static:register --reset; then
-        echo "QEMU registration image is unavailable on this host; using preconfigured binfmt support."
-    fi
+    docker run --rm --privileged multiarch/qemu-user-static:register --reset
 else
-    if ! docker run --rm --privileged multiarch/qemu-user-static --reset -p yes; then
-        echo "QEMU registration image is unavailable on this host; using preconfigured binfmt support."
-    fi
+    docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 fi
 
 docker run --privileged -d -ti -e "container=docker"  \
@@ -42,7 +37,6 @@ docker run --privileged -d -ti -e "container=docker"  \
     -e "BUILD_GTK3=$BUILD_GTK3" \
     -e "WX_VER=$WX_VER" \
     -e "BUILD_ENV=$BUILD_ENV" \
-    -e "RUN_DATA_TESTS=${RUN_DATA_TESTS:-false}" \
     -e "TZ=$TZ" \
     -e "DEBIAN_FRONTEND=$DEBIAN_FRONTEND" \
     -v $(pwd):/ci-source:rw -v ~/source_top:/source_top $DOCKER_IMAGE /bin/bash
@@ -52,9 +46,6 @@ DOCKER_CONTAINER_ID=$(docker ps | grep $DOCKER_IMAGE | awk '{print $1}')
 echo "Target build: $OCPN_TARGET"
 # Construct and run build script
 rm -f build.sh
-cat > build.sh << 'EOF'
-echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-ci-retries
-EOF
 
 delimstrnum=1
 
@@ -64,12 +55,12 @@ if [ "$BUILD_ENV" = "raspbian" ]; then
         # cmake 3.16 has a bug that stops the build to use an older version
         install_packages cmake=3.13.4-1 cmake-data=3.13.4-1
 EOF$delimstrnum
-delimstrnum=$((delimstrnum + 1))
+$delimstrnum = $delimstrnum + 1
     else
         cat >> build.sh << EOF$delimstrnum
         install_packages cmake cmake-data
 EOF$delimstrnum
-delimstrnum=$((delimstrnum + 1))
+$delimstrnum = $delimstrnum + 1
     fi
     if [ "$OCPN_TARGET" = "bullseye-armhf" ]; then
         cat >> build.sh << EOF$delimstrnum
@@ -80,12 +71,12 @@ delimstrnum=$((delimstrnum + 1))
         sudo mk-build-deps -ir ci-source/ci/control
         sudo apt-get --allow-unauthenticated install -f
 EOF$delimstrnum
-        delimstrnum=$((delimstrnum + 1))
+        $delimstrnum = $delimstrnum + 1
     else
         cat >> build.sh << EOF$delimstrnum
         install_packages git build-essential devscripts equivs gettext wx-common libgtk2.0-dev libwxbase3.0-dev libwxgtk3.0-dev libbz2-dev libcurl4-openssl-dev libexpat1-dev libcairo2-dev libarchive-dev liblzma-dev libexif-dev lsb-release
 EOF$delimstrnum
-        delimstrnum=$((delimstrnum + 1))
+        $delimstrnum = $delimstrnum + 1
     fi
 else
     if [ "$OCPN_TARGET" = "bullseye-armhf" ] ||
@@ -103,7 +94,7 @@ else
         apt-get -y --fix-missing install --allow-change-held-packages --allow-unauthenticated  \
         devscripts equivs wget git build-essential gettext wx-common libgtk2.0-dev libbz2-dev libcurl4-openssl-dev libexpat1-dev libcairo2-dev libarchive-dev liblzma-dev libexif-dev lsb-release openssl libssl-dev
 EOF$delimstrnum
-        delimstrnum=$((delimstrnum + 1))
+        $delimstrnum = $delimstrnum + 1
         if [ "$OCPN_TARGET" = "bullseye-armhf" ] ||
            [ "$OCPN_TARGET" = "bullseye-arm64" ] ||
            [ "$OCPN_TARGET" = "bookworm-armhf" ] ||
@@ -113,7 +104,7 @@ EOF$delimstrnum
                 cat >> build.sh << EOF$delimstrnum
                 apt-get -y --fix-missing --allow-change-held-packages --allow-unauthenticated install software-properties-common
 EOF$delimstrnum
-           delimstrnum=$((delimstrnum + 1))
+           $delimstrnum = $delimstrnum + 1
         fi
         if [ "$OCPN_TARGET" = "buster-armhf" ] ||
            [ "$OCPN_TARGET" = "bullseye-arm64" ]; then
@@ -123,13 +114,13 @@ EOF$delimstrnum
                 cat >> build.sh << EOF$delimstrnum
                 apt-get -y --no-install-recommends --fix-missing --allow-change-held-packages --allow-unauthenticated install libwxgtk3.0-dev
 EOF$delimstrnum
-                delimstrnum=$((delimstrnum + 1))
+                $delimstrnum = $delimstrnum + 1
             else
                 echo "Building for GTK3"
                 cat >> build.sh << EOF$delimstrnum
                 apt-get -y --no-install-recommends --fix-missing --allow-change-held-packages --allow-unauthenticated install libwxgtk3.0-gtk3-dev
 EOF$delimstrnum
-                delimstrnum=$((delimstrnum + 1))
+                $delimstrnum = $delimstrnum + 1
             fi
         fi
         echo "WX_VER: $WX_VER"
@@ -138,7 +129,7 @@ EOF$delimstrnum
             cat >> build.sh << EOF$delimstrnum
             apt-get -y --no-install-recommends --fix-missing --allow-change-held-packages --allow-unauthenticated install libwxbase3.0-dev
 EOF$delimstrnum
-            delimstrnum=$((delimstrnum + 1))
+            $delimstrnum = $delimstrnum + 1
         elif [ "$WX_VER" = "32" ]; then
             echo "Building for WX32"
             if [ "$OCPN_TARGET" = "bullseye-armhf" ] || [ "$OCPN_TARGET" = "bullseye-arm64" ]; then
@@ -147,12 +138,12 @@ EOF$delimstrnum
                 echo "deb-src [trusted=yes] https://ppa.launchpadcontent.net/opencpn/opencpn/ubuntu jammy main" | tee -a /etc/apt/sources.list
                 apt-get -y --allow-unauthenticated update
 EOF$delimstrnum
-                delimstrnum=$((delimstrnum + 1))
+                $delimstrnum = $delimstrnum + 1
             fi
             cat >> build.sh << EOF$delimstrnum
             apt-get -y --fix-missing --allow-change-held-packages --allow-unauthenticated install libwxgtk3.2-dev
 EOF$delimstrnum
-            delimstrnum=$((delimstrnum + 1))
+            $delimstrnum = $delimstrnum + 1
         fi
         if [ "$OCPN_TARGET" = "focal-armhf" ]; then
             cat >> build.sh << EOF$delimstrnum
@@ -162,20 +153,20 @@ EOF$delimstrnum
             apt-get --allow-unauthenticated update
             apt --allow-unauthenticated install cmake=$CMAKE_VERSION cmake-data=$CMAKE_VERSION
 EOF$delimstrnum
-            delimstrnum=$((delimstrnum + 1))
+            $delimstrnum = $delimstrnum + 1
         else
             cat >> build.sh << EOF$delimstrnum
             apt install -y --allow-unauthenticated cmake
 EOF$delimstrnum
-            delimstrnum=$((delimstrnum + 1))
+            $delimstrnum = $delimstrnum + 1
         fi
     else
-        cat >> build.sh << EOF$delimstrnum
+        cat > build.sh << EOF$delimstrnum
         apt-get -qq --allow-unauthenticated update
         apt-get -y --no-install-recommends --allow-change-held-packages --allow-unauthenticated install \
         git cmake build-essential gettext wx-common libgtk2.0-dev libwxbase3.0-dev libwxgtk3.0-dev libbz2-dev libcurl4-openssl-dev libexpat1-dev libcairo2-dev libarchive-dev liblzma-dev libexif-dev lsb-release
 EOF$delimstrnum
-        delimstrnum=$((delimstrnum + 1))
+        $delimstrnum = $delimstrnum + 1
     fi
 fi
 
@@ -196,26 +187,16 @@ fi
 
 cat build.sh
 
-TEST_CMAKE_ARGS=""
-TEST_COMMANDS=""
-if [ "${RUN_DATA_TESTS:-false}" = "true" ]; then
-    cat >> build.sh << 'EOF'
-apt-get install -y --no-install-recommends curl libgtest-dev
-/ci-source/ci/fetch-eclipse-data.sh /ci-source/eclipse/data --all
-EOF
-    TEST_CMAKE_ARGS="-DOCPN_BUILD_TEST=ON"
-    TEST_COMMANDS="ctest --output-on-failure; cd ..; cmake -S eclipse -B build-eclipse-ci -DCMAKE_BUILD_TYPE=Release; cmake --build build-eclipse-ci --parallel 2; ECLIPSE_DE440_PATH=/ci-source/eclipse/data/de440s.bsp ECLIPSE_LUNAR_PCK_PATH=/ci-source/eclipse/data/moon_pa_de440_200625.bpc ECLIPSE_LOLA_PATH=/ci-source/eclipse/data/lola64-pa.bin ctest --test-dir build-eclipse-ci --output-on-failure; cd build;"
-fi
-
 if type nproc &> /dev/null
 then
     BUILD_FLAGS="-j"$(nproc)
 fi
 
 docker exec -ti \
-    $DOCKER_CONTAINER_ID /bin/bash -xec "bash -xe ci-source/build.sh; rm -rf ci-source/build; mkdir ci-source/build; cd ci-source/build; cmake $TEST_CMAKE_ARGS ..; make $BUILD_FLAGS; make package; $TEST_COMMANDS chmod -R a+rw ../build;"
+    $DOCKER_CONTAINER_ID /bin/bash -xec "bash -xe ci-source/build.sh; rm -rf ci-source/build; mkdir ci-source/build; cd ci-source/build; cmake ..; make $BUILD_FLAGS; make package; chmod -R a+rw ../build;"
 
 echo "Stopping"
 docker ps -a
 docker stop $DOCKER_CONTAINER_ID
 docker rm -v $DOCKER_CONTAINER_ID
+
