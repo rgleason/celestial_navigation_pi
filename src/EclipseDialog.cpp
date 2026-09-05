@@ -5,11 +5,14 @@
 #include "Utf8Translation.h"
 
 #include "celestial_navigation_pi.h"
+#include <ocpn_plugin.h>
 
 #include "eclipse/data_pack.h"
 #include "eclipse/lunar_limb.h"
 #include "eclipse/pck.h"
 #include "eclipse/time.h"
+
+wxDEFINE_EVENT(EVT_ECLIPSE_DOWNLOAD, wxCommandEvent);
 
 #include <wx/button.h>
 #include <wx/checkbox.h>
@@ -49,6 +52,8 @@ enum VerificationPurpose {
   VERIFY_DOWNLOAD = 2,
   VERIFY_LOCAL_IMPORT = 3
 };
+
+
 
 wxString MiB(std::uint64_t bytes) {
   return wxString::Format("%.1f MiB", bytes / (1024.0 * 1024.0));
@@ -220,8 +225,12 @@ EclipseDialog::~EclipseDialog() {
   m_verification_timer.Stop();
   Unbind(wxEVT_TIMER, &EclipseDialog::OnVerificationTimer, this,
          m_verification_timer.GetId());
-  Disconnect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
-             wxEventHandler(EclipseDialog::OnDownloadEvent), NULL, this);
+//  Disconnect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
+//             wxEventHandler(EclipseDialog::OnDownloadEvent), NULL, this);
+
+Disconnect(wxID_ANY, EVT_ECLIPSE_DOWNLOAD,
+           wxEventHandler(EclipseDialog::OnDownloadEvent), NULL, this);
+
   if (m_download_handle) {
     OCPN_cancelDownloadFileBackground(m_download_handle);
     m_download_handle = 0;
@@ -383,8 +392,12 @@ void EclipseDialog::BuildInterface() {
   m_download_de->Bind(wxEVT_BUTTON, &EclipseDialog::OnDownloadDe440, this);
   m_optional_data->Bind(wxEVT_BUTTON, &EclipseDialog::OnOptionalData, this);
   m_cancel_install->Bind(wxEVT_BUTTON, &EclipseDialog::OnCancelInstall, this);
-  Connect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
-          wxEventHandler(EclipseDialog::OnDownloadEvent), NULL, this);
+
+//  Connect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
+//          wxEventHandler(EclipseDialog::OnDownloadEvent), NULL, this);
+  Connect(wxID_ANY, EVT_ECLIPSE_DOWNLOAD,
+        wxEventHandler(EclipseDialog::OnDownloadEvent), NULL, this);
+
   Bind(wxEVT_TIMER, &EclipseDialog::OnVerificationTimer, this,
        m_verification_timer.GetId());
   find->Bind(wxEVT_BUTTON, &EclipseDialog::OnFind, this);
