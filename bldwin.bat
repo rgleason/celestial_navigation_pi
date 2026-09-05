@@ -8,6 +8,18 @@ REM ----------------------------------------
 set PATH=C:\Program Files\Git\usr\bin;%PATH%
 
 REM ------------------------------------------------------------
+REM 0. Inject wxWidgets paths for PluginConfigure.cmake
+REM ------------------------------------------------------------
+set WX_ROOT=C:\Users\fcgle\source\ocpn_wxWidgets
+set WX_LIB=%WX_ROOT%\lib\vc_dll
+set WX_INC=%WX_ROOT%\include;%WX_LIB%\mswu
+
+set CMAKE_PREFIX_PATH=%WX_ROOT%
+set CMAKE_INCLUDE_PATH=%WX_INC%
+set CMAKE_LIBRARY_PATH=%WX_LIB%
+
+
+REM ------------------------------------------------------------
 REM 1. Define paths
 REM ------------------------------------------------------------
 set PLUGIN_ROOT=%cd%
