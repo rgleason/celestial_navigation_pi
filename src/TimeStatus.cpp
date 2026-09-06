@@ -159,7 +159,7 @@ bool GnssTimeMonitor::Update(const wxString& sentence) {
   wxString source;
   if (!ParseNmeaUtc(sentence, &utc, &source)) return false;
 
-  std::lock_guard<std::mutex> lock(m_mutex);
+  wxCriticalSectionLocker lock(m_criticalSection);
   m_valid = true;
   m_utc = utc;
   m_source = source;
@@ -169,7 +169,7 @@ bool GnssTimeMonitor::Update(const wxString& sentence) {
 
 GnssTimeSnapshot GnssTimeMonitor::Snapshot() const {
   GnssTimeSnapshot snapshot;
-  std::lock_guard<std::mutex> lock(m_mutex);
+  wxCriticalSectionLocker lock(m_criticalSection);
   if (!m_valid) return snapshot;
 
   snapshot.valid = true;
