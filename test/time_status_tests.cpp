@@ -2,6 +2,28 @@
 
 #include "TimeStatus.h"
 
+TEST(TimeStatus, InitialSnapshotIsInvalid) {
+  GnssTimeMonitor monitor;
+  const GnssTimeSnapshot snapshot = monitor.Snapshot();
+  EXPECT_FALSE(snapshot.valid);
+  EXPECT_EQ(0, snapshot.age_milliseconds);
+  EXPECT_TRUE(snapshot.source.empty());
+}
+
+TEST(TimeStatus, UpdatedSnapshotContainsParsedGnssTime) {
+  GnssTimeMonitor monitor;
+  ASSERT_TRUE(monitor.Update(
+      "$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,"
+      "003.1,W*6A"));
+
+  const GnssTimeSnapshot snapshot = monitor.Snapshot();
+  EXPECT_TRUE(snapshot.valid);
+  EXPECT_EQ("RMC", snapshot.source);
+  EXPECT_EQ("1994-03-23 12:35:19",
+            snapshot.utc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
+  EXPECT_GE(snapshot.age_milliseconds, 0);
+}
+
 TEST(TimeStatus, ParsesActiveRmcUtc) {
   wxDateTime utc;
   wxString source;
