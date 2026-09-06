@@ -23,9 +23,6 @@ class wxStaticText;
 class wxTextCtrl;
 class celestial_navigation_pi;
 
-extern const wxEventTypeTag<wxCommandEvent> EVT_ECLIPSE_DOWNLOAD;
-
-
 class EclipseDialog : public wxDialog {
 public:
   EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin);
@@ -103,8 +100,6 @@ private:
   wxButton* m_download_de;
   wxButton* m_optional_data;
   wxButton* m_cancel_install;
-
- 
 
   std::vector<celestial_navigation::EclipseDataKind> m_install_queue;
   std::vector<std::string> m_download_sources;
