@@ -114,12 +114,12 @@ int celestial_navigation_pi::Init(void) {
   m_leftclick_tool_id = InsertPlugInToolSVG(
       "Celestial Navigation", _svg_celestial_navigation,
       _svg_celestial_navigation_rollover, _svg_celestial_navigation_toggled,
-      wx ITEM_CHECK, _("Celestial Navigation"), "", NULL,
+      wxITEM_CHECK, _("Celestial Navigation"), "", NULL,
       CELESTIAL_NAVIGATION_TOOL_POSITION, 0, this);
 #else
   m_leftclick_tool_id =
       InsertPlugInTool("", _img_celestial_navigation, _img_celestial_navigation,
-                       wx ITEM_NORMAL, _("Celestial Navigation"), "", NULL,
+                       wxITEM_NORMAL, _("Celestial Navigation"), "", NULL,
                        CELESTIAL_NAVIGATION_TOOL_POSITION, 0, this);
 #endif
 
@@ -273,8 +273,12 @@ void celestial_navigation_pi::OnToolbarToolCallback(int id) {
 
     // Defensive: ensure parent window valid
     if (!m_parent_window) {
-      wxLogMessage("Celestial: parent_window is null, aborting dialog creation");
-      return;
+      wxLogWarning("Celestial: m_parent_window is NULL; calling GetOCPNCanvasWindow()");
+      m_parent_window = GetOCPNCanvasWindow();
+      if (!m_parent_window) {
+        wxLogError("Celestial: Cannot obtain parent window; aborting dialog creation");
+        return;
+      }
     }
 
     wxLogMessage("Celestial: Creating CelestialNavigationDialog");
