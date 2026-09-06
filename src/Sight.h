@@ -62,7 +62,7 @@ WX_DECLARE_LIST(wxRealPoint, wxRealPointList);
 const wxString SightType[] = {_("Altitude"), _("Azimuth"), _("Lunar"),
                               _("Horizon")};
 
-class Sight : public wxObject {
+class Sight {
 public:
   enum Type { ALTITUDE, AZIMUTH, LUNAR, HORIZON };
   enum HorizonEvent { SUNRISE, SUNSET };
