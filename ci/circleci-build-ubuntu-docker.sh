@@ -84,7 +84,7 @@ configure_bullseye_sources() {
     for source_file in /etc/apt/sources.list /etc/apt/sources.list.d/*.list; do
         [ -f "$source_file" ] || continue
         sed -i -E \
-          's#https?://(security|deb)\.debian\.org/debian-security#https://snapshot.debian.org/archive/debian-security/20260901T000000Z#g' \
+          's#https?://(security|deb)\.debian\.org/debian-security#http://snapshot.debian.org/archive/debian-security/20260901T000000Z#g' \
           "$source_file"
     done
     echo 'Acquire::Check-Valid-Until "false";' \
