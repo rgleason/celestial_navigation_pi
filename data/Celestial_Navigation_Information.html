@@ -53,7 +53,7 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
   <p style="text-align: center;"><strong>Experimental v2 documentation</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.3<br>Documentation revision 4 September 2026</p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.4<br>Documentation revision 7 September 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -450,7 +450,10 @@ searchable list. Time can be now, the selected sight, or a manual date/time.</p>
 zone time. Ship zone defaults to the conventional whole-hour offset suggested
 by longitude; disable <strong>Auto zone from longitude</strong> to select a
 manual offset in half-hour increments. East offsets are positive, west offsets
-negative. Conversion across midnight changes the UTC date correctly.</p>
+negative. Conversion across midnight changes the UTC date correctly. The zone
+controls are enabled only when ship-zone input or fixed-offset display uses
+them. A temporarily blank or invalid offset retains the last valid value rather
+than silently becoming the western limit.</p>
 
 <p>The default entry presentation is the unambiguous nautical form
 <strong>YYYY-MM-DD</strong> and <strong>HH:MM:SS</strong>. Select
@@ -458,7 +461,8 @@ negative. Conversion across midnight changes the UTC date correctly.</p>
 date and time controls instead. This changes presentation only, not the
 instant. Displayed event times may independently be UTC, computer local time,
 local mean time, or a fixed offset. The calculation itself is normalized to
-UTC.</p>
+UTC. The bold <strong>Resolved UTC</strong> line is the authoritative instant
+shared by every planner tab, independent of entry or display format.</p>
 
 <p>Editing latitude or longitude switches the position source to
 <strong>Manual</strong>; editing date or time switches the time source to
@@ -477,7 +481,9 @@ not alter the geometric body-centre Hc shown in the body table.</p>
 Moonset, local apparent noon and lunar transit when they occur. It reports UTC,
 selected display time, true bearing and observer position. High-latitude days
 may legitimately omit an event because the body does not cross the chosen
-altitude threshold.</p>
+altitude threshold. The schedule always covers the UTC civil day containing
+the resolved planning instant; local display dates may therefore differ near
+the date line.</p>
 
 <h2>9.3 Bodies &amp; Best Sights</h2>
 <p>The body list shows every catalogued body whose geometric Hc is at or above
@@ -509,9 +515,11 @@ a body remain decisive. <strong>Create selected sight…</strong> transfers the
 body and planning context to sight entry.</p>
 
 <h2>9.4 Almanac</h2>
-<p>Provides hourly GHA, SHA, declination, Hc and true Zn for the selected
-position/time context. <strong>Export CSV…</strong> creates a portable table
-for independent checking or a paper working sheet.</p>
+<p>Provides hourly body GHA, SHA, declination, GHA Aries, local hour angle of
+Aries, Hc and true Zn for the selected position/time context. Longitude is
+signed east-positive, so local hour angle is <code>GHA + longitude</code>,
+wrapped to 0–360°. <strong>Export CSV…</strong> creates the same columns in a
+portable table for independent checking or a paper working sheet.</p>
 
 <h2>9.5 Generate Voyage Almanac</h2>
 <p><strong>Generate Almanac…</strong> on the main Sights window creates an
@@ -668,17 +676,21 @@ split unrelated sessions rather than treating months of observations as one
 continuous vessel track.</p>
 
 <h2>11.2 Local apparent noon</h2>
-<p>The planner predicts meridian passage. Around that time, observe a series of
-Sun altitudes and identify the maximum or fit the sequence. Enter the corrected
-Ho in <strong>Noon &amp; Polaris → Sun at local apparent noon</strong> to solve
-latitude using declination and the meridian geometry. Noon primarily provides
-latitude; it is not by itself a normal two-dimensional fix.</p>
+<p>The planner predicts meridian passage by solving for solar local hour angle
+zero at the time-dependent observer position; it does not merely sample for the
+highest displayed altitude. Around that time, observe a series of Sun altitudes
+and identify the maximum or fit the sequence. Enter the corrected Ho in
+<strong>Noon &amp; Polaris → Sun at local apparent noon</strong> to solve latitude
+using declination and the meridian geometry. Noon primarily provides latitude;
+it is not by itself a normal two-dimensional fix.</p>
 
 <h2>11.3 Polaris latitude</h2>
 <p>Polaris is close to, but not exactly at, the north celestial pole. Select
 <strong>Polaris latitude</strong>, use a corrected Ho and the applicable
 time/position context. The helper applies the ephemeris rather than assuming
-that Ho equals latitude exactly. Polaris is a northern-hemisphere workflow.</p>
+that Ho equals latitude exactly. It displays the predicted Hc and does not offer
+a solution when Polaris is below the geometric horizon. Polaris is a
+northern-hemisphere workflow.</p>
 </section>
 
 <section>

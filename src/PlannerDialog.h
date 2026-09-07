@@ -41,6 +41,9 @@ private:
   void UpdateInputTimeLabels();
   void UpdateEntryFormatControls();
   void UpdateAutomaticZoneOffset();
+  void UpdateZoneOffsetControls();
+  void UpdateResolvedUtc(const wxDateTime& utc);
+  double ZoneOffsetHours() const;
   void ContextPositionEdited(wxCommandEvent& event);
   void ContextTimeEdited(wxCommandEvent& event);
   void ScheduleRefresh();
@@ -94,6 +97,7 @@ private:
   wxSpinCtrlDouble* m_course;
   wxSpinCtrlDouble* m_speed;
   wxSpinCtrlDouble* m_eyeHeight;
+  wxStaticText* m_resolvedUtc;
   wxStaticText* m_status;
   wxNotebook* m_notebook;
   wxListCtrl* m_events;
@@ -115,6 +119,8 @@ private:
   int m_lastPositionSource;
   int m_bodySortColumn;
   bool m_bodySortAscending;
+  double m_lastValidZoneOffset;
+  bool m_updatingZoneOffset;
   wxString m_waypointGuid;
   wxString m_waypointName;
   wxTimer m_cursorTimer;
