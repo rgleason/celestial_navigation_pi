@@ -1,4 +1,5 @@
 #include "AlmanacDialog.h"
+#include "DialogGeometry.h"
 
 #include "CelestialNavigationDialog.h"
 #include "NavigationUIUtils.h"
@@ -84,7 +85,12 @@ AlmanacDialog::AlmanacDialog(CelestialNavigationDialog* parent,
   }
   UpdateCoverageControls();
   UpdateSummary();
-  CentreOnParent();
+  SetMinSize(wxSize(760, 560));
+  dialog_geometry::Restore(this, _T("Almanac"), wxSize(1080, 760));
+}
+
+AlmanacDialog::~AlmanacDialog() {
+  dialog_geometry::Save(this, _T("Almanac"));
 }
 
 void AlmanacDialog::BuildInterface() {
@@ -582,9 +588,22 @@ void AlmanacDialog::OnPreview(wxCommandEvent&) {
       wxTE_MULTILINE | wxTE_READONLY | wxTE_RICH2 | wxHSCROLL);
   text->SetFont(wxFontInfo(9).Family(wxFONTFAMILY_TELETYPE));
   sizer->Add(text, 1, wxEXPAND | wxALL, 8);
-  sizer->Add(preview.CreateButtonSizer(wxOK), 0, wxEXPAND | wxALL, 8);
+  wxStdDialogButtonSizer* buttons = new wxStdDialogButtonSizer();
+  wxButton* close = new wxButton(&preview, wxID_CLOSE, _("Close"));
+  buttons->AddButton(close);
+  buttons->Realize();
+  sizer->Add(buttons, 0, wxEXPAND | wxALL, 8);
   preview.SetSizer(sizer);
+  preview.SetMinSize(wxSize(650, 480));
+  preview.SetEscapeId(wxID_CLOSE);
+  preview.Bind(wxEVT_BUTTON,
+               [&preview](wxCommandEvent&) { preview.EndModal(wxID_CLOSE); },
+               wxID_CLOSE);
+  preview.Bind(wxEVT_CLOSE_WINDOW,
+               [&preview](wxCloseEvent&) { preview.EndModal(wxID_CLOSE); });
+  dialog_geometry::Restore(&preview, _T("AlmanacPreview"), wxSize(820, 680));
   preview.ShowModal();
+  dialog_geometry::Save(&preview, _T("AlmanacPreview"));
 }
 
 void AlmanacDialog::OnGenerate(wxCommandEvent&) {

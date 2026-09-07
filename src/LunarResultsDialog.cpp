@@ -1,5 +1,6 @@
 #include "LunarResultsDialog.h"
 
+#include "DialogGeometry.h"
 #include "Sight.h"
 #include "SightDialog.h"
 #include "CelestialNavigationDialog.h"
@@ -115,11 +116,15 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
   m_applyOffset = new wxButton(this, wxID_ANY,
                                _("Apply selected watch offset to all sights"));
   buttons->AddButton(m_applyOffset);
-  buttons->AddButton(new wxButton(this, wxID_CLOSE, _("Close")));
+  wxButton* close = new wxButton(this, wxID_CLOSE, _("Close"));
+  buttons->AddButton(close);
   buttons->Realize();
   root->Add(buttons, 0, wxALL | wxALIGN_RIGHT, 10);
   Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { EndModal(wxID_CLOSE); },
        wxID_CLOSE);
+  Bind(wxEVT_CLOSE_WINDOW,
+       [this](wxCloseEvent&) { EndModal(wxID_CLOSE); });
+  SetEscapeId(wxID_CLOSE);
   m_applyOffset->Bind(wxEVT_BUTTON,
                       &LunarResultsDialog::ApplySelectedWatchOffset, this);
   m_candidates->Bind(wxEVT_LIST_ITEM_SELECTED,
@@ -129,8 +134,12 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
 
   SetSizer(root);
   SetMinSize(wxSize(650, 460));
-  CentreOnParent();
+  dialog_geometry::Restore(this, _T("LunarResults"), wxSize(940, 700));
   UpdateResults();
+}
+
+LunarResultsDialog::~LunarResultsDialog() {
+  dialog_geometry::Save(this, _T("LunarResults"));
 }
 
 void LunarResultsDialog::UpdateResults() {

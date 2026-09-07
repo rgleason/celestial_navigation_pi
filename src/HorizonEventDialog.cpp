@@ -13,6 +13,7 @@
 #include <wx/choice.h>
 #include <wx/display.h>
 #include <wx/fileconf.h>
+#include <wx/msgdlg.h>
 #include <wx/scrolwin.h>
 #include <wx/sizer.h>
 #include <wx/spinctrl.h>
@@ -20,6 +21,7 @@
 #include <wx/stattext.h>
 
 #include "OcpnApiCompat.h"
+#include "DialogGeometry.h"
 #include "UtcDateTime.h"
 #include "Utf8Translation.h"
 
@@ -49,7 +51,8 @@ wxSpinCtrlDouble* AddNumber(wxWindow* parent, wxFlexGridSizer* grid,
 
 HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
                                        int clockOffset,
-                                       const wxString& systemTimeSummary)
+                                       const wxString& systemTimeSummary,
+                                       Mode mode)
     : wxDialog(parent, wxID_ANY, _("Horizon Event"), wxDefaultPosition,
                wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
       m_sight(sight),
@@ -220,6 +223,8 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   wxStdDialogButtonSizer* buttons = new wxStdDialogButtonSizer;
   wxButton* ok = new wxButton(this, wxID_OK);
   wxButton* cancel = new wxButton(this, wxID_CANCEL);
+  ok->SetLabel(mode == Mode::Create ? _("Create Event")
+                                    : _("Save Changes"));
   buttons->AddButton(ok);
   buttons->AddButton(cancel);
   buttons->Realize();
@@ -236,11 +241,14 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
     displayArea = wxDisplay(static_cast<unsigned int>(0)).GetClientArea();
   const int width = std::max(600, std::min(700, displayArea.GetWidth() - 40));
   const int height = std::max(540, std::min(760, displayArea.GetHeight() - 80));
-  SetSize(wxSize(width, height));
-  CentreOnParent();
+  dialog_geometry::Restore(this, _T("HorizonEvent"), wxSize(width, height));
+  SetAffirmativeId(wxID_OK);
+  SetEscapeId(wxID_CANCEL);
+  ok->SetDefault();
 
   capture->Bind(wxEVT_BUTTON, &HorizonEventDialog::OnCaptureNow, this);
   ok->Bind(wxEVT_BUTTON, &HorizonEventDialog::OnOK, this);
+  Bind(wxEVT_CLOSE_WINDOW, &HorizonEventDialog::OnWindowClose, this);
   m_hasBearing->Bind(wxEVT_CHECKBOX, &HorizonEventDialog::OnInputChanged, this);
   m_event->Bind(wxEVT_CHOICE, &HorizonEventDialog::OnInputChanged, this);
   m_bearingReference->Bind(wxEVT_CHOICE, &HorizonEventDialog::OnInputChanged,
@@ -260,6 +268,15 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
 
   UpdateBearingControls();
   UpdatePreview();
+  m_transaction.StartTracking();
+}
+
+HorizonEventDialog::~HorizonEventDialog() {
+  dialog_geometry::Save(this, _T("HorizonEvent"));
+}
+
+void HorizonEventDialog::MarkDirty() {
+  m_transaction.MarkChanged();
 }
 
 void HorizonEventDialog::RelayoutContent() {
@@ -369,6 +386,7 @@ void HorizonEventDialog::UpdatePreview() {
 }
 
 void HorizonEventDialog::OnCaptureNow(wxCommandEvent& event) {
+  MarkDirty();
   const wxDateTime now = UtcDateTime::Now();
   m_calendar->SetDate(now);
   m_hours->SetValue(now.GetHour());
@@ -379,14 +397,17 @@ void HorizonEventDialog::OnCaptureNow(wxCommandEvent& event) {
 }
 
 void HorizonEventDialog::OnInputChanged(wxCommandEvent& event) {
+  MarkDirty();
   UpdatePreview();
 }
 
 void HorizonEventDialog::OnCalendarChanged(wxCalendarEvent& event) {
+  MarkDirty();
   UpdatePreview();
 }
 
 void HorizonEventDialog::OnQualityChanged(wxCommandEvent& event) {
+  MarkDirty();
   const double defaults[] = {10.0, 20.0, 60.0};
   const int selection = m_horizonQuality->GetSelection();
   if (selection >= 0 && selection < 3)
@@ -408,4 +429,21 @@ void HorizonEventDialog::OnOK(wxCommandEvent& event) {
   config->Write(_T("HorizonQuality"), m_sight.m_HorizonQuality);
 
   EndModal(wxID_OK);
+}
+
+void HorizonEventDialog::OnWindowClose(wxCloseEvent& event) {
+  if (m_transaction.HasUnsavedChanges() && event.CanVeto()) {
+    wxMessageDialog confirm(
+        this, _("Discard your changes?"), _("Unsaved Horizon Event"),
+        wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
+    confirm.SetYesNoLabels(_("Discard Changes"), _("Keep Editing"));
+    if (confirm.ShowModal() != wxID_YES) {
+      event.Veto();
+      return;
+    }
+  }
+  if (IsModal())
+    EndModal(wxID_CANCEL);
+  else
+    event.Skip();
 }

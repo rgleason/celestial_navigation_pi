@@ -1,4 +1,5 @@
 #include "EclipseDialog.h"
+#include "DialogGeometry.h"
 
 #include "AtomicXmlFile.h"
 #include "NavigationUIUtils.h"
@@ -96,7 +97,13 @@ public:
     root->Add(footer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
     SetSizerAndFit(root);
     SetMinSize(wxSize(700, GetSize().GetHeight()));
-    CentreOnParent();
+    SetEscapeId(wxID_CANCEL);
+    dialog_geometry::Restore(this, _T("OptionalLunarData"),
+                             wxSize(760, GetSize().GetHeight()));
+  }
+
+  ~OptionalLunarDataDialog() override {
+    dialog_geometry::Save(this, _T("OptionalLunarData"));
   }
 
 private:
@@ -208,6 +215,7 @@ EclipseDialog::EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin)
       m_installed_check_index(0) {
   m_invalid_data[0] = m_invalid_data[1] = m_invalid_data[2] = false;
   BuildInterface();
+  dialog_geometry::Restore(this, _T("Eclipse"), wxSize(960, 720));
   UpdateDataStatus();
   StartInstalledDataCheck();
   wxCommandEvent initial_position;
@@ -215,6 +223,7 @@ EclipseDialog::EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin)
 }
 
 EclipseDialog::~EclipseDialog() {
+  dialog_geometry::Save(this, _T("Eclipse"));
   m_verification_timer.Stop();
   Unbind(wxEVT_TIMER, &EclipseDialog::OnVerificationTimer, this,
          m_verification_timer.GetId());

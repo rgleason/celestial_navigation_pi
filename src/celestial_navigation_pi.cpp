@@ -287,7 +287,8 @@ void celestial_navigation_pi::OnToolbarToolCallback(int id) {
     wxLogMessage("Celestial: CelestialNavigationDialog constructed at %p", (void*)m_pCelestialNavigationDialog);
   }
 
-  m_pCelestialNavigationDialog->Show(!m_pCelestialNavigationDialog->IsShown());
+  m_pCelestialNavigationDialog->Show();
+  m_pCelestialNavigationDialog->Raise();
 }
 
 int celestial_navigation_pi::GetToolbarToolCount(void) { return 1; }

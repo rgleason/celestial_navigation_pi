@@ -1,6 +1,7 @@
 #include "PlannerDialog.h"
 
 #include "CelestialNavigationDialog.h"
+#include "DialogGeometry.h"
 #include "NavigationUIUtils.h"
 #include "Sight.h"
 #include "UtcDateTime.h"
@@ -166,12 +167,16 @@ public:
 
     wxStdDialogButtonSizer* buttons = new wxStdDialogButtonSizer();
     m_ok = new wxButton(this, wxID_OK);
+    m_ok->SetLabel(_("Use Waypoint"));
+    m_ok->SetDefault();
     m_ok->Enable(false);
     buttons->AddButton(m_ok);
     buttons->AddButton(new wxButton(this, wxID_CANCEL));
     buttons->Realize();
     root->Add(buttons, 0, wxALL | wxEXPAND, 8);
     SetSizer(root);
+    SetMinSize(wxSize(560, 400));
+    dialog_geometry::Restore(this, _T("WaypointPicker"), wxSize(700, 500));
 
     m_filter->Bind(wxEVT_TEXT, [this](wxCommandEvent&) { RebuildList(); });
     m_list->Bind(wxEVT_LIST_ITEM_SELECTED, [this](wxListEvent& event) {
@@ -184,6 +189,10 @@ public:
     });
     RebuildList();
     m_filter->SetFocus();
+  }
+
+  ~WaypointPickerDialog() override {
+    dialog_geometry::Save(this, _T("WaypointPicker"));
   }
 
   const WaypointPosition* GetSelectedWaypoint() const {
@@ -743,10 +752,12 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   ApplyTimeSource();
   wxCommandEvent dummy;
   RefreshAll(dummy);
-  CentreOnParent();
+  SetMinSize(wxSize(760, 560));
+  dialog_geometry::Restore(this, _T("Planner"), wxSize(1120, 720));
 }
 
 PlannerDialog::~PlannerDialog() {
+  dialog_geometry::Save(this, _T("Planner"));
   m_cursorTimer.Stop();
   m_refreshTimer.Stop();
   Unbind(wxEVT_TIMER, &PlannerDialog::OnCursorTimer, this,

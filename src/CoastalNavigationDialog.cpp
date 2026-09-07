@@ -1,6 +1,7 @@
 #include "CoastalNavigationDialog.h"
 
 #include "CelestialNavigationDialog.h"
+#include "DialogGeometry.h"
 #include "NavigationUIUtils.h"
 #include "OcpnApiCompat.h"
 #include "UtcDateTime.h"
@@ -263,7 +264,11 @@ CoastalNavigationDialog::CoastalNavigationDialog(
 
   SetSizer(root);
   SetMinSize(wxSize(720, 500));
-  CentreOnParent();
+  dialog_geometry::Restore(this, _T("CoastalNavigation"), wxSize(900, 760));
+}
+
+CoastalNavigationDialog::~CoastalNavigationDialog() {
+  dialog_geometry::Save(this, _T("CoastalNavigation"));
 }
 
 wxTextCtrl* CoastalNavigationDialog::AddField(wxSizer* sizer, wxWindow* parent,

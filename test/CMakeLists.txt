@@ -25,6 +25,8 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml ${CMAKE_CURRENT_BINARY
 
 set(SRC
     atomic_xml_file_tests.cpp
+    dialog_geometry_tests.cpp
+    dialog_transaction_state_tests.cpp
     eclipse_data_files_tests.cpp
     eclipse_verification_worker_tests.cpp
     altitude_tests.cpp
@@ -48,6 +50,7 @@ set(SRC
     mock_plugin_impl.cpp
     ${CMAKE_SOURCE_DIR}/src/Sight.cpp
     ${CMAKE_SOURCE_DIR}/src/AtomicXmlFile.cpp
+    ${CMAKE_SOURCE_DIR}/src/DialogGeometry.cpp
     ${CMAKE_SOURCE_DIR}/src/EclipseDataFiles.cpp
     ${CMAKE_SOURCE_DIR}/src/EclipseVerificationWorker.cpp
     ${CMAKE_SOURCE_DIR}/src/LunarDistanceEngine.cpp

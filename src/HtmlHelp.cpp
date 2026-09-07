@@ -14,11 +14,13 @@
 
 #include "HtmlHelp.h"
 
+#include <wx/button.h>
 #include <wx/filename.h>
 #include <wx/msgdlg.h>
 #include <wx/utils.h>
 
 #include "CelestialNavigationUI.h"
+#include "DialogGeometry.h"
 #include "celestial_navigation_pi.h"
 
 namespace {
@@ -41,6 +43,10 @@ bool ShowBundledHtmlHelp(wxWindow* parent, const wxString& title,
 
   InformationDialog dialog(parent, wxID_ANY, title, wxDefaultPosition,
                            wxSize(760, 650));
+  if (wxWindow* close = dialog.FindWindow(wxID_OK))
+    close->SetLabel(_("Close"));
+  dialog.SetMinSize(wxSize(600, 450));
+  dialog_geometry::Restore(&dialog, _T("Documentation"), wxSize(760, 650));
   if (!dialog.m_htmlInformation->LoadPage(path)) {
     wxMessageBox(wxString::Format(
                      _("The documentation file could not be opened:\n%s"), path),
@@ -49,6 +55,7 @@ bool ShowBundledHtmlHelp(wxWindow* parent, const wxString& title,
   }
 
   dialog.ShowModal();
+  dialog_geometry::Save(&dialog, _T("Documentation"));
   return true;
 }
 

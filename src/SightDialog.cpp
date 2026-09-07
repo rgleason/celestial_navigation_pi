@@ -43,6 +43,7 @@
 #include "celestial_navigation_pi.h"
 #include "geodesic.h"
 #include "BodyCatalog.h"
+#include "DialogGeometry.h"
 #include "HtmlHelp.h"
 
 #include <algorithm>
@@ -52,7 +53,7 @@
 #endif
 
 SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
-                         const wxDateTime& markedUtc)
+                         const wxDateTime& markedUtc, Mode mode)
     : SightDialogBase(parent),
       m_Sight(s),
       m_clock_offset(clock_offset),
@@ -75,28 +76,12 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
 
   GetSizer()->SetSizeHints(this);
 
-  wxFileConfig* pConf = GetOCPNConfigObject();
-  pConf->SetPath(_T("/PlugIns/CelestialNavigation"));
-
-  wxPoint p = GetPosition();
-  pConf->Read(_T ( "SightsDialogX" ), &p.x, p.x);
-  pConf->Read(_T ( "SightsDialogY" ), &p.y, p.y);
-  SetPosition(p);
-
-  wxSize sz = GetSize();
-  int w, h;
-  pConf->Read(_T ( "SightsDialogWidth" ), &w, -1);
-  pConf->Read(_T ( "SightsDialogHeight" ), &h, -1);
-  if (w == -1 || h == -1) {
-#ifdef __OCPN__ANDROID__
-    // for some reason Android gets the height wrong...
-    sz.y += 30;
-#endif
-  } else {
-    sz.x = w;
-    sz.y = h;
-  }
-  SetSize(sz);
+  m_sdbSizer1OK->SetLabel(mode == Mode::Create ? _("Create Sight")
+                                               : _("Save Changes"));
+  m_sdbSizer1OK->SetDefault();
+  m_sdbSizer1->Layout();
+  SetAffirmativeId(wxID_OK);
+  SetEscapeId(wxID_CANCEL);
 
   m_cType->SetSelection(m_Sight.m_Type);
 
@@ -129,12 +114,17 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
       wxString::Format(_T("%.4f"), m_Sight.m_DipShortDistance));
   m_cbArtificialHorizon->SetValue(m_Sight.m_ArtificialHorizon);
   m_cbDipShort->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent&) {
+    MarkDirty();
     if (m_cbDipShort->GetValue()) m_cbArtificialHorizon->SetValue(false);
     Recompute();
   });
   m_tDipShortDistance->Bind(wxEVT_TEXT,
-                            [this](wxCommandEvent&) { Recompute(); });
+                            [this](wxCommandEvent&) {
+                              MarkDirty();
+                              Recompute();
+                            });
   m_cbArtificialHorizon->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent&) {
+    MarkDirty();
     if (m_cbArtificialHorizon->GetValue()) m_cbDipShort->SetValue(false);
     Recompute();
   });
@@ -204,11 +194,20 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
                 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
   m_lunarBodyDistanceContact->Bind(wxEVT_CHOICE,
-                                   [this](wxCommandEvent&) { Recompute(); });
+                                   [this](wxCommandEvent&) {
+                                     MarkDirty();
+                                     Recompute();
+                                   });
   m_lunarMoonAltitudeUncertainty->Bind(
-      wxEVT_TEXT_ENTER, [this](wxCommandEvent&) { Recompute(); });
+      wxEVT_TEXT, [this](wxCommandEvent&) {
+        MarkDirty();
+        Recompute();
+      });
   m_lunarBodyAltitudeUncertainty->Bind(
-      wxEVT_TEXT_ENTER, [this](wxCommandEvent&) { Recompute(); });
+      wxEVT_TEXT, [this](wxCommandEvent&) {
+        MarkDirty();
+        Recompute();
+      });
 
   m_lunarTimingBox = new wxStaticBoxSizer(
       wxVERTICAL, m_panel2, _("Sequential lunar observation"));
@@ -274,17 +273,35 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
         "within 12 hours of the lunar-distance reading."));
   m_panel2->GetSizer()->Add(m_lunarTimingBox, 0, wxALL | wxEXPAND, 5);
   m_lunarSeparateTimes->Bind(wxEVT_CHECKBOX,
-                             [this](wxCommandEvent&) { Recompute(); });
+                             [this](wxCommandEvent&) {
+                               MarkDirty();
+                               Recompute();
+                             });
   m_lunarMovingObserver->Bind(wxEVT_CHECKBOX,
-                              [this](wxCommandEvent&) { Recompute(); });
+                              [this](wxCommandEvent&) {
+                                MarkDirty();
+                                Recompute();
+                              });
   m_lunarMoonTime->Bind(wxEVT_TIME_CHANGED,
-                        [this](wxDateEvent&) { Recompute(); });
+                        [this](wxDateEvent&) {
+                          MarkDirty();
+                          Recompute();
+                        });
   m_lunarBodyTime->Bind(wxEVT_TIME_CHANGED,
-                        [this](wxDateEvent&) { Recompute(); });
-  m_lunarCourseTrue->Bind(wxEVT_TEXT_ENTER,
-                          [this](wxCommandEvent&) { Recompute(); });
-  m_lunarSpeedKnots->Bind(wxEVT_TEXT_ENTER,
-                          [this](wxCommandEvent&) { Recompute(); });
+                        [this](wxDateEvent&) {
+                          MarkDirty();
+                          Recompute();
+                        });
+  m_lunarCourseTrue->Bind(wxEVT_TEXT,
+                          [this](wxCommandEvent&) {
+                            MarkDirty();
+                            Recompute();
+                          });
+  m_lunarSpeedKnots->Bind(wxEVT_TEXT,
+                          [this](wxCommandEvent&) {
+                            MarkDirty();
+                            Recompute();
+                          });
   UpdateLunarTimeControls();
   m_panel2->FitInside();
   m_sCertaintySeconds->SetRange(0, 172800);
@@ -300,6 +317,7 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
             UtcDateTime::FormatUtc(markedUtc, "%Y-%m-%d %H:%M:%S"));
     m_panel2->GetSizer()->Add(applyMarked, 0, wxLEFT | wxRIGHT | wxBOTTOM, 8);
     applyMarked->Bind(wxEVT_BUTTON, [this, markedUtc](wxCommandEvent&) {
+      MarkDirty();
       m_Calendar->SetDate(markedUtc);
       m_sHours->SetValue(markedUtc.GetHour());
       m_sMinutes->SetValue(markedUtc.GetMinute());
@@ -347,8 +365,12 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
           NULL, this);
 #endif
 
+  dialog_geometry::Restore(this, _T("Sight"), GetSize());
+  Bind(wxEVT_CLOSE_WINDOW, &SightDialog::OnWindowClose, this);
+
   m_breadytorecompute = true;
   Recompute();
+  m_transaction.StartTracking();
 }
 
 #ifdef __OCPN__ANDROID__
@@ -374,16 +396,28 @@ void SightDialog::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
 #endif
 
 SightDialog::~SightDialog() {
-  wxFileConfig* pConf = GetOCPNConfigObject();
-  pConf->SetPath(_T("/PlugIns/CelestialNavigation"));
+  dialog_geometry::Save(this, _T("Sight"));
+}
 
-  wxPoint p = GetPosition();
-  pConf->Write(_T ( "SightsDialogX" ), p.x);
-  pConf->Write(_T ( "SightsDialogY" ), p.y);
+void SightDialog::MarkDirty() {
+  m_transaction.MarkChanged();
+}
 
-  wxSize s = GetSize();
-  pConf->Write(_T ( "SightsDialogWidth" ), s.x);
-  pConf->Write(_T ( "SightsDialogHeight" ), s.y);
+void SightDialog::OnWindowClose(wxCloseEvent& event) {
+  if (m_transaction.HasUnsavedChanges() && event.CanVeto()) {
+    wxMessageDialog confirm(
+        this, _("Discard your changes?"), _("Unsaved Sight"),
+        wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
+    confirm.SetYesNoLabels(_("Discard Changes"), _("Keep Editing"));
+    if (confirm.ShowModal() != wxID_YES) {
+      event.Veto();
+      return;
+    }
+  }
+  if (IsModal())
+    EndModal(wxID_CANCEL);
+  else
+    event.Skip();
 }
 
 #if 0
@@ -407,9 +441,15 @@ void SightDialog::OnFindBody(wxCommandEvent& event) {
     LunarResultsDialog lunarresults_dialog(this, m_Sight);
     lunarresults_dialog.ShowModal();
   } else {
-    FindBodyDialog findbody_dialog(this, m_Sight);
+    Sight candidate = m_Sight;
+    FindBodyDialog findbody_dialog(this, candidate);
     findbody_dialog.ShowModal();
     if (findbody_dialog.GetReturnCode() == wxID_OK) {
+      m_Sight.m_DRLat = candidate.m_DRLat;
+      m_Sight.m_DRLon = candidate.m_DRLon;
+      m_Sight.m_DRBoatPosition = candidate.m_DRBoatPosition;
+      m_Sight.m_DRMagneticAzimuth = candidate.m_DRMagneticAzimuth;
+      MarkDirty();
       m_tMeasurement->SetValue(findbody_dialog.m_tEstimatedHs->GetValue());
     }
   }
@@ -428,12 +468,13 @@ void SightDialog::OnFindLunarMoon(wxCommandEvent& event) {
   FindBodyDialog findbody_dialog(this, lunarSight);
   findbody_dialog.ShowModal();
   if (findbody_dialog.GetReturnCode() == wxID_OK) {
+    MarkDirty();
     m_tLunarMoonAltitude->SetValue(findbody_dialog.m_tEstimatedHs->GetValue());
+    m_Sight.m_DRLat = lunarSight.m_DRLat;
+    m_Sight.m_DRLon = lunarSight.m_DRLon;
+    m_Sight.m_DRBoatPosition = lunarSight.m_DRBoatPosition;
+    m_Sight.m_DRMagneticAzimuth = lunarSight.m_DRMagneticAzimuth;
   }
-  m_Sight.m_DRLat = lunarSight.m_DRLat;
-  m_Sight.m_DRLon = lunarSight.m_DRLon;
-  m_Sight.m_DRBoatPosition = lunarSight.m_DRBoatPosition;
-  m_Sight.m_DRMagneticAzimuth = lunarSight.m_DRMagneticAzimuth;
 }
 
 void SightDialog::OnFindLunarBody(wxCommandEvent& event) {
@@ -448,12 +489,13 @@ void SightDialog::OnFindLunarBody(wxCommandEvent& event) {
   FindBodyDialog findbody_dialog(this, lunarSight);
   findbody_dialog.ShowModal();
   if (findbody_dialog.GetReturnCode() == wxID_OK) {
+    MarkDirty();
     m_tLunarBodyAltitude->SetValue(findbody_dialog.m_tEstimatedHs->GetValue());
+    m_Sight.m_DRLat = lunarSight.m_DRLat;
+    m_Sight.m_DRLon = lunarSight.m_DRLon;
+    m_Sight.m_DRBoatPosition = lunarSight.m_DRBoatPosition;
+    m_Sight.m_DRMagneticAzimuth = lunarSight.m_DRMagneticAzimuth;
   }
-  m_Sight.m_DRLat = lunarSight.m_DRLat;
-  m_Sight.m_DRLon = lunarSight.m_DRLon;
-  m_Sight.m_DRBoatPosition = lunarSight.m_DRBoatPosition;
-  m_Sight.m_DRMagneticAzimuth = lunarSight.m_DRMagneticAzimuth;
 }
 
 wxDateTime SightDialog::DateTime() {

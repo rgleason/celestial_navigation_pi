@@ -2,6 +2,7 @@
 
 #include "BodyCatalog.h"
 #include "CelestialNavigationDialog.h"
+#include "DialogGeometry.h"
 #include "NavigationAlgorithms.h"
 #include "NavigationUIUtils.h"
 #include "OcpnApiCompat.h"
@@ -128,11 +129,12 @@ LunarToolsDialog::LunarToolsDialog(CelestialNavigationDialog* parent)
   top->Add(bottom, 0, wxEXPAND);
   SetSizer(top);
   SetMinSize(wxSize(880, 650));
-  CentreOnParent();
+  dialog_geometry::Restore(this, _T("LunarTools"), wxSize(1120, 780));
   LoadProfiles();
 }
 
 LunarToolsDialog::~LunarToolsDialog() {
+  dialog_geometry::Save(this, _T("LunarTools"));
   wxFileConfig* config = GetOCPNConfigObject();
   if (!config || !m_entryFormat) return;
   config->SetPath(_T("/PlugIns/CelestialNavigation/LunarTools"));

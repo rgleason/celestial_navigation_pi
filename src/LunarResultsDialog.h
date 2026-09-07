@@ -12,7 +12,7 @@ class wxButton;
 class LunarResultsDialog : public wxDialog {
 public:
   LunarResultsDialog(wxWindow* parent, Sight& sight);
-  ~LunarResultsDialog() override = default;
+  ~LunarResultsDialog() override;
 
 private:
   void UpdateResults();

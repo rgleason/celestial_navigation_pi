@@ -9,10 +9,12 @@
 #include <wx/calctrl.h>
 
 #include "Sight.h"
+#include "DialogTransactionState.h"
 
 class wxCheckBox;
 class wxChoice;
 class wxCalendarEvent;
+class wxCloseEvent;
 class wxScrolledWindow;
 class wxSpinCtrl;
 class wxSpinCtrlDouble;
@@ -20,8 +22,12 @@ class wxStaticText;
 
 class HorizonEventDialog : public wxDialog {
 public:
+  enum class Mode { Create, Edit };
+
   HorizonEventDialog(wxWindow* parent, Sight& sight, int clockOffset,
-                     const wxString& systemTimeSummary);
+                     const wxString& systemTimeSummary,
+                     Mode mode = Mode::Edit);
+  ~HorizonEventDialog() override;
 
 private:
   void OnCaptureNow(wxCommandEvent& event);
@@ -29,6 +35,8 @@ private:
   void OnCalendarChanged(wxCalendarEvent& event);
   void OnQualityChanged(wxCommandEvent& event);
   void OnOK(wxCommandEvent& event);
+  void OnWindowClose(wxCloseEvent& event);
+  void MarkDirty();
   void UpdatePreview();
   void UpdateBearingControls();
   void RelayoutContent();
@@ -37,6 +45,7 @@ private:
   Sight& m_sight;
   int m_clockOffset;
   wxString m_systemTimeSummary;
+  DialogTransactionState m_transaction;
 
   wxScrolledWindow* m_scroller;
   wxChoice* m_event;

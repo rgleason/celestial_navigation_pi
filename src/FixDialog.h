@@ -42,10 +42,12 @@ class Sight;
 class wxChoice;
 class wxDatePickerCtrl;
 class wxTimePickerCtrl;
+class wxCloseEvent;
 
 class FixDialog : public FixDialogBase {
 public:
   FixDialog(CelestialNavigationDialog* parent);
+  ~FixDialog() override;
   void Update(int clock_offset);
   void RunIntegrationScenario();
 
@@ -60,6 +62,7 @@ private:
   void OnRunningControl(wxCommandEvent& event) { Update(m_clock_offset); }
   void OnGo(wxCommandEvent& event);
   void OnClose(wxCommandEvent& event);
+  void OnWindowClose(wxCloseEvent& event);
   void OnUpdate(wxCommandEvent& event) { Update(m_clock_offset); }
   void OnUpdateSpin(wxSpinEvent& event) { Update(m_clock_offset); }
 #ifdef __OCPN__ANDROID__
