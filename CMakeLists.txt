@@ -75,7 +75,7 @@ set(LONG_DESCRIPTION
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "8")
 set(VERSION_PATCH "4")
-set(VERSION_TWEAK "0")
+set(VERSION_TWEAK "1")
 set(VERSION_DATE  "07/09/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
@@ -196,12 +196,14 @@ SET(SRCS
         src/HtmlHelp.cpp
         src/EclipseDialog.cpp
         src/EclipseDataFiles.cpp
+        src/EclipseVerificationWorker.cpp
         src/TimeStatus.cpp
         src/CelestialNavigationUI.cpp
         src/SightDialog.cpp
         src/Sight.cpp
         src/LunarDistanceEngine.cpp
         src/LunarSessionEngine.cpp
+        src/LunarSessionWorker.cpp
         src/SextantCalibrationEngine.cpp
         src/LunarToolsDialog.cpp
         src/AlmanacGenerator.cpp
@@ -238,6 +240,7 @@ SET(HDRS
         src/HtmlHelp.h
         src/EclipseDialog.h
         src/EclipseDataFiles.h
+        src/EclipseVerificationWorker.h
         src/TimeStatus.h
         src/CelestialNavigationUI.h
         src/ClockCorrectionDialog.h
@@ -248,6 +251,7 @@ SET(HDRS
         src/Sight.h
         src/LunarDistanceEngine.h
         src/LunarSessionEngine.h
+        src/LunarSessionWorker.h
         src/SextantCalibrationEngine.h
         src/LunarToolsDialog.h
         src/AlmanacGenerator.h
