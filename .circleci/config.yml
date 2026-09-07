@@ -225,6 +225,7 @@ jobs:
             privileged: False
             shell: cmd.exe
             command: ci\circleci-build-msvc.bat
+            no_output_timeout: 30m
         - deploy-code:
             deploy_use_orb: false
     build-flatpak-aarch64-2208:
@@ -505,5 +506,6 @@ jobs:
             privileged: False
             shell: cmd.exe
             command: ci\circleci-build-msvc.bat
+            no_output_timeout: 30m
         - deploy-code:
             deploy_use_orb: false
