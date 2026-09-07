@@ -26,11 +26,13 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml ${CMAKE_CURRENT_BINARY
 set(SRC
     atomic_xml_file_tests.cpp
     eclipse_data_files_tests.cpp
+    eclipse_verification_worker_tests.cpp
     altitude_tests.cpp
     azimuth_tests.cpp
     lunar_tests.cpp
     lunar_distance_engine_tests.cpp
     lunar_session_engine_tests.cpp
+    lunar_session_worker_tests.cpp
     sextant_calibration_engine_tests.cpp
     lunar_de440_tests.cpp
     coastal_navigation_tests.cpp
@@ -47,8 +49,10 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/Sight.cpp
     ${CMAKE_SOURCE_DIR}/src/AtomicXmlFile.cpp
     ${CMAKE_SOURCE_DIR}/src/EclipseDataFiles.cpp
+    ${CMAKE_SOURCE_DIR}/src/EclipseVerificationWorker.cpp
     ${CMAKE_SOURCE_DIR}/src/LunarDistanceEngine.cpp
     ${CMAKE_SOURCE_DIR}/src/LunarSessionEngine.cpp
+    ${CMAKE_SOURCE_DIR}/src/LunarSessionWorker.cpp
     ${CMAKE_SOURCE_DIR}/src/SextantCalibrationEngine.cpp
     ${CMAKE_SOURCE_DIR}/src/LunarToolsDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/CoastalNavigationEngine.cpp

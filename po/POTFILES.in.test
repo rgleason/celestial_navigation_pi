@@ -22,12 +22,14 @@ src/HorizonEventDialog.cpp
 src/HtmlHelp.cpp
 src/EclipseDialog.cpp
 src/EclipseDataFiles.cpp
+src/EclipseVerificationWorker.cpp
 src/TimeStatus.cpp
 src/CelestialNavigationUI.cpp
 src/SightDialog.cpp
 src/Sight.cpp
 src/LunarDistanceEngine.cpp
 src/LunarSessionEngine.cpp
+src/LunarSessionWorker.cpp
 src/SextantCalibrationEngine.cpp
 src/LunarToolsDialog.cpp
 src/AlmanacGenerator.cpp
@@ -61,6 +63,7 @@ src/HorizonEventDialog.h
 src/HtmlHelp.h
 src/EclipseDialog.h
 src/EclipseDataFiles.h
+src/EclipseVerificationWorker.h
 src/TimeStatus.h
 src/CelestialNavigationUI.h
 src/ClockCorrectionDialog.h
@@ -71,6 +74,7 @@ src/icons.h
 src/Sight.h
 src/LunarDistanceEngine.h
 src/LunarSessionEngine.h
+src/LunarSessionWorker.h
 src/SextantCalibrationEngine.h
 src/LunarToolsDialog.h
 src/AlmanacGenerator.h

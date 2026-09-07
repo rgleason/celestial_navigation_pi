@@ -1,7 +1,6 @@
 #ifndef CELESTIAL_NAVIGATION_ECLIPSE_DIALOG_H
 #define CELESTIAL_NAVIGATION_ECLIPSE_DIALOG_H
 
-#include <future>
 #include <string>
 #include <vector>
 
@@ -9,6 +8,7 @@
 #include <wx/timer.h>
 
 #include "EclipseDataFiles.h"
+#include "EclipseVerificationWorker.h"
 #include "eclipse/engine.h"
 
 class piDC;
@@ -71,11 +71,6 @@ private:
   wxString DataPath(celestial_navigation::EclipseDataKind kind) const;
   bool DataVerified(celestial_navigation::EclipseDataKind kind) const;
 
-  struct VerificationResult {
-    bool valid;
-    std::string error;
-  };
-
   celestial_navigation_pi* m_plugin;
   eclipse::EclipseEngine m_engine;
   bool m_engine_ready;
@@ -111,7 +106,7 @@ private:
   bool m_cancel_requested;
 
   wxTimer m_verification_timer;
-  std::future<VerificationResult> m_verification_future;
+  celestial_navigation::EclipseVerificationWorker m_verification_worker;
   bool m_verifying;
   int m_verification_purpose;
   celestial_navigation::EclipseDataKind m_verification_kind;

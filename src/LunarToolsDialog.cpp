@@ -6,6 +6,7 @@
 #include "NavigationUIUtils.h"
 #include "OcpnApiCompat.h"
 #include "Sight.h"
+#include "LunarSessionWorker.h"
 #include "UtcDateTime.h"
 #include "Utf8Translation.h"
 #include "astrolabe/astrolabe.hpp"
@@ -27,9 +28,7 @@
 
 #include <algorithm>
 #include <atomic>
-#include <chrono>
 #include <cmath>
-#include <future>
 #include <memory>
 #include <sstream>
 
@@ -785,17 +784,19 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
     completedStarts.store(completed);
     totalStarts.store(total);
   };
-  std::future<lunar_session::Result> future = std::async(
-      std::launch::async,
-      [entries, options]() { return lunar_session::Solve(entries, options); });
+  celestial_navigation::LunarSessionWorker worker;
+  wxString workerError;
+  if (!worker.Start(entries, options, &workerError)) {
+    m_sequenceSummary->SetLabel(workerError);
+    return;
+  }
   wxProgressDialog progress(
       _("Lunar sequence"), CN_UTF8_("Preparing bounded multi-start solution…"),
       100, this,
       wxPD_APP_MODAL | wxPD_CAN_ABORT | wxPD_ELAPSED_TIME |
           wxPD_REMAINING_TIME | wxPD_SMOOTH | wxPD_AUTO_HIDE);
   bool userCancelled = false;
-  while (future.wait_for(std::chrono::milliseconds(75)) !=
-         std::future_status::ready) {
+  while (!worker.TryTakeResult(&m_sequenceResult)) {
     const std::size_t total = totalStarts.load();
     const std::size_t completed = completedStarts.load();
     const int percent =
@@ -812,8 +813,9 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
       userCancelled = true;
       cancelRequested.store(true);
     }
+    wxMilliSleep(75);
+    wxYieldIfNeeded();
   }
-  m_sequenceResult = future.get();
   if (!userCancelled) progress.Update(100, _("Lunar sequence complete."));
   m_sequenceCandidate->Clear();
   m_sequenceResiduals->DeleteAllItems();

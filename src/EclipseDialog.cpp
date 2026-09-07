@@ -25,9 +25,7 @@
 #include <wx/utils.h>
 
 #include <algorithm>
-#include <chrono>
 #include <cmath>
-#include <future>
 #include <iomanip>
 #include <sstream>
 
@@ -226,7 +224,7 @@ EclipseDialog::~EclipseDialog() {
     OCPN_cancelDownloadFileBackground(m_download_handle);
     m_download_handle = 0;
   }
-  if (m_verification_future.valid()) m_verification_future.wait();
+  m_verification_worker.Wait();
   if (!m_download_temp.empty() && wxFileExists(m_download_temp))
     wxRemoveFile(m_download_temp);
 }
@@ -694,23 +692,21 @@ void EclipseDialog::BeginVerification(EclipseDataKind kind,
       wxString::FromUTF8(
           celestial_navigation::GetEclipseDataFileSpec(kind).display_name)
           .c_str()));
-  m_verification_future = std::async(std::launch::async, [kind, native_path]() {
-    const eclipse::DataPackStatus status =
-        celestial_navigation::VerifyEclipseDataFile(kind, native_path);
-    VerificationResult result;
-    result.valid = status.valid;
-    result.error = status.error;
-    return result;
-  });
+  wxString worker_error;
+  if (!m_verification_worker.Start(kind, native_path, &worker_error)) {
+    m_verifying = false;
+    m_verification_purpose = VERIFY_NONE;
+    if (purpose == VERIFY_DOWNLOAD && wxFileExists(path)) wxRemoveFile(path);
+    FinishInstallation(false, worker_error);
+    return;
+  }
   m_verification_timer.Start(100);
 }
 
 void EclipseDialog::OnVerificationTimer(wxTimerEvent&) {
-  if (!m_verifying || !m_verification_future.valid()) return;
-  if (m_verification_future.wait_for(std::chrono::milliseconds(0)) !=
-      std::future_status::ready)
-    return;
-  const VerificationResult result = m_verification_future.get();
+  if (!m_verifying) return;
+  celestial_navigation::EclipseVerificationWorker::Result result;
+  if (!m_verification_worker.TryTakeResult(&result)) return;
   m_verification_timer.Stop();
   m_verifying = false;
   if (m_verification_purpose == VERIFY_INSTALLED) {
