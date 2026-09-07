@@ -34,17 +34,14 @@ else
 fi
 
 # wxWidgets settings 
-set "wxDIR=C:\Users\fcgle\source\ocpn_wxWidgets" 
-set "wxWIN=C:\Users\fcgle\source\ocpn_wxWidgets" 
-set "wxWidgets_ROOT_DIR=C:\Users\fcgle\source\ocpn_wxWidgets" 
-set "wxWidgets_LIB_DIR=C:\Users\fcgle\source\ocpn_wxWidgets\lib\vc_dll" 
-set "VCver=17" 
-set "VCstr=Visual Studio 17" 
+# wxWidgets settings 
+export wxDIR="C:/Users/fcgle/source/ocpn_wxWidgets"
+export wxWIN="C:/Users/fcgle/source/ocpn_wxWidgets"
+export wxWidgets_ROOT_DIR="C:/Users/fcgle/source/ocpn_wxWidgets"
+export wxWidgets_LIB_DIR="C:/Users/fcgle/source/ocpn_wxWidgets/lib/vc_dll"
 
-# wxDIR=$WXWIN
-# wxWidgets_ROOT_DIR=$WXWIN
-# wxWidgets_LIB_DIR="$WXWIN/lib/vc14x_dll"
-# WXWIN="/home/fcgle/source/wxWidgets-3.2.2"
+export "VCver=17" 
+export "VCstr=Visual Studio 17" 
 
 # build the plugin with cmake
 
@@ -58,13 +55,6 @@ bash ./cloudsmith-upload.sh
 
 # Find ${bold}"build/output.txt"${normal} file if the build is not successful.
 # Other examples below.
-
-# Copy .dll and .pdb files for debugging into MSVisualStudio Development Setup
-# Copy from 
-# C:\Users\fcgle\source\weather_routing_pi\build\relwithdebinfo   weather_routing_pi.dll and weather_routing_pi.pdb
-# into
-# C:\Users\fcgle\source\opencpn\build\RelWithDebInfo\plugins
-
 
 # cp -rv ./SourceFolder ./DestFolder
 # cp -r ./dist/* ./out
