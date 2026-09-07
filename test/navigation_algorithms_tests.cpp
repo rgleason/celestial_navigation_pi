@@ -110,6 +110,21 @@ TEST(PlannerTime, ConvertsWesternAndInternationalDateLineOffsets) {
             line.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
 }
 
+TEST(PlannerTime, ConvertsPostDstWesternZoneAcrossMidnight) {
+  wxDateTime fields;
+  ASSERT_TRUE(ParseNauticalPlannerDateTime("2026-11-01", "21:00:00", &fields));
+  const wxDateTime utc =
+      PlannerFieldsToUtc(fields, PlannerTimeBasis::ZoneTime, -5.0);
+  EXPECT_EQ("2026-11-02 02:00:00",
+            utc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
+}
+
+TEST(PlannerTime, UtcDayStartUsesUtcDateRatherThanComputerLocalDate) {
+  const wxDateTime instant = Utc("2026-08-13T23:30:00");
+  EXPECT_EQ("2026-08-13 00:00:00",
+            UtcDayStart(instant).Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
+}
+
 TEST(PlannerTime, SuggestsWholeHourShipZonesFromLongitude) {
   EXPECT_DOUBLE_EQ(-5.0, SuggestedZoneOffsetHours(-75.0));
   EXPECT_DOUBLE_EQ(10.0, SuggestedZoneOffsetHours(150.5));
@@ -214,6 +229,13 @@ TEST(Ephemeris, OrdinaryPlannerCoversDocumented1900To2100Range) {
   }
 }
 
+TEST(Ephemeris, PolarisIsBelowTheHorizonForSouthernObservers) {
+  const BodyState polaris = CelestialEphemeris::Evaluate(
+      "Polaris", Utc("2026-11-16T03:00:00"), -35.0, 150.0);
+  ASSERT_TRUE(polaris.valid);
+  EXPECT_LT(polaris.geometricAltitude, 0.0);
+}
+
 TEST(MoonPlanning, ReturnsTheNextFourPrincipalPhasesChronologically) {
   const wxDateTime start = Utc("2027-08-02T00:00:00");
   const auto phases = NextPrincipalMoonPhases(start, 36.0, -5.0);
@@ -246,6 +268,50 @@ TEST(HorizonEvents, GivesChronologicalOfflineTwilightAndRiseSetTable) {
   EXPECT_TRUE(sunrise);
   EXPECT_TRUE(sunset);
   EXPECT_TRUE(noon);
+}
+
+TEST(HorizonEvents, AnchorsTheScheduleToTheResolvedUtcCivilDay) {
+  ObserverMotion observer;
+  observer.referenceUtc = Utc("2026-08-13T23:30:00");
+  observer.latitude = 40.0;
+  observer.longitude = -75.0;
+  const auto events =
+      HorizonEventCalculator::Calculate(observer.referenceUtc, observer);
+  const wxDateTime start = Utc("2026-08-13T00:00:00");
+  const wxDateTime end = Utc("2026-08-14T00:00:00");
+  ASSERT_FALSE(events.events.empty());
+  for (const auto& event : events.events) {
+    EXPECT_FALSE(event.utc.IsEarlierThan(start));
+    EXPECT_FALSE(event.utc.IsLaterThan(end));
+  }
+}
+
+TEST(HorizonEvents, MeridianTransitSolvesLhaZeroInsteadOfMaximumAltitude) {
+  ObserverMotion observer;
+  observer.referenceUtc = Utc("2026-11-09T12:00:00");
+  observer.latitude = 40.0;
+  observer.longitude = -75.0;
+  const auto events =
+      HorizonEventCalculator::Calculate(observer.referenceUtc, observer);
+  wxDateTime transit;
+  double transitLongitude = 0.0;
+  for (const auto& event : events.events) {
+    if (event.kind == HorizonEventKind::UpperTransit) {
+      transit = event.utc;
+      transitLongitude = event.observerLongitude;
+      break;
+    }
+  }
+  ASSERT_TRUE(transit.IsValid());
+  const BodyState sun = CelestialEphemeris::Evaluate(
+      "Sun", transit, observer.latitude, transitLongitude);
+  ASSERT_TRUE(sun.valid);
+  double lha = std::fmod(sun.gha + transitLongitude + 180.0, 360.0);
+  if (lha < 0.0) lha += 360.0;
+  lha -= 180.0;
+  EXPECT_NEAR(0.0, lha, 0.002);
+  EXPECT_EQ("2026-11-09 16:43:50",
+            transit.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
 }
 
 TEST(HorizonEvents, EyeHeightChangesHorizonEventsButNotPlannedHc) {
@@ -568,10 +634,26 @@ TEST(Almanac, ExportsAStableOfflineCsvTable) {
                                  {"Sun", "Moon", "Polaris"}, observer);
   ASSERT_EQ(9u, rows.size());
   const wxString csv = AlmanacToCsv(rows);
-  EXPECT_TRUE(csv.StartsWith("UTC,Body,GHA_deg"));
+  EXPECT_TRUE(
+      csv.StartsWith("UTC,Body,GHA_deg,SHA_deg,GHA_Aries_deg,LHA_Aries_deg"));
   EXPECT_NE(wxNOT_FOUND, csv.Find("Polaris"));
   EXPECT_NE(wxNOT_FOUND, csv.Find("2027-01-01T00:00:00Z,Sun"));
   EXPECT_EQ(wxNOT_FOUND, csv.Find("2027-01-01Z00:00:00"));
+}
+
+TEST(Almanac, IncludesConsistentGreenwichAndLocalAriesHourAngles) {
+  ObserverMotion observer;
+  observer.referenceUtc = Utc("2027-01-01T00:00:00");
+  observer.latitude = 40.0;
+  observer.longitude = -75.0;
+  const auto rows =
+      BuildAlmanac(observer.referenceUtc, 0, {"Sun", "Moon"}, observer);
+  ASSERT_EQ(2u, rows.size());
+  EXPECT_NEAR(rows[0].ghaAries, rows[1].ghaAries, 1e-9);
+  double expected = std::fmod(rows[0].ghaAries + observer.longitude, 360.0);
+  if (expected < 0.0) expected += 360.0;
+  EXPECT_NEAR(expected, rows[0].lhaAries, 1e-9);
+  EXPECT_NEAR(expected, rows[1].lhaAries, 1e-9);
 }
 
 TEST(Almanac, HourlyUtcRowsDoNotSkipAtComputerDstBoundary) {

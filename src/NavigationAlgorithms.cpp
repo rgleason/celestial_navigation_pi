@@ -137,38 +137,56 @@ void FindCrossings(const wxString& body, const wxDateTime& start,
   if (alwaysBelow) *alwaysBelow = maximum < 0.0;
 }
 
+double MeridianValue(const wxString& body, const wxDateTime& utc,
+                     const ObserverMotion& observer, BodyState* output) {
+  double lat = 0.0, lon = 0.0;
+  observer.PositionAt(utc, &lat, &lon);
+  const BodyState state = CelestialEphemeris::Evaluate(body, utc, lat, lon);
+  if (output) *output = state;
+  if (!state.valid) return std::numeric_limits<double>::quiet_NaN();
+  // Longitude is signed positive east (negative west), so LHA is GHA plus
+  // signed longitude.  Upper transit is the zero crossing; the discontinuity
+  // at +/-180 degrees is deliberately ignored below.
+  return Wrap180(state.gha + lon);
+}
+
 HorizonEventResult FindTransit(const wxString& body, const wxDateTime& start,
                                const ObserverMotion& observer,
                                HorizonEventKind kind) {
-  int bestSeconds = 0;
-  double bestAltitude = -1000.0;
-  for (int seconds = 0; seconds <= 86400; seconds += 600) {
-    double lat, lon;
-    const wxDateTime utc = AddSeconds(start, seconds);
-    observer.PositionAt(utc, &lat, &lon);
-    const BodyState state = CelestialEphemeris::Evaluate(body, utc, lat, lon);
-    if (state.valid && state.geometricAltitude > bestAltitude) {
-      bestAltitude = state.geometricAltitude;
-      bestSeconds = seconds;
-    }
-  }
-  double lo = std::max(0, bestSeconds - 900);
-  double hi = std::min(86400, bestSeconds + 900);
-  for (int i = 0; i < 24; ++i) {
-    const double m1 = lo + (hi - lo) / 3.0;
-    const double m2 = hi - (hi - lo) / 3.0;
-    const double h1 = EventValue(body, AddSeconds(start, m1), observer, 0.0,
-                                 false, 0.0, nullptr);
-    const double h2 = EventValue(body, AddSeconds(start, m2), observer, 0.0,
-                                 false, 0.0, nullptr);
-    if (h1 < h2)
-      lo = m1;
-    else
-      hi = m2;
-  }
   HorizonEventResult result;
   result.kind = kind;
-  result.utc = AddSeconds(start, (lo + hi) / 2.0);
+  const int stepSeconds = 600;
+  wxDateTime previousTime = start;
+  double previous = MeridianValue(body, previousTime, observer, nullptr);
+  for (int seconds = stepSeconds; seconds <= 86400; seconds += stepSeconds) {
+    const wxDateTime currentTime = AddSeconds(start, seconds);
+    const double current = MeridianValue(body, currentTime, observer, nullptr);
+    const bool wrapsAtLowerTransit = std::isfinite(previous) &&
+                                     std::isfinite(current) &&
+                                     std::abs(current - previous) > 180.0;
+    if (!wrapsAtLowerTransit && std::isfinite(previous) &&
+        std::isfinite(current) && previous <= 0.0 && current >= 0.0) {
+      wxDateTime lo = previousTime;
+      wxDateTime hi = currentTime;
+      double flo = previous;
+      for (int i = 0; i < 24 && std::abs(SecondsBetween(hi, lo)) > 0.25; ++i) {
+        const wxDateTime mid = AddSeconds(lo, SecondsBetween(hi, lo) / 2.0);
+        const double value = MeridianValue(body, mid, observer, nullptr);
+        if (!std::isfinite(value)) break;
+        if ((flo <= 0.0 && value >= 0.0) || (flo >= 0.0 && value <= 0.0))
+          hi = mid;
+        else {
+          lo = mid;
+          flo = value;
+        }
+      }
+      result.utc = AddSeconds(lo, SecondsBetween(hi, lo) / 2.0);
+      break;
+    }
+    previous = current;
+    previousTime = currentTime;
+  }
+  if (!result.utc.IsValid()) return result;
   observer.PositionAt(result.utc, &result.observerLatitude,
                       &result.observerLongitude);
   const BodyState state = CelestialEphemeris::Evaluate(
@@ -324,6 +342,7 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
   result.azimuthTrue = Wrap360(result.azimuthTrue);
   result.declination = result.latitude;
   result.gha = Wrap360(-result.longitude);
+  result.ghaAries = Wrap360(ghaast);
   result.sha = Wrap360(result.gha - ghaast);
   result.distance = distance != 0.0 ? distance : radius;
   result.visualMagnitude = info->visualMagnitude;
@@ -356,11 +375,7 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
 DailyEventsResult HorizonEventCalculator::Calculate(
     const wxDateTime& dayUtc, const ObserverMotion& observer,
     double eyeHeightMetres) {
-  wxDateTime start(dayUtc);
-  start.SetHour(0);
-  start.SetMinute(0);
-  start.SetSecond(0);
-  start.SetMillisecond(0);
+  const wxDateTime start = UtcDayStart(dayUtc);
   DailyEventsResult result;
   const double dip = 1.76 * std::sqrt(std::max(0.0, eyeHeightMetres)) / 60.0;
 
@@ -381,10 +396,12 @@ DailyEventsResult HorizonEventCalculator::Calculate(
                 HorizonEventKind::Moonrise, HorizonEventKind::Moonset,
                 &result.events, &result.moonAlwaysAbove,
                 &result.moonAlwaysBelow);
-  result.events.push_back(
-      FindTransit("Sun", start, observer, HorizonEventKind::UpperTransit));
-  result.events.push_back(
-      FindTransit("Moon", start, observer, HorizonEventKind::MoonTransit));
+  const HorizonEventResult sunTransit =
+      FindTransit("Sun", start, observer, HorizonEventKind::UpperTransit);
+  if (sunTransit.utc.IsValid()) result.events.push_back(sunTransit);
+  const HorizonEventResult moonTransit =
+      FindTransit("Moon", start, observer, HorizonEventKind::MoonTransit);
+  if (moonTransit.utc.IsValid()) result.events.push_back(moonTransit);
   std::sort(result.events.begin(), result.events.end(),
             [](const HorizonEventResult& a, const HorizonEventResult& b) {
               return a.utc.IsEarlierThan(b.utc);
@@ -674,6 +691,16 @@ wxDateTime UtcToPlannerFields(const wxDateTime& utc, PlannerTimeBasis basis,
   return UtcDateTime::CopyFields(adjusted.ToUTC());
 }
 
+wxDateTime UtcDayStart(const wxDateTime& utc) {
+  if (!utc.IsValid()) return wxDateTime();
+  wxDateTime fields = UtcDateTime::FromInstant(utc);
+  fields.SetHour(0);
+  fields.SetMinute(0);
+  fields.SetSecond(0);
+  fields.SetMillisecond(0);
+  return UtcDateTime::ToInstant(fields);
+}
+
 double SuggestedZoneOffsetHours(double longitude) {
   if (!std::isfinite(longitude)) return 0.0;
   return Clamp(std::round(longitude / 15.0), -12.0, 14.0);
@@ -879,6 +906,8 @@ std::vector<AlmanacRow> BuildAlmanac(const wxDateTime& startUtc, unsigned hours,
       row.body = body;
       row.gha = state.gha;
       row.sha = state.sha;
+      row.ghaAries = state.ghaAries;
+      row.lhaAries = Wrap360(state.ghaAries + lon);
       row.declination = state.declination;
       row.altitude = state.geometricAltitude;
       row.azimuth = state.azimuthTrue;
@@ -890,13 +919,14 @@ std::vector<AlmanacRow> BuildAlmanac(const wxDateTime& startUtc, unsigned hours,
 
 wxString AlmanacToCsv(const std::vector<AlmanacRow>& rows) {
   wxString result =
-      "UTC,Body,GHA_deg,SHA_deg,Declination_deg,Hc_deg,Zn_true_deg\n";
+      "UTC,Body,GHA_deg,SHA_deg,GHA_Aries_deg,LHA_Aries_deg,"
+      "Declination_deg,Hc_deg,Zn_true_deg\n";
   for (const auto& row : rows)
     result += wxString::Format(
-        "%s,%s,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+        "%s,%s,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
         row.utc.Format("%Y-%m-%dT%H:%M:%SZ", wxDateTime::UTC).c_str(),
-        row.body.c_str(), row.gha, row.sha, row.declination, row.altitude,
-        row.azimuth);
+        row.body.c_str(), row.gha, row.sha, row.ghaAries, row.lhaAries,
+        row.declination, row.altitude, row.azimuth);
   return result;
 }
 

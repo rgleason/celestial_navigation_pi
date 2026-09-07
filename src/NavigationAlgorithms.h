@@ -53,6 +53,7 @@ struct BodyState {
   double latitude = 0.0;   // geographic position (declination)
   double longitude = 0.0;  // geographic position
   double gha = 0.0;
+  double ghaAries = 0.0;
   double sha = 0.0;
   double declination = 0.0;
   double geometricAltitude = 0.0;
@@ -179,6 +180,10 @@ wxDateTime PlannerFieldsToUtc(const wxDateTime& fields, PlannerTimeBasis basis,
                               double zoneOffsetHours);
 wxDateTime UtcToPlannerFields(const wxDateTime& utc, PlannerTimeBasis basis,
                               double zoneOffsetHours);
+// Return 00:00:00 UTC on the UTC civil date containing the supplied instant.
+// This must not be implemented by clearing the local fields of wxDateTime:
+// doing that selects the wrong day around timezone and DST boundaries.
+wxDateTime UtcDayStart(const wxDateTime& utc);
 double SuggestedZoneOffsetHours(double longitude);
 wxString FormatNauticalPlannerDate(const wxDateTime& fields);
 wxString FormatNauticalPlannerTime(const wxDateTime& fields);
@@ -253,6 +258,8 @@ struct AlmanacRow {
   wxString body;
   double gha = 0.0;
   double sha = 0.0;
+  double ghaAries = 0.0;
+  double lhaAries = 0.0;
   double declination = 0.0;
   double altitude = 0.0;
   double azimuth = 0.0;

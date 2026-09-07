@@ -257,7 +257,10 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
                wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
       m_parent(parent),
       m_bodySortColumn(6),
-      m_bodySortAscending(false) {
+      m_bodySortAscending(false),
+      m_lastValidZoneOffset(0.0),
+      m_zoneOffsetTextValid(true),
+      m_updatingZoneOffset(false) {
   const CelestialNavigationDefaults defaults =
       LoadCelestialNavigationDefaults();
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
@@ -399,6 +402,15 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   grid->AddSpacer(1);
   grid->AddSpacer(1);
   context->Add(grid, 1, wxALL | wxEXPAND, 6);
+  m_resolvedUtc = new wxStaticText(
+      this, wxID_ANY, _("Resolved UTC: waiting for a valid date and time"));
+  wxFont resolvedFont = m_resolvedUtc->GetFont();
+  resolvedFont.SetWeight(wxFONTWEIGHT_BOLD);
+  m_resolvedUtc->SetFont(resolvedFont);
+  m_resolvedUtc->SetToolTip(
+      _("This is the single UTC instant used by Events, Bodies, Almanac and "
+        "Noon/Polaris calculations."));
+  context->Add(m_resolvedUtc, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 8);
   context->Add(motion, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 8);
   m_status = new wxStaticText(this, wxID_ANY,
                               _("All calculations use bundled offline data."));
@@ -523,9 +535,11 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   AddColumn(m_almanac, 1, _("Body"), 90);
   AddColumn(m_almanac, 2, _("GHA"), 120);
   AddColumn(m_almanac, 3, _("SHA"), 120);
-  AddColumn(m_almanac, 4, _("Declination"), 130);
-  AddColumn(m_almanac, 5, _("Hc"), 120);
-  AddColumn(m_almanac, 6, _("Zn true"), 90);
+  AddColumn(m_almanac, 4, _("GHA Aries"), 120);
+  AddColumn(m_almanac, 5, _("LHA Aries"), 120);
+  AddColumn(m_almanac, 6, _("Declination"), 130);
+  AddColumn(m_almanac, 7, _("Hc"), 120);
+  AddColumn(m_almanac, 8, _("Zn true"), 90);
   almanacSizer->Add(m_almanac, 1, wxALL | wxEXPAND, 5);
   wxButton* exportButton =
       new wxButton(almanacPage, wxID_ANY, _("Export CSV..."));
@@ -593,11 +607,36 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   });
   m_nauticalDate->Bind(wxEVT_TEXT, &PlannerDialog::ContextTimeEdited, this);
   m_nauticalTime->Bind(wxEVT_TEXT, &PlannerDialog::ContextTimeEdited, this);
-  m_displayTime->Bind(wxEVT_CHOICE,
-                      [this](wxCommandEvent&) { RefreshEvents(); });
+  m_displayTime->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
+    UpdateZoneOffsetControls();
+    RefreshEvents();
+  });
   m_fixedOffset->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) {
+    if (m_updatingZoneOffset) return;
+    m_lastValidZoneOffset = m_fixedOffset->GetValue();
+    m_zoneOffsetTextValid = true;
     m_autoZoneOffset->SetValue(false);
     ScheduleRefresh();
+  });
+  m_fixedOffset->Bind(wxEVT_TEXT, [this](wxCommandEvent& event) {
+    if (m_updatingZoneOffset) return;
+    double value = 0.0;
+    m_zoneOffsetTextValid =
+        event.GetString().ToDouble(&value) && value >= -12.0 && value <= 14.0;
+    if (m_zoneOffsetTextValid) {
+      m_lastValidZoneOffset = value;
+      m_autoZoneOffset->SetValue(false);
+      ScheduleRefresh();
+    }
+  });
+  m_fixedOffset->Bind(wxEVT_KILL_FOCUS, [this](wxFocusEvent& event) {
+    if (!m_zoneOffsetTextValid) {
+      m_updatingZoneOffset = true;
+      m_fixedOffset->SetValue(m_lastValidZoneOffset);
+      m_updatingZoneOffset = false;
+      m_zoneOffsetTextValid = true;
+    }
+    event.Skip();
   });
   m_autoZoneOffset->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent&) {
     UpdateAutomaticZoneOffset();
@@ -626,6 +665,8 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
                         [this](wxCommandEvent&) { RefreshSkyPlot(); });
   m_plotBelowHorizon->Bind(wxEVT_CHECKBOX,
                            [this](wxCommandEvent&) { RefreshSkyPlot(); });
+  m_specialBody->Bind(wxEVT_CHOICE,
+                      [this](wxCommandEvent&) { RefreshSpecial(); });
   m_refreshTimer.SetOwner(this);
   Bind(wxEVT_TIMER, &PlannerDialog::OnRefreshTimer, this,
        m_refreshTimer.GetId());
@@ -678,6 +719,8 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_speed->SetValue(speed);
   m_eyeHeight->SetValue(eyeHeight);
   m_fixedOffset->SetValue(fixedOffset);
+  m_lastValidZoneOffset = fixedOffset;
+  m_zoneOffsetTextValid = true;
   m_autoZoneOffset->SetValue(autoZoneOffset);
   recommendationMinAltitude =
       std::max(0.0, std::min(90.0, recommendationMinAltitude));
@@ -693,6 +736,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_recommendationMinAltitude->Enable(limitRecommendationAltitude);
   m_recommendationMaxAltitude->Enable(limitRecommendationAltitude);
   UpdateAutomaticZoneOffset();
+  UpdateZoneOffsetControls();
   SetUtcControls(wxDateTime::UNow());
   ApplyPositionSource();
   m_lastPositionSource = m_positionSource->GetSelection();
@@ -724,7 +768,7 @@ PlannerDialog::~PlannerDialog() {
   config->Write(_T("Moving"), m_moving->GetValue());
   config->Write(_T("CourseTrue"), m_course->GetValue());
   config->Write(_T("SpeedKnots"), m_speed->GetValue());
-  config->Write(_T("FixedOffset"), m_fixedOffset->GetValue());
+  config->Write(_T("FixedOffset"), ZoneOffsetHours());
   config->Write(_T("AutoZoneOffset"), m_autoZoneOffset->GetValue());
   config->Write(_T("LimitRecommendationAltitude"),
                 m_limitRecommendationAltitude->GetValue());
@@ -742,7 +786,7 @@ wxDateTime PlannerDialog::ReadUtc(bool showErrors) {
   if (!entered.IsValid()) return wxDateTime();
   const wxDateTime utc = PlannerFieldsToUtc(
       entered, static_cast<PlannerTimeBasis>(m_inputTimeBasis->GetSelection()),
-      m_fixedOffset->GetValue());
+      ZoneOffsetHours());
   if (utc.GetYear() < 1900 || utc.GetYear() > 2100) {
     if (showErrors)
       wxMessageBox(_("The ordinary offline planner is supported from 1900 "
@@ -782,7 +826,7 @@ void PlannerDialog::SetUtcControls(const wxDateTime& utc) {
   if (!utc.IsValid()) return;
   const wxDateTime value = UtcToPlannerFields(
       utc, static_cast<PlannerTimeBasis>(m_inputTimeBasis->GetSelection()),
-      m_fixedOffset->GetValue());
+      ZoneOffsetHours());
   m_utcDate->SetValue(value);
   m_utcTime->SetValue(value);
   m_nauticalDate->ChangeValue(FormatNauticalPlannerDate(value));
@@ -798,6 +842,7 @@ void PlannerDialog::ChangeInputTimeBasis(wxCommandEvent&) {
     UpdateAutomaticZoneOffset();
   m_lastInputTimeBasis = next;
   UpdateInputTimeLabels();
+  UpdateZoneOffsetControls();
   SetUtcControls(utc);
   wxCommandEvent refresh;
   RefreshAll(refresh);
@@ -839,8 +884,38 @@ void PlannerDialog::UpdateEntryFormatControls() {
 void PlannerDialog::UpdateAutomaticZoneOffset() {
   if (!m_autoZoneOffset->GetValue()) return;
   double longitude = 0.0;
-  if (m_longitude->GetAngle(&longitude))
-    m_fixedOffset->SetValue(SuggestedZoneOffsetHours(longitude));
+  if (m_longitude->GetAngle(&longitude)) {
+    m_lastValidZoneOffset = SuggestedZoneOffsetHours(longitude);
+    m_updatingZoneOffset = true;
+    m_fixedOffset->SetValue(m_lastValidZoneOffset);
+    m_updatingZoneOffset = false;
+    m_zoneOffsetTextValid = true;
+  }
+}
+
+void PlannerDialog::UpdateZoneOffsetControls() {
+  const bool relevant = m_inputTimeBasis->GetSelection() ==
+                            static_cast<int>(PlannerTimeBasis::ZoneTime) ||
+                        m_displayTime->GetSelection() == 3;
+  m_fixedOffset->Enable(relevant);
+  m_autoZoneOffset->Enable(relevant);
+  const wxString explanation =
+      relevant ? _("Used for ship-zone entry or fixed-offset display.")
+               : _("Not used by the selected input or display time basis.");
+  m_fixedOffset->SetToolTip(explanation);
+  m_autoZoneOffset->SetToolTip(explanation);
+}
+
+double PlannerDialog::ZoneOffsetHours() const { return m_lastValidZoneOffset; }
+
+void PlannerDialog::UpdateResolvedUtc(const wxDateTime& utc) {
+  if (!utc.IsValid()) {
+    m_resolvedUtc->SetLabel(
+        CN_UTF8_("Resolved UTC: invalid — calculations have not been updated"));
+    return;
+  }
+  m_resolvedUtc->SetLabel(_("Resolved UTC: ") +
+                          utc.Format("%Y-%m-%d %H:%M:%S UTC", wxDateTime::UTC));
 }
 
 void PlannerDialog::ContextPositionEdited(wxCommandEvent&) {
@@ -860,10 +935,12 @@ void PlannerDialog::OnRefreshTimer(wxTimerEvent&) {
   UpdateAutomaticZoneOffset();
   const ObserverMotion motion = ReadMotion(false);
   if (!motion.referenceUtc.IsValid()) {
+    UpdateResolvedUtc(wxDateTime());
     ClearCalculatedResults(
         _("Results cleared: enter a valid supported date, time and position."));
     return;
   }
+  UpdateResolvedUtc(motion.referenceUtc);
   RefreshEvents();
   RefreshBodies();
   RefreshAlmanac();
@@ -1149,8 +1226,8 @@ wxString PlannerDialog::DisplayTime(const wxDateTime& utc) const {
         static_cast<long>(std::lround(m_longitude->GetAngleOr(0.0) * 240.0));
     suffix = "LMT";
   } else if (m_displayTime->GetSelection() == 3) {
-    offset = static_cast<long>(std::lround(m_fixedOffset->GetValue() * 3600.0));
-    suffix = wxString::Format("UTC%+.1f", m_fixedOffset->GetValue());
+    offset = static_cast<long>(std::lround(ZoneOffsetHours() * 3600.0));
+    suffix = wxString::Format("UTC%+.1f", ZoneOffsetHours());
   }
   return (utc + wxTimeSpan::Seconds(offset))
              .Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC) +
@@ -1163,10 +1240,12 @@ void PlannerDialog::RefreshAll(wxCommandEvent&) {
   ApplyTimeSource();
   const ObserverMotion motion = ReadMotion(true);
   if (!motion.referenceUtc.IsValid()) {
+    UpdateResolvedUtc(wxDateTime());
     ClearCalculatedResults(
         _("Results cleared: enter a valid supported date, time and position."));
     return;
   }
+  UpdateResolvedUtc(motion.referenceUtc);
   m_latitude->Normalize();
   m_longitude->Normalize();
   RefreshEvents();
@@ -1399,24 +1478,44 @@ void PlannerDialog::RefreshAlmanac() {
     m_almanac->SetItem(row, 1, item.body);
     m_almanac->SetItem(row, 2, FormatNavigationAngle(item.gha));
     m_almanac->SetItem(row, 3, FormatNavigationAngle(item.sha));
+    m_almanac->SetItem(row, 4, FormatNavigationAngle(item.ghaAries));
+    m_almanac->SetItem(row, 5, FormatNavigationAngle(item.lhaAries));
     m_almanac->SetItem(
-        row, 4,
+        row, 6,
         FormatNavigationAngle(item.declination, NavigationAngleKind::Latitude));
-    m_almanac->SetItem(row, 5, FormatNavigationAngle(item.altitude));
-    m_almanac->SetItem(row, 6, wxString::Format("%.1f", item.azimuth));
+    m_almanac->SetItem(row, 7, FormatNavigationAngle(item.altitude));
+    m_almanac->SetItem(row, 8, wxString::Format("%.1f", item.azimuth));
   }
 }
 
 void PlannerDialog::RefreshSpecial() {
   const ObserverMotion motion = ReadMotion(false);
+  if (m_specialBody->GetSelection() == 1) {
+    const BodyState polaris = CelestialEphemeris::Evaluate(
+        "Polaris", motion.referenceUtc, motion.latitude, motion.longitude);
+    if (!polaris.valid || polaris.geometricAltitude < 0.0) {
+      m_specialSummary->SetLabel(
+          _("Polaris is below the horizon and is not observable from the "
+            "selected position and time."));
+      return;
+    }
+    m_specialSummary->SetLabel(wxString::Format(
+        _("Polaris is observable: predicted Hc %s, Zn true %.2f%c.\n"
+          "Enter corrected Ho above to estimate latitude."),
+        FormatNavigationAngle(polaris.geometricAltitude).c_str(),
+        polaris.azimuthTrue, 0x00b0));
+    return;
+  }
   const DailyEventsResult events =
       HorizonEventCalculator::Calculate(motion.referenceUtc, motion);
   for (const auto& event : events.events) {
     if (event.kind == HorizonEventKind::UpperTransit) {
       m_specialSummary->SetLabel(wxString::Format(
-          _("Local apparent noon: %s UTC at observer position %s, %s.\n"
+          _("Local apparent noon (solar LHA 0%c): %s UTC at observer "
+            "position %s, %s.\n"
             "Enter corrected Ho above to estimate latitude; longitude comes "
             "primarily from noon timing."),
+          0x00b0,
           event.utc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC).c_str(),
           FormatNavigationAngle(event.observerLatitude,
                                 NavigationAngleKind::Latitude, true)
@@ -1464,6 +1563,16 @@ void PlannerDialog::SolveSpecialLatitude(wxCommandEvent&) {
     const auto events = HorizonEventCalculator::Calculate(time, motion).events;
     for (const auto& event : events)
       if (event.kind == HorizonEventKind::UpperTransit) time = event.utc;
+  } else {
+    const BodyState planned = CelestialEphemeris::Evaluate(
+        body, time, motion.latitude, motion.longitude);
+    if (!planned.valid || planned.geometricAltitude < 0.0) {
+      wxMessageBox(
+          _("Polaris is below the horizon and is not observable from the "
+            "selected position and time."),
+          _("Polaris not observable"), wxOK | wxICON_INFORMATION, this);
+      return;
+    }
   }
   double observedAltitude = 0.0;
   if (!m_specialAltitude->GetAngle(&observedAltitude)) {
