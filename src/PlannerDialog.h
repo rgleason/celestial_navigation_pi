@@ -120,6 +120,7 @@ private:
   int m_bodySortColumn;
   bool m_bodySortAscending;
   double m_lastValidZoneOffset;
+  bool m_zoneOffsetTextValid;
   bool m_updatingZoneOffset;
   wxString m_waypointGuid;
   wxString m_waypointName;

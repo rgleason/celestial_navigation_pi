@@ -259,6 +259,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
       m_bodySortColumn(6),
       m_bodySortAscending(false),
       m_lastValidZoneOffset(0.0),
+      m_zoneOffsetTextValid(true),
       m_updatingZoneOffset(false) {
   const CelestialNavigationDefaults defaults =
       LoadCelestialNavigationDefaults();
@@ -613,26 +614,27 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_fixedOffset->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) {
     if (m_updatingZoneOffset) return;
     m_lastValidZoneOffset = m_fixedOffset->GetValue();
+    m_zoneOffsetTextValid = true;
     m_autoZoneOffset->SetValue(false);
     ScheduleRefresh();
   });
-  m_fixedOffset->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
+  m_fixedOffset->Bind(wxEVT_TEXT, [this](wxCommandEvent& event) {
     if (m_updatingZoneOffset) return;
     double value = 0.0;
-    if (m_fixedOffset->GetTextValue().ToDouble(&value) && value >= -12.0 &&
-        value <= 14.0) {
+    m_zoneOffsetTextValid =
+        event.GetString().ToDouble(&value) && value >= -12.0 && value <= 14.0;
+    if (m_zoneOffsetTextValid) {
       m_lastValidZoneOffset = value;
       m_autoZoneOffset->SetValue(false);
       ScheduleRefresh();
     }
   });
   m_fixedOffset->Bind(wxEVT_KILL_FOCUS, [this](wxFocusEvent& event) {
-    double value = 0.0;
-    if (!m_fixedOffset->GetTextValue().ToDouble(&value) || value < -12.0 ||
-        value > 14.0) {
+    if (!m_zoneOffsetTextValid) {
       m_updatingZoneOffset = true;
       m_fixedOffset->SetValue(m_lastValidZoneOffset);
       m_updatingZoneOffset = false;
+      m_zoneOffsetTextValid = true;
     }
     event.Skip();
   });
@@ -718,6 +720,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_eyeHeight->SetValue(eyeHeight);
   m_fixedOffset->SetValue(fixedOffset);
   m_lastValidZoneOffset = fixedOffset;
+  m_zoneOffsetTextValid = true;
   m_autoZoneOffset->SetValue(autoZoneOffset);
   recommendationMinAltitude =
       std::max(0.0, std::min(90.0, recommendationMinAltitude));
@@ -886,6 +889,7 @@ void PlannerDialog::UpdateAutomaticZoneOffset() {
     m_updatingZoneOffset = true;
     m_fixedOffset->SetValue(m_lastValidZoneOffset);
     m_updatingZoneOffset = false;
+    m_zoneOffsetTextValid = true;
   }
 }
 
@@ -902,13 +906,7 @@ void PlannerDialog::UpdateZoneOffsetControls() {
   m_autoZoneOffset->SetToolTip(explanation);
 }
 
-double PlannerDialog::ZoneOffsetHours() const {
-  double value = 0.0;
-  if (m_fixedOffset->GetTextValue().ToDouble(&value) && value >= -12.0 &&
-      value <= 14.0)
-    return value;
-  return m_lastValidZoneOffset;
-}
+double PlannerDialog::ZoneOffsetHours() const { return m_lastValidZoneOffset; }
 
 void PlannerDialog::UpdateResolvedUtc(const wxDateTime& utc) {
   if (!utc.IsValid()) {
