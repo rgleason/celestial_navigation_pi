@@ -72,6 +72,26 @@ apt_ci_install() {
     apt_ci_update
     apt-get "$@"
 }
+
+configure_bullseye_sources() {
+    case "${OCPN_TARGET:-}" in
+        bullseye-*) ;;
+        *) return 0 ;;
+    esac
+
+    # Bullseye security stopped publishing after LTS ended on 2026-08-31.
+    # Pin the final official snapshot so its index and packages cannot diverge.
+    for source_file in /etc/apt/sources.list /etc/apt/sources.list.d/*.list; do
+        [ -f "$source_file" ] || continue
+        sed -i -E \
+          's#https?://(security|deb)\.debian\.org/debian-security#https://snapshot.debian.org/archive/debian-security/20260901T000000Z#g' \
+          "$source_file"
+    done
+    echo 'Acquire::Check-Valid-Until "false";' \
+      > /etc/apt/apt.conf.d/80-ci-bullseye-snapshot
+}
+
+configure_bullseye_sources
 EOF
 
 delimstrnum=1

@@ -28,6 +28,23 @@ apt_ci_install() {
   sudo apt-get "$@"
 }
 
+configure_bullseye_sources() {
+  if [ "${OCPN_TARGET:-}" != "bullseye" ]; then
+    return 0
+  fi
+
+  # Bullseye security stopped publishing after LTS ended on 2026-08-31.
+  # Pin the final official snapshot so its index and packages cannot diverge.
+  for source_file in /etc/apt/sources.list /etc/apt/sources.list.d/*.list; do
+    [ -f "$source_file" ] || continue
+    sudo sed -i -E \
+      's#https?://(security|deb)\.debian\.org/debian-security#https://snapshot.debian.org/archive/debian-security/20260901T000000Z#g' \
+      "$source_file"
+  done
+  echo 'Acquire::Check-Valid-Until "false";' |
+    sudo tee /etc/apt/apt.conf.d/80-ci-bullseye-snapshot
+}
+
 if [ "${CIRCLECI_LOCAL,,}" = "true" ]; then
     if [[ -d ~/circleci-cache ]]; then
         if [[ -f ~/circleci-cache/apt-proxy ]]; then
@@ -37,6 +54,7 @@ if [ "${CIRCLECI_LOCAL,,}" = "true" ]; then
     fi
 fi
 
+configure_bullseye_sources
 apt_ci_update
 apt_ci_install install devscripts equivs
 
