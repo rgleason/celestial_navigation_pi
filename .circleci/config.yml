@@ -81,6 +81,21 @@ commands:
                 type: boolean
                 default: true
         steps:
+            - run:
+                name: Skip deployment for pull request builds
+                command: |
+                  case "${CIRCLE_BRANCH:-}" in
+                    pull/*)
+                      echo "Build complete; Cloudsmith deployment is disabled for pull requests."
+                      circleci-agent step halt
+                      exit 0
+                      ;;
+                  esac
+                  if [ -n "${CIRCLE_PULL_REQUEST:-}" ]; then
+                    echo "Build complete; Cloudsmith deployment is disabled for pull requests."
+                    circleci-agent step halt
+                    exit 0
+                  fi
             - when:
                 condition: <<pipeline.parameters.run_workflow_deploy>>
                 steps:
@@ -210,6 +225,7 @@ jobs:
             privileged: False
             shell: cmd.exe
             command: ci\circleci-build-msvc.bat
+            no_output_timeout: 30m
         - deploy-code:
             deploy_use_orb: false
     build-flatpak-aarch64-2208:
@@ -414,7 +430,7 @@ jobs:
             resource_class: arm.medium
         environment:
         - OCPN_TARGET=bullseye-arm64
-        - DOCKER_IMAGE=arm64v8/debian:bullseye-backports
+        - DOCKER_IMAGE=arm64v8/debian:bullseye
         - BUILD_FLAGS=-j3
         - BUILD_ENV=debian
         - BUILD_GTK3: true
@@ -490,7 +506,6 @@ jobs:
             privileged: False
             shell: cmd.exe
             command: ci\circleci-build-msvc.bat
+            no_output_timeout: 30m
         - deploy-code:
             deploy_use_orb: false
-
-

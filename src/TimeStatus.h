@@ -6,10 +6,10 @@
 #define _CELESTIAL_NAVIGATION_TIME_STATUS_H_
 
 #include <chrono>
-#include <mutex>
 
 #include <wx/datetime.h>
 #include <wx/string.h>
+#include <wx/thread.h>
 
 struct GnssTimeSnapshot {
   GnssTimeSnapshot() : valid(false), age_milliseconds(0) {}
@@ -32,7 +32,12 @@ public:
                            wxString* source);
 
 private:
-  mutable std::mutex m_mutex;
+  // Use wx's process-local lock rather than std::mutex.  Recent MSVC STL
+  // headers changed std::mutex construction in a way which can crash when a
+  // plugin is loaded by an application already using an older msvcp140.dll.
+  // wxCriticalSection uses the native Windows critical section represented by
+  // the wx ABI and avoids that host/plugin runtime-version boundary.
+  mutable wxCriticalSection m_criticalSection;
   bool m_valid;
   wxDateTime m_utc;
   wxString m_source;

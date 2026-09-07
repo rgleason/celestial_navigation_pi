@@ -163,11 +163,7 @@ CelestialNavigationDialog::CelestialNavigationDialog(
 
   // create a image list for the list with just the eye icon
   wxImageList* imglist = new wxImageList(20, 20, true, 1);
-
-  wxBitmap bmp(eye);
-  wxLogMessage("Celestial: eye bitmap is %s", bmp.IsOk() ? "OK" : "INVALID");
-
-  imglist->Add(bmp);
+  imglist->Add(wxBitmap(eye));
   m_lSights->AssignImageList(imglist, wxIMAGE_LIST_SMALL);
 
   wxSizer* actionButtons = m_bNewSight->GetContainingSizer();
@@ -427,20 +423,20 @@ void CelestialNavigationDialog::BuildTimeIntegrityPanel(bool visible) {
       wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
   m_gnssTime =
       new wxStaticText(m_timeIntegrityPanel, wxID_ANY,
-                       CN_UTF8_("Not available ? no valid RMC/ZDA received"));
+                       CN_UTF8_("Not available — no valid RMC/ZDA received"));
   grid->Add(m_gnssTime, 1, wxEXPAND | wxRIGHT, 4);
 
   grid->Add(new wxStaticText(m_timeIntegrityPanel, wxID_ANY,
-                             CN_UTF8_("System ? GNSS")),
+                             CN_UTF8_("System − GNSS")),
             0, wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
   m_gnssDifference =
-      new wxStaticText(m_timeIntegrityPanel, wxID_ANY, CN_UTF8_("?"));
+      new wxStaticText(m_timeIntegrityPanel, wxID_ANY, CN_UTF8_("—"));
   grid->Add(m_gnssDifference, 1, wxEXPAND | wxRIGHT, 4);
 
   grid->Add(new wxStaticText(m_timeIntegrityPanel, wxID_ANY, _("System clock")),
             0, wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
   m_systemTimeStatus = new wxStaticText(m_timeIntegrityPanel, wxID_ANY,
-                                        CN_UTF8_("Checking chrony?"));
+                                        CN_UTF8_("Checking chrony…"));
   grid->Add(m_systemTimeStatus, 1, wxEXPAND | wxRIGHT, 4);
 
   grid->Add(
@@ -583,7 +579,6 @@ void CelestialNavigationDialog::QueryChrony() {
 }
 
 void CelestialNavigationDialog::UpdateTimeIntegrityPanel() {
-  wxLogMessage("Celestial: m_gnssTime = %p", (void*)m_gnssTime);
   const wxDateTime systemNow = wxDateTime::UNow();
   const wxDateTime now = m_markedTime.IsValid() ? m_markedTime : systemNow;
   wxString abbreviation = now.Format("%Z", wxDateTime::Local);
@@ -592,16 +587,16 @@ void CelestialNavigationDialog::UpdateTimeIntegrityPanel() {
     numericZone = numericZone.Left(3) + ":" + numericZone.Mid(3);
   wxString localSuffix = abbreviation;
   const wxString timezoneName = SystemTimezoneName();
-  if (!timezoneName.empty()) localSuffix += CN_UTF8_(" ? ") + timezoneName;
+  if (!timezoneName.empty()) localSuffix += CN_UTF8_(" — ") + timezoneName;
   if (!numericZone.empty()) localSuffix += " (UTC" + numericZone + ")";
   m_localTime->SetLabel(FormatClock(now, wxDateTime::Local, localSuffix));
   m_utcTime->SetLabel(FormatClock(now, wxDateTime::UTC, "UTC"));
 
   const GnssTimeSnapshot gnss = m_Plugin->GetGnssTimeSnapshot();
   if (!gnss.valid) {
-    m_gnssTime->SetLabel(CN_UTF8_("Not available ? no valid RMC/ZDA received"));
+    m_gnssTime->SetLabel(CN_UTF8_("Not available — no valid RMC/ZDA received"));
     SetStatusColour(m_gnssTime, 0);
-    m_gnssDifference->SetLabel(CN_UTF8_("?"));
+    m_gnssDifference->SetLabel(CN_UTF8_("—"));
     SetStatusColour(m_gnssDifference, 0);
   } else {
     const double ageSeconds = gnss.age_milliseconds / 1000.0;
@@ -609,21 +604,21 @@ void CelestialNavigationDialog::UpdateTimeIntegrityPanel() {
       const wxDateTime live =
           gnss.utc + wxTimeSpan::Milliseconds(gnss.age_milliseconds);
       m_gnssTime->SetLabel(FormatClock(live, wxDateTime::UTC, "UTC") +
-                           CN_UTF8_(" � ") + gnss.source + " age " +
+                           CN_UTF8_(" · ") + gnss.source + " age " +
                            FormatAge(ageSeconds));
       SetStatusColour(m_gnssTime, 1);
       const long long difference = static_cast<long long>(
           (systemNow - live).GetMilliseconds().GetValue());
       m_gnssDifference->SetLabel(wxString::Format(
-          CN_UTF8_("%+lld ms � includes NMEA delivery latency"), difference));
+          CN_UTF8_("%+lld ms · includes NMEA delivery latency"), difference));
       SetStatusColour(m_gnssDifference, 1);
     } else {
-      m_gnssTime->SetLabel(CN_UTF8_("Stale ? last ") + gnss.source + " " +
+      m_gnssTime->SetLabel(CN_UTF8_("Stale — last ") + gnss.source + " " +
                            FormatAge(ageSeconds) + _(" ago (reported ") +
                            gnss.utc.Format("%H:%M:%S", wxDateTime::UTC) +
                            " UTC)");
       SetStatusColour(m_gnssTime, -1);
-      m_gnssDifference->SetLabel(CN_UTF8_("Unavailable ? GNSS time is stale"));
+      m_gnssDifference->SetLabel(CN_UTF8_("Unavailable — GNSS time is stale"));
       SetStatusColour(m_gnssDifference, -1);
     }
   }
@@ -636,13 +631,13 @@ void CelestialNavigationDialog::UpdateTimeIntegrityPanel() {
                                 m_chronyTracking.reference_unix_seconds;
     if (m_chronyTracking.synchronized) {
       m_systemTimeStatus->SetLabel(
-          CN_UTF8_("? Synchronised by chrony � offset ") +
+          CN_UTF8_("✓ Synchronised by chrony · offset ") +
           wxString::Format("%+.1f ms",
                            1000.0 * m_chronyTracking.system_offset_seconds) +
-          CN_UTF8_(" � source update ") + FormatAge(referenceAge) + _(" ago"));
+          CN_UTF8_(" · source update ") + FormatAge(referenceAge) + _(" ago"));
       SetStatusColour(m_systemTimeStatus, 1);
     } else {
-      m_systemTimeStatus->SetLabel(CN_UTF8_("? chrony not synchronised ? ") +
+      m_systemTimeStatus->SetLabel(CN_UTF8_("⚠ chrony not synchronised — ") +
                                    m_chronyTracking.leap_status);
       SetStatusColour(m_systemTimeStatus, -1);
     }
