@@ -430,7 +430,7 @@ jobs:
             resource_class: arm.medium
         environment:
         - OCPN_TARGET=bullseye-arm64
-        - DOCKER_IMAGE=arm64v8/debian:bullseye-backports
+        - DOCKER_IMAGE=arm64v8/debian:bullseye
         - BUILD_FLAGS=-j3
         - BUILD_ENV=debian
         - BUILD_GTK3: true
