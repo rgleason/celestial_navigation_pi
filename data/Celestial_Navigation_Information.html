@@ -53,7 +53,7 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
   <p style="text-align: center;"><strong>Experimental v2 documentation</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.4<br>Documentation revision 7 September 2026</p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.5<br>Documentation revision 7 September 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -374,10 +374,19 @@ sight is plotted and included where a workflow uses visible sights.</p>
 <tr><td>Coastal Sextant…</td><td>Use vertical-angle ranging or horizontal-sextant-angle fixing.</td></tr>
 <tr><td>Duplicate / Edit / Delete</td><td>Manage a selected stored sight. Duplicate is useful for a run of sights.</td></tr>
 <tr><td>Clock Offset</td><td>Apply a common correction to stored sight times.</td></tr>
-<tr><td>Hide</td><td>Collapse or restore the sight list and controls.</td></tr>
+<tr><td>Hide Sights / Show Sights</td><td>Collapse or restore the sight list and controls.</td></tr>
 <tr><td>Documentation</td><td>Open this completely offline manual in the plugin's internal viewer.</td></tr>
 <tr><td>PDF Documentation</td><td>Open the fixed-layout manual in the system PDF viewer. If no external viewer is available, the plugin safely opens the internal HTML manual instead.</td></tr>
 </table>
+
+<p>Editors use task-specific actions: <strong>Create Sight</strong> or
+<strong>Create Event</strong> for new records, and <strong>Save Changes</strong>
+when editing an existing record. <strong>Cancel</strong> discards edits. If an
+editor contains unsaved changes, closing it with the window close button asks
+for confirmation before discarding them. Read-only and workbench windows use
+<strong>Close</strong>. Substantial resizable tool windows remember their size
+and position, and are brought back onto a visible display if the monitor layout
+later changes.</p>
 
 <p>Creating a sight selects it and clears the previous selection. Deleting a
 selected sight moves the selection to an adjacent sight when one remains, so

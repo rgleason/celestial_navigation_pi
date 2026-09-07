@@ -38,6 +38,7 @@
 #include "tinyxml.h"
 
 #include "AtomicXmlFile.h"
+#include "DialogGeometry.h"
 #include "OcpnApiCompat.h"
 
 #include "celestial_navigation_pi.h"
@@ -265,6 +266,10 @@ CelestialNavigationDialog::CelestialNavigationDialog(
               OnEvtPanGesture,
           NULL, this);
 #endif
+
+  // Retain the established main-window settings while recovering safely from
+  // a removed monitor or a smaller replacement display.
+  dialog_geometry::EnsureVisible(this);
 }
 
 #ifdef __OCPN__ANDROID__
@@ -1082,7 +1087,8 @@ void CelestialNavigationDialog::OnNew(wxCommandEvent& event) {
   Sight ns(Sight::ALTITUDE, _("Sun"), Sight::LOWER, now, 0, 0, 10);
   wxDateTime markedUtc;
   GetMarkedUtc(&markedUtc);
-  SightDialog dialog(this, ns, m_ClockCorrection, markedUtc);
+  SightDialog dialog(this, ns, m_ClockCorrection, markedUtc,
+                     SightDialog::Mode::Create);
 
   dialog.ShowModal();
   if (dialog.GetReturnCode() == wxID_OK) {
@@ -1129,7 +1135,8 @@ void CelestialNavigationDialog::OnHorizonEvent(wxCommandEvent& event) {
   config->Read(_T("HorizonQuality"), &sight.m_HorizonQuality, 0);
 
   HorizonEventDialog dialog(this, sight, m_ClockCorrection,
-                            CurrentTimeCaptureSummary());
+                            CurrentTimeCaptureSummary(),
+                            HorizonEventDialog::Mode::Create);
   if (dialog.ShowModal() != wxID_OK) return;
 
   sight.Recompute(m_ClockCorrection);
@@ -1321,7 +1328,8 @@ void CelestialNavigationDialog::CreatePlannedSight(const wxString& body,
   sight.m_DRLon = drLon;
   wxDateTime markedUtc;
   GetMarkedUtc(&markedUtc);
-  SightDialog dialog(this, sight, m_ClockCorrection, markedUtc);
+  SightDialog dialog(this, sight, m_ClockCorrection, markedUtc,
+                     SightDialog::Mode::Create);
   if (dialog.ShowModal() != wxID_OK) return;
   dialog.Recompute();
   if (sight.m_bVisible) {
@@ -1378,7 +1386,8 @@ void CelestialNavigationDialog::OnEdit() {
 
   if (s.m_Type == Sight::HORIZON) {
     HorizonEventDialog dialog(this, s, m_ClockCorrection,
-                              CurrentTimeCaptureSummary());
+                              CurrentTimeCaptureSummary(),
+                              HorizonEventDialog::Mode::Edit);
     if (dialog.ShowModal() == wxID_OK) {
       s.Recompute(m_ClockCorrection);
       if (s.m_bVisible) s.RebuildPolygons();
@@ -1393,7 +1402,8 @@ void CelestialNavigationDialog::OnEdit() {
 
   wxDateTime markedUtc;
   GetMarkedUtc(&markedUtc);
-  SightDialog dialog(this, s, m_ClockCorrection, markedUtc);
+  SightDialog dialog(this, s, m_ClockCorrection, markedUtc,
+                     SightDialog::Mode::Edit);
 
   dialog.ShowModal();
   if (dialog.GetReturnCode() == wxID_OK) {
@@ -1442,10 +1452,11 @@ void CelestialNavigationDialog::OnDeleteAll(wxCommandEvent& event) {
 void CelestialNavigationDialog::OnFix(wxCommandEvent& event) {
   if (m_FixDialog == NULL) {
     m_FixDialog = new FixDialog(this);
-    m_FixDialog->Show();
     m_FixDialog->Update(m_ClockCorrection);
     RequestRefresh(GetParent()->GetParent());
   }
+  m_FixDialog->Show();
+  m_FixDialog->Raise();
 }
 
 void CelestialNavigationDialog::OnFixClose() {
@@ -1512,13 +1523,13 @@ void CelestialNavigationDialog::OnPdfDocumentation(wxCommandEvent& event) {
 
 void CelestialNavigationDialog::OnHide(wxCommandEvent& event) {
   if (m_tbHide->GetValue()) {
-    m_tbHide->SetLabel(_("Show"));
+    m_tbHide->SetLabel(_("Show Sights"));
     m_fullSize = GetSize();
     m_lSights->Hide();
     Layout();
     Fit();
   } else {
-    m_tbHide->SetLabel(_("Hide"));
+    m_tbHide->SetLabel(_("Hide Sights"));
     m_lSights->Show();
     Layout();
     Fit();

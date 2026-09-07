@@ -1,6 +1,7 @@
 #include "SightAnalysisDialog.h"
 
 #include "CelestialNavigationDialog.h"
+#include "DialogGeometry.h"
 #include "NavigationUIUtils.h"
 #include "NavigationAlgorithms.h"
 #include "Sight.h"
@@ -231,7 +232,12 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { Close(); }, wxID_CLOSE);
   wxCommandEvent dummy;
   Analyze(dummy);
-  CentreOnParent();
+  SetMinSize(wxSize(700, 480));
+  dialog_geometry::Restore(this, _T("SightAnalysis"), wxSize(820, 540));
+}
+
+SightAnalysisDialog::~SightAnalysisDialog() {
+  dialog_geometry::Save(this, _T("SightAnalysis"));
 }
 
 void SightAnalysisDialog::Analyze(wxCommandEvent&) {

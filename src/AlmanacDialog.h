@@ -23,6 +23,7 @@ class AlmanacDialog : public wxDialog {
 public:
   explicit AlmanacDialog(CelestialNavigationDialog* parent,
                          const wxString& preferredRouteGuid = wxString());
+  ~AlmanacDialog() override;
   void SelectIntegrationPage(int page);
 
 private:

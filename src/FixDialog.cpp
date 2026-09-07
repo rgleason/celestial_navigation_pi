@@ -27,6 +27,7 @@
 
 #include <wx/wx.h>
 #include "CelestialNavigationDialog.h"
+#include "DialogGeometry.h"
 #include "FixDialog.h"
 
 #include "OcpnApiCompat.h"
@@ -64,6 +65,8 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
       m_runningSummary(NULL),
       m_residuals(NULL),
       m_lastEpochTimeBasis(0) {
+  m_sdbSizer8OK->SetLabel(_("Close"));
+  m_sdbSizer8->Layout();
   double lat, lon;
   celestial_navigation_pi_BoatPos(lat, lon);
   m_sInitialLatitude->SetValue(lat);
@@ -143,6 +146,9 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
   m_courseTrue->Bind(wxEVT_SPINCTRLDOUBLE, &FixDialog::OnRunningControl, this);
   m_speedKnots->Bind(wxEVT_SPINCTRLDOUBLE, &FixDialog::OnRunningControl, this);
   GetSizer()->Fit(this);
+  SetMinSize(wxSize(700, 480));
+  dialog_geometry::Restore(this, _T("Fix"), GetSize());
+  Bind(wxEVT_CLOSE_WINDOW, &FixDialog::OnWindowClose, this);
 
 #ifdef __OCPN__ANDROID__
   GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
@@ -152,6 +158,8 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
           NULL, this);
 #endif
 }
+
+FixDialog::~FixDialog() { dialog_geometry::Save(this, _T("Fix")); }
 
 void FixDialog::RunIntegrationScenario() {
   m_runningFix->SetValue(true);
@@ -572,3 +580,7 @@ void FixDialog::OnGo(wxCommandEvent& event) {
 }
 
 void FixDialog::OnClose(wxCommandEvent& event) { m_Parent->OnFixClose(); }
+
+void FixDialog::OnWindowClose(wxCloseEvent& event) {
+  m_Parent->OnFixClose();
+}

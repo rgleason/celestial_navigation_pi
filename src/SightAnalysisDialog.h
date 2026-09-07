@@ -14,6 +14,7 @@ class ResidualPlotPanel;
 class SightAnalysisDialog : public wxDialog {
 public:
   explicit SightAnalysisDialog(CelestialNavigationDialog* parent);
+  ~SightAnalysisDialog() override;
 
 private:
   void Analyze(wxCommandEvent& event);

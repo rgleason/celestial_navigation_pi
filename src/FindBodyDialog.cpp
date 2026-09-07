@@ -54,8 +54,12 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
   }
   m_cbBoatPosition->SetValue(sight.m_DRBoatPosition);
   m_cbMagneticAzimuth->SetValue(sight.m_DRMagneticAzimuth);
-  m_sFindDialogButtonOK->SetLabel(_T("Copy Hs"));
-  m_sFindDialogButtonCancel->SetLabel(_T("Close"));
+  m_sFindDialogButtonOK->SetLabel(_("Use Result"));
+  m_sFindDialogButtonCancel->SetLabel(_("Cancel"));
+  m_sFindDialogButtonOK->SetDefault();
+  m_sFindDialogButton->Layout();
+  SetAffirmativeId(wxID_OK);
+  SetEscapeId(wxID_CANCEL);
 
   int x, y;
   GetTextExtent(_T("000° 00.0000' S"), &x, &y);

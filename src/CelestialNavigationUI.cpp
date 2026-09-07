@@ -53,7 +53,7 @@ CelestialNavigationDialogBase::CelestialNavigationDialogBase( wxWindow* parent, 
 	m_bEditSight = new wxButton( this, wxID_ANY, _("Edit"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer24->Add( m_bEditSight, 0, wxALL|wxEXPAND, 5 );
 
-	m_tbHide = new wxToggleButton( this, wxID_ANY, _("Hide"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_tbHide = new wxToggleButton( this, wxID_ANY, _("Hide Sights"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer24->Add( m_tbHide, 0, wxALL|wxEXPAND, 5 );
 
 	m_bDeleteSight = new wxButton( this, wxID_ANY, _("Delete"), wxDefaultPosition, wxDefaultSize, 0 );

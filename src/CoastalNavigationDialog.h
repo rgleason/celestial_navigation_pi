@@ -19,7 +19,7 @@ class wxTextCtrl;
 class CoastalNavigationDialog : public wxDialog {
 public:
   explicit CoastalNavigationDialog(CelestialNavigationDialog* parent);
-  ~CoastalNavigationDialog() override = default;
+  ~CoastalNavigationDialog() override;
 
   bool Render(piDC* dc, PlugIn_ViewPort* viewport);
 
