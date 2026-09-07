@@ -53,7 +53,25 @@ echo "Target build: $OCPN_TARGET"
 # Construct and run build script
 rm -f build.sh
 cat > build.sh << 'EOF'
-echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-ci-retries
+printf '%s\n' \
+  'Acquire::Retries "5";' \
+  'Acquire::http::No-Cache "true";' \
+  'Acquire::https::No-Cache "true";' \
+  > /etc/apt/apt.conf.d/80-ci-retries
+
+apt_ci_update() {
+    apt-get -qq --allow-unauthenticated update
+}
+
+apt_ci_install() {
+    if apt-get "$@"; then
+        return 0
+    fi
+
+    echo "apt install failed; refreshing package indexes and retrying once"
+    apt_ci_update
+    apt-get "$@"
+}
 EOF
 
 delimstrnum=1
@@ -99,8 +117,9 @@ else
        [ "$OCPN_TARGET" = "buster-armhf" ]; then
         cat >> build.sh << EOF$delimstrnum
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
-        apt-get -qq --allow-unauthenticated update && DEBIAN_FRONTEND='noninteractive' TZ='America/New_York' apt-get -y --no-install-recommends --allow-change-held-packages install tzdata
-        apt-get -y --fix-missing install --allow-change-held-packages --allow-unauthenticated  \
+        apt_ci_update
+        DEBIAN_FRONTEND='noninteractive' TZ='America/New_York' apt_ci_install -y --no-install-recommends --allow-change-held-packages install tzdata
+        apt_ci_install -y --fix-missing install --allow-change-held-packages --allow-unauthenticated  \
         devscripts equivs wget git build-essential gettext wx-common libgtk2.0-dev libbz2-dev libcurl4-openssl-dev libexpat1-dev libcairo2-dev libarchive-dev liblzma-dev libexif-dev lsb-release openssl libssl-dev
 EOF$delimstrnum
         delimstrnum=$((delimstrnum + 1))
@@ -111,7 +130,7 @@ EOF$delimstrnum
            [ "$OCPN_TARGET" = "bookworm" ] ||
            [ "$OCPN_TARGET" = "buster-armhf" ]; then
                 cat >> build.sh << EOF$delimstrnum
-                apt-get -y --fix-missing --allow-change-held-packages --allow-unauthenticated install software-properties-common
+                apt_ci_install -y --fix-missing --allow-change-held-packages --allow-unauthenticated install software-properties-common
 EOF$delimstrnum
            delimstrnum=$((delimstrnum + 1))
         fi
@@ -121,13 +140,13 @@ EOF$delimstrnum
             if [ ! -n "$BUILD_GTK3" ] || [ "$BUILD_GTK3" = "false" ]; then
                 echo "Building for GTK2"
                 cat >> build.sh << EOF$delimstrnum
-                apt-get -y --no-install-recommends --fix-missing --allow-change-held-packages --allow-unauthenticated install libwxgtk3.0-dev
+                apt_ci_install -y --no-install-recommends --fix-missing --allow-change-held-packages --allow-unauthenticated install libwxgtk3.0-dev
 EOF$delimstrnum
                 delimstrnum=$((delimstrnum + 1))
             else
                 echo "Building for GTK3"
                 cat >> build.sh << EOF$delimstrnum
-                apt-get -y --no-install-recommends --fix-missing --allow-change-held-packages --allow-unauthenticated install libwxgtk3.0-gtk3-dev
+                apt_ci_install -y --no-install-recommends --fix-missing --allow-change-held-packages --allow-unauthenticated install libwxgtk3.0-gtk3-dev
 EOF$delimstrnum
                 delimstrnum=$((delimstrnum + 1))
             fi
@@ -136,7 +155,7 @@ EOF$delimstrnum
         if [ ! -n "$WX_VER" ] || [ "$WX_VER" = "30" ]; then
             echo "Building for WX30"
             cat >> build.sh << EOF$delimstrnum
-            apt-get -y --no-install-recommends --fix-missing --allow-change-held-packages --allow-unauthenticated install libwxbase3.0-dev
+            apt_ci_install -y --no-install-recommends --fix-missing --allow-change-held-packages --allow-unauthenticated install libwxbase3.0-dev
 EOF$delimstrnum
             delimstrnum=$((delimstrnum + 1))
         elif [ "$WX_VER" = "32" ]; then
@@ -145,12 +164,12 @@ EOF$delimstrnum
                 cat >> build.sh << EOF$delimstrnum
                 echo "deb [trusted=yes] https://ppa.launchpadcontent.net/opencpn/opencpn/ubuntu jammy main" | tee -a /etc/apt/sources.list
                 echo "deb-src [trusted=yes] https://ppa.launchpadcontent.net/opencpn/opencpn/ubuntu jammy main" | tee -a /etc/apt/sources.list
-                apt-get -y --allow-unauthenticated update
+                apt_ci_update
 EOF$delimstrnum
                 delimstrnum=$((delimstrnum + 1))
             fi
             cat >> build.sh << EOF$delimstrnum
-            apt-get -y --fix-missing --allow-change-held-packages --allow-unauthenticated install libwxgtk3.2-dev
+            apt_ci_install -y --fix-missing --allow-change-held-packages --allow-unauthenticated install libwxgtk3.2-dev
 EOF$delimstrnum
             delimstrnum=$((delimstrnum + 1))
         fi
@@ -171,8 +190,8 @@ EOF$delimstrnum
         fi
     else
         cat >> build.sh << EOF$delimstrnum
-        apt-get -qq --allow-unauthenticated update
-        apt-get -y --no-install-recommends --allow-change-held-packages --allow-unauthenticated install \
+        apt_ci_update
+        apt_ci_install -y --no-install-recommends --allow-change-held-packages --allow-unauthenticated install \
         git cmake build-essential gettext wx-common libgtk2.0-dev libwxbase3.0-dev libwxgtk3.0-dev libbz2-dev libcurl4-openssl-dev libexpat1-dev libcairo2-dev libarchive-dev liblzma-dev libexif-dev lsb-release
 EOF$delimstrnum
         delimstrnum=$((delimstrnum + 1))
@@ -200,7 +219,7 @@ TEST_CMAKE_ARGS=""
 TEST_COMMANDS=""
 if [ "${RUN_DATA_TESTS:-false}" = "true" ]; then
     cat >> build.sh << 'EOF'
-apt-get install -y --no-install-recommends curl libgtest-dev
+apt_ci_install install -y --no-install-recommends curl libgtest-dev
 /ci-source/ci/fetch-eclipse-data.sh /ci-source/eclipse/data --all
 EOF
     TEST_CMAKE_ARGS="-DOCPN_BUILD_TEST=ON"
