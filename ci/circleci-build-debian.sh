@@ -5,9 +5,28 @@
 #
 set -xe
 
-# Hosted mirrors occasionally reset long dependency downloads. Let apt retry
-# these transient transfers instead of failing an otherwise healthy target.
-echo 'Acquire::Retries "5";' | sudo tee /etc/apt/apt.conf.d/80-ci-retries
+# Hosted mirrors occasionally reset long dependency downloads or briefly serve
+# package indexes which refer to a security update that has just been replaced.
+# Avoid cached indexes and retry an install once after refreshing them.
+printf '%s\n' \
+  'Acquire::Retries "5";' \
+  'Acquire::http::No-Cache "true";' \
+  'Acquire::https::No-Cache "true";' |
+  sudo tee /etc/apt/apt.conf.d/80-ci-retries
+
+apt_ci_update() {
+  sudo apt-get -qq update
+}
+
+apt_ci_install() {
+  if sudo apt-get "$@"; then
+    return 0
+  fi
+
+  echo "apt install failed; refreshing package indexes and retrying once"
+  apt_ci_update
+  sudo apt-get "$@"
+}
 
 if [ "${CIRCLECI_LOCAL,,}" = "true" ]; then
     if [[ -d ~/circleci-cache ]]; then
@@ -18,21 +37,21 @@ if [ "${CIRCLECI_LOCAL,,}" = "true" ]; then
     fi
 fi
 
-sudo apt-get -qq update
-sudo apt-get install devscripts equivs
+apt_ci_update
+apt_ci_install install devscripts equivs
 
 # Install extra build libs
 ME=$(echo ${0##*/} | sed 's/\.sh//g')
 EXTRA_LIBS=./ci/extras/extra_libs.txt
 if test -f "$EXTRA_LIBS"; then
     while read -r line; do
-        sudo apt-get install $line
+        apt_ci_install install $line
     done < "$EXTRA_LIBS"
 fi
 EXTRA_LIBS=./ci/extras/${ME}_extra_libs.txt
 if test -f "$EXTRA_LIBS"; then
     while read -r line; do
-        sudo apt-get install $line
+        apt_ci_install install $line
     done < "$EXTRA_LIBS"
 fi
 
@@ -43,12 +62,12 @@ git submodule update --init opencpn-libs
 sudo mk-build-deps --install ./ci/control
 
 sudo apt-get --allow-unauthenticated install ./*all.deb  || :
-sudo apt-get --allow-unauthenticated install -f
+apt_ci_install --allow-unauthenticated install -f
 rm -f ./*all.deb
 
 TEST_CMAKE_ARGS=""
 if [ "${RUN_DATA_TESTS:-false}" = "true" ]; then
-  sudo apt-get install -y libgtest-dev
+  apt_ci_install install -y libgtest-dev
   ci/fetch-eclipse-data.sh eclipse/data --all
   TEST_CMAKE_ARGS="-DOCPN_BUILD_TEST=ON"
 fi
