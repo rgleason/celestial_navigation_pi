@@ -1,0 +1,194 @@
+diff --git a/driver/runner.cpp b/driver/runner.cpp
+index ebefd4d..6c4b908 100644
+--- a/driver/runner.cpp
++++ b/driver/runner.cpp
+@@ -36,6 +36,12 @@ void require(bool ok, const std::string& error) {
+ 
+ class Ephemeris {
+  public:
++  void set_dut1(double seconds) {
++    require(std::isfinite(seconds) && std::abs(seconds) <= 0.9,
++            "DUT1 must be within +/-0.9 seconds");
++    dut1_seconds_ = seconds;
++  }
++  void set_observer_astrometry(bool enabled) { observer_astrometry_ = enabled; }
+   Ephemeris(const std::string& path, const std::string& timestamp) {
+     std::string error;
+     require(kernel_.Open(path, &error), error);
+@@ -94,7 +100,13 @@ class Ephemeris {
+     s.body_horizontal_parallax_deg = degrees(std::asin(6378.137 / sun.Norm()));
+     s.body_semidiameter_deg = degrees(std::asin(695700.0 / sun.Norm()));
+     eclipse::EarthOrientation orientation;
+-    orientation.tt_jd = tt; orientation.ut1_jd = jd;
++    orientation.tt_jd = tt; orientation.ut1_jd = jd + dut1_seconds_ / 86400;
++    if (observer_astrometry_) {
++      s.observer_direction = [this, et, orientation](double lat, double lon,
++          double height, bool is_moon, double* alt, double* az, double* sd) {
++        observer_direction(et, orientation, lat, lon, height, is_moon, alt, az, sd);
++      };
++    }
+     const auto mf = eclipse::IcrfToEarthFixed(moon, orientation);
+     const auto sf = eclipse::IcrfToEarthFixed(sun, orientation);
+     s.moon_geographic_latitude_deg = degrees(std::atan2(mf.z, std::hypot(mf.x, mf.y)));
+@@ -123,14 +135,69 @@ class Ephemeris {
+     return s;
+   }
+  private:
++  void observer_direction(double et, const eclipse::EarthOrientation& orientation,
++                          double lat_deg, double lon_deg, double height,
++                          bool moon, double* alt, double* az, double* sd) {
++    // Recompute for each trial station. Parallax and observer-specific light
++    // time precede aberration; subtracting a station from an already aberrated
++    // geocentric vector is not equivalent for a nearby body such as the Moon.
++    const double lat = lat_deg*pi/180, lon = lon_deg*pi/180;
++    double rc2i[3][3], pv[2][3], station[3], velocity[3];
++    eraC2i06a(2451545.0, orientation.tt_jd-2451545.0, rc2i);
++    eraPvtob(lon, lat, height, 0, 0,
++             eraSp00(2451545.0, orientation.tt_jd-2451545.0),
++             eraEra00(2451545.0, orientation.ut1_jd-2451545.0), pv);
++    eraTrxp(rc2i, pv[0], station);
++    eraTrxp(rc2i, pv[1], velocity);
++    eclipse::Vector3 earth, before, after, sun, target;
++    std::string error;
++    require(kernel_.Position(399, 0, et, &earth, &error), error);
++    require(kernel_.Position(399, 0, et-30, &before, &error), error);
++    require(kernel_.Position(399, 0, et+30, &after, &error), error);
++    require(kernel_.Position(10, 0, et, &sun, &error), error);
++    const auto observer = earth + eclipse::Vector3(station[0],station[1],station[2]) * 0.001;
++    constexpr double c = 299792.458;
++    const auto beta = ((after-before)*(1.0/60) +
++                      eclipse::Vector3(velocity[0],velocity[1],velocity[2])*0.001)*(1.0/c);
++    double transmission = et;
++    eclipse::Vector3 relative;
++    bool converged = false;
++    for (int i=0; i<12; ++i) {
++      require(kernel_.Position(moon ? 301 : 10, 0, transmission, &target, &error), error);
++      relative = target-observer;
++      const double next = et-relative.Norm()/c;
++      if (std::abs(next-transmission) < 1e-7) { converged = true; break; }
++      transmission = next;
++    }
++    require(converged, "Observer light-time iteration did not converge");
++    const double range = relative.Norm();
++    require(range > 0, "Invalid observer range");
++    double natural[] = {relative.x/range,relative.y/range,relative.z/range};
++    double v[] = {beta.x,beta.y,beta.z}, apparent[3];
++    eraAb(natural, v, (sun-observer).Norm()/149597870.7,
++          std::sqrt(1-eclipse::Dot(beta,beta)), apparent);
++    const auto terrestrial = eclipse::IcrfToEarthFixed(
++        eclipse::Vector3(apparent[0],apparent[1],apparent[2]), orientation);
++    const eclipse::Vector3 up(std::cos(lat)*std::cos(lon), std::cos(lat)*std::sin(lon), std::sin(lat));
++    const eclipse::Vector3 east(-std::sin(lon), std::cos(lon), 0);
++    const eclipse::Vector3 north(-std::sin(lat)*std::cos(lon), -std::sin(lat)*std::sin(lon), std::cos(lat));
++    *alt = degrees(std::asin(std::clamp(eclipse::Dot(terrestrial,up),-1.0,1.0)));
++    *az = degrees(std::atan2(eclipse::Dot(terrestrial,east),eclipse::Dot(terrestrial,north)));
++    // Geometric apparent angular radius from retarded observer range, matching
++    // the existing spherical-disc convention (not a resolved limb ray trace).
++    *sd = degrees(std::asin((moon ? 1737.4 : 695700.0)/range));
++  }
+   eclipse::SpkKernel kernel_;
+   double midnight_ = 0;
++  double dut1_seconds_ = 0;
++  bool observer_astrometry_ = false;
+   long long millis_ = 0;
+ };
+ 
+ lunar_distance::Observation settings(const Params& p) {
+   lunar_distance::Observation o;
+   o.use_ellipsoid = get(p, "ellipsoid", 1);
++  o.diurnal_aberration = get(p, "diurnal_aberration", 0);
+   o.raw_distance_deg = get(p, "distance", 0);
+   o.moon_altitude_deg = get(p, "moon_alt", 0);
+   o.body_altitude_deg = get(p, "sun_alt", 0);
+@@ -169,7 +236,7 @@ int main(int argc, char** argv) {
+       "moon_limb", "sun_limb", "moon_contact", "sun_contact", "index_error", "eye_height",
+       "pressure", "temperature", "artificial_horizon", "separate_times", "moon_dt", "sun_dt",
+       "moving", "course", "speed", "distance_sigma", "moon_sigma", "sun_sigma", "offset",
+-      "solve_position"};
++      "solve_position", "dut1", "diurnal_aberration", "observer_astrometry"};
+     Params p;
+     for (int i = 6; i < argc; ++i) {
+       const std::string arg = argv[i];
+@@ -183,6 +250,18 @@ int main(int argc, char** argv) {
+       require(used == text.size() && std::isfinite(value), "Invalid number: " + arg);
+       require(p.emplace(key, value).second, "Duplicate parameter: " + key);
+     }
++    ephemeris.set_dut1(get(p, "dut1", 0));
++    for (const auto key : {"observer_astrometry", "diurnal_aberration"}) {
++      const double value = get(p,key,0);
++      require(value == 0 || value == 1, std::string(key)+" must be 0 or 1");
++    }
++    require(!get(p,"observer_astrometry",0) || p.count("dut1"),
++            "Observer astrometry requires an explicit dated DUT1 input");
++    ephemeris.set_observer_astrometry(get(p, "observer_astrometry", 0));
++    require(!(get(p,"observer_astrometry",0) && get(p,"diurnal_aberration",0)),
++            "Observer astrometry already includes diurnal aberration");
++    require(!get(p,"observer_astrometry",0) || get(p,"ellipsoid",1),
++            "Observer astrometry requires the ellipsoidal path");
+     auto o = settings(p);
+     for (auto key : {"moon_limb", "sun_limb", "moon_contact", "sun_contact"}) {
+       const double value = get(p, key, 0);
+diff --git a/engine/src/LunarDistanceEngine.h b/engine/src/LunarDistanceEngine.h
+index 652c002..d8723a0 100644
+--- a/engine/src/LunarDistanceEngine.h
++++ b/engine/src/LunarDistanceEngine.h
+@@ -14,6 +14,9 @@ struct Observation {
+   // WGS84 geodetic observer and exact vector parallax. False retains the
+   // historical spherical reduction for independent comparison/tests.
+   bool use_ellipsoid = false;
++  // Experimental: station rotational velocity, applied after vector parallax.
++  // The ephemeris already includes geocentric annual aberration.
++  bool diurnal_aberration = false;
+   double raw_distance_deg = 0.0;
+   double moon_altitude_deg = 0.0;
+   double body_altitude_deg = 0.0;
+@@ -40,6 +43,11 @@ struct Observation {
+ };
+ 
+ struct EphemerisSample {
++  // Optional experimental observer-aware airless centre/semidiameter provider.
++  // Arguments: geodetic lat/lon (deg), ellipsoidal height (m), Moon selection,
++  // and output altitude/azimuth/semidiameter (deg). No observed angles enter it.
++  std::function<void(double, double, double, bool, double*, double*, double*)>
++      observer_direction;
+   double predicted_distance_deg = 0.0;
+   double moon_semidiameter_deg = 0.0;
+   double moon_horizontal_parallax_deg = 0.0;
+diff --git a/engine/src/LunarDistanceEngine.cpp b/engine/src/LunarDistanceEngine.cpp
+index 8158b01..1e79a58 100644
+--- a/engine/src/LunarDistanceEngine.cpp
++++ b/engine/src/LunarDistanceEngine.cpp
+@@ -275,6 +275,11 @@ void EllipsoidalDirection(const Observation& observation,
+                           const EphemerisSample& sample,
+                           const GeographicPoint& observer, bool moon,
+                           double* altitude, double* azimuth, double* sd) {
++  if (sample.observer_direction) {
++    sample.observer_direction(observer.latitude_deg, observer.longitude_deg,
++                             observation.eye_height_m, moon, altitude, azimuth, sd);
++    return;
++  }
+   constexpr double a = 6378.137;  // km; HP uses the equatorial radius
+   constexpr double f = 1.0 / 298.257223563;
+   constexpr double e2 = f * (2.0 - f);
+@@ -304,6 +309,21 @@ void EllipsoidalDirection(const Observation& observation,
+         ClampUnit(range * std::sin(ToRadians(*sd)) / topocentric_range)));
+     topocentric = (1.0 / topocentric_range) * topocentric;
+   }
++  if (observation.diurnal_aberration) {
++    // Station velocity in the terrestrial frame: omega cross station. Apply
++    // the special-relativistic direction transform, not a fitted angular
++    // correction. This incremental boost neglects annual/diurnal cross terms.
++    constexpr double omega = 7.2921150e-5;  // radians / SI second
++    constexpr double c = 299792.458;  // km / SI second
++    const Vector3 beta{ -omega * station.y / c, omega * station.x / c, 0.0 };
++    const double inverse_gamma = std::sqrt(1.0 - Dot(beta, beta));
++    const double projection = Dot(topocentric, beta);
++    const Vector3 aberrated = inverse_gamma * topocentric +
++        (1.0 + projection / (1.0 + inverse_gamma)) * beta;
++    topocentric = (1.0 / Norm(aberrated)) * aberrated;
++    // Local angular scale of the boost, sufficient for a small circular disc.
++    *sd *= inverse_gamma / (1.0 + projection);
++  }
+   const Vector3 up = Unit(observer);
+   const Vector3 east{-std::sin(longitude), std::cos(longitude), 0.0};
+   const Vector3 north = Cross(up, east);

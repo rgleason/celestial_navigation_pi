@@ -1,9 +1,10 @@
 # Isolated celestial engine comparison lab
 
 This is an experimental test facility, **not a plugin release or a replacement
-for the installed plugin**. No numerical refinement has been applied yet.
-First establish baseline/candidate equivalence; then change one component in
-the candidate and compare both with independently saved reference results.
+for the installed plugin**. Setup creates identical frozen/experimental copies.
+An optional saved observer-astrometry experiment now passes the expanded
+candidate accuracy gate; the baseline and production source remain unchanged.
+See [the experiment results](OBSERVER-RESULTS-20260909.md).
 
 ## What is frozen
 
@@ -155,7 +156,7 @@ python3 validation/engine-lab/test_accuracy.py
 python3 validation/engine-lab/accuracy.py --kernel /absolute/path/to/de440s.bsp
 ```
 
-**This suite currently exits 1 for genuine accuracy findings:** 123 scenarios,
+**With enhancements disabled, this suite exits 1 for genuine accuracy findings:** 123 scenarios,
 758 checks, 30 failed checks (15 in each identical engine), no execution errors
 and no A/B differences. See [the measured results](ACCURACY-RESULTS-20260909.md).
 The original smaller suite still passes; neither result supersedes the other.
@@ -195,17 +196,19 @@ python3 validation/engine-lab/fetch_accuracy.py --output /new/accuracy/directory
 python3 validation/engine-lab/fetch_dut1.py --output /new/dut1/directory
 ```
 
-The DUT1 projection is diagnostic only: it does not alter engine outputs,
+The omitted-DUT1 projection is diagnostic only: it does not alter engine outputs,
 silence failures or establish that all inverse-solve discrepancies have the
 same cause. No new real-world observations have been promoted to absolute
 truth; Point Judith remains a reported-observation regression with DR, not GNSS.
 
 ## Next development passes
 
-1. Preserve this equivalence checkpoint before changing candidate mathematics.
-2. Add a dated, explicit Earth-orientation input (DUT1 first), with recorded
-   provenance and a clear separation between geocentric and topocentric checks.
-   Match frames before interpreting small RA offsets as ephemeris errors.
+1. Extend the successful observer-astrometry experiment with new held-out
+   dates/geometries and a second external astronomy pipeline.
+2. Design dated Earth-orientation data handling (including coverage, provenance,
+   interpolation and leap boundaries) before considering production integration.
+   Investigate polar motion and frame conventions separately, without fitting
+   residuals to the existing grid.
 3. Extend the independent limb/refraction checks to refracted contact and
    physical horizon observations; agreement with a baseline-generated sight
    is not sufficient evidence.
@@ -215,3 +218,49 @@ truth; Point Judith remains a reported-observation regression with DR, not GNSS.
 
 The results here are a controlled development checkpoint, not justification
 for changing v2.8.5.1 or claiming an absolute, error-free navigation solution.
+
+## Reproduce the observer-astrometry experiment
+
+After initial setup/build, apply the saved patch only to the duplicate:
+
+```sh
+python3 validation/engine-lab/apply_candidate.py
+python3 validation/engine-lab/run_experiment.py --kernel /absolute/path/to/de440s.bsp
+python3 validation/engine-lab/test_candidate.py
+```
+
+`apply_candidate.py` verifies the frozen baseline and complete candidate source
+tree, refuses unrelated changes/symlinks, and verifies the resulting source
+hashes. A second application is a no-op. It never modifies the baseline or
+production source. The seven candidate control tests expect the kernel at
+`eclipse/data/de440s.bsp` and include patch reproduction in a disposable copy.
+
+The experiment runner performs four ablations: disabled, DUT1 only, DUT1 plus
+incremental diurnal aberration, and DUT1 plus observer-specific astrometry. It
+retains the failing intermediate results, checks that baseline results and
+candidate sources stay unchanged across stages, and reports the final candidate
+gate. Each invocation creates a fresh report directory under `.work`, avoiding
+accidental reuse of stale reports. The summary defaults to
+`.work/experiment-summary.json`; `--summary PATH` saves a named checkpoint.
+
+For only the successful mode:
+
+```sh
+python3 validation/engine-lab/accuracy.py --kernel /absolute/path/to/de440s.bsp \
+  --candidate-dut1 --candidate-observer-astrometry --gate candidate \
+  --output validation/engine-lab/.work/accuracy-observer.json
+```
+
+The candidate gate checks all 379 candidate accuracy assertions and all execution
+errors. It **retains** the baseline's 15 failures and the intentional A/B
+differences in the report; they are not misreported as successes. The default
+`--gate both` continues to fail on either engine's failures or A/B differences.
+No reference values, geometry selection rules or tolerances are changed.
+
+The new adapter arguments are `dut1=SECONDS`, `observer_astrometry=1`, and the
+separate diagnostic `diurnal_aberration=1`. Observer astrometry requires explicit
+DUT1 and the ellipsoidal path, and rejects the additional diurnal flag to avoid
+double correction. It already includes the station velocity in aberration.
+The supplied DUT1 is held constant during each short fixture; this is not a
+general-purpose Earth-orientation service. All enhancements default off, so
+running the original regression suite still tests exact baseline equivalence.

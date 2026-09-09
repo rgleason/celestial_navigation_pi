@@ -5,7 +5,7 @@ import shutil
 import tempfile
 from pathlib import Path
 import unittest
-from accuracy import assess_inverse, inverse_eligibility, verify_accuracy_references, verify_raytrace_table, verify_epoch
+from accuracy import assess_inverse, inverse_eligibility, verify_accuracy_references, verify_raytrace_table, verify_epoch, verify_dut1_references
 from accuracy_reference import decode, expected_sight, separation, utc_shift
 from run import LAB
 
@@ -44,6 +44,18 @@ class AccuracyTests(unittest.TestCase):
     def test_reference_set_validates(self):
         result = verify_accuracy_references(self.directory,self.spec)
         self.assertEqual(len(result),25)
+
+    def test_dut1_input_is_bound_to_dated_raw_response(self):
+        result = verify_dut1_references(LAB/"references/dut1-20260909",self.spec)
+        self.assertAlmostEqual(result["after-2016-leap"]-result["before-2016-leap"],1)
+        with tempfile.TemporaryDirectory(prefix="celestial-dut1-test-") as temp:
+            directory = Path(temp)/"reference"
+            shutil.copytree(LAB/"references/dut1-20260909",directory)
+            manifest = json.loads((directory/"manifest.json").read_text())
+            manifest["epochs"]["2017-01-01T00:00:00Z"]["dut1_seconds"] -= 0.001
+            (directory/"manifest.json").write_text(json.dumps(manifest))
+            with self.assertRaisesRegex(ValueError,"DUT1 value"):
+                verify_dut1_references(directory,self.spec)
 
     def test_tampered_normalized_value_is_rejected(self):
         with tempfile.TemporaryDirectory(prefix="celestial-accuracy-test-") as temp:

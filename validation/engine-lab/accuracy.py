@@ -79,10 +79,9 @@ def position_error_nm(position, truth):
     return separation(position[1],position[0],truth[1],truth[0])*60
 
 
-def dut1_diagnostics(directory, spec, external, runs):
+def verify_dut1_references(directory, spec):
     epochs = json.loads((directory/"manifest.json").read_text())["epochs"]
-    result = []
-    by_id = {r["id"]:r for r in runs}
+    values = {}
     for site in spec["sites"]:
         meta = epochs[site["utc"]]
         file = directory/meta["file"]
@@ -97,8 +96,22 @@ def dut1_diagnostics(directory, spec, external, runs):
         value = float(raw_row["UT1-UTC"])
         if not math.isfinite(value) or value != meta["dut1_seconds"]:
             raise ValueError("DUT1 value does not match raw response")
+        values[site["id"]] = value
+    return values
+
+
+def dut1_diagnostics(directory, spec, external, runs):
+    values = verify_dut1_references(directory, spec)
+    result = []
+    by_id = {r["id"]:r for r in runs}
+    for site in spec["sites"]:
+        value = values[site["id"]]
         for name,out in by_id[site["id"]+"/airless"]["outputs"].items():
             if "error" in out: continue
+            if by_id[site["id"]+"/airless"].get("engine_inputs",{}).get(name,{}).get("dut1") is not None:
+                # The omitted-term projection is only meaningful for an
+                # engine run which has actually omitted that input.
+                continue
             for body in ("moon","sun"):
                 reference = external[site["id"]][body+"_topocentric"]
                 error = (out[body+"_alt_deg"]-reference["alt"])*3600
@@ -125,7 +138,17 @@ def main():
     parser.add_argument("--kernel", type=Path, required=True)
     parser.add_argument("--references", type=Path, default=LAB/"references/accuracy-20260909")
     parser.add_argument("--output", type=Path, default=LAB/".work/accuracy-report.json")
+    parser.add_argument("--candidate-dut1", action="store_true",
+                        help="Supply verified, dated Earth-orientation input only to the experimental adapter")
+    parser.add_argument("--candidate-diurnal-aberration", action="store_true",
+                        help="Enable the candidate's station-velocity correction")
+    parser.add_argument("--candidate-observer-astrometry", action="store_true",
+                        help="Recompute light time and aberration at each candidate station")
+    parser.add_argument("--gate", choices=("both", "candidate"), default="both",
+                        help="Candidate gate retains baseline failures and A/B differences in the report but gates only candidate accuracy and execution")
     args = parser.parse_args()
+    if args.candidate_observer_astrometry and args.candidate_diurnal_aberration:
+        parser.error("Observer astrometry already includes diurnal aberration")
     spec = json.loads((LAB/"accuracy-grid.json").read_text())
     corpus = json.loads((LAB/"corpus.json").read_text())
     work = LAB/".work"
@@ -135,6 +158,7 @@ def main():
     if digest(args.kernel) != corpus["kernel"]["sha256"]:
         raise ValueError("Unexpected kernel")
     external = verify_accuracy_references(args.references, spec)
+    dut1 = verify_dut1_references(LAB/"references/dut1-20260909", spec)
     verify_raytrace_table(spec,work/"baseline/engine/eclipse/third_party/erfa/src/refco.c")
     binaries = {name:work/f"build-{name}/lunar-lab" for name in ("baseline","candidate")}
     probes = {}
@@ -150,14 +174,23 @@ def main():
 
     def pair(label, site, mode, params, category):
         outputs = {}
+        engine_inputs = {}
         for name,binary in binaries.items():
+            engine_inputs[name] = dict(params)
+            if name == "candidate" and args.candidate_dut1:
+                engine_inputs[name]["dut1"] = dut1[site["id"]]
+            if name == "candidate" and args.candidate_diurnal_aberration:
+                engine_inputs[name]["diurnal_aberration"] = 1
+            if name == "candidate" and args.candidate_observer_astrometry:
+                engine_inputs[name]["observer_astrometry"] = 1
             try:
-                outputs[name] = invoke(binary,args.kernel,site,mode,params)
+                outputs[name] = invoke(binary,args.kernel,site,mode,engine_inputs[name])
             except (RuntimeError, ValueError, subprocess.TimeoutExpired) as error:
                 outputs[name] = {"error":str(error)}
                 errors.append(f"{label}/{name}: {error}")
         entry = {"id":label,"category":category,"utc":site["utc"],"position":site["position"],
                  "mode":mode,"inputs":params,"outputs":outputs,
+                 "engine_inputs":engine_inputs,
                  "differences":differences(outputs["baseline"],outputs["candidate"]),"checks":[]}
         runs.append(entry)
         return entry
@@ -287,6 +320,11 @@ def main():
 
     failures = [{"id":r["id"],**c} for r in runs for c in r["checks"] if not c["passed"]]
     mismatches = [r["id"] for r in runs if r["differences"]]
+    engine_summary = {name:{"checks":sum(c["engine"]==name for r in runs for c in r["checks"]),
+                            "accuracy_failures":sum(c["engine"]==name for c in failures)}
+                      for name in binaries}
+    gate_failed = bool(errors or (failures or mismatches if args.gate == "both" else
+                                  any(c["engine"] == "candidate" for c in failures)))
     # Keep a complete report even when a genuine accuracy check is red.
     report = {"baseline_revision":corpus["baseline_revision"],"created_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
         "grid_sha256":digest(LAB/"accuracy-grid.json"),"reference_manifest_sha256":digest(args.references/"manifest.json"),
@@ -294,6 +332,10 @@ def main():
         "harness_source_sha256":{p:digest(LAB/p) for p in
                                  ("accuracy.py","accuracy_reference.py","run.py","fetch_accuracy.py")},
         "dut1_manifest_sha256":digest(LAB/"references/dut1-20260909/manifest.json"),
+        "candidate_dut1_enabled":args.candidate_dut1,
+        "candidate_diurnal_aberration_enabled":args.candidate_diurnal_aberration,
+        "candidate_observer_astrometry_enabled":args.candidate_observer_astrometry,
+        "gate":args.gate,"gate_passed":not gate_failed,"engine_summary":engine_summary,
         "binary_sha256":{n:digest(b) for n,b in binaries.items()},
         "probe_sha256":{n:digest(b) for n,b in probes.items()},"probe_source_sha256":digest(LAB/"component_probe.cpp"),
         "candidate_source_sha256":{str(p.relative_to(work/"candidate")):digest(p)
@@ -301,7 +343,8 @@ def main():
         "dut1_diagnostics":dut1_diagnostics(LAB/"references/dut1-20260909",spec,external,runs),
         "policy":policy,"coverage":coverage,"runs":runs,"accuracy_failures":failures,
         "execution_errors":errors,"equivalence_mismatches":mismatches,
-        "limits":["Sun-Moon engines only; no numerical refinements applied",
+        "limits":["Sun-Moon engines only; optional candidate refinements are explicitly recorded above",
+                  "DUT1 is a dated external input held constant over each short fixture; no general EOP interpolation or leap-crossing inverse support is claimed",
                   "Inverse inputs use 1e-6 hPa because the frozen solver rejects zero pressure; the vacuum-limit approximation is separately bounded",
                   "No claim of real-observation absolute accuracy: the recorded Point Judith DR is not independent GNSS truth",
                   "Independent theoretical inverse sights use JPL, not either engine's forward model",
@@ -311,7 +354,8 @@ def main():
     print(f"{len(runs)} scenarios, {sum(len(r['checks']) for r in runs)} checks; "
           f"{len(failures)} accuracy failures, {len(errors)} execution errors, {len(mismatches)} A/B differences.")
     print("Report:",args.output)
-    return bool(failures or errors or mismatches)
+    print(f"{args.gate} gate: {'FAIL' if gate_failed else 'PASS'}; per-engine:",engine_summary)
+    return gate_failed
 
 
 def assess_inverse(entry, site, check, policy):
