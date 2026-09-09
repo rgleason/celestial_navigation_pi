@@ -101,6 +101,12 @@ set(SRC
 
 add_executable(celestial_tests ${SRC})
 
+option(CELESTIAL_ENGINE_LAB_TESTS "Compare experimental headless adapter with production" OFF)
+if(CELESTIAL_ENGINE_LAB_TESTS)
+    target_sources(celestial_tests PRIVATE
+        ${CMAKE_SOURCE_DIR}/validation/engine-lab/adapter_tests.cpp)
+endif()
+
 target_compile_definitions(celestial_tests
     PUBLIC
         USE_MOCK_DEFS
