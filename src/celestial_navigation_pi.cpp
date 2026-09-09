@@ -25,6 +25,7 @@
  */
 
 #include "wx/wxprec.h"
+#include "Dut1UpdatePanel.h"
 
 #ifndef WX_PRECOMP
 #include "wx/wx.h"
@@ -102,6 +103,7 @@ celestial_navigation_pi::~celestial_navigation_pi(void) {}
 //---------------------------------------------------------------------------------------------------------
 
 int celestial_navigation_pi::Init(void) {
+  celestial_navigation::LoadInstalledDut1Update();
   AddLocaleCatalog(_T("opencpn-celestial_navigation_pi"));
 
   // Get a pointer to the opencpn display canvas, to use as a parent for windows

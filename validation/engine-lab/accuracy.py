@@ -100,13 +100,14 @@ def verify_dut1_references(directory, spec):
     return values
 
 
-def dut1_diagnostics(directory, spec, external, runs):
+def dut1_diagnostics(directory, spec, external, runs, production=False):
     values = verify_dut1_references(directory, spec)
     result = []
     by_id = {r["id"]:r for r in runs}
     for site in spec["sites"]:
         value = values[site["id"]]
         for name,out in by_id[site["id"]+"/airless"]["outputs"].items():
+            if production and name=="candidate": continue
             if "error" in out: continue
             if by_id[site["id"]+"/airless"].get("engine_inputs",{}).get(name,{}).get("dut1") is not None:
                 # The omitted-term projection is only meaningful for an
@@ -146,9 +147,13 @@ def main():
                         help="Recompute light time and aberration at each candidate station")
     parser.add_argument("--gate", choices=("both", "candidate"), default="both",
                         help="Candidate gate retains baseline failures and A/B differences in the report but gates only candidate accuracy and execution")
+    parser.add_argument("--production-build",type=Path,
+                        help="Compare the frozen baseline with the actual production target in this CMake build")
     args = parser.parse_args()
     if args.candidate_observer_astrometry and args.candidate_diurnal_aberration:
         parser.error("Observer astrometry already includes diurnal aberration")
+    if args.production_build and (args.candidate_dut1 or args.candidate_diurnal_aberration or args.candidate_observer_astrometry):
+        parser.error("Production obtains dated DUT1 automatically; lab feature flags do not apply")
     spec = json.loads((LAB/"accuracy-grid.json").read_text())
     corpus = json.loads((LAB/"corpus.json").read_text())
     work = LAB/".work"
@@ -161,14 +166,20 @@ def main():
     dut1 = verify_dut1_references(LAB/"references/dut1-20260909", spec)
     verify_raytrace_table(spec,work/"baseline/engine/eclipse/third_party/erfa/src/refco.c")
     binaries = {name:work/f"build-{name}/lunar-lab" for name in ("baseline","candidate")}
+    if args.production_build:
+        args.production_build=args.production_build.resolve()
+        binaries["candidate"]=args.production_build/"test/lunar_production_lab"
     probes = {}
     for name in binaries:
-        subprocess.run(["cmake","--build",str(work/f"build-{name}"),"-j","2"], check=True)
+        production = name=="candidate" and args.production_build
+        build = args.production_build if production else work/f"build-{name}"
+        subprocess.run(["cmake","--build",str(build),"-j","2"]+
+                       (["--target","lunar_production_lab"] if production else []), check=True)
         probes[name] = work/f"build-{name}/component-probe"
         # A new diagnostic executable; do not edit either snapshot's driver.
         subprocess.run(["c++","-std=c++17","-O2",str(LAB/"component_probe.cpp"),
-                        str(work/name/"engine/src/LunarDistanceEngine.cpp"),
-                        "-I"+str(work/name/"engine/src"),"-o",str(probes[name])], check=True)
+                        str((LAB.parents[1] if production else work/name/"engine")/"src/LunarDistanceEngine.cpp"),
+                        "-I"+str((LAB.parents[1] if production else work/name/"engine")/"src"),"-o",str(probes[name])], check=True)
     runs, coverage, errors = [], [], []
     policy = spec["policy"]
 
@@ -326,11 +337,16 @@ def main():
     gate_failed = bool(errors or (failures or mismatches if args.gate == "both" else
                                   any(c["engine"] == "candidate" for c in failures)))
     # Keep a complete report even when a genuine accuracy check is red.
-    report = {"baseline_revision":corpus["baseline_revision"],"created_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+    report = {"production_build":str(args.production_build) if args.production_build else None,
+        "production_source_sha256":{str(p.relative_to(LAB.parents[1])):digest(p)
+            for directory in (LAB.parents[1]/"src",LAB.parents[1]/"eclipse")
+            for p in directory.rglob("*") if p.is_file() and p.suffix in (".h",".cpp",".c",".inc")} if args.production_build else None,
+        "baseline_revision":corpus["baseline_revision"],"created_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
         "grid_sha256":digest(LAB/"accuracy-grid.json"),"reference_manifest_sha256":digest(args.references/"manifest.json"),
         "kernel_sha256":digest(args.kernel),"baseline_manifest_sha256":digest(work/"baseline.sha256"),
         "harness_source_sha256":{p:digest(LAB/p) for p in
-                                 ("accuracy.py","accuracy_reference.py","run.py","fetch_accuracy.py")},
+                                 ("accuracy.py","accuracy_reference.py","run.py","fetch_accuracy.py",
+                                  "production_runner.cpp","adapter_tests.cpp")},
         "dut1_manifest_sha256":digest(LAB/"references/dut1-20260909/manifest.json"),
         "candidate_dut1_enabled":args.candidate_dut1,
         "candidate_diurnal_aberration_enabled":args.candidate_diurnal_aberration,
@@ -338,13 +354,15 @@ def main():
         "gate":args.gate,"gate_passed":not gate_failed,"engine_summary":engine_summary,
         "binary_sha256":{n:digest(b) for n,b in binaries.items()},
         "probe_sha256":{n:digest(b) for n,b in probes.items()},"probe_source_sha256":digest(LAB/"component_probe.cpp"),
-        "candidate_source_sha256":{str(p.relative_to(work/"candidate")):digest(p)
-                                    for p in sorted((work/"candidate").rglob("*")) if p.is_file()},
-        "dut1_diagnostics":dut1_diagnostics(LAB/"references/dut1-20260909",spec,external,runs),
+        "candidate_source_sha256":None if args.production_build else {
+            str(p.relative_to(work/"candidate")):digest(p)
+            for p in sorted((work/"candidate").rglob("*")) if p.is_file()},
+        "dut1_diagnostics":dut1_diagnostics(LAB/"references/dut1-20260909",spec,external,runs,bool(args.production_build)),
         "policy":policy,"coverage":coverage,"runs":runs,"accuracy_failures":failures,
         "execution_errors":errors,"equivalence_mismatches":mismatches,
         "limits":["Sun-Moon engines only; optional candidate refinements are explicitly recorded above",
-                  "DUT1 is a dated external input held constant over each short fixture; no general EOP interpolation or leap-crossing inverse support is claimed",
+                  ("Production selects/interpolates bundled IERS DUT1 per epoch; no lab-supplied DUT1. No leap-crossing inverse support is claimed"
+                   if args.production_build else "DUT1 is a dated external input held constant over each short fixture; no general EOP interpolation or leap-crossing inverse support is claimed"),
                   "Inverse inputs use 1e-6 hPa because the frozen solver rejects zero pressure; the vacuum-limit approximation is separately bounded",
                   "No claim of real-observation absolute accuracy: the recorded Point Judith DR is not independent GNSS truth",
                   "Independent theoretical inverse sights use JPL, not either engine's forward model",

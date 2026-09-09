@@ -1,7 +1,7 @@
 // Opt-in bridge: test the headless adapter against the actual plugin path.
 // This is not an external accuracy reference.
 #define main engine_lab_cli_main
-#include "runner.cpp"
+#include "production_runner.cpp"
 #undef main
 #include <gtest/gtest.h>
 #include "Sight.h"
@@ -35,6 +35,21 @@ TEST(EngineLabAdapter, MatchesProductionDe440Samples) {
         expected.body_geographic_longitude_deg};
       for (int i = 0; i < 9; ++i)
         EXPECT_NEAR(a[i], b[i], 1e-10) << timestamp << " offset " << offset << " field " << i;
+      ASSERT_TRUE(actual.observer_direction);
+      ASSERT_TRUE(expected.observer_direction);
+      EXPECT_TRUE(actual.dut1_available);
+      EXPECT_DOUBLE_EQ(actual.dut1_seconds,expected.dut1_seconds);
+      for (const auto point : {lunar_distance::GeographicPoint(41.37,-71.48),
+                               lunar_distance::GeographicPoint(-30,-60)}) {
+        for (bool moon : {false,true}) {
+          double aa,az,sd,bb,bz,bd;
+          ASSERT_TRUE(actual.observer_direction(point.latitude_deg,point.longitude_deg,6.1,moon,&aa,&az,&sd));
+          ASSERT_TRUE(expected.observer_direction(point.latitude_deg,point.longitude_deg,6.1,moon,&bb,&bz,&bd));
+          EXPECT_NEAR(aa,bb,1e-10);
+          EXPECT_NEAR(az,bz,1e-10);
+          EXPECT_NEAR(sd,bd,1e-10);
+        }
+      }
     }
   }
 }

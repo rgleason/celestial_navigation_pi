@@ -7,6 +7,20 @@
 #include "NauticalTimeCtrl.h"
 #include "LunarResultsDialog.h"
 #include "LunarSolutionRecord.h"
+#include "CelestialNavigationDialog.h"
+#include "LunarToolsDialog.h"
+#include "mock_plugin_api.h"
+#include "eclipse/dut1.h"
+#include <wx/filename.h>
+#include <wx/notebook.h>
+#include <wx/scrolwin.h>
+#include <wx/stattext.h>
+#include <wx/dcscreen.h>
+#include <wx/dcmemory.h>
+#include <wx/image.h>
+#ifdef __WXGTK3__
+#include <gtk/gtk.h>
+#endif
 
 namespace {
 void FindControls(wxWindow* window, wxChoice** mode, wxButton** save) {
@@ -72,6 +86,77 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
         EXPECT_EQ(snapshot, LunarInputSnapshot(sight));
       }
     }
+    // Exercise the actual main and Lunar Tools dialogs, with isolated host
+    // state. No installed sights, configuration or network are touched.
+    const wxString privatePath=wxFileName::CreateTempFileName("celestial-ui-state-");
+    ASSERT_TRUE(wxRemoveFile(privatePath));
+    ASSERT_TRUE(wxFileName::Mkdir(privatePath+"/plugins/celestial_navigation",0777,wxPATH_MKDIR_FULL));
+    SetTestPrivateDataPath(privatePath);
+    GetOCPNConfigObject()->Write("/PlugIns/CelestialNavigation/ShowTimeIntegrity",false);
+    wxInitAllImageHandlers();
+    {
+      celestial_navigation_pi plugin(nullptr);
+      CelestialNavigationDialog main(&frame,&plugin);
+      LunarToolsDialog dialog(&main);
+      wxNotebook* notebook=nullptr;
+      for (auto* child:dialog.GetChildren())
+        if (auto* value=dynamic_cast<wxNotebook*>(child)) notebook=value;
+      ASSERT_NE(notebook,nullptr);
+      ASSERT_EQ(notebook->GetPageCount(),4u);
+      EXPECT_EQ(notebook->GetPageText(3),"Advanced");
+      notebook->SetSelection(3);
+      auto* page=dynamic_cast<wxScrolledWindow*>(notebook->GetPage(3));
+      ASSERT_NE(page,nullptr);
+      const int calls=TestDownloadCalls();
+      dialog.Show();
+      for (const wxSize size : {wxSize(1120,780),wxSize(880,650)}) {
+        dialog.SetSize(size); dialog.Centre(); dialog.Layout();
+        for (int i=0;i<8;++i) { wxTheApp->Yield(); wxMilliSleep(30); }
+        EXPECT_EQ(TestDownloadCalls(),calls); // Opening/resizing never downloads.
+        EXPECT_LE(page->GetVirtualSize().x,page->GetClientSize().x);
+        for (auto* child:page->GetChildren()) {
+          if (!child->IsShown() || child->GetSize().y==0) continue;
+          EXPECT_TRUE(wxRect(wxPoint(0,0),page->GetClientSize()).Contains(child->GetRect()))
+              << child->GetLabel().ToStdString();
+        }
+#ifdef __WXGTK3__
+        // Wayland intentionally disallows wxScreenDC capture. Render the live
+        // GTK widget tree, including native text and controls, to an image.
+        auto* surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,size.x,size.y);
+        auto* cr=cairo_create(surface);
+        gtk_widget_draw(GTK_WIDGET(dialog.GetHandle()),cr);
+        const auto path=wxString::Format("/tmp/celestial-advanced-%d.png",size.x);
+        EXPECT_EQ(cairo_surface_write_to_png(surface,path.utf8_str()),CAIRO_STATUS_SUCCESS);
+        cairo_destroy(cr); cairo_surface_destroy(surface);
+#else
+        wxScreenDC screen;
+        wxBitmap bitmap(dialog.GetSize());
+        wxMemoryDC memory(bitmap);
+        const auto origin=dialog.GetScreenPosition();
+        ASSERT_TRUE(memory.Blit(0,0,bitmap.GetWidth(),bitmap.GetHeight(),&screen,origin.x,origin.y));
+        memory.SelectObject(wxNullBitmap);
+        ASSERT_TRUE(bitmap.SaveFile(wxString::Format("/tmp/celestial-advanced-%d.png",size.x),wxBITMAP_TYPE_PNG));
+#endif
+      }
+      wxButton* download=nullptr;
+      for (auto* child:page->GetChildren())
+        if (auto* button=dynamic_cast<wxButton*>(child))
+          if (button->GetLabel().StartsWith("Check / download")) download=button;
+      ASSERT_NE(download,nullptr);
+      const auto previous=eclipse::GetDut1Update();
+      wxCommandEvent event(wxEVT_BUTTON,download->GetId());
+      event.SetEventObject(download); download->ProcessWindowEvent(event);
+      EXPECT_EQ(TestDownloadCalls(),calls+1);
+      EXPECT_TRUE(download->IsEnabled());
+      EXPECT_EQ(eclipse::GetDut1Update(),previous);
+      bool failureShown=false;
+      for (auto* child:page->GetChildren())
+        if (child->GetLabel().Contains("failed or was cancelled")) failureShown=true;
+      EXPECT_TRUE(failureShown);
+      dialog.Hide();
+    }
+    SetTestPrivateDataPath(wxEmptyString);
+    wxFileName::Rmdir(privatePath,wxPATH_RMDIR_RECURSIVE);
   }
   wxTheApp->OnExit();
   wxEntryCleanup();

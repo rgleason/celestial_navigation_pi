@@ -23,6 +23,8 @@
 #include "OcpnApiCompat.h"
 #include <vector>
 #include <wx/string.h>
+void SetTestPrivateDataPath(const wxString& path);
+int TestDownloadCalls();
 
 // Base mock plugin class implementing all virtual functions with empty
 // implementations

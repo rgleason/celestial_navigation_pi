@@ -71,6 +71,12 @@ explains the simultaneous and sequential observation models,
 unknown-watch-offset workflow, genuine position ambiguity, controls and
 limitations.
 
+Version 2.8.5.2 promotes the independently tested observer-specific Sun–Moon
+astrometry, with bundled offline Earth-rotation data and optional precision
+updates under **Lunar Tools → Advanced**. Calculations continue beyond data
+coverage with an explicit fallback warning. See the
+[release and validation notes](docs/lunar-release-2.8.5.2.md).
+
 Version 2.8.5.1 adds coherent apparent DE440 Sun–Moon directions, WGS84 lunar
 geometry, immutable saved lunar solutions and scoped fix corrections. See the
 [reference audit and compatibility notes](docs/lunar-review-2.8.5.1.md).

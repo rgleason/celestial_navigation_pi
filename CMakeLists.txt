@@ -75,7 +75,7 @@ set(LONG_DESCRIPTION
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "8")
 set(VERSION_PATCH "5")
-set(VERSION_TWEAK "1")
+set(VERSION_TWEAK "2")
 set(VERSION_DATE  "09/09/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
@@ -188,6 +188,7 @@ SET(SRCS
         src/CelestialNavigationDialog.cpp
         src/DialogGeometry.cpp
         src/AtomicXmlFile.cpp
+        src/Dut1UpdatePanel.cpp
         src/BodyCatalog.cpp
         src/NavigationAlgorithms.cpp
         src/PlannerDialog.cpp
@@ -233,6 +234,7 @@ SET(HDRS
         src/celestial_navigation_pi.h
         src/CelestialNavigationDialog.h
         src/AtomicXmlFile.h
+        src/Dut1UpdatePanel.h
         src/BodyCatalog.h
         src/NavigationAlgorithms.h
         src/PlannerDialog.h

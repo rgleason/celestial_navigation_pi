@@ -1,4 +1,5 @@
 #include "LunarToolsDialog.h"
+#include "Dut1UpdatePanel.h"
 
 #include "BodyCatalog.h"
 #include "CelestialNavigationDialog.h"
@@ -117,6 +118,7 @@ LunarToolsDialog::LunarToolsDialog(CelestialNavigationDialog* parent)
   m_notebook->AddPage(sequence, _("Lunar sequence"));
   m_notebook->AddPage(planner, _("Lunar planner"));
   m_notebook->AddPage(calibration, _("Sextant check"));
+  m_notebook->AddPage(celestial_navigation::CreateDut1UpdatePanel(m_notebook), _("Advanced"));
   UpdateUtcEntryVisibility();
   m_entryFormat->Bind(wxEVT_CHOICE, &LunarToolsDialog::ChangeUtcEntryFormat,
                       this);
@@ -837,6 +839,10 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
     wxYieldIfNeeded();
   }
   if (!userCancelled) progress.Update(100, _("Lunar sequence complete."));
+  if (std::any_of(snapshots.begin(),snapshots.end(),
+                 [](const std::shared_ptr<Sight>& sight) { return sight->m_LunarDut1Fallback; }))
+    m_sequenceResult.warnings.push_back(
+        "Some trial dates lack Earth-rotation data (DUT1); UT1=UTC fallback, reduced accuracy.");
   m_sequenceCandidate->Clear();
   m_sequenceResiduals->DeleteAllItems();
   m_applySequence->Enable(false);

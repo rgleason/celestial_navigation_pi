@@ -51,6 +51,19 @@
 #include "eclipse/astronomy.h"
 #include "eclipse/spk.h"
 #include "eclipse/time.h"
+#include "eclipse/dut1.h"
+#include <memory>
+#include <mutex>
+#include <atomic>
+
+namespace {
+// Samples can outlive their originating call/thread. Keep the kernel alive
+// and serialize its mutable file stream if a sample is consumed elsewhere.
+struct LunarKernelContext {
+  eclipse::SpkKernel kernel;
+  std::mutex mutex;
+};
+}
 
 WX_DEFINE_LIST(wxRealPointList);
 
@@ -1120,7 +1133,9 @@ void Sight::RecomputeLunar(int preferred_candidate) {
 
   const wxString selected_body = m_Body;
   m_LunarUsesDe440 = false;
-  auto ephemeris = [this, selected_body](
+  m_LunarDut1Fallback = false;
+  const auto unavailable_dut1 = std::make_shared<std::atomic_bool>(false);
+  auto ephemeris = [this, selected_body, unavailable_dut1](
                        double offset_seconds,
                        lunar_distance::EphemerisSample* sample,
                        std::string* error) {
@@ -1130,6 +1145,8 @@ void Sight::RecomputeLunar(int preferred_candidate) {
       if (error) *error = "The candidate UTC is outside the supported range";
       return false;
     }
+
+    *sample = lunar_distance::EphemerisSample();
 
     double body_dec = 0.0, body_hour_angle = 0.0, body_rad = 0.0;
     double body_distance = 0.0;
@@ -1159,7 +1176,9 @@ void Sight::RecomputeLunar(int preferred_candidate) {
     bool used_de440 = false;
 
     if (!selected_body.Cmp(_T("Sun"))) {
-      static thread_local eclipse::SpkKernel kernel;
+      static thread_local std::shared_ptr<LunarKernelContext> context(new LunarKernelContext);
+      std::lock_guard<std::mutex> lock(context->mutex);
+      eclipse::SpkKernel& kernel=context->kernel;
       static thread_local wxString opened_path;
       static thread_local bool attempted = false;
 #ifdef UNIT_TESTS
@@ -1189,7 +1208,9 @@ void Sight::RecomputeLunar(int preferred_candidate) {
         double utc_jd = 0.0;
         std::string time_error;
         if (eclipse::CalendarToJulianDate(utc, &utc_jd, &time_error)) {
-          double tai_minus_utc = eclipse::TaiMinusUtcSeconds(utc);
+          const auto dut1 = eclipse::LookupDut1(utc_jd);
+          double tai_minus_utc = std::isfinite(dut1.tai_minus_utc) ? dut1.tai_minus_utc
+                                               : eclipse::TaiMinusUtcSeconds(utc);
           if (!std::isfinite(tai_minus_utc)) tai_minus_utc = 37.0;
           const double tt_jd = utc_jd + (tai_minus_utc + 32.184) / 86400.0;
           const double tdb_jd =
@@ -1220,7 +1241,26 @@ void Sight::RecomputeLunar(int preferred_candidate) {
               // GPs made simultaneous and time-tagged solutions disagree.
               eclipse::EarthOrientation orientation;
               orientation.tt_jd = tt_jd;
-              orientation.ut1_jd = utc_jd;  // UT1-UTC unavailable; <0.9 s.
+              if (!dut1.available) {
+                unavailable_dut1->store(true);
+                m_LunarDut1Fallback = true;
+              }
+              orientation.ut1_jd = utc_jd + dut1.seconds / 86400.0;
+              sample->dut1_available = dut1.available;
+              sample->dut1_seconds = dut1.seconds;
+              sample->dut1_quality = dut1.quality;
+              sample->dut1_from_update = dut1.from_update;
+              // Freeze this epoch, not the trial observer. The provider uses
+              // the same model for individual, sequential and watch solves.
+              const auto retained_context = context;
+              sample->observer_direction = [retained_context, et, orientation](
+                  double lat, double lon, double height, bool moon,
+                  double* alt, double* az, double* sd) {
+                std::lock_guard<std::mutex> guard(retained_context->mutex);
+                std::string error;
+                return eclipse::ObserverApparentDirection(retained_context->kernel,
+                    et, orientation, lat, lon, height, moon, alt, az, sd, &error);
+              };
               const auto moon_fixed =
                   eclipse::IcrfToEarthFixed(moon_vector, orientation);
               const auto sun_fixed =
@@ -1282,6 +1322,7 @@ void Sight::RecomputeLunar(int preferred_candidate) {
           ? lunar_distance::SolveTimeTagged(observation, ephemeris, options)
           : lunar_distance::SolveTime(observation, ephemeris, options);
   m_LunarCandidates = solution.candidates;
+  m_LunarDut1Fallback = unavailable_dut1->load();
   m_LunarSolutionValid = solution.valid;
   m_LunarSolutionError = wxString::FromUTF8(solution.error.c_str());
   m_LunarPositionResult = lunar_distance::PositionResult();
@@ -1342,10 +1383,35 @@ void Sight::RecomputeLunar(int preferred_candidate) {
         "Direct Triangle arithmetic below is a spherical baseline only.\n"
         "Final UTC/position uses the WGS84 forward model, including disc "
         "flattening by refraction.\n"
-        "UT1 assumption                = UTC (no measured DUT1 supplied)\n"
         "Dip corrects horizon altitudes, never the inter-body distance.\n"
         "Formal uncertainties exclude ephemeris, horizon and common instrument "
         "biases.\n");
+  if (m_LunarUsesDe440) {
+    lunar_distance::EphemerisSample orientation_sample;
+    std::string orientation_error;
+    if (ephemeris(0, &orientation_sample, &orientation_error) &&
+        orientation_sample.dut1_available) {
+      const wxString quality = orientation_sample.dut1_quality == 'P'
+          ? _("predicted") : orientation_sample.dut1_quality == 'I'
+          ? _("rapid") : orientation_sample.dut1_quality == 'B'
+          ? _("final Bulletin B") : _("final C04");
+      m_CalcStr += wxString::Format(
+          _("Earth rotation                = %s IERS DUT1 %+.7f s at reference UTC (%s)\n"
+            "DUT1 is looked up at each trial epoch; no extrapolation.\n"),
+          orientation_sample.dut1_from_update ? _("downloaded") : _("bundled"),
+          orientation_sample.dut1_seconds, quality);
+    } else {
+      m_CalcStr += _("WARNING: DUT1 unavailable at reference UTC; UT1=UTC fallback, reduced accuracy.\n");
+    }
+    m_CalcStr += _("Sun-Moon astrometry           = observer-specific light time and combined annual/diurnal aberration\n"
+                  "Polar motion and geoid/local vertical are not modelled.\n");
+    if (unavailable_dut1->load())
+      m_CalcStr += _("WARNING: part of this search is outside available DUT1 coverage; those trials use UT1=UTC with reduced accuracy.\n");
+    m_CalcStr += wxString::Format(_("Lunar engine version          = %d.%d.%d.%d\n"),
+        PLUGIN_VERSION_MAJOR, PLUGIN_VERSION_MINOR, PLUGIN_VERSION_PATCH, PLUGIN_VERSION_TWEAK);
+  } else {
+    m_CalcStr += _("Earth rotation                = analytical fallback; no dated DUT1 applied\n");
+  }
   m_CalcStr += wxString::Format(
       _("Raw lunar distance LDs        = %.8f deg  (%s)\n"
         "Moon distance contact         = %s\n"
