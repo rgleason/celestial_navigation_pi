@@ -217,7 +217,99 @@ GeographicPoint ObserverAt(const GeographicPoint& reference,
     distance = -distance;
     bearing += 180.0;
   }
+  if (observation.use_ellipsoid) {
+    // Vincenty's direct geodesic, using only local variables (the legacy
+    // geodesic.c helper has shared mutable state and is unsafe in workers).
+    constexpr double a = 6378137.0, f = 1.0 / 298.257223563;
+    constexpr double b = a * (1.0 - f);
+    const double u =
+        std::atan((1.0 - f) * std::tan(ToRadians(reference.latitude_deg)));
+    const double az = ToRadians(bearing);
+    const double sa = std::cos(u) * std::sin(az);
+    const double ca2 = 1.0 - sa * sa;
+    const double u2 = ca2 * (a * a - b * b) / (b * b);
+    const double A =
+        1.0 +
+        u2 / 16384.0 * (4096.0 + u2 * (-768.0 + u2 * (320.0 - 175.0 * u2)));
+    const double B =
+        u2 / 1024.0 * (256.0 + u2 * (-128.0 + u2 * (74.0 - 47.0 * u2)));
+    const double sigma1 = std::atan2(std::tan(u), std::cos(az));
+    const double base = distance * 1852.0 / (b * A);
+    double sigma = base;
+    for (int i = 0; i < 20; ++i) {
+      const double c = std::cos(2.0 * sigma1 + sigma);
+      const double s = std::sin(sigma), cs = std::cos(sigma);
+      const double next =
+          base + B * s *
+                     (c + B / 4.0 *
+                              (cs * (-1.0 + 2.0 * c * c) -
+                               B / 6.0 * c * (-3.0 + 4.0 * s * s) *
+                                   (-3.0 + 4.0 * c * c)));
+      if (std::fabs(next - sigma) < 1e-13) {
+        sigma = next;
+        break;
+      }
+      sigma = next;
+    }
+    const double s = std::sin(sigma), cs = std::cos(sigma);
+    const double t = std::sin(u) * s - std::cos(u) * cs * std::cos(az);
+    const double latitude =
+        std::atan2(std::sin(u) * cs + std::cos(u) * s * std::cos(az),
+                   (1.0 - f) * std::hypot(sa, t));
+    const double lambda = std::atan2(
+        s * std::sin(az), std::cos(u) * cs - std::sin(u) * s * std::cos(az));
+    const double C = f / 16.0 * ca2 * (4.0 + f * (4.0 - 3.0 * ca2));
+    const double c = std::cos(2.0 * sigma1 + sigma);
+    const double delta_lon =
+        lambda - (1.0 - C) * f * sa *
+                     (sigma + C * s * (c + C * cs * (-1.0 + 2.0 * c * c)));
+    return {ToDegrees(latitude),
+            NormalizeLongitude(reference.longitude_deg + ToDegrees(delta_lon))};
+  }
   return Destination(reference, bearing, distance);
+}
+
+// GP directions are geocentric; the observer latitude and local vertical are
+// geodetic. Do not convert the GP latitude to geodetic latitude.
+void EllipsoidalDirection(const Observation& observation,
+                          const EphemerisSample& sample,
+                          const GeographicPoint& observer, bool moon,
+                          double* altitude, double* azimuth, double* sd) {
+  constexpr double a = 6378.137;  // km; HP uses the equatorial radius
+  constexpr double f = 1.0 / 298.257223563;
+  constexpr double e2 = f * (2.0 - f);
+  const double latitude = ToRadians(observer.latitude_deg);
+  const double longitude = ToRadians(observer.longitude_deg);
+  const double n =
+      a / std::sqrt(1.0 - e2 * std::sin(latitude) * std::sin(latitude));
+  // Sea-level horizon observation: eye height approximates ellipsoidal height.
+  const double h = observation.eye_height_m / 1000.0;
+  const Vector3 station{(n + h) * std::cos(latitude) * std::cos(longitude),
+                        (n + h) * std::cos(latitude) * std::sin(longitude),
+                        (n * (1.0 - e2) + h) * std::sin(latitude)};
+  const Vector3 direction =
+      Unit(moon ? GeographicPoint(sample.moon_geographic_latitude_deg,
+                                  sample.moon_geographic_longitude_deg)
+                : GeographicPoint(sample.body_geographic_latitude_deg,
+                                  sample.body_geographic_longitude_deg));
+  const double hp = moon ? sample.moon_horizontal_parallax_deg
+                         : sample.body_horizontal_parallax_deg;
+  *sd = moon ? sample.moon_semidiameter_deg : sample.body_semidiameter_deg;
+  Vector3 topocentric = direction;
+  if (hp > 0.0) {
+    const double range = a / std::sin(ToRadians(hp));
+    topocentric = range * direction + (-1.0) * station;
+    const double topocentric_range = Norm(topocentric);
+    *sd = ToDegrees(std::asin(
+        ClampUnit(range * std::sin(ToRadians(*sd)) / topocentric_range)));
+    topocentric = (1.0 / topocentric_range) * topocentric;
+  }
+  const Vector3 up = Unit(observer);
+  const Vector3 east{-std::sin(longitude), std::cos(longitude), 0.0};
+  const Vector3 north = Cross(up, east);
+  *altitude = ToDegrees(std::asin(ClampUnit(Dot(topocentric, up))));
+  *azimuth =
+      ToDegrees(std::atan2(Dot(topocentric, east), Dot(topocentric, north)));
 }
 
 void AltitudeAzimuth(const GeographicPoint& observer,
@@ -262,6 +354,17 @@ double ApparentFromTopocentric(double topocentric_altitude_deg,
 double PredictedRawAltitude(const Observation& observation,
                             const EphemerisSample& sample,
                             const GeographicPoint& observer, bool moon) {
+  if (observation.use_ellipsoid) {
+    double altitude, azimuth, sd;
+    EllipsoidalDirection(observation, sample, observer, moon, &altitude,
+                         &azimuth, &sd);
+    const auto limb =
+        moon ? observation.moon_altitude_limb : observation.body_altitude_limb;
+    const double apparent_limb = ApparentFromTopocentric(
+        altitude - AltitudeLimbSign(limb) * sd, observation);
+    return (observation.artificial_horizon ? 2.0 : 1.0) * apparent_limb +
+           observation.index_error_arcmin / 60.0 + DipDegrees(observation);
+  }
   const GeographicPoint gp =
       moon ? GeographicPoint(sample.moon_geographic_latitude_deg,
                              sample.moon_geographic_longitude_deg)
@@ -297,6 +400,41 @@ double PredictedRawAltitude(const Observation& observation,
 double PredictedRawDistance(const Observation& observation,
                             const EphemerisSample& sample,
                             const GeographicPoint& observer) {
+  if (observation.use_ellipsoid) {
+    double moon_alt, moon_az, moon_sd, body_alt, body_az, body_sd;
+    EllipsoidalDirection(observation, sample, observer, true, &moon_alt,
+                         &moon_az, &moon_sd);
+    EllipsoidalDirection(observation, sample, observer, false, &body_alt,
+                         &body_az, &body_sd);
+    const double ma = ToRadians(ApparentFromTopocentric(moon_alt, observation));
+    const double ba = ToRadians(ApparentFromTopocentric(body_alt, observation));
+    const double az = ToRadians(moon_az - body_az);
+    const double separation =
+        std::acos(ClampUnit(std::sin(ma) * std::sin(ba) +
+                            std::cos(ma) * std::cos(ba) * std::cos(az)));
+    // Differential refraction flattens each apparent disc vertically. Project
+    // the refracted semidiameter in the direction of the other body's centre.
+    auto contact_radius = [&](double alt, double other, double sd) {
+      const double apparent = ApparentFromTopocentric(alt, observation);
+      const double vertical = (ApparentFromTopocentric(alt + sd, observation) -
+                               ApparentFromTopocentric(alt - sd, observation)) /
+                              2.0;
+      const double cosine =
+          std::fabs(std::sin(separation)) < 1e-12
+              ? 0.0
+              : ClampUnit(
+                    (std::sin(other) -
+                     std::sin(ToRadians(apparent)) * std::cos(separation)) /
+                    (std::cos(ToRadians(apparent)) * std::sin(separation)));
+      return std::hypot(vertical * cosine,
+                        sd * std::sqrt(std::max(0.0, 1.0 - cosine * cosine)));
+    };
+    return ToDegrees(separation) + observation.index_error_arcmin / 60.0 -
+           ContactSign(observation.moon_contact) *
+               contact_radius(moon_alt, ba, moon_sd) -
+           ContactSign(observation.body_contact) *
+               contact_radius(body_alt, ma, body_sd);
+  }
   double moon_geocentric = 0.0, moon_azimuth = 0.0;
   double body_geocentric = 0.0, body_azimuth = 0.0;
   AltitudeAzimuth(observer,
@@ -352,8 +490,19 @@ std::vector<GeographicPoint> SolveReferencePositions(
     if (error) *error = seeds.error;
     return {};
   }
-  if (!observation.moving_observer || observation.speed_knots == 0.0)
+  if (!observation.use_ellipsoid &&
+      (!observation.moving_observer || observation.speed_knots == 0.0))
     return seeds.candidates;
+
+  auto residual = [&](const GeographicPoint& observer, bool moon) {
+    if (observation.use_ellipsoid)
+      return PredictedRawAltitude(observation, moon ? moon_sample : body_sample,
+                                  observer, moon) -
+             (moon ? observation.moon_altitude_deg
+                   : observation.body_altitude_deg);
+    return CalculatedGeocentricAltitude(observer, moon ? moon_gp : body_gp) -
+           (moon ? moon_altitude : body_altitude);
+  };
 
   std::vector<GeographicPoint> result;
   for (GeographicPoint position : seeds.candidates) {
@@ -363,10 +512,8 @@ std::vector<GeographicPoint> SolveReferencePositions(
           position, observation, observation.moon_time_offset_seconds);
       const GeographicPoint body_observer = ObserverAt(
           position, observation, observation.body_time_offset_seconds);
-      const double f0 =
-          CalculatedGeocentricAltitude(moon_observer, moon_gp) - moon_altitude;
-      const double f1 =
-          CalculatedGeocentricAltitude(body_observer, body_gp) - body_altitude;
+      const double f0 = residual(moon_observer, true);
+      const double f1 = residual(body_observer, false);
       if (std::hypot(f0, f1) < 1e-9) {
         converged = true;
         break;
@@ -384,22 +531,10 @@ std::vector<GeographicPoint> SolveReferencePositions(
           longitude_step, observation, observation.moon_time_offset_seconds);
       const GeographicPoint body_lon_observer = ObserverAt(
           longitude_step, observation, observation.body_time_offset_seconds);
-      const double j00 =
-          (CalculatedGeocentricAltitude(moon_lat_observer, moon_gp) -
-           moon_altitude - f0) /
-          step;
-      const double j10 =
-          (CalculatedGeocentricAltitude(body_lat_observer, body_gp) -
-           body_altitude - f1) /
-          step;
-      const double j01 =
-          (CalculatedGeocentricAltitude(moon_lon_observer, moon_gp) -
-           moon_altitude - f0) /
-          step;
-      const double j11 =
-          (CalculatedGeocentricAltitude(body_lon_observer, body_gp) -
-           body_altitude - f1) /
-          step;
+      const double j00 = (residual(moon_lat_observer, true) - f0) / step;
+      const double j10 = (residual(body_lat_observer, false) - f1) / step;
+      const double j01 = (residual(moon_lon_observer, true) - f0) / step;
+      const double j11 = (residual(body_lon_observer, false) - f1) / step;
       const double determinant = j00 * j11 - j01 * j10;
       if (std::fabs(determinant) < 1e-12) break;
       double dlat = (-f0 * j11 + j01 * f1) / determinant;
@@ -421,7 +556,7 @@ std::vector<GeographicPoint> SolveReferencePositions(
     if (!duplicate) result.push_back(position);
   }
   if (result.empty() && error)
-    *error = "The moving-observer altitude circles did not converge";
+    *error = "The observer altitude constraints did not converge";
   return result;
 }
 
@@ -582,6 +717,12 @@ TaggedUncertainty EstimateTaggedUncertainty(
 }
 
 }  // namespace
+
+GeographicPoint AdvanceObserver(const GeographicPoint& reference,
+                                const Observation& observation,
+                                double relative_seconds) {
+  return ObserverAt(reference, observation, relative_seconds);
+}
 
 Clearance ClearDistance(const Observation& observation,
                         const EphemerisSample& ephemeris) {
@@ -754,6 +895,8 @@ Clearance ClearDistance(const Observation& observation,
 SolveResult SolveTime(const Observation& observation,
                       const EphemerisFunction& ephemeris,
                       const SolveOptions& options) {
+  if (observation.use_ellipsoid)
+    return SolveTimeTagged(observation, ephemeris, options);
   SolveResult result;
   if (!ephemeris) {
     result.error = "No ephemeris is available";
@@ -819,6 +962,8 @@ SolveResult SolveTime(const Observation& observation,
         std::signbit(left.residual) == std::signbit(right.residual))
       continue;
     ++bracket_number;
+    if (left.residual == 0.0) right = left;
+    else if (right.residual == 0.0) left = right;
     int refinement_iteration = 0;
     for (int iteration = 0;
          iteration < 80 && right.t - left.t > options.root_tolerance_seconds;
@@ -838,8 +983,11 @@ SolveResult SolveTime(const Observation& observation,
           {MatchTracePhase::Refinement, bracket_number, refinement_iteration,
            middle_t, left.t, right.t, middle_sample.predicted_distance_deg,
            middle_clearance.cleared_distance_deg, middle_residual * 60.0});
-      if (middle_residual == 0.0 ||
-          std::signbit(middle_residual) == std::signbit(left.residual)) {
+      if (middle_residual == 0.0) {
+        left = right = {middle_t, middle_residual};
+        break;
+      }
+      if (std::signbit(middle_residual) == std::signbit(left.residual)) {
         left = {middle_t, middle_residual};
       } else {
         right = {middle_t, middle_residual};
@@ -893,6 +1041,24 @@ SolveResult SolveTime(const Observation& observation,
         slope_arcmin_per_second > 1e-12
             ? candidate.angular_uncertainty_arcmin / slope_arcmin_per_second
             : std::numeric_limits<double>::infinity();
+    const auto position =
+        IntersectAltitudeCircles({sample.moon_geographic_latitude_deg,
+                                  sample.moon_geographic_longitude_deg},
+                                 clearance.moon_geocentric_altitude_deg,
+                                 {sample.body_geographic_latitude_deg,
+                                  sample.body_geographic_longitude_deg},
+                                 clearance.body_geocentric_altitude_deg);
+    candidate.positions = position.candidates;
+    candidate.circle_crossing_angle_deg = position.circle_crossing_angle_deg;
+    // Keep both intersections tied to this UTC candidate. A conservative
+    // scalar is the larger of their local horizontal RMS uncertainties.
+    candidate.position_uncertainty_nm = 0.0;
+    for (const auto& p : position.candidates) {
+      const auto uncertainty =
+          EstimateTaggedUncertainty(observation, ephemeris, root, p);
+      candidate.position_uncertainty_nm =
+          std::max(candidate.position_uncertainty_nm, uncertainty.position_nm);
+    }
     result.candidates.push_back(candidate);
   }
 
@@ -931,7 +1097,7 @@ SolveResult SolveTimeTagged(const Observation& observation,
     result.error = "Invalid time-tagged lunar-distance search";
     return result;
   }
-  if (!observation.separate_times) {
+  if (!observation.separate_times && !observation.use_ellipsoid) {
     result.error = "Separate angle times are not enabled";
     return result;
   }
@@ -1025,6 +1191,8 @@ SolveResult SolveTimeTagged(const Observation& observation,
           std::signbit(fleft) == std::signbit(fright))
         continue;
       ++bracket_number;
+      if (fleft == 0.0) right = left;
+      else if (fright == 0.0) left = right;
       bool bracket_valid = true;
       int refinement_iteration = 0;
       for (int iteration = 0;
@@ -1044,7 +1212,11 @@ SolveResult SolveTimeTagged(const Observation& observation,
              refinement_iteration, middle, left, right,
              observation.raw_distance_deg + fmiddle,
              observation.raw_distance_deg, fmiddle * 60.0});
-        if (fmiddle == 0.0 || std::signbit(fmiddle) == std::signbit(fleft)) {
+        if (fmiddle == 0.0) {
+          left = right = middle;
+          break;
+        }
+        if (std::signbit(fmiddle) == std::signbit(fleft)) {
           left = middle;
           fleft = fmiddle;
         } else {
@@ -1079,9 +1251,6 @@ SolveResult SolveTimeTagged(const Observation& observation,
           std::hypot(observation.distance_uncertainty_arcmin,
                      std::hypot(observation.moon_altitude_uncertainty_arcmin,
                                 observation.body_altitude_uncertainty_arcmin));
-      const double slope_arcmin_per_second =
-          std::fabs(slope_arcmin_per_hour) / 3600.0;
-
       TimeCandidate candidate;
       candidate.offset_seconds = root;
       candidate.predicted_distance_deg =
@@ -1093,12 +1262,7 @@ SolveResult SolveTimeTagged(const Observation& observation,
       candidate.positions.push_back(root_evaluation.positions[branch]);
       const TaggedUncertainty uncertainty = EstimateTaggedUncertainty(
           observation, ephemeris, root, candidate.positions.front());
-      candidate.time_uncertainty_seconds =
-          uncertainty.valid
-              ? uncertainty.time_seconds
-              : (slope_arcmin_per_second > 1e-12
-                     ? angular_uncertainty / slope_arcmin_per_second
-                     : std::numeric_limits<double>::infinity());
+      candidate.time_uncertainty_seconds = uncertainty.time_seconds;
       candidate.position_uncertainty_nm = uncertainty.position_nm;
 
       bool merged = false;
@@ -1113,6 +1277,12 @@ SolveResult SolveTimeTagged(const Observation& observation,
               duplicate_position = true;
           if (!duplicate_position)
             existing.positions.push_back(candidate.positions.front());
+          existing.time_uncertainty_seconds =
+              std::max(existing.time_uncertainty_seconds,
+                       candidate.time_uncertainty_seconds);
+          existing.position_uncertainty_nm =
+              std::max(existing.position_uncertainty_nm,
+                       candidate.position_uncertainty_nm);
           merged = true;
           break;
         }
@@ -1175,6 +1345,37 @@ PredictedObservation PredictTimeTaggedObservation(
                  Finite(result.body_altitude_deg);
   if (!result.valid) result.error = "A predicted sextant angle is not finite";
   return result;
+}
+
+PositionResult PositionAtTime(const Observation& observation,
+                              const EphemerisFunction& ephemeris,
+                              double correction_seconds) {
+  PositionResult result;
+  if (!ephemeris) {
+    result.error = "No ephemeris is available";
+    return result;
+  }
+  if (observation.separate_times || observation.use_ellipsoid) {
+    const auto evaluation =
+        EvaluateTagged(observation, ephemeris, correction_seconds);
+    result.valid = evaluation.valid;
+    result.error = evaluation.error;
+    result.candidates = evaluation.positions;
+    return result;
+  }
+  EphemerisSample sample;
+  if (!ephemeris(correction_seconds, &sample, &result.error)) return result;
+  const auto clearance = ClearDistance(observation, sample);
+  if (!clearance.valid) {
+    result.error = clearance.error;
+    return result;
+  }
+  return IntersectAltitudeCircles({sample.moon_geographic_latitude_deg,
+                                   sample.moon_geographic_longitude_deg},
+                                  clearance.moon_geocentric_altitude_deg,
+                                  {sample.body_geographic_latitude_deg,
+                                   sample.body_geographic_longitude_deg},
+                                  clearance.body_geocentric_altitude_deg);
 }
 
 PositionResult IntersectAltitudeCircles(

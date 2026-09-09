@@ -71,6 +71,10 @@ explains the simultaneous and sequential observation models,
 unknown-watch-offset workflow, genuine position ambiguity, controls and
 limitations.
 
+Version 2.8.5.1 adds coherent apparent DE440 Sun–Moon directions, WGS84 lunar
+geometry, immutable saved lunar solutions and scoped fix corrections. See the
+[reference audit and compatibility notes](docs/lunar-review-2.8.5.1.md).
+
 The almanac can now be **calculator-free**: after printing, a navigator can
 reduce and plot supported sights using the document, sextant, accurate watch,
 pencil and plotting tools, without a computer, internet connection,

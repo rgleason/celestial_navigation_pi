@@ -37,6 +37,7 @@
 
 #include "Sight.h"
 #include "SightDialog.h"
+#include "NauticalTimeCtrl.h"
 #include "UtcDateTime.h"
 #include "FindBodyDialog.h"
 #include "LunarResultsDialog.h"
@@ -65,6 +66,7 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
       m_lunarSeparateTimes(nullptr),
       m_lunarMoonTime(nullptr),
       m_lunarBodyTime(nullptr),
+      m_lunarTimeBasis(nullptr),
       m_lunarMovingObserver(nullptr),
       m_lunarCourseTrue(nullptr),
       m_lunarSpeedKnots(nullptr) {
@@ -85,7 +87,7 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
 
   m_cType->SetSelection(m_Sight.m_Type);
 
-  if (m_Sight.m_DRBoatPosition) {
+  if (mode == Mode::Create && m_Sight.m_DRBoatPosition) {
     celestial_navigation_pi_BoatPos(m_Sight.m_DRLat, m_Sight.m_DRLon);
   }
 
@@ -154,6 +156,9 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   m_cLunarBodyLimb->SetSelection((int)m_Sight.m_LunarBodyLimb);
 
   wxSizer* moonGrid = m_cLunarMoonLimb->GetContainingSizer();
+  // The generated altitude grid has three columns and only two limb cells.
+  // Finish that row before adding the uncertainty label and controls.
+  moonGrid->AddSpacer(1);
   moonGrid->Add(new wxStaticText(m_cLunarMoonLimb->GetParent(), wxID_ANY,
                                  _("Altitude uncertainty")),
                 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
@@ -167,6 +172,7 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
                 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
   wxSizer* bodyGrid = m_cLunarBodyLimb->GetContainingSizer();
+  bodyGrid->AddSpacer(1);
   bodyGrid->Add(new wxStaticText(m_cLunarBodyLimb->GetParent(), wxID_ANY,
                                  _("Distance contact")),
                 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
@@ -211,32 +217,49 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
 
   m_lunarTimingBox = new wxStaticBoxSizer(
       wxVERTICAL, m_panel2, _("Sequential lunar observation"));
-  m_lunarSeparateTimes = new wxCheckBox(
-      m_lunarTimingBox->GetStaticBox(), wxID_ANY,
-      _("The three angles have separate watch times"));
+  m_lunarTimeBasis = new wxChoice(m_lunarTimingBox->GetStaticBox(), wxID_ANY);
+  m_lunarTimeBasis->Append(_("Entered times: nominal UTC"));
+  m_lunarTimeBasis->Append(_("Entered times: recorded watch readings"));
+  m_lunarTimeBasis->SetSelection(m_Sight.m_LunarTimeIsWatch ? 1 : 0);
+  m_lunarTimingBox->Add(m_lunarTimeBasis, 0, wxALL | wxEXPAND, 5);
+  auto* basisNote =
+      new wxStaticText(m_lunarTimingBox->GetStaticBox(), wxID_ANY,
+                       _("All readings use the same time basis. Existing "
+                         "manual Clock Offset is added once. "
+                         "Results can check that UTC or solve an additional "
+                         "correction without changing the readings."));
+  basisNote->Wrap(540);
+  m_lunarTimingBox->Add(basisNote, 0, wxALL | wxEXPAND, 5);
+  m_lunarTimeBasis->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
+    MarkDirty();
+    Recompute();
+  });
+  m_lunarSeparateTimes =
+      new wxCheckBox(m_lunarTimingBox->GetStaticBox(), wxID_ANY,
+                     _("The three angles were recorded at different times"));
   m_lunarSeparateTimes->SetValue(m_Sight.m_LunarSeparateTimes);
   m_lunarTimingBox->Add(m_lunarSeparateTimes, 0, wxALL, 5);
   wxFlexGridSizer* timingGrid = new wxFlexGridSizer(0, 2, 5, 8);
   timingGrid->AddGrowableCol(1, 1);
   timingGrid->Add(new wxStaticText(m_lunarTimingBox->GetStaticBox(), wxID_ANY,
-                                   _("Lunar distance watch time")),
+                                   _("Lunar distance recorded time")),
                   0, wxALIGN_CENTER_VERTICAL);
   timingGrid->Add(new wxStaticText(
                       m_lunarTimingBox->GetStaticBox(), wxID_ANY,
                       _("Use the date/time controls above (reference epoch)")),
                   0, wxALIGN_CENTER_VERTICAL);
   timingGrid->Add(new wxStaticText(m_lunarTimingBox->GetStaticBox(), wxID_ANY,
-                                   _("Moon altitude watch time")),
+                                   _("Moon altitude recorded time (24 h)")),
                   0, wxALIGN_CENTER_VERTICAL);
-  m_lunarMoonTime = new wxTimePickerCtrl(
+  m_lunarMoonTime = new NauticalTimeCtrl(
       m_lunarTimingBox->GetStaticBox(), wxID_ANY,
       m_Sight.m_DateTime +
           wxTimeSpan::Seconds(m_Sight.m_LunarMoonTimeOffsetSeconds));
   timingGrid->Add(m_lunarMoonTime, 1, wxEXPAND);
   timingGrid->Add(new wxStaticText(m_lunarTimingBox->GetStaticBox(), wxID_ANY,
-                                   _("Body altitude watch time")),
+                                   _("Body altitude recorded time (24 h)")),
                   0, wxALIGN_CENTER_VERTICAL);
-  m_lunarBodyTime = new wxTimePickerCtrl(
+  m_lunarBodyTime = new NauticalTimeCtrl(
       m_lunarTimingBox->GetStaticBox(), wxID_ANY,
       m_Sight.m_DateTime +
           wxTimeSpan::Seconds(m_Sight.m_LunarBodyTimeOffsetSeconds));
@@ -515,7 +538,7 @@ wxDateTime SightDialog::DateTime() {
   return datetime;
 }
 
-int SightDialog::RelativeWatchSeconds(wxTimePickerCtrl* control) const {
+int SightDialog::RelativeWatchSeconds(NauticalTimeCtrl* control) const {
   if (!control) return 0;
   const int reference = m_sHours->GetValue() * 3600 +
                         m_sMinutes->GetValue() * 60 +
@@ -665,6 +688,7 @@ void SightDialog::Recompute() {
   m_lunarBodyAltitudeUncertainty->GetValue().ToDouble(
       &m_Sight.m_LunarBodyAltitudeUncertainty);
   m_Sight.m_LunarSeparateTimes = m_lunarSeparateTimes->GetValue();
+  m_Sight.m_LunarTimeIsWatch = m_lunarTimeBasis->GetSelection() == 1;
   m_Sight.m_LunarMoonTimeOffsetSeconds =
       m_Sight.m_LunarSeparateTimes ? RelativeWatchSeconds(m_lunarMoonTime) : 0;
   m_Sight.m_LunarBodyTimeOffsetSeconds =

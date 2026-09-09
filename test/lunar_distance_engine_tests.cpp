@@ -6,6 +6,18 @@
 
 namespace ld = lunar_distance;
 
+TEST(LunarDistanceEngine, Wgs84MotionMatchesIndependentGeographicLibExample) {
+  ld::Observation settings;
+  settings.use_ellipsoid = true;
+  settings.moving_observer = true;
+  settings.course_true_deg = 225;
+  settings.speed_knots = 20000000.0 / 1852.0;
+  // https://geographiclib.sourceforge.io/html/python/examples.html
+  const auto endpoint = ld::AdvanceObserver({-32.06, 115.74}, settings, 3600);
+  EXPECT_NEAR(endpoint.latitude_deg, 32.11195529, 1e-7);
+  EXPECT_NEAR(endpoint.longitude_deg, -63.95925278, 1e-7);
+}
+
 namespace {
 
 ld::Observation TypicalObservation() {
@@ -167,6 +179,30 @@ TEST(LunarDistanceEngine, ReportsMultipleTimeCandidates) {
   ASSERT_TRUE(result.valid) << result.error;
   EXPECT_GE(result.candidates.size(), 3u);
   EXPECT_FALSE(result.warnings.empty());
+}
+
+TEST(LunarDistanceEngine, ExactScanAndMidpointRootsAreNotRefinedAway) {
+  const auto observation = TypicalObservation();
+  const auto base = TypicalSample();
+  const auto clearance = ld::ClearDistance(observation, base);
+  ASSERT_TRUE(clearance.valid);
+  for (double expected : {-20.0, 0.0, 5.0, 20.0}) {
+    for (double slope : {-1.0, 1.0}) {
+      auto ephemeris = [=](double seconds, ld::EphemerisSample* sample, std::string*) {
+        *sample = base;
+        sample->predicted_distance_deg = clearance.cleared_distance_deg + slope * (seconds - expected) / 7200.0;
+        return true;
+      };
+      ld::SolveOptions options;
+      options.start_offset_seconds = -20;
+      options.end_offset_seconds = 20;
+      options.scan_step_seconds = 10;
+      const auto result = ld::SolveTime(observation, ephemeris, options);
+      ASSERT_TRUE(result.valid) << result.error;
+      ASSERT_EQ(1u, result.candidates.size());
+      EXPECT_DOUBLE_EQ(expected, result.candidates[0].offset_seconds);
+    }
+  }
 }
 
 TEST(LunarDistanceEngine, ExplainsNoMatch) {

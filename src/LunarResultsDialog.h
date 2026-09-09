@@ -8,6 +8,7 @@ class wxListCtrl;
 class wxStaticText;
 class wxTextCtrl;
 class wxButton;
+class wxChoice;
 
 class LunarResultsDialog : public wxDialog {
 public:
@@ -25,6 +26,8 @@ private:
   wxListCtrl* m_positions;
   wxTextCtrl* m_details;
   wxButton* m_applyOffset;
+  wxChoice* m_mode;
+  wxStaticText* m_geometry;
 };
 
 #endif

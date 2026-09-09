@@ -39,6 +39,7 @@
 #include "PlannerDialog.h"
 #include "CoastalNavigationDialog.h"
 #include "LunarToolsDialog.h"
+#include "LunarSolutionRecord.h"
 
 #include <vector>
 #include <wx/timer.h>
@@ -71,12 +72,18 @@ public:
                           double drLat, double drLon);
   int GetClockCorrection() const { return m_ClockCorrection; }
   void ApplyClockCorrection(int correction_seconds);
+  bool SaveLunarSolution(LunarSolutionRecord record);
+  void ShowLunarSolutions(wxWindow* parent);
+  const std::vector<LunarSolutionRecord>& LunarSolutions() const {
+    return m_lunarSolutions;
+  }
   void OpenAlmanacForRoute(const wxString& routeGuid = wxString());
   bool GetMarkedUtc(wxDateTime* utcFields) const;
 
 private:
   bool OpenXML(bool reportfailure);
-  void SaveXML();
+  bool SaveXML();
+  std::vector<LunarSolutionRecord> m_lunarSolutions;
 
   void RebuildList();
   void UpdateButtons();  // Correct button state

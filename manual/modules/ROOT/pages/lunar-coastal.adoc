@@ -11,8 +11,10 @@ A lunar observation records three sextant angles against the same watch:
 * the Moon's altitude above the horizon; and
 * the selected body's altitude above the horizon.
 
-Choose *Lunar* in the normal sight editor. Enter the watch reading as the
-nominal UTC, even when its constant offset is unknown. *Total UTC search span*
+Choose *Lunar* in the normal sight editor. Select whether the entered times
+are nominal UTC or recorded watch readings; all three readings must use the
+same basis. Keep the recorded values even when the watch offset is unknown.
+An existing manual clock correction is added once. *Total UTC search span*
 defines the interval searched symmetrically around that reading. For example,
 86400 seconds searches 12 hours on either side; 172800 seconds searches 24
 hours on either side. The calendar date must still be approximately known.
@@ -23,8 +25,8 @@ measurements. Enter realistic one-sigma uncertainties for the distance and
 both altitudes. The watch may be seconds or hours wrong: its interval rate,
 rather than its displayed UTC, must remain trustworthy between observations.
 
-The three angles do not have to be simultaneous. Enable *The three angles have
-separate watch times* in the *Time* tab and enter the Moon-altitude and
+The three angles do not have to be simultaneous. Enable *The three angles were
+recorded at different times* in the *Time* tab and enter the Moon-altitude and
 body-altitude watch readings; the normal date/time control is the lunar
 distance reading and reference epoch. Only the time of day is needed for the
 two nearby altitude readings. A reading crossing midnight is interpreted as
@@ -41,29 +43,16 @@ not enable it merely to force a result.
 Press *Time*. The result window opens on *Results*, the concise operational
 view of UTC candidates, watch correction, lunar-distance rate, uncertainty,
 position candidates and warnings. Select *Calculations* to inspect the full
-auditable working. In simultaneous mode the direct spherical-triangle clearing
-method:
+auditable working. Both time modes use a WGS84 geodetic observer, vector
+parallax, topocentric semidiameters and atmospheric refraction, including
+apparent-disc flattening. Dip is applied only to horizon altitudes, never to
+the angle between the bodies. The simultaneous report includes a conventional
+Direct Triangle spherical reduction as a comparison; it is not the final
+ellipsoidal answer. Raw inputs, model conventions, every coarse scan and
+refinement, candidate positions and formal uncertainties remain inspectable.
+Exact zero residuals terminate refinement without moving away from the root.
 
-. converts the measured limbs to apparent centres;
-. applies index correction, dip, refraction, semidiameter and parallax;
-. clears the measured distance by spherical trigonometry;
-. scans the complete selected time interval and refines every bracketed match;
-  and
-. reports the UTC candidate, constant watch correction, lunar-distance rate
-  and propagated time uncertainty.
-
-The *Calculations* page identifies this method and prints the raw inputs and
-conventions; index and dip arithmetic; every limb/contact and semidiameter
-correction; refraction, parallax and corrected altitudes; both spherical-
-triangle formulae with numerical substitutions; every coarse UTC scan point
-and bisection refinement; converged roots and uncertainty components; then the
-altitude-circle construction, position candidates and warnings. This is the
-trail actually used by the modern solver, not the former two-endpoint
-interpolation. The uncertainty values are shown separately and are not
-additional corrections: the solver propagates them through the clearing
-geometry and local lunar-distance rate to estimate recovered-UTC uncertainty.
-
-In separate-time mode the mathematical problem is a coupled three-equation
+The mathematical problem is a coupled three-equation
 solution. For each trial clock correction the plugin evaluates the Moon and
 selected body at all three corrected epochs, reduces each altitude at its own
 epoch, transports the observer when requested, and forward-models the raw
@@ -75,8 +64,16 @@ estimate. These estimates describe the entered random angle uncertainties,
 not unmodelled systematic effects such as an incorrect index correction,
 abnormal refraction or COG/SOG error.
 
+Choose *Check at entered UTC* to hold UTC fixed (including the existing manual
+correction) and examine position candidates and model-minus-observed lunar
+distance residuals. This mode does not solve or save an additional clock
+correction. Compare a published position at its stated UTC, not automatically
+with a position at a different recovered UTC.
+
 The Sun/Moon calculation uses the local JPL DE440s kernel when it has already
-been installed for the eclipse module. Other bodies, or an installation
+been installed for the eclipse module. Its separation and geographic positions
+use the same apparent directions, including light time and annual aberration.
+Other bodies, or an installation
 without DE440s, use the bundled offline analytical ephemeris. The results
 window identifies which source was used. NASA LOLA terrain is unrelated to
 ordinary lunar-distance clearing and is not used.
@@ -90,8 +87,8 @@ sextant, limb, altitude and refraction errors normally dominate.
 === Longitude with an unknown watch offset
 
 Once a lunar recovers UTC, the accompanying corrected Moon and body altitudes
-provide position constraints. In simultaneous mode they are two circles of
-equal altitude at the recovered instant. In separate-time mode their circles
+provide position constraints. Spherical altitude-circle intersections seed the
+WGS84 refinement. In separate-time mode the constraints
 are evaluated at their individual epochs and numerically reduced to the
 lunar-distance reference epoch. Position candidates, including longitude,
 are reported. This is a direct joint position calculation; the plugin does
@@ -102,15 +99,19 @@ Two circles generally have two mathematical intersections. A rough
 hemisphere/DR position selects the nearer one. If absolutely no positional
 knowledge is available, retain both candidates and resolve them with a third
 altitude sight, a second lunar, the observed sky orientation, or another
-independent constraint. After selecting the recovered UTC candidate, *Apply
-selected watch offset to all sights* stores a single global correction and
-recomputes every saved sight without changing any recorded watch reading.
-Additional altitude sights taken while the watch kept interval time can then
-be used by the normal stationary or time-tagged running-fix solver.
+independent constraint. After selecting a UTC candidate, *Save lunar solution*
+stores a named derived result with immutable input snapshots and its report.
+It changes neither raw readings nor the global clock correction. Review saved
+records from *Saved lunar solutions* in Lunar Tools. In the Fix dialog,
+explicitly select the saved correction for visible altitude sights from the
+same watch/clock. Only working copies are recalculated; sights more than
+12 hours from the solution's recorded reference epoch are rejected.
 
-Simultaneous results show the altitude-circle crossing angle. A shallow
-crossing is weak positional geometry and magnifies observational error.
-Separate-time results instead show the numerical joint position uncertainty.
+Both modes show joint position uncertainty as horizontal RMS, not the radius
+of a 68% confidence circle. WGS84 is a reference ellipsoid, not a local geoid
+or vertical-deflection model; eye height approximates ellipsoidal height.
+UT1 is approximated by UTC. These and unmodelled systematic effects are not
+included in the formal measurement uncertainty.
 
 == Joint lunar-sequence workflow
 
@@ -131,6 +132,19 @@ The initial position comes from the earliest selected sight's DR and remains
 editable. It should not normally be replaced by 0° N, 0° E: the sequence fits
 Moon altitude and body altitude as well as lunar distance, and the position is
 also a convergence seed when position is unknown.
+
+Multiple independent readings can improve precision, but copied readings do
+not provide new information. Shared readings identified by body and recorded
+epoch count once; conflicting copies are rejected. The residual table labels
+shared/excluded entries rather than presenting them as zero errors. A very
+small fitted residual does not reduce covariance below the supplied angle-error
+floor. Sequence results use the same named-solution workflow, not a global
+correction of unrelated historic sights.
+
+Old sight XML files remain readable. New solution records are optional children
+of the existing clock node; older plugin versions can still read the sights,
+but will discard the additional solution records when saving. Keep a backup
+before downgrading.
 
 The Sextant Check page shows the configured sight index error for comparison
 but deliberately does not apply it. The purpose of that workflow is to measure

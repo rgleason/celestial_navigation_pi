@@ -42,6 +42,7 @@ class Sight;
 class wxCheckBox;
 class wxStaticBoxSizer;
 class wxTimePickerCtrl;
+class NauticalTimeCtrl;
 class wxCloseEvent;
 
 class SightDialog : public SightDialogBase {
@@ -98,7 +99,7 @@ public:
   void Recompute();
   void RecomputeDMM();
   void UpdateLunarTimeControls();
-  int RelativeWatchSeconds(wxTimePickerCtrl* control) const;
+  int RelativeWatchSeconds(NauticalTimeCtrl* control) const;
   void SetClockOffset(int seconds) {
     m_clock_offset = seconds;
     Recompute();
@@ -121,8 +122,9 @@ private:
   wxTextCtrl* m_lunarBodyAltitudeUncertainty;
   wxStaticBoxSizer* m_lunarTimingBox;
   wxCheckBox* m_lunarSeparateTimes;
-  wxTimePickerCtrl* m_lunarMoonTime;
-  wxTimePickerCtrl* m_lunarBodyTime;
+  NauticalTimeCtrl* m_lunarMoonTime;
+  NauticalTimeCtrl* m_lunarBodyTime;
+  wxChoice* m_lunarTimeBasis;
   wxCheckBox* m_lunarMovingObserver;
   wxTextCtrl* m_lunarCourseTrue;
   wxTextCtrl* m_lunarSpeedKnots;
