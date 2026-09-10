@@ -178,6 +178,13 @@ Open *Coastal Sextant...* from the main plugin window. These methods use
 charted terrestrial objects and are separate from the celestial-body
 *Azimuth* sight type.
 
+Vertical and horizontal plots can remain visible together. Calculating a
+vertical range replaces only the previous vertical plot; solving an HSA fix
+replaces only the horizontal plot. Closing this form retains both plots and
+the inputs while the main plugin window remains open. *Clear chart plots*
+removes both coastal overlays without erasing inputs. *New / clear
+observation* currently resets both tabs, their results and their plots.
+
 === Vertical angle and distance
 
 For an object whose waterline is visible, enter the sextant angle from

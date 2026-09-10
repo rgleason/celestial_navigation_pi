@@ -36,6 +36,33 @@ offline Earth-rotation update/fallback workflow introduced in 2.8.5.2.
 
 Dedicated radar-bearing/range inputs remain a separate development pass.
 
+### Revised PDF and simultaneous-plot follow-up
+
+Bob's [revision 1 PDF](https://github.com/user-attachments/files/32063864/Distance.by.Vertical.Angle.revision.1.PDF.pdf)
+has been checked against the screenshot inputs (pages 3, 4, 6–10, 15–18).
+All six displayed vertical ranges and their bearing-derived positions match
+within the displayed rounding, as do both horizontal fixes. The second fix
+is 43°51.3588′ N, 69°05.3779′ W with formal uncertainty about 0.149 NM for
+the entered 60 arcminutes. These cases are now permanent regression tests;
+no numerical-engine changes were needed.
+
+Some explanatory caveats remain: Table 15 uses Hs minus signed index error
+minus dip; zero corrected angle is not maximum visibility; tan(0) is zero,
+not undefined. The Anvil example still enters 9 m whereas the earlier
+waypoint description says 45 m, so the successful test verifies the entered
+9 m case, not the lighthouse's actual focal height. The nearby Needles input
+is 45.6 arcminutes in the screenshot, versus 45.5 in the notes.
+The CN Tower comment shows the chart but not its observation inputs; its
+numerical solution cannot be independently reproduced from that image.
+
+Actual renderer regressions verify both plot layers together, recalculation
+in either order, replacement rather than accumulation, retention when the
+Coastal form is hidden/reopened, and explicit clearing without input loss.
+The solver already maintained independent layers. The form now explains
+that behaviour explicitly. Close behaviour and proposed radar/title changes
+remain unchanged pending discussion. The current New / clear action resets
+both tabs; Clear chart plots removes both overlays without resetting inputs.
+
 ## Reference results and validation
 
 Bob's Needles case (top 24 m, eye 3 m, index error -0.15 arcmin):
@@ -59,7 +86,7 @@ tolerances are explicit, not fitted to the implementation.
 
 Local release checks:
 
-- 162 non-GUI C++ tests and UTF-8 UI literal check.
+- 164 non-GUI C++ tests and UTF-8 UI literal check.
 - Separate Coastal GUI test: both tabs, 900×760 and 720×500 native GTK
   layouts, signed result display, waypoint accept/cancel/filter and retained
   inputs. Wayland allocations are explicitly synchronized for snapshots.

@@ -6,6 +6,8 @@
 #include <wx/scrolwin.h>
 #include <wx/textctrl.h>
 #include <wx/modalhook.h>
+#include <wx/dcmemory.h>
+#include "plugin_dc/dc_utils/include/pidc.h"
 #include <wx/log.h>
 #include <wx/evtloop.h>
 #include <wx/timer.h>
@@ -174,6 +176,19 @@ TEST(CoastalUiSmoke, LayoutAndWaypointTransactions) {
         EXPECT_TRUE(child->GetLabel().Contains("corrected angle -"));
       }
     EXPECT_TRUE(found);
+    auto renderedPoints=[&] {
+      wxBitmap bitmap(800,400);
+      wxMemoryDC memory(bitmap);
+      piDC dc(memory);
+      PlugIn_ViewPort viewport{};
+      SetTestCanvasRecording(true);
+      dialog.Render(&dc,&viewport);
+      auto points=TestCanvasPoints();
+      SetTestCanvasRecording(false);
+      return points;
+    };
+    const auto verticalPlot=renderedPoints();
+    ASSERT_EQ(verticalPlot.size(),181u);
     set("Left object latitude", "43 45.9N");
     set("Left object longitude", "69 19W");
     set("Centre object latitude", "43 57.9N");
@@ -187,6 +202,36 @@ TEST(CoastalUiSmoke, LayoutAndWaypointTransactions) {
     Find<wxTextCtrl>(book->GetPage(1), "Index error (on the arc +)")
         ->SetValue("-0.15");
     Click(Find<wxButton>(&dialog, "Solve and plot HSA fix"));
+    const auto combinedPlot=renderedPoints();
+    ASSERT_GT(combinedPlot.size(),verticalPlot.size());
+    EXPECT_TRUE(std::equal(verticalPlot.begin(),verticalPlot.end(),combinedPlot.begin()));
+    const std::vector<std::pair<double,double>> horizontalPlot(
+        combinedPlot.begin()+verticalPlot.size(),combinedPlot.end());
+    // Re-solving either tab replaces only that tab, without accumulating copies.
+    Click(Find<wxButton>(&dialog,"Calculate and plot range"));
+    EXPECT_EQ(renderedPoints(),combinedPlot);
+    Click(Find<wxButton>(&dialog,"Solve and plot HSA fix"));
+    EXPECT_EQ(renderedPoints(),combinedPlot);
+    set("Observed vertical angle","0 4.1");
+    Click(Find<wxButton>(&dialog,"Calculate and plot range"));
+    auto changed=renderedPoints();
+    ASSERT_EQ(changed.size(),combinedPlot.size());
+    EXPECT_FALSE(std::equal(verticalPlot.begin(),verticalPlot.end(),changed.begin()));
+    EXPECT_TRUE(std::equal(horizontalPlot.begin(),horizontalPlot.end(),
+                           changed.begin()+verticalPlot.size()));
+    set("Observed vertical angle","0 2.8");
+    Click(Find<wxButton>(&dialog,"Calculate and plot range"));
+    set("Left object latitude","43 55N"); set("Left object longitude","69 15.7W");
+    set("Left-centre measurement","70");
+    Click(Find<wxButton>(&dialog,"Solve and plot HSA fix"));
+    changed=renderedPoints();
+    ASSERT_GT(changed.size(),verticalPlot.size());
+    EXPECT_TRUE(std::equal(verticalPlot.begin(),verticalPlot.end(),changed.begin()));
+    EXPECT_NE(changed,combinedPlot);
+    set("Left object latitude","43 45.9N"); set("Left object longitude","69 19W");
+    set("Left-centre measurement","111");
+    Click(Find<wxButton>(&dialog,"Solve and plot HSA fix"));
+    EXPECT_EQ(renderedPoints(),combinedPlot);
     for (int page : {0, 1})
       for (const wxSize size : {wxSize(900, 760), wxSize(720, 500)}) {
         book->SetSelection(page);
@@ -226,8 +271,18 @@ TEST(CoastalUiSmoke, LayoutAndWaypointTransactions) {
         scroll->Scroll(0, 0);
       }
     dialog.Hide();
+    EXPECT_EQ(renderedPoints(),combinedPlot);
     dialog.Show();
     EXPECT_EQ(retained, field("Target latitude")->GetValue());
+    EXPECT_EQ(renderedPoints(),combinedPlot);
+    Click(Find<wxButton>(&dialog,"Clear chart plots"));
+    EXPECT_TRUE(renderedPoints().empty());
+    EXPECT_EQ(retained,field("Target latitude")->GetValue());
+    // Reverse plotting order must also keep both layers, with no stale copies.
+    Click(Find<wxButton>(&dialog,"Solve and plot HSA fix"));
+    EXPECT_EQ(renderedPoints(),horizontalPlot);
+    Click(Find<wxButton>(&dialog,"Calculate and plot range"));
+    EXPECT_EQ(renderedPoints(),combinedPlot);
     dialog.Hide();
   }
   SetTestWaypoints({});

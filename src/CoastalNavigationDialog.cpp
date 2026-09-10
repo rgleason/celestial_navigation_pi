@@ -264,7 +264,7 @@ CoastalNavigationDialog::CoastalNavigationDialog(
       _("Entries are retained when this window is closed. Use New / clear "
         "observation before starting a different observation."));
   retention->Wrap(690);
-  m_wrappedLabels[retention]=_("Entries are retained when this window is closed. Use New / clear observation before starting a different observation.");
+  m_wrappedLabels[retention]=_("Vertical and horizontal plots can stay on the chart together. Solving replaces only that tab's plot. Closing retains entries and plots; Clear chart plots removes both plots. New / clear observation resets both tabs.");
   root->Insert(root->GetItemCount() - 1, retention, 0,
                wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 10);
   newObservation->Bind(wxEVT_BUTTON, &CoastalNavigationDialog::NewObservation,

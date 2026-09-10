@@ -7,6 +7,53 @@
 
 namespace cn = coastal_navigation;
 
+TEST(CoastalNavigation, BobRevisionOneVerticalScreenshots) {
+  // Revised PDF pp. 3, 4, 6, 7 and 10. Compare the actual screenshot inputs,
+  // not rounded table lookup inputs or the conflicting Anvil waypoint height.
+  struct Example {
+    double height, hs_minutes, target_lat, target_lon, bearing_true;
+    double range, fix_lat, fix_lon;
+    cn::VerticalAngleMode mode;
+  };
+  const auto sea=cn::VerticalAngleMode::SeaHorizonToTopBeyondHorizon;
+  const auto water=cn::VerticalAngleMode::WaterlineToTop;
+  const Example examples[] = {
+    {24,45.6,50+39.7/60,-(1+35.5/60),75.22,.974,50+39.4516/60,-(1+36.9841/60),water},
+    {24,2.9,50+39.7/60,-(1+35.5/60),65.22,9.676,50+35.6333/60,-(1+49.3301/60),sea},
+    {24,4.1,50+39.7/60,-(1+35.5/60),65.22,8.341,50+36.1961/60,-(1+47.4242/60),sea},
+    {9,2.9,50+35.5133/60,-(1+57.5883/60),270.25,5.169,50+35.4860/60,-(1+49.4510/60),sea},
+    {216,14.6,43+27.6/60,-(76+31.8/60),78.15,19.822,43+23.4806/60,-(76+58.4779/60),sea},
+    {216,2.9,43+27.6/60,-(76+31.8/60),78.15,30.831,43+21.1482/60,-(77+13.2685/60),sea}
+  };
+  for(const auto& example:examples) {
+    cn::VerticalAngleObservation o;
+    o.mode=example.mode; o.charted_top_height_m=example.height;
+    o.eye_height_m=3; o.index_error_arcmin=-.15;
+    o.angle_deg=example.hs_minutes/60;
+    const auto result=cn::SolveVerticalAngle(o);
+    ASSERT_TRUE(result.valid)<<result.error;
+    EXPECT_NEAR(result.range_nm,example.range,.0006);
+    const auto fix=cn::Destination({example.target_lat,example.target_lon},
+                                   example.bearing_true+180,result.range_nm);
+    EXPECT_NEAR(fix.latitude_deg,example.fix_lat,.000002);
+    EXPECT_NEAR(fix.longitude_deg,example.fix_lon,.000002);
+  }
+}
+
+TEST(CoastalNavigation, BobRevisionOneSecondHorizontalFix) {
+  cn::HorizontalAngleObservation o;
+  o.left={43+55./60,-(69+15.7/60)};
+  o.centre={43+57.9/60,-(69+4.4/60)};
+  o.right={43+47./60,-(68+51.3/60)};
+  o.left_centre_angle_deg=70; o.centre_right_angle_deg=107;
+  o.index_error_arcmin=-.15; o.angle_uncertainty_arcmin=60;
+  const auto fix=cn::SolveHorizontalThreePointFix(o,{43+49.7/60,-(69+4.6/60)});
+  ASSERT_TRUE(fix.valid)<<fix.error;
+  EXPECT_NEAR(fix.position.latitude_deg,43+51.3588/60,.000002);
+  EXPECT_NEAR(fix.position.longitude_deg,-(69+5.3779/60),.000002);
+  EXPECT_NEAR(fix.estimated_uncertainty_nm,.148572,.000001);
+}
+
 TEST(CoastalNavigation, BobVerticalExamplesAndSignedAngles) {
   cn::VerticalAngleObservation o;
   o.mode=cn::VerticalAngleMode::SeaHorizonToTopBeyondHorizon;

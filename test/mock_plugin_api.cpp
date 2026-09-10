@@ -329,7 +329,18 @@ wxAuiPaneInfo& wxAuiManager::GetPane(wxWindow* window) {
 bool wxAuiPaneInfo::IsValid() const { return true; }
 
 void DimeWindow(wxWindow* win) {}
-void GetCanvasPixLL(PlugIn_ViewPort* vp, wxPoint* pp, double lat, double lon) {}
+static bool s_recordCanvas=false;
+static std::vector<std::pair<double,double>> s_canvasPoints;
+void SetTestCanvasRecording(bool enabled) {
+  s_recordCanvas=enabled;
+  s_canvasPoints.clear();
+}
+std::vector<std::pair<double,double>> TestCanvasPoints() { return s_canvasPoints; }
+void GetCanvasPixLL(PlugIn_ViewPort* vp, wxPoint* pp, double lat, double lon) {
+  if(s_recordCanvas) s_canvasPoints.emplace_back(lat,lon);
+  // Deterministic test projection, not the host chart projection.
+  *pp=wxPoint(wxRound((lon+180)*2),wxRound((90-lat)*2));
+}
 void RequestRefresh(wxWindow* window) {}
 
 wxEventType wxEVT_DOWNLOAD_EVENT = wxNewEventType();
