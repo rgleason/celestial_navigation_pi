@@ -44,6 +44,15 @@ bool ApparentGeocentricPosition(const SpkKernel& kernel, std::int32_t target,
 Vector3 IcrfToEarthFixed(const Vector3& icrf,
                          const EarthOrientation& orientation);
 
+// WGS84 observer-specific light time followed by combined barycentric
+// aberration. Airless centre direction and geometric angular semidiameter.
+// No solar light deflection, resolved limb or geoid/vertical correction.
+bool ObserverApparentDirection(const SpkKernel& kernel, double reception_et,
+    const EarthOrientation& orientation, double latitude_deg,
+    double longitude_deg, double height_m, bool moon,
+    double* altitude_deg, double* azimuth_deg, double* semidiameter_deg,
+    std::string* error);
+
 bool ShadowAxisPosition(const SolarLunarState& state,
                         const EarthOrientation& orientation,
                         const ReferenceEllipsoid& ellipsoid,

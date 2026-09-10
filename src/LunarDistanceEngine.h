@@ -40,6 +40,15 @@ struct Observation {
 };
 
 struct EphemerisSample {
+  // Observer-aware airless centre/semidiameter provider. Inputs are geodetic
+  // latitude/longitude (deg), ellipsoidal height (m), and Moon selection.
+  // False means the observation cannot be evaluated; never silently fall back.
+  std::function<bool(double, double, double, bool, double*, double*, double*)>
+      observer_direction;
+  bool dut1_available = false;
+  bool dut1_from_update = false;
+  double dut1_seconds = 0;
+  char dut1_quality = '?';
   double predicted_distance_deg = 0.0;
   double moon_semidiameter_deg = 0.0;
   double moon_horizontal_parallax_deg = 0.0;

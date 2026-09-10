@@ -14,6 +14,7 @@ src/geomag/geomag.c
 src/CelestialNavigationDialog.cpp
 src/DialogGeometry.cpp
 src/AtomicXmlFile.cpp
+src/Dut1UpdatePanel.cpp
 src/BodyCatalog.cpp
 src/NavigationAlgorithms.cpp
 src/PlannerDialog.cpp
@@ -56,6 +57,7 @@ src/Utf8Translation.h
 src/celestial_navigation_pi.h
 src/CelestialNavigationDialog.h
 src/AtomicXmlFile.h
+src/Dut1UpdatePanel.h
 src/BodyCatalog.h
 src/NavigationAlgorithms.h
 src/PlannerDialog.h

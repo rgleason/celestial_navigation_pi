@@ -53,7 +53,7 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
   <p style="text-align: center;"><strong>Experimental v2 documentation</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.5<br>Documentation revision 7 September 2026</p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.5.2<br>Documentation revision 9 September 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -743,6 +743,19 @@ correction is applied to all three watch times; the intervals between them are
 preserved.</p>
 
 <h2>12.3 Solving</h2>
+<p><strong>2.8.5.2 precision update:</strong> the DE440 Sun–Moon solver now uses
+observer-specific light time and annual/diurnal aberration. Bundled IERS
+Earth-rotation data (DUT1, the difference between UT1 and UTC) already supports
+high-accuracy offline calculations. Under <strong>Lunar Tools → Advanced</strong>,
+<strong>Check / download update…</strong> optionally retrieves and validates the
+latest official table; <strong>Import local file…</strong> accepts the same
+<code>finals2000A.all</code> file transferred from another computer. No compiler
+or restart is required. Startup and solving never download data.</p>
+<p>The Advanced tab shows coverage. Each sight uses its own date. Beyond all
+available data, calculations continue using UT1 = UTC with a reduced-accuracy
+warning: <strong>there is no expiry lockout</strong>. Failed updates retain
+existing data. The bundled September 2027 endpoint is not a plugin end date.
+Recorded observations remain unchanged.</p>
 <ol class="steps">
   <li>Create a <strong>Lunar</strong> sight and select the second body.</li>
   <li>Enter LDOpc, near/centre/far contact and both body altitudes with correct limbs.</li>

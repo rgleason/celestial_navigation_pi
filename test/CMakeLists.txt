@@ -39,6 +39,8 @@ set(SRC
     lunar_session_worker_tests.cpp
     sextant_calibration_engine_tests.cpp
     lunar_de440_tests.cpp
+    lunar_observer_tests.cpp
+    dut1_update_tests.cpp
     coastal_navigation_tests.cpp
     horizon_event_tests.cpp
     html_help_tests.cpp
@@ -52,6 +54,7 @@ set(SRC
     mock_plugin_impl.cpp
     ${CMAKE_SOURCE_DIR}/src/Sight.cpp
     ${CMAKE_SOURCE_DIR}/src/AtomicXmlFile.cpp
+    ${CMAKE_SOURCE_DIR}/src/Dut1UpdatePanel.cpp
     ${CMAKE_SOURCE_DIR}/src/DialogGeometry.cpp
     ${CMAKE_SOURCE_DIR}/src/EclipseDataFiles.cpp
     ${CMAKE_SOURCE_DIR}/src/EclipseVerificationWorker.cpp
@@ -100,6 +103,21 @@ set(SRC
 )
 
 add_executable(celestial_tests ${SRC})
+if(GTK3_LIBRARIES)
+    target_link_libraries(celestial_tests PRIVATE ${GTK3_LIBRARIES})
+endif()
+
+option(CELESTIAL_ENGINE_LAB_TESTS "Compare experimental headless adapter with production" OFF)
+if(CELESTIAL_ENGINE_LAB_TESTS)
+    target_sources(celestial_tests PRIVATE
+        ${CMAKE_SOURCE_DIR}/validation/engine-lab/adapter_tests.cpp)
+    add_executable(lunar_production_lab
+        ${CMAKE_SOURCE_DIR}/validation/engine-lab/production_runner.cpp
+        ${CMAKE_SOURCE_DIR}/src/LunarDistanceEngine.cpp
+        ${CMAKE_SOURCE_DIR}/src/LunarSessionEngine.cpp)
+    target_include_directories(lunar_production_lab PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    target_link_libraries(lunar_production_lab PRIVATE celestial::eclipse_core)
+endif()
 
 target_compile_definitions(celestial_tests
     PUBLIC

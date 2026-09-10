@@ -116,7 +116,11 @@ DECL_EXP void JumpToPosition(double lat, double lon, double scale) {}
 
 // Plugin API mock implementations
 
-wxString* GetpPrivateApplicationDataLocation(void) { return nullptr; }
+static wxString s_privatePath;
+void SetTestPrivateDataPath(const wxString& path) { s_privatePath=path; }
+wxString* GetpPrivateApplicationDataLocation(void) {
+  return s_privatePath.empty() ? nullptr : &s_privatePath;
+}
 
 wxString *GetpSharedDataLocation(void) { return nullptr; }
 
@@ -312,6 +316,13 @@ void GetCanvasPixLL(PlugIn_ViewPort* vp, wxPoint* pp, double lat, double lon) {}
 void RequestRefresh(wxWindow* window) {}
 
 wxEventType wxEVT_DOWNLOAD_EVENT = wxNewEventType();
+static int s_downloadCalls=0;
+int TestDownloadCalls() { return s_downloadCalls; }
+OCPN_DLStatus OCPN_downloadFile(const wxString&, const wxString&, const wxString&,
+    const wxString&, const wxBitmap&, wxWindow*, long, int) {
+  ++s_downloadCalls;
+  return OCPN_DL_FAILED;
+}
 
 OCPN_DLStatus OCPN_downloadFileBackground(const wxString&, const wxString&,
                                            wxEvtHandler*, long* handle) {

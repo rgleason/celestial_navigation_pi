@@ -1,0 +1,731 @@
+{
+  "schema_version": 1,
+  "kind": "independent_calculated_reference",
+  "corpus_sha256": "5947284e88724dd05d713fbdb538187237e7a4a9bb09f5df944c8165ecea90c0",
+  "policy": {
+    "kind": "independent_calculated_ephemeris_not_real_sights",
+    "provider": "NASA/JPL Horizons",
+    "documentation": "https://ssd.jpl.nasa.gov/horizons/manual.html",
+    "geocentric_direction_tolerance_arcsec": 0.1,
+    "topocentric_tolerance_arcsec": 1.0,
+    "rationale": "Predeclared comparison budgets, not sextant uncertainties. Horizons apparent RA/Dec uses EOP-corrected IAU76/80 (approximately 53 mas equinox offset from IAU06/00a); the baseline uses ERFA IAU06/00a. Topocentric budget also accommodates omitted DUT1, polar motion and diurnal aberration for these dated cases. Failures must be investigated, not automatically retoleranced.",
+    "limits": "Horizons currently reports DE441 while the baseline uses DE440s: this is an independent implementation check, not wholly independent underlying ephemeris data. It does not certify atmospheric refraction, lunar limb topography or physical local vertical."
+  },
+  "cases": [
+    {
+      "id": "point-judith",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        41.36666666666667,
+        -71.48333333333333
+      ],
+      "height_m": 6.1,
+      "expected": {
+        "moon_ra_deg": 170.510425856,
+        "moon_dec_deg": 6.34432228,
+        "moon_alt_deg": 34.221386789,
+        "sun_ra_deg": 82.661667343,
+        "sun_dec_deg": 23.266996432,
+        "sun_alt_deg": 52.146163673
+      },
+      "provenance": [
+        {
+          "file": "point-judith-moon-geocentric.json",
+          "sha256": "d41659afbfeddd4646e228f4e73c3cc7e6dfb87d3c2738302013115b8f2c76fd",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27301%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'301'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:29.209120+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Moon (301)                      {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "point-judith-moon-topocentric.json",
+          "sha256": "b96ef27ce7a7ff8aebe26dfb83da24dc007ec97cfb19d05f732d3f179172814f",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27301%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-71.48333333333333%2C41.36666666666667%2C0.0060999999999999995%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'301'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-71.48333333333333,41.36666666666667,0.0060999999999999995'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:29.906502+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Moon (301)                      {source: DE441}",
+            "Center geodetic : 288.5166667, 41.3666667, .0061  {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "point-judith-sun-geocentric.json",
+          "sha256": "0d995f25d852b1c3a90c6f3914957ed5051064ac828021be90fe92bcf22d9314",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'10'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:30.643464+00:00",
+          "api_signature": {
+            "version": "1.2",
+            "source": "NASA/JPL Horizons API"
+          },
+          "model_header": [
+            "Target body name: Sun (10)                        {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "point-judith-sun-topocentric.json",
+          "sha256": "a04802c8dcbcb1c94445bbed22fd70b3ea2a506b2d14777070caeb7b1a48b885",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-71.48333333333333%2C41.36666666666667%2C0.0060999999999999995%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'10'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-71.48333333333333,41.36666666666667,0.0060999999999999995'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:31.363675+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Sun (10)                        {source: DE441}",
+            "Center geodetic : 288.5166667, 41.3666667, .0061  {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "equatorial",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        0,
+        -45
+      ],
+      "height_m": 0,
+      "expected": {
+        "moon_ra_deg": 170.510425856,
+        "moon_dec_deg": 6.34432228,
+        "moon_alt_deg": 67.359297486,
+        "sun_ra_deg": 82.661667343,
+        "sun_dec_deg": 23.266996432,
+        "sun_alt_deg": 21.546235963
+      },
+      "provenance": [
+        {
+          "file": "point-judith-moon-geocentric.json",
+          "sha256": "d41659afbfeddd4646e228f4e73c3cc7e6dfb87d3c2738302013115b8f2c76fd",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27301%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'301'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:29.209120+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Moon (301)                      {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "equatorial-moon-topocentric.json",
+          "sha256": "07194ed57162d0d0b2c95378f8bd517d0a5ee253ec8fe87ab896ea045685d9ff",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27301%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-45%2C0%2C0.0%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'301'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-45,0,0.0'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:32.094521+00:00",
+          "api_signature": {
+            "version": "1.2",
+            "source": "NASA/JPL Horizons API"
+          },
+          "model_header": [
+            "Target body name: Moon (301)                      {source: DE441}",
+            "Center geodetic : 315.0, 0.0, 0.0                 {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "point-judith-sun-geocentric.json",
+          "sha256": "0d995f25d852b1c3a90c6f3914957ed5051064ac828021be90fe92bcf22d9314",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'10'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:30.643464+00:00",
+          "api_signature": {
+            "version": "1.2",
+            "source": "NASA/JPL Horizons API"
+          },
+          "model_header": [
+            "Target body name: Sun (10)                        {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "equatorial-sun-topocentric.json",
+          "sha256": "079485b4610c3c9ac7023d87fca1d693bbd0c561980dc152caf6d1c228129724",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-45%2C0%2C0.0%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'10'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-45,0,0.0'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:32.838220+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Sun (10)                        {source: DE441}",
+            "Center geodetic : 315.0, 0.0, 0.0                 {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "southern",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        -30,
+        -60
+      ],
+      "height_m": 10,
+      "expected": {
+        "moon_ra_deg": 170.510425856,
+        "moon_dec_deg": 6.34432228,
+        "moon_alt_deg": 38.89588316,
+        "sun_ra_deg": 82.661667343,
+        "sun_dec_deg": 23.266996432,
+        "sun_alt_deg": 17.363845147
+      },
+      "provenance": [
+        {
+          "file": "point-judith-moon-geocentric.json",
+          "sha256": "d41659afbfeddd4646e228f4e73c3cc7e6dfb87d3c2738302013115b8f2c76fd",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27301%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'301'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:29.209120+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Moon (301)                      {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "southern-moon-topocentric.json",
+          "sha256": "86cacb8409b922dac9640e147fcccc9fc87bf3536b0ec0cfa2864823c74280f5",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27301%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-60%2C-30%2C0.01%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'301'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-60,-30,0.01'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:33.575508+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Moon (301)                      {source: DE441}",
+            "Center geodetic : 300.0, -30.0, .010              {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "point-judith-sun-geocentric.json",
+          "sha256": "0d995f25d852b1c3a90c6f3914957ed5051064ac828021be90fe92bcf22d9314",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'10'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:30.643464+00:00",
+          "api_signature": {
+            "version": "1.2",
+            "source": "NASA/JPL Horizons API"
+          },
+          "model_header": [
+            "Target body name: Sun (10)                        {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "southern-sun-topocentric.json",
+          "sha256": "6b162aa9daad8d9f4255e995cc51242e100dbb61386ec8afca50236ddefb3602",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-60%2C-30%2C0.01%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'10'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-60,-30,0.01'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:34.699079+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Sun (10)                        {source: DE441}",
+            "Center geodetic : 300.0, -30.0, .010              {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "high-north-elevated",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        65,
+        -50
+      ],
+      "height_m": 400,
+      "expected": {
+        "moon_ra_deg": 170.510425856,
+        "moon_dec_deg": 6.34432228,
+        "moon_alt_deg": 27.647104922,
+        "sun_ra_deg": 82.661667343,
+        "sun_dec_deg": 23.266996432,
+        "sun_alt_deg": 32.930696514
+      },
+      "provenance": [
+        {
+          "file": "point-judith-moon-geocentric.json",
+          "sha256": "d41659afbfeddd4646e228f4e73c3cc7e6dfb87d3c2738302013115b8f2c76fd",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27301%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'301'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:29.209120+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Moon (301)                      {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "high-north-elevated-moon-topocentric.json",
+          "sha256": "d94d4f99e168b2d15c9ea62aa53a782c365c25d30f88317e86c0f06624c4ba5c",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27301%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-50%2C65%2C0.4%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'301'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-50,65,0.4'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:35.454297+00:00",
+          "api_signature": {
+            "version": "1.2",
+            "source": "NASA/JPL Horizons API"
+          },
+          "model_header": [
+            "Target body name: Moon (301)                      {source: DE441}",
+            "Center geodetic : 310.0, 65.0, .400               {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "point-judith-sun-geocentric.json",
+          "sha256": "0d995f25d852b1c3a90c6f3914957ed5051064ac828021be90fe92bcf22d9314",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'10'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:30.643464+00:00",
+          "api_signature": {
+            "version": "1.2",
+            "source": "NASA/JPL Horizons API"
+          },
+          "model_header": [
+            "Target body name: Sun (10)                        {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "high-north-elevated-sun-topocentric.json",
+          "sha256": "1262f0f5b01d214322b7dd2b1b856f918984607322fc9269a0f20d609af5edea",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-50%2C65%2C0.4%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'10'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-50,65,0.4'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:36.335640+00:00",
+          "api_signature": {
+            "version": "1.2",
+            "source": "NASA/JPL Horizons API"
+          },
+          "model_header": [
+            "Target body name: Sun (10)                        {source: DE441}",
+            "Center geodetic : 310.0, 65.0, .400               {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "march-2025",
+      "utc": "2025-03-05T15:00:00Z",
+      "position": [
+        20,
+        -45
+      ],
+      "height_m": 0,
+      "expected": {
+        "moon_ra_deg": 58.301310782,
+        "moon_dec_deg": 25.105730994,
+        "moon_alt_deg": 20.781559959,
+        "sun_ra_deg": 346.45446804,
+        "sun_dec_deg": -5.797985913,
+        "sun_alt_deg": 64.049895908
+      },
+      "provenance": [
+        {
+          "file": "march-2025-moon-geocentric.json",
+          "sha256": "9f5c3d4b6a9edd70233618a629ac0b21c5992f254ffc047bcf772b3032a6f2df",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27301%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272025-03-05+15%3A00%3A00%27&STOP_TIME=%272025-03-05+15%3A01%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'301'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2025-03-05 15:00:00'",
+            "STOP_TIME": "'2025-03-05 15:01:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:37.257176+00:00",
+          "api_signature": {
+            "version": "1.2",
+            "source": "NASA/JPL Horizons API"
+          },
+          "model_header": [
+            "Target body name: Moon (301)                      {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "march-2025-moon-topocentric.json",
+          "sha256": "c99f661bd4bbca22f49b6a9fbee2319f57b4a0804e291f49723e48b15875d0fd",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27301%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272025-03-05+15%3A00%3A00%27&STOP_TIME=%272025-03-05+15%3A01%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-45%2C20%2C0.0%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'301'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2025-03-05 15:00:00'",
+            "STOP_TIME": "'2025-03-05 15:01:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-45,20,0.0'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:38.084586+00:00",
+          "api_signature": {
+            "version": "1.2",
+            "source": "NASA/JPL Horizons API"
+          },
+          "model_header": [
+            "Target body name: Moon (301)                      {source: DE441}",
+            "Center geodetic : 315.0, 20.0, 0.0                {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "march-2025-sun-geocentric.json",
+          "sha256": "09f8e68f0ef0e8fcc80711788c845f22f9c5904f2629a5941d18448490fbe2a2",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272025-03-05+15%3A00%3A00%27&STOP_TIME=%272025-03-05+15%3A01%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'10'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2025-03-05 15:00:00'",
+            "STOP_TIME": "'2025-03-05 15:01:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:38.999052+00:00",
+          "api_signature": {
+            "version": "1.2",
+            "source": "NASA/JPL Horizons API"
+          },
+          "model_header": [
+            "Target body name: Sun (10)                        {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        },
+        {
+          "file": "march-2025-sun-topocentric.json",
+          "sha256": "a1a0b91cb09bcf0cf4bdc7f7e3ac9b3a62fd235f9bb7ca89462d74b2f59b3495",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272025-03-05+15%3A00%3A00%27&STOP_TIME=%272025-03-05+15%3A01%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-45%2C20%2C0.0%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'10'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2025-03-05 15:00:00'",
+            "STOP_TIME": "'2025-03-05 15:01:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-45,20,0.0'"
+          },
+          "retrieved_utc": "2026-09-09T18:38:39.880514+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Sun (10)                        {source: DE441}",
+            "Center geodetic : 315.0, 20.0, 0.0                {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260908.p261205"
+          ]
+        }
+      ]
+    }
+  ]
+}

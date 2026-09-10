@@ -202,6 +202,7 @@ public:
   lunar_distance::PositionResult m_LunarPositionResult;
   int m_LunarSelectedPosition;
   bool m_LunarUsesDe440;
+  bool m_LunarDut1Fallback = false;
   lunar_distance::EphemerisFunction m_LunarEphemeris;
 
   /* DR info */

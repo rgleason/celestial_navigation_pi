@@ -25,9 +25,11 @@ add_library(eclipse_core STATIC
   src/besselian.cpp
   src/contours.cpp
   src/data_pack.cpp
+  src/dut1.cpp
   src/engine.cpp
   src/geometry.cpp
   src/lunar_limb.cpp
+  src/observer.cpp
   src/pck.cpp
   src/spk.cpp
   src/time.cpp

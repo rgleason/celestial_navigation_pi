@@ -41,6 +41,12 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
               "retained."));
   explanation->Wrap(740);
   results->Add(explanation, 0, wxALL | wxEXPAND, 10);
+  if (m_sight.m_LunarDut1Fallback) {
+    auto* warning = new wxStaticText(resultsPage, wxID_ANY,
+        _("Earth-rotation data do not cover all evaluated dates. Calculations remain available offline using UT1=UTC; accuracy is reduced and formal uncertainty does not include this approximation."));
+    warning->Wrap(740);
+    results->Add(warning, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
+  }
   m_mode = new wxChoice(resultsPage, wxID_ANY);
   m_mode->Append(m_sight.m_LunarSeparateTimes
                      ? _("Recover UTC and position at individual reading times")

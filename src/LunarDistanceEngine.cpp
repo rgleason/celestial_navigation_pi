@@ -275,6 +275,12 @@ void EllipsoidalDirection(const Observation& observation,
                           const EphemerisSample& sample,
                           const GeographicPoint& observer, bool moon,
                           double* altitude, double* azimuth, double* sd) {
+  if (sample.observer_direction) {
+    if (!sample.observer_direction(observer.latitude_deg, observer.longitude_deg,
+                                   observation.eye_height_m, moon, altitude, azimuth, sd))
+      *altitude = *azimuth = *sd = std::numeric_limits<double>::quiet_NaN();
+    return;
+  }
   constexpr double a = 6378.137;  // km; HP uses the equatorial radius
   constexpr double f = 1.0 / 298.257223563;
   constexpr double e2 = f * (2.0 - f);

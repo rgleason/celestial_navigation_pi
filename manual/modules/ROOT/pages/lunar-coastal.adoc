@@ -52,6 +52,27 @@ ellipsoidal answer. Raw inputs, model conventions, every coarse scan and
 refinement, candidate positions and formal uncertainties remain inspectable.
 Exact zero residuals terminate refinement without moving away from the root.
 
+=== Optional Earth-rotation precision updates (2.8.5.2)
+
+The enhanced DE440 Sun–Moon solver includes observer-specific light time and
+annual/diurnal aberration. Bundled IERS DUT1 data supports high-accuracy
+offline calculations without downloading an update. DUT1 is UT1 minus UTC,
+the small correction for Earth's rotation; it is not chart or weather data.
+
+Under *Lunar Tools → Advanced*, *Check / download update…* retrieves the
+official IERS table, validates it and installs it for immediate offline use.
+No compiler or restart is required. This explicit button press is the only
+network action. Alternatively use *Import local file…* with an official
+`finals2000A.all` file copied from another computer. Current coverage is shown
+on the tab. Data is selected for each sight's date, not the computer's date.
+
+The plugin has no data-expiry lockout. Outside all available coverage it
+continues using UT1 = UTC and warns of reduced accuracy. Failed downloads,
+invalid data or failed saves retain the previous valid table and the bundle.
+The bundled table ends in September 2027, but that is not an end date for the
+plugin. Downloaded tables can extend it; fallback solving remains available
+beyond it. Future fallback is not guaranteed to match dated-data precision.
+
 The mathematical problem is a coupled three-equation
 solution. For each trial clock correction the plugin evaluates the Moon and
 selected body at all three corrected epochs, reduces each altitude at its own
