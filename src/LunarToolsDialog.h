@@ -2,6 +2,7 @@
 #define CELESTIAL_NAVIGATION_LUNAR_TOOLS_DIALOG_H
 
 #include "LunarSessionEngine.h"
+#include "LunarSolutionRecord.h"
 #include "SextantCalibrationEngine.h"
 
 #include <wx/dialog.h>
@@ -93,6 +94,7 @@ private:
   wxButton* m_applySequence;
   std::vector<std::size_t> m_lunarIndices;
   lunar_session::Result m_sequenceResult;
+  std::vector<LunarSolutionRecord> m_sequenceRecords;
   bool m_sequencePositionAutomatic;
 
   NavigationAngleCtrl* m_plannerLatitude;

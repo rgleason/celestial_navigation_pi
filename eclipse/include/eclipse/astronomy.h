@@ -34,6 +34,13 @@ bool AstrometricPosition(const SpkKernel& kernel, std::int32_t target,
                          std::int32_t observer, double reception_et,
                          Vector3* position_km, std::string* error);
 
+// Airless apparent geocentric direction, retaining the light-time range.
+// Adds the observer's barycentric aberration to AstrometricPosition. Solar
+// light deflection is not included (sub-arcsecond away from the solar limb).
+bool ApparentGeocentricPosition(const SpkKernel& kernel, std::int32_t target,
+                                double reception_et, Vector3* position_km,
+                                std::string* error);
+
 Vector3 IcrfToEarthFixed(const Vector3& icrf,
                          const EarthOrientation& orientation);
 

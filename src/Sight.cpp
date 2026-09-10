@@ -564,12 +564,12 @@ void Sight::Render(piDC* dc, PlugIn_ViewPort& VP, double pix_per_mm) {
   }
 }
 
-void Sight::Recompute(int clock_offset) {
+void Sight::Recompute(double clock_offset) {
   m_CalcStr.clear();
 
   if (clock_offset)
     m_CalcStr += wxString::Format(
-        _("Applying clock correction of %d seconds\n\n"), clock_offset);
+        _("Applying clock correction of %+.3f seconds\n\n"), clock_offset);
 
   m_CorrectedDateTime = UtcDateTime::AddSeconds(m_DateTime, clock_offset);
 
@@ -1097,21 +1097,25 @@ lunar_distance::Observation Sight::LunarObservation() const {
       std::max(0.0, m_LunarMoonAltitudeUncertainty);
   observation.body_altitude_uncertainty_arcmin =
       std::max(0.0, m_LunarBodyAltitudeUncertainty);
+  observation.use_ellipsoid = true;
   observation.separate_times = m_LunarSeparateTimes;
-  observation.moon_time_offset_seconds = m_LunarMoonTimeOffsetSeconds;
-  observation.body_time_offset_seconds = m_LunarBodyTimeOffsetSeconds;
+  observation.moon_time_offset_seconds =
+      m_LunarSeparateTimes ? m_LunarMoonTimeOffsetSeconds : 0.0;
+  observation.body_time_offset_seconds =
+      m_LunarSeparateTimes ? m_LunarBodyTimeOffsetSeconds : 0.0;
   observation.moving_observer = m_LunarSeparateTimes && m_LunarMovingObserver;
   observation.course_true_deg = m_LunarCourseTrue;
   observation.speed_knots = m_LunarSpeedKnots;
   return observation;
 }
 
-void Sight::RecomputeLunar() {
+void Sight::RecomputeLunar(int preferred_candidate) {
   // A lunar recovers Greenwich time by clearing the observed limb distance
-  // of dip, refraction, semidiameter and parallax, then matching the resulting
-  // geocentric centre distance against the ephemeris.  The former code only
-  // evaluated two endpoints and linearly extrapolated between them; it could
-  // silently return a time even when no root existed or several roots existed.
+  // of refraction, semidiameter and parallax (dip applies to altitudes),
+  // matching the resulting geocentric centre distance against the ephemeris.
+  // The former code only evaluated two endpoints and linearly extrapolated
+  // between them; it could silently return a time even when no root existed or
+  // several roots existed.
   const lunar_distance::Observation observation = LunarObservation();
 
   const wxString selected_body = m_Body;
@@ -1155,9 +1159,9 @@ void Sight::RecomputeLunar() {
     bool used_de440 = false;
 
     if (!selected_body.Cmp(_T("Sun"))) {
-      static eclipse::SpkKernel kernel;
-      static wxString opened_path;
-      static bool attempted = false;
+      static thread_local eclipse::SpkKernel kernel;
+      static thread_local wxString opened_path;
+      static thread_local bool attempted = false;
 #ifdef UNIT_TESTS
       // wxStandardPaths requires a running wxApp.  The sight tests are
       // deliberately headless, so exercise the same kernel against the
@@ -1194,23 +1198,41 @@ void Sight::RecomputeLunar() {
           eclipse::Vector3 moon_vector;
           eclipse::Vector3 sun_vector;
           std::string de_error;
-          if (eclipse::AstrometricPosition(kernel, 301, 399, et, &moon_vector,
-                                           &de_error) &&
-              eclipse::AstrometricPosition(kernel, 10, 399, et, &sun_vector,
-                                           &de_error)) {
+          if (eclipse::ApparentGeocentricPosition(kernel, 301, et, &moon_vector,
+                                                  &de_error) &&
+              eclipse::ApparentGeocentricPosition(kernel, 10, et, &sun_vector,
+                                                  &de_error)) {
             const double denominator = moon_vector.Norm() * sun_vector.Norm();
             if (denominator > 0.0) {
               sample->predicted_distance_deg = r_to_d(acos(std::max(
                   -1.0, std::min(1.0, eclipse::Dot(moon_vector, sun_vector) /
                                           denominator))));
               sample->moon_horizontal_parallax_deg =
-                  r_to_d(asin(EARTH_RADIUS / moon_vector.Norm()));
+                  r_to_d(asin(6378.137 / moon_vector.Norm()));
               sample->moon_semidiameter_deg =
                   r_to_d(asin(1737.4 / moon_vector.Norm()));
               sample->body_horizontal_parallax_deg =
-                  r_to_d(asin(EARTH_RADIUS / sun_vector.Norm()));
+                  r_to_d(asin(6378.137 / sun_vector.Norm()));
               sample->body_semidiameter_deg =
                   r_to_d(asin(695700.0 / sun_vector.Norm()));
+              // The separation and the altitude constraints must use the
+              // same apparent vectors. Mixing DE440 distances with analytical
+              // GPs made simultaneous and time-tagged solutions disagree.
+              eclipse::EarthOrientation orientation;
+              orientation.tt_jd = tt_jd;
+              orientation.ut1_jd = utc_jd;  // UT1-UTC unavailable; <0.9 s.
+              const auto moon_fixed =
+                  eclipse::IcrfToEarthFixed(moon_vector, orientation);
+              const auto sun_fixed =
+                  eclipse::IcrfToEarthFixed(sun_vector, orientation);
+              sample->moon_geographic_latitude_deg = r_to_d(
+                  atan2(moon_fixed.z, hypot(moon_fixed.x, moon_fixed.y)));
+              sample->moon_geographic_longitude_deg =
+                  r_to_d(atan2(moon_fixed.y, moon_fixed.x));
+              sample->body_geographic_latitude_deg =
+                  r_to_d(atan2(sun_fixed.z, hypot(sun_fixed.x, sun_fixed.y)));
+              sample->body_geographic_longitude_deg =
+                  r_to_d(atan2(sun_fixed.y, sun_fixed.x));
               m_LunarUsesDe440 = true;
               used_de440 = true;
             }
@@ -1224,7 +1246,7 @@ void Sight::RecomputeLunar() {
       const double moon_distance_km =
           moon_distance(ut_to_dt(instant.GetJulianDayNumber()));
       sample->moon_horizontal_parallax_deg =
-          r_to_d(asin(EARTH_RADIUS / moon_distance_km));
+          r_to_d(asin(6378.137 / moon_distance_km));
       sample->moon_semidiameter_deg = r_to_d(
           asin(K_MOON * sin(d_to_r(sample->moon_horizontal_parallax_deg))));
 
@@ -1240,7 +1262,7 @@ void Sight::RecomputeLunar() {
         sample->body_horizontal_parallax_deg = 0.002442 / body_rad;
       } else if (body_is_planet && body_distance > EARTH_RADIUS) {
         sample->body_horizontal_parallax_deg =
-            r_to_d(asin(EARTH_RADIUS / body_distance));
+            r_to_d(asin(6378.137 / body_distance));
       }
     }
     m_IsPlanet = body_is_planet;
@@ -1288,11 +1310,10 @@ void Sight::RecomputeLunar() {
           ? _("Method: time-tagged joint UTC/position forward model.\n"
               "The three measured watch intervals are retained and a common "
               "watch correction is solved with position.\n\n")
-          : _("Method: Direct Triangle clearing followed by numerical UTC "
-              "matching.\n"
-              "The observed limb distance is reduced to a geocentric "
-              "centre-to-centre distance, then matched to the offline "
-              "ephemeris.\n\n");
+          : _("Method: WGS84 joint UTC/position matching of simultaneous "
+              "angles.\n"
+              "Direct Triangle clearing is shown as a spherical comparison, "
+              "not the final ellipsoidal solution.\n\n");
 
   m_CalcStr += _("A. OBSERVATION, CONVENTIONS AND SEARCH\n"
                  "--------------------------------------\n");
@@ -1308,9 +1329,23 @@ void Sight::RecomputeLunar() {
       options.scan_step_seconds, options.root_tolerance_seconds);
   m_CalcStr +=
       m_LunarUsesDe440
-          ? _("Ephemeris                     = local JPL DE440s (offline)\n")
+          ? _("Ephemeris                     = local JPL DE440s apparent "
+              "directions (offline)\n")
           : _("Ephemeris                     = bundled analytical fallback "
-              "(offline)\n");
+              "(offline; reduced accuracy)\n");
+  m_CalcStr +=
+      _("Earth model                   = WGS84 ellipsoid; geodetic observer "
+        "latitude\n"
+        "a = 6378137 m; 1/f = 298.257223563; exact vector parallax.\n"
+        "Eye height approximates ellipsoidal height; geoid/local vertical not "
+        "modelled.\n"
+        "Direct Triangle arithmetic below is a spherical baseline only.\n"
+        "Final UTC/position uses the WGS84 forward model, including disc "
+        "flattening by refraction.\n"
+        "UT1 assumption                = UTC (no measured DUT1 supplied)\n"
+        "Dip corrects horizon altitudes, never the inter-body distance.\n"
+        "Formal uncertainties exclude ephemeris, horizon and common instrument "
+        "biases.\n");
   m_CalcStr += wxString::Format(
       _("Raw lunar distance LDs        = %.8f deg  (%s)\n"
         "Moon distance contact         = %s\n"
@@ -1377,7 +1412,13 @@ void Sight::RecomputeLunar() {
         calculation_candidate = index;
     }
     calculation_offset_seconds =
-        solution.candidates[calculation_candidate].offset_seconds;
+        solution
+            .candidates[preferred_candidate >= 0 &&
+                                std::size_t(preferred_candidate) <
+                                    solution.candidates.size()
+                            ? std::size_t(preferred_candidate)
+                            : calculation_candidate]
+            .offset_seconds;
   }
 
   lunar_distance::EphemerisSample calculation_sample;
@@ -1542,7 +1583,7 @@ void Sight::RecomputeLunar() {
   }
 
   m_CalcStr +=
-      observation.separate_times
+      (observation.separate_times || observation.use_ellipsoid)
           ? _("\nF. UTC/POSITION MATCHING TRAIL\n"
               "------------------------------\n"
               "Residual F(t) = forward-modelled raw LD(t) - observed raw "
@@ -1613,7 +1654,7 @@ void Sight::RecomputeLunar() {
     return;
   }
 
-  if (!observation.separate_times) {
+  if (!observation.separate_times && !observation.use_ellipsoid) {
     for (lunar_distance::TimeCandidate& candidate : m_LunarCandidates) {
       lunar_distance::EphemerisSample candidate_sample;
       std::string candidate_error;
@@ -1641,6 +1682,9 @@ void Sight::RecomputeLunar() {
         fabs(m_LunarCandidates[selected].offset_seconds))
       selected = index;
   }
+  if (preferred_candidate >= 0 &&
+      std::size_t(preferred_candidate) < m_LunarCandidates.size())
+    selected = std::size_t(preferred_candidate);
   const lunar_distance::TimeCandidate& chosen = m_LunarCandidates[selected];
   m_TimeCorrection = static_cast<long>(lround(chosen.offset_seconds));
   m_LDC = chosen.cleared_distance_deg;
@@ -1653,7 +1697,7 @@ void Sight::RecomputeLunar() {
     const lunar_distance::TimeCandidate& candidate = solution.candidates[index];
     const wxDateTime candidate_time =
         UtcDateTime::AddSeconds(m_CorrectedDateTime, candidate.offset_seconds);
-    if (observation.separate_times) {
+    if (observation.separate_times || observation.use_ellipsoid) {
       m_CalcStr += wxString::Format(
           _("%s%s\n"
             "    watch correction       = %+.3f s\n"
@@ -1697,7 +1741,7 @@ void Sight::RecomputeLunar() {
 
   m_CalcStr += _("\nH. POSITION INTERSECTION AND WARNINGS\n"
                  "---------------------------------------\n");
-  if (observation.separate_times) {
+  if (observation.separate_times || observation.use_ellipsoid) {
     m_CalcStr +=
         _("The joint solver intersects the Moon and body altitude constraints "
           "at their individual corrected UTCs, advances the observer by the "
@@ -1766,7 +1810,7 @@ void Sight::RecomputeLunar() {
               ? _T(" (nearest DR/boat position)")
               : _T(""));
     }
-    if (!observation.separate_times) {
+    if (!observation.separate_times && !observation.use_ellipsoid) {
       m_CalcStr += wxString::Format(
           _("Altitude-circle crossing angle: %.2f%c.\n"),
           m_LunarPositionResult.circle_crossing_angle_deg, 0x00B0);

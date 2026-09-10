@@ -34,6 +34,8 @@
 #include <wx/imaglist.h>
 #include <wx/statbox.h>
 #include <wx/utils.h>
+#include <wx/textdlg.h>
+#include <wx/clipbrd.h>
 
 #include "tinyxml.h"
 
@@ -667,10 +669,8 @@ void CelestialNavigationDialog::OnTimeTimer(wxTimerEvent& event) {
 double AttributeDouble(TiXmlElement* e, const char* name, double def) {
   const char* attr = e->Attribute(name);
   if (!attr) return def;
-  char* end;
-  double d = strtod(attr, &end);
-  if (end == attr) return def;
-  return d;
+  double value;
+  return wxString::FromUTF8(attr).ToCDouble(&value) ? value : def;
 }
 
 int AttributeInt(TiXmlElement* e, const char* name, int def) {
@@ -701,11 +701,13 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
       FAIL(_("Invalid xml file"));
 
     m_Sights.clear();
+    m_lunarSolutions.clear();
 
     for (TiXmlElement* e = root.FirstChild().Element(); e;
          e = e->NextSiblingElement()) {
       if (!strcmp(e->Value(), "ClockError")) {
         m_ClockCorrection = AttributeInt(e, "Seconds", 0);
+        m_lunarSolutions = ReadLunarSolutions(e);
       } else if (!strcmp(e->Value(), "Sight")) {
         Sight s;
 
@@ -727,6 +729,7 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
             AttributeDouble(e, "LunarBodyAltitudeUncertainty", .2);
         s.m_LunarSeparateTimes =
             AttributeInt(e, "LunarSeparateTimes", 0) != 0;
+        s.m_LunarTimeIsWatch = AttributeBool(e, "LunarTimeIsWatch", false);
         s.m_LunarMoonTimeOffsetSeconds =
             AttributeInt(e, "LunarMoonTimeOffsetSeconds", 0);
         s.m_LunarBodyTimeOffsetSeconds =
@@ -831,12 +834,10 @@ failed:
 
 void SetFloatAttribute(TiXmlElement* c, const char* label, Sight& s,
                        double value) {
-  char buf[20];
-  sprintf(buf, "%f", value);
-  c->SetAttribute(label, buf);
+  SetPreciseXmlDouble(c, label, value);
 }
 
-void CelestialNavigationDialog::SaveXML() {
+bool CelestialNavigationDialog::SaveXML() {
   TiXmlDocument doc;
   TiXmlDeclaration* decl = new TiXmlDeclaration("1.0", "utf-8", "");
   doc.LinkEndChild(decl);
@@ -851,6 +852,8 @@ void CelestialNavigationDialog::SaveXML() {
 
   TiXmlElement* c = new TiXmlElement("ClockError");
   c->SetAttribute("Seconds", m_ClockCorrection);
+  // Optional children of an existing node: old readers still load the sights.
+  WriteLunarSolutions(c, m_lunarSolutions);
   root->LinkEndChild(c);
 
   for (Sight& s : m_Sights) {
@@ -870,6 +873,7 @@ void CelestialNavigationDialog::SaveXML() {
     SetFloatAttribute(c, "LunarBodyAltitudeUncertainty", s,
                       s.m_LunarBodyAltitudeUncertainty);
     c->SetAttribute("LunarSeparateTimes", s.m_LunarSeparateTimes ? 1 : 0);
+    c->SetAttribute("LunarTimeIsWatch", s.m_LunarTimeIsWatch ? 1 : 0);
     c->SetAttribute("LunarMoonTimeOffsetSeconds",
                     s.m_LunarMoonTimeOffsetSeconds);
     c->SetAttribute("LunarBodyTimeOffsetSeconds",
@@ -931,7 +935,9 @@ void CelestialNavigationDialog::SaveXML() {
     wxMessageDialog mdlg(this, _("Failed to save xml file: ") + m_sights_path,
                          _("Celestial Navigation"), wxOK | wxICON_ERROR);
     mdlg.ShowModal();
+    return false;
   }
+  return true;
 }
 
 bool compareSightAsc(const Sight& a, const Sight& b, int sortCol) {
@@ -1506,6 +1512,63 @@ void CelestialNavigationDialog::ApplyClockCorrection(int correction_seconds) {
   SaveXML();
   UpdateTimeIntegrityPanel();
   RequestRefresh(GetParent());
+}
+
+bool CelestialNavigationDialog::SaveLunarSolution(LunarSolutionRecord record) {
+  if (!std::isfinite(record.TotalCorrection()) || record.inputs.empty())
+    return false;
+  wxTextEntryDialog name(
+      this,
+      _("Name this watch/session. Saving preserves an input snapshot and a "
+        "derived solution; no sight times or global clock correction change."),
+      _("Save lunar solution"), record.reference_time);
+  if (name.ShowModal() != wxID_OK) return false;
+  record.name = name.GetValue();
+  record.created_utc =
+      UtcDateTime::FormatUtc(UtcDateTime::Now(), "%Y-%m-%d %H:%M:%S UTC");
+  m_lunarSolutions.push_back(record);
+  if (!SaveXML()) {
+    m_lunarSolutions.pop_back();
+    return false;
+  }
+  return true;
+}
+
+void CelestialNavigationDialog::ShowLunarSolutions(wxWindow* parent) {
+  wxDialog dialog(parent, wxID_ANY, _("Saved lunar solutions"),
+                  wxDefaultPosition, wxSize(880, 650),
+                  wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+  auto* layout = new wxBoxSizer(wxVERTICAL);
+  auto* choice = new wxChoice(&dialog, wxID_ANY);
+  for (const auto& record : m_lunarSolutions) choice->Append(record.Summary());
+  layout->Add(choice, 0, wxALL | wxEXPAND, 8);
+  auto* details =
+      new wxTextCtrl(&dialog, wxID_ANY, wxEmptyString, wxDefaultPosition,
+                     wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY | wxHSCROLL);
+  layout->Add(details, 1, wxALL | wxEXPAND, 8);
+  auto update = [this, choice, details]() {
+    const int selected = choice->GetSelection();
+    details->SetValue(selected == wxNOT_FOUND
+                          ? _("No lunar solutions saved yet.")
+                          : m_lunarSolutions[selected].Details());
+  };
+  if (!m_lunarSolutions.empty())
+    choice->SetSelection(m_lunarSolutions.size() - 1);
+  update();
+  choice->Bind(wxEVT_CHOICE, [update](wxCommandEvent&) { update(); });
+  auto* buttons = new wxBoxSizer(wxHORIZONTAL);
+  auto* copy = new wxButton(&dialog, wxID_ANY, _("Copy report"));
+  copy->Bind(wxEVT_BUTTON, [details](wxCommandEvent&) {
+    if (wxTheClipboard->Open()) {
+      wxTheClipboard->SetData(new wxTextDataObject(details->GetValue()));
+      wxTheClipboard->Close();
+    }
+  });
+  buttons->Add(copy, 0, wxALL, 8);
+  buttons->Add(new wxButton(&dialog, wxID_OK, _("Close")), 0, wxALL, 8);
+  layout->Add(buttons, 0, wxALIGN_RIGHT);
+  dialog.SetSizer(layout);
+  dialog.ShowModal();
 }
 
 void CelestialNavigationDialog::OnDocumentation(wxCommandEvent& event) {

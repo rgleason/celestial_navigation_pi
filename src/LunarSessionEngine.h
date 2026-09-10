@@ -4,6 +4,8 @@
 #include "LunarDistanceEngine.h"
 
 #include <cstddef>
+#include <array>
+#include <limits>
 #include <functional>
 #include <string>
 #include <vector>
@@ -17,6 +19,9 @@ struct SessionObservation {
   // Watch interval from the session reference epoch to the distance sight.
   double epoch_offset_seconds = 0.0;
   bool enabled = true;
+  // Optional identities of the distance/Moon/body readings. A shared reading
+  // contributes one residual, however many triples refer to it.
+  std::array<std::string, 3> reading_ids;
 };
 
 struct PositionSeed {
@@ -55,9 +60,9 @@ struct Options {
 
 struct ReadingResidual {
   std::string label;
-  double distance_arcmin = 0.0;
-  double moon_altitude_arcmin = 0.0;
-  double body_altitude_arcmin = 0.0;
+  double distance_arcmin = std::numeric_limits<double>::quiet_NaN();
+  double moon_altitude_arcmin = std::numeric_limits<double>::quiet_NaN();
+  double body_altitude_arcmin = std::numeric_limits<double>::quiet_NaN();
   double standardized_max = 0.0;
   bool possible_outlier = false;
 };
@@ -68,8 +73,8 @@ struct Candidate {
   double common_index_bias_arcmin = 0.0;
   double weighted_rms = 0.0;
   double angular_rms_arcmin = 0.0;
-  double time_uncertainty_seconds = 0.0;
-  double position_uncertainty_nm = 0.0;
+  double time_uncertainty_seconds = std::numeric_limits<double>::infinity();
+  double position_uncertainty_nm = std::numeric_limits<double>::infinity();
   double condition_number = 0.0;
   std::vector<ReadingResidual> residuals;
 };

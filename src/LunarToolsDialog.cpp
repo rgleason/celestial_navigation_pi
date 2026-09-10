@@ -124,6 +124,11 @@ LunarToolsDialog::LunarToolsDialog(CelestialNavigationDialog* parent)
   auto* close = new wxButton(this, wxID_CLOSE, _("Close"));
   close->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { EndModal(wxID_CLOSE); });
   auto* bottom = new wxBoxSizer(wxHORIZONTAL);
+  auto* saved = new wxButton(this, wxID_ANY, _("Saved lunar solutions"));
+  saved->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    m_parentDialog->ShowLunarSolutions(this);
+  });
+  bottom->Add(saved, 0, wxALL, 8);
   bottom->AddStretchSpacer();
   bottom->Add(close, 0, wxALL, 8);
   top->Add(bottom, 0, wxEXPAND);
@@ -371,8 +376,7 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
                     0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
   resultHeader->Add(m_sequenceCandidate, 0, wxRIGHT, 10);
   resultHeader->AddStretchSpacer();
-  m_applySequence =
-      new wxButton(page, wxID_ANY, _("Apply watch correction to all sights"));
+  m_applySequence = new wxButton(page, wxID_ANY, _("Save lunar solution"));
   m_applySequence->Enable(false);
   m_applySequence->Bind(wxEVT_BUTTON,
                         &LunarToolsDialog::ApplySequenceCorrection, this);
@@ -664,6 +668,8 @@ void LunarToolsDialog::UseEarliestSequencePosition(wxCommandEvent&) {
 }
 
 void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
+  m_applySequence->Enable(false);
+  m_sequenceRecords.clear();
   double sequenceLatitude = 0.0;
   double sequenceLongitude = 0.0;
   if (!m_sequenceLatitude->GetAngle(&sequenceLatitude) ||
@@ -748,6 +754,18 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
     entry.settings = sight.LunarObservation();
     entry.epoch_offset_seconds =
         UtcDateTime::SecondsBetween(sight.m_CorrectedDateTime, reference);
+    auto reading_id = [&](const wxString& body, double offset) {
+      return (body + "@" +
+              UtcDateTime::FormatUtc(
+                  UtcDateTime::AddSeconds(sight.m_DateTime, offset),
+                  "%Y-%m-%d %H:%M:%S.%l"))
+          .ToStdString();
+    };
+    entry.reading_ids[0] = reading_id("LD:Moon-" + sight.m_Body, 0);
+    entry.reading_ids[1] =
+        reading_id("Hs:Moon", entry.settings.moon_time_offset_seconds);
+    entry.reading_ids[2] = reading_id("Hs:" + sight.m_Body,
+                                      entry.settings.body_time_offset_seconds);
     const auto sight_ephemeris = sight.LunarEphemeris();
     const double epoch = entry.epoch_offset_seconds;
     entry.ephemeris = [snapshot, sight_ephemeris, epoch](
@@ -835,6 +853,45 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
     m_sequenceCandidate->Append(
         wxString::Format(_("Candidate %zu"), index + 1));
   m_sequenceCandidate->SetSelection(0);
+  for (std::size_t index = 0; index < m_sequenceResult.candidates.size();
+       ++index) {
+    const auto& candidate = m_sequenceResult.candidates[index];
+    LunarSolutionRecord record;
+    record.reference_time = UtcDateTime::FormatUtc(
+        UtcDateTime::AddSeconds(reference,
+                                -m_parentDialog->GetClockCorrection()),
+        "%Y-%m-%d %H:%M:%S");
+    record.method = options.solve_position
+                        ? "WGS84 sequence: time and position"
+                        : "WGS84 sequence: time at known position";
+    record.base_correction_seconds = m_parentDialog->GetClockCorrection();
+    record.additional_correction_seconds = candidate.clock_correction_seconds;
+    record.time_sigma_seconds = candidate.time_uncertainty_seconds;
+    for (const auto& snapshot : snapshots)
+      record.inputs.push_back(LunarInputSnapshot(*snapshot));
+    record.report = wxString::Format(
+        "Candidate %zu; reference position %.9f, %.9f; position sigma %.3f NM\n"
+        "Motion %d; COG %.3f; SOG %.3f; robust fit %d; fit index bias %d\n"
+        "Index bias %.6f arcmin; weighted RMS %.6f; condition %.6g\n"
+        "Residual nan means a shared/excluded reading, not a zero error.\n",
+        index + 1, candidate.reference_position.latitude_deg,
+        candidate.reference_position.longitude_deg,
+        candidate.position_uncertainty_nm, int(options.moving_observer),
+        options.course_true_deg, options.speed_knots, int(options.robust_fit),
+        int(options.estimate_common_index_bias),
+        candidate.common_index_bias_arcmin, candidate.weighted_rms,
+        candidate.condition_number);
+    for (const auto& residual : candidate.residuals)
+      record.report +=
+          wxString::FromUTF8(residual.label.c_str()) +
+          wxString::Format(
+              " residuals arcmin: LD %+.6f Moon %+.6f body %+.6f; outlier %d\n",
+              residual.distance_arcmin, residual.moon_altitude_arcmin,
+              residual.body_altitude_arcmin, int(residual.possible_outlier));
+    for (const auto& warning : m_sequenceResult.warnings)
+      record.report += wxString::FromUTF8(warning.c_str()) + "\n";
+    m_sequenceRecords.push_back(record);
+  }
   ShowCandidate(0);
   m_applySequence->Enable(true);
 }
@@ -857,7 +914,7 @@ void LunarToolsDialog::ShowCandidate(std::size_t index) {
       candidate.reference_position.longitude_deg, candidate.angular_rms_arcmin,
       candidate.weighted_rms, candidate.time_uncertainty_seconds,
       candidate.position_uncertainty_nm);
-  if (m_sequenceBias->GetValue())
+  if (candidate.common_index_bias_arcmin != 0.0)
     summary += wxString::Format(CN_UTF8_("; common index bias %+0.2f′"),
                                 candidate.common_index_bias_arcmin);
   for (const auto& warning : m_sequenceResult.warnings)
@@ -865,16 +922,20 @@ void LunarToolsDialog::ShowCandidate(std::size_t index) {
   m_sequenceSummary->SetLabel(summary);
   m_sequenceSummary->Wrap(1000);
   m_sequenceResiduals->DeleteAllItems();
+  auto residual_text = [](double value) {
+    return std::isfinite(value) ? wxString::Format("%+0.2f'", value)
+                                : _("Shared/not used");
+  };
   for (std::size_t row = 0; row < candidate.residuals.size(); ++row) {
     const auto& residual = candidate.residuals[row];
     const long item = m_sequenceResiduals->InsertItem(
         static_cast<long>(row), wxString::FromUTF8(residual.label.c_str()));
-    m_sequenceResiduals->SetItem(
-        item, 1, wxString::Format("%+0.2f'", residual.distance_arcmin));
-    m_sequenceResiduals->SetItem(
-        item, 2, wxString::Format("%+0.2f'", residual.moon_altitude_arcmin));
-    m_sequenceResiduals->SetItem(
-        item, 3, wxString::Format("%+0.2f'", residual.body_altitude_arcmin));
+    m_sequenceResiduals->SetItem(item, 1,
+                                 residual_text(residual.distance_arcmin));
+    m_sequenceResiduals->SetItem(item, 2,
+                                 residual_text(residual.moon_altitude_arcmin));
+    m_sequenceResiduals->SetItem(item, 3,
+                                 residual_text(residual.body_altitude_arcmin));
     m_sequenceResiduals->SetItem(
         item, 4,
         residual.possible_outlier ? wxString::Format(CN_UTF8_("Inspect: %.1fσ"),
@@ -885,19 +946,10 @@ void LunarToolsDialog::ShowCandidate(std::size_t index) {
 
 void LunarToolsDialog::ApplySequenceCorrection(wxCommandEvent&) {
   const int selection = m_sequenceCandidate->GetSelection();
-  if (selection == wxNOT_FOUND) return;
-  const int additional = static_cast<int>(std::lround(
-      m_sequenceResult.candidates[selection].clock_correction_seconds));
-  const int total = m_parentDialog->GetClockCorrection() + additional;
-  if (wxMessageBox(
-          wxString::Format(
-              _("Apply total sight correction %+d seconds (current %+d, "
-                "sequence adds %+d) to every saved sight? Raw watch times are "
-                "retained."),
-              total, m_parentDialog->GetClockCorrection(), additional),
-          _("Apply recovered watch correction"), wxYES_NO | wxICON_QUESTION,
-          this) == wxYES) {
-    m_parentDialog->ApplyClockCorrection(total);
+  if (selection == wxNOT_FOUND ||
+      std::size_t(selection) >= m_sequenceRecords.size())
+    return;
+  if (m_parentDialog->SaveLunarSolution(m_sequenceRecords[selection])) {
     m_applySequence->Enable(false);
   }
 }

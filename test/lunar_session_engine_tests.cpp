@@ -104,6 +104,33 @@ TEST(LunarSessionEngine, RecoversClockAndPositionJointly) {
                 result.candidates[0].reference_position, truth),
             0.1);
   EXPECT_LT(result.candidates[0].angular_rms_arcmin, 0.01);
+  EXPECT_GT(result.candidates[0].time_uncertainty_seconds, 0.1);
+  EXPECT_GT(result.candidates[0].position_uncertainty_nm, 0.01);
+}
+
+TEST(LunarSessionEngine, CopiesOfSharedReadingsDoNotImproveUncertainty) {
+  const lunar_distance::GeographicPoint truth(32.4, -48.7);
+  auto observations = MakeSession(4372, truth, 3);
+  for (std::size_t i = 0; i < observations.size(); ++i)
+    for (int c = 0; c < 3; ++c)
+      observations[i].reading_ids[c] =
+          std::to_string(i) + "/" + std::to_string(c);
+  lunar_session::Options options;
+  options.known_or_initial_position = truth;
+  options.correction_seeds = {4372};
+  options.start_correction_seconds = 4000;
+  options.end_correction_seconds = 4500;
+  auto once = lunar_session::Solve(observations, options);
+  ASSERT_TRUE(once.valid) << once.error;
+  const auto duplicate = observations;
+  observations.insert(observations.end(), duplicate.begin(), duplicate.end());
+  auto twice = lunar_session::Solve(observations, options);
+  ASSERT_TRUE(twice.valid) << twice.error;
+  EXPECT_NEAR(once.candidates[0].time_uncertainty_seconds,
+              twice.candidates[0].time_uncertainty_seconds, 1e-6);
+  EXPECT_FALSE(twice.warnings.empty());
+  observations.back().settings.moon_altitude_deg += 0.1;
+  EXPECT_FALSE(lunar_session::Solve(observations, options).valid);
 }
 
 TEST(LunarSessionEngine, RobustFitReportsButResistsAnOutlier) {

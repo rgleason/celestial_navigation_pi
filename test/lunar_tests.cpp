@@ -93,6 +93,9 @@ struct lunarsightdata {
 };
 
 struct lunarsightdata LUNAR_SIGHTS[] = {
+    // Regression outputs for the 2.8.5.1 WGS84/apparent-direction model.
+    // Former spherical/mixed-ephemeris outputs were 60.104126/-63 and
+    // 60.091036/+24. Independent Horizons checks live in lunar_de440_tests.
     /* case 1 */
     {"2025-08-18 11:58:00",
      "Sun",
@@ -106,8 +109,8 @@ struct lunarsightdata LUNAR_SIGHTS[] = {
      {70, 4},
      Sight::LOWER,
      {17, 1},
-     60.104126,
-     -63},
+     60.102648265,
+     -78},
     /* case 2 */
     {"2025-08-18 11:58:00",
      "Sun",
@@ -121,8 +124,8 @@ struct lunarsightdata LUNAR_SIGHTS[] = {
      {70, 4},
      Sight::LOWER,
      {17, 1},
-     60.091036,
-     24},
+     60.089777736,
+     7},
     /* case 5 */
     //    { "2025-08-09 07:00:00", "Saturn", Sight::LUNAR_NEAR, 10, 1010,
     //    0.1, 2.4, { 45, 2.8 }, Sight::LOWER, { 22, 53 }, Sight::CENTER, { 42,
@@ -141,7 +144,7 @@ struct lunarsightdata LUNAR_SIGHTS[] = {
      Sight::CENTER,
      {70, 38},
      44.800810,
-     -2},
+     4},
 };
 
 TEST_F(LunarTest, Sight) {

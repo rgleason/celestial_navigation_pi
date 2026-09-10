@@ -87,14 +87,14 @@ public:
   bool IsCalculated() const { return m_bCalculated; }
   bool IsSelected() const { return m_bSelected; }
 
-  void Recompute(int clock_offset);
+  void Recompute(double clock_offset);
   void RebuildPolygons();
 
   wxString Alminac(wxDateTime time, double lat, double lon, double ghaast,
                    double rad, double SD, double HP);
   void RecomputeAltitude();
   void RecomputeAzimuth();
-  void RecomputeLunar();
+  void RecomputeLunar(int preferred_candidate = -1);
   void RecomputeHorizon();
 
   void RebuildPolygonsAltitude();
@@ -136,6 +136,7 @@ public:
   double m_LunarMoonAltitudeUncertainty;
   double m_LunarBodyAltitudeUncertainty;
   bool m_LunarSeparateTimes;
+  bool m_LunarTimeIsWatch = false;
   int m_LunarMoonTimeOffsetSeconds;
   int m_LunarBodyTimeOffsetSeconds;
   bool m_LunarMovingObserver;

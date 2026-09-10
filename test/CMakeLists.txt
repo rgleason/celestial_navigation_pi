@@ -32,6 +32,8 @@ set(SRC
     altitude_tests.cpp
     azimuth_tests.cpp
     lunar_tests.cpp
+    lunar_solution_record_tests.cpp
+    lunar_ui_smoke_tests.cpp
     lunar_distance_engine_tests.cpp
     lunar_session_engine_tests.cpp
     lunar_session_worker_tests.cpp

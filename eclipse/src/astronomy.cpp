@@ -38,6 +38,31 @@ bool AstrometricPosition(const SpkKernel& kernel, std::int32_t target,
   return true;
 }
 
+bool ApparentGeocentricPosition(const SpkKernel& kernel, std::int32_t target,
+                                double reception_et, Vector3* position_km,
+                                std::string* error) {
+  Vector3 natural, before, after, sun;
+  if (!position_km ||
+      !AstrometricPosition(kernel, target, 399, reception_et, &natural,
+                           error) ||
+      !kernel.Position(399, 0, reception_et - 30.0, &before, error) ||
+      !kernel.Position(399, 0, reception_et + 30.0, &after, error) ||
+      !kernel.Position(10, 399, reception_et, &sun, error))
+    return false;
+  const double range = natural.Norm();
+  if (!(range > 0.0) || !(sun.Norm() > 0.0)) return false;
+  const Vector3 velocity = (after - before) * (1.0 / (60.0 * 299792.458));
+  double direction[3] = {natural.x / range, natural.y / range,
+                         natural.z / range};
+  double v[3] = {velocity.x, velocity.y, velocity.z};
+  double apparent[3];
+  eraAb(direction, v, sun.Norm() / 149597870.7,
+        std::sqrt(1.0 - Dot(velocity, velocity)), apparent);
+  *position_km =
+      Vector3(apparent[0] * range, apparent[1] * range, apparent[2] * range);
+  return true;
+}
+
 Vector3 IcrfToEarthFixed(const Vector3& icrf,
                          const EarthOrientation& orientation) {
   double matrix[3][3];

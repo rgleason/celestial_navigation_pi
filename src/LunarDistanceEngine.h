@@ -11,6 +11,9 @@ enum class AltitudeLimb { Lower, Center, Upper };
 enum class DistanceContact { Near, Center, Far };
 
 struct Observation {
+  // WGS84 geodetic observer and exact vector parallax. False retains the
+  // historical spherical reduction for independent comparison/tests.
+  bool use_ellipsoid = false;
   double raw_distance_deg = 0.0;
   double moon_altitude_deg = 0.0;
   double body_altitude_deg = 0.0;
@@ -54,6 +57,10 @@ struct GeographicPoint {
   GeographicPoint(double latitude = 0.0, double longitude = 0.0)
       : latitude_deg(latitude), longitude_deg(longitude) {}
 };
+
+GeographicPoint AdvanceObserver(const GeographicPoint& reference,
+                                const Observation& observation,
+                                double relative_seconds);
 
 struct PositionResult {
   bool valid = false;
@@ -144,6 +151,7 @@ struct TimeCandidate {
   double time_uncertainty_seconds = 0.0;
   std::vector<GeographicPoint> positions;
   double position_uncertainty_nm = 0.0;
+  double circle_crossing_angle_deg = 0.0;
 };
 
 struct SolveOptions {
@@ -202,6 +210,10 @@ PositionResult IntersectAltitudeCircles(
     double moon_observed_altitude_deg,
     const GeographicPoint& body_geographic_position,
     double body_observed_altitude_deg);
+
+PositionResult PositionAtTime(const Observation& observation,
+                              const EphemerisFunction& ephemeris,
+                              double correction_seconds);
 
 double GreatCircleDistanceNm(const GeographicPoint& first,
                              const GeographicPoint& second);

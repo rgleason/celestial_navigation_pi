@@ -52,6 +52,7 @@ using namespace std;
 
 FixDialog::FixDialog(CelestialNavigationDialog* parent)
     : FixDialogBase(parent),
+      m_clock_offset(parent->GetClockCorrection()),
       m_fixlat(NAN),
       m_fixlon(NAN),
       m_fixerror(NAN),
@@ -67,6 +68,21 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
       m_lastEpochTimeBasis(0) {
   m_sdbSizer8OK->SetLabel(_("Close"));
   m_sdbSizer8->Layout();
+  auto* correctionRow = new wxBoxSizer(wxVERTICAL);
+  correctionRow->Add(
+      new wxStaticText(this, wxID_ANY,
+                       _("Correction for this fix only. Select visible sights "
+                         "from the same watch and clock.")),
+      0, wxALL, 5);
+  m_lunarSolution = new wxChoice(this, wxID_ANY);
+  m_lunarSolution->Append(_("Use existing manual clock correction"));
+  for (const auto& record : parent->LunarSolutions())
+    m_lunarSolution->Append(record.Summary());
+  m_lunarSolution->SetSelection(0);
+  m_lunarSolution->Bind(wxEVT_CHOICE,
+                        [this](wxCommandEvent&) { Update(m_clock_offset); });
+  correctionRow->Add(m_lunarSolution, 0, wxALL | wxEXPAND, 5);
+  GetSizer()->Insert(1, correctionRow, 0, wxEXPAND);
   double lat, lon;
   celestial_navigation_pi_BoatPos(lat, lon);
   m_sInitialLatitude->SetValue(lat);
@@ -311,11 +327,32 @@ int matrix_invert3(double a[3][3]) {
 }
 
 void FixDialog::Update(int clock_offset) {
+  m_clock_offset = clock_offset;
+  double effective_correction = clock_offset;
+  const LunarSolutionRecord* record = nullptr;
+  const int selection = m_lunarSolution->GetSelection();
+  if (selection > 0 &&
+      std::size_t(selection - 1) < m_Parent->LunarSolutions().size()) {
+    record = &m_Parent->LunarSolutions()[selection - 1];
+    effective_correction = record->TotalCorrection();
+  }
+  wxString error;
+  if (!PrepareLunarFixSights(m_Parent->m_Sights, record, effective_correction,
+                             &m_workingSights, &error)) {
+    m_fixlat = m_fixlon = m_fixerror = NAN;
+    m_stLatitude->SetValue(_("N/A"));
+    m_stLongitude->SetValue(_("N/A"));
+    m_stFixError->SetValue(_("Watch mismatch"));
+    m_runningSummary->SetLabel(error);
+    m_bGo->Disable();
+    return;
+  }
   if (m_runningFix && m_runningFix->GetValue()) {
-    UpdateRunningFix(clock_offset);
+    UpdateRunningFix(effective_correction);
     return;
   }
   if (m_residuals) m_residuals->DeleteAllItems();
+  if (m_runningSummary) m_runningSummary->SetLabel(wxEmptyString);
   std::list<std::vector<double> > J;
   std::list<double> R;
 
@@ -330,7 +367,7 @@ void FixDialog::Update(int clock_offset) {
   m_clock_offset = clock_offset;
   int iterations = 0;
 again:
-  for (Sight& s : ((CelestialNavigationDialog*)GetParent())->m_Sights) {
+  for (Sight& s : m_workingSights) {
     if (!s.IsVisible() ||
         (s.m_Type != Sight::ALTITUDE && s.m_Type != Sight::HORIZON))
       continue;
@@ -349,8 +386,8 @@ determine fix visually instead.\n"),
     }
 
     double lat, lon;
-    s.BodyLocation(UtcDateTime::AddSeconds(s.m_DateTime, clock_offset), &lat, &lon,
-                   0, 0, 0);
+    s.BodyLocation(UtcDateTime::AddSeconds(s.m_DateTime, effective_correction),
+                   &lat, &lon, 0, 0, 0);
 
     /* take vector from body location of length equal to
        normalized measurement (so the plane this vector
@@ -498,7 +535,7 @@ determine fix visually instead.\n"),
   RequestRefresh(GetParent()->GetParent());
 }
 
-void FixDialog::UpdateRunningFix(int clock_offset) {
+void FixDialog::UpdateRunningFix(double clock_offset) {
   const wxDateTime epoch = ReadEpochUtc();
   if (!epoch.IsValid()) {
     m_stLatitude->SetValue(_("   N/A   "));
@@ -509,15 +546,15 @@ void FixDialog::UpdateRunningFix(int clock_offset) {
     return;
   }
   std::vector<FixObservation> observations;
-  for (const Sight& sight : m_Parent->m_Sights) {
+  for (const Sight& sight : m_workingSights) {
     if (!sight.IsVisible() || !sight.IsCalculated() ||
         (sight.m_Type != Sight::ALTITUDE && sight.m_Type != Sight::HORIZON))
       continue;
     FixObservation observation;
     observation.label = sight.m_Body;
     observation.body = sight.m_Body;
-    observation.utc = UtcDateTime::ToInstant(sight.m_DateTime) +
-                      wxTimeSpan::Seconds(clock_offset);
+    observation.utc = UtcDateTime::ToInstant(
+        UtcDateTime::AddSeconds(sight.m_DateTime, clock_offset));
     observation.observedAltitude = sight.m_ObservedAltitude;
     observation.uncertaintyMinutes =
         sight.m_Type == Sight::HORIZON
