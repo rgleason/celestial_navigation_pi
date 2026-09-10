@@ -23,6 +23,9 @@
 #include "OcpnApiCompat.h"
 #include <vector>
 #include <wx/string.h>
+#include "WaypointPositionSource.h"
+void SetTestWaypoints(const std::vector<WaypointPosition>& points);
+void SetTestPluginDataRoot(const wxString& path);
 void SetTestPrivateDataPath(const wxString& path);
 int TestDownloadCalls();
 

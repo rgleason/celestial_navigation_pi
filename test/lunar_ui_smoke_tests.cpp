@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <wx/app.h>
+#include <wx/log.h>
 #include <wx/frame.h>
 #include <wx/choice.h>
 #include <wx/button.h>
@@ -47,6 +48,7 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
   wxApp::SetInstance(new wxApp);
   ASSERT_TRUE(wxEntryStart(argc, argv));
   ASSERT_TRUE(wxTheApp->CallOnInit());
+  delete wxLog::SetActiveTarget(new wxLogStderr);
   {
     wxFrame frame(nullptr, wxID_ANY, "Lunar UI test");
     wxDateTime time;
@@ -92,6 +94,7 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
     ASSERT_TRUE(wxRemoveFile(privatePath));
     ASSERT_TRUE(wxFileName::Mkdir(privatePath+"/plugins/celestial_navigation",0777,wxPATH_MKDIR_FULL));
     SetTestPrivateDataPath(privatePath);
+    SetTestPluginDataRoot(wxFileName(__FILE__).GetPath()+"/..");
     GetOCPNConfigObject()->Write("/PlugIns/CelestialNavigation/ShowTimeIntegrity",false);
     wxInitAllImageHandlers();
     {
@@ -156,6 +159,7 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       dialog.Hide();
     }
     SetTestPrivateDataPath(wxEmptyString);
+    SetTestPluginDataRoot(wxEmptyString);
     wxFileName::Rmdir(privatePath,wxPATH_RMDIR_RECURSIVE);
   }
   wxTheApp->OnExit();

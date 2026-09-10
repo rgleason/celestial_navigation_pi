@@ -3,8 +3,95 @@
 #include "CoastalNavigationEngine.h"
 
 #include <cmath>
+#include <array>
 
 namespace cn = coastal_navigation;
+
+TEST(CoastalNavigation, BobVerticalExamplesAndSignedAngles) {
+  cn::VerticalAngleObservation o;
+  o.mode=cn::VerticalAngleMode::SeaHorizonToTopBeyondHorizon;
+  o.eye_height_m=3; o.index_error_arcmin=-0.15;
+  for (const auto& example : {std::array<double,3>{24,2.9,9.676436},
+       {24,2.8,9.797358},{9,2.9,5.169446},{216,14.6,19.821714},
+       {216,2.9,30.830644},{24,4.1,8.341}}) {
+    o.charted_top_height_m=example[0]; o.angle_deg=example[1]/60;
+    const auto r=cn::SolveVerticalAngle(o);
+    ASSERT_TRUE(r.valid) << r.error;
+    EXPECT_NEAR(r.range_nm,example[2],0.001);
+  }
+  o.charted_top_height_m=24;
+  o.angle_deg=(1.758*std::sqrt(3.)+o.index_error_arcmin)/60;
+  const auto zero=cn::SolveVerticalAngle(o);
+  ASSERT_TRUE(zero.valid) << zero.error;
+  EXPECT_NEAR(zero.corrected_angle_deg,0,1e-15);
+  EXPECT_NEAR(zero.range_nm,9.682511,0.001);
+}
+
+TEST(CoastalNavigation, BowditchSignedTableEntries) {
+  // Table 15, 2019 ed., 70 ft height difference. Published entries are
+  // tenths of NM and differ slightly from its printed rounded constants.
+  cn::VerticalAngleObservation o;
+  o.mode=cn::VerticalAngleMode::SeaHorizonToTopBeyondHorizon;
+  o.eye_height_m=10; o.charted_top_height_m=10+70*0.3048;
+  for (const auto& example : {std::array<double,2>{-4,15.7},
+       {-3,14.0},{-2,12.5},{-1,11.0},{0,9.7},{1,8.6},{3,6.8}}) {
+    o.angle_deg=(example[0]+1.758*std::sqrt(10.))/60;
+    const auto r=cn::SolveVerticalAngle(o);
+    ASSERT_TRUE(r.valid) << r.error;
+    EXPECT_NEAR(r.range_nm,example[1],0.1);
+  }
+}
+
+TEST(CoastalNavigation, VisibilityBoundsAndModeGuidance) {
+  cn::VerticalAngleObservation o;
+  o.mode=cn::VerticalAngleMode::SeaHorizonToTopBeyondHorizon;
+  o.charted_top_height_m=24; o.eye_height_m=3; o.angle_deg=0;
+  auto r=cn::SolveVerticalAngle(o);
+  ASSERT_TRUE(r.valid) << r.error;
+  EXPECT_NEAR(r.range_nm,r.geographic_range_nm,0.01);
+  EXPECT_GT(r.geographic_range_nm,13.8);
+  EXPECT_LT(r.geographic_range_nm,14.2);
+  o.angle_deg=-0.001;
+  EXPECT_FALSE(cn::SolveVerticalAngle(o).valid);
+  o.angle_deg=1;
+  r=cn::SolveVerticalAngle(o);
+  ASSERT_TRUE(r.valid);
+  EXPECT_GT(r.warnings.size(),1u);
+  o.mode=cn::VerticalAngleMode::WaterlineToTop;
+  r=cn::SolveVerticalAngle(o);
+  o.angle_deg=r.waterline_transition_angle_deg;
+  r=cn::SolveVerticalAngle(o);
+  ASSERT_TRUE(r.valid) << r.error;
+  EXPECT_NEAR(r.range_nm,r.observer_horizon_nm,0.000001);
+  o.angle_deg-=0.000001;
+  EXPECT_FALSE(cn::SolveVerticalAngle(o).valid);
+  for(double angle:{0.,-0.001}) { o.angle_deg=angle; EXPECT_FALSE(cn::SolveVerticalAngle(o).valid); }
+  o.angle_deg=1; o.eye_height_m=30;
+  EXPECT_FALSE(cn::SolveVerticalAngle(o).valid);
+  o.eye_height_m=NAN;
+  EXPECT_FALSE(cn::SolveVerticalAngle(o).valid);
+}
+
+TEST(CoastalNavigation, BobHorizontalFixAndUncertaintyScaling) {
+  cn::HorizontalAngleObservation o;
+  o.left={43+45.9/60,-(69+19./60)};
+  o.centre={43+57.9/60,-(69+4.4/60)}; o.right={43+47./60,-(68+51.3/60)};
+  o.left_centre_angle_deg=111; o.centre_right_angle_deg=107; o.index_error_arcmin=-0.15;
+  const cn::GeoPoint initial{43+49.7/60,-(69+4.6/60)};
+  auto fine=cn::SolveHorizontalThreePointFix(o,initial);
+  ASSERT_TRUE(fine.valid);
+  EXPECT_NEAR(fine.position.latitude_deg,43+49.9315/60,0.000002);
+  EXPECT_NEAR(fine.position.longitude_deg,-(69+4.4233/60),0.000002);
+  o.angle_uncertainty_arcmin=60;
+  auto coarse=cn::SolveHorizontalThreePointFix(o,initial);
+  ASSERT_TRUE(coarse.valid);
+  EXPECT_DOUBLE_EQ(fine.position.latitude_deg,coarse.position.latitude_deg);
+  EXPECT_NEAR(coarse.estimated_uncertainty_nm/fine.estimated_uncertainty_nm,300,1e-9);
+  for(double sigma:{0.,-1.,double(NAN)}) {
+    o.angle_uncertainty_arcmin=sigma;
+    EXPECT_FALSE(cn::SolveHorizontalThreePointFix(o,initial).valid);
+  }
+}
 
 TEST(CoastalNavigation, WaterlineTopRangeIncludesEyeHeightAndCurvature) {
   cn::VerticalAngleObservation observation;

@@ -40,38 +40,77 @@ double VerticalSubtendedAngle(double range_m, double earth_radius_m,
   const double ty = top_y;
   const double denominator = std::hypot(bx, by) * std::hypot(tx, ty);
   if (!(denominator > 0.0)) return std::numeric_limits<double>::quiet_NaN();
-  return Deg(std::acos(Clamp((bx * tx + by * ty) / denominator, -1.0, 1.0)));
+  return Deg(std::atan2(std::fabs(bx * ty - by * tx), bx * tx + by * ty));
 }
 
 bool ValidPoint(const GeoPoint& point) {
   return std::isfinite(point.latitude_deg) &&
          std::isfinite(point.longitude_deg) && point.latitude_deg > -90.0 &&
-         point.latitude_deg < 90.0;
+         point.latitude_deg < 90.0 && point.longitude_deg >= -180.0 &&
+         point.longitude_deg <= 180.0;
 }
 
 }  // namespace
 
 RangeResult SolveVerticalAngle(const VerticalAngleObservation& observation) {
   RangeResult result;
-  const double corrected =
-      observation.angle_deg - observation.index_error_arcmin / 60.0 -
-      (observation.mode == VerticalAngleMode::SeaHorizonToTopBeyondHorizon
-           ? 1.758 * std::sqrt(std::max(0.0, observation.eye_height_m)) / 60.0
-           : 0.0);
-  result.corrected_angle_deg = corrected;
+  const bool sea = observation.mode == VerticalAngleMode::SeaHorizonToTopBeyondHorizon;
+  if ((!sea && observation.mode != VerticalAngleMode::WaterlineToTop) ||
+      !std::isfinite(observation.charted_top_height_m) ||
+      !std::isfinite(observation.water_level_above_height_datum_m) ||
+      !std::isfinite(observation.eye_height_m) || observation.eye_height_m < 0) {
+    result.error = "Invalid observation mode, target height, water level or eye height";
+    return result;
+  }
   result.effective_height_m = observation.charted_top_height_m -
                               observation.water_level_above_height_datum_m;
-  if (!std::isfinite(corrected) || corrected <= 0.0 || corrected >= 90.0) {
-    result.error = "Corrected vertical angle must be between 0 and 90 degrees";
+  if (!std::isfinite(result.effective_height_m) || !(result.effective_height_m > 0)) {
+    result.error = "Target top must be above the current water level; check the height datum";
     return result;
   }
-  if (!(result.effective_height_m > 0.0) || observation.eye_height_m < 0.0) {
-    result.error =
-        "The target top must be above the current water level and eye height "
-        "cannot be negative";
+  const double coefficient = observation.terrestrial_refraction_coefficient;
+  if (!sea && (!std::isfinite(coefficient) || coefficient < 0 || coefficient >= 0.5)) {
+    result.error = "Terrestrial refraction coefficient must be between 0 and 0.5";
     return result;
   }
-
+  // Table 15's quadratic curvature term is 0.7349 feet per NM squared.
+  // Use its equivalent radius for its visibility estimates, rather than
+  // mixing the waterline mode's k=0.13 with Bowditch's refraction convention.
+  const double effective_radius = sea
+      ? kMetresPerNm*kMetresPerNm/(2*0.7349*0.3048)
+      : kEarthRadiusM/(1-coefficient);
+  auto horizon = [effective_radius](double height) {
+    return effective_radius*std::atan2(std::sqrt(height*(2*effective_radius+height)),
+                                       effective_radius)/kMetresPerNm;
+  };
+  result.observer_horizon_nm = horizon(observation.eye_height_m);
+  result.geographic_range_nm = result.observer_horizon_nm+horizon(result.effective_height_m);
+  if (!std::isfinite(observation.eye_height_m*(2*effective_radius+observation.eye_height_m)) ||
+      !std::isfinite(result.effective_height_m*(2*effective_radius+result.effective_height_m))) {
+    result.error = "Heights exceed the supported numerical range";
+    return result;
+  }
+  result.dip_arcmin = sea ? 1.758*std::sqrt(observation.eye_height_m) : 0;
+  if (observation.eye_height_m > 0)
+    result.waterline_transition_angle_deg = VerticalSubtendedAngle(
+        result.observer_horizon_nm*kMetresPerNm,effective_radius,
+        observation.eye_height_m,result.effective_height_m);
+  result.visibility_available = true;
+  const double corrected =
+      observation.angle_deg - observation.index_error_arcmin / 60.0 -
+      result.dip_arcmin/60;
+  result.corrected_angle_deg = corrected;
+  if (!std::isfinite(corrected) || corrected >= 90.0 || corrected <= -90.0 || (!sea && corrected <= 0.0)) {
+    result.error = sea ? "Corrected sea-horizon angle must be between -90 and 90 degrees"
+                       : "Corrected waterline angle must be between 0 and 90 degrees";
+    return result;
+  }
+  // The top may be below the observer's horizontal, but cannot be below the
+  // visible horizon. Do not confuse a signed dip-corrected angle with Hs-IE.
+  if (sea && observation.angle_deg-observation.index_error_arcmin/60 < -1e-12) {
+    result.error = "Target top would be below the visible sea horizon after index correction";
+    return result;
+  }
   if (observation.mode == VerticalAngleMode::SeaHorizonToTopBeyondHorizon) {
     // American Practical Navigator (Bowditch), Table 15. Heights are feet,
     // range is nautical miles; constants include standard terrestrial
@@ -88,28 +127,33 @@ RangeResult SolveVerticalAngle(const VerticalAngleObservation& observation) {
       result.error = "Bowditch distance formula has no real solution";
       return result;
     }
-    result.range_nm = std::sqrt(radicand) - term;
+    const double root = std::sqrt(radicand);
+    result.range_nm = term > 0 ? (height_difference_ft/0.7349)/(root+term)
+                               : root-term;
+    // Small differences between rounded Bowditch constants are not a reason
+    // to reject a grazing observation; the physical Hs-IE test above is strict.
+    if (result.range_nm > result.geographic_range_nm+0.01) {
+      result.error = "Range exceeds geographic visibility under the standard refraction model";
+      return result;
+    }
+    if (result.range_nm < result.observer_horizon_nm)
+      result.warnings.push_back(
+          "Target waterline should be visible at this range. Confirm that the measured baseline was the sea horizon, not the waterline; modes are not interchangeable");
     result.warnings.push_back(
         "This Bowditch mode assumes standard terrestrial refraction; unusual "
         "atmospheric gradients can move the visible horizon");
   } else {
-    const double coefficient = observation.terrestrial_refraction_coefficient;
-    if (!std::isfinite(coefficient) || coefficient < 0.0 ||
-        coefficient >= 0.5) {
-      result.error =
-          "Terrestrial refraction coefficient must be between 0 and 0.5";
+    if (observation.eye_height_m == 0 || result.effective_height_m <= observation.eye_height_m) {
+      result.error = "Waterline mode requires positive eye height and a target top above the observer; lower targets can have ambiguous ranges";
       return result;
     }
-    const double effective_radius = kEarthRadiusM / (1.0 - coefficient);
-    const double visible_horizon_m =
-        std::sqrt(2.0 * effective_radius * observation.eye_height_m +
-                  observation.eye_height_m * observation.eye_height_m);
+    const double visible_horizon_m = result.observer_horizon_nm*kMetresPerNm;
     double low = 0.01;
-    double high = std::max(1.0, visible_horizon_m * 0.999999);
+    double high = visible_horizon_m;
     const double high_angle =
         VerticalSubtendedAngle(high, effective_radius, observation.eye_height_m,
                                result.effective_height_m);
-    if (!std::isfinite(high_angle) || corrected < high_angle) {
+    if (!std::isfinite(high_angle) || corrected < high_angle-1e-10) {
       result.error =
           "The waterline would be below the visible horizon at the range "
           "implied by this angle; use the sea-horizon method instead";
@@ -200,6 +244,10 @@ HorizontalFixResult SolveHorizontalThreePointFix(
   }
   const double left_centre_angle_deg =
       observation.left_centre_angle_deg - observation.index_error_arcmin / 60.0;
+  if (!std::isfinite(observation.angle_uncertainty_arcmin) || observation.angle_uncertainty_arcmin <= 0) {
+    result.error = "Angle uncertainty must be finite and positive";
+    return result;
+  }
   const double centre_right_angle_deg = observation.centre_right_angle_deg -
                                         observation.index_error_arcmin / 60.0;
   if (!(left_centre_angle_deg > 0.0 && left_centre_angle_deg < 180.0 &&

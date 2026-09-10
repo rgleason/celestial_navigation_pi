@@ -1,4 +1,6 @@
 #include "CoastalNavigationDialog.h"
+#include "WaypointPickerDialog.h"
+#include "Utf8Translation.h"
 
 #include "CelestialNavigationDialog.h"
 #include "DialogGeometry.h"
@@ -20,6 +22,7 @@
 #include <wx/textctrl.h>
 
 #include <cmath>
+#include <algorithm>
 
 namespace cn = coastal_navigation;
 
@@ -49,6 +52,7 @@ CoastalNavigationDialog::CoastalNavigationDialog(
         "from an object; one horizontal angle gives a line of position. Two "
         "independent horizontal angles can give a fix."));
   intro->Wrap(710);
+  m_wrappedLabels[intro]=_("These are coastal sextant methods. A vertical angle gives distance from an object; two horizontal angles can give a fix. Enter what you actually observed; calculations never change the raw readings.");
   root->Add(intro, 0, wxALL | wxEXPAND, 10);
 
   wxNotebook* notebook = new wxNotebook(this, wxID_ANY);
@@ -60,10 +64,10 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   verticalGrid->Add(new wxStaticText(vertical, wxID_ANY, _("Observation")), 0,
                     wxALIGN_CENTER_VERTICAL);
   wxArrayString verticalModes;
-  verticalModes.Add(_("Waterline to top (waterline visible)"));
-  verticalModes.Add(_("Sea horizon to top (object beyond horizon)"));
+  verticalModes.Add(_("Waterline to top (visible)"));
+  verticalModes.Add(_("Sea horizon to top"));
   m_verticalMode = new wxChoice(vertical, wxID_ANY, wxDefaultPosition,
-                                wxSize(340, -1), verticalModes);
+                                wxSize(220, -1), verticalModes);
   m_verticalMode->SetSelection(0);
   verticalGrid->Add(m_verticalMode, 0);
   verticalGrid->AddSpacer(1);
@@ -86,6 +90,11 @@ CoastalNavigationDialog::CoastalNavigationDialog(
       AddField(verticalGrid, vertical, _("Height of eye"),
                wxString::Format("%.1f", defaults.eyeHeight), _("m"));
   verticalRoot->Add(verticalGrid, 0, wxALL | wxEXPAND, 10);
+  AddWaypointPicker(verticalRoot,vertical,_("Select target waypoint..."),m_verticalTargetLat,m_verticalTargetLon);
+  m_verticalHeight->SetToolTip(_("Height of the point actually sighted, relative to the stated height datum. Focal height and tower height are not interchangeable."));
+  m_verticalWaterLevel->SetToolTip(_("Signed water level relative to the SAME height datum as the target, not necessarily chart sounding datum. Negative values are permitted."));
+  m_verticalGuidance=new wxStaticText(vertical,wxID_ANY,wxEmptyString);
+  verticalRoot->Add(m_verticalGuidance,0,wxLEFT|wxRIGHT|wxBOTTOM|wxEXPAND,10);
 
   wxStaticBoxSizer* bearingBox =
       new wxStaticBoxSizer(wxVERTICAL, vertical, _("Optional bearing fix"));
@@ -98,6 +107,7 @@ CoastalNavigationDialog::CoastalNavigationDialog(
       _("Record the bearing at effectively the same time as the vertical "
         "angle, or reduce it to that position epoch before entry."));
   bearingTiming->Wrap(650);
+  m_wrappedLabels[bearingTiming]=_("Record the bearing at effectively the same time as the vertical angle, or reduce it to that position epoch before entry.");
   bearingBox->Add(bearingTiming, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
   wxFlexGridSizer* bearingGrid = new wxFlexGridSizer(0, 3, 6, 8);
   bearingGrid->AddGrowableCol(1, 1);
@@ -139,6 +149,7 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   verticalRoot->Add(calculateVertical, 0, wxALL, 10);
   m_verticalResult = new wxStaticText(vertical, wxID_ANY, _("No result yet."));
   m_verticalResult->Wrap(690);
+  m_wrappedLabels[m_verticalResult]=m_verticalResult->GetLabel();
   verticalRoot->Add(m_verticalResult, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND,
                     10);
   vertical->SetSizer(verticalRoot);
@@ -155,6 +166,7 @@ CoastalNavigationDialog::CoastalNavigationDialog(
         "the two included angles. The approximate position chooses the "
         "correct solution when the geometry has an ambiguity."));
   hsaHelp->Wrap(690);
+  m_wrappedLabels[hsaHelp]=_("Enter three charted objects in left-centre-right visual order and the two included angles. The approximate position helps select a solution; check ambiguity independently. Formal uncertainty excludes landmark-coordinate error, misidentification and instrument biases. Small residuals do not establish position accuracy.");
   horizontalRoot->Add(hsaHelp, 0, wxALL | wxEXPAND, 10);
   wxFlexGridSizer* horizontalGrid = new wxFlexGridSizer(0, 3, 6, 8);
   horizontalGrid->AddGrowableCol(1, 1);
@@ -187,6 +199,10 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   m_initialLon = AddField(horizontalGrid, horizontal,
                           _("Approximate vessel longitude"), lon, _("angle"));
   horizontalRoot->Add(horizontalGrid, 0, wxALL | wxEXPAND, 10);
+  AddWaypointPicker(horizontalRoot,horizontal,_("Select left waypoint..."),m_leftLat,m_leftLon);
+  AddWaypointPicker(horizontalRoot,horizontal,_("Select centre waypoint..."),m_centreLat,m_centreLon);
+  AddWaypointPicker(horizontalRoot,horizontal,_("Select right waypoint..."),m_rightLat,m_rightLon);
+  m_angleUncertainty->SetToolTip(_("One-sigma uncertainty of each measured included angle, in arcminutes (60 arcminutes = 1 degree). This is not total fix accuracy."));
 
   wxStaticBoxSizer* sequence = new wxStaticBoxSizer(
       wxVERTICAL, horizontal, _("Sequential angle readings"));
@@ -224,6 +240,7 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   m_horizontalResult =
       new wxStaticText(horizontal, wxID_ANY, _("No result yet."));
   m_horizontalResult->Wrap(690);
+  m_wrappedLabels[m_horizontalResult]=m_horizontalResult->GetLabel();
   horizontalRoot->Add(m_horizontalResult, 0,
                       wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
   horizontal->SetSizer(horizontalRoot);
@@ -247,6 +264,7 @@ CoastalNavigationDialog::CoastalNavigationDialog(
       _("Entries are retained when this window is closed. Use New / clear "
         "observation before starting a different observation."));
   retention->Wrap(690);
+  m_wrappedLabels[retention]=_("Entries are retained when this window is closed. Use New / clear observation before starting a different observation.");
   root->Insert(root->GetItemCount() - 1, retention, 0,
                wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 10);
   newObservation->Bind(wxEVT_BUTTON, &CoastalNavigationDialog::NewObservation,
@@ -265,6 +283,90 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   SetSizer(root);
   SetMinSize(wxSize(720, 500));
   dialog_geometry::Restore(this, _T("CoastalNavigation"), wxSize(900, 760));
+  Bind(wxEVT_SIZE,[this](wxSizeEvent& event) { Rewrap(); event.Skip(); });
+  for(auto* page:{vertical,horizontal})
+    page->Bind(wxEVT_SIZE,[this](wxSizeEvent& event) { Rewrap(); event.Skip(); });
+  notebook->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED,[this](wxBookCtrlEvent& event) { Rewrap(); event.Skip(); });
+  for(auto* field:{m_verticalHeight,m_verticalWaterLevel,m_verticalEyeHeight})
+    field->Bind(wxEVT_TEXT,[this](wxCommandEvent&) { UpdateVerticalGuidance(); });
+  m_verticalMode->Bind(wxEVT_CHOICE,[this](wxCommandEvent&) { UpdateVerticalGuidance(); });
+  UpdateVerticalGuidance();
+}
+
+void CoastalNavigationDialog::SetWrappedLabel(wxStaticText* control,const wxString& text) {
+  m_wrappedLabels[control]=text;
+  Rewrap();
+}
+
+void CoastalNavigationDialog::Rewrap() {
+  if (m_rewrapping || !GetSizer()) return;
+  m_rewrapping=true;
+  Layout();
+  for (auto& item:m_wrappedLabels) {
+    auto* control=item.first;
+    control->SetLabel(item.second);
+    control->Wrap(std::max(160,control->GetParent()->GetClientSize().x-32));
+    control->SetMinSize(wxSize(1,-1));
+  }
+  Layout();
+  for(auto* child:GetChildren()) if(auto* notebook=dynamic_cast<wxNotebook*>(child))
+    for(size_t i=0;i<notebook->GetPageCount();++i) {
+      auto* page=dynamic_cast<wxScrolledWindow*>(notebook->GetPage(i));
+      if(page) {
+        page->FitInside();
+        page->SetVirtualSize(page->GetClientSize().x,page->GetVirtualSize().y);
+        page->Layout();
+      }
+    }
+  m_rewrapping=false;
+}
+
+void CoastalNavigationDialog::UpdateVerticalGuidance() {
+  cn::VerticalAngleObservation observation;
+  observation.mode=m_verticalMode->GetSelection()==0 ? cn::VerticalAngleMode::WaterlineToTop
+      : cn::VerticalAngleMode::SeaHorizonToTopBeyondHorizon;
+  if(!m_verticalHeight->GetValue().ToDouble(&observation.charted_top_height_m) ||
+     !m_verticalWaterLevel->GetValue().ToDouble(&observation.water_level_above_height_datum_m) ||
+     !m_verticalEyeHeight->GetValue().ToDouble(&observation.eye_height_m)) {
+    SetWrappedLabel(m_verticalGuidance,_("Enter target height, water level and eye height for visibility estimates."));
+    return;
+  }
+  const auto result=cn::SolveVerticalAngle(observation);
+  if(!result.visibility_available) { SetWrappedLabel(m_verticalGuidance,wxString::FromUTF8(result.error.c_str())); return; }
+  wxString text=wxString::Format(_("Estimated observer horizon: %.2f NM; target geographic visibility: %.2f NM. Standard refraction estimate, not a guarantee of visibility or a light's luminous range."),result.observer_horizon_nm,result.geographic_range_nm);
+  if(observation.eye_height_m>0)
+    text+=wxString::Format(_(" Waterline reaches the horizon at an index-corrected waterline-to-top angle of %.2f arcmin (no dip correction)."),result.waterline_transition_angle_deg*60);
+  text+=m_verticalMode->GetSelection()==0
+      ? _(" Use the waterline mode only if you actually measured from the visible waterline.")
+      : _(" Sea-horizon mode subtracts index error and dip; the resulting angle may be zero or negative. Do not substitute a waterline reading.");
+  SetWrappedLabel(m_verticalGuidance,text);
+}
+
+void CoastalNavigationDialog::AddWaypointPicker(wxSizer* layout,wxWindow* page,
+    const wxString& label,wxTextCtrl* latitude,wxTextCtrl* longitude) {
+  auto* button=new wxButton(page,wxID_ANY,label);
+  layout->Add(button,0,wxLEFT|wxRIGHT|wxBOTTOM,10);
+  button->SetToolTip(_("Copy coordinates from an OpenCPN mark or route point. The coordinates stay editable; target height must be checked separately."));
+  button->Bind(wxEVT_BUTTON,[this,latitude,longitude](wxCommandEvent&) {
+    const auto points=LoadOpenCpnWaypoints();
+    if(points.empty()) { wxMessageBox(_("No OpenCPN waypoints or marks are available."),_("Select waypoint"),wxOK|wxICON_INFORMATION,this); return; }
+    WaypointPickerDialog picker(this,points,wxEmptyString);
+    if(picker.ShowModal()!=wxID_OK) return;
+    const auto* point=picker.GetSelectedWaypoint();
+    if(!point) return;
+    latitude->SetValue(FormatNavigationAngle(point->latitude,NavigationAngleKind::Latitude,true));
+    longitude->SetValue(FormatNavigationAngle(point->longitude,NavigationAngleKind::Longitude,true));
+    if(latitude==m_verticalTargetLat) {
+      m_rangeCircle.clear();
+      m_hasVerticalPosition=false;
+      SetWrappedLabel(m_verticalResult,_("Waypoint coordinates selected. Check target height and calculate the range."));
+    } else {
+      m_hsaLoci.clear();
+      m_hasHorizontalFix=false;
+      SetWrappedLabel(m_horizontalResult,_("Waypoint coordinates selected. Check all three objects and solve the fix."));
+    }
+    RefreshChart();
+  });
 }
 
 CoastalNavigationDialog::~CoastalNavigationDialog() {
@@ -278,8 +380,9 @@ wxTextCtrl* CoastalNavigationDialog::AddField(wxSizer* sizer, wxWindow* parent,
   sizer->Add(new wxStaticText(parent, wxID_ANY, label), 0,
              wxALIGN_CENTER_VERTICAL);
   wxTextCtrl* control = new wxTextCtrl(parent, wxID_ANY, value,
-                                       wxDefaultPosition, wxSize(260, -1));
-  sizer->Add(control, 0);
+                                       wxDefaultPosition, wxSize(220, -1));
+  control->SetName(label);
+  sizer->Add(control, 0, wxEXPAND);
   sizer->Add(new wxStaticText(parent, wxID_ANY, units), 0,
              wxALIGN_CENTER_VERTICAL);
   return control;
@@ -364,8 +467,7 @@ void CoastalNavigationDialog::CalculateVertical(wxCommandEvent&) {
     return;
   const cn::RangeResult result = cn::SolveVerticalAngle(observation);
   if (!result.valid) {
-    m_verticalResult->SetLabel(_("No range: ") +
-                               wxString::FromUTF8(result.error.c_str()));
+    SetWrappedLabel(m_verticalResult,_("No range: ") + wxString::FromUTF8(result.error.c_str()));
     m_rangeCircle.clear();
     m_hasVerticalPosition = false;
     RefreshChart();
@@ -374,7 +476,8 @@ void CoastalNavigationDialog::CalculateVertical(wxCommandEvent&) {
   wxString text = wxString::Format(
       _("Range %.3f NM; corrected angle %s; effective target height %.2f m."),
       result.range_nm,
-      FormatNavigationAngle(result.corrected_angle_deg).c_str(),
+      ((result.corrected_angle_deg < 0 ? wxString("-") : wxString()) +
+       FormatNavigationAngle(std::fabs(result.corrected_angle_deg))).c_str(),
       result.effective_height_m);
   for (const std::string& warning : result.warnings)
     text += _("\nWarning: ") + wxString::FromUTF8(warning.c_str());
@@ -407,7 +510,7 @@ void CoastalNavigationDialog::CalculateVertical(wxCommandEvent&) {
         _("\nThis is a range circle, not a fix. Add a bearing or another "
           "independent observation.");
   }
-  m_verticalResult->SetLabel(text);
+  SetWrappedLabel(m_verticalResult,text);
   RefreshChart();
 }
 
@@ -469,7 +572,7 @@ void CoastalNavigationDialog::CalculateHorizontal(wxCommandEvent&) {
   }
   if (!result.valid) {
     m_hasHorizontalFix = false;
-    m_horizontalResult->SetLabel(
+    SetWrappedLabel(m_horizontalResult,
         _("No fix: ") + wxString::FromUTF8(result.error.c_str()) +
         _("\nThe individual HSA loci are plotted where their coastal-scale "
           "chart construction is valid."));
@@ -477,8 +580,8 @@ void CoastalNavigationDialog::CalculateHorizontal(wxCommandEvent&) {
     m_hasHorizontalFix = true;
     m_horizontalFix = result.position;
     wxString resultText = wxString::Format(
-        _("Fix %s, %s; residuals %+.4f' / %+.4f'; estimated 1-sigma geometry "
-          "uncertainty %.3f NM; condition %.1f."),
+        _("Fix %s, %s; residuals %+.4f' / %+.4f'; formal angular-input uncertainty "
+          "(1-sigma) %.3f NM; condition %.1f. Not total fix accuracy."),
         FormatNavigationAngle(result.position.latitude_deg,
                               NavigationAngleKind::Latitude, true)
             .c_str(),
@@ -491,7 +594,7 @@ void CoastalNavigationDialog::CalculateHorizontal(wxCommandEvent&) {
       resultText +=
           _(" The fix and both plotted loci are reduced to the "
             "first-angle reference epoch.");
-    m_horizontalResult->SetLabel(resultText);
+    SetWrappedLabel(m_horizontalResult,resultText);
   }
   RefreshChart();
 }
@@ -512,7 +615,7 @@ void CoastalNavigationDialog::UseWmmVariation(wxCommandEvent&) {
   const double variation =
       celestial_navigation_pi_GetWMM(latitude, longitude, 0.0, utc);
   m_variation->ChangeValue(wxString::Format("%.2f", variation));
-  m_variationSource->SetLabel(wxString::Format(
+  SetWrappedLabel(m_variationSource,wxString::Format(
       _("WMM estimate for current boat position at %s UTC; editable."),
       UtcDateTime::FormatUtc(utc, "%Y-%m-%d %H:%M")));
   m_variationSource->Wrap(520);
@@ -528,10 +631,10 @@ void CoastalNavigationDialog::UpdateBearingControls() {
   m_deviation->Enable(magnetic);
   m_useWmmVariation->Enable(magnetic);
   if (!magnetic) {
-    m_variationSource->SetLabel(
+    SetWrappedLabel(m_variationSource,
         _("Variation and deviation are ignored for True bearings."));
   } else if (!m_variationSource->GetLabel().StartsWith(_("WMM estimate"))) {
-    m_variationSource->SetLabel(
+    SetWrappedLabel(m_variationSource,
         _("Enter variation manually or use the current-position WMM estimate; "
           "compass deviation remains manual."));
   }
@@ -586,8 +689,9 @@ void CoastalNavigationDialog::NewObservation(wxCommandEvent&) {
       FormatNavigationAngle(boatLatitude, NavigationAngleKind::Latitude, true));
   m_initialLon->ChangeValue(FormatNavigationAngle(
       boatLongitude, NavigationAngleKind::Longitude, true));
-  m_verticalResult->SetLabel(_("No result yet."));
-  m_horizontalResult->SetLabel(_("No result yet."));
+  SetWrappedLabel(m_verticalResult,_("No result yet."));
+  SetWrappedLabel(m_horizontalResult,_("No result yet."));
+  UpdateVerticalGuidance();
   m_variationSource->SetLabel(
       _("Variation and deviation are ignored for True bearings."));
   m_variationSource->Wrap(520);

@@ -6,6 +6,7 @@
 #include <wx/dialog.h>
 
 #include <vector>
+#include <map>
 
 class CelestialNavigationDialog;
 class piDC;
@@ -41,6 +42,14 @@ private:
   void NewObservation(wxCommandEvent& event);
   void ClearPlots(wxCommandEvent& event);
   void RefreshChart();
+  void SetWrappedLabel(wxStaticText* control, const wxString& text);
+  void Rewrap();
+  void UpdateVerticalGuidance();
+  void AddWaypointPicker(wxSizer* layout, wxWindow* page, const wxString& label,
+                         wxTextCtrl* latitude, wxTextCtrl* longitude);
+  std::map<wxStaticText*,wxString> m_wrappedLabels;
+  bool m_rewrapping = false;
+  wxStaticText* m_verticalGuidance;
 
   CelestialNavigationDialog* m_parent;
   wxChoice* m_verticalMode;
