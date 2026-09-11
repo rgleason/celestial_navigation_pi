@@ -459,21 +459,36 @@ void SightDialog::SetColorScheme(ColorScheme cs)
 }
 #endif
 
+void SightDialog::ApplyFindPosition(const Sight& candidate) {
+  if (m_Sight.m_DRLat == candidate.m_DRLat &&
+      m_Sight.m_DRLon == candidate.m_DRLon &&
+      m_Sight.m_DRBoatPosition == candidate.m_DRBoatPosition &&
+      m_Sight.m_DRMagneticAzimuth == candidate.m_DRMagneticAzimuth) return;
+  m_Sight.m_DRLat = candidate.m_DRLat;
+  m_Sight.m_DRLon = candidate.m_DRLon;
+  m_Sight.m_DRBoatPosition = candidate.m_DRBoatPosition;
+  m_Sight.m_DRMagneticAzimuth = candidate.m_DRMagneticAzimuth;
+  MarkDirty();
+  Recompute();
+}
+
 void SightDialog::OnFindBody(wxCommandEvent& event) {
   if (m_Sight.m_Type == Sight::LUNAR) {
     LunarResultsDialog lunarresults_dialog(this, m_Sight);
     lunarresults_dialog.ShowModal();
   } else {
     Sight candidate = m_Sight;
-    FindBodyDialog findbody_dialog(this, candidate);
+    FindBodyDialog::CopyHsHandler copyHs;
+    // A bearing sight has no Hs input: never put an altitude in its bearing.
+    if (m_Sight.m_Type == Sight::ALTITUDE)
+      copyHs = [this](const wxString& hs) {
+        MarkDirty();
+        m_tMeasurement->SetValue(hs);
+      };
+    FindBodyDialog findbody_dialog(this, candidate, copyHs);
     findbody_dialog.ShowModal();
     if (findbody_dialog.GetReturnCode() == wxID_OK) {
-      m_Sight.m_DRLat = candidate.m_DRLat;
-      m_Sight.m_DRLon = candidate.m_DRLon;
-      m_Sight.m_DRBoatPosition = candidate.m_DRBoatPosition;
-      m_Sight.m_DRMagneticAzimuth = candidate.m_DRMagneticAzimuth;
-      MarkDirty();
-      m_tMeasurement->SetValue(findbody_dialog.m_tEstimatedHs->GetValue());
+      ApplyFindPosition(candidate);
     }
   }
 }
@@ -488,15 +503,13 @@ void SightDialog::OnFindLunarMoon(wxCommandEvent& event) {
   lunarSight.m_BodyLimb = m_Sight.m_LunarMoonLimb;
   lunarSight.m_Measurement = m_Sight.m_LunarMoonAltitude;
   lunarSight.Recompute(m_clock_offset);
-  FindBodyDialog findbody_dialog(this, lunarSight);
+  FindBodyDialog findbody_dialog(this, lunarSight, [this](const wxString& hs) {
+    MarkDirty();
+    m_tLunarMoonAltitude->SetValue(hs);
+  });
   findbody_dialog.ShowModal();
   if (findbody_dialog.GetReturnCode() == wxID_OK) {
-    MarkDirty();
-    m_tLunarMoonAltitude->SetValue(findbody_dialog.m_tEstimatedHs->GetValue());
-    m_Sight.m_DRLat = lunarSight.m_DRLat;
-    m_Sight.m_DRLon = lunarSight.m_DRLon;
-    m_Sight.m_DRBoatPosition = lunarSight.m_DRBoatPosition;
-    m_Sight.m_DRMagneticAzimuth = lunarSight.m_DRMagneticAzimuth;
+    ApplyFindPosition(lunarSight);
   }
 }
 
@@ -509,15 +522,13 @@ void SightDialog::OnFindLunarBody(wxCommandEvent& event) {
   lunarSight.m_BodyLimb = m_Sight.m_LunarBodyLimb;
   lunarSight.m_Measurement = m_Sight.m_LunarBodyAltitude;
   lunarSight.Recompute(m_clock_offset);
-  FindBodyDialog findbody_dialog(this, lunarSight);
+  FindBodyDialog findbody_dialog(this, lunarSight, [this](const wxString& hs) {
+    MarkDirty();
+    m_tLunarBodyAltitude->SetValue(hs);
+  });
   findbody_dialog.ShowModal();
   if (findbody_dialog.GetReturnCode() == wxID_OK) {
-    MarkDirty();
-    m_tLunarBodyAltitude->SetValue(findbody_dialog.m_tEstimatedHs->GetValue());
-    m_Sight.m_DRLat = lunarSight.m_DRLat;
-    m_Sight.m_DRLon = lunarSight.m_DRLon;
-    m_Sight.m_DRBoatPosition = lunarSight.m_DRBoatPosition;
-    m_Sight.m_DRMagneticAzimuth = lunarSight.m_DRMagneticAzimuth;
+    ApplyFindPosition(lunarSight);
   }
 }
 
