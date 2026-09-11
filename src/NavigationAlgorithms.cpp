@@ -357,8 +357,8 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
     result.horizontalParallax = std::asin(EARTH_RADIUS / radius) / kDeg;
     result.semidiameter = std::asin(MOON_MEAN_RADIUS / radius) / kDeg;
   } else if (info->kind == CelestialBodyKind::Planet && distance > 0.0) {
-    // Planet distance is in AU; equatorial horizontal parallax at 1 AU.
-    result.horizontalParallax = 0.002442 / distance;
+    // BodyLocation/geocentric_planet returns planetary distance in kilometres.
+    result.horizontalParallax = std::asin(EARTH_RADIUS / distance) / kDeg;
   }
   if (result.horizontalParallax != 0.0)
     topocentricAltitude -=
@@ -746,52 +746,102 @@ bool ParseNauticalPlannerDateTime(const wxString& dateText,
 
 RunningFixResult RunningFixSolver::Solve(
     const std::vector<FixObservation>& sights, const ObserverMotion& motion,
-    double initialLat, double initialLon) {
+    double initialLat, double initialLon, unsigned maximumIterations) {
   RunningFixResult result;
   result.epochUtc = motion.referenceUtc;
-  if (sights.size() < 2 || !motion.referenceUtc.IsValid()) {
-    result.error = "At least two sights and a valid common epoch are required";
+  if (sights.size() < 2 || !motion.referenceUtc.IsValid() ||
+      !std::isfinite(initialLat) || std::fabs(initialLat) >= 90 ||
+      !std::isfinite(initialLon) || maximumIterations == 0) {
+    result.error =
+        "At least two sights, valid position/epoch and an iteration budget are "
+        "required";
     return result;
   }
-  double lat = initialLat, lon = initialLon;
-  double normal00 = 0, normal01 = 0, normal11 = 0;
-  for (unsigned iteration = 0; iteration < 20; ++iteration) {
-    normal00 = normal01 = normal11 = 0.0;
-    double rhs0 = 0, rhs1 = 0;
-    for (const auto& sight : sights) {
-      const double hc = Hc(sight, motion, lat, lon);
-      const double epsilon = 1e-4;
-      const double dLat = (Hc(sight, motion, lat + epsilon, lon) -
-                           Hc(sight, motion, lat - epsilon, lon)) /
-                          (2.0 * epsilon);
-      const double dLon = (Hc(sight, motion, lat, lon + epsilon) -
-                           Hc(sight, motion, lat, lon - epsilon)) /
-                          (2.0 * epsilon);
-      const double residual = sight.observedAltitude - hc;
-      const double sigma = std::max(0.1, sight.uncertaintyMinutes) / 60.0;
-      const double weight = 1.0 / (sigma * sigma);
-      normal00 += weight * dLat * dLat;
-      normal01 += weight * dLat * dLon;
-      normal11 += weight * dLon * dLon;
-      rhs0 += weight * dLat * residual;
-      rhs1 += weight * dLon * residual;
-    }
-    const double determinant = normal00 * normal11 - normal01 * normal01;
-    if (std::abs(determinant) < 1e-12) {
-      result.error =
-          "Sight geometry is singular; choose better-spaced azimuths";
+  for (const auto& sight : sights) {
+    if (!sight.utc.IsValid() || !BodyCatalog::Find(sight.body) ||
+        !std::isfinite(sight.observedAltitude) ||
+        std::fabs(sight.observedAltitude) > 90 ||
+        !std::isfinite(sight.uncertaintyMinutes) ||
+        sight.uncertaintyMinutes <= 0) {
+      result.error = "A sight altitude, time, body or uncertainty is invalid";
       return result;
     }
-    const double deltaLat = (normal11 * rhs0 - normal01 * rhs1) / determinant;
-    const double deltaLon = (normal00 * rhs1 - normal01 * rhs0) / determinant;
-    lat = Clamp(lat + deltaLat, -89.9, 89.9);
-    lon = Wrap180(lon + deltaLon);
-    result.iterations = iteration + 1;
-    if (std::hypot(deltaLat, deltaLon * std::cos(lat * kDeg)) * 60.0 < 0.001)
-      break;
   }
-
-  double sumSquares = 0.0;
+  double lat = initialLat, lon = Wrap180(initialLon);
+  double n00 = 0, n01 = 0, n11 = 0, rhs0 = 0, rhs1 = 0, cost = 0;
+  auto normalAt = [&](double latitude, double longitude) {
+    n00 = n01 = n11 = rhs0 = rhs1 = cost = 0;
+    for (const auto& sight : sights) {
+      const double epsilon = 1e-4;
+      const double hc = Hc(sight, motion, latitude, longitude);
+      const double dLat = (Hc(sight, motion, latitude + epsilon, longitude) -
+                           Hc(sight, motion, latitude - epsilon, longitude)) /
+                          (2 * epsilon);
+      const double dLon = (Hc(sight, motion, latitude, longitude + epsilon) -
+                           Hc(sight, motion, latitude, longitude - epsilon)) /
+                          (2 * epsilon);
+      if (!std::isfinite(hc) || !std::isfinite(dLat) || !std::isfinite(dLon))
+        return false;
+      const double residual = sight.observedAltitude - hc;
+      const double sigma = std::max(0.1, sight.uncertaintyMinutes) / 60;
+      const double w = 1 / (sigma * sigma);
+      n00 += w * dLat * dLat;
+      n01 += w * dLat * dLon;
+      n11 += w * dLon * dLon;
+      rhs0 += w * dLat * residual;
+      rhs1 += w * dLon * residual;
+      cost += w * residual * residual;
+    }
+    return std::isfinite(cost) && std::isfinite(n00 + n11) &&
+           n00 * n11 - n01 * n01 > 1e-12 * n00 * n11;
+  };
+  bool converged = false;
+  for (unsigned iteration = 0; iteration < maximumIterations; ++iteration) {
+    if (!normalAt(lat, lon)) {
+      result.error = "Sight geometry is singular or ill-conditioned";
+      return result;
+    }
+    const double determinant = n00 * n11 - n01 * n01;
+    const double deltaLat = (n11 * rhs0 - n01 * rhs1) / determinant;
+    const double deltaLon = (n00 * rhs1 - n01 * rhs0) / determinant;
+    result.iterations = iteration + 1;
+    // Convergence is based on the undamped correction, not a tiny rejected
+    // step.
+    if (std::hypot(deltaLat, deltaLon * std::cos(lat * kDeg)) * 60 < 0.001) {
+      converged = true;
+      break;
+    }
+    double scale =
+        1 /
+        std::max(1.0, std::max(std::fabs(deltaLat), std::fabs(deltaLon)) / 5);
+    bool accepted = false;
+    for (int attempt = 0; attempt < 20; ++attempt, scale *= 0.5) {
+      const double trialLat = lat + scale * deltaLat;
+      const double trialLon = Wrap180(lon + scale * deltaLon);
+      if (std::fabs(trialLat) >= 89.9) continue;
+      double trialCost = 0;
+      for (const auto& sight : sights) {
+        const double r =
+            (sight.observedAltitude - Hc(sight, motion, trialLat, trialLon)) /
+            (std::max(0.1, sight.uncertaintyMinutes) / 60);
+        trialCost += r * r;
+      }
+      if (std::isfinite(trialCost) && trialCost < cost) {
+        lat = trialLat;
+        lon = trialLon;
+        accepted = true;
+        break;
+      }
+    }
+    if (!accepted) break;
+  }
+  if (!converged || !normalAt(lat, lon)) {
+    result.error =
+        "Running fix did not converge; check observations and starting "
+        "position";
+    return result;
+  }
+  double sumSquares = 0;
   for (const auto& sight : sights) {
     FixResidual residual;
     residual.label = sight.label;
@@ -799,33 +849,31 @@ RunningFixResult RunningFixSolver::Solve(
     residual.utc = sight.utc;
     residual.calculatedAltitude = Hc(sight, motion, lat, lon);
     residual.interceptMinutes =
-        60.0 * (sight.observedAltitude - residual.calculatedAltitude);
+        60 * (sight.observedAltitude - residual.calculatedAltitude);
     sumSquares += residual.interceptMinutes * residual.interceptMinutes;
     result.residuals.push_back(residual);
   }
   result.rmsMinutes = std::sqrt(sumSquares / sights.size());
   result.latitude = lat;
   result.longitude = lon;
-  const double determinant = normal00 * normal11 - normal01 * normal01;
-  if (determinant > 0.0) {
-    // Convert covariance in degrees to an approximate nautical-mile tangent
-    // plane before extracting ellipse axes.
-    const double variance =
-        sights.size() > 2 ? sumSquares / (sights.size() - 2) / 3600.0 : 1.0;
-    const double c00 = variance * normal11 / determinant * 3600.0;
-    const double c01 =
-        -variance * normal01 / determinant * 3600.0 * std::cos(lat * kDeg);
-    const double c11 = variance * normal00 / determinant * 3600.0 *
-                       std::pow(std::cos(lat * kDeg), 2);
-    const double trace = c00 + c11;
-    const double disc =
-        std::sqrt(std::max(0.0, (c00 - c11) * (c00 - c11) + 4.0 * c01 * c01));
-    result.semiMajorNm = std::sqrt(std::max(0.0, (trace + disc) / 2.0));
-    result.semiMinorNm = std::sqrt(std::max(0.0, (trace - disc) / 2.0));
-    result.ellipseBearing =
-        Wrap360(0.5 * std::atan2(2.0 * c01, c00 - c11) / kDeg);
-  }
-  result.valid = true;
+  // Inverse normal matrix already contains supplied angular variances.
+  // Inflate by dimensionless reduced chi-square; never erase measurement
+  // errors.
+  const double scale =
+      sights.size() > 2 ? std::max(1.0, cost / (sights.size() - 2)) : 1;
+  const double determinant = n00 * n11 - n01 * n01;
+  const double c00 = scale * n11 / determinant * 3600;
+  const double c01 = -scale * n01 / determinant * 3600 * std::cos(lat * kDeg);
+  const double c11 =
+      scale * n00 / determinant * 3600 * std::pow(std::cos(lat * kDeg), 2);
+  const double trace = c00 + c11;
+  const double disc = std::hypot(c00 - c11, 2 * c01);
+  result.semiMajorNm = std::sqrt(std::max(0.0, (trace + disc) / 2));
+  result.semiMinorNm = std::sqrt(std::max(0.0, (trace - disc) / 2));
+  result.ellipseBearing = Wrap360(0.5 * std::atan2(2 * c01, c00 - c11) / kDeg);
+  result.valid =
+      std::isfinite(result.semiMajorNm) && std::isfinite(result.rmsMinutes);
+  if (!result.valid) result.error = "Running-fix uncertainty is not finite";
   return result;
 }
 
@@ -933,6 +981,10 @@ wxString AlmanacToCsv(const std::vector<AlmanacRow>& rows) {
 double SolveLatitudeFromAltitude(const wxString& body, const wxDateTime& utc,
                                  double longitude, double observedAltitude,
                                  double initialLatitude) {
+  if (!utc.IsValid() || !BodyCatalog::Find(body) || !std::isfinite(longitude) ||
+      !std::isfinite(initialLatitude) || std::fabs(initialLatitude) >= 90 ||
+      !std::isfinite(observedAltitude) || std::fabs(observedAltitude) > 90)
+    return NAN;
   double latitude = Clamp(initialLatitude, -89.0, 89.0);
   for (int i = 0; i < 20; ++i) {
     const double value =
@@ -946,10 +998,17 @@ double SolveLatitudeFromAltitude(const wxString& body, const wxDateTime& utc,
          CelestialEphemeris::Evaluate(body, utc, latitude - epsilon, longitude)
              .geometricAltitude) /
         (2.0 * epsilon);
-    if (std::abs(derivative) < 1e-8) break;
+    if (!std::isfinite(value) || !std::isfinite(derivative) ||
+        std::abs(derivative) < 1e-8)
+      return NAN;
+    if (std::abs(value) < 1e-8) return latitude;
     const double delta = value / derivative;
     latitude = Clamp(latitude - delta, -89.9, 89.9);
     if (std::abs(delta) < 1e-8) break;
   }
-  return latitude;
+  const double residual =
+      CelestialEphemeris::Evaluate(body, utc, latitude, longitude)
+          .geometricAltitude -
+      observedAltitude;
+  return std::isfinite(residual) && std::abs(residual) < 1e-8 ? latitude : NAN;
 }

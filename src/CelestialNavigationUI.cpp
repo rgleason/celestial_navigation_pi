@@ -811,7 +811,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	m_cbTowards = new wxCheckBox( this, wxID_ANY, _("Towards"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_cbTowards->Enable( false );
 
-	bSizer4->Add( m_cbTowards, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	bSizer4->Add( m_cbTowards, 0, wxALL|wxEXPAND, 5 );
 
 
 	m_Body->Add( bSizer4, 1, wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
@@ -822,7 +822,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	m_cbAway = new wxCheckBox( this, wxID_ANY, _("Away"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_cbAway->Enable( false );
 
-	bSizer41->Add( m_cbAway, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	bSizer41->Add( m_cbAway, 0, wxALL|wxEXPAND, 5 );
 
 
 	m_Body->Add( bSizer41, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );

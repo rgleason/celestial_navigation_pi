@@ -117,6 +117,22 @@ DECL_EXP void JumpToPosition(double lat, double lon, double scale) {}
 // Plugin API mock implementations
 
 static wxString s_privatePath;
+static wxString s_pluginDataRoot;
+void SetTestPluginDataRoot(const wxString& path) { s_pluginDataRoot=path; }
+static std::vector<WaypointPosition> s_waypoints;
+void SetTestWaypoints(const std::vector<WaypointPosition>& points) { s_waypoints=points; }
+wxArrayString GetWaypointGUIDArray() {
+  wxArrayString result;
+  for (const auto& point:s_waypoints) result.Add(point.guid);
+  return result;
+}
+bool GetSingleWaypoint(wxString guid,PlugIn_Waypoint* result) {
+  for (const auto& point:s_waypoints) if (point.guid==guid) {
+    result->m_lat=point.latitude; result->m_lon=point.longitude;
+    result->m_MarkName=point.name; return true;
+  }
+  return false;
+}
 void SetTestPrivateDataPath(const wxString& path) { s_privatePath=path; }
 wxString* GetpPrivateApplicationDataLocation(void) {
   return s_privatePath.empty() ? nullptr : &s_privatePath;
@@ -150,6 +166,7 @@ std::vector<uint8_t> DECL_EXP GetN2000Payload(NMEA2000Id /* id */,
 }
 
 wxString DECL_EXP GetPluginDataDir(const char* plugin_name) {
+  if(!s_pluginDataRoot.empty()) return s_pluginDataRoot;
   const char* testdata = TESTDATA;
   return wxString(testdata);
 }
@@ -312,7 +329,18 @@ wxAuiPaneInfo& wxAuiManager::GetPane(wxWindow* window) {
 bool wxAuiPaneInfo::IsValid() const { return true; }
 
 void DimeWindow(wxWindow* win) {}
-void GetCanvasPixLL(PlugIn_ViewPort* vp, wxPoint* pp, double lat, double lon) {}
+static bool s_recordCanvas=false;
+static std::vector<std::pair<double,double>> s_canvasPoints;
+void SetTestCanvasRecording(bool enabled) {
+  s_recordCanvas=enabled;
+  s_canvasPoints.clear();
+}
+std::vector<std::pair<double,double>> TestCanvasPoints() { return s_canvasPoints; }
+void GetCanvasPixLL(PlugIn_ViewPort* vp, wxPoint* pp, double lat, double lon) {
+  if(s_recordCanvas) s_canvasPoints.emplace_back(lat,lon);
+  // Deterministic test projection, not the host chart projection.
+  *pp=wxPoint(wxRound((lon+180)*2),wxRound((90-lat)*2));
+}
 void RequestRefresh(wxWindow* window) {}
 
 wxEventType wxEVT_DOWNLOAD_EVENT = wxNewEventType();

@@ -848,7 +848,7 @@ lc = %.4f%c = %s\n"),
   double CorrectedAltitude =
       ApparentAltitude - RefractionCorrection + LimbCorrection;
   m_CalcStr +=
-      wxString::Format(_("\nCorrected Altitude (Hc)\n\
+      wxString::Format(_("\nCorrected topocentric centre altitude (before parallax)\n\
 CorrectedAltitude = ApparentAltitude - RefractionCorrection + LimbCorrection\n\
 CorrectedAltitude = %.4f%c - %.4f%c + %.4f%c\n\
 CorrectedAltitude = %.4f%c = %s\n"),
@@ -2388,96 +2388,59 @@ UTC = %s\n"),
 #endif
 }
 
+void Sight::CalculateAtDR(double* hc, double* zn) {
+  double lat, lon;
+  BodyLocation(m_CorrectedDateTime, &lat, &lon, nullptr, nullptr, nullptr);
+  AltitudeAzimuth(m_DRLat, m_DRLon, lat, lon, hc, zn);
+}
+
 void Sight::EstimateHs(double hc, double* hs, double* error) {
-  *hs = NAN;
-  *error = NAN;
-  if (hc < 0) return;
+  *hs = *error = NAN;
+  if (!std::isfinite(hc) || hc < 0 || hc > 90 || !std::isfinite(m_EyeHeight) ||
+      m_EyeHeight < 0 || !std::isfinite(m_IndexError) ||
+      !std::isfinite(m_Pressure) || m_Pressure < 0 ||
+      !std::isfinite(m_Temperature) || m_Temperature <= -100 ||
+      (!m_ArtificialHorizon && m_DipShort &&
+       (!std::isfinite(m_DipShortDistance) || m_DipShortDistance <= 0)))
+    return;
 
-  // first calculate HP and SD
-  double SD = 0, topoSD = 0;
-  double HP = 0;
-  double planet_dist, rad;
-  BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad, &planet_dist);
-
-  if (!m_Body.Cmp(_T("Sun"))) {
-    HP = 0.002442 / rad;
-    double lc = 0.266564 / rad;
-    SD = r_to_d(sin(d_to_r(lc)));
-    topoSD = SD;
+  double dip = 0;
+  if (!m_ArtificialHorizon) {
+    dip = m_DipShort
+              ? r_to_d(atan(m_EyeHeight / (0.3048 * 6076 * m_DipShortDistance) +
+                            m_DipShortDistance / 8268))
+              : 1.758 * sqrt(m_EyeHeight) / 60.0;
   }
-  if (!m_Body.Cmp(_T("Moon"))) {
-    wxDateTime time = m_CorrectedDateTime;
-    time.MakeFromUTC();
-    double jdu = time.GetJulianDayNumber();
-    double jdd = ut_to_dt(jdu);
-    double moon_dist = moon_distance(jdd);
-    HP = r_to_d(asin(EARTH_RADIUS / moon_dist));
-    SD = r_to_d(asin(K_MOON * sin(d_to_r(HP))));
-  }
-  if (m_IsPlanet) {
-    HP = r_to_d(asin(EARTH_RADIUS / planet_dist));
-  }
-
-  double ca, ha, parallax = 0, dip, ic, refraction, lc, ho;
-  double diff;
-
-  // estimate CA
-  ca = hc;
-  diff = 0;
-  if (HP > 0) {
-    ca = hc;
-    for (int i = 0; i < 11; i++) {
-      ca -= diff;
-      parallax = r_to_d(asin(sin(d_to_r(HP)) * cos(d_to_r(ca))));
-      double ho_estimate = ca + parallax;
-      diff = abs(ho_estimate - hc);
-      if (diff == 0) break;
+  const double factor = m_ArtificialHorizon ? 2.0 : 1.0;
+  // Invert the actual forward reduction, not a separately maintained formula.
+  // A working copy keeps raw data, Ho, time and the calculation report intact.
+  Sight trial = *this;
+  auto reduce = [&](double apparentLimbAltitude) {
+    trial.m_Measurement =
+        factor * apparentLimbAltitude + dip + m_IndexError / 60.0;
+    trial.m_CalcStr.clear();
+    trial.m_ObservedAltitude = NAN;
+    trial.RecomputeAltitude();
+    return trial.m_ObservedAltitude;
+  };
+  double low = -1.0, high = 90.0 - 1e-10;
+  const double bottom = reduce(low), top = reduce(high);
+  if (!std::isfinite(bottom) || !std::isfinite(top) || hc < bottom || hc > top)
+    return;
+  for (int iteration = 0; iteration < 64; ++iteration) {
+    const double middle = (low + high) / 2;
+    const double ho = reduce(middle);
+    if (!std::isfinite(ho)) return;
+    if (std::fabs(ho - hc) < 1e-10) {
+      *hs = trial.m_Measurement;
+      *error = (ho - hc) * 60;
+      return;
     }
+    if (ho < hc)
+      low = middle;
+    else
+      high = middle;
   }
-
-  // estimate HA
-  ha = ca;
-  diff = 0;
-  for (int i = 0; i < 11; i++) {
-    ha += diff;
-    double topoSD = SD * (1 + sin(d_to_r(ha)) * sin(d_to_r(HP)));
-    lc = r_to_d(asin(d_to_r(topoSD)));
-    if (m_BodyLimb == UPPER) {
-      lc = -lc;
-    } else if (m_BodyLimb == CENTER) {
-      lc = 0;
-    }
-    double x = tan(d_to_r(ha) + d_to_r(4.848e-2) / (tan(d_to_r(ha) + .028)));
-    refraction = .267 * m_Pressure / (x * (m_Temperature + 273.15)) / 60.0;
-    double ca_estimate = ha + lc - refraction;
-    diff = ca - ca_estimate;
-    if (diff == 0) break;
-  }
-
-  // final calculations
-  if (m_ArtificialHorizon) {
-    dip = 0;
-  } else if (m_DipShort) {
-    dip = r_to_d(atan(m_EyeHeight / (0.3048 * 6076 * m_DipShortDistance) +
-                      m_DipShortDistance / 8268));
-  } else {
-    dip = 1.758 * sqrt(m_EyeHeight) / 60.0;
-  }
-
-  ic = m_IndexError / 60.0;
-
-  if (m_ArtificialHorizon) {
-    *hs = ha * 2 + ic;
-  } else {
-    *hs = ha + dip + ic;
-  }
-
-  if (m_ArtificialHorizon) {
-    ho = (*hs - ic) / 2 - refraction + parallax + lc;
-  } else {
-    ho = *hs - dip - ic - refraction + parallax + lc;
-  }
-  *error = (ho - hc) * 60;
 }
 
 void Sight::RebuildPolygonsAltitude() {
@@ -2555,32 +2518,19 @@ wxRealPoint Sight::DistancePoint(double altitude, double trace, double lat,
 /* Calculate Hc and Zn from from one position to another */
 void Sight::AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
                             double* hc, double* zn) {
-  lat1 = resolve_heading_positive(lat1);
-  lat2 = resolve_heading_positive(lat2);
-  double lat1_r = d_to_r(lat1);
-  double lon1_r = d_to_r(lon1);
-  double lat2_r = d_to_r(lat2);
-  double lon2_r = d_to_r(lon2);
-
-  double lha = lon1 - lon2;
-  lha = resolve_heading_positive(lha);
-  double lha_r = d_to_r(lha);
-
-  double hc_r =
-      asin(sin(lat1_r) * sin(lat2_r) + cos(lat1_r) * cos(lat2_r) * cos(lha_r));
-  double zn_r =
-      acos((sin(lat2_r) - sin(lat1_r) * sin(hc_r)) / (cos(lat1_r) * cos(hc_r)));
-
-  *hc = r_to_d(hc_r);
-  *zn = r_to_d(zn_r);
-  if (lat1 > 0) {
-    if (lha < 180) *zn = 360 - *zn;
-  } else {
-    if (lha > 180)
-      *zn = 180 - *zn;
-    else
-      *zn = 180 + *zn;
-  }
+  // East-positive GP longitude; LHA = observer longitude - GP longitude.
+  const double latitude = d_to_r(lat1), declination = d_to_r(lat2);
+  const double lha = d_to_r(resolve_heading(lon1 - lon2));
+  const double up = sin(latitude) * sin(declination) +
+                    cos(latitude) * cos(declination) * cos(lha);
+  const double north = cos(latitude) * sin(declination) -
+                       sin(latitude) * cos(declination) * cos(lha);
+  const double east = -cos(declination) * sin(lha);
+  *hc = r_to_d(atan2(up, hypot(north, east)));
+  // Bearing is undefined exactly at the zenith/nadir (and at either pole).
+  *zn = hypot(north, east) < 1e-14 || fabs(cos(latitude)) < 1e-14
+            ? NAN
+            : resolve_heading_positive(r_to_d(atan2(east, north)));
 }
 
 void Sight::BuildAltitudeLineOfPosition(double tracestep, double altitudemin,

@@ -22,9 +22,15 @@
 
 #include "OcpnApiCompat.h"
 #include <vector>
+#include <utility>
 #include <wx/string.h>
+#include "WaypointPositionSource.h"
+void SetTestWaypoints(const std::vector<WaypointPosition>& points);
+void SetTestPluginDataRoot(const wxString& path);
 void SetTestPrivateDataPath(const wxString& path);
 int TestDownloadCalls();
+void SetTestCanvasRecording(bool enabled);
+std::vector<std::pair<double,double>> TestCanvasPoints();
 
 // Base mock plugin class implementing all virtual functions with empty
 // implementations

@@ -53,7 +53,7 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
   <p style="text-align: center;"><strong>Experimental v2 documentation</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.5.2<br>Documentation revision 9 September 2026</p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.5.3<br>Documentation revision 11 September 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -81,6 +81,18 @@ override contrary navigational evidence.</div>
 eclipse planner also works offline once its separate DE440 data has been
 imported. Optional LOLA lunar-limb data is not required for navigation or for
 ordinary eclipse plotting.</p>
+
+<p><strong>11 September numerical-audit update:</strong> corrected UTC handling
+in generated almanacs (including daylight-saving transitions), ordinary sight
+azimuths, sextant-calibration longitude geometry, planetary parallax in the
+planner, and running-fix formal uncertainty. Find Body now uses the sight's
+effective corrected time, and estimated Hs is checked through the actual forward
+reduction. Iterative solvers reject unconverged results. Recorded observations
+are not rewritten. Formal uncertainty is not a guarantee of real-world accuracy.</p>
+<div class="warning"><span class="label">Previously generated almanacs:</span>
+regenerate almanacs produced by earlier builds on computers using a non-UTC
+timezone. Their UTC-labelled astronomical tables and curves could use an
+incorrect epoch. Saved sightings themselves are unaffected.</div>
 
 <h2 id="how-to-use">How to use the manual</h2>
 <ul>
@@ -927,6 +939,26 @@ charted top height, water level above the height datum and height of eye.
 Optionally add a corrected bearing observed at effectively the same epoch.
 Select <strong>Calculate and plot range</strong>.</p>
 
+<p><strong>2.8.5.3:</strong> sea-horizon mode accepts zero or negative
+dip-corrected angles, while requiring the index-corrected observed top to be
+on or above the visible horizon. Waterline mode still requires a positive
+angle. Choose the baseline actually measured; modes and raw readings are
+never changed automatically. Both range methods require the target top
+above the observer; waterline mode also requires positive eye height.
+Lower targets with potentially ambiguous ranges are not supported.</p>
+
+<p>The visibility guide estimates the observer's horizon, the target's
+geographic range, and the waterline-to-top angle at the waterline horizon.
+These standard-refraction estimates are not a guarantee of visibility or
+a light's luminous range. A zero dip-corrected angle is not the maximum
+visibility distance. Use the height of the feature actually sighted (for
+example, focal height rather than tower height), and express water level
+relative to the same height datum. Negative water levels are allowed.</p>
+
+<p><strong>Select target waypoint...</strong> copies coordinates from the
+searchable OpenCPN waypoint/mark list. They remain editable; target height
+must be checked separately. Cancelling leaves the observation unchanged.</p>
+
 <p>Observation coordinates and measured angles start blank. Closing the
 window temporarily retains an unfinished observation; the window says so.
 Select <strong>New / clear observation</strong> before a different observation
@@ -947,6 +979,15 @@ plausible-looking defaults cannot be mistaken for observations. The central sext
 default is applied to both angle measurements and remains editable. Enter
 uncertainty and an approximate vessel position to choose among ambiguous
 solutions. Select <strong>Solve and plot HSA fix</strong>.</p>
+
+<p>The left, centre and right waypoint buttons fill the corresponding
+coordinates. Check coordinates when names repeat. Angular uncertainty is
+entered in <strong>arcminutes</strong> (60 arcminutes = 1 degree). The result
+is formal angular-input uncertainty, not total fix accuracy: it excludes
+landmark-coordinate errors, misidentification, shared instrument errors and
+unmodelled motion. Increasing this uncertainty changes the estimate, not the
+best-fit position. Dedicated radar-bearing/range entry is not implemented;
+a radar range is not a vertical-angle observation.</p>
 
 <p>If the two angles were taken sequentially while underway, enable
 <strong>Advance the vessel between the two HSA readings</strong> and enter the

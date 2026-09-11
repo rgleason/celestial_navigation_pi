@@ -178,6 +178,13 @@ Open *Coastal Sextant...* from the main plugin window. These methods use
 charted terrestrial objects and are separate from the celestial-body
 *Azimuth* sight type.
 
+Vertical and horizontal plots can remain visible together. Calculating a
+vertical range replaces only the previous vertical plot; solving an HSA fix
+replaces only the horizontal plot. Closing this form retains both plots and
+the inputs while the main plugin window remains open. *Clear chart plots*
+removes both coastal overlays without erasing inputs. *New / clear
+observation* currently resets both tabs, their results and their plots.
+
 === Vertical angle and distance
 
 For an object whose waterline is visible, enter the sextant angle from
@@ -190,6 +197,28 @@ For an object whose base is hidden beyond the sea horizon, select *Sea horizon
 to top*. This uses the refraction-aware formula underlying Table 15 of the
 American Practical Navigator (Bowditch). Abnormal refraction can produce
 large errors. Charted height and tide datum must refer to compatible datums.
+
+In 2.8.5.3 this mode accepts zero and negative *dip-corrected* angles. The
+index-corrected measured angle must still place the top on or above the
+visible sea horizon. Waterline mode still requires a positive angle; the
+two measured baselines are not interchangeable and the plugin never changes
+modes or corrects the raw reading for you.
+
+Visibility guidance shows the observer's horizon, the target's estimated
+geographic range, and the waterline-to-top angle at the waterline horizon.
+These are standard-refraction estimates, not guaranteed visibility or a
+light's nominal/luminous range. Bowditch mode uses the effective curvature
+implicit in its published constants; waterline mode uses its own terrestrial
+refraction coefficient. A zero dip-corrected angle is not the visibility limit.
+Both implemented range methods require the target top above the observer;
+waterline mode also requires positive eye height. Lower targets can produce
+ambiguous waterline ranges and are rejected rather than choosing a branch.
+
+Use the height of the actual sighted feature: for a light this may be focal
+height, not the height of its tower. Water level must be expressed relative
+to the *same* height datum (it may be negative). *Select target waypoint...*
+copies coordinates from an OpenCPN mark or route point. Coordinates remain
+editable; the picker does not supply or change the target height.
 
 An optional true bearing turns the range into an estimated position. A raw
 magnetic compass bearing is converted with explicit east-positive variation
@@ -218,6 +247,20 @@ The central sextant index-error default is applied to both measurements. The
 plugin solves their intersection on the sphere from the supplied approximate
 position and reports residuals, a geometry condition indicator and an
 estimated one-sigma uncertainty.
+
+The left, centre and right waypoint buttons reuse the searchable OpenCPN
+waypoint picker; cancelling leaves existing coordinates untouched. Choose
+by coordinates as well as name when names repeat.
+
+The uncertainty entry is in *arcminutes* (60 arcminutes = 1 degree). The
+reported value is formal angular-input uncertainty, not total fix accuracy:
+it excludes landmark-coordinate errors, misidentification, shared instrument
+errors and unmodelled vessel motion. Coordinates rounded to 0.1 arcminute
+cannot justify interpreting a small formal error as metre-level accuracy.
+Increasing the entered angular uncertainty changes the uncertainty estimate,
+not the best-fit position. Independent observations and a maintained DR
+remain essential. Dedicated radar-bearing/range input is not implemented;
+ordinary radar range is not a vertical-angle measurement.
 
 The approximate position chooses the intended solution; poor or tangent
 geometry may have other solutions or fail to converge. The plotted individual

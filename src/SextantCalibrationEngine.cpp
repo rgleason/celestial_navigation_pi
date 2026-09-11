@@ -33,7 +33,7 @@ Horizontal ToHorizontal(const BodySample& body,
   const double latitude = environment.observer.latitude_deg * kDegToRad;
   const double declination = body.geographic_latitude_deg * kDegToRad;
   const double hour_angle =
-      (body.geographic_longitude_deg + environment.observer.longitude_deg) *
+      (environment.observer.longitude_deg - body.geographic_longitude_deg) *
       kDegToRad;
   const double sin_altitude =
       std::sin(latitude) * std::sin(declination) +

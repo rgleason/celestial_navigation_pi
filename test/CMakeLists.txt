@@ -42,9 +42,11 @@ set(SRC
     lunar_observer_tests.cpp
     dut1_update_tests.cpp
     coastal_navigation_tests.cpp
+    coastal_ui_smoke_tests.cpp
     horizon_event_tests.cpp
     html_help_tests.cpp
     navigation_algorithms_tests.cpp
+    numerical_audit_tests.cpp
     waypoint_position_source_tests.cpp
     almanac_generator_tests.cpp
     time_status_tests.cpp
@@ -72,6 +74,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/AlmanacDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/PlannerDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/WaypointPositionSource.cpp
+    ${CMAKE_SOURCE_DIR}/src/WaypointPickerDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/SightAnalysisDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/TimeStatus.cpp
     ${CMAKE_SOURCE_DIR}/src/astrolabe/calendar.cpp
@@ -161,6 +164,15 @@ endif()
 
 # Add the test
 add_test(NAME celestial_tests COMMAND celestial_tests)
+if(UNIX)
+    # Separate processes avoid wx/libc timezone caches masking UTC-boundary bugs.
+    foreach(zone UTC Europe/London America/New_York Asia/Kolkata)
+        string(REPLACE "/" "_" test_zone "${zone}")
+        add_test(NAME numerical_audit_${test_zone}
+            COMMAND ${CMAKE_COMMAND} -E env "TZ=${zone}"
+                $<TARGET_FILE:celestial_tests> --gtest_filter=NumericalAudit.*)
+    endforeach()
+endif()
 add_test(
     NAME ui_utf8_literals
     COMMAND ${Python3_EXECUTABLE}

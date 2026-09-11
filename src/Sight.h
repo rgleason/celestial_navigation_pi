@@ -165,6 +165,8 @@ public:
   void AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
                        double* hc, double* zn);
   void EstimateHs(double hc, double* hs, double* error);
+  // Uses the effective sight time, leaving the recorded observation unchanged.
+  void CalculateAtDR(double* hc, double* zn);
   std::list<wxRealPoint> GetPoints();
 
   wxString m_CalcStr;

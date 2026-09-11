@@ -19,6 +19,7 @@ src/BodyCatalog.cpp
 src/NavigationAlgorithms.cpp
 src/PlannerDialog.cpp
 src/WaypointPositionSource.cpp
+src/WaypointPickerDialog.cpp
 src/SightAnalysisDialog.cpp
 src/HorizonEventDialog.cpp
 src/HtmlHelp.cpp
@@ -62,6 +63,7 @@ src/BodyCatalog.h
 src/NavigationAlgorithms.h
 src/PlannerDialog.h
 src/WaypointPositionSource.h
+src/WaypointPickerDialog.h
 src/SightAnalysisDialog.h
 src/UtcDateTime.h
 src/HorizonEventDialog.h

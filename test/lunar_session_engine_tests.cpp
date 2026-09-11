@@ -108,6 +108,17 @@ TEST(LunarSessionEngine, RecoversClockAndPositionJointly) {
   EXPECT_GT(result.candidates[0].position_uncertainty_nm, 0.01);
 }
 
+TEST(LunarSessionEngine, IterationExhaustionIsNotAConvergedSolution) {
+  const lunar_distance::GeographicPoint truth(32.4,-48.7);
+  const auto observations=MakeSession(23.0,truth);
+  lunar_session::Options options;
+  options.known_or_initial_position={30,-45};
+  options.maximum_iterations=0;
+  EXPECT_FALSE(lunar_session::Solve(observations,options).valid);
+  options.maximum_iterations=1;
+  EXPECT_FALSE(lunar_session::Solve(observations,options).valid);
+}
+
 TEST(LunarSessionEngine, CopiesOfSharedReadingsDoNotImproveUncertainty) {
   const lunar_distance::GeographicPoint truth(32.4, -48.7);
   auto observations = MakeSession(4372, truth, 3);

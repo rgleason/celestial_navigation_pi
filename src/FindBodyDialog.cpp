@@ -36,6 +36,7 @@
 #include "Sight.h"
 #include "celestial_navigation_pi.h"
 #include "geodesic.h"
+#include <cmath>
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
@@ -61,10 +62,10 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
   SetAffirmativeId(wxID_OK);
   SetEscapeId(wxID_CANCEL);
 
-  int x, y;
-  GetTextExtent(_T("000° 00.0000' S"), &x, &y);
-  m_tLatitude->SetSizeHints(x + 20, -1);
-  m_tLongitude->SetSizeHints(x + 20, -1);
+  const int coordinateWidth = m_tLongitude->GetTextExtent(
+      toSDMM_PlugIn(2, -179.99999, true)).x + 32;
+  m_tLatitude->SetMinSize(wxSize(coordinateWidth, -1));
+  m_tLongitude->SetMinSize(wxSize(coordinateWidth, -1));
 
 #ifdef __OCPN__ANDROID__
   GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
@@ -75,8 +76,9 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
       NULL, this);
 #endif
 
-  Centre();
   UpdateBoatPosition();
+  GetSizer()->Fit(this);
+  Centre();
 }
 
 #ifdef __OCPN__ANDROID__
@@ -131,7 +133,7 @@ void FindBodyDialog::UpdateBoatPosition() {
 
 void FindBodyDialog::Update() {
   /* NOTE: we do not peform any altitude corrections here */
-  double lat, lon, hc, zn;
+  double hc, zn;
 
   m_Sight.m_DRMagneticAzimuth = m_cbMagneticAzimuth->GetValue();
   if (!m_Sight.m_DRBoatPosition) {
@@ -139,18 +141,17 @@ void FindBodyDialog::Update() {
     m_Sight.m_DRLon = fromDMM_Plugin(m_tLongitude->GetValue());
   }
 
-  m_Sight.BodyLocation(m_Sight.m_DateTime, &lat, &lon, 0, 0, 0);
-  m_Sight.AltitudeAzimuth(m_Sight.m_DRLat, m_Sight.m_DRLon, lat, lon, &hc, &zn);
+  m_Sight.CalculateAtDR(&hc, &zn);
 
   if (m_Sight.m_DRMagneticAzimuth) {
     zn -=
         celestial_navigation_pi_GetWMM(m_Sight.m_DRLat, m_Sight.m_DRLon,
-                                       m_Sight.m_EyeHeight, m_Sight.m_DateTime);
+                                       m_Sight.m_EyeHeight, m_Sight.m_CorrectedDateTime);
     zn = resolve_heading_positive(zn);
   }
 
-  m_tAltitude->SetValue(toSDMM_PlugIn(0, hc, true));
-  m_tAzimuth->SetValue(toSDMM_PlugIn(0, zn, true));
+  m_tAltitude->SetValue(std::isfinite(hc) ? toSDMM_PlugIn(0, hc, true) : _("N/A"));
+  m_tAzimuth->SetValue(std::isfinite(zn) ? toSDMM_PlugIn(0, zn, true) : _("N/A"));
   m_tIntercept->SetValue(
       wxString::Format(_T("%f"), fabs(hc - m_Sight.m_ObservedAltitude) * 60));
   if (hc >= m_Sight.m_ObservedAltitude) {

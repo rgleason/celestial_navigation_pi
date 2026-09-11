@@ -75,8 +75,8 @@ set(LONG_DESCRIPTION
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "8")
 set(VERSION_PATCH "5")
-set(VERSION_TWEAK "2")
-set(VERSION_DATE  "09/09/2026" )# DD/MM/YYYY format
+set(VERSION_TWEAK "3")
+set(VERSION_DATE  "11/09/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -193,6 +193,7 @@ SET(SRCS
         src/NavigationAlgorithms.cpp
         src/PlannerDialog.cpp
         src/WaypointPositionSource.cpp
+        src/WaypointPickerDialog.cpp
         src/SightAnalysisDialog.cpp
         src/HorizonEventDialog.cpp
         src/HtmlHelp.cpp
@@ -239,6 +240,7 @@ SET(HDRS
         src/NavigationAlgorithms.h
         src/PlannerDialog.h
         src/WaypointPositionSource.h
+        src/WaypointPickerDialog.h
         src/SightAnalysisDialog.h
         src/UtcDateTime.h
         src/HorizonEventDialog.h
