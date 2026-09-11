@@ -106,6 +106,7 @@ public:
   }
 
 private:
+  void ApplyFindPosition(const Sight& candidate);
   void MarkDirty();
   void OnWindowClose(wxCloseEvent& event);
   double BodyAltitude(wxString body);

@@ -53,7 +53,7 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
   <p style="text-align: center;"><strong>Experimental v2 documentation</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.5.3<br>Documentation revision 11 September 2026</p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.5.4<br>Documentation revision 11 September 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -95,6 +95,25 @@ timezone. Their UTC-labelled astronomical tables and curves could use an
 incorrect epoch. Saved sightings themselves are unaffected.</div>
 
 <h2 id="how-to-use">How to use the manual</h2>
+<p><strong>2.8.5.4 Find popup:</strong> <strong>Close</strong> keeps the edited
+DR position and returns to Sight Properties without changing the measured
+altitude. <strong>Copy estimated Hs</strong> deliberately replaces the appropriate
+altitude field and leaves Find open. <strong>Reset position</strong> restores the
+position and live-position setting shown when Find opened; it does not undo an
+explicit Hs copy and leaves Find open. <strong>Cancel</strong> restores the
+opening position and closes Find, without undoing an explicitly copied Hs.
+The window close control and Escape behave like Cancel, and
+Enter never implicitly copies Hs. Close remains available when no estimate can
+be calculated. Use <strong>Save Changes</strong> in Sight Properties to retain
+the edit, or its <strong>Cancel</strong> to discard it. A computed estimate is
+not a new observation: do not replace a real sextant reading unintentionally.</p>
+<p>For a bearing sight, Copy estimated Hs is disabled: an altitude must not
+replace the measured bearing. Position editing and Close still work.</p>
+<p><strong>Altitude (Ho)</strong>, below Hc, shows the reduced observed altitude
+in the same angle format as Hc. In a lunar Moon/body Find popup it is that
+body's reduced altitude, not the lunar distance. Copy estimated Hs is beside
+its estimate; Reset position is beside the coordinate controls. Neither Find
+Cancel nor Close writes the sights XML file directly.</p>
 <ul>
   <li>If celestial navigation is new to you, read Chapters 1–6 in order.</li>
   <li>For a first practical altitude sight, use the checklist in Chapter 8.</li>
@@ -417,7 +436,9 @@ unavailable” means no valid supported sentence has been received; it does not
 mean the computer clock is necessarily wrong.</div>
 
 <p>Use the panel to decide how much confidence to place in a captured time and
-to synchronise a deck watch. Hide the panel when screen space is limited.</p>
+to synchronise a deck watch. Use <strong>Hide Time</strong> and
+<strong>Show Time</strong> to hide or restore the Time integrity panel when
+screen space is limited; this does not change the solver's time corrections.</p>
 </section>
 
 <section>

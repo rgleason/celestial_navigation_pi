@@ -29,6 +29,7 @@
 #define _FINDBODYDIALOG_H_
 
 #include "CelestialNavigationUI.h"
+#include <functional>
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
@@ -38,7 +39,9 @@ class Sight;
 
 class FindBodyDialog : public FindBodyDialogBase {
 public:
-  FindBodyDialog(wxWindow* parent, Sight& sight);
+  using CopyHsHandler = std::function<void(const wxString&)>;
+  FindBodyDialog(wxWindow* parent, Sight& sight,
+                 CopyHsHandler copyHs = CopyHsHandler());
   ~FindBodyDialog();
 
   void OnUpdate(wxCommandEvent& event);
@@ -53,6 +56,17 @@ public:
   Sight& m_Sight;
   int m_lastPanX;
   int m_lastPanY;
+
+private:
+  void ResetPosition();
+  void CopyEstimatedHs();
+  void CloseKeepingPosition();
+  void CancelPosition();
+  CopyHsHandler m_copyHs;
+  wxButton* m_copyHsButton;
+  wxTextCtrl* m_observedAltitude;
+  double m_initialLatitude, m_initialLongitude;
+  bool m_initialBoatPosition;
 };
 
 #endif

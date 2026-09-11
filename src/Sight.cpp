@@ -45,6 +45,7 @@
 
 #include "celestial_navigation_pi.h"
 #include "Sight.h"
+#include "LunarCandidateSelection.h"
 #include "UtcDateTime.h"
 #include "transform_star.hpp"
 #include "moon.h"
@@ -1122,6 +1123,17 @@ lunar_distance::Observation Sight::LunarObservation() const {
   return observation;
 }
 
+int Sight::SelectLunarCandidate(int preferred_candidate) const {
+  const lunar_distance::GeographicPoint approximate{m_DRLat, m_DRLon};
+  // Legacy sights have no DR-availability flag and default to (0,0). Do not
+  // silently treat that placeholder as a known position. At the actual origin
+  // the navigator can still select a branch explicitly.
+  const bool available = lunar_distance::ValidCandidatePosition(approximate) &&
+                         (m_DRLat != 0.0 || m_DRLon != 0.0);
+  return lunar_distance::SelectLunarCandidate(
+      m_LunarCandidates, available ? &approximate : nullptr, preferred_candidate);
+}
+
 void Sight::RecomputeLunar(int preferred_candidate) {
   // A lunar recovers Greenwich time by clearing the observed limb distance
   // of refraction, semidiameter and parallax (dip applies to altitudes),
@@ -1322,6 +1334,7 @@ void Sight::RecomputeLunar(int preferred_candidate) {
           ? lunar_distance::SolveTimeTagged(observation, ephemeris, options)
           : lunar_distance::SolveTime(observation, ephemeris, options);
   m_LunarCandidates = solution.candidates;
+  m_LunarSelectedCandidate = SelectLunarCandidate(preferred_candidate);
   m_LunarDut1Fallback = unavailable_dut1->load();
   m_LunarSolutionValid = solution.valid;
   m_LunarSolutionError = wxString::FromUTF8(solution.error.c_str());
@@ -1471,20 +1484,9 @@ void Sight::RecomputeLunar(int preferred_candidate) {
   double calculation_offset_seconds = 0.0;
   if (!observation.separate_times && solution.valid &&
       !solution.candidates.empty()) {
-    std::size_t calculation_candidate = 0;
-    for (std::size_t index = 1; index < solution.candidates.size(); ++index) {
-      if (fabs(solution.candidates[index].offset_seconds) <
-          fabs(solution.candidates[calculation_candidate].offset_seconds))
-        calculation_candidate = index;
-    }
-    calculation_offset_seconds =
-        solution
-            .candidates[preferred_candidate >= 0 &&
-                                std::size_t(preferred_candidate) <
-                                    solution.candidates.size()
-                            ? std::size_t(preferred_candidate)
-                            : calculation_candidate]
-            .offset_seconds;
+    if (m_LunarSelectedCandidate >= 0)
+      calculation_offset_seconds =
+          solution.candidates[m_LunarSelectedCandidate].offset_seconds;
   }
 
   lunar_distance::EphemerisSample calculation_sample;
@@ -1742,15 +1744,9 @@ void Sight::RecomputeLunar(int preferred_candidate) {
     }
   }
 
-  std::size_t selected = 0;
-  for (std::size_t index = 1; index < m_LunarCandidates.size(); ++index) {
-    if (fabs(m_LunarCandidates[index].offset_seconds) <
-        fabs(m_LunarCandidates[selected].offset_seconds))
-      selected = index;
-  }
-  if (preferred_candidate >= 0 &&
-      std::size_t(preferred_candidate) < m_LunarCandidates.size())
-    selected = std::size_t(preferred_candidate);
+  m_LunarSelectedCandidate = SelectLunarCandidate(preferred_candidate);
+  if (m_LunarSelectedCandidate < 0) return;
+  const std::size_t selected = static_cast<std::size_t>(m_LunarSelectedCandidate);
   const lunar_distance::TimeCandidate& chosen = m_LunarCandidates[selected];
   m_TimeCorrection = static_cast<long>(lround(chosen.offset_seconds));
   m_LDC = chosen.cleared_distance_deg;

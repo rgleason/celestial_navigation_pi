@@ -386,7 +386,9 @@ void CelestialNavigationDialog::BuildTimeIntegrityPanel(bool visible) {
   header->Add(title, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
   header->AddStretchSpacer();
   m_timeIntegrityToggle =
-      new wxToggleButton(this, wxID_ANY, visible ? _("Hide") : _("Show"));
+      new wxToggleButton(this, wxID_ANY,
+                         visible ? _("Hide Time") : _("Show Time"));
+  m_timeIntegrityToggle->SetToolTip(_("Show or hide the Time integrity panel."));
   m_timeIntegrityToggle->SetValue(visible);
   header->Add(m_timeIntegrityToggle, 0, wxRIGHT, 4);
   box->Add(header, 0, wxEXPAND | wxTOP | wxBOTTOM, 3);
@@ -502,7 +504,7 @@ void CelestialNavigationDialog::BuildTimeIntegrityPanel(bool visible) {
 void CelestialNavigationDialog::SetTimeIntegrityVisible(bool visible,
                                                         bool resize) {
   m_timeIntegrityToggle->SetValue(visible);
-  m_timeIntegrityToggle->SetLabel(visible ? _("Hide") : _("Show"));
+  m_timeIntegrityToggle->SetLabel(visible ? _("Hide Time") : _("Show Time"));
   m_timeIntegrityPanel->Show(visible);
   if (visible) m_timeIntegrityPanel->FitInside();
   Layout();

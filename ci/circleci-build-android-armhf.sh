@@ -6,6 +6,9 @@
 
 set -xe
 
+source "$(dirname "${BASH_SOURCE[0]}")/apt-ci-settings.sh"
+apt_ci_prepare
+
 pwd
 
 git submodule update --init opencpn-libs

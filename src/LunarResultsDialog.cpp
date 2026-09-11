@@ -245,16 +245,15 @@ void LunarResultsDialog::UpdateResults() {
     m_status->SetLabel(wxString::Format(
         m_sight.m_LunarCandidates.size() == 1
             ? _("One UTC solution was found in the selected search interval.")
-            : _("%zu possible UTC solutions were found. Select using an "
-                "approximate date/time or a second lunar distance."),
+            : _("%zu possible UTC solutions were found. The default uses "
+                "proximity to DR when available, otherwise proximity to entered "
+                "UTC. Check the DR and all candidates; use another observation "
+                "if the choice remains ambiguous."),
         m_sight.m_LunarCandidates.size()));
   }
 
-  std::size_t selected = 0;
-  for (std::size_t index = 1; index < m_sight.m_LunarCandidates.size(); ++index)
-    if (std::fabs(m_sight.m_LunarCandidates[index].offset_seconds) <
-        std::fabs(m_sight.m_LunarCandidates[selected].offset_seconds))
-      selected = index;
+  const int selected = m_sight.SelectLunarCandidate(
+      m_sight.m_LunarSelectedCandidate);
 
   for (std::size_t index = 0; index < m_sight.m_LunarCandidates.size(); ++index) {
     const lunar_distance::TimeCandidate& candidate =
@@ -277,7 +276,7 @@ void LunarResultsDialog::UpdateResults() {
             ? wxString::Format("%.1f s (1-sigma)",
                                candidate.time_uncertainty_seconds)
             : _("Indeterminate"));
-    if (index == selected)
+    if (static_cast<int>(index) == selected)
       m_candidates->SetItemState(row, wxLIST_STATE_SELECTED,
                                  wxLIST_STATE_SELECTED);
   }

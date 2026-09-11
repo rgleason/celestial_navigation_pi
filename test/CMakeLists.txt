@@ -1,6 +1,9 @@
 # test/CMakeLists.txt
 cmake_minimum_required(VERSION 3.14)
 project(celestial_navigation_pi_tests)
+if(UNIX)
+    add_test(NAME ci_apt_settings COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/ci_apt_settings_test.sh)
+endif()
 set(CMAKE_CXX_STANDARD 17)
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
@@ -32,8 +35,10 @@ set(SRC
     altitude_tests.cpp
     azimuth_tests.cpp
     lunar_tests.cpp
+    lunar_fiji_tests.cpp
     lunar_solution_record_tests.cpp
     lunar_ui_smoke_tests.cpp
+    find_body_ui_tests.cpp
     lunar_distance_engine_tests.cpp
     lunar_session_engine_tests.cpp
     lunar_session_worker_tests.cpp

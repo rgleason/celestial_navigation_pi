@@ -42,8 +42,9 @@
 #include <wx/qt/private/wxQtGesture.h>
 #endif
 
-FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
-    : FindBodyDialogBase(parent), m_Sight(sight) {
+FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight,
+                               CopyHsHandler copyHs)
+    : FindBodyDialogBase(parent), m_Sight(sight), m_copyHs(copyHs) {
   m_cbBoatPosition->SetLabel(_("Current boat position (live)"));
   m_cbBoatPosition->SetToolTip(
       _("Uses OpenCPN's current boat position, not the boat position at the "
@@ -55,15 +56,70 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
   }
   m_cbBoatPosition->SetValue(sight.m_DRBoatPosition);
   m_cbMagneticAzimuth->SetValue(sight.m_DRMagneticAzimuth);
-  m_sFindDialogButtonOK->SetLabel(_("Use Result"));
-  m_sFindDialogButtonCancel->SetLabel(_("Cancel"));
-  m_sFindDialogButtonOK->SetDefault();
-  m_sFindDialogButton->Layout();
-  SetAffirmativeId(wxID_OK);
-  SetEscapeId(wxID_CANCEL);
+  // Replace the generated accept/cancel row with independent tool actions.
+  // Keep behaviour here so regenerating the base form cannot restore copying
+  // on acceptance. The unused generated buttons cannot receive default input.
+  GetSizer()->Hide(m_sFindDialogButton);
+  m_sFindDialogButtonOK->Disable();
+  m_sFindDialogButtonCancel->Disable();
+  auto* actions = new wxBoxSizer(wxHORIZONTAL);
+  auto* reset = new wxButton(this, wxID_ANY, _("Reset position"));
+  m_copyHsButton = new wxButton(this, wxID_ANY, _("Copy estimated Hs"));
+  auto* close = new wxButton(this, wxID_CLOSE, _("Close"));
+  auto* cancel = m_sFindDialogButtonCancel;
+  m_sFindDialogButton->Detach(cancel);
+  cancel->SetLabel(_("Cancel"));
+  cancel->Enable();
+  cancel->Show();
+  reset->SetToolTip(
+      _("Restore the position and live-position setting shown when Find "
+        "opened. Find stays open; explicitly copied Hs is not undone."));
+  cancel->SetToolTip(
+      _("Discard position edits and close Find. Explicitly copied Hs is not "
+        "undone."));
+  m_copyHsButton->SetToolTip(
+      _("Replace the altitude in Sight Properties with this estimate. Find "
+        "stays open."));
+  close->SetToolTip(
+      _("Keep the position and return to Sight Properties without copying Hs. "
+        "Save Changes there to keep the sight."));
+  // Reuse the generated controls, but arrange the tool actions alongside the
+  // values they affect. Keep all layout customisation out of generated code.
+  m_Body->GetItem(size_t(2))->GetSizer()->Add(reset, 0, wxALL, 5);
+  auto* towards = m_Body->GetItem(size_t(7))->GetSizer();
+  auto* away = m_Body->GetItem(size_t(8))->GetSizer();
+  m_Body->Detach(towards);
+  m_Body->Detach(away);
+  towards->Add(away, 0, wxEXPAND);
+  auto* hoBox = new wxStaticBoxSizer(wxVERTICAL, this, _("Altitude (Ho)"));
+  m_observedAltitude = new wxTextCtrl(hoBox->GetStaticBox(), wxID_ANY,
+      wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
+  m_observedAltitude->SetToolTip(
+      _("Observed altitude after reduction of the entered Hs. For lunar "
+        "helpers this is the selected Moon or body's altitude, not lunar "
+        "distance."));
+  hoBox->Add(m_observedAltitude, 0, wxALL | wxEXPAND, 5);
+  m_Body->Insert(6, hoBox, 1, wxALL | wxEXPAND, 5);
+  m_Body->Insert(8, towards, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+  m_Body->Add(m_copyHsButton, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+  actions->AddStretchSpacer();
+  actions->Add(cancel, 0, wxALL, 5);
+  actions->Add(close, 0, wxALL, 5);
+  GetSizer()->Add(actions, 0, wxEXPAND);
+  reset->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { ResetPosition(); });
+  m_copyHsButton->Bind(wxEVT_BUTTON,
+                       [this](wxCommandEvent&) { CopyEstimatedHs(); });
+  close->Bind(wxEVT_BUTTON,
+              [this](wxCommandEvent&) { CloseKeepingPosition(); });
+  cancel->Bind(wxEVT_BUTTON,
+               [this](wxCommandEvent&) { CancelPosition(); });
+  Bind(wxEVT_CLOSE_WINDOW, [this](wxCloseEvent&) { CancelPosition(); });
+  SetAffirmativeId(wxID_CLOSE);
+  SetEscapeId(cancel->GetId());
+  close->SetDefault();
 
-  const int coordinateWidth = m_tLongitude->GetTextExtent(
-      toSDMM_PlugIn(2, -179.99999, true)).x + 32;
+  const int coordinateWidth =
+      m_tLongitude->GetTextExtent(toSDMM_PlugIn(2, -179.99999, true)).x + 32;
   m_tLatitude->SetMinSize(wxSize(coordinateWidth, -1));
   m_tLongitude->SetMinSize(wxSize(coordinateWidth, -1));
 
@@ -77,6 +133,9 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight)
 #endif
 
   UpdateBoatPosition();
+  m_initialLatitude = m_Sight.m_DRLat;
+  m_initialLongitude = m_Sight.m_DRLon;
+  m_initialBoatPosition = m_Sight.m_DRBoatPosition;
   GetSizer()->Fit(this);
   Centre();
 }
@@ -104,6 +163,49 @@ void FindBodyDialog::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
 #endif
 
 FindBodyDialog::~FindBodyDialog() {}
+
+void FindBodyDialog::ResetPosition() {
+  m_Sight.m_DRLat = m_initialLatitude;
+  m_Sight.m_DRLon = m_initialLongitude;
+  m_cbBoatPosition->SetValue(m_initialBoatPosition);
+  m_Sight.m_DRBoatPosition = m_initialBoatPosition;
+  m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_initialLatitude, true));
+  m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_initialLongitude, true));
+  m_tLatitude->Enable(!m_initialBoatPosition);
+  m_tLongitude->Enable(!m_initialBoatPosition);
+  Update();
+}
+
+void FindBodyDialog::CopyEstimatedHs() {
+  Update();
+  if (!m_copyHs || !m_copyHsButton->IsEnabled()) return;
+  const wxString value = m_tEstimatedHs->GetValue();
+  m_copyHs(value);
+  // Refresh the popup's intercept against the deliberately copied altitude.
+  // Retain the already corrected epoch, limb and reduction settings.
+  m_Sight.m_Measurement = fromDMM_Plugin(value);
+  m_Sight.m_CalcStr.clear();
+  m_Sight.RecomputeAltitude();
+  Update();
+}
+
+void FindBodyDialog::CloseKeepingPosition() {
+  Update();
+  if (IsModal())
+    EndModal(wxID_OK);
+  else
+    Hide();
+}
+
+void FindBodyDialog::CancelPosition() {
+  ResetPosition();
+  // Explicit Hs copies have already been applied to Sight Properties. Do not
+  // apply this popup's remaining local settings when cancelling its position.
+  if (IsModal())
+    EndModal(wxID_CANCEL);
+  else
+    Hide();
+}
 
 void FindBodyDialog::OnUpdate(wxCommandEvent& event) { Update(); }
 
@@ -144,14 +246,21 @@ void FindBodyDialog::Update() {
   m_Sight.CalculateAtDR(&hc, &zn);
 
   if (m_Sight.m_DRMagneticAzimuth) {
-    zn -=
-        celestial_navigation_pi_GetWMM(m_Sight.m_DRLat, m_Sight.m_DRLon,
-                                       m_Sight.m_EyeHeight, m_Sight.m_CorrectedDateTime);
+    zn -= celestial_navigation_pi_GetWMM(m_Sight.m_DRLat, m_Sight.m_DRLon,
+                                         m_Sight.m_EyeHeight,
+                                         m_Sight.m_CorrectedDateTime);
     zn = resolve_heading_positive(zn);
   }
 
-  m_tAltitude->SetValue(std::isfinite(hc) ? toSDMM_PlugIn(0, hc, true) : _("N/A"));
-  m_tAzimuth->SetValue(std::isfinite(zn) ? toSDMM_PlugIn(0, zn, true) : _("N/A"));
+  m_tAltitude->SetValue(std::isfinite(hc) ? toSDMM_PlugIn(0, hc, true)
+                                          : _("N/A"));
+  m_observedAltitude->SetValue(
+      m_Sight.m_Type == Sight::ALTITUDE &&
+              std::isfinite(m_Sight.m_ObservedAltitude)
+          ? toSDMM_PlugIn(0, m_Sight.m_ObservedAltitude, true)
+          : _("N/A"));
+  m_tAzimuth->SetValue(std::isfinite(zn) ? toSDMM_PlugIn(0, zn, true)
+                                         : _("N/A"));
   m_tIntercept->SetValue(
       wxString::Format(_T("%f"), fabs(hc - m_Sight.m_ObservedAltitude) * 60));
   if (hc >= m_Sight.m_ObservedAltitude) {
@@ -166,9 +275,9 @@ void FindBodyDialog::Update() {
   m_Sight.EstimateHs(hc, &estimatedHs, &estimatedError);
   if (!isnan(estimatedHs)) {
     m_tEstimatedHs->SetValue(toSDMM_PlugIn(0, estimatedHs, true));
-    m_sFindDialogButtonOK->Enable();
+    m_copyHsButton->Enable(static_cast<bool>(m_copyHs));
   } else {
     m_tEstimatedHs->SetValue("   N/A");
-    m_sFindDialogButtonOK->Disable();
+    m_copyHsButton->Disable();
   }
 }
