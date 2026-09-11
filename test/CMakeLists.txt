@@ -1,6 +1,9 @@
 # test/CMakeLists.txt
 cmake_minimum_required(VERSION 3.14)
 project(celestial_navigation_pi_tests)
+if(UNIX)
+    add_test(NAME ci_apt_settings COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/ci_apt_settings_test.sh)
+endif()
 set(CMAKE_CXX_STANDARD 17)
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 

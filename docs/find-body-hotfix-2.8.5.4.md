@@ -33,3 +33,11 @@ Local release validation: 175 non-GUI tests, four timezone regression runs,
 all three opt-in GUI suites, 26 Find workflow scenarios, and 379/379 production
 independent-reference checks passed. The frozen baseline retains its 15 expected
 accuracy failures. Offline HTML, PDF and embedded-image DOCX validation passed.
+
+The first hosted Ubuntu job timed out at `apt-get update` before compilation;
+an unchanged-code retry then lost an Android dependency download over HTTP.
+CI dependency setup now uses five acquisition retries, 30-second HTTP/HTTPS
+timeouts and official Ubuntu HTTPS archive endpoints. Ubuntu index progress is
+no longer suppressed. Package signature/TLS verification is not weakened.
+Pure shell regression checks cover these settings and URL rewrites without
+touching host package configuration. This does not change the plugin binary.

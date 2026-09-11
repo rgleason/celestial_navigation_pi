@@ -8,14 +8,12 @@ set -xe
 # Hosted mirrors occasionally reset long dependency downloads or briefly serve
 # package indexes which refer to a security update that has just been replaced.
 # Avoid cached indexes and retry an install once after refreshing them.
-printf '%s\n' \
-  'Acquire::Retries "5";' \
-  'Acquire::http::No-Cache "true";' \
-  'Acquire::https::No-Cache "true";' |
-  sudo tee /etc/apt/apt.conf.d/80-ci-retries
+source "$(dirname "${BASH_SOURCE[0]}")/apt-ci-settings.sh"
+apt_ci_prepare
 
 apt_ci_update() {
-  sudo apt-get -qq update
+  # Keep progress visible so CI distinguishes a slow mirror from a dead job.
+  sudo apt-get update
 }
 
 apt_ci_install() {
