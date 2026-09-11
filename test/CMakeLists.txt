@@ -35,6 +35,7 @@ set(SRC
     altitude_tests.cpp
     azimuth_tests.cpp
     lunar_tests.cpp
+    lunar_fiji_tests.cpp
     lunar_solution_record_tests.cpp
     lunar_ui_smoke_tests.cpp
     find_body_ui_tests.cpp

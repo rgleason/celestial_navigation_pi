@@ -95,6 +95,7 @@ public:
   void RecomputeAltitude();
   void RecomputeAzimuth();
   void RecomputeLunar(int preferred_candidate = -1);
+  int SelectLunarCandidate(int preferred_candidate = -1) const;
   void RecomputeHorizon();
 
   void RebuildPolygonsAltitude();
@@ -201,6 +202,7 @@ public:
   bool m_LunarSolutionValid;
   wxString m_LunarSolutionError;
   std::vector<lunar_distance::TimeCandidate> m_LunarCandidates;
+  int m_LunarSelectedCandidate = -1;
   lunar_distance::PositionResult m_LunarPositionResult;
   int m_LunarSelectedPosition;
   bool m_LunarUsesDe440;

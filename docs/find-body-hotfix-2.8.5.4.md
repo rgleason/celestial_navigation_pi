@@ -1,5 +1,39 @@
 # Find Body workflow hotfix — 2.8.5.4
 
+## Fiji lunar candidate-selection follow-up
+
+Bob's Fiji Saturn–Moon cases 7a and 7b reproduced a northern-hemisphere default
+solution even though the solver also found a southern solution near his DR.
+The old default chose the smallest absolute UTC correction before considering
+position. Both branches fit the measured angles; the approximate position is
+needed to distinguish them.
+
+The calculation trail and Results page now share a selection policy which ranks
+all UTC/position branches by proximity to valid DR coordinates. Explicit user
+selection overrides that default and is retained when the Results mode changes.
+All branches remain visible, with a warning to check DR and ambiguity. This does
+not force a solution onto the DR position or change the underlying ephemerides.
+Invalid/missing coordinates fall back to the nearest entered UTC. Legacy sights
+have no position-availability flag, so the default (0,0) is conservatively treated
+as unavailable; an observer actually there can select a branch explicitly.
+
+Permanent headless tests exercise the complete Sight calculation with Bob's
+screenshot inputs and the worksheet's slightly different pressure/eye height:
+
+- 7a, no added lunar-distance error: default now approximately 0.73 NM from the
+  stated position, rather than approximately 2,734 NM away.
+- 7b, with deliberately added 1.5 arcminutes: default now approximately 1.43 NM
+  from Bob's old production reference, rather than the northern branch. Its
+  displacement from the original DR is expected because the input contains error.
+- Missing/invalid DR, date-line proximity, multiple positions per UTC root and
+  explicit overrides are also covered. Raw observations and UTC remain unchanged.
+
+These are regression comparisons and forward-model consistency checks, not new
+independent accuracy claims. This Saturn–Moon case uses the bundled analytical
+ephemeris path, not the separately audited DE440 Sun–Moon path.
+
+## Find workflow
+
 Addresses Bob's report in issue #289, comment 5635145707. Version 2.8.5.3
 combined accepting DR coordinates and copying estimated Hs, preventing a
 position-only edit. This is a behavioural fix, not only button renaming.
