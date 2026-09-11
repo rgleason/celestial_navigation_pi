@@ -238,6 +238,7 @@ Fit Optimise(const std::vector<SessionObservation>& observations,
       Evaluate(observations, options, FromVector(values, options));
   if (!current.valid) return fit;
   double current_cost = Cost(current, options.robust_fit);
+  bool converged = false;
   const std::vector<double> finite_step =
       options.solve_position
           ? (options.estimate_common_index_bias
@@ -283,16 +284,25 @@ Fit Optimise(const std::vector<SessionObservation>& observations,
           normal[a][b] += weight * jacobian[row][a] * jacobian[row][b];
       }
     }
+    // A heavily damped/rejected step can be tiny far from a solution. Test
+    // the undamped normal correction instead, at the current accepted point.
+    std::vector<double> undamped;
+    if (!SolveLinear(normal, rhs, &undamped)) break;
+    double correction_norm = 0;
+    for (double value : undamped) correction_norm += value * value;
+    if (std::isfinite(correction_norm) && correction_norm < 1e-12) {
+      fit.normal = normal;
+      converged = true;
+      break;
+    }
     std::vector<std::vector<double>> damped = normal;
     for (int column = 0; column < columns; ++column)
       damped[column][column] += damping * std::max(1.0, normal[column][column]);
     std::vector<double> increment;
     if (!SolveLinear(damped, rhs, &increment)) break;
-    double step_norm = 0.0;
     std::vector<double> trial = values;
     for (int column = 0; column < columns; ++column) {
       trial[column] += increment[column];
-      step_norm += increment[column] * increment[column];
     }
     Parameters trial_parameters = FromVector(trial, options);
     if (std::fabs(trial_parameters.latitude) > 89.8) {
@@ -310,13 +320,12 @@ Fit Optimise(const std::vector<SessionObservation>& observations,
       current_cost = trial_cost;
       fit.normal = normal;
       damping = std::max(1e-9, damping * 0.3);
-      if (step_norm < 1e-12) break;
     } else {
       damping *= 10.0;
       if (damping > 1e12) break;
     }
   }
-  fit.valid = current.valid;
+  fit.valid = current.valid && converged && std::isfinite(current_cost);
   fit.parameters = FromVector(values, options);
   fit.evaluation = current;
   fit.cost = current_cost;

@@ -1,8 +1,14 @@
 # Celestial Navigation 2.8.5.3
 
-This pass addresses Bob's *Distance by Vertical Angle* testing in issue #282.
-It does not change the enhanced lunar engine, stored sights, ephemeris, or
+The original pass addresses Bob's *Distance by Vertical Angle* testing in issue #282.
+It did not change the enhanced lunar engine, stored sights, ephemeris, or
 offline Earth-rotation update/fallback workflow introduced in 2.8.5.2.
+
+The subsequent [11 September numerical-audit follow-up](numerical-audit-2026-09-11.md)
+corrects UTC handling, ordinary bearings, calibration geometry, running-fix
+uncertainty, Find Body time, planetary parallax and inverse Hs reduction.
+It also requires actual solver convergence. Raw sightings, the lunar physical
+model and offline Earth-rotation update/fallback remain unchanged.
 
 ## Coastal changes
 

@@ -6772,7 +6772,7 @@
                 <property name="permission">none</property>
                 <object class="sizeritem" expanded="false">
                   <property name="border">5</property>
-                  <property name="flag">wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</property>
+                  <property name="flag">wxALL|wxEXPAND</property>
                   <property name="proportion">0</property>
                   <object class="wxCheckBox" expanded="false">
                     <property name="BottomDockable">1</property>
@@ -6848,7 +6848,7 @@
                 <property name="permission">none</property>
                 <object class="sizeritem" expanded="false">
                   <property name="border">5</property>
-                  <property name="flag">wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</property>
+                  <property name="flag">wxALL|wxEXPAND</property>
                   <property name="proportion">0</property>
                   <object class="wxCheckBox" expanded="false">
                     <property name="BottomDockable">1</property>

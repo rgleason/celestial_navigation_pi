@@ -46,6 +46,7 @@ set(SRC
     horizon_event_tests.cpp
     html_help_tests.cpp
     navigation_algorithms_tests.cpp
+    numerical_audit_tests.cpp
     waypoint_position_source_tests.cpp
     almanac_generator_tests.cpp
     time_status_tests.cpp
@@ -163,6 +164,15 @@ endif()
 
 # Add the test
 add_test(NAME celestial_tests COMMAND celestial_tests)
+if(UNIX)
+    # Separate processes avoid wx/libc timezone caches masking UTC-boundary bugs.
+    foreach(zone UTC Europe/London America/New_York Asia/Kolkata)
+        string(REPLACE "/" "_" test_zone "${zone}")
+        add_test(NAME numerical_audit_${test_zone}
+            COMMAND ${CMAKE_COMMAND} -E env "TZ=${zone}"
+                $<TARGET_FILE:celestial_tests> --gtest_filter=NumericalAudit.*)
+    endforeach()
+endif()
 add_test(
     NAME ui_utf8_literals
     COMMAND ${Python3_EXECUTABLE}

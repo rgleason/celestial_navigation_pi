@@ -1476,6 +1476,10 @@ void PlannerDialog::SolveSpecialLatitude(wxCommandEvent&) {
   m_specialAltitude->Normalize();
   const double latitude = SolveLatitudeFromAltitude(
       body, time, motion.longitude, observedAltitude, motion.latitude);
+  if (!std::isfinite(latitude)) {
+    m_specialSummary->SetLabel(_("No converged latitude solution. Check Ho, time, longitude and approximate latitude."));
+    return;
+  }
   const BodyState state =
       CelestialEphemeris::Evaluate(body, time, latitude, motion.longitude);
   m_specialSummary->SetLabel(wxString::Format(

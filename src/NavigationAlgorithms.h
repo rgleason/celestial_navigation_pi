@@ -231,7 +231,7 @@ class RunningFixSolver {
 public:
   static RunningFixResult Solve(const std::vector<FixObservation>& sights,
                                 const ObserverMotion& motion, double initialLat,
-                                double initialLon);
+                                double initialLon, unsigned maximumIterations = 40);
 };
 
 struct SequenceStatistics {
