@@ -46,7 +46,7 @@ all three opt-in GUI suites, 39 Find workflow scenarios (normal and 150% font
 scaling), and 379/379 production
 independent-reference checks passed. The frozen baseline retains its 15 expected
 accuracy failures. Offline HTML, PDF and embedded-image DOCX validation passed.
-Native normal/scaled layouts were visually inspected (525×348 and 714×400).
+Native normal/scaled layouts were visually inspected (527×347 and 714×400).
 
 The first hosted Ubuntu job timed out at `apt-get update` before compilation;
 an unchanged-code retry then lost an Android dependency download over HTTP.
