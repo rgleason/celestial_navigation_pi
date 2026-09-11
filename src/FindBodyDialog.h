@@ -61,8 +61,10 @@ private:
   void ResetPosition();
   void CopyEstimatedHs();
   void CloseKeepingPosition();
+  void CancelPosition();
   CopyHsHandler m_copyHs;
   wxButton* m_copyHsButton;
+  wxTextCtrl* m_observedAltitude;
   double m_initialLatitude, m_initialLongitude;
   bool m_initialBoatPosition;
 };

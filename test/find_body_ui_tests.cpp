@@ -3,11 +3,13 @@
 #include <wx/button.h>
 #include <wx/checkbox.h>
 #include <wx/filename.h>
+#include <wx/ffile.h>
 #include <wx/frame.h>
 #include <wx/listctrl.h>
 #include <wx/log.h>
 #include <wx/modalhook.h>
 #include <wx/textctrl.h>
+#include <wx/tglbtn.h>
 #include <cstdlib>
 #include <functional>
 #include "CelestialNavigationDialog.h"
@@ -35,6 +37,13 @@ wxTextCtrl* Coordinate(wxWindow* root, const wxString& label) {
     if (auto* value = Coordinate(child, label)) return value;
   }
   return nullptr;
+}
+wxString SavedXml(const wxString& path) {
+  if (!wxFileExists(path)) return wxString();
+  wxFFile file(path, "r");
+  wxString contents;
+  EXPECT_TRUE(file.ReadAll(&contents));
+  return contents;
 }
 void Click(wxWindow* root, const wxString& label) {
   auto* button = Find<wxButton>(root, label);
@@ -115,13 +124,25 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
     wxFrame frame(nullptr, wxID_ANY, "Find workflow test");
     celestial_navigation_pi plugin(nullptr);
     Main main(&frame, &plugin);
+    auto* timeToggle = Find<wxToggleButton>(&main, "Hide Time");
+    ASSERT_NE(nullptr, timeToggle);
+    timeToggle->SetValue(false);
+    wxCommandEvent toggleTime(wxEVT_TOGGLEBUTTON, timeToggle->GetId());
+    toggleTime.SetEventObject(timeToggle);
+    timeToggle->ProcessWindowEvent(toggleTime);
+    EXPECT_EQ("Show Time", timeToggle->GetLabel());
+    timeToggle->SetValue(true);
+    timeToggle->ProcessWindowEvent(toggleTime);
+    EXPECT_EQ("Hide Time", timeToggle->GetLabel());
     Hook hook;
     hook.Register();
     // 0 close only, 1 window X, 2 Escape, 3 reset, 4 copy twice,
-    // 5 no estimate, 6 copy then cancel the outer Sight Properties.
+    // 5 no estimate, 6 copy then cancel the outer Sight Properties,
+    // 7 Cancel after a typo/live toggle, 8/9/10 copy then Cancel/X/Escape.
     for (int route = 0; route < 4; ++route)
-      for (int action = 0; action < 7; ++action) {
-        if (route == 3 && (action == 4 || action == 6)) continue;
+      for (int action = 0; action < 11; ++action) {
+        if (route == 3 && (action == 4 || action == 6 || action >= 8))
+          continue;
         SCOPED_TRACE(::testing::Message()
                      << "route=" << route << " action=" << action);
         wxDateTime time;
@@ -152,6 +173,8 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
         main.m_lSights->SetItemState(0, wxLIST_STATE_SELECTED,
                                      wxLIST_STATE_SELECTED);
         double expectedLat = 42, expectedLon = -70, copied = NAN;
+        const wxString xmlPath = state + "/plugins/celestial_navigation/Sights.xml";
+        const wxString xmlBefore = SavedXml(xmlPath);
         int visits = 0;
         hook.finder = [&](FindBodyDialog* dialog) {
           ++visits;
@@ -160,7 +183,16 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
           ASSERT_NE(nullptr, lat);
           ASSERT_NE(nullptr, lon);
           ASSERT_EQ(wxID_CLOSE, dialog->GetAffirmativeId());
-          ASSERT_EQ(wxID_CLOSE, dialog->GetEscapeId());
+          auto* cancel = Find<wxButton>(dialog, "Cancel");
+          ASSERT_NE(nullptr, cancel);
+          ASSERT_EQ(cancel->GetId(), dialog->GetEscapeId());
+          auto* ho = Coordinate(dialog, "Altitude (Ho)");
+          ASSERT_NE(nullptr, ho);
+          EXPECT_FALSE(ho->IsEditable());
+          EXPECT_EQ(route == 3 ? wxString("N/A")
+                               : toSDMM_PlugIn(
+                                     0, dialog->m_Sight.m_ObservedAltitude, true),
+                    ho->GetValue());
           if (visits == 2) {
             EXPECT_NEAR(expectedLat, dialog->m_Sight.m_DRLat, 1e-6);
             EXPECT_NEAR(expectedLon, dialog->m_Sight.m_DRLon, 1e-6);
@@ -175,9 +207,10 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
           EXPECT_TRUE(dialog->IsShown());
           EXPECT_NEAR(initial.m_Measurement, main.m_Sights[0].m_Measurement,
                       1e-6);
-          if (route == 3)
+          if (route == 3) {
             EXPECT_FALSE(
                 Find<wxButton>(dialog, "Copy estimated Hs")->IsEnabled());
+          }
           if (action == 3) {
             auto* live =
                 Find<wxCheckBox>(dialog, "Current boat position (live)");
@@ -193,10 +226,13 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
             expectedLat = initial.m_DRLat;
             expectedLon = initial.m_DRLon;
           }
-          if (action == 4 || action == 6) {
+          if (action == 4 || action == 6 || action >= 8) {
             copied = fromDMM_Plugin(dialog->m_tEstimatedHs->GetValue());
             Click(dialog, "Copy estimated Hs");
             EXPECT_TRUE(dialog->IsShown());
+            EXPECT_EQ(toSDMM_PlugIn(
+                          0, dialog->m_Sight.m_ObservedAltitude, true),
+                      ho->GetValue());
             const auto& editing = main.m_Sights[0];
             EXPECT_NEAR(copied,
                         route == 0   ? editing.m_Measurement
@@ -207,10 +243,13 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
             copied = fromDMM_Plugin(dialog->m_tEstimatedHs->GetValue());
             Click(dialog, "Copy estimated Hs");
             EXPECT_TRUE(dialog->IsShown());
-            // Reset affects position only, never undoes an explicit copy.
-            Click(dialog, "Reset position");
-            expectedLat = initial.m_DRLat;
-            expectedLon = initial.m_DRLon;
+            if (action == 4 || action == 6) {
+              // Reset affects position only, never undoes an explicit copy.
+              Click(dialog, "Reset position");
+              EXPECT_TRUE(dialog->IsShown());
+              expectedLat = initial.m_DRLat;
+              expectedLon = initial.m_DRLon;
+            }
           }
           if (action == 5) {
             double gpLat, gpLon;
@@ -242,26 +281,50 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
             cairo_destroy(cr);
             cairo_surface_destroy(surface);
             for (const auto& label :
-                 {"Reset position", "Copy estimated Hs", "Close"}) {
+                 {"Reset position", "Copy estimated Hs", "Cancel", "Close"}) {
               auto* button = Find<wxButton>(dialog, label);
               EXPECT_TRUE(wxRect(wxPoint(0, 0), dialog->GetClientSize())
                               .Contains(button->GetRect()));
             }
+            EXPECT_LT(ho->GetScreenPosition().y,
+                      Find<wxButton>(dialog, "Copy estimated Hs")
+                          ->GetScreenPosition().y);
+            EXPECT_LT(dialog->m_tEstimatedHs->GetScreenPosition().x,
+                      Find<wxButton>(dialog, "Copy estimated Hs")
+                          ->GetScreenPosition().x);
           }
 #endif
-          if (action == 1)
+          if (action == 1 || action == 2 || action >= 7) {
+            expectedLat = initial.m_DRLat;
+            expectedLon = initial.m_DRLon;
+            if (action == 7) {
+              auto* live =
+                  Find<wxCheckBox>(dialog, "Current boat position (live)");
+              live->SetValue(true);
+              wxCommandEvent toggle(wxEVT_CHECKBOX, live->GetId());
+              toggle.SetEventObject(live);
+              live->ProcessWindowEvent(toggle);
+            }
+            lat->SetValue("");  // An accidental blank must not be committed.
+          }
+          EXPECT_EQ(xmlBefore, SavedXml(xmlPath));
+          if (action == 1 || action == 9)
             dialog->Close();
-          else if (action == 2) {
+          else if (action == 2 || action == 10) {
             wxKeyEvent escape(wxEVT_CHAR_HOOK);
             escape.m_keyCode = WXK_ESCAPE;
             dialog->ProcessWindowEvent(escape);
-          } else
+          } else if (action == 7 || action == 8)
+            Click(dialog, "Cancel");
+          else
             Click(dialog, "Close");
         };
         hook.properties = [&](SightDialog* properties) {
           OpenFind(properties, route);
+          EXPECT_EQ(xmlBefore, SavedXml(xmlPath));
           OpenFind(properties,
                    route);  // Position survives closing/reopening Find.
+          EXPECT_EQ(xmlBefore, SavedXml(xmlPath));
           wxCommandEvent done(wxEVT_BUTTON,
                               action == 6 ? wxID_CANCEL : wxID_OK);
           properties->ProcessWindowEvent(done);
@@ -277,14 +340,16 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
         }
         EXPECT_NEAR(expectedLat, saved.m_DRLat, 1e-6);
         EXPECT_NEAR(expectedLon, saved.m_DRLon, 1e-6);
+        EXPECT_EQ(initial.m_DRBoatPosition, saved.m_DRBoatPosition);
         EXPECT_EQ(initial.m_DateTime, saved.m_DateTime);
-        EXPECT_NEAR(action == 4 && route == 0 ? copied : initial.m_Measurement,
+        const bool keptCopy = action == 4 || action >= 8;
+        EXPECT_NEAR(keptCopy && route == 0 ? copied : initial.m_Measurement,
                     saved.m_Measurement, 1e-6);
         EXPECT_NEAR(
-            action == 4 && route == 1 ? copied : initial.m_LunarMoonAltitude,
+            keptCopy && route == 1 ? copied : initial.m_LunarMoonAltitude,
             saved.m_LunarMoonAltitude, 1e-6);
         EXPECT_NEAR(
-            action == 4 && route == 2 ? copied : initial.m_LunarBodyAltitude,
+            keptCopy && route == 2 ? copied : initial.m_LunarBodyAltitude,
             saved.m_LunarBodyAltitude, 1e-6);
       }
   }

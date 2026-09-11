@@ -66,18 +66,44 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight,
   auto* reset = new wxButton(this, wxID_ANY, _("Reset position"));
   m_copyHsButton = new wxButton(this, wxID_ANY, _("Copy estimated Hs"));
   auto* close = new wxButton(this, wxID_CLOSE, _("Close"));
+  auto* cancel = m_sFindDialogButtonCancel;
+  m_sFindDialogButton->Detach(cancel);
+  cancel->SetLabel(_("Cancel"));
+  cancel->Enable();
+  cancel->Show();
   reset->SetToolTip(
       _("Restore the position and live-position setting shown when Find "
-        "opened."));
+        "opened. Find stays open; explicitly copied Hs is not undone."));
+  cancel->SetToolTip(
+      _("Discard position edits and close Find. Explicitly copied Hs is not "
+        "undone."));
   m_copyHsButton->SetToolTip(
       _("Replace the altitude in Sight Properties with this estimate. Find "
         "stays open."));
   close->SetToolTip(
       _("Keep the position and return to Sight Properties without copying Hs. "
         "Save Changes there to keep the sight."));
-  actions->Add(reset, 0, wxALL, 5);
-  actions->Add(m_copyHsButton, 0, wxALL, 5);
+  // Reuse the generated controls, but arrange the tool actions alongside the
+  // values they affect. Keep all layout customisation out of generated code.
+  m_Body->GetItem(size_t(2))->GetSizer()->Add(reset, 0, wxALL, 5);
+  auto* towards = m_Body->GetItem(size_t(7))->GetSizer();
+  auto* away = m_Body->GetItem(size_t(8))->GetSizer();
+  m_Body->Detach(towards);
+  m_Body->Detach(away);
+  towards->Add(away, 0, wxEXPAND);
+  auto* hoBox = new wxStaticBoxSizer(wxVERTICAL, this, _("Altitude (Ho)"));
+  m_observedAltitude = new wxTextCtrl(hoBox->GetStaticBox(), wxID_ANY,
+      wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
+  m_observedAltitude->SetToolTip(
+      _("Observed altitude after reduction of the entered Hs. For lunar "
+        "helpers this is the selected Moon or body's altitude, not lunar "
+        "distance."));
+  hoBox->Add(m_observedAltitude, 0, wxALL | wxEXPAND, 5);
+  m_Body->Insert(6, hoBox, 1, wxALL | wxEXPAND, 5);
+  m_Body->Insert(8, towards, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+  m_Body->Add(m_copyHsButton, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
   actions->AddStretchSpacer();
+  actions->Add(cancel, 0, wxALL, 5);
   actions->Add(close, 0, wxALL, 5);
   GetSizer()->Add(actions, 0, wxEXPAND);
   reset->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { ResetPosition(); });
@@ -85,9 +111,11 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight,
                        [this](wxCommandEvent&) { CopyEstimatedHs(); });
   close->Bind(wxEVT_BUTTON,
               [this](wxCommandEvent&) { CloseKeepingPosition(); });
-  Bind(wxEVT_CLOSE_WINDOW, [this](wxCloseEvent&) { CloseKeepingPosition(); });
+  cancel->Bind(wxEVT_BUTTON,
+               [this](wxCommandEvent&) { CancelPosition(); });
+  Bind(wxEVT_CLOSE_WINDOW, [this](wxCloseEvent&) { CancelPosition(); });
   SetAffirmativeId(wxID_CLOSE);
-  SetEscapeId(wxID_CLOSE);
+  SetEscapeId(cancel->GetId());
   close->SetDefault();
 
   const int coordinateWidth =
@@ -169,6 +197,16 @@ void FindBodyDialog::CloseKeepingPosition() {
     Hide();
 }
 
+void FindBodyDialog::CancelPosition() {
+  ResetPosition();
+  // Explicit Hs copies have already been applied to Sight Properties. Do not
+  // apply this popup's remaining local settings when cancelling its position.
+  if (IsModal())
+    EndModal(wxID_CANCEL);
+  else
+    Hide();
+}
+
 void FindBodyDialog::OnUpdate(wxCommandEvent& event) { Update(); }
 
 void FindBodyDialog::OnUpdateBoatPosition(wxCommandEvent& event) {
@@ -216,6 +254,11 @@ void FindBodyDialog::Update() {
 
   m_tAltitude->SetValue(std::isfinite(hc) ? toSDMM_PlugIn(0, hc, true)
                                           : _("N/A"));
+  m_observedAltitude->SetValue(
+      m_Sight.m_Type == Sight::ALTITUDE &&
+              std::isfinite(m_Sight.m_ObservedAltitude)
+          ? toSDMM_PlugIn(0, m_Sight.m_ObservedAltitude, true)
+          : _("N/A"));
   m_tAzimuth->SetValue(std::isfinite(zn) ? toSDMM_PlugIn(0, zn, true)
                                          : _("N/A"));
   m_tIntercept->SetValue(
