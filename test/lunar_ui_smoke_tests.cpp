@@ -11,6 +11,7 @@
 #include "CelestialNavigationDialog.h"
 #include "LunarToolsDialog.h"
 #include "FindBodyDialog.h"
+#include "PlannerDialog.h"
 #include "SightDialog.h"
 #include "NavigationAlgorithms.h"
 #include "UtcDateTime.h"
@@ -52,6 +53,25 @@ bool ContainsStaticText(wxWindow* window, const wxString& text) {
     if (ContainsStaticText(child, text)) return true;
   }
   return false;
+}
+
+void ExpectUnclippedNonOverlappingChildren(wxWindow* page) {
+  const wxRect client(wxPoint(0, 0), page->GetClientSize());
+  std::vector<wxWindow*> visible;
+  for (auto* child : page->GetChildren()) {
+    if (!child->IsShown() || child->GetSize().x <= 0 ||
+        child->GetSize().y <= 0)
+      continue;
+    visible.push_back(child);
+    EXPECT_TRUE(client.Contains(child->GetRect()))
+        << child->GetClassInfo()->GetClassName();
+  }
+  for (std::size_t first = 0; first < visible.size(); ++first)
+    for (std::size_t second = first + 1; second < visible.size(); ++second)
+      EXPECT_FALSE(visible[first]->GetRect().Intersects(
+          visible[second]->GetRect()))
+          << visible[first]->GetClassInfo()->GetClassName() << " overlaps "
+          << visible[second]->GetClassInfo()->GetClassName();
 }
 void FindControls(wxWindow* window, wxChoice** mode, wxButton** save) {
   for (auto* child : window->GetChildren()) {
@@ -306,6 +326,48 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
         if (child->GetLabel().Contains("failed or was cancelled")) failureShown=true;
       EXPECT_TRUE(failureShown);
       dialog.Hide();
+
+      PlannerDialog planner(&main);
+      planner.Show();
+      for (int i = 0; i < 4; ++i) {
+        wxTheApp->Yield();
+        wxMilliSleep(20);
+      }
+      planner.SelectPageForIntegration(1);
+      wxNotebook* plannerNotebook = nullptr;
+      for (auto* child : planner.GetChildren())
+        if (auto* value = dynamic_cast<wxNotebook*>(child))
+          plannerNotebook = value;
+      ASSERT_NE(plannerNotebook, nullptr);
+      ASSERT_EQ(plannerNotebook->GetSelection(), 1);
+      wxWindow* bodiesPage = plannerNotebook->GetPage(1);
+      ASSERT_NE(bodiesPage, nullptr);
+      for (const wxSize size : {wxSize(1120, 720), wxSize(900, 650)}) {
+        planner.SetSize(size);
+        planner.Centre();
+        planner.Layout();
+        bodiesPage->Layout();
+        for (int i = 0; i < 8; ++i) {
+          wxTheApp->Yield();
+          wxMilliSleep(30);
+        }
+        ExpectUnclippedNonOverlappingChildren(bodiesPage);
+#ifdef __WXGTK3__
+        GtkAllocation requested{0, 0, size.x, size.y};
+        gtk_widget_size_allocate(GTK_WIDGET(planner.GetHandle()), &requested);
+        auto* surface =
+            cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.x, size.y);
+        auto* cr = cairo_create(surface);
+        gtk_widget_draw(GTK_WIDGET(planner.GetHandle()), cr);
+        const auto path =
+            wxString::Format("/tmp/celestial-planner-bodies-%d.png", size.x);
+        EXPECT_EQ(cairo_surface_write_to_png(surface, path.utf8_str()),
+                  CAIRO_STATUS_SUCCESS);
+        cairo_destroy(cr);
+        cairo_surface_destroy(surface);
+#endif
+      }
+      planner.Hide();
     }
     SetTestPrivateDataPath(wxEmptyString);
     SetTestPluginDataRoot(wxEmptyString);

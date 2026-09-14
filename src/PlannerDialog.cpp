@@ -150,6 +150,8 @@ public:
 void PlannerDialog::SelectPageForIntegration(unsigned page) {
   if (m_notebook && page < m_notebook->GetPageCount()) {
     m_notebook->SetSelection(page);
+    m_notebook->GetPage(page)->Layout();
+    m_notebook->Layout();
     Layout();
     Refresh();
     Update();
@@ -401,8 +403,9 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   bodiesLeft->Add(m_combinations, 0, wxALL | wxEXPAND, 5);
   bodiesRoot->Add(bodiesLeft, 1, wxEXPAND);
   wxBoxSizer* plotSizer = new wxBoxSizer(wxVERTICAL);
-  wxBoxSizer* plotControls = new wxBoxSizer(wxHORIZONTAL);
-  plotControls->Add(
+  wxBoxSizer* plotControls = new wxBoxSizer(wxVERTICAL);
+  wxBoxSizer* magnitudeControls = new wxBoxSizer(wxHORIZONTAL);
+  magnitudeControls->Add(
       new wxStaticText(bodiesPage, wxID_ANY, _("Sky plot magnitude")), 0,
       wxRIGHT | wxALIGN_CENTER_VERTICAL, 4);
   m_plotMagnitude = new wxChoice(bodiesPage, wxID_ANY);
@@ -410,10 +413,11 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_plotMagnitude->Append(_("2 or brighter"));
   m_plotMagnitude->Append(_("3 or brighter"));
   m_plotMagnitude->SetSelection(2);
-  plotControls->Add(m_plotMagnitude, 0, wxRIGHT, 8);
+  magnitudeControls->Add(m_plotMagnitude, 0);
+  plotControls->Add(magnitudeControls, 0, wxEXPAND | wxBOTTOM, 4);
   m_plotBelowHorizon =
       new wxCheckBox(bodiesPage, wxID_ANY, _("Show below horizon"));
-  plotControls->Add(m_plotBelowHorizon, 0, wxALIGN_CENTER_VERTICAL);
+  plotControls->Add(m_plotBelowHorizon, 0);
   plotSizer->Add(plotControls, 0, wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 8);
   m_skyPlot = new SkyPlotPanel(bodiesPage);
   plotSizer->Add(m_skyPlot, 1, wxALL | wxEXPAND, 8);
@@ -421,10 +425,11 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
       bodiesPage, wxID_ANY,
       _("Sun yellow; Moon blue; planets red; grey stars = daylight; hollow = "
         "below horizon"));
-  plotLegend->Wrap(360);
+  plotLegend->Wrap(280);
   plotSizer->Add(plotLegend, 0, wxLEFT | wxRIGHT | wxBOTTOM, 8);
   bodiesRoot->Add(plotSizer, 0, wxEXPAND);
   bodiesPage->SetSizer(bodiesRoot);
+  bodiesPage->Layout();
   m_notebook->AddPage(bodiesPage, _("Bodies && Best Sights"), false);
 
   wxPanel* almanacPage = new wxPanel(m_notebook);
@@ -487,6 +492,19 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   buttons->Realize();
   root->Add(buttons, 0, wxALL | wxEXPAND, 6);
   SetSizer(root);
+
+  // On GTK, notebook pages which were hidden while their list controls were
+  // populated can retain the page's original full-size child allocation.
+  // Relayout the newly selected page explicitly so its controls cannot cover
+  // the recommendation row or the sky-plot pane.
+  m_notebook->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED,
+                   [this](wxBookCtrlEvent& event) {
+                     event.Skip();
+                     if (wxWindow* page = m_notebook->GetCurrentPage())
+                       page->Layout();
+                     m_notebook->Layout();
+                     Layout();
+                   });
 
   m_positionSource->Bind(wxEVT_CHOICE, &PlannerDialog::ChangePositionSource,
                          this);
@@ -650,6 +668,10 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   RefreshAll(dummy);
   SetMinSize(wxSize(760, 560));
   dialog_geometry::Restore(this, _T("Planner"), wxSize(1120, 720));
+  for (size_t page = 0; page < m_notebook->GetPageCount(); ++page)
+    m_notebook->GetPage(page)->Layout();
+  m_notebook->Layout();
+  Layout();
 }
 
 PlannerDialog::~PlannerDialog() {
