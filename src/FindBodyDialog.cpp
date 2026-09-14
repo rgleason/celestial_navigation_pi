@@ -45,6 +45,7 @@
 FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight,
                                CopyHsHandler copyHs)
     : FindBodyDialogBase(parent), m_Sight(sight), m_copyHs(copyHs) {
+  SetTitle(wxString::Format(_("Find %s"), m_Sight.m_Body));
   m_cbBoatPosition->SetLabel(_("Current boat position (live)"));
   m_cbBoatPosition->SetToolTip(
       _("Uses OpenCPN's current boat position, not the boat position at the "

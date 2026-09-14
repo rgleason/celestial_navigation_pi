@@ -579,6 +579,10 @@ void Sight::Render(piDC* dc, PlugIn_ViewPort& VP, double pix_per_mm) {
 }
 
 void Sight::Recompute(double clock_offset) {
+  // Any edited input invalidates cached plot geometry. Hidden sights are not
+  // rebuilt immediately, so this flag ensures the next eye toggle rebuilds
+  // them instead of displaying geometry copied from an earlier sight type.
+  m_bCalculated = false;
   m_CalcStr.clear();
 
   if (clock_offset)
@@ -604,6 +608,13 @@ void Sight::Recompute(double clock_offset) {
 }
 
 void Sight::RebuildPolygons() {
+  if (m_Type == LUNAR) {
+    // A sight converted from Altitude/Azimuth must not retain its old plot.
+    polygons.clear();
+    lines.clear();
+    m_bCalculated = true;
+    return;
+  }
   switch (m_Type) {
     case ALTITUDE:
       RebuildPolygonsAltitude();
@@ -612,7 +623,7 @@ void Sight::RebuildPolygons() {
       RebuildPolygonsAzimuth();
       break;
     case LUNAR:
-      return;  // lunar has no polygons
+      break;
     case HORIZON:
       RebuildPolygonsHorizon();
       break;
@@ -1740,7 +1751,10 @@ void Sight::RecomputeLunar(int preferred_candidate) {
               {candidate_sample.body_geographic_latitude_deg,
                candidate_sample.body_geographic_longitude_deg},
               candidate_clearance.body_geocentric_altitude_deg);
-      if (positions.valid) candidate.positions = positions.candidates;
+      if (positions.valid) {
+        candidate.positions = positions.candidates;
+        candidate.position_geometry = positions.geometry;
+      }
     }
   }
 
@@ -1763,15 +1777,19 @@ void Sight::RecomputeLunar(int preferred_candidate) {
       m_CalcStr += wxString::Format(
           _("%s%s\n"
             "    watch correction       = %+.3f s\n"
-            "    model centre distance  = %.8f deg\n"
-            "    joint residual rate    = %.6f arcmin/hour\n"
+            "    %s = %.8f deg\n"
+            "    local residual rate    = %.6f arcmin/hour (%.6f arcmin/minute)\n"
             "    input angle sigma RSS  = %.6f arcmin\n"
             "    covariance sigma UTC   = %.3f s\n"
             "    covariance sigma pos   = %.3f NM\n"),
           index == selected ? _T("* ") : _T("  "),
           UtcDateTime::FormatUtc(candidate_time, "%Y-%m-%d %H:%M:%S.%l"),
-          candidate.offset_seconds, candidate.predicted_distance_deg,
+          candidate.offset_seconds,
+          observation.separate_times ? _("predicted geocentric distance")
+                                     : _("LD cleared (matched geocentric distance)"),
+          candidate.predicted_distance_deg,
           candidate.slope_arcmin_per_hour,
+          candidate.slope_arcmin_per_hour / 60.0,
           candidate.angular_uncertainty_arcmin,
           candidate.time_uncertainty_seconds,
           candidate.position_uncertainty_nm);
@@ -1781,7 +1799,7 @@ void Sight::RecomputeLunar(int preferred_candidate) {
             "    watch correction       = %+.3f s\n"
             "    ephemeris distance     = %.8f deg\n"
             "    cleared distance       = %.8f deg\n"
-            "    lunar-distance rate    = %.6f arcmin/hour\n"
+            "    local lunar-distance rate = %.6f arcmin/hour (%.6f arcmin/minute)\n"
             "    propagated angle sigma = %.6f arcmin\n"
             "      LD contribution      = %.6f arcmin\n"
             "      Moon-alt contribution= %.6f arcmin\n"
@@ -1791,6 +1809,7 @@ void Sight::RecomputeLunar(int preferred_candidate) {
           UtcDateTime::FormatUtc(candidate_time, "%Y-%m-%d %H:%M:%S.%l"),
           candidate.offset_seconds, candidate.predicted_distance_deg,
           candidate.cleared_distance_deg, candidate.slope_arcmin_per_hour,
+          candidate.slope_arcmin_per_hour / 60.0,
           candidate.angular_uncertainty_arcmin,
           candidate.distance_uncertainty_contribution_arcmin,
           candidate.moon_altitude_uncertainty_contribution_arcmin,
@@ -1812,6 +1831,10 @@ void Sight::RecomputeLunar(int preferred_candidate) {
     if (!chosen.positions.empty()) {
       m_LunarPositionResult.valid = true;
       m_LunarPositionResult.candidates = chosen.positions;
+      m_LunarPositionResult.geometry = chosen.position_geometry;
+      if (!chosen.position_geometry.empty())
+        m_LunarPositionResult.circle_crossing_angle_deg =
+            chosen.position_geometry.front().effective_crossing_angle_deg;
     } else {
       m_LunarPositionResult.error =
           "The joint time-tagged solution did not return a position";
@@ -1852,6 +1875,16 @@ void Sight::RecomputeLunar(int preferred_candidate) {
   }
   if (m_LunarPositionResult.valid) {
     lunar_distance::GeographicPoint approximate{m_DRLat, m_DRLon};
+    const bool has_saved_dr =
+        std::isfinite(m_DRLat) && std::isfinite(m_DRLon) &&
+        std::fabs(m_DRLat) <= 90.0 && std::fabs(m_DRLon) <= 180.0 &&
+        (m_DRLat != 0.0 || m_DRLon != 0.0);
+    m_CalcStr += has_saved_dr
+                     ? wxString::Format(
+                           _("Saved DR used to rank branches: %s, %s\n"),
+                           toSDMM_PlugIn(1, m_DRLat, true),
+                           toSDMM_PlugIn(2, m_DRLon, true))
+                     : _("Saved DR used to rank branches: not available.\n");
     double nearest = INFINITY;
     for (std::size_t index = 0; index < m_LunarPositionResult.candidates.size();
          ++index) {
@@ -1868,19 +1901,38 @@ void Sight::RecomputeLunar(int preferred_candidate) {
       m_CalcStr += wxString::Format(
           _("Position candidate %zu: %.6f%c, %.6f%c%s\n"), index + 1,
           position.latitude_deg, 0x00B0, position.longitude_deg, 0x00B0,
-          static_cast<int>(index) == m_LunarSelectedPosition
-              ? _T(" (nearest DR/boat position)")
+          has_saved_dr && static_cast<int>(index) == m_LunarSelectedPosition
+              ? _T(" (nearest saved DR)")
               : _T(""));
     }
-    if (!observation.separate_times && !observation.use_ellipsoid) {
+    if (m_LunarSelectedPosition >= 0 &&
+        static_cast<std::size_t>(m_LunarSelectedPosition) <
+            m_LunarPositionResult.geometry.size()) {
+      const auto& geometry =
+          m_LunarPositionResult.geometry[m_LunarSelectedPosition];
       m_CalcStr += wxString::Format(
-          _("Altitude-circle crossing angle: %.2f%c.\n"),
-          m_LunarPositionResult.circle_crossing_angle_deg, 0x00B0);
-      if (m_LunarPositionResult.circle_crossing_angle_deg < 15.0)
+          _("Selected branch true azimuths: Moon Zn %.2f%c; %s Zn %.2f%c.\n"
+            "Azimuth separation (delta Zn): %.2f%c; effective COP crossing: "
+            "%.2f%c.\n"),
+          geometry.moon_azimuth_deg, 0x00B0, m_Body,
+          geometry.body_azimuth_deg, 0x00B0,
+          geometry.azimuth_separation_deg, 0x00B0,
+          geometry.effective_crossing_angle_deg, 0x00B0);
+      if (geometry.effective_crossing_angle_deg < 15.0)
         m_CalcStr +=
-            _("Warning: shallow altitude-circle crossing gives weak position "
-              "geometry.\n");
-    } else {
+            _("Warning: very weak position geometry. Latitude and longitude "
+              "are retained, but their errors are strongly correlated; use "
+              "an independent latitude or another well-separated sight.\n");
+      else if (geometry.effective_crossing_angle_deg < 30.0)
+        m_CalcStr +=
+            _("Warning: weak position geometry. The retained position has an "
+              "elongated correlated uncertainty; another well-separated "
+              "sight is recommended.\n");
+      else if (geometry.effective_crossing_angle_deg < 60.0)
+        m_CalcStr += _("Notice: moderate position geometry; uncertainty is "
+                       "amplified along one direction.\n");
+    }
+    if (observation.separate_times || observation.use_ellipsoid) {
       m_CalcStr +=
           std::isfinite(chosen.position_uncertainty_nm)
               ? wxString::Format(_("Estimated joint position uncertainty: %.2f "
