@@ -67,6 +67,15 @@ struct GeographicPoint {
       : latitude_deg(latitude), longitude_deg(longitude) {}
 };
 
+struct PositionGeometry {
+  double moon_azimuth_deg = 0.0;
+  double body_azimuth_deg = 0.0;
+  // The smaller angular separation between the two true azimuths (0..180).
+  double azimuth_separation_deg = 0.0;
+  // The acute crossing angle of the two local altitude constraints (0..90).
+  double effective_crossing_angle_deg = 0.0;
+};
+
 GeographicPoint AdvanceObserver(const GeographicPoint& reference,
                                 const Observation& observation,
                                 double relative_seconds);
@@ -75,6 +84,9 @@ struct PositionResult {
   bool valid = false;
   std::string error;
   std::vector<GeographicPoint> candidates;
+  // Aligned with candidates. Kept per branch because the geometry can differ
+  // at the two mathematical intersections.
+  std::vector<PositionGeometry> geometry;
   double circle_crossing_angle_deg = 0.0;
 };
 
@@ -159,6 +171,8 @@ struct TimeCandidate {
   double body_altitude_uncertainty_contribution_arcmin = 0.0;
   double time_uncertainty_seconds = 0.0;
   std::vector<GeographicPoint> positions;
+  // Aligned with positions.
+  std::vector<PositionGeometry> position_geometry;
   double position_uncertainty_nm = 0.0;
   double circle_crossing_angle_deg = 0.0;
 };
@@ -219,6 +233,11 @@ PositionResult IntersectAltitudeCircles(
     double moon_observed_altitude_deg,
     const GeographicPoint& body_geographic_position,
     double body_observed_altitude_deg);
+
+PositionGeometry CalculatePositionGeometry(
+    const GeographicPoint& observer,
+    const GeographicPoint& moon_geographic_position,
+    const GeographicPoint& body_geographic_position);
 
 PositionResult PositionAtTime(const Observation& observation,
                               const EphemerisFunction& ephemeris,

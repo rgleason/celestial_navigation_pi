@@ -570,7 +570,10 @@ struct TaggedEvaluation {
   bool valid = false;
   std::string error;
   EphemerisSample distance_sample;
+  EphemerisSample moon_sample;
+  EphemerisSample body_sample;
   std::vector<GeographicPoint> positions;
+  std::vector<PositionGeometry> geometry;
   std::vector<double> residuals;
 };
 
@@ -578,24 +581,29 @@ TaggedEvaluation EvaluateTagged(const Observation& observation,
                                 const EphemerisFunction& ephemeris,
                                 double correction_seconds) {
   TaggedEvaluation result;
-  EphemerisSample moon_sample;
-  EphemerisSample body_sample;
   if (!ephemeris(correction_seconds, &result.distance_sample, &result.error) ||
       !ephemeris(correction_seconds + observation.moon_time_offset_seconds,
-                 &moon_sample, &result.error) ||
+                 &result.moon_sample, &result.error) ||
       !ephemeris(correction_seconds + observation.body_time_offset_seconds,
-                 &body_sample, &result.error))
+                 &result.body_sample, &result.error))
     return result;
   double moon_altitude = 0.0, body_altitude = 0.0;
-  if (!CorrectObservedAltitude(observation, moon_sample, true, &moon_altitude,
-                               &result.error) ||
-      !CorrectObservedAltitude(observation, body_sample, false, &body_altitude,
-                               &result.error))
+  if (!CorrectObservedAltitude(observation, result.moon_sample, true,
+                               &moon_altitude, &result.error) ||
+      !CorrectObservedAltitude(observation, result.body_sample, false,
+                               &body_altitude, &result.error))
     return result;
   result.positions =
-      SolveReferencePositions(observation, moon_sample, body_sample,
+      SolveReferencePositions(observation, result.moon_sample,
+                              result.body_sample,
                               moon_altitude, body_altitude, &result.error);
   for (const GeographicPoint& position : result.positions) {
+    result.geometry.push_back(CalculatePositionGeometry(
+        position,
+        {result.moon_sample.moon_geographic_latitude_deg,
+         result.moon_sample.moon_geographic_longitude_deg},
+        {result.body_sample.body_geographic_latitude_deg,
+         result.body_sample.body_geographic_longitude_deg}));
     const double predicted =
         PredictedRawDistance(observation, result.distance_sample, position);
     result.residuals.push_back(predicted - observation.raw_distance_deg);
@@ -723,6 +731,31 @@ TaggedUncertainty EstimateTaggedUncertainty(
 }
 
 }  // namespace
+
+PositionGeometry CalculatePositionGeometry(
+    const GeographicPoint& observer,
+    const GeographicPoint& moon_geographic_position,
+    const GeographicPoint& body_geographic_position) {
+  double moon_altitude = 0.0;
+  double body_altitude = 0.0;
+  PositionGeometry result;
+  AltitudeAzimuth(observer, moon_geographic_position, &moon_altitude,
+                  &result.moon_azimuth_deg);
+  AltitudeAzimuth(observer, body_geographic_position, &body_altitude,
+                  &result.body_azimuth_deg);
+  auto normalize = [](double value) {
+    value = std::fmod(value, 360.0);
+    return value < 0.0 ? value + 360.0 : value;
+  };
+  result.moon_azimuth_deg = normalize(result.moon_azimuth_deg);
+  result.body_azimuth_deg = normalize(result.body_azimuth_deg);
+  double separation =
+      std::fabs(result.moon_azimuth_deg - result.body_azimuth_deg);
+  if (separation > 180.0) separation = 360.0 - separation;
+  result.azimuth_separation_deg = separation;
+  result.effective_crossing_angle_deg = std::min(separation, 180.0 - separation);
+  return result;
+}
 
 GeographicPoint AdvanceObserver(const GeographicPoint& reference,
                                 const Observation& observation,
@@ -1055,6 +1088,7 @@ SolveResult SolveTime(const Observation& observation,
                                   sample.body_geographic_longitude_deg},
                                  clearance.body_geocentric_altitude_deg);
     candidate.positions = position.candidates;
+    candidate.position_geometry = position.geometry;
     candidate.circle_crossing_angle_deg = position.circle_crossing_angle_deg;
     // Keep both intersections tied to this UTC candidate. A conservative
     // scalar is the larger of their local horizontal RMS uncertainties.
@@ -1266,6 +1300,8 @@ SolveResult SolveTimeTagged(const Observation& observation,
       candidate.slope_arcmin_per_hour = slope_arcmin_per_hour;
       candidate.angular_uncertainty_arcmin = angular_uncertainty;
       candidate.positions.push_back(root_evaluation.positions[branch]);
+      if (branch < root_evaluation.geometry.size())
+        candidate.position_geometry.push_back(root_evaluation.geometry[branch]);
       const TaggedUncertainty uncertainty = EstimateTaggedUncertainty(
           observation, ephemeris, root, candidate.positions.front());
       candidate.time_uncertainty_seconds = uncertainty.time_seconds;
@@ -1281,8 +1317,12 @@ SolveResult SolveTimeTagged(const Observation& observation,
                     Dot(Unit(position), Unit(candidate.positions.front()))))) <
                 1e-5)
               duplicate_position = true;
-          if (!duplicate_position)
+          if (!duplicate_position) {
             existing.positions.push_back(candidate.positions.front());
+            if (!candidate.position_geometry.empty())
+              existing.position_geometry.push_back(
+                  candidate.position_geometry.front());
+          }
           existing.time_uncertainty_seconds =
               std::max(existing.time_uncertainty_seconds,
                        candidate.time_uncertainty_seconds);
@@ -1367,6 +1407,7 @@ PositionResult PositionAtTime(const Observation& observation,
     result.valid = evaluation.valid;
     result.error = evaluation.error;
     result.candidates = evaluation.positions;
+    result.geometry = evaluation.geometry;
     return result;
   }
   EphemerisSample sample;
@@ -1435,16 +1476,13 @@ PositionResult IntersectAltitudeCircles(
   result.candidates.push_back(Geographic(first));
   if (scale > 1e-10) result.candidates.push_back(Geographic(second));
 
-  const Vector3 observer = first;
-  const Vector3 moon_tangent = moon + (-moon_plane) * observer;
-  const Vector3 body_tangent = body + (-body_plane) * observer;
-  const double tangent_denominator = Norm(moon_tangent) * Norm(body_tangent);
-  if (tangent_denominator > 0.0) {
-    double angle = ToDegrees(std::acos(
-        ClampUnit(Dot(moon_tangent, body_tangent) / tangent_denominator)));
-    if (angle > 90.0) angle = 180.0 - angle;
-    result.circle_crossing_angle_deg = angle;
-  }
+  for (const GeographicPoint& candidate : result.candidates)
+    result.geometry.push_back(CalculatePositionGeometry(
+        candidate, moon_geographic_position, body_geographic_position));
+
+  if (!result.geometry.empty())
+    result.circle_crossing_angle_deg =
+        result.geometry.front().effective_crossing_angle_deg;
   result.valid = true;
   return result;
 }

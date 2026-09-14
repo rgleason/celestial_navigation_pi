@@ -238,6 +238,31 @@ TEST(LunarDistanceEngine, TwoCorrectedAltitudesRecoverPositionAndLongitude) {
     nearest = std::min(nearest, ld::GreatCircleDistanceNm(candidate, truth));
   EXPECT_LT(nearest, 1e-5);
   EXPECT_GT(result.circle_crossing_angle_deg, 1.0);
+  ASSERT_EQ(result.candidates.size(), result.geometry.size());
+  for (const auto& geometry : result.geometry) {
+    EXPECT_GE(geometry.azimuth_separation_deg, 0.0);
+    EXPECT_LE(geometry.azimuth_separation_deg, 180.0);
+    EXPECT_NEAR(geometry.effective_crossing_angle_deg,
+                std::min(geometry.azimuth_separation_deg,
+                         180.0 - geometry.azimuth_separation_deg),
+                1e-10);
+    EXPECT_NEAR(geometry.effective_crossing_angle_deg,
+                result.circle_crossing_angle_deg, 1e-9);
+  }
+}
+
+TEST(LunarDistanceEngine, ReportsDeltaZnAndAcuteEffectiveCrossing) {
+  const auto geometry = ld::CalculatePositionGeometry(
+      ld::GeographicPoint{12.0, -24.0},
+      ld::GeographicPoint{30.0, 15.0},
+      ld::GeographicPoint{-20.0, 150.0});
+  EXPECT_GE(geometry.azimuth_separation_deg, 0.0);
+  EXPECT_LE(geometry.azimuth_separation_deg, 180.0);
+  EXPECT_NEAR(geometry.effective_crossing_angle_deg,
+              std::min(geometry.azimuth_separation_deg,
+                       180.0 - geometry.azimuth_separation_deg),
+              1e-10);
+  EXPECT_LE(geometry.effective_crossing_angle_deg, 90.0);
 }
 
 TEST(LunarDistanceEngine, InconsistentAltitudesDoNotInventLongitude) {

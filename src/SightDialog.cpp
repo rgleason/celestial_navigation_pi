@@ -611,27 +611,57 @@ void SightDialog::RecomputeDMM() {
 }
 
 void SightDialog::Recompute() {
-  m_cbMagneticAzimuth->Enable(m_cType->GetSelection() == AZIMUTH);
-  m_cLimb->Enable(m_cType->GetSelection() != AZIMUTH);
+  const auto selectedType =
+      static_cast<Sight::Type>(m_cType->GetSelection());
+  const bool leavingLunar =
+      m_breadytorecompute && m_Sight.m_Type == Sight::LUNAR &&
+      selectedType != Sight::LUNAR;
+  Sight::BodyLimb displayedLimb =
+      static_cast<Sight::BodyLimb>(m_cLimb->GetSelection());
+
+  // Lunar and ordinary sights historically shared this control and storage
+  // field even though it has two different meanings. Never reinterpret a
+  // lunar UTC search span (often 24 hours) as an altitude/azimuth time
+  // uncertainty. When producing an altitude copy, use the body's recorded Hs
+  // and altitude limb rather than the lunar-distance angle/contact.
+  if (leavingLunar) {
+    m_sCertaintySeconds->SetValue(0);
+    if (selectedType == Sight::ALTITUDE) {
+      m_tMeasurement->ChangeValue(
+          toSDMM_PlugIn(0, m_Sight.m_LunarBodyAltitude, true));
+      displayedLimb = m_Sight.m_LunarBodyLimb;
+      if (m_Sight.m_LunarSeparateTimes) {
+        const wxDateTime bodyTime = UtcDateTime::AddSeconds(
+            m_Sight.m_DateTime, m_Sight.m_LunarBodyTimeOffsetSeconds);
+        m_Calendar->SetDate(bodyTime);
+        m_sHours->SetValue(bodyTime.GetHour());
+        m_sMinutes->SetValue(bodyTime.GetMinute());
+        m_sSeconds->SetValue(bodyTime.GetSecond());
+      }
+    } else {
+      displayedLimb = Sight::CENTER;
+    }
+  }
+
+  m_cbMagneticAzimuth->Enable(selectedType == Sight::AZIMUTH);
+  m_cLimb->Enable(selectedType != Sight::AZIMUTH);
   m_cbDipShort->Enable(!m_cbArtificialHorizon->GetValue());
   m_tDipShortDistance->Enable(m_cbDipShort->GetValue() &&
                               !m_cbArtificialHorizon->GetValue());
 
-  m_fgSizerLunar->Show(m_cType->GetSelection() == LUNAR);
-  if (m_cType->GetSelection() == LUNAR) {
+  m_fgSizerLunar->Show(selectedType == Sight::LUNAR);
+  if (selectedType == Sight::LUNAR) {
     m_bFindBody->SetLabel(_T("Time"));
     m_sbSizerSight->GetStaticBox()->SetLabel(_T("Lunar distance (LDOpc)"));
-    m_Sight.m_BodyLimb = (Sight::BodyLimb)m_cLimb->GetSelection();
     m_cLimb->Clear();
     m_cLimb->Append(_T("Near"));
     m_cLimb->Append(_T("Far"));
-    m_cLimb->SetSelection((int)m_Sight.m_BodyLimb);
+    m_cLimb->SetSelection(static_cast<int>(displayedLimb));
     m_staticText13->SetLabel(_("Total UTC search span (seconds)"));
-  } else if (m_cType->GetSelection() == AZIMUTH) {
+  } else if (selectedType == Sight::AZIMUTH) {
     m_bFindBody->SetLabel(_T("Find"));
     m_sbSizerSight->GetStaticBox()->SetLabel(
         _T("Celestial body bearing (not a terrestrial horizontal angle)"));
-    m_Sight.m_BodyLimb = Sight::CENTER;
     m_cLimb->Clear();
     m_cLimb->Append(_T("Center"));
     m_cLimb->SetSelection(0);
@@ -639,12 +669,11 @@ void SightDialog::Recompute() {
   } else {
     m_bFindBody->SetLabel(_T("Find"));
     m_sbSizerSight->GetStaticBox()->SetLabel(_T("Sight measurement (Hs)"));
-    m_Sight.m_BodyLimb = (Sight::BodyLimb)m_cLimb->GetSelection();
     m_cLimb->Clear();
     m_cLimb->Append(_T("Lower"));
     m_cLimb->Append(_T("Center"));
     m_cLimb->Append(_T("Upper"));
-    m_cLimb->SetSelection((int)m_Sight.m_BodyLimb);
+    m_cLimb->SetSelection(static_cast<int>(displayedLimb));
     m_staticText13->SetLabel(_("Seconds"));
   }
   // Text/choice events can be emitted while the derived dialog constructor
@@ -661,7 +690,7 @@ void SightDialog::Recompute() {
 
   if (!m_breadytorecompute) return;
 
-  m_Sight.m_Type = (Sight::Type)m_cType->GetSelection();
+  m_Sight.m_Type = selectedType;
   m_Sight.m_Body = m_cBody->GetStringSelection();
   m_Sight.m_BodyLimb = (Sight::BodyLimb)m_cLimb->GetSelection();
 

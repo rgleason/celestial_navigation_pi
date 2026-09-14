@@ -22,6 +22,7 @@ private:
 
   Sight& m_sight;
   wxStaticText* m_status;
+  wxStaticText* m_dr;
   wxListCtrl* m_candidates;
   wxListCtrl* m_positions;
   wxTextCtrl* m_details;

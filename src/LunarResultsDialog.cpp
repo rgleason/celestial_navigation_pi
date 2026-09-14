@@ -18,9 +18,34 @@
 
 #include <cmath>
 
+namespace {
+bool HasSavedDr(const Sight& sight) {
+  return std::isfinite(sight.m_DRLat) && std::isfinite(sight.m_DRLon) &&
+         std::fabs(sight.m_DRLat) <= 90.0 &&
+         std::fabs(sight.m_DRLon) <= 180.0 &&
+         (sight.m_DRLat != 0.0 || sight.m_DRLon != 0.0);
+}
+
+wxString GeometryAssessment(double effective) {
+  if (effective < 15.0)
+    return _("Very weak geometry. Latitude and longitude are retained, but "
+             "their errors are strongly correlated; use an independent "
+             "latitude or another well-separated sight.");
+  if (effective < 30.0)
+    return _("Weak geometry. The retained position has an elongated, "
+             "correlated uncertainty; another well-separated sight is "
+             "recommended.");
+  if (effective < 60.0)
+    return _("Moderate geometry. The retained position is usable with "
+             "greater uncertainty along one direction.");
+  return _("Good geometry. This describes the position solution, not lunar "
+           "time accuracy.");
+}
+}  // namespace
+
 LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
     : wxDialog(parent, wxID_ANY, _("Lunar-distance UTC recovery"),
-               wxDefaultPosition, wxSize(940, 700),
+               wxDefaultPosition, wxSize(1040, 720),
                wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
       m_sight(sight) {
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
@@ -58,17 +83,34 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
   results->Add(m_mode, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
 
   m_status = new wxStaticText(resultsPage, wxID_ANY, wxEmptyString);
-  m_status->Wrap(740);
+  m_status->Wrap(880);
   results->Add(m_status, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
+
+  m_dr = new wxStaticText(resultsPage, wxID_ANY, wxEmptyString);
+  if (HasSavedDr(m_sight)) {
+    m_dr->SetLabel(wxString::Format(
+        _("Saved DR used to rank solution branches: %s, %s"),
+        FormatNavigationAngle(m_sight.m_DRLat,
+                              NavigationAngleKind::Latitude, true),
+        FormatNavigationAngle(m_sight.m_DRLon,
+                              NavigationAngleKind::Longitude, true)));
+  } else {
+    m_dr->SetLabel(_("Saved DR used to rank solution branches: not available; "
+                     "review all mathematical branches."));
+  }
+  m_dr->Wrap(880);
+  results->Add(m_dr, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
 
   m_candidates = new wxListCtrl(resultsPage, wxID_ANY, wxDefaultPosition,
                                 wxDefaultSize,
                                 wxLC_REPORT | wxLC_SINGLE_SEL);
   m_candidates->InsertColumn(0, _("UTC candidate"));
-  m_candidates->InsertColumn(1, _("Clock correction"));
-  m_candidates->InsertColumn(2, _("Model centre distance"));
-  m_candidates->InsertColumn(3, _("Rate (arcmin/h)"));
-  m_candidates->InsertColumn(4, _("Estimated UTC uncertainty"));
+  m_candidates->InsertColumn(1, _("Correction"));
+  m_candidates->InsertColumn(
+      2, m_sight.m_LunarSeparateTimes ? _("Predicted geocentric distance")
+                                      : _("LD cleared"));
+  m_candidates->InsertColumn(3, _("Local rate"));
+  m_candidates->InsertColumn(4, _("UTC uncertainty"));
   results->Add(m_candidates, 1, wxLEFT | wxRIGHT | wxEXPAND, 10);
 
   results->Add(new wxStaticText(
@@ -83,8 +125,8 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
   m_positions->InsertColumn(0, _("Candidate"));
   m_positions->InsertColumn(1, _("Latitude"));
   m_positions->InsertColumn(2, _("Longitude"));
-  m_positions->InsertColumn(3, _("Distance from saved sight DR"));
-  m_positions->InsertColumn(4, _("Estimated position uncertainty"));
+  m_positions->InsertColumn(3, _("From saved DR"));
+  m_positions->InsertColumn(4, _("Position uncertainty"));
   results->Add(m_positions, 0, wxLEFT | wxRIGHT | wxEXPAND, 10);
   m_geometry = new wxStaticText(resultsPage, wxID_ANY, wxEmptyString);
   results->Add(m_geometry, 0, wxALL | wxEXPAND, 10);
@@ -134,13 +176,13 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
   pages->AddPage(calculationsPage, _("Calculations"), false);
   root->Add(pages, 1, wxEXPAND | wxALL, 6);
 
-  wxStdDialogButtonSizer* buttons = new wxStdDialogButtonSizer();
+  wxBoxSizer* buttons = new wxBoxSizer(wxHORIZONTAL);
   m_applyOffset = new wxButton(this, wxID_ANY, _("Save lunar solution"));
-  buttons->AddButton(m_applyOffset);
   wxButton* close = new wxButton(this, wxID_CLOSE, _("Close"));
-  buttons->AddButton(close);
-  buttons->Realize();
-  root->Add(buttons, 0, wxALL | wxALIGN_RIGHT, 10);
+  buttons->AddStretchSpacer();
+  buttons->Add(m_applyOffset, 0, wxRIGHT, 8);
+  buttons->Add(close, 0);
+  root->Add(buttons, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
   Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { EndModal(wxID_CLOSE); },
        wxID_CLOSE);
   Bind(wxEVT_CLOSE_WINDOW,
@@ -154,8 +196,8 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
                      });
 
   SetSizer(root);
-  SetMinSize(wxSize(650, 460));
-  dialog_geometry::Restore(this, _T("LunarResults"), wxSize(940, 700));
+  SetMinSize(wxSize(760, 500));
+  dialog_geometry::Restore(this, _T("LunarResults"), wxSize(1040, 720));
   UpdateResults();
 }
 
@@ -251,6 +293,7 @@ void LunarResultsDialog::UpdateResults() {
                 "if the choice remains ambiguous."),
         m_sight.m_LunarCandidates.size()));
   }
+  m_status->Wrap(880);
 
   const int selected = m_sight.SelectLunarCandidate(
       m_sight.m_LunarSelectedCandidate);
@@ -269,7 +312,12 @@ void LunarResultsDialog::UpdateResults() {
     m_candidates->SetItem(
         row, 2, FormatNavigationAngle(candidate.cleared_distance_deg));
     m_candidates->SetItem(
-        row, 3, wxString::Format("%.3f", candidate.slope_arcmin_per_hour));
+        row, 3,
+        wxString::Format("%.2f%s/h (%.3f%s/min)",
+                         candidate.slope_arcmin_per_hour,
+                         wxString::FromUTF8("\xE2\x80\xB2"),
+                         candidate.slope_arcmin_per_hour / 60.0,
+                         wxString::FromUTF8("\xE2\x80\xB2")));
     m_candidates->SetItem(
         row, 4,
         std::isfinite(candidate.time_uncertainty_seconds)
@@ -316,26 +364,19 @@ void LunarResultsDialog::UpdatePositions(long candidate_index) {
   if (!checking && !positions && m_sight.m_LunarPositionResult.valid) {
     positions = &m_sight.m_LunarPositionResult.candidates;
   }
-  const double crossing = checking ? check_position.circle_crossing_angle_deg
-                          : time_candidate
-                              ? time_candidate->circle_crossing_angle_deg
-                              : 0;
-  m_geometry->SetLabel(
-      m_sight.LunarObservation().use_ellipsoid || m_sight.m_LunarSeparateTimes
-          ? _("Position belongs to this UTC candidate at the distance-reading "
-              "epoch. Review alternate branches and residuals.")
-          : wxString::Format(
-                _("Altitude-circle crossing: %.2f degrees. %s"), crossing,
-                crossing < 15 ? _("Weak position geometry: additional "
-                                  "independent sights are needed.")
-                              : _("This describes position geometry, not lunar "
-                                  "time accuracy.")));
-  m_geometry->Wrap(740);
+  const std::vector<lunar_distance::PositionGeometry>* geometries = nullptr;
+  if (checking && !check_position.geometry.empty())
+    geometries = &check_position.geometry;
+  else if (time_candidate && !time_candidate->position_geometry.empty())
+    geometries = &time_candidate->position_geometry;
+  else if (!checking && !m_sight.m_LunarPositionResult.geometry.empty())
+    geometries = &m_sight.m_LunarPositionResult.geometry;
   if (positions) {
     const lunar_distance::GeographicPoint approximate{m_sight.m_DRLat,
                                                        m_sight.m_DRLon};
     std::size_t nearest = 0;
     double nearest_distance = INFINITY;
+    const bool hasDr = HasSavedDr(m_sight);
     for (std::size_t index = 0; index < positions->size(); ++index) {
       const double distance = lunar_distance::GreatCircleDistanceNm(
           approximate, (*positions)[index]);
@@ -348,7 +389,7 @@ void LunarResultsDialog::UpdatePositions(long candidate_index) {
       const auto& position = (*positions)[index];
       const long row = m_positions->InsertItem(
           static_cast<long>(index),
-          index == nearest
+          hasDr && index == nearest
               ? wxString::Format(_("%zu (nearest DR)"), index + 1)
               : wxString::Format(_("%zu"), index + 1));
       m_positions->SetItem(
@@ -359,11 +400,12 @@ void LunarResultsDialog::UpdatePositions(long candidate_index) {
           row, 2,
           FormatNavigationAngle(position.longitude_deg,
                                 NavigationAngleKind::Longitude, true));
-      m_positions->SetItem(
-          row, 3,
-          wxString::Format("%.1f NM",
-                           lunar_distance::GreatCircleDistanceNm(
-                               approximate, position)));
+      m_positions->SetItem(row, 3,
+                           hasDr ? wxString::Format(
+                                       "%.1f NM",
+                                       lunar_distance::GreatCircleDistanceNm(
+                                           approximate, position))
+                                 : _("Not available"));
       m_positions->SetItem(
           row, 4,
           time_candidate &&
@@ -389,6 +431,23 @@ void LunarResultsDialog::UpdatePositions(long candidate_index) {
             residual));
       }
     }
+    const std::size_t described = hasDr ? nearest : 0;
+    if (geometries && described < geometries->size()) {
+      const auto& geometry = (*geometries)[described];
+      const wxString deltaZn = wxString::FromUTF8("\xCE\x94Zn");
+      m_geometry->SetLabel(wxString::Format(
+          _("Branch %zu geometry: Moon Zn %.1f%c; %s Zn %.1f%c; "
+            "azimuth separation (%s) %.1f%c; effective crossing %.1f%c. "
+            "%s"),
+          described + 1, geometry.moon_azimuth_deg, 0x00B0, m_sight.m_Body,
+          geometry.body_azimuth_deg, 0x00B0, deltaZn,
+          geometry.azimuth_separation_deg, 0x00B0,
+          geometry.effective_crossing_angle_deg, 0x00B0,
+          GeometryAssessment(geometry.effective_crossing_angle_deg)));
+    } else {
+      m_geometry->SetLabel(
+          _("Position geometry could not be evaluated for this branch."));
+    }
   } else {
     m_positions->InsertItem(
         0,
@@ -397,8 +456,10 @@ void LunarResultsDialog::UpdatePositions(long candidate_index) {
                                          : m_sight.m_LunarPositionResult.error)
                                    .c_str()));
   }
+  m_geometry->Wrap(880);
   for (int column = 0; column < 5; ++column)
     m_positions->SetColumnWidth(column, wxLIST_AUTOSIZE_USEHEADER);
+  Layout();
 }
 
 void LunarResultsDialog::ApplySelectedWatchOffset(wxCommandEvent&) {
