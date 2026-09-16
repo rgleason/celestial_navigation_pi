@@ -602,7 +602,7 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
     m_residuals->SetItem(
         row, 3, wxString::Format("%+.2f'", residual.interceptMinutes));
   }
-  m_Parent->SetLastFix(m_fixlat, m_fixlon);
+  m_Parent->SetLastFix(m_fixlat, m_fixlon, fix.epochUtc);
   m_bGo->Enable();
   RequestRefresh(GetParent()->GetParent());
 }

@@ -36,6 +36,9 @@
 #endif
 
 class Sight;
+class CelestialNavigationDialog;
+class wxChoice;
+class wxStaticText;
 
 class FindBodyDialog : public FindBodyDialogBase {
 public:
@@ -58,6 +61,10 @@ public:
   int m_lastPanY;
 
 private:
+  CelestialNavigationDialog* NavigationDialog() const;
+  void ChangePositionSource(wxCommandEvent& event);
+  void ApplyPositionSource();
+  void SetCoordinates(double latitude, double longitude);
   void ResetPosition();
   void CopyEstimatedHs();
   void CloseKeepingPosition();
@@ -65,6 +72,9 @@ private:
   CopyHsHandler m_copyHs;
   wxButton* m_copyHsButton;
   wxTextCtrl* m_observedAltitude;
+  wxChoice* m_positionSource;
+  wxStaticText* m_positionInfo;
+  int m_appliedPositionSource;
   double m_initialLatitude, m_initialLongitude;
   bool m_initialBoatPosition;
 };
