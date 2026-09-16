@@ -71,6 +71,12 @@ explains the simultaneous and sequential observation models,
 unknown-watch-offset workflow, genuine position ambiguity, controls and
 limitations.
 
+Version 2.8.5.6 keeps the Sextant Check prediction engine unchanged while
+separating independently measured index error from the persistent residual
+scale/centering profile. Existing saved profiles remain readable with their
+legacy total-correction meaning. See the
+[2.8.5.6 correction note](docs/sextant-index-error-2.8.5.6.md).
+
 Version 2.8.5.2 promotes the independently tested observer-specific Sun–Moon
 astrometry, with bundled offline Earth-rotation data and optional precision
 updates under **Lunar Tools → Advanced**. Calculations continue beyond data

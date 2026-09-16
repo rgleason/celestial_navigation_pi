@@ -53,7 +53,7 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
   <p style="text-align: center;"><strong>Experimental v2 documentation</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.5.4<br>Documentation revision 11 September 2026</p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.5.6<br>Documentation revision 16 September 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -886,13 +886,17 @@ a pair you can identify unambiguously.</p>
 refracted, apparent distance between two selected bodies for a stated UTC,
 position, pressure and temperature. Select centre-to-centre, near contact or
 far contact to match what was actually observed; limb contacts include the
-applicable semidiameters. Record repeated sextant readings, their uncertainty
-and any shade/note. The displayed correction is
-<em>predicted minus observed</em>: add it to the raw reading.</p>
+applicable semidiameters. Record repeated raw sextant readings, their
+independently measured index error, uncertainty and any shade/note. The
+displayed residual is <em>predicted apparent minus index-corrected
+observed</em>: add it only after applying index error.</p>
 
-<p>The current sight index-error default is displayed for comparison but is
-not applied to this check. Applying a pre-existing correction while measuring
-the instrument's correction would make the calibration circular.</p>
+<p>The editable <strong>Measured IE (on arc +)</strong> field starts with the
+current sight default. Enter an independently measured index error for the
+session. The raw observation is retained and the index-corrected apparent
+angle is <em>raw minus IE</em>. The residual shown and saved in a new profile
+therefore describes scale/centering behaviour after index error, preventing
+the same index correction from being applied twice.</p>
 
 <p>For checking scale or centering behaviour, prefer well-identified stars at
 similar, comfortable altitudes and away from the horizon. Star–star checks
@@ -901,13 +905,15 @@ pairs are valuable end-to-end checks, but incorrect UTC, position, limb choice
 or atmospheric conditions can masquerade as instrument error.</p>
 
 <p><strong>Build / save profile</strong> groups repeated checks by angular
-range and stores correction points, uncertainty, repeatability, instrument
-name and serial number in the plugin configuration. Select a saved profile to
-display its interpolated correction at the currently entered observed angle.
+range and stores residual correction points, uncertainty, repeatability,
+instrument name and serial number in the plugin configuration. Select a saved
+profile to display its interpolated correction after the entered index error.
 Between tested angles the plugin uses straight-line interpolation; beyond the
 tested range it clearly marks the nearest endpoint rather than inventing a
 polynomial trend. The table is advisory and does not alter saved sights
-automatically, preserving the raw record and its provenance.</p>
+automatically, preserving the raw record and its provenance. Profiles saved by
+older versions remain labelled as legacy total corrections: apply those
+directly to raw readings and do not apply index error separately.</p>
 
 <div class="warning"><strong>A computed profile is not mechanical
 adjustment.</strong> Follow the sextant maker's specified sequence—normally

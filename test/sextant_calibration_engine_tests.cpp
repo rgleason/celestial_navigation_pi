@@ -55,6 +55,49 @@ TEST(SextantCalibrationEngine, BuildsPiecewiseCorrectionProfile) {
   EXPECT_NEAR(sextant_calibration::CorrectionAt(profile, 46.5, &uncertainty),
               0.4, 0.1);
   EXPECT_GT(uncertainty, 0.0);
+  EXPECT_TRUE(profile.excludes_index_error);
+}
+
+TEST(SextantCalibrationEngine, SeparatesIndexErrorFromResidualCorrection) {
+  sextant_calibration::CheckReading reading;
+  reading.predicted_deg = 60.0;
+  reading.observed_deg = 60.0 + 1.0 / 60.0;
+  reading.index_error_arcmin = 0.4;
+
+  EXPECT_NEAR(
+      sextant_calibration::IndexCorrectedObservedDegrees(reading),
+      60.0 + 0.6 / 60.0, 1e-12);
+  EXPECT_NEAR(sextant_calibration::ResidualCorrectionArcmin(reading), -0.6,
+              1e-10);
+
+  // Applying IE and the residual once recovers the prediction.  Applying the
+  // old total correction as well would expose a double-counting regression.
+  const double corrected = reading.observed_deg -
+                           reading.index_error_arcmin / 60.0 +
+                           sextant_calibration::ResidualCorrectionArcmin(
+                               reading) /
+                               60.0;
+  EXPECT_NEAR(corrected, reading.predicted_deg, 1e-12);
+}
+
+TEST(SextantCalibrationEngine, ProfileIsIndependentOfMeasuredIndexError) {
+  sextant_calibration::CheckReading first;
+  first.predicted_deg = 50.0;
+  first.observed_deg = 50.0 + 1.1 / 60.0;
+  first.index_error_arcmin = 0.5;
+  first.uncertainty_arcmin = 0.2;
+
+  sextant_calibration::CheckReading second = first;
+  second.observed_deg = 50.0 - 0.4 / 60.0;
+  second.index_error_arcmin = -1.0;
+
+  const auto profile = sextant_calibration::BuildProfile(
+      "Primary", "123", "2026-09-16T12:00:00Z", {first, second}, 10.0);
+  ASSERT_EQ(profile.points.size(), 1u);
+  // Both readings contain the same +0.6' residual after their different IE
+  // values are removed, so the saved scale correction is -0.6'.
+  EXPECT_NEAR(profile.points.front().correction_arcmin, -0.6, 1e-10);
+  EXPECT_NEAR(profile.points.front().angle_deg, 50.0 + 0.6 / 60.0, 1e-12);
 }
 
 TEST(SextantCalibrationEngine, ClampsOutsideMeasuredRange) {

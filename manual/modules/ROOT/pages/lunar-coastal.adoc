@@ -167,10 +167,12 @@ of the existing clock node; older plugin versions can still read the sights,
 but will discard the additional solution records when saving. Keep a backup
 before downgrading.
 
-The Sextant Check page shows the configured sight index error for comparison
-but deliberately does not apply it. The purpose of that workflow is to measure
-an instrument correction; pre-applying the assumed correction would make the
-calibration circular.
+The Sextant Check page copies the configured sight index error into an editable
+*Measured IE (on arc +)* field. Use an independently measured index error for
+the session. The raw observation is retained, the check subtracts IE, and the
+saved profile contains only the remaining scale/centering correction. Legacy
+profiles are identified and remain total corrections to raw readings, so do
+not apply a separate index correction with them.
 
 == Coastal sextant navigation
 
