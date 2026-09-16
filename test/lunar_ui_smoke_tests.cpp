@@ -20,10 +20,13 @@
 #include <wx/filename.h>
 #include <wx/notebook.h>
 #include <wx/scrolwin.h>
+#include <wx/statbox.h>
 #include <wx/stattext.h>
 #include <wx/dcscreen.h>
 #include <wx/dcmemory.h>
 #include <wx/image.h>
+#include <wx/listctrl.h>
+#include <wx/spinctrl.h>
 #ifdef __WXGTK3__
 #include <gtk/gtk.h>
 #endif
@@ -62,6 +65,9 @@ void ExpectUnclippedNonOverlappingChildren(wxWindow* page) {
     if (!child->IsShown() || child->GetSize().x <= 0 ||
         child->GetSize().y <= 0)
       continue;
+    // A wxStaticBox is a decorative container whose rectangle deliberately
+    // surrounds and intersects the controls managed by its static-box sizer.
+    if (dynamic_cast<wxStaticBox*>(child)) continue;
     visible.push_back(child);
     EXPECT_TRUE(client.Contains(child->GetRect()))
         << child->GetClassInfo()->GetClassName();
@@ -83,6 +89,31 @@ void FindControls(wxWindow* window, wxChoice** mode, wxButton** save) {
       if (button->GetLabel() == "Save lunar solution") *save = button;
     FindControls(child, mode, save);
   }
+}
+
+wxSpinCtrlDouble* FindSpinByTooltip(wxWindow* window,
+                                    const wxString& tooltipText) {
+  for (auto* child : window->GetChildren()) {
+    if (auto* spin = dynamic_cast<wxSpinCtrlDouble*>(child))
+      if (spin->GetToolTipText().Contains(tooltipText)) return spin;
+    if (auto* result = FindSpinByTooltip(child, tooltipText)) return result;
+  }
+  return nullptr;
+}
+
+wxListCtrl* FindListWithColumn(wxWindow* window, const wxString& heading) {
+  for (auto* child : window->GetChildren()) {
+    if (auto* list = dynamic_cast<wxListCtrl*>(child)) {
+      for (int column = 0; column < list->GetColumnCount(); ++column) {
+        wxListItem item;
+        item.SetMask(wxLIST_MASK_TEXT);
+        if (list->GetColumn(column, item) && item.GetText() == heading)
+          return list;
+      }
+    }
+    if (auto* result = FindListWithColumn(child, heading)) return result;
+  }
+  return nullptr;
 }
 }  // namespace
 
@@ -325,6 +356,47 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       for (auto* child:page->GetChildren())
         if (child->GetLabel().Contains("failed or was cancelled")) failureShown=true;
       EXPECT_TRUE(failureShown);
+
+      // The Sextant Check keeps the prediction engine intact while exposing
+      // an independently measured IE.  Verify the complete provenance table
+      // and the compact layout, since native Windows controls are wider than
+      // their GTK counterparts.
+      dialog.SelectPageForIntegration(2);
+      wxWindow* sextantPage = notebook->GetPage(2);
+      ASSERT_NE(sextantPage, nullptr);
+      EXPECT_TRUE(ContainsStaticText(sextantPage, "Measured IE (on arc +)"));
+      auto* indexError =
+          FindSpinByTooltip(sextantPage, "independently measured index error");
+      ASSERT_NE(indexError, nullptr);
+      auto* readingList =
+          FindListWithColumn(sextantPage, "Predicted apparent");
+      ASSERT_NE(readingList, nullptr);
+      EXPECT_EQ(readingList->GetColumnCount(), 7);
+      for (const wxSize size : {wxSize(1120, 780), wxSize(880, 650)}) {
+        dialog.SetSize(size);
+        dialog.Centre();
+        dialog.Layout();
+        sextantPage->Layout();
+        for (int i = 0; i < 8; ++i) {
+          wxTheApp->Yield();
+          wxMilliSleep(30);
+        }
+        ExpectUnclippedNonOverlappingChildren(sextantPage);
+#ifdef __WXGTK3__
+        GtkAllocation requested{0, 0, size.x, size.y};
+        gtk_widget_size_allocate(GTK_WIDGET(dialog.GetHandle()), &requested);
+        auto* surface =
+            cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.x, size.y);
+        auto* cr = cairo_create(surface);
+        gtk_widget_draw(GTK_WIDGET(dialog.GetHandle()), cr);
+        const auto path =
+            wxString::Format("/tmp/celestial-sextant-check-%d.png", size.x);
+        EXPECT_EQ(cairo_surface_write_to_png(surface, path.utf8_str()),
+                  CAIRO_STATUS_SUCCESS);
+        cairo_destroy(cr);
+        cairo_surface_destroy(surface);
+#endif
+      }
       dialog.Hide();
 
       PlannerDialog planner(&main);

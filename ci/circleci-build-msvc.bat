@@ -78,3 +78,6 @@ echo Build for windows
 
 :cmake --build . --target tarball --config %CONFIGURATION%
 cmake --build . --target package --config %CONFIGURATION%
+if errorlevel 1 exit /b 1
+powershell -NoProfile -ExecutionPolicy Bypass -File ..\ci\check-msvc-mutex-imports.ps1 -BuildDirectory .
+if errorlevel 1 exit /b 1

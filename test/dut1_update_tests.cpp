@@ -7,10 +7,13 @@
 #include <wx/filename.h>
 #include <iomanip>
 #include <sstream>
+#include <atomic>
 #include <cmath>
 #include <algorithm>
 #include <cstdlib>
 #include <fstream>
+#include <thread>
+#include <vector>
 
 namespace {
 // Synthetic full-format input derived from bundled daily history. Future rows
@@ -120,4 +123,36 @@ TEST(Dut1Update, InstallIsAtomicAndPreservesBundleAndLastGoodUpdate) {
   file.Close();
   eclipse::SetDut1Update(nullptr);
   wxRemoveFile(input); wxRemoveFile(destination);
+}
+
+TEST(Dut1Update, PublishesUpdatesSafelyAcrossThreads) {
+  std::string error;
+  const auto table=eclipse::ParseDut1Update(Fixture(),&error);
+  ASSERT_TRUE(table) << error;
+  eclipse::SetDut1Update(table);
+
+  std::atomic<bool> start(false);
+  std::atomic<int> failures(0);
+  std::vector<std::thread> readers;
+  for (int thread=0;thread<4;++thread) {
+    readers.emplace_back([&]() {
+      while (!start.load(std::memory_order_acquire)) {}
+      for (int iteration=0;iteration<5000;++iteration) {
+        const auto current=eclipse::GetDut1Update();
+        if (current && current!=table) ++failures;
+        const auto value=eclipse::LookupDut1(2464000.5);
+        if (value.available && !value.from_update) ++failures;
+      }
+    });
+  }
+  std::thread writer([&]() {
+    while (!start.load(std::memory_order_acquire)) {}
+    for (int iteration=0;iteration<5000;++iteration)
+      eclipse::SetDut1Update(iteration%2 ? table : nullptr);
+  });
+  start.store(true,std::memory_order_release);
+  writer.join();
+  for (auto& reader : readers) reader.join();
+  EXPECT_EQ(failures.load(),0);
+  eclipse::SetDut1Update(nullptr);
 }

@@ -110,6 +110,7 @@ private:
   wxChoice* m_calContact;
   wxSpinCtrlDouble* m_calPressure;
   wxSpinCtrlDouble* m_calTemperature;
+  wxSpinCtrlDouble* m_calIndexError;
   wxStaticText* m_calPrediction;
   NavigationAngleCtrl* m_calObservedAngle;
   wxSpinCtrlDouble* m_calUncertainty;
