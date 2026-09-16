@@ -50,11 +50,11 @@
 #include "transform_star.hpp"
 #include "moon.h"
 #include "eclipse/astronomy.h"
+#include "eclipse/mutex.h"
 #include "eclipse/spk.h"
 #include "eclipse/time.h"
 #include "eclipse/dut1.h"
 #include <memory>
-#include <mutex>
 #include <atomic>
 
 namespace {
@@ -62,7 +62,7 @@ namespace {
 // and serialize its mutable file stream if a sample is consumed elsewhere.
 struct LunarKernelContext {
   eclipse::SpkKernel kernel;
-  std::mutex mutex;
+  eclipse::Mutex mutex;
 };
 }
 
@@ -1200,7 +1200,7 @@ void Sight::RecomputeLunar(int preferred_candidate) {
 
     if (!selected_body.Cmp(_T("Sun"))) {
       static thread_local std::shared_ptr<LunarKernelContext> context(new LunarKernelContext);
-      std::lock_guard<std::mutex> lock(context->mutex);
+      eclipse::MutexGuard lock(context->mutex);
       eclipse::SpkKernel& kernel=context->kernel;
       static thread_local wxString opened_path;
       static thread_local bool attempted = false;
@@ -1279,7 +1279,7 @@ void Sight::RecomputeLunar(int preferred_candidate) {
               sample->observer_direction = [retained_context, et, orientation](
                   double lat, double lon, double height, bool moon,
                   double* alt, double* az, double* sd) {
-                std::lock_guard<std::mutex> guard(retained_context->mutex);
+                eclipse::MutexGuard guard(retained_context->mutex);
                 std::string error;
                 return eclipse::ObserverApparentDirection(retained_context->kernel,
                     et, orientation, lat, lon, height, moon, alt, az, sd, &error);

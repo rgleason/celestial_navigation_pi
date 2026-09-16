@@ -1,8 +1,8 @@
 #include "eclipse/dut1.h"
+#include "eclipse/mutex.h"
 #include "eclipse/time.h"
 #include <cmath>
 #include <iterator>
-#include <mutex>
 #include <sstream>
 #include <locale>
 #include <stdexcept>
@@ -13,7 +13,7 @@ struct Record { int mjd; double dut1; char quality; };
 const Record records[] = {
 #include "dut1_data.inc"
 };
-std::mutex update_mutex;
+Mutex update_mutex;
 std::shared_ptr<const Dut1Table> update_table;
 double TaiAtMidnight(int mjd) {
   return TaiMinusUtcSeconds(JulianDateToCalendar(mjd+2400000.5));
@@ -45,11 +45,11 @@ static Dut1Result LookupBundledDut1(double utc_jd) {
 }
 
 std::shared_ptr<const Dut1Table> GetDut1Update() {
-  std::lock_guard<std::mutex> lock(update_mutex);
+  MutexGuard lock(update_mutex);
   return update_table;
 }
 void SetDut1Update(std::shared_ptr<const Dut1Table> table) {
-  std::lock_guard<std::mutex> lock(update_mutex);
+  MutexGuard lock(update_mutex);
   update_table=std::move(table);
 }
 Dut1Result LookupDut1(double utc_jd) {
