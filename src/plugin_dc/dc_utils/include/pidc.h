@@ -44,6 +44,18 @@ typedef double GLdouble;
 typedef void (*_GLUfuncptr)();
 
 #else
+#ifdef _WIN32
+// The Windows OpenGL headers require APIENTRY and WINGDIAPI from windows.h.
+// Do this here so pidc.h is safe even when a caller has included only the
+// narrower wxWidgets headers rather than wx/wx.h.
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 #include "GL/gl.h"
 #include "GL/glu.h"
 #include "GL/glext.h"
@@ -57,7 +69,7 @@ typedef void (__stdcall* _GLUfuncptr)();
 #include "linmath.h"
 
 #include "TexFont.h"
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 
 #ifdef ocpnUSE_GL
 #include <wx/glcanvas.h>

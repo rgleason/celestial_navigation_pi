@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "purpose": "Independent accuracy baseline before numerical refinements; no engine-generated expected sights",
+  "documentation": "https://ssd.jpl.nasa.gov/horizons/manual.html",
+  "policy": {
+    "geocentric_direction_arcsec": 0.1,
+    "topocentric_altitude_arcsec": 1.0,
+    "topocentric_separation_arcsec": 1.0,
+    "limb_increment_arcsec": 0.01,
+    "clock_seconds": 1.0,
+    "position_nm": 0.1,
+    "inverse_min_altitude_deg": 5.0,
+    "inverse_max_altitude_deg": 85.0,
+    "inverse_min_separation_deg": 10.0,
+    "inverse_max_separation_deg": 150.0,
+    "inverse_min_abs_sin_azimuth_crossing": 0.25,
+    "refraction_min_altitude_deg": 10.0,
+    "refraction_model_difference_arcsec": 10.0,
+    "notes": "Predeclared budgets. Report failures without loosening limits. The 1 arcsecond altitude budget is intentionally retained from stage 1, not a promise that UT1=UTC works at every epoch. Refraction is an approximate standard-atmosphere model comparison, not physical weather truth. Near-horizon refraction and ill-conditioned inverse cases are explicitly excluded from pass/fail accuracy claims, but airless directions are still measured."
+  },
+  "sites": [
+    {"id":"1972-july", "utc":"1972-07-01T12:00:00Z", "position":[0,0], "height_m":0},
+    {"id":"1982-pacific", "utc":"1982-07-05T16:00:00Z", "position":[46,-128], "height_m":3},
+    {"id":"2000-january", "utc":"2000-01-15T12:00:00Z", "position":[35,0], "height_m":0},
+    {"id":"2010-april", "utc":"2010-04-20T12:00:00Z", "position":[0,0], "height_m":10},
+    {"id":"before-2016-leap", "utc":"2016-12-31T23:59:59Z", "position":[-30,180], "height_m":0},
+    {"id":"after-2016-leap", "utc":"2017-01-01T00:00:00Z", "position":[-30,180], "height_m":0},
+    {"id":"2020-leap-day", "utc":"2020-02-29T12:00:00Z", "position":[0,0], "height_m":0},
+    {"id":"march-quarter", "utc":"2024-03-17T12:00:00Z", "position":[25,0], "height_m":0},
+    {"id":"april-conjunction", "utc":"2024-04-08T18:00:00Z", "position":[25,-105], "height_m":0},
+    {"id":"june-conjunction", "utc":"2024-06-06T12:00:00Z", "position":[0,0], "height_m":0},
+    {"id":"point-judith", "utc":"2024-06-13T19:26:00Z", "position":[41.36666666666667,-71.48333333333333], "height_m":6.1},
+    {"id":"june-equator", "utc":"2024-06-13T19:26:00Z", "position":[0,-45], "height_m":0},
+    {"id":"june-south", "utc":"2024-06-13T19:26:00Z", "position":[-30,-60], "height_m":10},
+    {"id":"june-high-north", "utc":"2024-06-13T19:26:00Z", "position":[65,-50], "height_m":400},
+    {"id":"june-low-sun", "utc":"2024-06-13T19:26:00Z", "position":[0,-24], "height_m":0},
+    {"id":"june-low-moon", "utc":"2024-06-13T19:26:00Z", "position":[0,-110], "height_m":0},
+    {"id":"june-zenith-sun", "utc":"2024-06-13T19:26:00Z", "position":[23.26,-111.43], "height_m":0},
+    {"id":"june-zenith-moon", "utc":"2024-06-13T19:26:00Z", "position":[6.34,-23.59], "height_m":0},
+    {"id":"june-opposition", "utc":"2024-06-21T12:00:00Z", "position":[60,0], "height_m":0},
+    {"id":"september-opposition", "utc":"2024-09-18T02:00:00Z", "position":[0,-90], "height_m":0},
+    {"id":"december-south", "utc":"2024-12-15T12:00:00Z", "position":[-65,0], "height_m":0},
+    {"id":"march-2025-west", "utc":"2025-03-05T15:00:00Z", "position":[20,-45], "height_m":0},
+    {"id":"march-2025-east", "utc":"2025-03-05T15:00:00Z", "position":[20,20], "height_m":0},
+    {"id":"point-judith-before", "utc":"2024-06-13T19:24:30Z", "position":[41.36666666666667,-71.48333333333333], "height_m":6.1},
+    {"id":"point-judith-after", "utc":"2024-06-13T19:28:00Z", "position":[41.36666666666667,-71.48333333333333], "height_m":6.1}
+  ],
+  "sequential_case": {
+    "distance_site": "point-judith", "moon_site": "point-judith-before", "sun_site": "point-judith-after",
+    "injected_clock_seconds": 23.0,
+    "notes": "A stationary independently generated sequential triple; angles are direct JPL values at each actual UTC. Not an actual observing session."
+  },
+  "raytrace_refraction": {
+    "source": "https://github.com/liberfa/erfa/blob/master/src/refco.c",
+    "source_local_frozen_copy": "eclipse/third_party/erfa/src/refco.c",
+    "description": "Published raytrace column in ERFA refco documentation, not output from either lunar engine or from eraRefco. Zenith distances are observed, not vacuum.",
+    "pressure_hpa":1005, "temperature_c":7.0, "humidity_fraction":0.8,
+    "wavelength_micrometres":0.574, "lapse_rate_K_per_m":0.0065, "latitude_deg":50, "height_m":0,
+    "tolerance_arcsec":2.0,
+    "observed_zenith_deg_and_refraction_arcsec":[
+      [10,10.27],[20,21.19],[30,33.61],[40,48.82],[45,58.16],[50,69.28],
+      [55,82.97],[60,100.51],[65,124.23],[70,158.63],[72,177.32],
+      [74,200.35],[76,229.45],[78,267.44],[80,319.13]
+    ]
+  }
+}

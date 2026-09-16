@@ -26,22 +26,44 @@
  */
 
 #include <wx/wx.h>
+#include <wx/clipbrd.h>
 #include <wx/fileconf.h>
 
 #include <wx/filename.h>
 #include <wx/stdpaths.h>
 #include <wx/imaglist.h>
+#include <wx/statbox.h>
+#include <wx/utils.h>
+#include <wx/textdlg.h>
+#include <wx/clipbrd.h>
 
 #include "tinyxml.h"
 
-#include "ocpn_plugin.h"
+#include "AtomicXmlFile.h"
+#include "DialogGeometry.h"
+#include "OcpnApiCompat.h"
 
 #include "celestial_navigation_pi.h"
 #include "Sight.h"
 #include "SightDialog.h"
+#include "HorizonEventDialog.h"
+#include "PlannerDialog.h"
+#include "SightAnalysisDialog.h"
+#include "LunarToolsDialog.h"
+#include "AlmanacDialog.h"
+#include "HtmlHelp.h"
 #include "CelestialNavigationDialog.h"
+#include "UtcDateTime.h"
+#include "Utf8Translation.h"
 #include <algorithm>
+#include <cmath>
+#include <ctime>
 #include <functional>
+
+#if defined(__UNIX__) && !defined(__OCPN__ANDROID__)
+#include <limits.h>
+#include <unistd.h>
+#endif
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
@@ -88,7 +110,7 @@ enum {
 };  // RMColumns;
 
 wxString columns[] = {
-    _(""), _("Type"), _("Body"), _("Time (UTC)"), _("Measurement"), _("Color"),
+    "", _("Type"), _("Body"), _("Time (UTC)"), _("Measurement"), _("Color"),
 };
 
 CelestialNavigationDialog::CelestialNavigationDialog(
@@ -96,7 +118,33 @@ CelestialNavigationDialog::CelestialNavigationDialog(
     : CelestialNavigationDialogBase(parent),
       m_ClockCorrectionDialog(NULL),
       m_FixDialog(NULL),
-      m_Plugin(ppi) {
+      m_Plugin(ppi),
+      m_ClockCorrection(0),
+      m_localTime(NULL),
+      m_utcTime(NULL),
+      m_timeIntegrityPanel(NULL),
+      m_timeIntegrityToggle(NULL),
+      m_gnssTime(NULL),
+      m_gnssDifference(NULL),
+      m_systemTimeStatus(NULL),
+      m_sightCorrection(NULL),
+      m_markTimeButton(NULL),
+      m_copyMarkedUtcButton(NULL),
+      m_markedTimeStatus(NULL),
+      m_horizonEventButton(NULL),
+      m_eclipseButton(NULL),
+      m_plannerButton(NULL),
+      m_analyzeButton(NULL),
+      m_coastalButton(NULL),
+      m_almanacButton(NULL),
+      m_pdfDocumentationButton(NULL),
+      m_eclipseDialog(NULL),
+      m_coastalDialog(NULL),
+      m_chronyPollTicks(0),
+      m_chronyAvailable(false),
+      m_hasLastFix(false),
+      m_lastFixLatitude(0.0),
+      m_lastFixLongitude(0.0) {
   wxFileConfig* pConf = GetOCPNConfigObject();
 
   pConf->SetPath(_T("/PlugIns/CelestialNavigation"));
@@ -121,6 +169,79 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   imglist->Add(wxBitmap(eye));
   m_lSights->AssignImageList(imglist, wxIMAGE_LIST_SMALL);
 
+  wxSizer* actionButtons = m_bNewSight->GetContainingSizer();
+  m_bFix->SetLabel(_("Fix..."));
+  m_horizonEventButton = new wxButton(this, wxID_ANY, _("Horizon Event..."));
+  m_horizonEventButton->SetToolTip(
+      _("Record an observed sunrise or sunset time and optional bearing"));
+  actionButtons->Insert(2, m_horizonEventButton, 0, wxALL | wxEXPAND, 5);
+  m_horizonEventButton->Bind(wxEVT_BUTTON,
+                             &CelestialNavigationDialog::OnHorizonEvent, this);
+  m_plannerButton = new wxButton(this, wxID_ANY, _("Sun && Moon..."));
+  m_plannerButton->SetToolTip(
+      _("Offline rise, set, twilight, body planning and almanac"));
+  actionButtons->Insert(3, m_plannerButton, 0, wxALL | wxEXPAND, 5);
+  m_plannerButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnPlanner,
+                        this);
+  m_analyzeButton = new wxButton(this, wxID_ANY, _("Analyze Sights..."));
+  m_analyzeButton->SetToolTip(
+      _("Analyze repeated sights, scatter, bias, trend and outliers"));
+  actionButtons->Insert(4, m_analyzeButton, 0, wxALL | wxEXPAND, 5);
+  m_analyzeButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnAnalyze,
+                        this);
+  m_lunarToolsButton = new wxButton(this, wxID_ANY, _("Lunar Tools..."));
+  m_lunarToolsButton->SetToolTip(
+      _("Joint lunar sequences, lunar pair planning and sextant checks"));
+  actionButtons->Insert(5, m_lunarToolsButton, 0, wxALL | wxEXPAND, 5);
+  m_lunarToolsButton->Bind(wxEVT_BUTTON,
+                           &CelestialNavigationDialog::OnLunarTools, this);
+  m_almanacButton = new wxButton(this, wxID_ANY, _("Generate Almanac..."));
+  m_almanacButton->SetMinSize(
+      wxSize(std::max(215, m_almanacButton->GetBestSize().x + 30), -1));
+  m_almanacButton->SetToolTip(
+      _("Build a tailored, completely offline voyage almanac PDF"));
+  actionButtons->Insert(6, m_almanacButton, 0, wxALL | wxEXPAND, 5);
+  m_almanacButton->Bind(wxEVT_BUTTON,
+                        &CelestialNavigationDialog::OnGenerateAlmanac, this);
+  m_coastalButton = new wxButton(this, wxID_ANY, _("Coastal Sextant..."));
+  m_coastalButton->SetToolTip(
+      _("Vertical-angle ranges and horizontal-sextant-angle fixes"));
+  actionButtons->Insert(5, m_coastalButton, 0, wxALL | wxEXPAND, 5);
+  m_coastalButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnCoastal,
+                        this);
+  m_eclipseButton = new wxButton(this, wxID_ANY, _("Eclipses..."));
+  m_eclipseButton->SetToolTip(
+      _("Find and plot offline solar eclipse paths and local circumstances"));
+  actionButtons->Insert(5, m_eclipseButton, 0, wxALL | wxEXPAND, 5);
+  m_eclipseButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnEclipse,
+                        this);
+  m_pdfDocumentationButton =
+      new wxButton(this, wxID_ANY, _("PDF Documentation"));
+  m_pdfDocumentationButton->SetToolTip(
+      _("Open the fixed-layout manual in the system PDF viewer"));
+  actionButtons->Insert(actionButtons->GetItemCount() - 1,
+                        m_pdfDocumentationButton, 0, wxALL | wxEXPAND, 5);
+  m_pdfDocumentationButton->Bind(
+      wxEVT_BUTTON, &CelestialNavigationDialog::OnPdfDocumentation, this);
+
+  // Keep sight maintenance together on the left and fix/reference tools on
+  // the right. All controls were created above (or by the base dialog); only
+  // their positions change. The Time integrity toggle stays with its panel.
+  actionButtons->Clear(false);
+  auto addAction = [actionButtons](wxWindow* control) {
+    actionButtons->Add(control, 0, wxALL | wxEXPAND, 5);
+  };
+  addAction(m_bNewSight);           addAction(m_bFix);
+  addAction(m_bDuplicateSight);     addAction(m_bClockOffset);
+  addAction(m_bEditSight);          addAction(m_eclipseButton);
+  addAction(m_bDeleteSight);        addAction(m_almanacButton);
+  addAction(m_bDeleteAllSights);    addAction(m_bDocumentation);
+  addAction(m_horizonEventButton);  addAction(m_pdfDocumentationButton);
+  addAction(m_coastalButton);       actionButtons->AddSpacer(0);
+  addAction(m_plannerButton);       actionButtons->AddSpacer(0);
+  addAction(m_lunarToolsButton);    actionButtons->AddSpacer(0);
+  addAction(m_analyzeButton);       addAction(m_tbHide);
+
   m_lSights->InsertColumn(rmVISIBLE, wxT(""));
   for (int i = 1; i < rmMAX; i++) {
     m_lSights->InsertColumn(i, columns[i]);
@@ -141,6 +262,18 @@ CelestialNavigationDialog::CelestialNavigationDialog(
     }
   }
 
+  bool showTimeIntegrity = true;
+  pConf->Read(_T("ShowTimeIntegrity"), &showTimeIntegrity, true);
+  BuildTimeIntegrityPanel(showTimeIntegrity);
+  m_timeTimer.SetOwner(this);
+  Bind(wxEVT_TIMER, &CelestialNavigationDialog::OnTimeTimer, this,
+       m_timeTimer.GetId());
+  if (showTimeIntegrity) {
+    QueryChrony();
+    UpdateTimeIntegrityPanel();
+    m_timeTimer.Start(100);
+  }
+
   // calculate scaler for minimum line width
   double mmx = PlugInGetDisplaySizeMM();
   int sx, sy;
@@ -155,6 +288,10 @@ CelestialNavigationDialog::CelestialNavigationDialog(
               OnEvtPanGesture,
           NULL, this);
 #endif
+
+  // Retain the established main-window settings while recovering safely from
+  // a removed monitor or a smaller replacement display.
+  dialog_geometry::EnsureVisible(this);
 }
 
 #ifdef __OCPN__ANDROID__
@@ -180,6 +317,18 @@ void CelestialNavigationDialog::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
 #endif
 
 CelestialNavigationDialog::~CelestialNavigationDialog() {
+  m_timeTimer.Stop();
+  Unbind(wxEVT_TIMER, &CelestialNavigationDialog::OnTimeTimer, this,
+         m_timeTimer.GetId());
+  if (m_eclipseDialog) {
+    m_eclipseDialog->Destroy();
+    m_eclipseDialog = NULL;
+  }
+  if (m_coastalDialog) {
+    m_coastalDialog->Destroy();
+    m_coastalDialog = NULL;
+  }
+
   wxFileConfig* pConf = GetOCPNConfigObject();
   pConf->SetPath(_T("/PlugIns/CelestialNavigation"));
 
@@ -193,8 +342,345 @@ CelestialNavigationDialog::~CelestialNavigationDialog() {
   }
   pConf->Write(_T ( "DialogWidth" ), s.x);
   pConf->Write(_T ( "DialogHeight" ), s.y);
+  pConf->Write(_T("ShowTimeIntegrity"),
+               m_timeIntegrityToggle && m_timeIntegrityToggle->GetValue());
 
   SaveXML();
+}
+
+namespace {
+
+wxString FormatClock(const wxDateTime& value, const wxDateTime::TimeZone& zone,
+                     const wxString& suffix) {
+  return value.Format("%H:%M:%S", zone) +
+         wxString::Format(".%d ", value.GetMillisecond() / 100) + suffix;
+}
+
+wxString FormatAge(double seconds) {
+  if (seconds < 0.0) seconds = 0.0;
+  if (seconds < 10.0) return wxString::Format("%.1f s", seconds);
+  const long total = static_cast<long>(seconds);
+  if (total < 60) return wxString::Format("%ld s", total);
+  if (total < 3600)
+    return wxString::Format("%ldm %lds", total / 60, total % 60);
+  if (total < 86400)
+    return wxString::Format("%ldh %ldm", total / 3600, (total % 3600) / 60);
+  return wxString::Format("%ldd %ldh", total / 86400, (total % 86400) / 3600);
+}
+
+void SetStatusColour(wxStaticText* text, int state) {
+  if (!text) return;
+  if (state > 0)
+    text->SetForegroundColour(wxColour(24, 130, 59));
+  else if (state < 0)
+    text->SetForegroundColour(wxColour(183, 104, 0));
+  else
+    text->SetForegroundColour(
+        wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
+}
+
+wxString SystemTimezoneName() {
+#if defined(__UNIX__) && !defined(__OCPN__ANDROID__)
+  char target[PATH_MAX + 1];
+  const ssize_t length = readlink("/etc/localtime", target, PATH_MAX);
+  if (length > 0) {
+    target[length] = '\0';
+    const wxString path = wxString::FromUTF8(target);
+    const wxString marker = "/zoneinfo/";
+    const int position = path.Find(marker);
+    if (position != wxNOT_FOUND) return path.Mid(position + marker.length());
+  }
+#endif
+  return wxString();
+}
+
+}  // namespace
+
+void CelestialNavigationDialog::BuildTimeIntegrityPanel(bool visible) {
+  wxStaticBoxSizer* box = new wxStaticBoxSizer(wxVERTICAL, this, wxString());
+  wxBoxSizer* header = new wxBoxSizer(wxHORIZONTAL);
+  wxStaticText* title = new wxStaticText(this, wxID_ANY, _("Time integrity"));
+  wxFont titleFont = title->GetFont();
+  titleFont.SetWeight(wxFONTWEIGHT_BOLD);
+  title->SetFont(titleFont);
+  header->Add(title, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
+  header->AddStretchSpacer();
+  m_timeIntegrityToggle =
+      new wxToggleButton(this, wxID_ANY,
+                         visible ? _("Hide Time") : _("Show Time"));
+  m_timeIntegrityToggle->SetToolTip(_("Show or hide the Time integrity panel."));
+  m_timeIntegrityToggle->SetValue(visible);
+  header->Add(m_timeIntegrityToggle, 0, wxRIGHT, 4);
+  box->Add(header, 0, wxEXPAND | wxTOP | wxBOTTOM, 3);
+
+  m_timeIntegrityPanel =
+      new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+                           wxTAB_TRAVERSAL | wxVSCROLL);
+  // Keep this compatible with wxWidgets 3.0 and the Android wxQt port, where
+  // wxWindow::FromDIP() is unavailable.  Other plugin scrollers use the same
+  // portable pixel sizing convention.
+  m_timeIntegrityPanel->SetScrollRate(0, 10);
+  // Keep the sight list useful when the saved dialog height or available
+  // desktop work area is small.  The complete time-status content remains
+  // available through this panel's vertical scrollbar.
+  m_timeIntegrityPanel->SetMinSize(wxSize(-1, 220));
+  wxBoxSizer* panelSizer = new wxBoxSizer(wxVERTICAL);
+  wxFlexGridSizer* grid = new wxFlexGridSizer(0, 2, 4, 10);
+  grid->AddGrowableCol(1);
+
+  wxFont clockFont = GetFont();
+  clockFont.SetFamily(wxFONTFAMILY_TELETYPE);
+  clockFont.SetPointSize(wxMax(14, GetFont().GetPointSize() + 3));
+  clockFont.SetWeight(wxFONTWEIGHT_BOLD);
+
+  grid->Add(
+      new wxStaticText(m_timeIntegrityPanel, wxID_ANY, _("Computer local")), 0,
+      wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
+  m_localTime = new wxStaticText(m_timeIntegrityPanel, wxID_ANY, "--:--:--.-");
+  m_localTime->SetFont(clockFont);
+  grid->Add(m_localTime, 1, wxEXPAND | wxRIGHT, 4);
+
+  grid->Add(new wxStaticText(m_timeIntegrityPanel, wxID_ANY, _("UTC")), 0,
+            wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
+  m_utcTime =
+      new wxStaticText(m_timeIntegrityPanel, wxID_ANY, "--:--:--.- UTC");
+  m_utcTime->SetFont(clockFont);
+  grid->Add(m_utcTime, 1, wxEXPAND | wxRIGHT, 4);
+
+  grid->Add(
+      new wxStaticText(m_timeIntegrityPanel, wxID_ANY, _("GNSS/NMEA UTC")), 0,
+      wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
+  m_gnssTime =
+      new wxStaticText(m_timeIntegrityPanel, wxID_ANY,
+                       CN_UTF8_("Not available — no valid RMC/ZDA received"));
+  grid->Add(m_gnssTime, 1, wxEXPAND | wxRIGHT, 4);
+
+  grid->Add(new wxStaticText(m_timeIntegrityPanel, wxID_ANY,
+                             CN_UTF8_("System − GNSS")),
+            0, wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
+  m_gnssDifference =
+      new wxStaticText(m_timeIntegrityPanel, wxID_ANY, CN_UTF8_("—"));
+  grid->Add(m_gnssDifference, 1, wxEXPAND | wxRIGHT, 4);
+
+  grid->Add(new wxStaticText(m_timeIntegrityPanel, wxID_ANY, _("System clock")),
+            0, wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
+  m_systemTimeStatus = new wxStaticText(m_timeIntegrityPanel, wxID_ANY,
+                                        CN_UTF8_("Checking chrony…"));
+  grid->Add(m_systemTimeStatus, 1, wxEXPAND | wxRIGHT, 4);
+
+  grid->Add(
+      new wxStaticText(m_timeIntegrityPanel, wxID_ANY, _("Sight correction")),
+      0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxBOTTOM, 4);
+  m_sightCorrection = new wxStaticText(m_timeIntegrityPanel, wxID_ANY, "+0 s");
+  grid->Add(m_sightCorrection, 1, wxEXPAND | wxRIGHT | wxBOTTOM, 4);
+
+  panelSizer->Add(grid, 0, wxEXPAND | wxALL, 3);
+  wxBoxSizer* markRow = new wxBoxSizer(wxHORIZONTAL);
+  m_markTimeButton =
+      new wxButton(m_timeIntegrityPanel, wxID_ANY, _("Mark time"));
+  m_copyMarkedUtcButton =
+      new wxButton(m_timeIntegrityPanel, wxID_ANY, _("Copy marked UTC"));
+  m_copyMarkedUtcButton->Enable(false);
+  m_markedTimeStatus =
+      new wxStaticText(m_timeIntegrityPanel, wxID_ANY, _("Clock is live"));
+  markRow->Add(m_markTimeButton, 0, wxRIGHT, 5);
+  markRow->Add(m_copyMarkedUtcButton, 0, wxRIGHT, 8);
+  markRow->Add(m_markedTimeStatus, 1, wxALIGN_CENTER_VERTICAL);
+  panelSizer->Add(markRow, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 7);
+  wxStaticText* note = new wxStaticText(
+      m_timeIntegrityPanel, wxID_ANY,
+      _("GNSS comparison is informational; it never changes sight times or "
+        "Clock Offset."));
+  wxFont noteFont = note->GetFont();
+  noteFont.SetPointSize(wxMax(7, noteFont.GetPointSize() - 1));
+  note->SetFont(noteFont);
+  panelSizer->Add(note, 0, wxLEFT | wxRIGHT | wxBOTTOM, 7);
+  m_timeIntegrityPanel->SetSizer(panelSizer);
+  m_timeIntegrityPanel->FitInside();
+  box->Add(m_timeIntegrityPanel, 0, wxEXPAND);
+
+  GetSizer()->Add(box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
+  m_timeIntegrityToggle->Bind(wxEVT_TOGGLEBUTTON,
+                              &CelestialNavigationDialog::OnTimeIntegrityToggle,
+                              this);
+  m_markTimeButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnMarkTime,
+                         this);
+  m_copyMarkedUtcButton->Bind(
+      wxEVT_BUTTON, &CelestialNavigationDialog::OnCopyMarkedUtc, this);
+  SetTimeIntegrityVisible(visible, true);
+
+  m_gnssTime->SetToolTip(
+      _("UTC decoded directly from checksum-valid RMC or ZDA sentences. "
+        "Message age includes NMEA/USB/Wi-Fi delivery latency."));
+  m_gnssDifference->SetToolTip(
+      _("Informational comparison only. It includes receiver, NMEA, USB or "
+        "Wi-Fi delivery latency and is not applied to sights."));
+  m_systemTimeStatus->SetToolTip(
+      _("chrony tracking offset and age of its selected reference update."));
+  m_sightCorrection->SetToolTip(
+      _("Manual correction applied by the Clock Offset button."));
+}
+
+void CelestialNavigationDialog::SetTimeIntegrityVisible(bool visible,
+                                                        bool resize) {
+  m_timeIntegrityToggle->SetValue(visible);
+  m_timeIntegrityToggle->SetLabel(visible ? _("Hide Time") : _("Show Time"));
+  m_timeIntegrityPanel->Show(visible);
+  if (visible) m_timeIntegrityPanel->FitInside();
+  Layout();
+
+  SetMinSize(wxDefaultSize);
+  wxSize minimum = GetSizer()->CalcMin();
+  if (visible) minimum.x = wxMax(minimum.x, 590);
+  SetMinSize(minimum);
+  if (resize && visible) {
+    const wxSize current = GetSize();
+    SetSize(wxMax(current.x, minimum.x), wxMax(current.y, minimum.y));
+  }
+  m_fullSize = GetSize();
+}
+
+void CelestialNavigationDialog::OnTimeIntegrityToggle(wxCommandEvent& event) {
+  const bool visible = m_timeIntegrityToggle->GetValue();
+  SetTimeIntegrityVisible(visible, true);
+  if (visible) {
+    QueryChrony();
+    UpdateTimeIntegrityPanel();
+    m_timeTimer.Start(100);
+  } else {
+    m_timeTimer.Stop();
+  }
+
+  wxFileConfig* config = GetOCPNConfigObject();
+  config->SetPath(_T("/PlugIns/CelestialNavigation"));
+  config->Write(_T("ShowTimeIntegrity"), visible);
+}
+
+void CelestialNavigationDialog::OnMarkTime(wxCommandEvent&) {
+  if (m_markedTime.IsValid()) {
+    m_markedTime = wxDateTime();
+    m_markTimeButton->SetLabel(_("Mark time"));
+    m_copyMarkedUtcButton->Enable(false);
+    m_markedTimeStatus->SetLabel(_("Clock is live"));
+  } else {
+    m_markedTime = wxDateTime::UNow();
+    m_markTimeButton->SetLabel(_("Release"));
+    m_copyMarkedUtcButton->Enable(true);
+    m_markedTimeStatus->SetLabel(
+        _("Local and UTC clocks held at the marked instant"));
+  }
+  UpdateTimeIntegrityPanel();
+  m_timeIntegrityPanel->FitInside();
+  Layout();
+}
+
+void CelestialNavigationDialog::OnCopyMarkedUtc(wxCommandEvent&) {
+  if (!m_markedTime.IsValid() || !wxTheClipboard->Open()) return;
+  const wxString text =
+      m_markedTime.Format("%Y-%m-%dT%H:%M:%S", wxDateTime::UTC) +
+      wxString::Format(".%03dZ", m_markedTime.GetMillisecond());
+  wxTheClipboard->SetData(new wxTextDataObject(text));
+  wxTheClipboard->Close();
+  m_markedTimeStatus->SetLabel(_("Marked UTC copied: ") + text);
+  m_timeIntegrityPanel->FitInside();
+  Layout();
+}
+
+bool CelestialNavigationDialog::GetMarkedUtc(wxDateTime* utcFields) const {
+  if (!utcFields || !m_markedTime.IsValid()) return false;
+  *utcFields = UtcDateTime::FromInstant(m_markedTime);
+  return true;
+}
+
+void CelestialNavigationDialog::QueryChrony() {
+#if defined(__UNIX__) && !defined(__OCPN__ANDROID__)
+  wxArrayString output;
+  wxArrayString errors;
+  const long result =
+      wxExecute("chronyc -c tracking", output, errors, wxEXEC_SYNC);
+  ChronyTrackingInfo tracking;
+  m_chronyAvailable = result == 0 && !output.empty() &&
+                      ParseChronyTrackingCsv(output[0], &tracking);
+  if (m_chronyAvailable) m_chronyTracking = tracking;
+#else
+  m_chronyAvailable = false;
+#endif
+}
+
+void CelestialNavigationDialog::UpdateTimeIntegrityPanel() {
+  const wxDateTime systemNow = wxDateTime::UNow();
+  const wxDateTime now = m_markedTime.IsValid() ? m_markedTime : systemNow;
+  wxString abbreviation = now.Format("%Z", wxDateTime::Local);
+  wxString numericZone = now.Format("%z", wxDateTime::Local);
+  if (numericZone.length() == 5)
+    numericZone = numericZone.Left(3) + ":" + numericZone.Mid(3);
+  wxString localSuffix = abbreviation;
+  const wxString timezoneName = SystemTimezoneName();
+  if (!timezoneName.empty()) localSuffix += CN_UTF8_(" — ") + timezoneName;
+  if (!numericZone.empty()) localSuffix += " (UTC" + numericZone + ")";
+  m_localTime->SetLabel(FormatClock(now, wxDateTime::Local, localSuffix));
+  m_utcTime->SetLabel(FormatClock(now, wxDateTime::UTC, "UTC"));
+
+  const GnssTimeSnapshot gnss = m_Plugin->GetGnssTimeSnapshot();
+  if (!gnss.valid) {
+    m_gnssTime->SetLabel(CN_UTF8_("Not available — no valid RMC/ZDA received"));
+    SetStatusColour(m_gnssTime, 0);
+    m_gnssDifference->SetLabel(CN_UTF8_("—"));
+    SetStatusColour(m_gnssDifference, 0);
+  } else {
+    const double ageSeconds = gnss.age_milliseconds / 1000.0;
+    if (ageSeconds <= 3.0) {
+      const wxDateTime live =
+          gnss.utc + wxTimeSpan::Milliseconds(gnss.age_milliseconds);
+      m_gnssTime->SetLabel(FormatClock(live, wxDateTime::UTC, "UTC") +
+                           CN_UTF8_(" · ") + gnss.source + " age " +
+                           FormatAge(ageSeconds));
+      SetStatusColour(m_gnssTime, 1);
+      const long long difference = static_cast<long long>(
+          (systemNow - live).GetMilliseconds().GetValue());
+      m_gnssDifference->SetLabel(wxString::Format(
+          CN_UTF8_("%+lld ms · includes NMEA delivery latency"), difference));
+      SetStatusColour(m_gnssDifference, 1);
+    } else {
+      m_gnssTime->SetLabel(CN_UTF8_("Stale — last ") + gnss.source + " " +
+                           FormatAge(ageSeconds) + _(" ago (reported ") +
+                           gnss.utc.Format("%H:%M:%S", wxDateTime::UTC) +
+                           " UTC)");
+      SetStatusColour(m_gnssTime, -1);
+      m_gnssDifference->SetLabel(CN_UTF8_("Unavailable — GNSS time is stale"));
+      SetStatusColour(m_gnssDifference, -1);
+    }
+  }
+
+  if (!m_chronyAvailable) {
+    m_systemTimeStatus->SetLabel(_("chrony status unavailable"));
+    SetStatusColour(m_systemTimeStatus, 0);
+  } else {
+    const double referenceAge = static_cast<double>(std::time(NULL)) -
+                                m_chronyTracking.reference_unix_seconds;
+    if (m_chronyTracking.synchronized) {
+      m_systemTimeStatus->SetLabel(
+          CN_UTF8_("✓ Synchronised by chrony · offset ") +
+          wxString::Format("%+.1f ms",
+                           1000.0 * m_chronyTracking.system_offset_seconds) +
+          CN_UTF8_(" · source update ") + FormatAge(referenceAge) + _(" ago"));
+      SetStatusColour(m_systemTimeStatus, 1);
+    } else {
+      m_systemTimeStatus->SetLabel(CN_UTF8_("⚠ chrony not synchronised — ") +
+                                   m_chronyTracking.leap_status);
+      SetStatusColour(m_systemTimeStatus, -1);
+    }
+  }
+
+  m_sightCorrection->SetLabel(wxString::Format("%+d s", m_ClockCorrection));
+}
+
+void CelestialNavigationDialog::OnTimeTimer(wxTimerEvent& event) {
+  UpdateTimeIntegrityPanel();
+  if (++m_chronyPollTicks >= 600) {
+    m_chronyPollTicks = 0;
+    QueryChrony();
+  }
 }
 
 #define FAIL(X)  \
@@ -205,10 +691,8 @@ CelestialNavigationDialog::~CelestialNavigationDialog() {
 double AttributeDouble(TiXmlElement* e, const char* name, double def) {
   const char* attr = e->Attribute(name);
   if (!attr) return def;
-  char* end;
-  double d = strtod(attr, &end);
-  if (end == attr) return def;
-  return d;
+  double value;
+  return wxString::FromUTF8(attr).ToCDouble(&value) ? value : def;
 }
 
 int AttributeInt(TiXmlElement* e, const char* name, int def) {
@@ -239,11 +723,13 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
       FAIL(_("Invalid xml file"));
 
     m_Sights.clear();
+    m_lunarSolutions.clear();
 
     for (TiXmlElement* e = root.FirstChild().Element(); e;
          e = e->NextSiblingElement()) {
       if (!strcmp(e->Value(), "ClockError")) {
         m_ClockCorrection = AttributeInt(e, "Seconds", 0);
+        m_lunarSolutions = ReadLunarSolutions(e);
       } else if (!strcmp(e->Value(), "Sight")) {
         Sight s;
 
@@ -257,6 +743,23 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_LunarBodyAltitude = AttributeDouble(e, "LunarBodyAltitude", 0);
         s.m_LunarBodyLimb =
             (Sight::BodyLimb)AttributeInt(e, "LunarBodyLimb", 0);
+        s.m_LunarBodyDistanceLimb = (Sight::BodyLimb)AttributeInt(
+            e, "LunarBodyDistanceLimb", Sight::LUNAR_NEAR);
+        s.m_LunarMoonAltitudeUncertainty =
+            AttributeDouble(e, "LunarMoonAltitudeUncertainty", .2);
+        s.m_LunarBodyAltitudeUncertainty =
+            AttributeDouble(e, "LunarBodyAltitudeUncertainty", .2);
+        s.m_LunarSeparateTimes =
+            AttributeInt(e, "LunarSeparateTimes", 0) != 0;
+        s.m_LunarTimeIsWatch = AttributeBool(e, "LunarTimeIsWatch", false);
+        s.m_LunarMoonTimeOffsetSeconds =
+            AttributeInt(e, "LunarMoonTimeOffsetSeconds", 0);
+        s.m_LunarBodyTimeOffsetSeconds =
+            AttributeInt(e, "LunarBodyTimeOffsetSeconds", 0);
+        s.m_LunarMovingObserver =
+            AttributeInt(e, "LunarMovingObserver", 0) != 0;
+        s.m_LunarCourseTrue = AttributeDouble(e, "LunarCourseTrue", 0.0);
+        s.m_LunarSpeedKnots = AttributeDouble(e, "LunarSpeedKnots", 0.0);
 
         s.m_DateTime.ParseISODate(wxString::FromUTF8(e->Attribute("Date")));
 
@@ -267,6 +770,7 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
           s.m_DateTime.SetHour(time.GetHour());
           s.m_DateTime.SetMinute(time.GetMinute());
           s.m_DateTime.SetSecond(time.GetSecond());
+          s.m_DateTime.SetMillisecond(AttributeInt(e, "Milliseconds", 0));
         } else
           continue; /* skip if invalid */
 
@@ -298,6 +802,23 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_DRBoatPosition = AttributeBool(e, "DRBoatPosition", false);
         s.m_DRMagneticAzimuth = AttributeBool(e, "DRMagneticAzimuth", false);
         s.m_TimeCorrection = AttributeInt(e, "TimeCorrection", 0);
+
+        s.m_HorizonEvent = static_cast<Sight::HorizonEvent>(
+            AttributeInt(e, "HorizonEvent", Sight::SUNRISE));
+        s.m_HorizonBearingProvided =
+            AttributeBool(e, "HorizonBearingProvided", false);
+        s.m_HorizonBearingMagnetic =
+            AttributeBool(e, "HorizonBearingMagnetic", true);
+        s.m_HorizonBearing = AttributeDouble(e, "HorizonBearing", 90);
+        s.m_HorizonVariation = AttributeDouble(e, "HorizonVariation", 0);
+        s.m_HorizonDeviation = AttributeDouble(e, "HorizonDeviation", 0);
+        s.m_HorizonBearingUncertainty =
+            AttributeDouble(e, "HorizonBearingUncertainty", 2);
+        s.m_HorizonAltitudeUncertainty =
+            AttributeDouble(e, "HorizonAltitudeUncertainty", 10);
+        s.m_HorizonQuality = AttributeInt(e, "HorizonQuality", 0);
+        if (const char* source = e->Attribute("HorizonTimeSource"))
+          s.m_HorizonTimeSource = wxString::FromUTF8(source);
 
         s.m_bCalculated = false;
         s.m_bSelected = false;
@@ -335,12 +856,10 @@ failed:
 
 void SetFloatAttribute(TiXmlElement* c, const char* label, Sight& s,
                        double value) {
-  char buf[20];
-  sprintf(buf, "%f", value);
-  c->SetAttribute(label, buf);
+  SetPreciseXmlDouble(c, label, value);
 }
 
-void CelestialNavigationDialog::SaveXML() {
+bool CelestialNavigationDialog::SaveXML() {
   TiXmlDocument doc;
   TiXmlDeclaration* decl = new TiXmlDeclaration("1.0", "utf-8", "");
   doc.LinkEndChild(decl);
@@ -355,6 +874,8 @@ void CelestialNavigationDialog::SaveXML() {
 
   TiXmlElement* c = new TiXmlElement("ClockError");
   c->SetAttribute("Seconds", m_ClockCorrection);
+  // Optional children of an existing node: old readers still load the sights.
+  WriteLunarSolutions(c, m_lunarSolutions);
   root->LinkEndChild(c);
 
   for (Sight& s : m_Sights) {
@@ -368,9 +889,25 @@ void CelestialNavigationDialog::SaveXML() {
     c->SetAttribute("LunarMoonLimb", s.m_LunarMoonLimb);
     SetFloatAttribute(c, "LunarBodyAltitude", s, s.m_LunarBodyAltitude);
     c->SetAttribute("LunarBodyLimb", s.m_LunarBodyLimb);
+    c->SetAttribute("LunarBodyDistanceLimb", s.m_LunarBodyDistanceLimb);
+    SetFloatAttribute(c, "LunarMoonAltitudeUncertainty", s,
+                      s.m_LunarMoonAltitudeUncertainty);
+    SetFloatAttribute(c, "LunarBodyAltitudeUncertainty", s,
+                      s.m_LunarBodyAltitudeUncertainty);
+    c->SetAttribute("LunarSeparateTimes", s.m_LunarSeparateTimes ? 1 : 0);
+    c->SetAttribute("LunarTimeIsWatch", s.m_LunarTimeIsWatch ? 1 : 0);
+    c->SetAttribute("LunarMoonTimeOffsetSeconds",
+                    s.m_LunarMoonTimeOffsetSeconds);
+    c->SetAttribute("LunarBodyTimeOffsetSeconds",
+                    s.m_LunarBodyTimeOffsetSeconds);
+    c->SetAttribute("LunarMovingObserver",
+                    s.m_LunarMovingObserver ? 1 : 0);
+    SetFloatAttribute(c, "LunarCourseTrue", s, s.m_LunarCourseTrue);
+    SetFloatAttribute(c, "LunarSpeedKnots", s, s.m_LunarSpeedKnots);
 
     c->SetAttribute("Date", s.m_DateTime.FormatISODate().mb_str());
     c->SetAttribute("Time", s.m_DateTime.FormatISOTime().mb_str());
+    c->SetAttribute("Milliseconds", s.m_DateTime.GetMillisecond());
 
     SetFloatAttribute(c, "TimeCertainty", s, s.m_TimeCertainty);
 
@@ -399,14 +936,30 @@ void CelestialNavigationDialog::SaveXML() {
     c->SetAttribute("DRMagneticAzimuth", s.m_DRMagneticAzimuth);
     c->SetAttribute("TimeCorrection", s.m_TimeCorrection);
 
+    c->SetAttribute("HorizonEvent", s.m_HorizonEvent);
+    c->SetAttribute("HorizonBearingProvided", s.m_HorizonBearingProvided);
+    c->SetAttribute("HorizonBearingMagnetic", s.m_HorizonBearingMagnetic);
+    SetFloatAttribute(c, "HorizonBearing", s, s.m_HorizonBearing);
+    SetFloatAttribute(c, "HorizonVariation", s, s.m_HorizonVariation);
+    SetFloatAttribute(c, "HorizonDeviation", s, s.m_HorizonDeviation);
+    SetFloatAttribute(c, "HorizonBearingUncertainty", s,
+                      s.m_HorizonBearingUncertainty);
+    SetFloatAttribute(c, "HorizonAltitudeUncertainty", s,
+                      s.m_HorizonAltitudeUncertainty);
+    c->SetAttribute("HorizonQuality", s.m_HorizonQuality);
+    c->SetAttribute("HorizonTimeSource", s.m_HorizonTimeSource.mb_str());
+
     root->LinkEndChild(c);
   }
 
-  if (!doc.SaveFile(m_sights_path.mb_str())) {
+  if (!celestial_navigation::SaveXmlDocumentAtomically(
+          doc, m_sights_path)) {
     wxMessageDialog mdlg(this, _("Failed to save xml file: ") + m_sights_path,
                          _("Celestial Navigation"), wxOK | wxICON_ERROR);
     mdlg.ShowModal();
+    return false;
   }
+  return true;
 }
 
 bool compareSightAsc(const Sight& a, const Sight& b, int sortCol) {
@@ -478,13 +1031,17 @@ void CelestialNavigationDialog::RebuildList() {
     item.SetMask(item.GetMask() | wxLIST_MASK_TEXT);
     int idx = m_lSights->InsertItem(item);
     m_lSights->SetItemImage(idx, s.IsVisible() ? 0 : -1);
-    m_lSights->SetItem(idx, rmTYPE, SightType[s.m_Type]);
+    m_lSights->SetItem(idx, rmTYPE,
+                       s.m_Type == Sight::HORIZON ? s.HorizonEventName()
+                                                  : SightType[s.m_Type]);
     m_lSights->SetItem(idx, rmBODY, s.m_Body);
     wxDateTime dt = s.m_DateTime;
     m_lSights->SetItem(idx, rmTIME,
                        dt.FormatISODate() + _T(" ") + dt.FormatISOTime());
     m_lSights->SetItem(idx, rmMEASUREMENT,
-                       toSDMM_PlugIn(0, s.m_Measurement, true));
+                       s.m_Type == Sight::HORIZON
+                           ? s.HorizonMeasurementText()
+                           : toSDMM_PlugIn(0, s.m_Measurement, true));
     if (s.m_Type == Sight::LUNAR)
       m_lSights->SetItem(
           idx, rmCOLOR,
@@ -509,13 +1066,17 @@ void CelestialNavigationDialog::UpdateSight(int idx) {
   Sight& s = m_Sights[idx];
 
   // then add sights to the listctrl
-  m_lSights->SetItem(idx, rmTYPE, SightType[s.m_Type]);
+  m_lSights->SetItem(
+      idx, rmTYPE,
+      s.m_Type == Sight::HORIZON ? s.HorizonEventName() : SightType[s.m_Type]);
   m_lSights->SetItem(idx, rmBODY, s.m_Body);
   wxDateTime dt = s.m_DateTime;
   m_lSights->SetItem(idx, rmTIME,
                      dt.FormatISODate() + _T(" ") + dt.FormatISOTime());
   m_lSights->SetItem(idx, rmMEASUREMENT,
-                     wxString::Format(_T("%.5f"), s.m_Measurement));
+                     s.m_Type == Sight::HORIZON
+                         ? s.HorizonMeasurementText()
+                         : wxString::Format(_T("%.5f"), s.m_Measurement));
   if (s.m_Type == Sight::LUNAR)
     m_lSights->SetItem(idx, rmCOLOR,
                        _("Time Correction") +
@@ -552,12 +1113,15 @@ void CelestialNavigationDialog::OnNew(wxCommandEvent& event) {
   wxDateTime now = wxDateTime::Now().ToUTC();
 
   Sight ns(Sight::ALTITUDE, _("Sun"), Sight::LOWER, now, 0, 0, 10);
-  SightDialog dialog(this, ns, m_ClockCorrection);
+  wxDateTime markedUtc;
+  GetMarkedUtc(&markedUtc);
+  SightDialog dialog(this, ns, m_ClockCorrection, markedUtc,
+                     SightDialog::Mode::Create);
 
   dialog.ShowModal();
   if (dialog.GetReturnCode() == wxID_OK) {
+    dialog.Recompute();
     if (ns.m_bVisible) {
-      dialog.Recompute();
       ns.RebuildPolygons();
     }
     ns.SetSelected(true);
@@ -566,6 +1130,267 @@ void CelestialNavigationDialog::OnNew(wxCommandEvent& event) {
     RebuildList();
     RequestRefresh(GetParent());
   }
+}
+
+wxString CelestialNavigationDialog::CurrentTimeCaptureSummary() {
+  QueryChrony();
+  UpdateTimeIntegrityPanel();
+  wxString summary = m_systemTimeStatus ? m_systemTimeStatus->GetLabel()
+                                        : _("System UTC status unavailable");
+  const GnssTimeSnapshot gnss = m_Plugin->GetGnssTimeSnapshot();
+  if (gnss.valid && gnss.age_milliseconds <= 3000)
+    summary += _("; GNSS comparison current (") + gnss.source + ")";
+  return summary;
+}
+
+void CelestialNavigationDialog::OnHorizonEvent(wxCommandEvent& event) {
+  const wxDateTime now = wxDateTime::UNow();
+  const wxDateTime localNow = wxDateTime::Now();
+  Sight sight(Sight::HORIZON, _T("Sun"), Sight::UPPER, now, 2, 0, 10);
+  sight.m_HorizonEvent =
+      localNow.GetHour() < 12 ? Sight::SUNRISE : Sight::SUNSET;
+  sight.m_HorizonBearing =
+      sight.m_HorizonEvent == Sight::SUNRISE ? 90.0 : 270.0;
+
+  wxFileConfig* config = GetOCPNConfigObject();
+  config->SetPath(_T("/PlugIns/CelestialNavigation"));
+  config->Read(_T("HorizonMagneticVariation"), &sight.m_HorizonVariation, 0.0);
+  config->Read(_T("HorizonCompassDeviation"), &sight.m_HorizonDeviation, 0.0);
+  config->Read(_T("HorizonBearingUncertainty"),
+               &sight.m_HorizonBearingUncertainty, 2.0);
+  config->Read(_T("HorizonAltitudeUncertainty"),
+               &sight.m_HorizonAltitudeUncertainty, 10.0);
+  config->Read(_T("HorizonQuality"), &sight.m_HorizonQuality, 0);
+
+  HorizonEventDialog dialog(this, sight, m_ClockCorrection,
+                            CurrentTimeCaptureSummary(),
+                            HorizonEventDialog::Mode::Create);
+  if (dialog.ShowModal() != wxID_OK) return;
+
+  sight.Recompute(m_ClockCorrection);
+  sight.RebuildPolygons();
+  sight.SetSelected(true);
+  for (Sight& existing : m_Sights) existing.SetSelected(false);
+  m_Sights.push_back(std::move(sight));
+  RebuildList();
+  RequestRefresh(GetParent());
+}
+
+void CelestialNavigationDialog::OnEclipse(wxCommandEvent&) {
+  if (!m_eclipseDialog) m_eclipseDialog = new EclipseDialog(this, m_Plugin);
+  m_eclipseDialog->Show();
+  m_eclipseDialog->Raise();
+}
+
+void CelestialNavigationDialog::OnCoastal(wxCommandEvent&) {
+  if (!m_coastalDialog) m_coastalDialog = new CoastalNavigationDialog(this);
+  m_coastalDialog->Show();
+  m_coastalDialog->Raise();
+}
+
+void CelestialNavigationDialog::OnPlanner(wxCommandEvent&) {
+  PlannerDialog dialog(this);
+  dialog.ShowModal();
+}
+
+void CelestialNavigationDialog::OnLunarTools(wxCommandEvent&) {
+  LunarToolsDialog dialog(this);
+  dialog.ShowModal();
+}
+
+void CelestialNavigationDialog::OnGenerateAlmanac(wxCommandEvent&) {
+  OpenAlmanacForRoute();
+}
+
+void CelestialNavigationDialog::OpenAlmanacForRoute(
+    const wxString& routeGuid) {
+  AlmanacDialog dialog(this, routeGuid);
+  dialog.ShowModal();
+}
+
+void CelestialNavigationDialog::RunPlannerIntegrationScenario() {
+  wxString scenario;
+  wxGetEnv("CELESTIAL_GUI_TEST_DIALOG", &scenario);
+  scenario.MakeLower();
+  wxLogMessage("Celestial GUI integration scenario: %s", scenario);
+
+  if (scenario == "main") return;
+
+  if (scenario == "fix") {
+    wxCommandEvent event;
+    OnFix(event);
+    if (m_FixDialog) m_FixDialog->RunIntegrationScenario();
+    return;
+  }
+
+  if (scenario == "analyzer") {
+    SightAnalysisDialog* dialog = new SightAnalysisDialog(this);
+    dialog->Show();
+    dialog->Raise();
+    return;
+  }
+
+  if (scenario == "almanac") {
+    wxString preferredRoute;
+#ifndef UNIT_TESTS
+    wxString useFirstRoute;
+    if (wxGetEnv("CELESTIAL_GUI_TEST_FIRST_ROUTE", &useFirstRoute) &&
+        useFirstRoute == "1") {
+      const wxArrayString routes = GetRouteGUIDArray();
+      if (!routes.IsEmpty()) preferredRoute = routes[0];
+    }
+#endif
+    AlmanacDialog* dialog = new AlmanacDialog(this, preferredRoute);
+    wxString pageText;
+    long page = 0;
+    if (wxGetEnv("CELESTIAL_GUI_TEST_PAGE", &pageText))
+      pageText.ToLong(&page);
+    dialog->SelectIntegrationPage(static_cast<int>(page));
+    dialog->Show();
+    dialog->Raise();
+    wxTheApp->CallAfter([dialog]() {
+      if (dialog) {
+        dialog->Raise();
+        dialog->SetFocus();
+      }
+    });
+    return;
+  }
+
+  if (scenario == "lunar") {
+    wxString seedLunars;
+    if (wxGetEnv("CELESTIAL_GUI_TEST_SEED_LUNARS", &seedLunars) &&
+        seedLunars == "1") {
+      m_Sights.clear();
+      const wxDateTime reference = UtcDateTime::Now();
+      const lunar_distance::GeographicPoint known_position(0.0, 0.0);
+      const wxString bodies[] = {_T("Sun"), _T("Mercury"), _T("Regulus")};
+      for (int index = 0; index < 3; ++index) {
+        Sight sight(Sight::LUNAR, bodies[index], Sight::LUNAR_NEAR,
+                    UtcDateTime::AddSeconds(reference, index * 600.0),
+                    4.0 * 3600.0, 30.0, 0.2);
+        sight.m_LunarMoonAltitude = 30.0;
+        sight.m_LunarBodyAltitude = 30.0;
+        sight.m_LunarMoonLimb = Sight::CENTER;
+        sight.m_LunarBodyLimb = Sight::CENTER;
+        sight.m_LunarBodyDistanceLimb = Sight::CENTER;
+        sight.m_LunarMoonAltitudeUncertainty = 0.2;
+        sight.m_LunarBodyAltitudeUncertainty = 0.2;
+        sight.m_DRLat = known_position.latitude_deg;
+        sight.m_DRLon = known_position.longitude_deg;
+        sight.m_DRBoatPosition = false;
+        sight.Recompute(0);
+        const auto predicted = lunar_distance::PredictTimeTaggedObservation(
+            sight.LunarObservation(), sight.LunarEphemeris(), 0.0,
+            known_position);
+        if (!predicted.valid) continue;
+        sight.m_Measurement = predicted.raw_distance_deg;
+        sight.m_LunarMoonAltitude = predicted.moon_altitude_deg;
+        sight.m_LunarBodyAltitude = predicted.body_altitude_deg;
+        sight.Recompute(0);
+        m_Sights.push_back(std::move(sight));
+      }
+      RebuildList();
+    }
+    LunarToolsDialog* dialog = new LunarToolsDialog(this);
+    wxString pageText;
+    long page = 0;
+    if (wxGetEnv("CELESTIAL_GUI_TEST_PAGE", &pageText)) pageText.ToLong(&page);
+    dialog->SelectPageForIntegration(page < 0 ? 0 : static_cast<unsigned>(page));
+    dialog->Show();
+    dialog->Raise();
+    return;
+  }
+
+  PlannerDialog* dialog = new PlannerDialog(this);
+  wxString pageText;
+  long page = 0;
+  if (wxGetEnv("CELESTIAL_GUI_TEST_PAGE", &pageText)) pageText.ToLong(&page);
+  dialog->SelectPageForIntegration(page < 0 ? 0 : static_cast<unsigned>(page));
+  dialog->Show();
+  dialog->Raise();
+#ifdef CELESTIAL_PLANNER_INTEGRATION_TEST
+  wxString waypointName;
+  if (wxGetEnv("CELESTIAL_GUI_TEST_WAYPOINT", &waypointName) &&
+      !waypointName.empty()) {
+    dialog->ScheduleWaypointIntegration(waypointName);
+  }
+#endif
+}
+
+void CelestialNavigationDialog::OnAnalyze(wxCommandEvent&) {
+  SightAnalysisDialog dialog(this);
+  dialog.ShowModal();
+}
+
+const Sight* CelestialNavigationDialog::GetSelectedSight() const {
+  const long selected = m_lSights->GetNextItem(
+      -1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+  if (selected < 0 || static_cast<size_t>(selected) >= m_Sights.size())
+    return nullptr;
+  return &m_Sights[selected];
+}
+
+bool CelestialNavigationDialog::GetLastFix(double* latitude,
+                                           double* longitude,
+                                           wxDateTime* calculatedUtc,
+                                           wxDateTime* epochUtc) const {
+  if (!m_hasLastFix || !latitude || !longitude) return false;
+  *latitude = m_lastFixLatitude;
+  *longitude = m_lastFixLongitude;
+  if (calculatedUtc) *calculatedUtc = m_lastFixCalculatedUtc;
+  if (epochUtc) *epochUtc = m_lastFixEpochUtc;
+  return true;
+}
+
+void CelestialNavigationDialog::SetLastFix(double latitude, double longitude,
+                                          const wxDateTime& epochUtc) {
+  m_hasLastFix = std::isfinite(latitude) && std::isfinite(longitude);
+  m_lastFixLatitude = latitude;
+  m_lastFixLongitude = longitude;
+  m_lastFixCalculatedUtc = wxDateTime::UNow();
+  m_lastFixEpochUtc = epochUtc;
+}
+
+void CelestialNavigationDialog::CreatePlannedSight(const wxString& body,
+                                                   const wxDateTime& utc,
+                                                   double drLat,
+                                                   double drLon) {
+  Sight sight(Sight::ALTITUDE, body, Sight::LOWER,
+              UtcDateTime::FromInstant(utc), 0, 0, 1);
+  sight.m_DRBoatPosition = false;
+  sight.m_DRLat = drLat;
+  sight.m_DRLon = drLon;
+  wxDateTime markedUtc;
+  GetMarkedUtc(&markedUtc);
+  SightDialog dialog(this, sight, m_ClockCorrection, markedUtc,
+                     SightDialog::Mode::Create);
+  if (dialog.ShowModal() != wxID_OK) return;
+  dialog.Recompute();
+  if (sight.m_bVisible) {
+    sight.RebuildPolygons();
+  }
+  for (Sight& existing : m_Sights) existing.SetSelected(false);
+  sight.SetSelected(true);
+  m_Sights.push_back(std::move(sight));
+  RebuildList();
+  RequestRefresh(GetParent());
+}
+
+void CelestialNavigationDialog::RunEclipseIntegrationScenario() {
+  wxCommandEvent command;
+  OnEclipse(command);
+  if (m_eclipseDialog) m_eclipseDialog->RunIntegrationScenario2027();
+}
+
+bool CelestialNavigationDialog::RenderEclipse(piDC* dc,
+                                              PlugIn_ViewPort* viewport) {
+  return m_eclipseDialog && m_eclipseDialog->Render(dc, viewport);
+}
+
+bool CelestialNavigationDialog::RenderCoastal(piDC* dc,
+                                              PlugIn_ViewPort* viewport) {
+  return m_coastalDialog && m_coastalDialog->Render(dc, viewport);
 }
 
 void CelestialNavigationDialog::OnDuplicate(wxCommandEvent& event) {
@@ -594,12 +1419,31 @@ void CelestialNavigationDialog::OnEdit() {
   Sight& s = m_Sights[selectedIndex];
   Sight originalsight = s; /* in case of cancel */
 
-  SightDialog dialog(this, s, m_ClockCorrection);
+  if (s.m_Type == Sight::HORIZON) {
+    HorizonEventDialog dialog(this, s, m_ClockCorrection,
+                              CurrentTimeCaptureSummary(),
+                              HorizonEventDialog::Mode::Edit);
+    if (dialog.ShowModal() == wxID_OK) {
+      s.Recompute(m_ClockCorrection);
+      if (s.m_bVisible) s.RebuildPolygons();
+      UpdateSight(selectedIndex);
+      RebuildList();
+    } else {
+      m_Sights[selectedIndex] = originalsight;
+    }
+    RequestRefresh(GetParent());
+    return;
+  }
+
+  wxDateTime markedUtc;
+  GetMarkedUtc(&markedUtc);
+  SightDialog dialog(this, s, m_ClockCorrection, markedUtc,
+                     SightDialog::Mode::Edit);
 
   dialog.ShowModal();
   if (dialog.GetReturnCode() == wxID_OK) {
+    dialog.Recompute();
     if (s.m_bVisible) {
-      dialog.Recompute();
       s.RebuildPolygons();
     }
     UpdateSight(selectedIndex);
@@ -643,10 +1487,11 @@ void CelestialNavigationDialog::OnDeleteAll(wxCommandEvent& event) {
 void CelestialNavigationDialog::OnFix(wxCommandEvent& event) {
   if (m_FixDialog == NULL) {
     m_FixDialog = new FixDialog(this);
-    m_FixDialog->Show();
     m_FixDialog->Update(m_ClockCorrection);
     RequestRefresh(GetParent()->GetParent());
   }
+  m_FixDialog->Show();
+  m_FixDialog->Raise();
 }
 
 void CelestialNavigationDialog::OnFixClose() {
@@ -679,37 +1524,104 @@ void CelestialNavigationDialog::OnClockOffset(wxCommandEvent& event) {
   m_ClockCorrectionDialog = new ClockCorrectionDialog(this, m_ClockCorrection);
   m_ClockCorrectionDialog->ShowModal();
   if (m_ClockCorrectionDialog->GetReturnCode() == wxID_OK) {
-    m_ClockCorrection = m_ClockCorrectionDialog->m_sClockCorrection->GetValue();
-    for (Sight& s : m_Sights) {
-      if (s.m_bVisible) {
-        s.Recompute(m_ClockCorrection);
-        s.RebuildPolygons();
-      }
-    }
-    UpdateSights();
-    RequestRefresh(GetParent());
+    ApplyClockCorrection(
+        m_ClockCorrectionDialog->m_sClockCorrection->GetValue());
   }
   m_ClockCorrectionDialog->Destroy();
   m_ClockCorrectionDialog = NULL;
 }
 
+void CelestialNavigationDialog::ApplyClockCorrection(int correction_seconds) {
+  m_ClockCorrection = correction_seconds;
+  for (Sight& sight : m_Sights) {
+    sight.Recompute(m_ClockCorrection);
+    if (sight.m_bVisible) sight.RebuildPolygons();
+  }
+  UpdateSights();
+  SaveXML();
+  UpdateTimeIntegrityPanel();
+  RequestRefresh(GetParent());
+}
+
+bool CelestialNavigationDialog::SaveLunarSolution(LunarSolutionRecord record) {
+  if (!std::isfinite(record.TotalCorrection()) || record.inputs.empty())
+    return false;
+  wxTextEntryDialog name(
+      this,
+      _("Name this watch/session. Saving preserves an input snapshot and a "
+        "derived solution; no sight times or global clock correction change."),
+      _("Save lunar solution"), record.reference_time);
+  if (name.ShowModal() != wxID_OK) return false;
+  record.name = name.GetValue();
+  record.created_utc =
+      UtcDateTime::FormatUtc(UtcDateTime::Now(), "%Y-%m-%d %H:%M:%S UTC");
+  m_lunarSolutions.push_back(record);
+  if (!SaveXML()) {
+    m_lunarSolutions.pop_back();
+    return false;
+  }
+  return true;
+}
+
+void CelestialNavigationDialog::ShowLunarSolutions(wxWindow* parent) {
+  wxDialog dialog(parent, wxID_ANY, _("Saved lunar solutions"),
+                  wxDefaultPosition, wxSize(880, 650),
+                  wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+  auto* layout = new wxBoxSizer(wxVERTICAL);
+  auto* choice = new wxChoice(&dialog, wxID_ANY);
+  for (const auto& record : m_lunarSolutions) choice->Append(record.Summary());
+  layout->Add(choice, 0, wxALL | wxEXPAND, 8);
+  auto* details =
+      new wxTextCtrl(&dialog, wxID_ANY, wxEmptyString, wxDefaultPosition,
+                     wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY | wxHSCROLL);
+  layout->Add(details, 1, wxALL | wxEXPAND, 8);
+  auto update = [this, choice, details]() {
+    const int selected = choice->GetSelection();
+    details->SetValue(selected == wxNOT_FOUND
+                          ? _("No lunar solutions saved yet.")
+                          : m_lunarSolutions[selected].Details());
+  };
+  if (!m_lunarSolutions.empty())
+    choice->SetSelection(m_lunarSolutions.size() - 1);
+  update();
+  choice->Bind(wxEVT_CHOICE, [update](wxCommandEvent&) { update(); });
+  auto* buttons = new wxBoxSizer(wxHORIZONTAL);
+  auto* copy = new wxButton(&dialog, wxID_ANY, _("Copy report"));
+  copy->Bind(wxEVT_BUTTON, [details](wxCommandEvent&) {
+    if (wxTheClipboard->Open()) {
+      wxTheClipboard->SetData(new wxTextDataObject(details->GetValue()));
+      wxTheClipboard->Close();
+    }
+  });
+  buttons->Add(copy, 0, wxALL, 8);
+  buttons->Add(new wxButton(&dialog, wxID_OK, _("Close")), 0, wxALL, 8);
+  layout->Add(buttons, 0, wxALIGN_RIGHT);
+  dialog.SetSizer(layout);
+  dialog.ShowModal();
+}
+
 void CelestialNavigationDialog::OnDocumentation(wxCommandEvent& event) {
-  wxString infolocation = celestial_navigation_pi_DataDir() + _T("/data/") +
-                          _T("Celestial_Navigation_Information.html");
-  infolocation.Prepend(_T("file://"));
-  infolocation.Replace(_T(" "), _T("%20"));
-  wxLaunchDefaultBrowser(infolocation);
+  ShowBundledHtmlHelp(this, _("Celestial Navigation Documentation"),
+                      _T("Celestial_Navigation_Information.html"));
+}
+
+void CelestialNavigationDialog::OnPdfDocumentation(wxCommandEvent& event) {
+  if (!OpenBundledDocumentExternally(
+          _T("Celestial_Navigation_Manual_v2.pdf"))) {
+    ShowBundledHtmlHelp(this, _("Celestial Navigation Documentation"),
+                        _T("Celestial_Navigation_Information.html"));
+  }
 }
 
 void CelestialNavigationDialog::OnHide(wxCommandEvent& event) {
   if (m_tbHide->GetValue()) {
-    m_tbHide->SetLabel(_("Show"));
+    m_tbHide->SetLabel(_("Show Sights"));
     m_fullSize = GetSize();
     m_lSights->Hide();
     Layout();
     Fit();
   } else {
-    m_tbHide->SetLabel(_("Hide"));
+    m_tbHide->SetLabel(_("Hide Sights"));
     m_lSights->Show();
     Layout();
     Fit();

@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Celestial Navigation for OpenCPN — Principles and Plugin Manual</title>
+<style>
+@page { size: A4; margin: 19mm 18mm 20mm 20mm; }
+body { font-family: "Liberation Sans", Arial, sans-serif; color: #202830; line-height: 1.42; max-width: 980px; margin: 0 auto; padding: 1.2rem; }
+h1, h2, h3, h4 { color: #17365d; page-break-after: avoid; }
+h1 { font-size: 2.05rem; border-bottom: 3px solid #2f75b5; padding-bottom: .25rem; margin-top: 2.2rem; page-break-before: always; }
+h1.first { page-break-before: auto; }
+h2 { font-size: 1.55rem; margin-top: 1.7rem; }
+h3 { font-size: 1.2rem; margin-top: 1.25rem; }
+h4 { font-size: 1.02rem; margin-bottom: .25rem; }
+p, li { font-size: 10.7pt; }
+a { color: #1f5f99; }
+.cover { text-align: center; min-height: 900px; display: flex; flex-direction: column; justify-content: center; page-break-after: always; }
+.cover h1 { border: 0; font-size: 2.5rem; page-break-before: auto; }
+.subtitle { color: #2f75b5; font-size: 1.35rem; }
+.edition { margin-top: 3rem; color: #606770; }
+.warning, .note, .example, .principle { border-left: 5px solid #2f75b5; padding: .65rem .9rem; margin: 1rem 0; background: #eaf2f8; page-break-inside: avoid; }
+.warning { border-color: #c43d3d; background: #fff0f0; }
+.principle { border-color: #2a9d8f; background: #edf8f5; font-size: 1.05rem; }
+.example { border-color: #e9b949; background: #fff8e6; }
+.label { font-weight: bold; color: #17365d; }
+.formula { text-align: center; font-family: "Liberation Serif", serif; font-size: 1.15rem; padding: .45rem; margin: .7rem auto; background: #f5f7f9; max-width: 80%; page-break-inside: avoid; }
+figure { text-align: center; margin: 1.2rem auto; page-break-inside: avoid; }
+figure img { max-width: 100%; height: auto; }
+figcaption { color: #505b66; font-size: 9.5pt; margin-top: .45rem; }
+table { width: 100%; border-collapse: collapse; margin: .8rem 0 1.2rem; page-break-inside: avoid; }
+th { background: #17365d; color: white; text-align: left; }
+th, td { border: 1px solid #aab4be; padding: .38rem .48rem; vertical-align: top; font-size: 9.7pt; }
+tr:nth-child(even) td { background: #f4f7fa; }
+.toc ol { margin-top: .25rem; }
+.toc li { margin: .18rem 0; }
+.quick td:first-child, .abbr td:first-child { white-space: nowrap; font-weight: bold; color: #17365d; }
+.troubleshooting { width: 650px; max-width: 100%; table-layout: fixed; }
+.troubleshooting th:first-child, .troubleshooting td:first-child { width: 30%; }
+.troubleshooting th:last-child, .troubleshooting td:last-child { width: 70%; }
+.troubleshooting td { overflow-wrap: anywhere; }
+.steps li { margin-bottom: .45rem; }
+.small { color: #606770; font-size: 9.2pt; }
+.new-page { page-break-before: always; }
+.keep { page-break-inside: avoid; }
+code { font-family: "Liberation Mono", monospace; font-size: .94em; }
+@media print { body { max-width: none; padding: 0; } a { color: inherit; text-decoration: none; } }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
+  <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
+  <p style="text-align: center;"><strong>Experimental v2 documentation</strong></p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.5.6<br>Documentation revision 16 September 2026</p>
+  <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
+</section>
+
+<section style="page-break-before: always;">
+<h1 class="first" id="about">About this manual</h1>
+
+<p>This manual has two purposes. First, it explains celestial navigation from
+its simplest underlying geometry. Secondly, it gives operating instructions
+for the Celestial Navigation plugin for OpenCPN, including its planning,
+running-fix, time-integrity, lunar-distance, coastal and eclipse tools.</p>
+
+<div class="principle"><span class="label">The teaching order:</span> first
+understand why one altitude creates a Circle of Equal Altitude. Then learn why
+that circle is usually treated as a Line of Position. Only after that do we
+introduce the intercept method, running fixes and specialist observations.</div>
+
+<div class="warning"><span class="label">Navigation warning.</span> This is
+experimental software and instructional material, not an approved primary
+means of navigation. Maintain an independent position, a proper dead-reckoning
+plot and all equipment and publications required for the voyage. Check results
+for plausibility. Never allow an attractive plot or numerical answer to
+override contrary navigational evidence.</div>
+
+<p>The plugin performs its ordinary celestial calculations offline. The
+eclipse planner also works offline once its separate DE440 data has been
+imported. Optional LOLA lunar-limb data is not required for navigation or for
+ordinary eclipse plotting.</p>
+
+<p><strong>11 September numerical-audit update:</strong> corrected UTC handling
+in generated almanacs (including daylight-saving transitions), ordinary sight
+azimuths, sextant-calibration longitude geometry, planetary parallax in the
+planner, and running-fix formal uncertainty. Find Body now uses the sight's
+effective corrected time, and estimated Hs is checked through the actual forward
+reduction. Iterative solvers reject unconverged results. Recorded observations
+are not rewritten. Formal uncertainty is not a guarantee of real-world accuracy.</p>
+<div class="warning"><span class="label">Previously generated almanacs:</span>
+regenerate almanacs produced by earlier builds on computers using a non-UTC
+timezone. Their UTC-labelled astronomical tables and curves could use an
+incorrect epoch. Saved sightings themselves are unaffected.</div>
+
+<h2 id="how-to-use">How to use the manual</h2>
+<p><strong>2.8.5.4 Find popup:</strong> <strong>Close</strong> keeps the edited
+DR position and returns to Sight Properties without changing the measured
+altitude. <strong>Copy estimated Hs</strong> deliberately replaces the appropriate
+altitude field and leaves Find open. <strong>Reset position</strong> restores the
+position and live-position setting shown when Find opened; it does not undo an
+explicit Hs copy and leaves Find open. <strong>Cancel</strong> restores the
+opening position and closes Find, without undoing an explicitly copied Hs.
+The window close control and Escape behave like Cancel, and
+Enter never implicitly copies Hs. Close remains available when no estimate can
+be calculated. Use <strong>Save Changes</strong> in Sight Properties to retain
+the edit, or its <strong>Cancel</strong> to discard it. A computed estimate is
+not a new observation: do not replace a real sextant reading unintentionally.</p>
+<p>For a bearing sight, Copy estimated Hs is disabled: an altitude must not
+replace the measured bearing. Position editing and Close still work.</p>
+<p><strong>Altitude (Ho)</strong>, below Hc, shows the reduced observed altitude
+in the same angle format as Hc. In a lunar Moon/body Find popup it is that
+body's reduced altitude, not the lunar distance. Copy estimated Hs is beside
+its estimate; Reset position is beside the coordinate controls. Neither Find
+Cancel nor Close writes the sights XML file directly.</p>
+<ul>
+  <li>If celestial navigation is new to you, read Chapters 1–6 in order.</li>
+  <li>For a first practical altitude sight, use the checklist in Chapter 8.</li>
+  <li>For planning, running fixes or analysis, continue through Chapters 9–11.</li>
+  <li>Lunar distance, joint lunar sequences, sextant checking, horizon events, coastal methods and eclipses are specialist workflows in Chapters 12–15.</li>
+  <li>Use the notation table below for immediate help. The comprehensive alphabetical lists are in Appendices A and B.</li>
+</ul>
+
+<h2 id="notation-quick">Notation at a glance</h2>
+<table class="quick">
+<tr><th>Symbol</th><th>Meaning</th></tr>
+<tr><td>AP</td><td>Assumed position used to calculate an expected altitude and azimuth.</td></tr>
+<tr><td>DR</td><td>Dead-reckoning position obtained from the previous position and estimated motion.</td></tr>
+<tr><td>GP</td><td>Geographic position: the point on Earth directly beneath a celestial body.</td></tr>
+<tr><td>Hs</td><td>Sextant altitude: the angle read from the sextant.</td></tr>
+<tr><td>Ha</td><td>Apparent altitude after index and horizon/dip corrections.</td></tr>
+<tr><td>Ho</td><td>Observed altitude: the fully corrected measured altitude used for navigation.</td></tr>
+<tr><td>Hc</td><td>Computed altitude predicted at the AP for the observation time.</td></tr>
+<tr><td>Zn</td><td>Calculated true azimuth of the body, conventionally 000°–360° from true north.</td></tr>
+<tr><td>COP</td><td>Circle of Position, here normally a Circle of Equal Altitude.</td></tr>
+<tr><td>LOP</td><td>Line of Position: the local straight-line approximation to a COP.</td></tr>
+<tr><td>GHA</td><td>Greenwich Hour Angle, measured westward from Greenwich to the body's hour circle.</td></tr>
+<tr><td>LHA</td><td>Local Hour Angle, the body's hour angle relative to the observer's meridian.</td></tr>
+<tr><td>UTC / UT1</td><td>UTC is civil atomic time with leap seconds; UT1 follows Earth rotation and is the astronomical argument required by hour angle.</td></tr>
+</table>
+
+<nav class="toc">
+<h2 id="contents">Contents</h2>
+<ol>
+  <li><a href="#principle">The one idea behind celestial navigation</a></li>
+  <li><a href="#circle">One altitude gives a Circle of Equal Altitude</a></li>
+  <li><a href="#lop">From circles to Lines of Position</a></li>
+  <li><a href="#corrections">From sextant reading Hs to observed altitude Ho</a></li>
+  <li><a href="#fixes">Fixes, geometry and uncertainty</a></li>
+  <li><a href="#time">Time, longitude and the astronomical triangle</a></li>
+  <li><a href="#interface">Plugin orientation and time integrity</a></li>
+  <li><a href="#altitude-workflow">Entering an altitude sight</a></li>
+  <li><a href="#planner">Sun, Moon and Sight Planner</a></li>
+  <li><a href="#running">Running fixes and moving observers</a></li>
+  <li><a href="#analysis">Sight Sequence Analyzer, noon and Polaris</a></li>
+  <li><a href="#lunar">Lunar distance, joint sequences and sextant checking</a></li>
+  <li><a href="#horizon">Sunrise and sunset horizon events</a></li>
+  <li><a href="#coastal">Coastal sextant methods</a></li>
+  <li><a href="#eclipses">Offline solar-eclipse planner</a></li>
+  <li><a href="#troubleshooting">Troubleshooting and validation</a></li>
+  <li><a href="#abbreviations">Appendix A — abbreviations and symbols</a></li>
+  <li><a href="#glossary">Appendix B — glossary</a></li>
+  <li><a href="#formulae">Appendix C — formulae and sign conventions</a></li>
+  <li><a href="#references">Appendix D — references and provenance</a></li>
+</ol>
+</nav>
+</section>
+
+<section>
+<h1 id="principle">1. The one idea behind celestial navigation</h1>
+
+<p>A sextant does not directly measure latitude or longitude. It measures an
+angle. At a recorded time, the navigator measures the altitude of the Sun,
+Moon, a planet or a star above the visible horizon. An almanac or ephemeris
+provides the body's corresponding position in the sky.</p>
+
+<h2 id="gp">1.1 The body's geographic position</h2>
+<p>Imagine a line from the centre of a distant celestial body through the
+centre of Earth. Where that line meets Earth's surface is the body's
+<strong>geographic position (GP)</strong>. To an observer at the GP, the body
+is at the zenith: directly overhead. The GP moves as Earth rotates and as the
+body moves in its orbit. Its latitude is the body's declination; its longitude
+is obtained from its Greenwich Hour Angle.</p>
+
+<h2 id="altitude">1.2 Altitude and zenith distance</h2>
+<p>The corrected observed altitude <strong>Ho</strong> is the angle from the
+observer's horizontal plane up to the body. The complementary angle between
+the observer's zenith and the body is the <strong>zenith distance z</strong>.</p>
+<div class="formula">z = 90° − Ho</div>
+
+<figure>
+<img src="images/01_geographic_position_and_altitude.png" width="620" alt="Side view of Earth showing the observer, body geographic position, local horizontal, observed altitude and zenith distance.">
+<figcaption>Figure 1. Altitude and zenith distance are complementary. The central angle from the observer to the body's GP equals the zenith distance.</figcaption>
+</figure>
+
+<p>The important geometric fact is that the angle at Earth's centre between
+the observer and the GP is also z. Therefore Ho tells us our angular distance
+from the GP. It does not yet tell us in which direction from the GP we lie.</p>
+
+<div class="example"><span class="label">Example.</span> If Ho is 50°, then
+z is 40°. The observer is 40° of arc from the body's GP. Since one degree of
+arc is 60 nautical miles, that angular distance is approximately 2,400 NM.</div>
+</section>
+
+<section>
+<h1 id="circle">2. One altitude gives a Circle of Equal Altitude</h1>
+
+<p>All positions that are the same angular distance from the GP form a small
+circle on Earth. Every observer on that circle sees the body at the same
+corrected altitude at that instant. This is the <strong>Circle of Equal
+Altitude</strong>, a type of Circle of Position.</p>
+
+<figure>
+<img src="images/02_circle_of_equal_altitude.png" width="620" alt="View centred on a celestial body's GP, surrounded by a Circle of Equal Altitude with an observer on the circle.">
+<figcaption>Figure 2. One corrected altitude defines a complete circle, not a unique position.</figcaption>
+</figure>
+
+<div class="principle"><strong>One altitude sight gives one position
+constraint.</strong> You are somewhere on its circle. A single ordinary
+altitude sight cannot, by itself, provide a complete two-dimensional fix.</div>
+
+<h2>2.1 Why minutes of arc become nautical miles</h2>
+<p>The nautical mile is tied to angular distance on Earth. For practical sight
+reduction, one minute of altitude difference corresponds to approximately one
+nautical mile measured along the direction to or from the GP. This is why a
+sextant error of one arcminute commonly appears as about one nautical mile of
+LOP displacement.</p>
+
+<h2>2.2 Intersecting circles</h2>
+<p>Two simultaneous sights of different bodies normally give two intersections.
+A DR position, hemisphere, third body or other evidence selects the intended
+one. A third independent circle also checks the consistency of the observations.</p>
+
+<figure>
+<img src="images/03_intersecting_altitude_circles.png" width="620" alt="Two altitude circles creating two candidate positions, followed by a third circle selecting and checking the fix.">
+<figcaption>Figure 3. Two circles normally leave an ambiguity; a third sight resolves and checks it.</figcaption>
+</figure>
+
+<p>Real observations seldom meet at one mathematical point. Instrument error,
+horizon quality, timing, refraction, vessel motion and personal technique
+create a small triangle or more general scatter. The purpose of additional
+sights is not to make error disappear, but to expose and estimate it.</p>
+</section>
+
+<section>
+<h1 id="lop">3. From circles to Lines of Position</h1>
+
+<p>A Circle of Equal Altitude can have a radius of thousands of miles. Over the
+small area of a normal plotting sheet, a short arc of that circle is nearly
+straight. Navigators therefore use a tangent <strong>Line of Position
+(LOP)</strong>.</p>
+
+<h2>3.1 The altitude-intercept method</h2>
+<p>Choose an Assumed Position (AP) near the DR. For the observation time and
+body, calculate:</p>
+<ul>
+  <li><strong>Hc</strong>, the altitude the body would have if you were at the AP;</li>
+  <li><strong>Zn</strong>, the true azimuth from the AP towards the body's GP.</li>
+</ul>
+<p>Compare the corrected observed altitude Ho with Hc. Their signed difference
+is the intercept.</p>
+<div class="formula">a = Ho − Hc</div>
+<ul>
+  <li>If Ho is greater than Hc, the body appeared higher: move the LOP <strong>towards</strong> the GP.</li>
+  <li>If Ho is less than Hc, the body appeared lower: move the LOP <strong>away</strong> from the GP.</li>
+  <li>The magnitude in arcminutes is the intercept distance in nautical miles.</li>
+</ul>
+
+<figure>
+<img src="images/04_intercept_method.png" width="620" alt="Intercept construction showing the assumed position, azimuth, computed LOP, intercept and observed LOP.">
+<figcaption>Figure 4. The observed LOP is perpendicular to Zn at a distance |Ho − Hc| from the AP.</figcaption>
+</figure>
+
+<div class="note"><strong>Why the plugin can show circles.</strong> Historically,
+drawing a large spherical circle on a paper chart was inconvenient. OpenCPN
+can draw the COP directly. The circle and its local tangent LOP express the
+same observation; the full circle is especially helpful when the DR is poor or
+unknown.</div>
+</section>
+
+<section>
+<h1 id="corrections">4. From sextant reading Hs to observed altitude Ho</h1>
+
+<p>The sextant reading is not yet the altitude used to construct the circle.
+The plugin applies corrections appropriate to the body, limb, instrument,
+horizon and atmospheric conditions.</p>
+
+<figure>
+<img src="images/05_altitude_correction_pipeline.png" width="620" alt="Pipeline from sextant reading through index, dip, refraction, semidiameter and parallax corrections to observed altitude.">
+<figcaption>Figure 5. Conceptual correction sequence. The Calculations tab records the terms actually applied.</figcaption>
+</figure>
+
+<h2>4.1 The principal terms</h2>
+<table>
+<tr><th>Term</th><th>Purpose</th></tr>
+<tr><td>Index correction</td><td>Removes the sextant's zero error. “On the arc, take it off; off the arc, put it on” is the traditional mnemonic.</td></tr>
+<tr><td>Dip</td><td>Corrects the visible sea horizon below the observer's true horizontal plane. It depends principally on height of eye.</td></tr>
+<tr><td>Refraction</td><td>Corrects atmospheric bending, greatest near the horizon and dependent on altitude, pressure and temperature.</td></tr>
+<tr><td>Semidiameter</td><td>Converts a selected upper or lower limb of the Sun or Moon to the body's centre.</td></tr>
+<tr><td>Parallax in altitude</td><td>Converts the topocentric direction at the observer to the required geocentric direction. It is particularly important for the Moon.</td></tr>
+</table>
+
+<h2>4.2 Horizon choices</h2>
+<p><strong>Natural horizon:</strong> enter height of eye and normal atmospheric
+conditions. <strong>Artificial horizon:</strong> the measured doubled angle
+must be handled by the selected workflow; dip is not applied as for a sea
+horizon. <strong>Dip short:</strong> use when the visible waterline is at a
+finite distance rather than the astronomical sea horizon. <strong>Back
+sight:</strong> use only when the observation geometry and sign are understood.</p>
+
+<h2>4.3 Record what was observed</h2>
+<p>Do not “improve” a raw observation to match an expected answer. Record the
+body, limb, Hs, watch time, horizon, eye height and environmental values. Let
+the correction and analysis stages remain reproducible.</p>
+</section>
+
+<section>
+<h1 id="fixes">5. Fixes, geometry and uncertainty</h1>
+
+<h2>5.1 Near-simultaneous multi-body fix</h2>
+<p>A twilight fix normally uses two or more well-separated bodies observed in
+a short interval. Three bodies are preferable because they show scatter and
+reduce the risk of accepting the wrong two-circle intersection. Good azimuth
+spread matters more than collecting many bodies in one part of the sky.</p>
+
+<h2>5.2 A cocked hat is information</h2>
+<p>Three LOPs that do not meet form a cocked hat. Its size and shape reflect
+observation and model errors, but it is not automatically a confidence region
+with a fixed probability. Consider horizon quality, repeated-sight scatter,
+timing, geometry, and known systematic bias before assigning meaning to it.</p>
+
+<h2>5.3 Repeated observations</h2>
+<p>A run of sights can reveal blunders and personal trend. Retain the original
+readings. The Sight Sequence Analyzer can report residuals, scatter, trend,
+possible outliers and personal bias. Do not discard a point merely because a
+program labels it unusual; first look for a physical explanation.</p>
+
+<h2>5.4 Uncertainty fields</h2>
+<p>Measurement certainty controls the plotted band around a COP/LOP. Time
+certainty represents uncertainty in the observation epoch. These values should
+describe the observation honestly; reducing the number only draws a thinner
+line and does not improve the sight.</p>
+</section>
+
+<section>
+<h1 id="time">6. Time, longitude and the astronomical triangle</h1>
+
+<h2>6.1 Why time is inseparable from longitude</h2>
+<p>The body's GP moves in longitude as Earth rotates. Earth turns approximately
+15° per hour, 15′ of hour angle per minute and 15″ per second. A timing error
+therefore puts the calculated GP on the wrong meridian. The resulting position
+error depends on latitude, body motion, azimuth and the other sights—it is not
+always a simple one-for-one longitude correction.</p>
+
+<figure>
+<img src="images/06_time_and_longitude.png" width="620" alt="Two globes comparing the predicted geographic position with correct UTC and a watch twenty minutes slow.">
+<figcaption>Figure 6. An uncorrected watch error displaces the predicted GP and every position circle derived from it.</figcaption>
+</figure>
+
+<h2>6.2 UTC, UT1 and the system clock</h2>
+<p>UTC is the civil time broadcast by modern systems. UT1 follows actual Earth
+rotation and is the time argument underlying GHA. For ordinary sextant work
+the small UTC–UT1 difference is normally below other observational errors, but
+the distinction matters for rigorous prediction and eclipse timing. Future
+UTC cannot be known indefinitely because future leap seconds are not
+predictable.</p>
+
+<h2>6.3 The astronomical triangle</h2>
+<p>The formal calculation uses a spherical triangle whose vertices are the
+elevated pole, the observer/AP and the body's GP. Its sides are colatitude,
+polar distance and zenith distance; its angles include LHA and azimuth. The
+plugin solves this geometry numerically. Understanding the triangle explains
+where Hc and Zn come from, but table manipulation is not required to use the
+plugin.</p>
+
+<figure>
+<img src="images/07_navigational_spherical_triangle.png" width="620" alt="The navigational spherical triangle joining the elevated pole, assumed position and celestial body's geographic position.">
+<figcaption>Figure 7. The navigational triangle names the three great-circle sides and the LHA and azimuth angles used to calculate Hc and Zn.</figcaption>
+</figure>
+
+<div class="formula">sin Hc = sin φ sin δ + cos φ cos δ cos LHA</div>
+<p class="small">Here φ is latitude and δ is declination. An atan2 form is used
+for azimuth to preserve the correct quadrant.</p>
+</section>
+
+<section>
+<h1 id="interface">7. Plugin orientation and time integrity</h1>
+
+<h2>7.1 Main Sights window</h2>
+<p>The main list contains stored observations. Its columns show sight type,
+body, UTC time, measurement and colour. The eye symbol controls whether a
+sight is plotted and included where a workflow uses visible sights.</p>
+
+<table>
+<tr><th>Control</th><th>Purpose</th></tr>
+<tr><td>New</td><td>Create an altitude, azimuth or lunar observation.</td></tr>
+<tr><td>Fix…</td><td>Solve from suitable visible sights near a selected epoch.</td></tr>
+<tr><td>Horizon Event…</td><td>Record observed sunrise or sunset timing and optional bearing.</td></tr>
+<tr><td>Sun &amp; Moon…</td><td>Open the offline event, body, best-sight, almanac, noon and Polaris planner.</td></tr>
+<tr><td>Analyze Sights…</td><td>Analyze residuals and repeat-observation behaviour.</td></tr>
+<tr><td>Lunar Tools…</td><td>Jointly solve several lunar observations, rank Moon–body pairs and check a sextant against computed angular distances.</td></tr>
+<tr><td>Generate Almanac…</td><td>Build a tailored, completely offline planning, calculator-complete or calculator-free paper almanac as a PDF.</td></tr>
+<tr><td>Eclipses…</td><td>Search, plot and calculate offline solar-eclipse circumstances.</td></tr>
+<tr><td>Coastal Sextant…</td><td>Use vertical-angle ranging or horizontal-sextant-angle fixing.</td></tr>
+<tr><td>Duplicate / Edit / Delete</td><td>Manage a selected stored sight. Duplicate is useful for a run of sights.</td></tr>
+<tr><td>Clock Offset</td><td>Apply a common correction to stored sight times.</td></tr>
+<tr><td>Hide Sights / Show Sights</td><td>Collapse or restore the sight list and controls.</td></tr>
+<tr><td>Documentation</td><td>Open this completely offline manual in the plugin's internal viewer.</td></tr>
+<tr><td>PDF Documentation</td><td>Open the fixed-layout manual in the system PDF viewer. If no external viewer is available, the plugin safely opens the internal HTML manual instead.</td></tr>
+</table>
+
+<p>Editors use task-specific actions: <strong>Create Sight</strong> or
+<strong>Create Event</strong> for new records, and <strong>Save Changes</strong>
+when editing an existing record. <strong>Cancel</strong> discards edits. If an
+editor contains unsaved changes, closing it with the window close button asks
+for confirmation before discarding them. Read-only and workbench windows use
+<strong>Close</strong>. Substantial resizable tool windows remember their size
+and position, and are brought back onto a visible display if the monitor layout
+later changes.</p>
+
+<p>Creating a sight selects it and clears the previous selection. Deleting a
+selected sight moves the selection to an adjacent sight when one remains, so
+there is deliberately no unselected state while the list is non-empty.</p>
+
+<h2>7.2 Time integrity panel</h2>
+<p>The panel displays computer local time with time zone, UTC, GNSS/NMEA UTC
+when valid RMC or ZDA sentences have been received, the system-to-GNSS
+difference, and system clock synchronisation information. On systems using
+chrony, the plugin reports synchronisation state, estimated offset and source
+age where available.</p>
+
+<div class="note"><strong>Important:</strong> GNSS comparison is informational.
+It does not silently rewrite stored sight times or Clock Offset. “GNSS time
+unavailable” means no valid supported sentence has been received; it does not
+mean the computer clock is necessarily wrong.</div>
+
+<p>Use the panel to decide how much confidence to place in a captured time and
+to synchronise a deck watch. Use <strong>Hide Time</strong> and
+<strong>Show Time</strong> to hide or restore the Time integrity panel when
+screen space is limited; this does not change the solver's time corrections.</p>
+</section>
+
+<section>
+<h1 id="altitude-workflow">8. Entering an altitude sight</h1>
+
+<h2>8.1 Before the observation</h2>
+<ol class="steps">
+  <li>Check sextant adjustment and determine index error.</li>
+  <li>Measure height of eye above the actual waterline.</li>
+  <li>Check the time source and record watch error or confirm the intended Clock Offset workflow.</li>
+  <li>Use <strong>Sun &amp; Moon…</strong> to select visible bodies with useful azimuth spread and altitude.</li>
+  <li>Preset the sextant from an estimated altitude if helpful, while keeping the actual observation independent.</li>
+</ol>
+
+<h2>8.2 Create the sight</h2>
+<ol class="steps">
+  <li>Select <strong>New</strong> and choose <strong>Altitude</strong>.</li>
+  <li>Select the body and, for Sun or Moon, the observed limb.</li>
+  <li>Enter Hs in the accepted angle form. Verify the redisplayed value and hemisphere/sign conventions.</li>
+  <li>Enter the exact UTC date and time of the observation. If entering watch time, apply the known convention consistently.</li>
+  <li>Enter measurement and time uncertainty honestly.</li>
+  <li>On Parameters, enter index error, height of eye, pressure, temperature and horizon type.</li>
+  <li>Enter or select the DR/AP used for the calculation.</li>
+  <li>Review the Calculations tab: Hs, applied corrections, Ho, Hc, Zn and intercept should tell a coherent story.</li>
+  <li>Accept the sight and inspect its COP on the chart.</li>
+</ol>
+
+<h2>8.3 Common entry mistakes</h2>
+<ul>
+  <li>Entering local civil time in a field labelled UTC.</li>
+  <li>Crossing midnight during time-zone conversion without changing the date.</li>
+  <li>Applying watch error manually and again through Clock Offset.</li>
+  <li>Using the wrong Sun/Moon limb or the wrong sign for index error.</li>
+  <li>Entering west longitude without the expected sign or W designator.</li>
+  <li>Using GPS position as “DR” while trying to conduct an independent no-GPS exercise.</li>
+</ul>
+</section>
+
+<section>
+<h1 id="planner">9. Sun, Moon and Sight Planner</h1>
+
+<p>The planner is completely offline. Set a position and time context, then
+select <strong>Calculate / refresh</strong>.</p>
+
+<h2>9.1 Position and time context</h2>
+<p>Position can be manual, current boat position, chart cursor, selected sight
+DR, last calculated fix, or an OpenCPN waypoint/place selected from the
+searchable list. Time can be now, the selected sight, or a manual date/time.</p>
+
+<p>Manual input can be interpreted as UTC, computer local civil time, or ship
+zone time. Ship zone defaults to the conventional whole-hour offset suggested
+by longitude; disable <strong>Auto zone from longitude</strong> to select a
+manual offset in half-hour increments. East offsets are positive, west offsets
+negative. Conversion across midnight changes the UTC date correctly. The zone
+controls are enabled only when ship-zone input or fixed-offset display uses
+them. A temporarily blank or invalid offset retains the last valid value rather
+than silently becoming the western limit.</p>
+
+<p>The default entry presentation is the unambiguous nautical form
+<strong>YYYY-MM-DD</strong> and <strong>HH:MM:SS</strong>. Select
+<strong>OpenCPN / platform format</strong> to use the operating system's native
+date and time controls instead. This changes presentation only, not the
+instant. Displayed event times may independently be UTC, computer local time,
+local mean time, or a fixed offset. The calculation itself is normalized to
+UTC. The bold <strong>Resolved UTC</strong> line is the authoritative instant
+shared by every planner tab, independent of entry or display format.</p>
+
+<p>Editing latitude or longitude switches the position source to
+<strong>Manual</strong>; editing date or time switches the time source to
+<strong>Manual date/time</strong>. Valid edits to position, time, COG, SOG,
+zone offset or eye height automatically refresh the results after a short
+pause. <strong>Calculate / refresh</strong> remains available for an explicit
+update. Planner choices including COG/SOG and entry/display formats persist,
+but a newly opened planner starts its date/time at <strong>Now</strong>. Eye
+height is reloaded from the main plugin defaults each time.</p>
+
+<p>Eye height affects dip of the visible horizon used for rise and set. It does
+not alter the geometric body-centre Hc shown in the body table.</p>
+
+<h2>9.2 Events tab</h2>
+<p>Lists astronomical, nautical and civil dawn/dusk, sunrise, sunset, Moonrise,
+Moonset, local apparent noon and lunar transit when they occur. It reports UTC,
+selected display time, true bearing and observer position. High-latitude days
+may legitimately omit an event because the body does not cross the chosen
+altitude threshold. The schedule always covers the UTC civil day containing
+the resolved planning instant; local display dates may therefore differ near
+the date line.</p>
+
+<h2>9.3 Bodies &amp; Best Sights</h2>
+<p>The body list shows every catalogued body whose geometric Hc is at or above
+the horizon. Click any column heading to sort the table; click it again to
+reverse the order. <strong>Limit recommendations by Hc</strong> optionally
+applies the adjacent, editable minimum and maximum only to suggested pairs and
+triads. The initial preferred range is 10°–75°. Bodies outside it remain in the
+table and are marked below or above the preferred Hc; disabling the option
+makes every listed body eligible for recommendations.</p>
+
+<p>The individual score gives 65% weight to altitude near 40° and 35% to
+brightness, with a daylight/twilight penalty for stars. Planets currently
+receive no equivalent twilight penalty, so the score is not by itself a
+guarantee that Mercury or another planet is practically observable. Suggested
+pairs additionally favour a crossing angle near 90°; triads rank their
+two-dimensional bearing geometry separately.</p>
+
+<p>The polar sky plot has independent magnitude limits of 1, 2 or 3 and can
+optionally show bodies below the horizon. Sun symbols are yellow, the Moon is
+blue, planets are red, stars rendered during daylight are grey, and
+below-horizon bodies are hollow. Labels favour the brightest bodies and share
+the available label allowance across the four compass quadrants. The allowance
+adapts to the plot size, and labels are still suppressed when they would
+overlap; an unlabeled dot does not mean the body is absent from the catalogue.</p>
+
+<p>These rankings and the sky plot are planning aids, not commands. Weather,
+deck obstruction, glare, horizon quality and a navigator's ability to identify
+a body remain decisive. <strong>Create selected sight…</strong> transfers the
+body and planning context to sight entry.</p>
+
+<h2>9.4 Almanac</h2>
+<p>Provides hourly body GHA, SHA, declination, GHA Aries, local hour angle of
+Aries, Hc and true Zn for the selected position/time context. Longitude is
+signed east-positive, so local hour angle is <code>GHA + longitude</code>,
+wrapped to 0–360°. <strong>Export CSV…</strong> creates the same columns in a
+portable table for independent checking or a paper working sheet.</p>
+
+<h2>9.5 Generate Voyage Almanac</h2>
+<p><strong>Generate Almanac…</strong> on the main Sights window creates an
+independent OpenCPN Voyage Almanac PDF. It is not an official Nautical
+Almanac and does not imitate an official publication's page design. It uses
+the same completely offline calculation engine as the planner.</p>
+<p>Select any saved route in the generator. Alternatively, open the route's
+OpenCPN context menu and choose <strong>Generate fallback almanac…</strong>.
+That shortcut opens the same generator with the route, document title and
+default 150 NM off-course corridor preselected; all settings remain editable.</p>
+
+<h3>Presets and safety level</h3>
+<ul>
+  <li><strong>Passage Brief</strong> is a compact planning aid. It deliberately omits some reduction reference material.</li>
+  <li><strong>Voyage Almanac</strong> is the normal calculator-complete paper backup.</li>
+  <li><strong>Calculator-free Voyage</strong> adds all paper interpolation, correction and reduction dependencies, including direct Hc/Zn and universal Ageton tables.</li>
+  <li><strong>Celestial Navigator</strong> provides more forms and fuller planning material.</li>
+  <li><strong>Full Global Annual</strong> selects a complete calendar year, global coverage, monthly star data and the deliberately very large full-declination direct-table option.</li>
+  <li><strong>Custom</strong> appears when preset options are changed.</li>
+</ul>
+<p><strong>Self-contained with scientific calculator</strong> means that the
+PDF includes hourly Sun, Moon, Aries and navigational-planet data, the 57
+navigational stars, corrections, formulae, procedures and forms needed to
+perform reductions with an ordinary scientific calculator.</p>
+<p><strong>Self-contained calculator-free paper backup</strong> enforces a
+stronger dependency manifest. After printing, no computer, internet service,
+trigonometric calculator or external almanac is needed. The document includes:</p>
+<ul>
+  <li>hourly GHA, declination, v, d, HP and semidiameter as applicable;</li>
+  <li>60 minute pages with second-specific Sun/planet, Aries and Moon increments and v/d proportional corrections;</li>
+  <li>dip, refraction, atmospheric and Moon limb/parallax correction tables;</li>
+  <li>half-minute Ageton log-cosecant/log-secant tables for universal calculator-free Hc/Zn reduction;</li>
+  <li>optional precomputed direct Hc/Zn tables for the selected latitude and date/body scope;</li>
+  <li>procedures, worked workflow and plotting/record forms.</li>
+</ul>
+<p>The cover must state <strong>COMPLETE: CALCULATOR-FREE</strong> before the
+document is treated as a paper-only backup. A sextant, accurate watch, pencil,
+ruler/dividers, plotting sheets, training and judgement are still required.</p>
+
+<h3>Direct and universal reduction tables</h3>
+<p>The direct Hc/Zn option precomputes whole-degree latitude, declination and
+meridian-angle solutions. It is the quickest and least error-prone paper
+workflow within the chosen scope: enter the nearest rows and interpolate.
+Voyage/date-aware mode includes declinations actually occupied by selected
+bodies and latitude implied by a fixed position, band or route corridor.</p>
+<p><strong>Direct tables for every declination</strong> deliberately expands
+the output and can create tens of thousands of pages with global latitude
+coverage. The live estimate makes this cost visible. Direct-table pruning is
+never a safety dependency: calculator-free output also retains the compact
+universal Ageton tables, so an off-track navigator can reduce a sight without
+extrapolating a route-specific direct table.</p>
+<p>The tables are newly computed, not reproduced pages. The universal compact
+method follows Arthur A. Ageton's public 1931 secant-cosecant construction;
+the direct Hc/Zn layer serves the practical purpose of NGA Pub. 229 in a
+voyage-aware layout. Hourly quantities and v/d notation follow conventional
+Nautical Almanac practice. The generated document remains an independent,
+non-official publication.</p>
+
+<h3>Planning cadence and visual aids</h3>
+<p>Hourly body ephemerides remain daily. The planning-page cadence can be
+daily, every 2/7/14/30 days, or disabled; this is a safe way to compact a long
+edition because it removes only duplicated location-aware planning material.
+Optional curves show expected body altitude, lunar distance and rate through
+the day, plus dip/refraction sensitivity. Curves are planning and gross-error
+aids. Wherever tenths of a minute matter, the familiar printed table remains
+authoritative.</p>
+
+<h3>Coverage</h3>
+<p>The hourly geocentric ephemeris for every included body remains usable
+independently of the route. Coverage and observability choices compact the
+location-dependent suggestions and planning pages, not the universal data
+needed if the vessel leaves the expected track:</p>
+<ul>
+  <li><strong>Planned OpenCPN route:</strong> begins at the first waypoint on the From date and advances along cumulative route distance at the selected fallback speed. The corridor states the planning uncertainty; it does not alter universal GHA/declination data.</li>
+  <li><strong>Fixed position:</strong> produces events and recommendations for one latitude/longitude.</li>
+  <li><strong>Latitude band:</strong> uses the middle of the band for sample planning pages while direct reduction tables span the selected integer latitudes. Do not interpret the planning sample as valid at every longitude.</li>
+  <li><strong>Global:</strong> retains universal ephemeris and uses 0° N, 0° E only as a clearly labelled planning example.</li>
+</ul>
+
+<h3>Time basis and DUT1</h3>
+<p>Daily rows are labelled in UTC. Earth rotation is evaluated using
+UT1 = UTC + DUT1. The generator never downloads DUT1: enter a current value
+obtained before departure, or leave it unchecked and the cover will record
+the explicit 0.000-second assumption and warning. Future leap seconds and
+future DUT1 cannot be known exactly in advance.</p>
+
+<h3>Preview, page count and output</h3>
+<p>The live page count is structural and exact; it does not need to calculate
+every body merely to count pages. <strong>Preview first pages</strong> shows
+the cover, manifest and opening pages from the same semantic document model
+used by the PDF renderer. Output is first completed as a sibling temporary
+file and then renamed, so a failed calculation does not leave a plausible but
+partial final PDF.</p>
+<p><strong>Booklet imposition</strong> places two logical pages on each
+landscape PDF page and orders them in independently foldable signatures of
+4-64 logical pages. The summary distinguishes logical pages, physical PDF
+pages and printed sheets. Print a trial signature and confirm the printer's
+duplex flip-edge setting before relying on a long run.</p>
+
+<div class="warning"><strong>Check before departure.</strong> Generate the
+actual voyage PDF, open it independently, inspect several daily pages and
+print a sample duplex pair. Compare representative GHA/declination and event
+values with an authoritative source. Retain the cover manifest with the
+document.</div>
+
+<h2>9.6 Time-tagged moving observer</h2>
+<p>Enable this option and enter true COG and SOG when event positions or sight
+planning should follow a vessel moving from the reference position and time.
+This is a constant-motion model. It cannot know future alterations, leeway or
+unmodelled current.</p>
+</section>
+
+<section>
+<h1 id="running">10. Running fixes and moving observers</h1>
+
+<p>Observations made at different times belong to different vessel positions.
+They cannot simply be intersected as though simultaneous. Advance each earlier
+LOP by the vessel displacement from its observation time to a common reference
+epoch.</p>
+
+<figure>
+<img src="images/08_running_fix.png" width="620" alt="An earlier line of position advanced by vessel motion to intersect a second observation at a common epoch.">
+<figcaption>Figure 8. A numerical running fix advances the observation, not the celestial body, to a common vessel epoch.</figcaption>
+</figure>
+
+<h2>10.1 Time-tagged numerical fix</h2>
+<ol class="steps">
+  <li>Preserve each observation's actual timestamp.</li>
+  <li>Choose the fix reference epoch, normally the latest observation.</li>
+  <li>Enter the best available true COG and SOG or equivalent displacement model.</li>
+  <li>Solve, then examine residuals and whether the assumed motion was credible.</li>
+</ol>
+
+<p>A long interval can improve azimuth crossing while increasing DR uncertainty.
+A morning-Sun/afternoon-Sun running fix is useful, but its precision depends as
+much on vessel motion as on the sextant observations.</p>
+</section>
+
+<section>
+<h1 id="analysis">11. Sight Sequence Analyzer, noon and Polaris</h1>
+
+<h2>11.1 Sight Sequence Analyzer</h2>
+<p>Select the sights to display, open <strong>Analyze Sights…</strong>, choose
+whether to restrict analysis to the selected body, and set a stationary or
+moving observer model. The analyzer reports residuals, scatter, trend,
+possible outliers and estimated personal bias. A trend can indicate changing
+conditions, vessel motion, a systematic timing error or poor technique; it is
+not automatically a sextant error.</p>
+
+<p>In stationary mode each sight retains its own saved DR position. In moving
+observer mode one COG/SOG track is fitted across the selected observations.
+The analyzer warns when that constant-motion model spans more than 24 hours;
+split unrelated sessions rather than treating months of observations as one
+continuous vessel track.</p>
+
+<h2>11.2 Local apparent noon</h2>
+<p>The planner predicts meridian passage by solving for solar local hour angle
+zero at the time-dependent observer position; it does not merely sample for the
+highest displayed altitude. Around that time, observe a series of Sun altitudes
+and identify the maximum or fit the sequence. Enter the corrected Ho in
+<strong>Noon &amp; Polaris → Sun at local apparent noon</strong> to solve latitude
+using declination and the meridian geometry. Noon primarily provides latitude;
+it is not by itself a normal two-dimensional fix.</p>
+
+<h2>11.3 Polaris latitude</h2>
+<p>Polaris is close to, but not exactly at, the north celestial pole. Select
+<strong>Polaris latitude</strong>, use a corrected Ho and the applicable
+time/position context. The helper applies the ephemeris rather than assuming
+that Ho equals latitude exactly. It displays the predicted Hc and does not offer
+a solution when Polaris is below the geometric horizon. Polaris is a
+northern-hemisphere workflow.</p>
+</section>
+
+<section>
+<h1 id="lunar">12. Lunar distance, joint sequences and sextant checking</h1>
+
+<p>Lunar distance uses the Moon's rapid motion against the Sun, planets or
+stars as a celestial clock. The observed Moon-to-body angular distance is
+corrected (“cleared”) for limb, refraction and parallax, then compared with the
+geocentric ephemeris over a search interval.</p>
+
+<p>For a Moon–Sun calculation, the solver uses the checksum-verified local JPL
+DE440s kernel when it has already been imported for the eclipse module. A
+Moon–planet or Moon–star calculation, or any installation without DE440s,
+uses the bundled analytical ephemeris. The result identifies the ephemeris
+source used. DE440s is optional for ordinary navigation, no calculation
+downloads data, and LOLA terrain is unrelated to lunar-distance clearing.</p>
+
+<figure>
+<img src="images/09_lunar_distance_observations.png" width="620" alt="Moon, second body, visible horizon and observer showing lunar distance and the separate altitudes of both bodies.">
+<figcaption>Figure 9. The three angles may be taken sequentially. Each retains its own watch time while sharing one unknown constant watch correction.</figcaption>
+</figure>
+
+<h2>12.1 What to observe</h2>
+<ul>
+  <li>The lunar distance LDOpc from the selected Moon limb/contact to the second body.</li>
+  <li>The Moon altitude above the horizon.</li>
+  <li>The second-body altitude above the horizon.</li>
+  <li>The watch time of every reading, plus index error, limb/contact and uncertainty.</li>
+</ul>
+
+<h2>12.2 Sequential observations</h2>
+<p>Enable <strong>The three angles have separate watch times</strong> when the
+readings were not simultaneous. The lunar-distance date/time is the reference
+epoch. Enter Moon-altitude and body-altitude watch times separately. Times
+near midnight are interpreted as the nearest occurrence within twelve hours
+of the reference reading.</p>
+
+<p>If the vessel moved materially, enable <strong>Advance vessel between
+readings</strong> and enter true COG and SOG. The same unknown constant watch
+correction is applied to all three watch times; the intervals between them are
+preserved.</p>
+
+<h2>12.3 Solving</h2>
+<p><strong>2.8.5.2 precision update:</strong> the DE440 Sun–Moon solver now uses
+observer-specific light time and annual/diurnal aberration. Bundled IERS
+Earth-rotation data (DUT1, the difference between UT1 and UTC) already supports
+high-accuracy offline calculations. Under <strong>Lunar Tools → Advanced</strong>,
+<strong>Check / download update…</strong> optionally retrieves and validates the
+latest official table; <strong>Import local file…</strong> accepts the same
+<code>finals2000A.all</code> file transferred from another computer. No compiler
+or restart is required. Startup and solving never download data.</p>
+<p>The Advanced tab shows coverage. Each sight uses its own date. Beyond all
+available data, calculations continue using UT1 = UTC with a reduced-accuracy
+warning: <strong>there is no expiry lockout</strong>. Failed updates retain
+existing data. The bundled September 2027 endpoint is not a plugin end date.
+Recorded observations remain unchanged.</p>
+<ol class="steps">
+  <li>Create a <strong>Lunar</strong> sight and select the second body.</li>
+  <li>Enter LDOpc, near/centre/far contact and both body altitudes with correct limbs.</li>
+  <li>Enter one time or enable separate times as actually observed.</li>
+  <li>Set a plausible total UTC search span around the watch time.</li>
+  <li>Select <strong>Time</strong>. Use <strong>Results</strong> for the operational candidates and <strong>Calculations</strong> for the complete auditable working.</li>
+  <li>Use rough DR, hemisphere, an additional altitude sight or independent evidence to select the physical solution.</li>
+</ol>
+
+<p>The lunar result window deliberately has two pages. <strong>Results</strong>
+is the concise operational view: possible UTC values, watch correction,
+lunar-distance rate, estimated UTC uncertainty, position candidates and
+warnings. <strong>Calculations</strong> preserves the educational and auditable
+working. In simultaneous mode it shows the raw observations and conventions;
+index and dip arithmetic; every limb/contact and semidiameter correction;
+refraction, parallax and corrected altitudes; both direct spherical-triangle
+formulae with their numerical substitutions; every coarse UTC scan point;
+every bisection refinement; converged roots; uncertainty components; altitude-
+circle construction, position candidates and warnings. It records the
+calculations actually used by the modern solver rather than the former
+two-endpoint interpolation.</p>
+
+<p>Entered one-sigma angle uncertainties are shown separately: they are
+propagated through the clearing geometry and local lunar-distance rate to
+estimate UTC uncertainty, not applied as additional corrections.</p>
+
+<div class="warning"><strong>Lunar accuracy is demanding.</strong> A lunar
+distance changes slowly enough that a small angular error can become a large
+time error. Sextant adjustment, side error, limb contact, refraction/parallax
+clearing and repeated observations matter substantially more than in an
+ordinary altitude sight.</div>
+
+<h2>12.4 Unknown UTC and longitude</h2>
+<p>The solver does not use the crude “15 degrees per hour” shortcut as a
+longitude answer. It searches clock correction and reference position jointly
+against the lunar distance and altitude constraints. More than one physical
+candidate can remain. Reported numerical convergence does not remove geometric
+ambiguity or observational uncertainty.</p>
+
+<h2>12.5 Joint lunar-sequence estimation</h2>
+<p>One lunar triple contains three measured angles and can solve three primary
+unknowns—constant watch correction, latitude and longitude—but it supplies
+almost no redundancy. Several timed triples are much more useful: one shared
+solution can reveal scatter, weak geometry, a competing time/position minimum
+or a reading that disagrees with the others.</p>
+
+<ol class="steps">
+  <li>Save at least two complete <strong>Lunar</strong> sights. Use each sight's separate-time controls whenever the three angles were not simultaneous.</li>
+  <li>Highlight one of the sights in the main list, then select <strong>Lunar Tools… → Lunar sequence</strong>. The highlighted sight and observations within six hours are initially ticked; adjust the selection so it contains only one watch/session. <strong>Select visible sights</strong> is an explicit convenience, not an assertion that every visible sight belongs to one session.</li>
+  <li>Choose <strong>Recover time and position</strong>, or <strong>Recover time at known position</strong> for a clock check at a trustworthy position.</li>
+  <li>The initial position comes from the earliest selected sight's DR and can be edited or restored with <strong>Use earliest selected DR</strong>. Do not replace a useful DR with 0° N, 0° E: the triple includes two altitude constraints and the position is also the joint solver's convergence seed.</li>
+  <li>Enter a physically justified <strong>Additional watch correction search ±</strong>. Every row already retains its own recorded UTC; this control searches a correction either side of the correction already applied, rather than defining a new observation start time. If the vessel moved over the session, enter true COG and SOG.</li>
+  <li>Normally retain <strong>Robust fit</strong>. It reduces the leverage of a discrepant reading but still displays and flags every residual; it never deletes evidence.</li>
+  <li>Solve, inspect all competitive candidates, angular and weighted RMS, formal uncertainties and every component residual before applying a watch correction. The bounded multi-start fit runs away from the GUI thread and has progress and cancellation.</li>
+</ol>
+
+<p>A sequence is limited to 12 observations spanning no more than 24 hours.
+These are deliberate session-integrity and fail-safe limits: split a historic
+archive into the watches during which one clock correction and one motion
+model were physically meaningful.</p>
+
+<p>The reported correction is additional to the correction already displayed
+by the plugin. <strong>Apply watch correction</strong> explicitly shows the
+resulting total and asks for confirmation. Raw watch timestamps remain in the
+observation record.</p>
+
+<div class="warning"><strong>Do not select a pleasing minimum merely because
+it is numerical.</strong> A high condition number, large uncertainty,
+competitive alternate solution or residual beyond three stated standard
+uncertainties requires more evidence. The optional common residual index-bias
+parameter is an advanced diagnostic; with too few observations it can trade
+against clock correction and should not be treated as a sextant calibration.</div>
+
+<h2>12.6 Lunar pair planner</h2>
+<p><strong>Lunar Tools… → Lunar planner</strong> ranks the offline body
+catalogue for a selected UTC and position. It displays Moon and body altitude,
+centre separation, distance rate in arcminutes per hour and the approximate
+time change corresponding to 0.1′ of distance. A small time value means useful
+time sensitivity. The quality text also penalises hidden/low bodies, awkward
+sextant angles, very unequal altitudes and faint stars.</p>
+
+<p>Lunar Tools defaults to <strong>Nautical: YYYY-MM-DD, 24-hour</strong> UTC
+entry for an unambiguous cross-platform display. Select
+<strong>OpenCPN / platform format</strong> when the native operating-system
+date/time controls are preferred. Changing presentation preserves the entered
+instant.</p>
+
+<p>The ranking is a planning aid, not a visibility guarantee. Cloud, Moon
+phase/glare, twilight, haze, telescope field, the chosen limb/contact and the
+observer's ability remain decisive. Recalculate at candidate times and choose
+a pair you can identify unambiguously.</p>
+
+<h2>12.7 Sextant observational checks and correction profiles</h2>
+<p><strong>Lunar Tools… → Sextant check</strong> predicts the topocentric,
+refracted, apparent distance between two selected bodies for a stated UTC,
+position, pressure and temperature. Select centre-to-centre, near contact or
+far contact to match what was actually observed; limb contacts include the
+applicable semidiameters. Record repeated raw sextant readings, their
+independently measured index error, uncertainty and any shade/note. The
+displayed residual is <em>predicted apparent minus index-corrected
+observed</em>: add it only after applying index error.</p>
+
+<p>The editable <strong>Measured IE (on arc +)</strong> field starts with the
+current sight default. Enter an independently measured index error for the
+session. The raw observation is retained and the index-corrected apparent
+angle is <em>raw minus IE</em>. The residual shown and saved in a new profile
+therefore describes scale/centering behaviour after index error, preventing
+the same index correction from being applied twice.</p>
+
+<p>For checking scale or centering behaviour, prefer well-identified stars at
+similar, comfortable altitudes and away from the horizon. Star–star checks
+largely avoid limb and parallax ambiguity. Moon–star, Moon–planet and Sun/Moon
+pairs are valuable end-to-end checks, but incorrect UTC, position, limb choice
+or atmospheric conditions can masquerade as instrument error.</p>
+
+<p><strong>Build / save profile</strong> groups repeated checks by angular
+range and stores residual correction points, uncertainty, repeatability,
+instrument name and serial number in the plugin configuration. Select a saved
+profile to display its interpolated correction after the entered index error.
+Between tested angles the plugin uses straight-line interpolation; beyond the
+tested range it clearly marks the nearest endpoint rather than inventing a
+polynomial trend. The table is advisory and does not alter saved sights
+automatically, preserving the raw record and its provenance. Profiles saved by
+older versions remain labelled as legacy total corrections: apply those
+directly to raw readings and do not apply index error separately.</p>
+
+<div class="warning"><strong>A computed profile is not mechanical
+adjustment.</strong> Follow the sextant maker's specified sequence—normally
+perpendicularity, side, collimation and index checks—before investigating
+graduation, centering or scale behaviour. A changing or irregular correction
+may indicate damage, technique, shades, temperature or an adjustment fault
+that software must not conceal.</div>
+</section>
+
+<section>
+<h1 id="horizon">13. Sunrise and sunset horizon events</h1>
+
+<p>The Horizon Event workflow records first upper-limb appearance at sunrise
+or final upper-limb disappearance at sunset. Timing gives an approximate
+altitude constraint. An optional bearing adds a rough directional constraint.</p>
+
+<p>The UTC observation schedule remains fixed at the top of the dialog. On a
+short display, scroll only the lower bearing, horizon-condition and result
+section, so the event date and 24-hour UTC time remain visible.</p>
+
+<ol class="steps">
+  <li>Select sunrise or sunset and enter/capture the UTC date and time.</li>
+  <li>Record time uncertainty and identify the time source.</li>
+  <li>If a bearing was taken, select magnetic compass or true bearing.</li>
+  <li>For a magnetic observation, enter magnetic variation and compass deviation using the displayed E+/W− convention.</li>
+  <li>Enter bearing uncertainty, height of eye, pressure, temperature, horizon quality and horizon/refraction uncertainty.</li>
+  <li>Read the estimated result and retain its stated limitations.</li>
+</ol>
+
+<p>Without a sextant, the apparent instant is affected by waves, observer
+height, abnormal refraction, horizon definition, extinction, limb recognition
+and reaction time. A handheld magnetic bearing adds compass, variation and
+deviation errors. Treat the result as a broad constraint to combine with other
+evidence—not as a sextant-quality fix.</p>
+</section>
+
+<section>
+<h1 id="coastal">14. Coastal sextant methods</h1>
+
+<figure>
+<img src="images/10_coastal_sextant_methods.png" width="620" alt="Two coastal methods: vertical angle to a charted object for range, and two horizontal angles between three objects for a fix.">
+<figcaption>Figure 10. Coastal methods use charted terrestrial objects and different geometry from celestial altitude or azimuth sights.</figcaption>
+</figure>
+
+<h2>14.1 Vertical angle and distance</h2>
+<p>Select <strong>Vertical angle / distance</strong>. Choose waterline-to-top
+when the object's waterline is visible or sea-horizon-to-top when it is beyond
+the horizon. Enter target coordinates, observed vertical angle, index error,
+charted top height, water level above the height datum and height of eye.
+Optionally add a corrected bearing observed at effectively the same epoch.
+Select <strong>Calculate and plot range</strong>.</p>
+
+<p><strong>2.8.5.3:</strong> sea-horizon mode accepts zero or negative
+dip-corrected angles, while requiring the index-corrected observed top to be
+on or above the visible horizon. Waterline mode still requires a positive
+angle. Choose the baseline actually measured; modes and raw readings are
+never changed automatically. Both range methods require the target top
+above the observer; waterline mode also requires positive eye height.
+Lower targets with potentially ambiguous ranges are not supported.</p>
+
+<p>The visibility guide estimates the observer's horizon, the target's
+geographic range, and the waterline-to-top angle at the waterline horizon.
+These standard-refraction estimates are not a guarantee of visibility or
+a light's luminous range. A zero dip-corrected angle is not the maximum
+visibility distance. Use the height of the feature actually sighted (for
+example, focal height rather than tower height), and express water level
+relative to the same height datum. Negative water levels are allowed.</p>
+
+<p><strong>Select target waypoint...</strong> copies coordinates from the
+searchable OpenCPN waypoint/mark list. They remain editable; target height
+must be checked separately. Cancelling leaves the observation unchanged.</p>
+
+<p>Observation coordinates and measured angles start blank. Closing the
+window temporarily retains an unfinished observation; the window says so.
+Select <strong>New / clear observation</strong> before a different observation
+to clear all entries, results and plots and reload the current central index-
+error and eye-height defaults.</p>
+
+<p>For a true bearing, magnetic variation and compass deviation are disabled
+and ignored. For a magnetic compass bearing they remain editable. <strong>Use
+WMM at current boat/time</strong> obtains a clearly labelled estimate for the
+current boat position and UTC; compass deviation always remains a manual
+instrument/vessel input.</p>
+
+<h2>14.2 Horizontal sextant angles</h2>
+<p>Select <strong>Horizontal angles / fix</strong>. Enter three charted objects
+in left–centre–right visual order and the included left-centre and centre-right
+measurements. Landmark coordinates and the two measurements start blank so
+plausible-looking defaults cannot be mistaken for observations. The central sextant index-error
+default is applied to both angle measurements and remains editable. Enter
+uncertainty and an approximate vessel position to choose among ambiguous
+solutions. Select <strong>Solve and plot HSA fix</strong>.</p>
+
+<p>The left, centre and right waypoint buttons fill the corresponding
+coordinates. Check coordinates when names repeat. Angular uncertainty is
+entered in <strong>arcminutes</strong> (60 arcminutes = 1 degree). The result
+is formal angular-input uncertainty, not total fix accuracy: it excludes
+landmark-coordinate errors, misidentification, shared instrument errors and
+unmodelled motion. Increasing this uncertainty changes the estimate, not the
+best-fit position. Dedicated radar-bearing/range entry is not implemented;
+a radar range is not a vertical-angle observation.</p>
+
+<p>If the two angles were taken sequentially while underway, enable
+<strong>Advance the vessel between the two HSA readings</strong> and enter the
+interval, true COG and SOG. This is distinct from the celestial
+<strong>Azimuth</strong> sight type.</p>
+</section>
+
+<section>
+<h1 id="eclipses">15. Offline solar-eclipse planner</h1>
+
+<p>The eclipse planner is a separate specialist module within the plugin. It
+uses a locally installed JPL DE440s ephemeris to search events and calculate
+geometry without network access. The data can be downloaded on an explicit
+user request or imported from a local copy.</p>
+
+<h2>15.1 Data</h2>
+<ul>
+  <li><strong>DE440s:</strong> required for eclipse searching, paths and local circumstances.</li>
+  <li><strong>Lunar orientation:</strong> optional orientation support for refined limb work.</li>
+  <li><strong>LOLA pack:</strong> optional lunar-topography refinement of contact timing; not required for ordinary eclipse use.</li>
+</ul>
+
+<p>Select <strong>Download and install DE440s… (31.2 MiB)</strong> for the
+base eclipse data. The download is staged, checked for its exact size and
+SHA-256 digest, inspected for the expected SPK structure and then installed
+atomically. If a source fails, the plugin tries another trusted project or
+NASA/JPL source. <strong>Import DE440s…</strong> applies the same verification
+and safe-installation process to a local file.</p>
+
+<p><strong>Optional lunar data…</strong> opens a separate explanation and
+separate download/import controls for the 12.3 MiB lunar-orientation kernel and
+the 506 MiB LOLA terrain pack. Neither is downloaded when DE440s is installed.
+If LOLA is selected without lunar orientation already installed, the plugin
+shows the combined download and temporary disk-space requirement and asks for
+confirmation before downloading either file. Downloads can be cancelled; a
+partial or unverified file is never installed.</p>
+
+<h2>15.2 Find and plot an eclipse</h2>
+<ol class="steps">
+  <li>Open <strong>Eclipses…</strong> and confirm the data status.</li>
+  <li>Choose search years (the UI intentionally limits searches to 2100) and select <strong>Find eclipses</strong>.</li>
+  <li>Select an event. Enable the central line and totality/annularity limits and, if desired, partial-magnitude contours.</li>
+  <li>Select <strong>Plot selected</strong>. Use <strong>Clear plot</strong> to remove overlays.</li>
+  <li>For local circumstances, enter coordinates or use boat position, then select <strong>Calculate</strong>.</li>
+  <li>Enable LOLA contact refinement only when the optional data is installed and its extra detail is wanted.</li>
+</ol>
+
+<p>Local contact times are reported on the astronomical time basis stated in
+the dialog. Future UTC can differ because future leap seconds and Earth
+rotation cannot be known exactly years in advance. Eclipse planning is not a
+celestial-navigation fix.</p>
+</section>
+
+<section>
+<h1 id="troubleshooting">16. Troubleshooting and validation</h1>
+
+<table class="troubleshooting" width="650" style="width: 650px; table-layout: fixed;">
+<colgroup><col width="195"><col width="455"></colgroup>
+<tr><th>Symptom</th><th>Checks</th></tr>
+<tr><td>No COP is visible</td><td>Confirm the eye icon is enabled; zoom out; check UTC/date, body, Hs and limb; increase plotted certainty temporarily; verify the circle is not far from the current viewport.</td></tr>
+<tr><td>Hc or Zn is implausible</td><td>Check AP/DR latitude and longitude signs, UTC conversion, selected body, and whether “boat position” moved after the sight.</td></tr>
+<tr><td>Intercept is enormous</td><td>Check degrees/minutes entry, west/east longitude, upper/lower limb, time zone/date rollover and double-applied clock correction.</td></tr>
+<tr><td>Sunrise/sunset differs by about an hour</td><td>Distinguish UTC from local civil time and daylight-saving time. Verify the planner's independent entry-time and display-time selectors.</td></tr>
+<tr><td>Planner or Lunar Tools date appears in an unexpected order or uses AM/PM</td><td>Select <strong>Nautical: YYYY-MM-DD, 24-hour</strong>. The alternative OpenCPN/platform format intentionally follows the native operating-system controls.</td></tr>
+<tr><td>Editing a live position or “Now” time stops following it</td><td>This is intentional: a direct edit changes that source to Manual so an automatic update cannot immediately overwrite the entered value. Reselect the live source to follow it again.</td></tr>
+<tr><td>A body dot has no sky-plot label</td><td>Labels favour bright bodies, are shared across compass quadrants and are suppressed when they would overlap. Enlarge the planner or use the sortable body table to identify and inspect every listed body.</td></tr>
+<tr><td>A body is listed but absent from the recommended pairs or triads</td><td>Check <strong>Limit recommendations by Hc</strong> and its preferred minimum and maximum. Bodies outside the range remain available in the table but are deliberately excluded from recommendations while the limit is enabled.</td></tr>
+<tr><td>An invalid planner date or time leaves no results</td><td>This is intentional: the plugin clears previously calculated events, bodies, almanac and helper results so stale output cannot be mistaken for the invalid planning context. Correct the entry using YYYY-MM-DD and HH:MM:SS.</td></tr>
+<tr><td>GNSS UTC unavailable</td><td>Confirm a valid NMEA RMC or ZDA sentence is reaching OpenCPN. The plugin does not infer GNSS time from position alone.</td></tr>
+<tr><td>Chrony status unavailable</td><td>The computer may use another synchronisation service, chrony may not be installed, or its query interface may be unavailable. UTC display still uses the system clock.</td></tr>
+<tr><td>Lunar solver finds several times</td><td>Narrow the search only when justified; check contact/limbs and altitudes; use DR/hemisphere or another sight to resolve candidates.</td></tr>
+<tr><td>Lunar solution is unstable</td><td>Review distance and altitude uncertainties, sextant side/index error, body geometry, separate timestamps and vessel motion.</td></tr>
+<tr><td>Joint lunar solution has alternates</td><td>Do not choose by RMS alone. Add observations with different bodies/geometry, narrow the time range only from independent evidence, and compare the candidate positions with DR or known hemisphere.</td></tr>
+<tr><td>Joint lunar residual is flagged</td><td>Check transcription, contact/limb, individual timestamps, uncertainty and conditions. Robust mode retains the reading; investigate before excluding it from a new solution.</td></tr>
+<tr><td>Sextant check predicts “unavailable”</td><td>One body is below the usable horizon, the bodies are identical, or the entered UTC/position is wrong. Select another pair/time and check UTC rather than local civil time.</td></tr>
+<tr><td>Correction profile varies unexpectedly</td><td>Repeat the check, use similar-altitude star pairs, keep shades/technique identified, verify mechanical adjustment and compare only within the measured angular range.</td></tr>
+<tr><td>Running fix is poor</td><td>Check the reference epoch, COG/SOG, set and drift, leeway, course alterations and observation geometry.</td></tr>
+<tr><td>Eclipse controls unavailable</td><td>Select <strong>Download and install DE440s…</strong>, or import a local DE440s copy, and wait for verification to complete. LOLA and lunar orientation are optional and should not block ordinary eclipse plotting.</td></tr>
+</table>
+
+<h2>16.1 Independent checks</h2>
+<ul>
+  <li>Compare selected almanac values with an official Nautical Almanac or USNO data for the same UT1/AP.</li>
+  <li>At a known position, compare Ho with Hc and examine the residual rather than forcing agreement.</li>
+  <li>Test time-zone handling at dates near midnight and daylight-saving transitions.</li>
+  <li>Use synthetic test sights with known answers before relying on advanced lunar or running-fix workflows.</li>
+  <li>Keep the raw observation record so any result can be reconstructed independently.</li>
+</ul>
+</section>
+
+<section>
+<h1 id="abbreviations">Appendix A — Abbreviations and symbols</h1>
+<table class="abbr">
+<tr><th>Abbreviation</th><th>Expansion and use</th></tr>
+<tr><td>A4</td><td>International standard paper size used for the printable manual.</td></tr>
+<tr><td>AP</td><td>Assumed Position.</td></tr>
+<tr><td>BIPM</td><td>International Bureau of Weights and Measures; maintains international atomic time scales.</td></tr>
+<tr><td>C1–C4</td><td>First through fourth local eclipse contacts.</td></tr>
+<tr><td>COG</td><td>Course Over Ground; use true degrees where the plugin says COG true.</td></tr>
+<tr><td>COP</td><td>Circle of Position.</td></tr>
+<tr><td>CSV</td><td>Comma-Separated Values file.</td></tr>
+<tr><td>DE440 / DE440s</td><td>JPL Development Ephemeris 440 and its compact short-span kernel.</td></tr>
+<tr><td>Dec, δ</td><td>Declination; celestial latitude north or south of the celestial equator.</td></tr>
+<tr><td>DOCX</td><td>Office Open XML word-processing document; the editable contributor edition of this manual.</td></tr>
+<tr><td>DR</td><td>Dead Reckoning (historically also “deduced reckoning”).</td></tr>
+<tr><td>DUT1</td><td>UT1 − UTC.</td></tr>
+<tr><td>GHA</td><td>Greenwich Hour Angle.</td></tr>
+<tr><td>GNSS</td><td>Global Navigation Satellite System.</td></tr>
+<tr><td>GP</td><td>Geographic Position of a celestial body.</td></tr>
+<tr><td>GPS</td><td>Global Positioning System; one GNSS constellation and a common shorthand for a satellite-derived position.</td></tr>
+<tr><td>Ha</td><td>Apparent altitude after index and dip/horizon corrections.</td></tr>
+<tr><td>Hc</td><td>Computed altitude at the AP.</td></tr>
+<tr><td>Ho</td><td>Observed, fully corrected altitude.</td></tr>
+<tr><td>HP</td><td>Horizontal parallax.</td></tr>
+<tr><td>Hs</td><td>Sextant altitude.</td></tr>
+<tr><td>HSA</td><td>Horizontal Sextant Angle.</td></tr>
+<tr><td>HTML</td><td>HyperText Markup Language; the offline edition opened by the plugin's Documentation button.</td></tr>
+<tr><td>IC</td><td>Index Correction.</td></tr>
+<tr><td>IE</td><td>Index Error.</td></tr>
+<tr><td>IERS</td><td>International Earth Rotation and Reference Systems Service.</td></tr>
+<tr><td>JPL</td><td>Jet Propulsion Laboratory.</td></tr>
+<tr><td>LAN</td><td>Local Apparent Noon.</td></tr>
+<tr><td>LD / LDOpc</td><td>Lunar Distance / observed raw lunar-distance measurement with selected contact.</td></tr>
+<tr><td>LDc</td><td>Cleared lunar distance.</td></tr>
+<tr><td>LHA</td><td>Local Hour Angle.</td></tr>
+<tr><td>LOLA</td><td>Lunar Orbiter Laser Altimeter.</td></tr>
+<tr><td>LOP</td><td>Line of Position.</td></tr>
+<tr><td>NMEA</td><td>National Marine Electronics Association; commonly refers to marine data sentence/protocol families.</td></tr>
+<tr><td>NM</td><td>Nautical mile.</td></tr>
+<tr><td>PA</td><td>Parallax in Altitude.</td></tr>
+<tr><td>PCK</td><td>Planetary Constants Kernel used for body orientation data.</td></tr>
+<tr><td>PDF</td><td>Portable Document Format; the fixed-layout display and printable edition of this manual.</td></tr>
+<tr><td>RA</td><td>Right Ascension.</td></tr>
+<tr><td>RMC</td><td>NMEA Recommended Minimum Navigation Information sentence.</td></tr>
+<tr><td>RMS</td><td>Root Mean Square; a summary measure of residual size. It does not by itself establish that a solution is correct.</td></tr>
+<tr><td>SD</td><td>Semidiameter.</td></tr>
+<tr><td>SHA</td><td>Sidereal Hour Angle.</td></tr>
+<tr><td>SOG</td><td>Speed Over Ground in knots.</td></tr>
+<tr><td>TAI</td><td>International Atomic Time.</td></tr>
+<tr><td>TT</td><td>Terrestrial Time, used in ephemeris calculations.</td></tr>
+<tr><td>UI</td><td>User Interface.</td></tr>
+<tr><td>USNO</td><td>United States Naval Observatory.</td></tr>
+<tr><td>UT</td><td>Universal Time; use the specifically stated form where precision matters.</td></tr>
+<tr><td>UT1</td><td>Universal Time derived from Earth rotation.</td></tr>
+<tr><td>UTC</td><td>Coordinated Universal Time.</td></tr>
+<tr><td>WMM</td><td>World Magnetic Model.</td></tr>
+<tr><td>ZD</td><td>Zone Description in traditional nautical time notation; do not confuse with zenith distance z.</td></tr>
+<tr><td>ZDA</td><td>NMEA Time &amp; Date sentence.</td></tr>
+<tr><td>Zn</td><td>True azimuth, normally 000°–360° clockwise from true north.</td></tr>
+<tr><td>z</td><td>Zenith distance, 90° − altitude.</td></tr>
+<tr><td>ΔT</td><td>TT − UT1, required when relating dynamical ephemeris time to Earth rotation.</td></tr>
+</table>
+</section>
+
+<section>
+<h1 id="glossary">Appendix B — Glossary</h1>
+<dl>
+<dt><strong>Ageton table</strong></dt><dd>A compact universal sight-reduction table using precomputed logarithms of cosecants and secants. It converts spherical-triangle reduction into lookup plus addition/subtraction and provides the off-track fallback when a tailored direct Hc/Zn table does not cover the actual geometry.</dd>
+<dt><strong>Almanac</strong></dt><dd>Tabulation or computation of celestial coordinates and supporting navigation data for stated times.</dd>
+<dt><strong>Altitude</strong></dt><dd>Angular height of a body above the observer's horizon, measured along a vertical circle.</dd>
+<dt><strong>Apparent altitude (Ha)</strong></dt><dd>In this manual, Hs after index and dip/horizon correction, before the main body/atmospheric corrections.</dd>
+<dt><strong>Artificial horizon</strong></dt><dd>A reflecting horizontal surface used when no natural sea horizon is available. The observed angle is normally doubled by reflection geometry.</dd>
+<dt><strong>Assumed Position</strong></dt><dd>A convenient position near the DR at which Hc and Zn are computed. It is a calculation origin, not a claim that the vessel is there.</dd>
+<dt><strong>Azimuth</strong></dt><dd>Horizontal direction of a body. Zn is true azimuth clockwise from true north; a raw compass bearing is not Zn until corrected.</dd>
+<dt><strong>Back sight</strong></dt><dd>A sextant observation made with geometry opposite the normal forward observation, requiring correct interpretation of the angle and horizon.</dd>
+<dt><strong>Calculated altitude (Hc)</strong></dt><dd>The altitude predicted for the selected body, time and AP.</dd>
+<dt><strong>Calculator-complete backup</strong></dt><dd>A document containing the ephemeris, corrections, formulae and procedures required to reduce its supported sights using a scientific calculator.</dd>
+<dt><strong>Calculator-free backup</strong></dt><dd>A dependency-checked paper document containing ephemeris, interpolation, altitude-correction and universal sight-reduction lookup tables, procedures and forms. Once printed, it requires no computer, internet connection, scientific calculator or external almanac, but still requires observation instruments, accurate time, plotting tools, competence and judgement.</dd>
+<dt><strong>Celestial equator</strong></dt><dd>Earth's equatorial plane extended to the celestial sphere.</dd>
+<dt><strong>Celestial sphere</strong></dt><dd>A conceptual sphere on which directions to celestial bodies are represented. Distance to the body is irrelevant to the angular coordinate construction.</dd>
+<dt><strong>Centering error</strong></dt><dd>Sextant arc error caused when the index-arm pivot is not exactly at the geometric centre of the graduated arc; it may vary with measured angle.</dd>
+<dt><strong>Chronometer / deck watch</strong></dt><dd>A clock used to carry a known time reference. Rate stability and known error are more important than displaying an apparently exact value.</dd>
+<dt><strong>Circle of Equal Altitude</strong></dt><dd>The locus of positions from which a body has the same corrected altitude at one instant; centred on the body's GP.</dd>
+<dt><strong>Circle of Position</strong></dt><dd>Any circular position locus. An equal-altitude circle is the normal celestial COP.</dd>
+<dt><strong>Clearing a lunar distance</strong></dt><dd>Converting the observed limb-to-limb/topocentric distance to the equivalent geocentric centre-to-centre angular distance by applying limb, refraction and parallax corrections.</dd>
+<dt><strong>Clock correction</strong></dt><dd>The value applied to a displayed watch time to obtain the required reference time. State the sign convention; do not confuse it with “watch error.”</dd>
+<dt><strong>Collimation error</strong></dt><dd>Sextant telescope/line-of-sight misalignment relative to the instrument plane. Correct it mechanically according to the maker's instructions.</dd>
+<dt><strong>Compass deviation</strong></dt><dd>Error of the vessel's magnetic compass caused by the vessel and onboard fields. It varies with heading and installation.</dd>
+<dt><strong>Computed altitude</strong></dt><dd>See Hc.</dd>
+<dt><strong>Correction profile</strong></dt><dd>A documented set of angle-dependent corrections derived from repeated checks of one identified instrument. It supplements, and must not replace, proper mechanical adjustment.</dd>
+<dt><strong>Coverage corridor</strong></dt><dd>The stated cross-track region around a planned route within which location-dependent planning results are intended to remain relevant. It does not limit universal GHA, SHA or declination data.</dd>
+<dt><strong>Dead reckoning</strong></dt><dd>Advancing a known position by courses and distances without using a new position observation. Set, drift and leeway must be considered separately or incorporated.</dd>
+<dt><strong>Declination</strong></dt><dd>Angular distance north or south of the celestial equator. It is the latitude of the body's GP.</dd>
+<dt><strong>Dip</strong></dt><dd>Angle between the observer's horizontal and the visible sea horizon, principally a function of height of eye and refraction.</dd>
+<dt><strong>Dip short</strong></dt><dd>Horizon correction when the waterline used as a horizon is at a finite known distance.</dd>
+<dt><strong>Ephemeris</strong></dt><dd>A table or numerical model giving celestial-body positions, and sometimes velocities, as functions of time.</dd>
+<dt><strong>Epoch</strong></dt><dd>The stated instant to which a position, observation or running-fix line refers.</dd>
+<dt><strong>Fix</strong></dt><dd>A position determined from two or more independent position constraints referred to a common epoch.</dd>
+<dt><strong>Geocentric</strong></dt><dd>Referred to Earth's centre.</dd>
+<dt><strong>Geographic Position</strong></dt><dd>The point on Earth where a celestial body is at the zenith at a stated instant.</dd>
+<dt><strong>Great circle</strong></dt><dd>A circle on a sphere whose plane passes through the sphere's centre; the shortest surface route between non-antipodal points lies on one.</dd>
+<dt><strong>Greenwich Hour Angle</strong></dt><dd>Angle measured westward from the Greenwich meridian to the body's hour circle, 0°–360°.</dd>
+<dt><strong>Height of eye</strong></dt><dd>Observer's eye (effectively sextant telescope) height above the water surface used to calculate dip.</dd>
+<dt><strong>Horizon</strong></dt><dd>The reference from which altitude is measured. Distinguish visible/sensible, celestial/true, artificial and finite-distance horizons.</dd>
+<dt><strong>Hour angle</strong></dt><dd>Angular measure related to rotation from a reference meridian to a body's hour circle.</dd>
+<dt><strong>Index correction</strong></dt><dd>The correction equal in magnitude and opposite in sign to index error.</dd>
+<dt><strong>Index error</strong></dt><dd>Non-zero sextant reading when the index and horizon mirrors should indicate zero angle.</dd>
+<dt><strong>Intercept</strong></dt><dd>Signed difference Ho − Hc. Plot its magnitude in NM towards the body if positive and away if negative.</dd>
+<dt><strong>Latitude</strong></dt><dd>Angular distance north or south of Earth's equator.</dd>
+<dt><strong>Leeway</strong></dt><dd>Sideways displacement through the water caused principally by wind; it can make heading differ from course through water.</dd>
+<dt><strong>Limb</strong></dt><dd>Visible edge of the Sun or Moon. A semidiameter correction converts a limb observation to the centre as required.</dd>
+<dt><strong>Line of Position</strong></dt><dd>A line on which the observer lies. In intercept sight reduction it is the local tangent approximation to the equal-altitude circle.</dd>
+<dt><strong>Local apparent noon</strong></dt><dd>Instant when the apparent Sun crosses the observer's meridian, normally reaching its greatest altitude for that passage.</dd>
+<dt><strong>Local Hour Angle</strong></dt><dd>Hour angle relative to the observer's local meridian, formed from GHA and longitude with the stated sign convention.</dd>
+<dt><strong>Longitude</strong></dt><dd>Angular displacement east or west of the Greenwich meridian.</dd>
+<dt><strong>Lunar distance</strong></dt><dd>Angular separation of the Moon from a selected Sun, planet or star, historically and computationally usable as a time reference.</dd>
+<dt><strong>Magnetic compass</strong></dt><dd>A direction instrument aligned approximately with the local magnetic field; its reading requires deviation and variation corrections to obtain true bearing.</dd>
+<dt><strong>Magnetic variation</strong></dt><dd>Angle between true north and magnetic north at a place and date. Also called magnetic declination; kept distinct here from celestial declination.</dd>
+<dt><strong>Meridian passage</strong></dt><dd>Crossing of a body over the observer's meridian. Upper meridian passage is normally used for noon/maximum-altitude work.</dd>
+<dt><strong>Nautical mile</strong></dt><dd>A distance of exactly 1,852 metres. One minute of arc along a great circle is one nautical mile by navigational convention to the working accuracy of ordinary plotting.</dd>
+<dt><strong>Observed altitude (Ho)</strong></dt><dd>The corrected altitude used for comparison with Hc and for constructing the COP.</dd>
+<dt><strong>Parallax</strong></dt><dd>Difference in apparent direction caused by observing from Earth's surface rather than its centre; large for the nearby Moon.</dd>
+<dt><strong>Personal bias</strong></dt><dd>A repeatable tendency in an observer's sights. It must be established from sufficient independent data, not inferred from one sequence.</dd>
+<dt><strong>Polar distance</strong></dt><dd>90° minus declination, a side of the navigational triangle.</dd>
+<dt><strong>Rate</strong></dt><dd>The amount a watch gains or loses per unit time. A stable known rate allows its correction to be carried between checks.</dd>
+<dt><strong>Refraction</strong></dt><dd>Atmospheric bending that raises the apparent position of a body, with the strongest and least predictable effects near the horizon.</dd>
+<dt><strong>Residual</strong></dt><dd>Observed value minus the value predicted by a fitted solution, using the sign convention stated by the workflow.</dd>
+<dt><strong>Robust fit</strong></dt><dd>An estimator that limits the leverage of discrepant data while retaining them for inspection; it is not permission to ignore an outlier's cause.</dd>
+<dt><strong>Running fix</strong></dt><dd>A fix combining observations made at different times after advancing them by estimated vessel motion to a common epoch.</dd>
+<dt><strong>Scale error</strong></dt><dd>Angle-dependent sextant reading error associated with graduation, centering or scale geometry after ordinary adjustments have been made.</dd>
+<dt><strong>Semidiameter</strong></dt><dd>Apparent angular radius of an extended body such as Sun or Moon.</dd>
+<dt><strong>Set and drift</strong></dt><dd>Direction towards which a current carries the vessel and the current's speed; together they contribute to motion over the ground.</dd>
+<dt><strong>Sextant altitude (Hs)</strong></dt><dd>The angle read directly from the sextant before navigational corrections.</dd>
+<dt><strong>Sidereal Hour Angle</strong></dt><dd>Angle measured westward from Aries to a star's hour circle; approximately constant for a catalogued star over short periods.</dd>
+<dt><strong>Sight reduction</strong></dt><dd>Conversion of a timed sextant observation and almanac data into a COP/LOP, intercept and azimuth.</dd>
+<dt><strong>Small circle</strong></dt><dd>A circle on a sphere whose plane does not pass through the centre. A non-degenerate Circle of Equal Altitude is a small circle.</dd>
+<dt><strong>Spherical triangle</strong></dt><dd>A triangle on a sphere bounded by three great-circle arcs; celestial sight reduction uses the pole–observer–body triangle.</dd>
+<dt><strong>Topocentric</strong></dt><dd>Referred to the observer's actual position on or near Earth's surface.</dd>
+<dt><strong>Twilight</strong></dt><dd>Period when the horizon and suitable bodies may both be visible. Civil, nautical and astronomical twilight use different Sun-altitude thresholds.</dd>
+<dt><strong>Vertical circle</strong></dt><dd>Great circle of the celestial sphere through the zenith and nadir. Altitude is measured along it.</dd>
+<dt><strong>Visible horizon</strong></dt><dd>The apparent boundary between sea and sky used by a marine sextant; it is depressed below the observer's horizontal by dip.</dd>
+<dt><strong>Watch error</strong></dt><dd>Difference between watch indication and reference time. Always state whether “fast” or “slow” and how the correction is applied.</dd>
+<dt><strong>Zenith</strong></dt><dd>Direction directly above the observer, opposite the local gravity direction.</dd>
+<dt><strong>Zenith distance</strong></dt><dd>Angular distance from zenith to body, z = 90° − altitude.</dd>
+</dl>
+</section>
+
+<section>
+<h1 id="formulae">Appendix C — Formulae and sign conventions</h1>
+
+<h2>C.1 Core relationships</h2>
+<div class="formula">z = 90° − Ho</div>
+<div class="formula">a (NM) = Ho (minutes) − Hc (minutes)</div>
+<div class="formula">sin Hc = sin φ sin δ + cos φ cos δ cos LHA</div>
+
+<h2>C.2 Position signs</h2>
+<ul>
+  <li>Latitude: north positive, south negative when decimal signs are used.</li>
+  <li>Longitude in plugin decimal fields: east positive, west negative unless a field explicitly accepts hemisphere notation.</li>
+  <li>Declination: north positive, south negative in formula form.</li>
+  <li>Azimuth Zn: 000°–360° clockwise from true north.</li>
+</ul>
+
+<h2>C.3 Magnetic conversion fields</h2>
+<p>The Horizon Event and coastal bearing workflows display their convention:
+variation and deviation use east positive / west negative. Enter the raw
+compass observation only in a field labelled magnetic compass, then allow the
+workflow to display the effective true bearing. Do not pre-correct a bearing
+and also enter the same corrections.</p>
+
+<h2>C.4 Time scales</h2>
+<table>
+<tr><th>Scale</th><th>Role</th></tr>
+<tr><td>UTC</td><td>Civil time used for observation records; discontinuous from TAI by an integer number of leap seconds.</td></tr>
+<tr><td>UT1</td><td>Earth-rotation time used for hour angle and stated eclipse circumstances.</td></tr>
+<tr><td>TT</td><td>Uniform terrestrial time used for ephemerides.</td></tr>
+<tr><td>ΔT</td><td>TT − UT1; modelled for future epochs when no observed value exists.</td></tr>
+</table>
+</section>
+
+<section>
+<h1 id="references">Appendix D — References and provenance</h1>
+
+<p>The manual's diagrams are original deterministic drawings generated from
+explicit geometry in <code>docs/v2/generate_diagrams.py</code>. They were
+checked against the coordinate definitions and sight-reduction geometry in the
+following primary or authoritative references. Online examples were used for
+comparison, not copied.</p>
+
+<ol>
+  <li>National Geospatial-Intelligence Agency, <em>Pub. No. 9, The American Practical Navigator (Bowditch)</em>, 2019/maintained digital edition, especially Chapters 14–20. <a href="https://msi.nga.mil/Publications/APN">https://msi.nga.mil/Publications/APN</a></li>
+  <li>United States Naval Observatory, <em>Celestial Navigation Data for Assumed Position and Time</em>. <a href="https://aa.usno.navy.mil/data/celnav">https://aa.usno.navy.mil/data/celnav</a></li>
+  <li>United States Naval Observatory, <em>Computing Altitude and Azimuth from Greenwich Apparent Sidereal Time</em>. <a href="https://aa.usno.navy.mil/faq/alt_az">https://aa.usno.navy.mil/faq/alt_az</a></li>
+  <li>USNO and HM Nautical Almanac Office, <em>The Nautical Almanac</em>. <a href="https://aa.usno.navy.mil/publications/na">https://aa.usno.navy.mil/publications/na</a></li>
+  <li>His Majesty's Nautical Almanac Office, overview and astronomical navigation services. <a href="https://www.gov.uk/government/organisations/hm-nautical-almanac-office/about">https://www.gov.uk/government/organisations/hm-nautical-almanac-office/about</a></li>
+  <li>OpenCPN Celestial Navigation plugin source and automated regression tests in this repository.</li>
+</ol>
+
+<p class="small">This v2 manual is intended for contributor review. Corrections
+to navigation practice, notation, workflow or presentation are welcomed. The
+HTML, editable DOCX and printable PDF should always be generated from the same
+reviewed source revision.</p>
+</section>
+
+</body>
+</html>

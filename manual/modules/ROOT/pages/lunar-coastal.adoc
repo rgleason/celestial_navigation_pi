@@ -1,0 +1,307 @@
+= Lunar distance, watch recovery and coastal sextant methods
+
+All calculations described here run locally. No observation, position or
+ephemeris request is sent over the network.
+
+== Recovering UTC from a lunar distance
+
+A lunar observation records three sextant angles against the same watch:
+
+* the angular distance between the Moon and a selected body;
+* the Moon's altitude above the horizon; and
+* the selected body's altitude above the horizon.
+
+Choose *Lunar* in the normal sight editor. Select whether the entered times
+are nominal UTC or recorded watch readings; all three readings must use the
+same basis. Keep the recorded values even when the watch offset is unknown.
+An existing manual clock correction is added once. *Total UTC search span*
+defines the interval searched symmetrically around that reading. For example,
+86400 seconds searches 12 hours on either side; 172800 seconds searches 24
+hours on either side. The calendar date must still be approximately known.
+
+Select the Moon near/far contact and, for the Sun, its near, centre or far
+distance contact separately from the limbs used for the two altitude
+measurements. Enter realistic one-sigma uncertainties for the distance and
+both altitudes. The watch may be seconds or hours wrong: its interval rate,
+rather than its displayed UTC, must remain trustworthy between observations.
+
+The three angles do not have to be simultaneous. Enable *The three angles were
+recorded at different times* in the *Time* tab and enter the Moon-altitude and
+body-altitude watch readings; the normal date/time control is the lunar
+distance reading and reference epoch. Only the time of day is needed for the
+two nearby altitude readings. A reading crossing midnight is interpreted as
+the nearest occurrence within 12 hours of the lunar-distance reading. All
+three readings receive the same unknown constant UTC correction, so their
+measured intervals are preserved.
+
+If the vessel moved appreciably during the sequence, enable *Advance vessel
+between readings* and enter COG true and SOG. The reported position is at the
+lunar-distance reference epoch. This is a constant-course/constant-speed
+model; use representative motion for the short observation sequence and do
+not enable it merely to force a result.
+
+Press *Time*. The result window opens on *Results*, the concise operational
+view of UTC candidates, watch correction, lunar-distance rate, uncertainty,
+position candidates and warnings. Select *Calculations* to inspect the full
+auditable working. Both time modes use a WGS84 geodetic observer, vector
+parallax, topocentric semidiameters and atmospheric refraction, including
+apparent-disc flattening. Dip is applied only to horizon altitudes, never to
+the angle between the bodies. The simultaneous report includes a conventional
+Direct Triangle spherical reduction as a comparison; it is not the final
+ellipsoidal answer. Raw inputs, model conventions, every coarse scan and
+refinement, candidate positions and formal uncertainties remain inspectable.
+Exact zero residuals terminate refinement without moving away from the root.
+
+=== Optional Earth-rotation precision updates (2.8.5.2)
+
+The enhanced DE440 Sun–Moon solver includes observer-specific light time and
+annual/diurnal aberration. Bundled IERS DUT1 data supports high-accuracy
+offline calculations without downloading an update. DUT1 is UT1 minus UTC,
+the small correction for Earth's rotation; it is not chart or weather data.
+
+Under *Lunar Tools → Advanced*, *Check / download update…* retrieves the
+official IERS table, validates it and installs it for immediate offline use.
+No compiler or restart is required. This explicit button press is the only
+network action. Alternatively use *Import local file…* with an official
+`finals2000A.all` file copied from another computer. Current coverage is shown
+on the tab. Data is selected for each sight's date, not the computer's date.
+
+The plugin has no data-expiry lockout. Outside all available coverage it
+continues using UT1 = UTC and warns of reduced accuracy. Failed downloads,
+invalid data or failed saves retain the previous valid table and the bundle.
+The bundled table ends in September 2027, but that is not an end date for the
+plugin. Downloaded tables can extend it; fallback solving remains available
+beyond it. Future fallback is not guaranteed to match dated-data precision.
+
+The mathematical problem is a coupled three-equation
+solution. For each trial clock correction the plugin evaluates the Moon and
+selected body at all three corrected epochs, reduces each altitude at its own
+epoch, transports the observer when requested, and forward-models the raw
+lunar distance. It solves the common clock correction, reference latitude and
+reference longitude together. The reported one-sigma UTC and position
+uncertainties come from the local weighted numerical covariance of the three
+raw angles; weak or highly correlated geometry therefore produces a larger
+estimate. These estimates describe the entered random angle uncertainties,
+not unmodelled systematic effects such as an incorrect index correction,
+abnormal refraction or COG/SOG error.
+
+Choose *Check at entered UTC* to hold UTC fixed (including the existing manual
+correction) and examine position candidates and model-minus-observed lunar
+distance residuals. This mode does not solve or save an additional clock
+correction. Compare a published position at its stated UTC, not automatically
+with a position at a different recovered UTC.
+
+The Sun/Moon calculation uses the local JPL DE440s kernel when it has already
+been installed for the eclipse module. Its separation and geographic positions
+use the same apparent directions, including light time and annual aberration.
+Other bodies, or an installation
+without DE440s, use the bundled offline analytical ephemeris. The results
+window identifies which source was used. NASA LOLA terrain is unrelated to
+ordinary lunar-distance clearing and is not used.
+
+When more than one time matches, the plugin does not silently choose a remote
+root. Narrow the approximate date/time, or use a second lunar observation.
+Geometry where lunar distance changes slowly is reported as weak. A
+one-second-rate watch does not by itself produce one-second recovered UTC:
+sextant, limb, altitude and refraction errors normally dominate.
+
+=== Longitude with an unknown watch offset
+
+Once a lunar recovers UTC, the accompanying corrected Moon and body altitudes
+provide position constraints. Spherical altitude-circle intersections seed the
+WGS84 refinement. In separate-time mode the constraints
+are evaluated at their individual epochs and numerically reduced to the
+lunar-distance reference epoch. Position candidates, including longitude,
+are reported. This is a direct joint position calculation; the plugin does
+not use the invalid shortcut of multiplying watch error by 15 degrees per
+hour.
+
+Two circles generally have two mathematical intersections. A rough
+hemisphere/DR position selects the nearer one. If absolutely no positional
+knowledge is available, retain both candidates and resolve them with a third
+altitude sight, a second lunar, the observed sky orientation, or another
+independent constraint. After selecting a UTC candidate, *Save lunar solution*
+stores a named derived result with immutable input snapshots and its report.
+It changes neither raw readings nor the global clock correction. Review saved
+records from *Saved lunar solutions* in Lunar Tools. In the Fix dialog,
+explicitly select the saved correction for visible altitude sights from the
+same watch/clock. Only working copies are recalculated; sights more than
+12 hours from the solution's recorded reference epoch are rejected.
+
+Both modes show joint position uncertainty as horizontal RMS, not the radius
+of a 68% confidence circle. WGS84 is a reference ellipsoid, not a local geoid
+or vertical-deflection model; eye height approximates ellipsoidal height.
+UT1 is approximated by UTC. These and unmodelled systematic effects are not
+included in the formal measurement uncertainty.
+
+== Joint lunar-sequence workflow
+
+The Lunar Sequence page is not a second planner with one start time. Every
+listed lunar retains its own recorded UTC. *Additional watch correction search
+±* searches either side of the correction already applied to those timestamps.
+The displayed reference UTC is the earliest selected observation.
+
+When a lunar is highlighted in the main sight list, that observation and
+lunars within six hours are initially selected. Review the checkboxes so the
+set represents one physical watch/session. *Select visible sights* is an
+explicit convenience; chart visibility is not treated as proof of session
+membership. The solver accepts at most 12 observations spanning no more than
+24 hours, bounds its correction and position starts, runs away from the GUI
+thread and reports progress with a Cancel control.
+
+The initial position comes from the earliest selected sight's DR and remains
+editable. It should not normally be replaced by 0° N, 0° E: the sequence fits
+Moon altitude and body altitude as well as lunar distance, and the position is
+also a convergence seed when position is unknown.
+
+Multiple independent readings can improve precision, but copied readings do
+not provide new information. Shared readings identified by body and recorded
+epoch count once; conflicting copies are rejected. The residual table labels
+shared/excluded entries rather than presenting them as zero errors. A very
+small fitted residual does not reduce covariance below the supplied angle-error
+floor. Sequence results use the same named-solution workflow, not a global
+correction of unrelated historic sights.
+
+Old sight XML files remain readable. New solution records are optional children
+of the existing clock node; older plugin versions can still read the sights,
+but will discard the additional solution records when saving. Keep a backup
+before downgrading.
+
+The Sextant Check page copies the configured sight index error into an editable
+*Measured IE (on arc +)* field. Use an independently measured index error for
+the session. The raw observation is retained, the check subtracts IE, and the
+saved profile contains only the remaining scale/centering correction. Legacy
+profiles are identified and remain total corrections to raw readings, so do
+not apply a separate index correction with them.
+
+== Coastal sextant navigation
+
+Open *Coastal Sextant...* from the main plugin window. These methods use
+charted terrestrial objects and are separate from the celestial-body
+*Azimuth* sight type.
+
+Vertical and horizontal plots can remain visible together. Calculating a
+vertical range replaces only the previous vertical plot; solving an HSA fix
+replaces only the horizontal plot. Closing this form retains both plots and
+the inputs while the main plugin window remains open. *Clear chart plots*
+removes both coastal overlays without erasing inputs. *New / clear
+observation* currently resets both tabs, their results and their plots.
+
+=== Vertical angle and distance
+
+For an object whose waterline is visible, enter the sextant angle from
+waterline to top, the charted top height, water level above the chart height
+datum, height of eye and index error. The solver includes Earth curvature and
+a selectable standard terrestrial-refraction model. The result is a range
+circle centred on the charted object, not a fix.
+
+For an object whose base is hidden beyond the sea horizon, select *Sea horizon
+to top*. This uses the refraction-aware formula underlying Table 15 of the
+American Practical Navigator (Bowditch). Abnormal refraction can produce
+large errors. Charted height and tide datum must refer to compatible datums.
+
+In 2.8.5.3 this mode accepts zero and negative *dip-corrected* angles. The
+index-corrected measured angle must still place the top on or above the
+visible sea horizon. Waterline mode still requires a positive angle; the
+two measured baselines are not interchangeable and the plugin never changes
+modes or corrects the raw reading for you.
+
+Visibility guidance shows the observer's horizon, the target's estimated
+geographic range, and the waterline-to-top angle at the waterline horizon.
+These are standard-refraction estimates, not guaranteed visibility or a
+light's nominal/luminous range. Bowditch mode uses the effective curvature
+implicit in its published constants; waterline mode uses its own terrestrial
+refraction coefficient. A zero dip-corrected angle is not the visibility limit.
+Both implemented range methods require the target top above the observer;
+waterline mode also requires positive eye height. Lower targets can produce
+ambiguous waterline ranges and are rejected rather than choosing a branch.
+
+Use the height of the actual sighted feature: for a light this may be focal
+height, not the height of its tower. Water level must be expressed relative
+to the *same* height datum (it may be negative). *Select target waypoint...*
+copies coordinates from an OpenCPN mark or route point. Coordinates remain
+editable; the picker does not supply or change the target height.
+
+An optional true bearing turns the range into an estimated position. A raw
+magnetic compass bearing is converted with explicit east-positive variation
+and deviation. Its accuracy is limited by the bearing as well as the vertical
+angle. Record the bearing at effectively the same instant as the vertical
+angle, or reduce it to that position epoch before entry.
+
+Target coordinates and measured angles start blank. Closing the window retains
+an unfinished observation; choose *New / clear observation* before starting a
+different one. That action also clears results and plots and reloads the
+current central index-error and eye-height defaults.
+
+Variation and deviation are disabled and ignored for true bearings. For a
+magnetic compass bearing they are editable, and *Use WMM at current boat/time*
+can fill a clearly labelled variation estimate for the current boat position
+and UTC. Compass deviation remains a manual vessel/instrument input.
+
+=== Horizontal sextant angles
+
+One included angle between two charted objects defines a curved line of
+position. Enter three objects in their observed left-centre-right order and
+the left-centre and centre-right measurements to obtain two independent loci.
+Landmark positions and measurements initially remain blank so plausible
+defaults cannot be mistaken for observations.
+The central sextant index-error default is applied to both measurements. The
+plugin solves their intersection on the sphere from the supplied approximate
+position and reports residuals, a geometry condition indicator and an
+estimated one-sigma uncertainty.
+
+The left, centre and right waypoint buttons reuse the searchable OpenCPN
+waypoint picker; cancelling leaves existing coordinates untouched. Choose
+by coordinates as well as name when names repeat.
+
+The uncertainty entry is in *arcminutes* (60 arcminutes = 1 degree). The
+reported value is formal angular-input uncertainty, not total fix accuracy:
+it excludes landmark-coordinate errors, misidentification, shared instrument
+errors and unmodelled vessel motion. Coordinates rounded to 0.1 arcminute
+cannot justify interpreting a small formal error as metre-level accuracy.
+Increasing the entered angular uncertainty changes the uncertainty estimate,
+not the best-fit position. Independent observations and a maintained DR
+remain essential. Dedicated radar-bearing/range input is not implemented;
+ordinary radar range is not a vertical-angle measurement.
+
+The approximate position chooses the intended solution; poor or tangent
+geometry may have other solutions or fail to converge. The plotted individual
+loci are coastal-scale charting aids, while the reported numerical fix uses
+exact spherical bearings.
+
+If the two horizontal angles were read sequentially while underway, enable
+*Advance the vessel between the two HSA readings*. Enter the second reading's
+signed interval from the first, plus COG true and SOG. The numerical solver
+evaluates each angle at its own vessel position and reduces the resulting fix
+and chart loci to the first-angle reference epoch. With no vessel motion, the
+times of observations of fixed terrestrial objects do not change the
+geometry.
+
+== Azimuth sight scope
+
+The normal *Azimuth* type means the bearing of a celestial body relative to
+true or magnetic north. It creates a celestial bearing line of position. It
+does not mean the horizontal angle between two terrestrial objects. In
+magnetic mode the plugin applies magnetic variation; correct a raw compass
+bearing for compass deviation before entering it.
+
+== Verification and references
+
+Automated tests cover limb signs, impossible spherical observations,
+sub-second numerical root refinement, multiple/no-root cases, end-to-end
+unknown-watch-offset and longitude recovery with non-simultaneous readings
+and vessel motion, a JPL Horizons comparison, vertical-angle ranges, the
+Bowditch Table 15 formula, and simultaneous/sequential synthetic three-object
+fixes.
+
+Primary references:
+
+* US Naval Observatory, Celestial Navigation Data and algorithms:
+  https://aa.usno.navy.mil/publications/celnav
+* NGA, _American Practical Navigator_ (Bowditch), Volume II:
+  https://www.dco.uscg.mil/Portals/9/NMC/pdfs/examinations/bowditch_Vol_2_2019.pdf
+* The Journal of Navigation, “The Line of Position from a Horizontal Angle”:
+  https://www.cambridge.org/core/journals/journal-of-navigation/article/line-of-position-from-a-horizontal-angle/CE2BB0783B92731BCBB14ACC99052DB8
+
+These are backup and training aids, not a substitute for maintaining a DR,
+recording raw observations and checking a result by an independent method.

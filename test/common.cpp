@@ -6,7 +6,7 @@
 #include "wx/tokenzr.h"
 
 #include <gtest/gtest.h>
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 #include "Sight.h"
 #include <cmath>
 #include <iomanip>
@@ -78,5 +78,4 @@ void report(const char *name, const char *type, std::vector<int> &vec) {
     std::cout << "    over 0.1' matches: " << overone
               << " (" << ((overone * 100) / vec.size()) << "%)" << std::endl;
 }
-
 

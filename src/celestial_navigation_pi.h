@@ -33,8 +33,9 @@
 
 #define ABOUT_AUTHOR_URL "http://seandepagnier.users.sourceforge.net"
 
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 #include "pidc.h"
+#include "TimeStatus.h"
 
 //----------------------------------------------------------------------------------------------------------
 //    The PlugIn Class Definition
@@ -44,6 +45,16 @@
   -1  // Request default positioning of toolbar tool
 
 class CelestialNavigationDialog;
+
+struct BoatNavigationSnapshot {
+  bool valid = false;
+  double latitude = 0.0;
+  double longitude = 0.0;
+  double cogTrue = 0.0;
+  double sogKnots = 0.0;
+  double variation = 0.0;
+  wxDateTime fixUtc;
+};
 
 class celestial_navigation_pi : public wxEvtHandler, opencpn_plugin_118 {
 public:
@@ -69,6 +80,7 @@ public:
   wxBitmap m_panelBitmap;
 
   void OnToolbarToolCallback(int id);
+  void OnContextMenuItemCallback(int id) override;
 
   int GetToolbarToolCount(void);
   void SetColorScheme(PI_ColorScheme cs);
@@ -79,6 +91,11 @@ public:
 
   static wxString StandardPath();
   void SetPositionFixEx(PlugIn_Position_Fix_Ex& pfix);
+  void SetNMEASentence(wxString& sentence);
+  GnssTimeSnapshot GetGnssTimeSnapshot() const;
+  bool GetBoatPosition(double* latitude, double* longitude) const;
+  BoatNavigationSnapshot GetBoatNavigationSnapshot() const;
+  bool GetCursorPosition(double* latitude, double* longitude) const;
   void SetCursorLatLon(double lat, double lon);
   void SetPluginMessage(wxString& message_id, wxString& message_body);
   void OnDialogClose();
@@ -86,8 +103,15 @@ public:
 private:
   wxWindow* m_parent_window;
   int m_leftclick_tool_id;
+  int m_route_almanac_menu_id;
 
   CelestialNavigationDialog* m_pCelestialNavigationDialog;
+  GnssTimeMonitor m_gnssTime;
+  bool m_hasPositionFix;
+  BoatNavigationSnapshot m_navigation;
+  bool m_hasCursorPosition;
+  double m_cursorLatitude;
+  double m_cursorLongitude;
 };
 
 extern void celestial_navigation_pi_BoatPos(double& lat, double& lon);

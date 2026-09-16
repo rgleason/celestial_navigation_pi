@@ -25,6 +25,7 @@
  */
 
 #include "wx/wxprec.h"
+#include "Dut1UpdatePanel.h"
 
 #ifndef WX_PRECOMP
 #include "wx/wx.h"
@@ -32,7 +33,7 @@
 
 #include <wx/stdpaths.h>
 
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 
 #include "celestial_navigation_pi.h"
 #include "CelestialNavigationDialog.h"
@@ -59,7 +60,12 @@ extern "C" DECL_EXP void destroy_pi(opencpn_plugin* p) { delete p; }
 //---------------------------------------------------------------------------------------------------------
 
 celestial_navigation_pi::celestial_navigation_pi(void* ppimgr)
-    : opencpn_plugin_118(ppimgr) {
+    : opencpn_plugin_118(ppimgr),
+      m_route_almanac_menu_id(-1),
+      m_hasPositionFix(false),
+      m_hasCursorPosition(false),
+      m_cursorLatitude(0.0),
+      m_cursorLongitude(0.0) {
   // Create the PlugIn icons
   initialize_images();
 
@@ -97,6 +103,7 @@ celestial_navigation_pi::~celestial_navigation_pi(void) {}
 //---------------------------------------------------------------------------------------------------------
 
 int celestial_navigation_pi::Init(void) {
+  celestial_navigation::LoadInstalledDut1Update();
   AddLocaleCatalog(_T("opencpn-celestial_navigation_pi"));
 
   // Get a pointer to the opencpn display canvas, to use as a parent for windows
@@ -120,22 +127,71 @@ int celestial_navigation_pi::Init(void) {
 
   m_pCelestialNavigationDialog = NULL;
 
+  wxMenu routeMenu;
+  m_route_almanac_menu_id = AddCanvasMenuItem(
+      new wxMenuItem(&routeMenu, wxID_ANY,
+                     _("Generate fallback almanac...")),
+      this, "Route");
+
+#ifdef CELESTIAL_ECLIPSE_INTEGRATION_TEST
+  wxTheApp->CallAfter([this]() {
+    OnToolbarToolCallback(m_leftclick_tool_id);
+    if (m_pCelestialNavigationDialog) {
+      m_pCelestialNavigationDialog->RunEclipseIntegrationScenario();
+      // Centre the Test-OpenCPN canvas on the 2027 path at a useful regional
+      // scale.  JumpToPosition takes pixels/metre, not a chart denominator.
+      JumpToPosition(25.5, 33.2, 5e-4);
+      RequestRefresh(GetOCPNCanvasWindow());
+    }
+  });
+#endif
+
+#ifdef CELESTIAL_PLANNER_INTEGRATION_TEST
+  wxTheApp->CallAfter([this]() {
+    OnToolbarToolCallback(m_leftclick_tool_id);
+    if (m_pCelestialNavigationDialog)
+      m_pCelestialNavigationDialog->RunPlannerIntegrationScenario();
+  });
+#endif
+
   return (WANTS_OVERLAY_CALLBACK | WANTS_OPENGL_OVERLAY_CALLBACK |
-          WANTS_NMEA_EVENTS |
-          //            WANTS_CURSOR_LATLON       |
+          WANTS_NMEA_EVENTS | WANTS_NMEA_SENTENCES |
+          WANTS_CURSOR_LATLON |
           WANTS_TOOLBAR_CALLBACK | WANTS_PLUGIN_MESSAGING |
           INSTALLS_TOOLBAR_TOOL);
 }
 
 bool celestial_navigation_pi::DeInit(void) {
+  if (m_route_almanac_menu_id >= 0) {
+    RemoveCanvasMenuItem(m_route_almanac_menu_id, "Route");
+    m_route_almanac_menu_id = -1;
+  }
   RemovePlugInTool(m_leftclick_tool_id);
 
   if (m_pCelestialNavigationDialog) {
-    m_pCelestialNavigationDialog->Close();
-    delete m_pCelestialNavigationDialog;
+    // Do not route application shutdown through the normal window-close
+    // handler.  OnDialogClose() uses wxWindow::Destroy(), which is deferred;
+    // once OpenCPN's main event loop is stopping that deferred destruction can
+    // leave this top-level dialog alive and keep the process running.  Clear
+    // the plugin pointer first and destroy the owned dialog synchronously.
+    CelestialNavigationDialog* dialog = m_pCelestialNavigationDialog;
     m_pCelestialNavigationDialog = NULL;
+    dialog->Hide();
+    delete dialog;
   }
   return true;
+}
+
+void celestial_navigation_pi::OnContextMenuItemCallback(int id) {
+  if (id != m_route_almanac_menu_id) return;
+  const wxString routeGuid = GetSelectedRouteGUID_Plugin();
+  if (routeGuid.empty()) return;
+  if (!m_pCelestialNavigationDialog)
+    OnToolbarToolCallback(m_leftclick_tool_id);
+  if (!m_pCelestialNavigationDialog) return;
+  m_pCelestialNavigationDialog->Show();
+  m_pCelestialNavigationDialog->Raise();
+  m_pCelestialNavigationDialog->OpenAlmanacForRoute(routeGuid);
 }
 
 int celestial_navigation_pi::GetAPIVersionMajor() {
@@ -190,7 +246,12 @@ void celestial_navigation_pi::OnToolbarToolCallback(int id) {
     /* load the geographical magnetic table */
     wxString geomag_text_path = celestial_navigation_pi_DataDir();
     geomag_text_path.Append(_T("/data/IGRF11.COF"));
+
+    wxLogMessage("Celestial: OnToolbarToolCallback enter");
+    wxLogMessage("Celestial: geomag path = %s", geomag_text_path);
+
     if ((ret = geomag_load(geomag_text_path.mb_str())) < 0) {
+      wxLogWarning("Celestial: geomag_load returned %d", ret);
       wxString message = _("Failed to load file: ") + geomag_text_path + "\n";
       switch (ret) {
         case -1:
@@ -208,13 +269,28 @@ void celestial_navigation_pi::OnToolbarToolCallback(int id) {
                                        "for the celestial navigation plugin."),
                            wxString(_("OpenCPN Alert"), wxOK | wxICON_ERROR));
       mdlg.ShowModal();
+    } else {
+      wxLogMessage("Celestial: geomag_load succeeded (ret=%d)", ret);
     }
 
+    // Defensive: ensure parent window valid
+    if (!m_parent_window) {
+      wxLogWarning("Celestial: m_parent_window is NULL; calling GetOCPNCanvasWindow()");
+      m_parent_window = GetOCPNCanvasWindow();
+      if (!m_parent_window) {
+        wxLogError("Celestial: Cannot obtain parent window; aborting dialog creation");
+        return;
+      }
+    }
+
+    wxLogMessage("Celestial: Creating CelestialNavigationDialog");
     m_pCelestialNavigationDialog =
         new CelestialNavigationDialog(m_parent_window, this);
+    wxLogMessage("Celestial: CelestialNavigationDialog constructed at %p", (void*)m_pCelestialNavigationDialog);
   }
 
-  m_pCelestialNavigationDialog->Show(!m_pCelestialNavigationDialog->IsShown());
+  m_pCelestialNavigationDialog->Show();
+  m_pCelestialNavigationDialog->Raise();
 }
 
 int celestial_navigation_pi::GetToolbarToolCount(void) { return 1; }
@@ -226,6 +302,15 @@ void celestial_navigation_pi::SetColorScheme(PI_ColorScheme cs) {
 }
 
 bool celestial_navigation_pi::RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp) {
+#ifdef CELESTIAL_ECLIPSE_INTEGRATION_TEST
+  static bool logged_cpu_overlay = false;
+  if (!logged_cpu_overlay && m_pCelestialNavigationDialog &&
+      m_pCelestialNavigationDialog->IsShown()) {
+    wxLogMessage(
+        "CELESTIAL_ECLIPSE_INTEGRATION_TEST: CPU overlay callback active");
+    logged_cpu_overlay = true;
+  }
+#endif
   piDC* pidc = new piDC(dc);
   bool ret = RenderOverlayAll(pidc, vp);
   delete pidc;
@@ -234,6 +319,15 @@ bool celestial_navigation_pi::RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp) {
 
 bool celestial_navigation_pi::RenderGLOverlay(wxGLContext* pcontext,
                                               PlugIn_ViewPort* vp) {
+#ifdef CELESTIAL_ECLIPSE_INTEGRATION_TEST
+  static bool logged_gl_overlay = false;
+  if (!logged_gl_overlay && m_pCelestialNavigationDialog &&
+      m_pCelestialNavigationDialog->IsShown()) {
+    wxLogMessage(
+        "CELESTIAL_ECLIPSE_INTEGRATION_TEST: OpenGL overlay callback active");
+    logged_gl_overlay = true;
+  }
+#endif
   piDC* pidc = new piDC(pcontext);
   pidc->SetVP(vp);
   bool ret = RenderOverlayAll(pidc, vp);
@@ -250,6 +344,9 @@ bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
     s.Render(dc, *vp, m_pCelestialNavigationDialog->m_pix_per_mm);
   }
 
+  m_pCelestialNavigationDialog->RenderEclipse(dc, vp);
+  m_pCelestialNavigationDialog->RenderCoastal(dc, vp);
+
   if (!m_pCelestialNavigationDialog->m_FixDialog ||
       !m_pCelestialNavigationDialog->m_FixDialog->IsShown())
     return true;
@@ -262,13 +359,15 @@ bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
   if (!isnan(err)) {
     wxPoint r;
     GetCanvasPixLL(vp, &r, lat, lon);
-    int crosslen = (int) ( 10.0 * m_pCelestialNavigationDialog->m_pix_per_mm);
+    int crosslen = (int)(10.0 * m_pCelestialNavigationDialog->m_pix_per_mm);
 
     dc->SetPen(wxPen(wxColor(255, 0, 0),
                      (int)(0.5 * m_pCelestialNavigationDialog->m_pix_per_mm)));
     dc->SetBrush(*wxTRANSPARENT_BRUSH);
-    dc->DrawLine(r.x - crosslen, r.y - crosslen, r.x + crosslen, r.y + crosslen);
-    dc->DrawLine(r.x - crosslen, r.y + crosslen, r.x + crosslen, r.y - crosslen);
+    dc->DrawLine(r.x - crosslen, r.y - crosslen, r.x + crosslen,
+                 r.y + crosslen);
+    dc->DrawLine(r.x - crosslen, r.y + crosslen, r.x + crosslen,
+                 r.y - crosslen);
   }
   return true;
 }
@@ -285,9 +384,55 @@ static double s_boat_lat, s_boat_lon;
 void celestial_navigation_pi::SetPositionFixEx(PlugIn_Position_Fix_Ex& pfix) {
   s_boat_lat = pfix.Lat;
   s_boat_lon = pfix.Lon;
+  m_hasPositionFix = std::isfinite(pfix.Lat) && std::isfinite(pfix.Lon) &&
+                     pfix.Lat >= -90.0 && pfix.Lat <= 90.0 &&
+                     pfix.Lon >= -180.0 && pfix.Lon <= 180.0;
+  m_navigation.valid = m_hasPositionFix;
+  m_navigation.latitude = pfix.Lat;
+  m_navigation.longitude = pfix.Lon;
+  m_navigation.cogTrue = std::isfinite(pfix.Cog) ? pfix.Cog : 0.0;
+  m_navigation.sogKnots = std::isfinite(pfix.Sog) ? pfix.Sog : 0.0;
+  m_navigation.variation = std::isfinite(pfix.Var) ? pfix.Var : 0.0;
+  if (pfix.FixTime > 0)
+    m_navigation.fixUtc = wxDateTime(static_cast<time_t>(pfix.FixTime));
 }
 
-void celestial_navigation_pi::SetCursorLatLon(double lat, double lon) {}
+void celestial_navigation_pi::SetNMEASentence(wxString& sentence) {
+  m_gnssTime.Update(sentence);
+}
+
+GnssTimeSnapshot celestial_navigation_pi::GetGnssTimeSnapshot() const {
+  return m_gnssTime.Snapshot();
+}
+
+bool celestial_navigation_pi::GetBoatPosition(double* latitude,
+                                              double* longitude) const {
+  if (!m_hasPositionFix || !latitude || !longitude) return false;
+  *latitude = s_boat_lat;
+  *longitude = s_boat_lon;
+  return true;
+}
+
+BoatNavigationSnapshot celestial_navigation_pi::GetBoatNavigationSnapshot()
+    const {
+  return m_navigation;
+}
+
+bool celestial_navigation_pi::GetCursorPosition(double* latitude,
+                                                double* longitude) const {
+  if (!m_hasCursorPosition || !latitude || !longitude) return false;
+  *latitude = m_cursorLatitude;
+  *longitude = m_cursorLongitude;
+  return true;
+}
+
+void celestial_navigation_pi::SetCursorLatLon(double lat, double lon) {
+  m_cursorLatitude = lat;
+  m_cursorLongitude = lon;
+  m_hasCursorPosition = std::isfinite(lat) && std::isfinite(lon) &&
+                        lat >= -90.0 && lat <= 90.0 && lon >= -180.0 &&
+                        lon <= 180.0;
+}
 
 void celestial_navigation_pi_BoatPos(double& lat, double& lon) {
   lat = s_boat_lat;
@@ -312,9 +457,11 @@ void celestial_navigation_pi::SetPluginMessage(wxString& message_id,
 }
 
 void celestial_navigation_pi::OnDialogClose() {
-  m_pCelestialNavigationDialog->Hide();
-  m_pCelestialNavigationDialog->Destroy();
+  CelestialNavigationDialog* dialog = m_pCelestialNavigationDialog;
   m_pCelestialNavigationDialog = NULL;
+  if (!dialog) return;
+  dialog->Hide();
+  dialog->Destroy();
 }
 
 double celestial_navigation_pi_GetWMM(double lat, double lon, double altitude,

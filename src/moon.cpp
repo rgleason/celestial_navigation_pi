@@ -8,7 +8,7 @@
 #include <iostream>
 #include <cmath>
 #include <iomanip>
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 #include "Sight.h"
 #include "astrolabe/astrolabe.hpp"
 

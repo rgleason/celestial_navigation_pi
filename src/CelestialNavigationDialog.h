@@ -35,8 +35,14 @@
 #include "CelestialNavigationUI.h"
 #include "FixDialog.h"
 #include "ClockCorrectionDialog.h"
+#include "EclipseDialog.h"
+#include "PlannerDialog.h"
+#include "CoastalNavigationDialog.h"
+#include "LunarToolsDialog.h"
+#include "LunarSolutionRecord.h"
 
 #include <vector>
+#include <wx/timer.h>
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
@@ -54,17 +60,55 @@ public:
   std::vector<Sight> m_Sights;
 
   void OnFixClose();
+  bool RenderEclipse(piDC* dc, PlugIn_ViewPort* viewport);
+  bool RenderCoastal(piDC* dc, PlugIn_ViewPort* viewport);
+  void RunEclipseIntegrationScenario();
+  void RunPlannerIntegrationScenario();
+  celestial_navigation_pi* GetPlugin() const { return m_Plugin; }
+  const Sight* GetSelectedSight() const;
+  bool GetLastFix(double* latitude, double* longitude,
+                  wxDateTime* calculatedUtc = nullptr,
+                  wxDateTime* epochUtc = nullptr) const;
+  void SetLastFix(double latitude, double longitude,
+                  const wxDateTime& epochUtc = wxDateTime());
+  void CreatePlannedSight(const wxString& body, const wxDateTime& utc,
+                          double drLat, double drLon);
+  int GetClockCorrection() const { return m_ClockCorrection; }
+  void ApplyClockCorrection(int correction_seconds);
+  bool SaveLunarSolution(LunarSolutionRecord record);
+  void ShowLunarSolutions(wxWindow* parent);
+  const std::vector<LunarSolutionRecord>& LunarSolutions() const {
+    return m_lunarSolutions;
+  }
+  void OpenAlmanacForRoute(const wxString& routeGuid = wxString());
+  bool GetMarkedUtc(wxDateTime* utcFields) const;
 
 private:
   bool OpenXML(bool reportfailure);
-  void SaveXML();
+  bool SaveXML();
+  std::vector<LunarSolutionRecord> m_lunarSolutions;
 
   void RebuildList();
   void UpdateButtons();  // Correct button state
   void UpdateFix();
+  void BuildTimeIntegrityPanel(bool visible);
+  void SetTimeIntegrityVisible(bool visible, bool resize);
+  void UpdateTimeIntegrityPanel();
+  void QueryChrony();
+  void OnTimeTimer(wxTimerEvent& event);
+  void OnTimeIntegrityToggle(wxCommandEvent& event);
+  void OnMarkTime(wxCommandEvent& event);
+  void OnCopyMarkedUtc(wxCommandEvent& event);
 
   // event handlers
   void OnNew(wxCommandEvent& event);
+  void OnHorizonEvent(wxCommandEvent& event);
+  void OnEclipse(wxCommandEvent& event);
+  void OnPlanner(wxCommandEvent& event);
+  void OnAnalyze(wxCommandEvent& event);
+  void OnCoastal(wxCommandEvent& event);
+  void OnLunarTools(wxCommandEvent& event);
+  void OnGenerateAlmanac(wxCommandEvent& event);
   void OnDuplicate(wxCommandEvent& event);
   void OnEdit();
   void OnEditMouse(wxMouseEvent& event) { OnEdit(); }
@@ -75,6 +119,7 @@ private:
   void OnDRShift(wxCommandEvent& event);
   void OnClockOffset(wxCommandEvent& event);
   void OnDocumentation(wxCommandEvent& event);
+  void OnPdfDocumentation(wxCommandEvent& event);
   void OnHide(wxCommandEvent& event);
   void OnClose(wxCloseEvent& event);
 
@@ -85,6 +130,7 @@ private:
   void OnEdit(wxListEvent& event) { OnEdit(); }
   void OnColumnHeaderClick(wxListEvent& event);
   void OnSightSelected(wxListEvent& event);
+  wxString CurrentTimeCaptureSummary();
 #ifdef __OCPN__ANDROID__
   void OnEvtPanGesture(wxQT_PanGestureEvent& event);
 #endif
@@ -95,6 +141,38 @@ private:
   celestial_navigation_pi* m_Plugin;
   wxString m_sights_path;
   int m_ClockCorrection;
+
+  wxStaticText* m_localTime;
+  wxStaticText* m_utcTime;
+  wxScrolledWindow* m_timeIntegrityPanel;
+  wxToggleButton* m_timeIntegrityToggle;
+  wxStaticText* m_gnssTime;
+  wxStaticText* m_gnssDifference;
+  wxStaticText* m_systemTimeStatus;
+  wxStaticText* m_sightCorrection;
+  wxButton* m_markTimeButton;
+  wxButton* m_copyMarkedUtcButton;
+  wxStaticText* m_markedTimeStatus;
+  wxDateTime m_markedTime;
+  wxButton* m_horizonEventButton;
+  wxButton* m_eclipseButton;
+  wxButton* m_plannerButton;
+  wxButton* m_analyzeButton;
+  wxButton* m_coastalButton;
+  wxButton* m_lunarToolsButton;
+  wxButton* m_almanacButton;
+  wxButton* m_pdfDocumentationButton;
+  EclipseDialog* m_eclipseDialog;
+  CoastalNavigationDialog* m_coastalDialog;
+  wxTimer m_timeTimer;
+  int m_chronyPollTicks;
+  ChronyTrackingInfo m_chronyTracking;
+  bool m_chronyAvailable;
+  bool m_hasLastFix;
+  double m_lastFixLatitude;
+  double m_lastFixLongitude;
+  wxDateTime m_lastFixCalculatedUtc;
+  wxDateTime m_lastFixEpochUtc;
 
   wxPoint m_startPos;
   wxPoint m_startMouse;

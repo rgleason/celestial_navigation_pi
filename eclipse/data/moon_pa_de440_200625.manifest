@@ -1,0 +1,6 @@
+format=celestial-eclipse-data-pack-v1
+file=moon_pa_de440_200625.bpc
+bytes=12863488
+sha256=60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f
+source=NASA/JPL/NAIF DE440 high-accuracy lunar orientation binary PCK
+runtime_network_access=none

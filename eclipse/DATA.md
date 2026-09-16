@@ -1,0 +1,96 @@
+# Offline eclipse data
+
+The required base pack is the official JPL/NAIF [`de440s.bsp`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/de440s.bsp)
+kernel plus the small text manifest in `data/de440s.manifest`. Despite its name, `de440s` is
+already the short DE440 subset: it covers 1850–2150 and is 32,726,016 bytes
+(31.21 MiB). Creating another bespoke SPK subset would save little while
+introducing avoidable provenance and interpolation risk. Their manifests are
+versioned with the source contribution. The kernel and both optional runtime
+packs are hosted separately in the immutable
+[`eclipse-data-2026.1` GitHub release](https://github.com/pob220/celestial_navigation_pi/releases/tag/eclipse-data-2026.1);
+they are omitted from the upstream contribution fork to avoid imposing
+large-file storage and bandwidth on the upstream GitHub fork network.
+
+The planner can download DE440s on an explicit user request, or a user or
+package builder can import a local copy into the plugin's private eclipse-data
+directory. Optional lunar-orientation and LOLA downloads are separate choices
+behind the **Optional lunar data…** dialog. The plugin shows their sizes and
+never downloads them as a side effect of installing DE440s. Selecting LOLA
+without the orientation kernel installed requires a second confirmation which
+states that both files and approximately 518 MiB must be downloaded.
+
+Every download is written to a staging file. The plugin checks byte count,
+SHA-256 digest and file structure off the GUI thread, then publishes it through
+an atomic replacement. A truncated, modified or substituted file is rejected
+and the next trusted source is tried. Local imports use the same verifier and
+atomic installation path. A verification record avoids repeatedly hashing the
+506 MiB LOLA file; any size or modification-time change invalidates that
+record. Once the data is installed, the eclipse engine performs no network
+access.
+
+The base installation budget is therefore approximately:
+
+| Item | Installed size |
+| --- | ---: |
+| DE440s | 31.21 MiB |
+| Manifest and time tables | under 1 MiB |
+| Eclipse engine and ERFA code | under 5 MiB |
+| DE440 lunar-orientation PCK (optional) | 12.27 MiB |
+| Converted LOLA 64 ppd global limb grid (optional) | 506.25 MiB |
+
+The optional grid is derived from NASA Goddard's 2024 MOON_PA 64 ppd LOLA
+pixel grid. Its one-metre signed offsets preserve the source's useful vertical
+precision while halving the floating-point source size. This global pack is
+larger than an event-only profile, but it can refine C1–C4 for any observer and
+any supported eclipse without another download or preprocessing run.
+
+Build trees and the 701 MiB netCDF source terrain product are not runtime data. The guarded
+working budget is 90 GiB, leaving 10 GiB below the user's requested 100 GB
+ceiling. Normal development is expected to remain below 5 GiB even when a
+LOLA source tile is staged temporarily.
+
+Exact optional pack inputs
+--------------------------
+
+The lunar-orientation file is NAIF's
+[`moon_pa_de440_200625.bpc`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/moon_pa_de440_200625.bpc)
+(12,863,488 bytes). The terrain source is NASA
+Goddard PGDA's `LDEM64_PA_pixel_202405.grd` (735,220,834 bytes), a
+23,040 × 11,520 netCDF pixel grid in the same Moon principal-axes frame. The
+developer-side converter produces
+[`lola64-pa.bin`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/lola64-pa.bin)
+(530,841,624 bytes) as
+signed one-metre offsets from a 1737.4 km lunar radius. Exact source and output
+SHA-256 values are pinned in `data/*.manifest`; the plugin rejects any other
+byte stream.
+
+| Runtime file | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `de440s.bsp` | 32,726,016 | `c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2` |
+| `moon_pa_de440_200625.bpc` | 12,863,488 | `60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f` |
+| `lola64-pa.bin` | 530,841,624 | `f59edf8437442b05525345b3c29b65f0f31af8fc96420abf2dd18af3480f7ff4` |
+
+The source grid can be converted with:
+
+```sh
+lola-pack LDEM64_PA_pixel_202405.grd lola64-pa.bin
+eclipse-cli verify-lola lola64-pa.bin
+```
+
+The netCDF source and converter are not installed with OpenCPN. The runtime
+pack remains a deliberately separate optional data store at installation time
+because it is useful only for terrain-sensitive contact refinements and is
+much larger than the 31 MiB base ephemeris. It is available from the public
+eclipse-data download directory for offline preparation and installation.
+
+The kernel's authoritative source is NASA's Navigation and Ancillary
+Information Facility (NAIF):
+`https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp`.
+The downloader first uses the pinned project release, then this generic NAIF
+source and an official NAIF/PDS mission-archive copy. Each must pass the same
+pinned digest and structure checks.
+The optional PCK is published at
+`https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/moon_pa_de440_200625.bpc`,
+and the LOLA source at
+`https://pgda.gsfc.nasa.gov/data/LOLA_PA/LDEM64_PA_pixel_202405.grd`.
+The application is fully functional with its installed data while offline.

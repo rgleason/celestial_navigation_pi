@@ -30,6 +30,7 @@
 
 #include "CelestialNavigationUI.h"
 #include "CelestialNavigationDialog.h"
+#include "NavigationAlgorithms.h"
 
 #include <list>
 
@@ -38,18 +39,30 @@
 #endif
 
 class Sight;
+class wxChoice;
+class wxDatePickerCtrl;
+class wxTimePickerCtrl;
+class wxCloseEvent;
 
 class FixDialog : public FixDialogBase {
 public:
   FixDialog(CelestialNavigationDialog* parent);
+  ~FixDialog() override;
   void Update(int clock_offset);
+  void RunIntegrationScenario();
 
   int m_clock_offset;
   double m_fixlat, m_fixlon, m_fixerror;
 
 private:
+  wxDateTime ReadEpochUtc() const;
+  void SetEpochControls(const wxDateTime& utc);
+  void ChangeEpochTimeBasis(wxCommandEvent& event);
+  void UpdateRunningFix(double clock_offset);
+  void OnRunningControl(wxCommandEvent& event) { Update(m_clock_offset); }
   void OnGo(wxCommandEvent& event);
   void OnClose(wxCommandEvent& event);
+  void OnWindowClose(wxCloseEvent& event);
   void OnUpdate(wxCommandEvent& event) { Update(m_clock_offset); }
   void OnUpdateSpin(wxSpinEvent& event) { Update(m_clock_offset); }
 #ifdef __OCPN__ANDROID__
@@ -57,6 +70,17 @@ private:
 #endif
 
   CelestialNavigationDialog* m_Parent;
+  wxCheckBox* m_runningFix;
+  wxChoice* m_lunarSolution;
+  std::vector<Sight> m_workingSights;
+  wxChoice* m_epochTimeBasis;
+  wxDatePickerCtrl* m_epochDate;
+  wxTimePickerCtrl* m_epochTime;
+  wxSpinCtrlDouble* m_courseTrue;
+  wxSpinCtrlDouble* m_speedKnots;
+  wxStaticText* m_runningSummary;
+  wxListCtrl* m_residuals;
+  int m_lastEpochTimeBasis;
   int m_lastPanX;
   int m_lastPanY;
 };

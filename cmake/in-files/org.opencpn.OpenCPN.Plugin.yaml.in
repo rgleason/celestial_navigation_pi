@@ -24,7 +24,5 @@ modules:
         cxxflags: -fPIC -DFLATPAK
         strip: true
     sources:
-       - type: git
-         url: https://${GIT_REPOSITORY_SERVER}/${GIT_REPOSITORY}
-         ${GIT_BRANCH_OR_TAG}: ${GIT_REPOSITORY_ITEM}
+${flatpak_plugin_source}
 ${flatpak_extra_modules}

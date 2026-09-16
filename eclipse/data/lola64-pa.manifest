@@ -1,0 +1,10 @@
+format=celestial-eclipse-data-pack-v1
+file=lola64-pa.bin
+bytes=530841624
+sha256=f59edf8437442b05525345b3c29b65f0f31af8fc96420abf2dd18af3480f7ff4
+source_file=LDEM64_PA_pixel_202405.grd
+source_bytes=735220834
+source_sha256=c0e6c419368da7a3be67fe861b5485c2284f79e7363a828dcc3b3f4b2e5687c8
+source=NASA/GSFC PGDA LOLA MOON_PA 64-pixels-per-degree global pixel grid
+grid=23040x11520 int16 signed metre offsets from 1737.4 km
+runtime_network_access=none

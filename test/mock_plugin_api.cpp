@@ -34,7 +34,7 @@
 #include <memory>
 #include <string>
 
-#include "ocpn_plugin.h"
+#include "OcpnApiCompat.h"
 #include "mock_plugin_api.h"
 
 // Plugin API mock implementations
@@ -62,7 +62,12 @@ wxWindow* GetOCPNCanvasWindow() { return 0; }
 
 DECL_EXP void PushNMEABuffer(wxString str) {}
 
+int AddCanvasMenuItem(wxMenuItem*, opencpn_plugin*, const char*) { return 73; }
+void RemoveCanvasMenuItem(int, const char*) {}
+
 }  // extern "C"
+
+wxString GetSelectedRouteGUID_Plugin() { return wxString(); }
 
 void RemovePlugInTool(int tool_id) {}
 DECL_EXP int InsertPlugInToolSVG(wxString label, wxString SVGfile,
@@ -111,7 +116,27 @@ DECL_EXP void JumpToPosition(double lat, double lon, double scale) {}
 
 // Plugin API mock implementations
 
-wxString* GetpPrivateApplicationDataLocation(void) { return nullptr; }
+static wxString s_privatePath;
+static wxString s_pluginDataRoot;
+void SetTestPluginDataRoot(const wxString& path) { s_pluginDataRoot=path; }
+static std::vector<WaypointPosition> s_waypoints;
+void SetTestWaypoints(const std::vector<WaypointPosition>& points) { s_waypoints=points; }
+wxArrayString GetWaypointGUIDArray() {
+  wxArrayString result;
+  for (const auto& point:s_waypoints) result.Add(point.guid);
+  return result;
+}
+bool GetSingleWaypoint(wxString guid,PlugIn_Waypoint* result) {
+  for (const auto& point:s_waypoints) if (point.guid==guid) {
+    result->m_lat=point.latitude; result->m_lon=point.longitude;
+    result->m_MarkName=point.name; return true;
+  }
+  return false;
+}
+void SetTestPrivateDataPath(const wxString& path) { s_privatePath=path; }
+wxString* GetpPrivateApplicationDataLocation(void) {
+  return s_privatePath.empty() ? nullptr : &s_privatePath;
+}
 
 wxString *GetpSharedDataLocation(void) { return nullptr; }
 
@@ -141,6 +166,7 @@ std::vector<uint8_t> DECL_EXP GetN2000Payload(NMEA2000Id /* id */,
 }
 
 wxString DECL_EXP GetPluginDataDir(const char* plugin_name) {
+  if(!s_pluginDataRoot.empty()) return s_pluginDataRoot;
   const char* testdata = TESTDATA;
   return wxString(testdata);
 }
@@ -303,8 +329,36 @@ wxAuiPaneInfo& wxAuiManager::GetPane(wxWindow* window) {
 bool wxAuiPaneInfo::IsValid() const { return true; }
 
 void DimeWindow(wxWindow* win) {}
-void GetCanvasPixLL(PlugIn_ViewPort* vp, wxPoint* pp, double lat, double lon) {}
+static bool s_recordCanvas=false;
+static std::vector<std::pair<double,double>> s_canvasPoints;
+void SetTestCanvasRecording(bool enabled) {
+  s_recordCanvas=enabled;
+  s_canvasPoints.clear();
+}
+std::vector<std::pair<double,double>> TestCanvasPoints() { return s_canvasPoints; }
+void GetCanvasPixLL(PlugIn_ViewPort* vp, wxPoint* pp, double lat, double lon) {
+  if(s_recordCanvas) s_canvasPoints.emplace_back(lat,lon);
+  // Deterministic test projection, not the host chart projection.
+  *pp=wxPoint(wxRound((lon+180)*2),wxRound((90-lat)*2));
+}
 void RequestRefresh(wxWindow* window) {}
+
+wxEventType wxEVT_DOWNLOAD_EVENT = wxNewEventType();
+static int s_downloadCalls=0;
+int TestDownloadCalls() { return s_downloadCalls; }
+OCPN_DLStatus OCPN_downloadFile(const wxString&, const wxString&, const wxString&,
+    const wxString&, const wxBitmap&, wxWindow*, long, int) {
+  ++s_downloadCalls;
+  return OCPN_DL_FAILED;
+}
+
+OCPN_DLStatus OCPN_downloadFileBackground(const wxString&, const wxString&,
+                                           wxEvtHandler*, long* handle) {
+  if (handle) *handle = 0;
+  return OCPN_DL_FAILED;
+}
+
+void OCPN_cancelDownloadFileBackground(long) {}
 
 extern DECL_EXP wxString GetLocaleCanonicalName() {
   return "";
@@ -313,5 +367,3 @@ extern DECL_EXP wxString GetLocaleCanonicalName() {
 extern "C" DECL_EXP void toSM_Plugin(double lat, double lon, double lat0,
                                      double lon0, double *x, double *y) {
 }
-
-

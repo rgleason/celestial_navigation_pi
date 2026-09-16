@@ -1,0 +1,2 @@
+# Unified-diff context markers leave a space on otherwise empty source lines.
+*.patch whitespace=-blank-at-eol

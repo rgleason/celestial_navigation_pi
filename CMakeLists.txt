@@ -70,14 +70,13 @@ set(SHORT_DESCRIPTION
 	"Celestial Navigation Plugin for OpenCPN"
 )
 set(LONG_DESCRIPTION
-	"Nautical almanac: sun, moon, planets and navigational stars. Compute position fix from celestial measurements."
+	"Offline nautical almanac, sight planning and ranking, time-tagged running fixes, sequence analysis, horizon events, time integrity and a DE440 solar-eclipse planner."
 )
-
 set(VERSION_MAJOR "2")
-set(VERSION_MINOR "4")
-set(VERSION_PATCH "66")
-set(VERSION_TWEAK "0")
-set(VERSION_DATE  "19/12/2025" )# DD/MM/YYYY format
+set(VERSION_MINOR "8")
+set(VERSION_PATCH "5")
+set(VERSION_TWEAK "9")
+set(VERSION_DATE  "16/09/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -187,9 +186,34 @@ SET(SRCS
         src/astrolabe/vsop87d.cpp
         src/geomag/geomag.c
         src/CelestialNavigationDialog.cpp
+        src/DialogGeometry.cpp
+        src/AtomicXmlFile.cpp
+        src/Dut1UpdatePanel.cpp
+        src/BodyCatalog.cpp
+        src/NavigationAlgorithms.cpp
+        src/PlannerDialog.cpp
+        src/WaypointPositionSource.cpp
+        src/WaypointPickerDialog.cpp
+        src/SightAnalysisDialog.cpp
+        src/HorizonEventDialog.cpp
+        src/HtmlHelp.cpp
+        src/EclipseDialog.cpp
+        src/EclipseDataFiles.cpp
+        src/EclipseVerificationWorker.cpp
+        src/TimeStatus.cpp
         src/CelestialNavigationUI.cpp
         src/SightDialog.cpp
         src/Sight.cpp
+        src/LunarDistanceEngine.cpp
+        src/LunarSessionEngine.cpp
+        src/LunarSessionWorker.cpp
+        src/SextantCalibrationEngine.cpp
+        src/LunarToolsDialog.cpp
+        src/AlmanacGenerator.cpp
+        src/AlmanacPaperTables.cpp
+        src/AlmanacDialog.cpp
+        src/CoastalNavigationEngine.cpp
+        src/CoastalNavigationDialog.cpp
         src/icons.cpp
         src/FindBodyDialog.cpp
         src/LunarResultsDialog.cpp
@@ -203,8 +227,28 @@ SET(SRCS
         )
 
 SET(HDRS
+        src/OcpnApiCompat.h
+        src/DialogGeometry.h
+        src/DialogTransactionState.h
+        src/NavigationUIUtils.h
+        src/Utf8Translation.h
         src/celestial_navigation_pi.h
         src/CelestialNavigationDialog.h
+        src/AtomicXmlFile.h
+        src/Dut1UpdatePanel.h
+        src/BodyCatalog.h
+        src/NavigationAlgorithms.h
+        src/PlannerDialog.h
+        src/WaypointPositionSource.h
+        src/WaypointPickerDialog.h
+        src/SightAnalysisDialog.h
+        src/UtcDateTime.h
+        src/HorizonEventDialog.h
+        src/HtmlHelp.h
+        src/EclipseDialog.h
+        src/EclipseDataFiles.h
+        src/EclipseVerificationWorker.h
+        src/TimeStatus.h
         src/CelestialNavigationUI.h
         src/ClockCorrectionDialog.h
         src/FindBodyDialog.h
@@ -212,6 +256,16 @@ SET(HDRS
         src/geodesic.h
         src/icons.h
         src/Sight.h
+        src/LunarDistanceEngine.h
+        src/LunarSessionEngine.h
+        src/LunarSessionWorker.h
+        src/SextantCalibrationEngine.h
+        src/LunarToolsDialog.h
+        src/AlmanacGenerator.h
+        src/AlmanacPaperTables.h
+        src/AlmanacDialog.h
+        src/CoastalNavigationEngine.h
+        src/CoastalNavigationDialog.h
         src/SightDialog.h
         src/moon.h
         )
@@ -248,6 +302,27 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/geomag)
 # ==============================================================
 
 target_sources(${PACKAGE_NAME} PUBLIC ${SRC} )
+
+# The eclipse numerical core is also usable as a standalone library/CLI. The
+# plugin embeds only the network-free runtime library; development tools and
+# tests remain in the standalone build.
+set(ECLIPSE_BUILD_CLI OFF CACHE BOOL "" FORCE)
+set(ECLIPSE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ECLIPSE_BUILD_LOLA_TOOL OFF CACHE BOOL "" FORCE)
+add_subdirectory(eclipse)
+target_link_libraries(${PACKAGE_NAME} celestial::eclipse_core)
+option(CELESTIAL_ECLIPSE_INTEGRATION_TEST
+       "Open and exercise the 2027 eclipse planner automatically" OFF)
+if(CELESTIAL_ECLIPSE_INTEGRATION_TEST)
+  target_compile_definitions(${PACKAGE_NAME} PRIVATE
+    CELESTIAL_ECLIPSE_INTEGRATION_TEST=1)
+endif()
+option(CELESTIAL_PLANNER_INTEGRATION_TEST
+       "Open and exercise the offline sight planner automatically" OFF)
+if(CELESTIAL_PLANNER_INTEGRATION_TEST)
+  target_compile_definitions(${PACKAGE_NAME} PRIVATE
+    CELESTIAL_PLANNER_INTEGRATION_TEST=1)
+endif()
 
 
 if (NOT OCPN_FLATPAK_CONFIG)

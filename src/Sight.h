@@ -25,8 +25,13 @@
  *
  */
 
+#ifndef _CELESTIAL_NAVIGATION_SIGHT_H_
+#define _CELESTIAL_NAVIGATION_SIGHT_H_
+
 #include <list>
+#include <vector>
 #include "pidc.h"
+#include "LunarDistanceEngine.h"
 
 #ifdef __MSVC__
 #define _USE_MATH_DEFINES
@@ -54,11 +59,13 @@ WX_DECLARE_LIST(wxRealPoint, wxRealPointList);
 //    Sight
 //----------------------------------------------------------------------------
 
-const wxString SightType[] = {_("Altitude"), _("Azimuth"), _("Lunar")};
+const wxString SightType[] = {_("Altitude"), _("Azimuth"), _("Lunar"),
+                              _("Horizon")};
 
 class Sight : public wxObject {
 public:
-  enum Type { ALTITUDE, AZIMUTH, LUNAR };
+  enum Type { ALTITUDE, AZIMUTH, LUNAR, HORIZON };
+  enum HorizonEvent { SUNRISE, SUNSET };
   enum BodyLimb {
     LOWER = 0,
     LUNAR_NEAR = 0,
@@ -67,7 +74,7 @@ public:
     UPPER = 2
   };
 
-  Sight() {}
+  Sight();
   Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
         double timecertainty, double measurement, double measurementcertainty);
 
@@ -76,21 +83,38 @@ public:
   void SetVisible(bool visible = true);  ///< set visibility and make points
                                          ///< selectable accordingly
   void SetSelected(bool selected = true);
-  bool IsVisible() { return m_bVisible; }
-  bool IsCalculated() { return m_bCalculated; }
-  bool IsSelected() { return m_bSelected; }
+  bool IsVisible() const { return m_bVisible; }
+  bool IsCalculated() const { return m_bCalculated; }
+  bool IsSelected() const { return m_bSelected; }
 
-  void Recompute(int clock_offset);
+  void Recompute(double clock_offset);
   void RebuildPolygons();
 
   wxString Alminac(wxDateTime time, double lat, double lon, double ghaast,
                    double rad, double SD, double HP);
   void RecomputeAltitude();
   void RecomputeAzimuth();
-  void RecomputeLunar();
+  void RecomputeLunar(int preferred_candidate = -1);
+  int SelectLunarCandidate(int preferred_candidate = -1) const;
+  void RecomputeHorizon();
 
   void RebuildPolygonsAltitude();
   void RebuildPolygonsAzimuth();
+  void RebuildPolygonsHorizon();
+
+  double HorizonTrueBearing() const;
+  bool HorizonEstimatedPosition(double* lat, double* lon);
+  double HorizonEstimateUncertaintyNm() const;
+  wxString HorizonEventName() const;
+  wxString HorizonMeasurementText() const;
+
+  // Shared lunar input and forward model.  RecomputeLunar populates the
+  // ephemeris callback; the sequence solver deliberately reuses it so single
+  // and joint solutions cannot drift into different astronomical models.
+  lunar_distance::Observation LunarObservation() const;
+  const lunar_distance::EphemerisFunction& LunarEphemeris() const {
+    return m_LunarEphemeris;
+  }
 
   bool m_bVisible;  // should this sight be drawn?
   bool m_bCalculated;
@@ -109,6 +133,16 @@ public:
   double m_MeasurementCertainty;
   double m_LunarMoonAltitude, m_LunarBodyAltitude;
   BodyLimb m_LunarMoonLimb, m_LunarBodyLimb;
+  BodyLimb m_LunarBodyDistanceLimb;
+  double m_LunarMoonAltitudeUncertainty;
+  double m_LunarBodyAltitudeUncertainty;
+  bool m_LunarSeparateTimes;
+  bool m_LunarTimeIsWatch = false;
+  int m_LunarMoonTimeOffsetSeconds;
+  int m_LunarBodyTimeOffsetSeconds;
+  bool m_LunarMovingObserver;
+  double m_LunarCourseTrue;
+  double m_LunarSpeedKnots;
 
   double m_EyeHeight;         // Height above sea in meters
   double m_Temperature;       // Temperature in degrees celcius
@@ -128,10 +162,12 @@ public:
   virtual void Render(piDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm);
 
   void BodyLocation(wxDateTime time, double* lat, double* lon, double* ghaash,
-                    double* rad, double* dist);
+                    double* rad, double* dist, bool timeIsInstant = false);
   void AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
                        double* hc, double* zn);
-  void EstimateHs(double hc, double *hs, double *error);
+  void EstimateHs(double hc, double* hs, double* error);
+  // Uses the effective sight time, leaving the recorded observation unchanged.
+  void CalculateAtDR(double* hc, double* zn);
   std::list<wxRealPoint> GetPoints();
 
   wxString m_CalcStr;
@@ -144,9 +180,34 @@ public:
   /* for azimuth */
   bool m_bMagneticNorth;  // if azimuth angle is in magnetic coordinates
 
+  /* for sunrise/sunset horizon events */
+  HorizonEvent m_HorizonEvent;
+  bool m_HorizonBearingProvided;
+  bool m_HorizonBearingMagnetic;
+  double m_HorizonBearing;
+  double m_HorizonVariation;            // degrees, east positive
+  double m_HorizonDeviation;            // degrees, east positive
+  double m_HorizonBearingUncertainty;   // degrees
+  double m_HorizonAltitudeUncertainty;  // arcminutes
+  int m_HorizonQuality;                 // 0 clear, 1 hazy, 2 obstructed
+  wxString m_HorizonTimeSource;
+  bool m_HorizonEstimateValid;
+  double m_HorizonEstimateLat;
+  double m_HorizonEstimateLon;
+  double m_HorizonEstimateRadiusNm;
+
   /* for lunar */
   long m_TimeCorrection;
   double m_LDC;
+  bool m_LunarSolutionValid;
+  wxString m_LunarSolutionError;
+  std::vector<lunar_distance::TimeCandidate> m_LunarCandidates;
+  int m_LunarSelectedCandidate = -1;
+  lunar_distance::PositionResult m_LunarPositionResult;
+  int m_LunarSelectedPosition;
+  bool m_LunarUsesDe440;
+  bool m_LunarDut1Fallback = false;
+  lunar_distance::EphemerisFunction m_LunarEphemeris;
 
   /* DR info */
   double m_DRLat;
@@ -189,3 +250,5 @@ private:
 
 double resolve_heading(double heading);
 double resolve_heading_positive(double heading);
+
+#endif

@@ -23,7 +23,7 @@ image::four-circles-of-position.png["4 Circles of Position",width=550,link="_ima
 
 == Types of Observations
 
-Three types of observations are supported:
+Four observation types and separate coastal sextant tools are supported:
 
 === Altitude (sextant measurement)
 
@@ -37,7 +37,25 @@ small boat in high seas. However, it is interesting for demonstration purposes, 
 
 === Lunar distance (sextant measurement)
 
-Measure the angle between two heavenly bodies. The computer then attempts to determine clock error from this measurement, and the system time may be corrected.
+Measure the angle between the Moon and another heavenly body together with
+both altitudes. The plugin clears the distance, searches for matching UTC,
+recovers a constant watch offset and reports the two spherical position
+intersections. See xref:lunar-coastal.adoc[Lunar distance, watch recovery and
+coastal sextant methods].
+
+=== Horizon event
+
+Record the first upper-limb appearance at sunrise or final upper-limb
+disappearance at sunset, optionally with a corrected magnetic or true bearing.
+This supplies a deliberately conservative navigation constraint.
+
+=== Coastal sextant tools
+
+The separate *Coastal Sextant...* window calculates vertical-angle ranges and
+three-object horizontal-sextant-angle fixes. These terrestrial methods are
+not the same as a celestial Azimuth sight. See
+xref:lunar-coastal.adoc[Lunar distance, watch recovery and coastal sextant
+methods].
 
 == Process
 
@@ -153,6 +171,22 @@ was set to 0.05.
 
 image::four-sights-entered.png["four-sights-entered",width=550,link="_images/four-sights-entered.png"]
 
+== Offline planner, running fix and sight analysis
+
+This maintained version adds an entirely offline *Sun & Moon…* planner,
+time-tagged numerical running fixes, a sight-sequence analyzer, noon/Polaris
+helpers and almanac CSV export. See
+xref:offline-planning.adoc[Offline planning, running fixes and sight analysis]
+for controls, algorithms, limitations and safety notes.
+
+Creating a sight selects it and clears the previous selection. Deleting the
+selected sight moves selection to an adjacent sight when one remains; there is
+therefore no unselected state while the sight list is non-empty.
+
+The old manual DR Shift and visual-fix process remains available. Alternatively,
+*Fix…* can now propagate visible observations along a COG/SOG model to a common
+epoch and solve them numerically without changing the stored raw sight times.
+
 == Videos: Methodology with Celestial_Navigation_Pi
 
 Videos by David Burch, Starpath Navigation https://www.starpath.com/index.htm
@@ -223,11 +257,11 @@ General information on direct computation methods can be found on pages
 * link:{attachmentsdir}/cel_nav_direct_fix_v44n1-2.pdf[The Direct Fix of Latitude and Longitude from two observed Altitudes (pdf 1mb)]
 * link:{attachmentsdir}/cel_nav_generic_03_2012_06.pdf[Generic Algorithm for Solving Celestial Navigation Problems (pdf 435kb)]
 
-Presently, the plugin is not capable of advancing COP's to a common
-time. When a shift is entered, the calculated numerical position on the
-main window disappears. In this case, the fix can only be established by
-visual examination of the graphics on the screen (also see above) xref:#_3_sight_properties_date_and_time_tab[3. Sight
-Properties - Date and Time Tab] and xref:#_9_four_circles_of_position_showing_dr_position_as_mob_and_fix_as_waypoint[9. Four Circles of Position].
+Manual DR Shift still produces graphically advanced circles for visual use.
+This maintained version also offers a separate time-tagged running-fix mode in
+*Fix…*. It keeps each raw observation at its actual UTC, propagates a candidate
+position through a COG/SOG motion model, and solves latitude/longitude at a
+chosen common epoch. See xref:offline-planning.adoc[the running-fix guide].
 
 == Accuracy of Astronomical Data
 

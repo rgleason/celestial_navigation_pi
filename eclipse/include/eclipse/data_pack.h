@@ -1,0 +1,32 @@
+#ifndef CELESTIAL_ECLIPSE_DATA_PACK_H
+#define CELESTIAL_ECLIPSE_DATA_PACK_H
+
+#include <cstdint>
+#include <string>
+
+namespace eclipse {
+
+struct DataPackStatus {
+  bool valid;
+  std::uint64_t bytes;
+  std::string sha256;
+  std::string error;
+
+  DataPackStatus() : valid(false), bytes(0) {}
+};
+
+// The official NAIF de440s kernel is the compact 1849-2150 subset used by
+// this module. Verification is deliberately local and performs no downloads.
+const char* ExpectedDe440sSha256();
+std::uint64_t ExpectedDe440sBytes();
+const char* ExpectedLunarOrientationSha256();
+std::uint64_t ExpectedLunarOrientationBytes();
+const char* ExpectedLola64PaSha256();
+std::uint64_t ExpectedLola64PaBytes();
+DataPackStatus VerifyDe440s(const std::string& path);
+DataPackStatus VerifyLunarOrientationPck(const std::string& path);
+DataPackStatus VerifyLola64Pa(const std::string& path);
+
+}  // namespace eclipse
+
+#endif

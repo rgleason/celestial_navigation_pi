@@ -6,6 +6,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include "CelestialNavigationUI.h"
+#include "Utf8Translation.h"
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -52,7 +53,7 @@ CelestialNavigationDialogBase::CelestialNavigationDialogBase( wxWindow* parent, 
 	m_bEditSight = new wxButton( this, wxID_ANY, _("Edit"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer24->Add( m_bEditSight, 0, wxALL|wxEXPAND, 5 );
 
-	m_tbHide = new wxToggleButton( this, wxID_ANY, _("Hide"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_tbHide = new wxToggleButton( this, wxID_ANY, _("Hide Sights"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer24->Add( m_tbHide, 0, wxALL|wxEXPAND, 5 );
 
 	m_bDeleteSight = new wxButton( this, wxID_ANY, _("Delete"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -129,7 +130,8 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	fgSizer1->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
 	m_notebook1 = new wxNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
-	m_panel1 = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel1 = new wxScrolledWindow( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL|wxVSCROLL );
+	m_panel1->SetScrollRate( 0, 12 );
 	m_fgPanelSizer = new wxFlexGridSizer( 0, 1, 0, 0 );
 	m_fgPanelSizer->AddGrowableCol( 0 );
 	m_fgPanelSizer->SetFlexibleDirection( wxBOTH );
@@ -197,7 +199,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_staticText6->Wrap( -1 );
 	fgSizer31->Add( m_staticText6, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_tMeasurement = new wxTextCtrl( m_sbSizerSight->GetStaticBox(), wxID_ANY, _("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+	m_tMeasurement = new wxTextCtrl( m_sbSizerSight->GetStaticBox(), wxID_ANY, CN_UTF8_("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
 	fgSizer31->Add( m_tMeasurement, 0, wxALL, 5 );
 
 	m_staticText8 = new wxStaticText( m_sbSizerSight->GetStaticBox(), wxID_ANY, _("Certainty (')"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -227,7 +229,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_staticText12->Wrap( -1 );
 	fgSizer25->Add( m_staticText12, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_tLunarMoonAltitude = new wxTextCtrl( sbSizer10->GetStaticBox(), wxID_ANY, _("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+	m_tLunarMoonAltitude = new wxTextCtrl( sbSizer10->GetStaticBox(), wxID_ANY, CN_UTF8_("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
 	fgSizer25->Add( m_tLunarMoonAltitude, 0, wxALL, 5 );
 
 	m_bFindLunarMoon = new wxButton( sbSizer10->GetStaticBox(), wxID_ANY, _("Find"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -261,7 +263,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_staticText122->Wrap( -1 );
 	fgSizer29->Add( m_staticText122, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_tLunarBodyAltitude = new wxTextCtrl( sbSizer11->GetStaticBox(), wxID_ANY, _("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+	m_tLunarBodyAltitude = new wxTextCtrl( sbSizer11->GetStaticBox(), wxID_ANY, CN_UTF8_("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
 	fgSizer29->Add( m_tLunarBodyAltitude, 0, wxALL, 5 );
 
 	m_bFindLunarBody = new wxButton( sbSizer11->GetStaticBox(), wxID_ANY, _("Find"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -292,9 +294,10 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 
 	m_panel1->SetSizer( m_fgPanelSizer );
 	m_panel1->Layout();
-	m_fgPanelSizer->Fit( m_panel1 );
+	m_panel1->FitInside();
 	m_notebook1->AddPage( m_panel1, _("Sight"), true );
-	m_panel2 = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel2 = new wxScrolledWindow( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL|wxVSCROLL );
+	m_panel2->SetScrollRate( 0, 12 );
 	wxFlexGridSizer* fgSizer8;
 	fgSizer8 = new wxFlexGridSizer( 0, 1, 0, 0 );
 	fgSizer8->SetFlexibleDirection( wxBOTH );
@@ -372,7 +375,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 
 	m_panel2->SetSizer( fgSizer8 );
 	m_panel2->Layout();
-	fgSizer8->Fit( m_panel2 );
+	m_panel2->FitInside();
 	m_notebook1->AddPage( m_panel2, _("Time (UTC)"), false );
 	m_panel6 = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxFlexGridSizer* fgSizer18;
@@ -741,7 +744,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	wxStaticBoxSizer* sbSizer6;
 	sbSizer6 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Latitude") ), wxVERTICAL );
 
-	m_tLatitude = new wxTextCtrl( sbSizer6->GetStaticBox(), wxID_ANY, _("N 000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+	m_tLatitude = new wxTextCtrl( sbSizer6->GetStaticBox(), wxID_ANY, CN_UTF8_("N 000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
 	sbSizer6->Add( m_tLatitude, 0, wxALL|wxEXPAND, 5 );
 
 
@@ -750,7 +753,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	wxStaticBoxSizer* sbSizer7;
 	sbSizer7 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Longitude") ), wxVERTICAL );
 
-	m_tLongitude = new wxTextCtrl( sbSizer7->GetStaticBox(), wxID_ANY, _("E 000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+	m_tLongitude = new wxTextCtrl( sbSizer7->GetStaticBox(), wxID_ANY, CN_UTF8_("E 000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
 	sbSizer7->Add( m_tLongitude, 0, wxALL|wxEXPAND, 5 );
 
 
@@ -769,7 +772,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	wxStaticBoxSizer* sbSizer8;
 	sbSizer8 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Altitude (Hc)") ), wxVERTICAL );
 
-	m_tAltitude = new wxTextCtrl( sbSizer8->GetStaticBox(), wxID_ANY, _("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	m_tAltitude = new wxTextCtrl( sbSizer8->GetStaticBox(), wxID_ANY, CN_UTF8_("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
 	sbSizer8->Add( m_tAltitude, 0, wxALL|wxEXPAND, 5 );
 
 
@@ -778,7 +781,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	wxStaticBoxSizer* sbSizer9;
 	sbSizer9 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Azimuth (Zn)") ), wxVERTICAL );
 
-	m_tAzimuth = new wxTextCtrl( sbSizer9->GetStaticBox(), wxID_ANY, _("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	m_tAzimuth = new wxTextCtrl( sbSizer9->GetStaticBox(), wxID_ANY, CN_UTF8_("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
 	sbSizer9->Add( m_tAzimuth, 0, wxALL|wxEXPAND, 5 );
 
 
@@ -808,7 +811,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	m_cbTowards = new wxCheckBox( this, wxID_ANY, _("Towards"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_cbTowards->Enable( false );
 
-	bSizer4->Add( m_cbTowards, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	bSizer4->Add( m_cbTowards, 0, wxALL|wxEXPAND, 5 );
 
 
 	m_Body->Add( bSizer4, 1, wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
@@ -819,7 +822,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	m_cbAway = new wxCheckBox( this, wxID_ANY, _("Away"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_cbAway->Enable( false );
 
-	bSizer41->Add( m_cbAway, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	bSizer41->Add( m_cbAway, 0, wxALL|wxEXPAND, 5 );
 
 
 	m_Body->Add( bSizer41, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
@@ -827,7 +830,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	wxStaticBoxSizer* sbSizer81;
 	sbSizer81 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Est. Altitude (Hs)") ), wxVERTICAL );
 
-	m_tEstimatedHs = new wxTextCtrl( sbSizer81->GetStaticBox(), wxID_ANY, _("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	m_tEstimatedHs = new wxTextCtrl( sbSizer81->GetStaticBox(), wxID_ANY, CN_UTF8_("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
 	sbSizer81->Add( m_tEstimatedHs, 0, wxALL|wxEXPAND, 5 );
 
 
@@ -893,7 +896,7 @@ LunarResultsDialogBase::LunarResultsDialogBase( wxWindow* parent, wxWindowID id,
 	wxStaticBoxSizer* sbSizer13;
 	sbSizer13 = new wxStaticBoxSizer( new wxStaticBox( m_Lunar->GetStaticBox(), wxID_ANY, _("LD cleared") ), wxVERTICAL );
 
-	m_tLDC = new wxTextCtrl( sbSizer13->GetStaticBox(), wxID_ANY, _("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	m_tLDC = new wxTextCtrl( sbSizer13->GetStaticBox(), wxID_ANY, CN_UTF8_("000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
 	sbSizer13->Add( m_tLDC, 0, wxALL|wxEXPAND, 5 );
 
 
@@ -920,7 +923,7 @@ LunarResultsDialogBase::LunarResultsDialogBase( wxWindow* parent, wxWindowID id,
 	wxStaticBoxSizer* sbSizer151;
 	sbSizer151 = new wxStaticBoxSizer( new wxStaticBox( m_Lunar->GetStaticBox(), wxID_ANY, _("Lon revised") ), wxVERTICAL );
 
-	m_tLonRevised = new wxTextCtrl( sbSizer151->GetStaticBox(), wxID_ANY, _("E 000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	m_tLonRevised = new wxTextCtrl( sbSizer151->GetStaticBox(), wxID_ANY, CN_UTF8_("E 000° 00.0000'"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
 	sbSizer151->Add( m_tLonRevised, 0, wxALL|wxEXPAND, 5 );
 
 
@@ -1022,7 +1025,7 @@ FixDialogBase::FixDialogBase( wxWindow* parent, wxWindowID id, const wxString& t
 	m_staticText26->Wrap( -1 );
 	fgSizer16->Add( m_staticText26, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
-	m_stLatitude = new wxTextCtrl( sbSizer7->GetStaticBox(), wxID_ANY, _("000° 00.0000' N"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	m_stLatitude = new wxTextCtrl( sbSizer7->GetStaticBox(), wxID_ANY, CN_UTF8_("000° 00.0000' N"), wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
 	fgSizer16->Add( m_stLatitude, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText28 = new wxStaticText( sbSizer7->GetStaticBox(), wxID_ANY, _("Longitude"), wxDefaultPosition, wxDefaultSize, 0 );

@@ -585,7 +585,7 @@
                     <property name="gripper">0</property>
                     <property name="hidden">0</property>
                     <property name="id">wxID_ANY</property>
-                    <property name="label">Hide</property>
+                    <property name="label">Hide Sights</property>
                     <property name="margins"></property>
                     <property name="markup">0</property>
                     <property name="max_size"></property>
@@ -955,7 +955,7 @@
               <property name="bitmap"></property>
               <property name="label">Sight</property>
               <property name="select">1</property>
-              <object class="wxPanel" expanded="true">
+              <object class="wxScrolledWindow" expanded="true">
                 <property name="BottomDockable">1</property>
                 <property name="LeftDockable">1</property>
                 <property name="RightDockable">1</property>
@@ -2625,7 +2625,7 @@
               <property name="bitmap"></property>
               <property name="label">Time (UTC)</property>
               <property name="select">0</property>
-              <object class="wxPanel" expanded="false">
+              <object class="wxScrolledWindow" expanded="false">
                 <property name="BottomDockable">1</property>
                 <property name="LeftDockable">1</property>
                 <property name="RightDockable">1</property>
@@ -6772,7 +6772,7 @@
                 <property name="permission">none</property>
                 <object class="sizeritem" expanded="false">
                   <property name="border">5</property>
-                  <property name="flag">wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</property>
+                  <property name="flag">wxALL|wxEXPAND</property>
                   <property name="proportion">0</property>
                   <object class="wxCheckBox" expanded="false">
                     <property name="BottomDockable">1</property>
@@ -6848,7 +6848,7 @@
                 <property name="permission">none</property>
                 <object class="sizeritem" expanded="false">
                   <property name="border">5</property>
-                  <property name="flag">wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</property>
+                  <property name="flag">wxALL|wxEXPAND</property>
                   <property name="proportion">0</property>
                   <object class="wxCheckBox" expanded="false">
                     <property name="BottomDockable">1</property>
