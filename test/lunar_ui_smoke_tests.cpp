@@ -317,7 +317,8 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
         EXPECT_LE(page->GetVirtualSize().x,page->GetClientSize().x);
         for (auto* child:page->GetChildren()) {
           if (!child->IsShown() || child->GetSize().y==0) continue;
-          EXPECT_TRUE(wxRect(wxPoint(0,0),page->GetClientSize()).Contains(child->GetRect()))
+          EXPECT_TRUE(wxRect(wxPoint(0,0),page->GetVirtualSize()).Contains(child->GetRect()))
+              << child->GetClassInfo()->GetClassName() << " "
               << child->GetLabel().ToStdString();
         }
 #ifdef __WXGTK3__
@@ -356,6 +357,71 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       for (auto* child:page->GetChildren())
         if (child->GetLabel().Contains("failed or was cancelled")) failureShown=true;
       EXPECT_TRUE(failureShown);
+
+      // The lunar planner reports measurements and a factual geometric
+      // horizon flag, without an undisclosed quality ranking.
+      dialog.SelectPageForIntegration(1);
+      wxWindow* lunarPlannerPage = notebook->GetPage(1);
+      ASSERT_NE(lunarPlannerPage, nullptr);
+      auto* lunarPlannerList =
+          FindListWithColumn(lunarPlannerPage, "Below horizon");
+      ASSERT_NE(lunarPlannerList, nullptr);
+      EXPECT_EQ(lunarPlannerList->GetColumnCount(), 11);
+      EXPECT_EQ(FindListWithColumn(lunarPlannerPage, "Quality"), nullptr);
+      EXPECT_EQ(FindListWithColumn(lunarPlannerPage, wxString::FromUTF8("0.1′ time")),
+                lunarPlannerList);
+      ASSERT_GT(lunarPlannerList->GetItemCount(), 0);
+      bool sawBelowHorizon = false;
+      double previousTime = -1.0;
+      for (long index = 0; index < lunarPlannerList->GetItemCount(); ++index) {
+        const wxString horizon = lunarPlannerList->GetItemText(index, 1);
+        EXPECT_TRUE(horizon.empty() || horizon == "Moon" ||
+                    horizon == "Body" || horizon == "Both");
+        EXPECT_EQ(lunarPlannerList->GetItemText(index, 5).StartsWith("-"),
+                  horizon == "Moon" || horizon == "Both");
+        EXPECT_EQ(lunarPlannerList->GetItemText(index, 6).StartsWith("-"),
+                  horizon == "Body" || horizon == "Both");
+        if (!horizon.empty()) {
+          sawBelowHorizon = true;
+        } else {
+          EXPECT_FALSE(sawBelowHorizon)
+              << "above-horizon pair sorted below a flagged pair";
+        }
+        const wxString time = lunarPlannerList->GetItemText(index, 4);
+        if (time == wxString::FromUTF8("—")) continue;
+        double seconds = 0.0;
+        ASSERT_TRUE(time.BeforeFirst(' ').ToDouble(&seconds));
+        if (index > 0 &&
+            horizon.empty() == lunarPlannerList->GetItemText(index - 1, 1).empty())
+          EXPECT_GE(seconds, previousTime);
+        previousTime = seconds;
+      }
+      EXPECT_TRUE(sawBelowHorizon);
+      for (const wxSize size : {wxSize(1120, 780), wxSize(880, 650)}) {
+        dialog.SetSize(size);
+        dialog.Centre();
+        dialog.Layout();
+        lunarPlannerPage->Layout();
+        for (int i = 0; i < 8; ++i) {
+          wxTheApp->Yield();
+          wxMilliSleep(30);
+        }
+        ExpectUnclippedNonOverlappingChildren(lunarPlannerPage);
+#ifdef __WXGTK3__
+        GtkAllocation requested{0, 0, size.x, size.y};
+        gtk_widget_size_allocate(GTK_WIDGET(dialog.GetHandle()), &requested);
+        auto* surface =
+            cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.x, size.y);
+        auto* cr = cairo_create(surface);
+        gtk_widget_draw(GTK_WIDGET(dialog.GetHandle()), cr);
+        const auto path =
+            wxString::Format("/tmp/celestial-lunar-planner-%d.png", size.x);
+        EXPECT_EQ(cairo_surface_write_to_png(surface, path.utf8_str()),
+                  CAIRO_STATUS_SUCCESS);
+        cairo_destroy(cr);
+        cairo_surface_destroy(surface);
+#endif
+      }
 
       // The Sextant Check keeps the prediction engine intact while exposing
       // an independently measured IE.  Verify the complete provenance table
