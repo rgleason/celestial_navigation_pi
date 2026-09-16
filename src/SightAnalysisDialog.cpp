@@ -49,11 +49,10 @@ private:
       return;
     }
     if (size.x < 80 || size.y < 60) return;
-    const int left = 48, right = size.x - 12, top = 12, bottom = size.y - 28;
+    const int left = 48, right = size.x - 12, top = 12, bottom = size.y - 16;
     dc.SetPen(wxPen(wxColour(110, 110, 110)));
     dc.DrawLine(left, top, left, bottom);
     dc.DrawLine(left, bottom, right, bottom);
-    dc.DrawText(_("UTC sequence"), std::max(left, right - 95), bottom + 5);
     wxDateTime first = m_analysis.residuals.front().utc;
     wxDateTime last = first;
     double minimum = m_analysis.residuals.front().interceptMinutes;
@@ -179,6 +178,10 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   root->Add(m_summary, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 8);
   m_plot = new ResidualPlotPanel(this);
   root->Add(m_plot, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 8);
+  // Keep the axis caption in a native control, outside the painted plot.
+  // wxDC text at the chart edge was right-aligned and corrupted on Windows.
+  root->Add(new wxStaticText(this, wxID_ANY, _("UTC sequence")), 0, wxLEFT,
+            56);
   m_results = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
                              wxLC_REPORT | wxLC_HRULES);
   m_results->InsertColumn(0, _("UTC"), wxLIST_FORMAT_LEFT, 160);
