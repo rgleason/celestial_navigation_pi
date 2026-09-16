@@ -196,6 +196,8 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   m_lunarToolsButton->Bind(wxEVT_BUTTON,
                            &CelestialNavigationDialog::OnLunarTools, this);
   m_almanacButton = new wxButton(this, wxID_ANY, _("Generate Almanac..."));
+  m_almanacButton->SetMinSize(
+      wxSize(std::max(215, m_almanacButton->GetBestSize().x + 30), -1));
   m_almanacButton->SetToolTip(
       _("Build a tailored, completely offline voyage almanac PDF"));
   actionButtons->Insert(6, m_almanacButton, 0, wxALL | wxEXPAND, 5);
@@ -221,6 +223,24 @@ CelestialNavigationDialog::CelestialNavigationDialog(
                         m_pdfDocumentationButton, 0, wxALL | wxEXPAND, 5);
   m_pdfDocumentationButton->Bind(
       wxEVT_BUTTON, &CelestialNavigationDialog::OnPdfDocumentation, this);
+
+  // Keep sight maintenance together on the left and fix/reference tools on
+  // the right. All controls were created above (or by the base dialog); only
+  // their positions change. The Time integrity toggle stays with its panel.
+  actionButtons->Clear(false);
+  auto addAction = [actionButtons](wxWindow* control) {
+    actionButtons->Add(control, 0, wxALL | wxEXPAND, 5);
+  };
+  addAction(m_bNewSight);           addAction(m_bFix);
+  addAction(m_bDuplicateSight);     addAction(m_bClockOffset);
+  addAction(m_bEditSight);          addAction(m_eclipseButton);
+  addAction(m_bDeleteSight);        addAction(m_almanacButton);
+  addAction(m_bDeleteAllSights);    addAction(m_bDocumentation);
+  addAction(m_horizonEventButton);  addAction(m_pdfDocumentationButton);
+  addAction(m_coastalButton);       actionButtons->AddSpacer(0);
+  addAction(m_plannerButton);       actionButtons->AddSpacer(0);
+  addAction(m_lunarToolsButton);    actionButtons->AddSpacer(0);
+  addAction(m_analyzeButton);       addAction(m_tbHide);
 
   m_lSights->InsertColumn(rmVISIBLE, wxT(""));
   for (int i = 1; i < rmMAX; i++) {
@@ -1312,17 +1332,24 @@ const Sight* CelestialNavigationDialog::GetSelectedSight() const {
 }
 
 bool CelestialNavigationDialog::GetLastFix(double* latitude,
-                                           double* longitude) const {
+                                           double* longitude,
+                                           wxDateTime* calculatedUtc,
+                                           wxDateTime* epochUtc) const {
   if (!m_hasLastFix || !latitude || !longitude) return false;
   *latitude = m_lastFixLatitude;
   *longitude = m_lastFixLongitude;
+  if (calculatedUtc) *calculatedUtc = m_lastFixCalculatedUtc;
+  if (epochUtc) *epochUtc = m_lastFixEpochUtc;
   return true;
 }
 
-void CelestialNavigationDialog::SetLastFix(double latitude, double longitude) {
+void CelestialNavigationDialog::SetLastFix(double latitude, double longitude,
+                                          const wxDateTime& epochUtc) {
   m_hasLastFix = std::isfinite(latitude) && std::isfinite(longitude);
   m_lastFixLatitude = latitude;
   m_lastFixLongitude = longitude;
+  m_lastFixCalculatedUtc = wxDateTime::UNow();
+  m_lastFixEpochUtc = epochUtc;
 }
 
 void CelestialNavigationDialog::CreatePlannedSight(const wxString& body,

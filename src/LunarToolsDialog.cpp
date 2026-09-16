@@ -70,6 +70,11 @@ double AngularDistance(double lat1, double lon1, double lat2, double lon2) {
   return std::acos(std::max(-1.0, std::min(1.0, cosine))) / to_rad;
 }
 
+wxString FormatPlannerAltitude(double degrees) {
+  return degrees < 0.0 ? wxString("-") + FormatNavigationAngle(-degrees)
+                       : FormatNavigationAngle(degrees);
+}
+
 }  // namespace
 
 LunarToolsDialog::LunarToolsDialog(CelestialNavigationDialog* parent)
@@ -425,11 +430,11 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
   auto* top = new wxBoxSizer(wxVERTICAL);
   auto* note = new wxStaticText(
       page, wxID_ANY,
-      CN_UTF8_("Rank fully offline Moon–body pairs. The time sensitivity is "
-               "the approximate UTC change corresponding to 0.1′ of distance; "
-               "visibility and a comfortable sextant angle still require the "
-               "navigator's judgement."));
-  note->Wrap(1000);
+      CN_UTF8_("Pairs are ordered by 0.1′ time (shortest first), with pairs "
+               "below the geometric horizon last. The time is the approximate "
+               "UTC change corresponding to 0.1′ of lunar distance. "
+               "Visibility and instrument range require your judgement."));
+  note->Wrap(820);
   top->Add(note, 0, wxEXPAND | wxALL, 8);
   auto* controls = new wxBoxSizer(wxVERTICAL);
   auto* positionRow = new wxBoxSizer(wxHORIZONTAL);
@@ -448,7 +453,7 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
                    wxRIGHT, 6);
   positionRow->Add(LabelControl(page, _("Longitude"), m_plannerLongitude), 1,
                    wxRIGHT, 6);
-  auto* calculate = new wxButton(page, wxID_ANY, _("Rank pairs"));
+  auto* calculate = new wxButton(page, wxID_ANY, _("Calculate pairs"));
   calculate->Bind(wxEVT_BUTTON, &LunarToolsDialog::CalculatePlanner, this);
   positionRow->Add(calculate, 0);
   controls->Add(positionRow, 0, wxEXPAND | wxBOTTOM, 5);
@@ -462,11 +467,12 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
   m_plannerList = new wxListCtrl(page, wxID_ANY, wxDefaultPosition,
                                  wxDefaultSize, wxLC_REPORT | wxBORDER_SUNKEN);
   const wxString columns[] = {
-      _("Body"),          _("Moon altitude"),    _("Moon Zn true"),
-      _("Body altitude"), _("Body Zn true"),     _("Distance"),
-      _("Rate"),          CN_UTF8_("0.1′ time"), _("Moon illum."),
-      _("Magnitude"),     _("Quality")};
-  const int widths[] = {150, 145, 105, 145, 105, 125, 125, 115, 105, 95, 230};
+      _("Body"),          _("Below horizon"), _("Distance"),
+      _("Rate"),          CN_UTF8_("0.1′ time"),
+      _("Moon altitude"), _("Body altitude"),
+      _("Moon Zn true"),  _("Body Zn true"),
+      _("Moon illum."),   _("Magnitude")};
+  const int widths[] = {145, 125, 125, 100, 100, 130, 130, 105, 105, 100, 95};
   for (int index = 0; index < 11; ++index) {
     m_plannerList->InsertColumn(index, columns[index]);
     m_plannerList->SetColumnWidth(index, widths[index]);
@@ -1000,8 +1006,6 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
     double sensitivity;
     double illumination;
     double magnitude;
-    double score;
-    wxString quality;
   };
   const MoonInformation moonInformation =
       CalculateMoonInformation(utc, observerLatitude, observerLongitude);
@@ -1026,53 +1030,45 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
     const double rate = (distance_later - distance) * 60.0 * 12.0;
     const double sensitivity =
         std::fabs(rate) > 0.01 ? 360.0 / std::fabs(rate) : INFINITY;
-    double score = 100.0;
-    wxString quality = _("Good geometry");
-    if (moon_alt < 10.0 || body_alt < 10.0) {
-      score -= 80.0;
-      quality = _("Too low / hidden");
-    }
-    if (moon_alt > 75.0 || body_alt > 75.0) {
-      score -= 15.0;
-      quality = _("Awkward altitude");
-    }
-    if (distance < 5.0 || distance > 120.0) {
-      score -= 60.0;
-      quality = _("Awkward sextant angle");
-    }
-    if (std::fabs(rate) < 10.0) {
-      score -= 30.0;
-      quality = _("Weak time sensitivity");
-    }
-    score -= std::min(25.0, std::fabs(moon_alt - body_alt) * 0.4);
-    score -= std::max(0.0, info.visualMagnitude - 1.5) * 4.0;
     rows.push_back({info.name, moon_alt, moon_az, body_alt, body_az, distance,
                     rate, sensitivity,
                     moonInformation.illuminatedFraction * 100.0,
-                    info.visualMagnitude, score, quality});
+                    info.visualMagnitude});
   }
   std::sort(rows.begin(), rows.end(),
-            [](const Row& a, const Row& b) { return a.score > b.score; });
+            [](const Row& a, const Row& b) {
+              const bool a_above = a.moon_alt >= 0.0 && a.body_alt >= 0.0;
+              const bool b_above = b.moon_alt >= 0.0 && b.body_alt >= 0.0;
+              if (a_above != b_above) return a_above;
+              if (a.sensitivity != b.sensitivity)
+                return a.sensitivity < b.sensitivity;
+              return a.body.CmpNoCase(b.body) < 0;
+            });
   for (std::size_t index = 0; index < rows.size(); ++index) {
     const Row& row = rows[index];
     long item = m_plannerList->InsertItem(index, row.body);
-    m_plannerList->SetItem(item, 1, FormatNavigationAngle(row.moon_alt));
-    m_plannerList->SetItem(item, 2,
-                           wxString::Format(CN_UTF8_("%.1f°"), row.moon_az));
-    m_plannerList->SetItem(item, 3, FormatNavigationAngle(row.body_alt));
-    m_plannerList->SetItem(item, 4,
-                           wxString::Format(CN_UTF8_("%.1f°"), row.body_az));
-    m_plannerList->SetItem(item, 5, FormatNavigationAngle(row.distance));
-    m_plannerList->SetItem(item, 6,
+    if (row.moon_alt < 0.0 && row.body_alt < 0.0)
+      m_plannerList->SetItem(item, 1, _("Both"));
+    else if (row.moon_alt < 0.0)
+      m_plannerList->SetItem(item, 1, _("Moon"));
+    else if (row.body_alt < 0.0)
+      m_plannerList->SetItem(item, 1, _("Body"));
+    m_plannerList->SetItem(item, 2, FormatNavigationAngle(row.distance));
+    m_plannerList->SetItem(item, 3,
                            wxString::Format(CN_UTF8_("%+.1f′/h"), row.rate));
-    m_plannerList->SetItem(item, 7,
+    m_plannerList->SetItem(item, 4,
                            std::isfinite(row.sensitivity)
                                ? wxString::Format("%.1f s", row.sensitivity)
                                : CN_UTF8_("—"));
+    m_plannerList->SetItem(item, 5, FormatPlannerAltitude(row.moon_alt));
+    m_plannerList->SetItem(item, 6, FormatPlannerAltitude(row.body_alt));
+    m_plannerList->SetItem(item, 7,
+                           wxString::Format(CN_UTF8_("%.1f°"), row.moon_az));
     m_plannerList->SetItem(item, 8,
+                           wxString::Format(CN_UTF8_("%.1f°"), row.body_az));
+    m_plannerList->SetItem(item, 9,
                            wxString::Format("%.1f%%", row.illumination));
-    m_plannerList->SetItem(item, 9, wxString::Format("%.1f", row.magnitude));
-    m_plannerList->SetItem(item, 10, row.quality);
+    m_plannerList->SetItem(item, 10, wxString::Format("%.1f", row.magnitude));
   }
 }
 

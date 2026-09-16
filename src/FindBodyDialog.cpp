@@ -31,12 +31,16 @@
 
 #include "FindBodyDialog.h"
 
+#include "CelestialNavigationDialog.h"
 #include "OcpnApiCompat.h"
 
 #include "Sight.h"
 #include "celestial_navigation_pi.h"
 #include "geodesic.h"
+#include "WaypointPickerDialog.h"
 #include <cmath>
+#include <wx/choice.h>
+#include <wx/stattext.h>
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
@@ -44,13 +48,30 @@
 
 FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight,
                                CopyHsHandler copyHs)
-    : FindBodyDialogBase(parent), m_Sight(sight), m_copyHs(copyHs) {
+    : FindBodyDialogBase(parent), m_Sight(sight), m_copyHs(copyHs),
+      m_appliedPositionSource(sight.m_DRBoatPosition ? 1 : 0) {
   SetTitle(wxString::Format(_("Find %s"), m_Sight.m_Body));
-  m_cbBoatPosition->SetLabel(_("Current boat position (live)"));
-  m_cbBoatPosition->SetToolTip(
-      _("Uses OpenCPN's current boat position, not the boat position at the "
-        "sight's UTC. For a historical sight, clear this option and enter the "
-        "DR position at the sight time."));
+  m_cbBoatPosition->Hide();
+  auto* positionControls = m_Body->GetItem(size_t(2))->GetSizer();
+  m_positionSource = new wxChoice(this, wxID_ANY);
+  m_positionSource->SetName("Find position source");
+  m_positionSource->Append(_("Manual"));
+  m_positionSource->Append(_("Current boat position (live)"));
+  m_positionSource->Append(_("Chart cursor"));
+  m_positionSource->Append(_("Last calculated fix"));
+  m_positionSource->Append(_("Waypoint or place..."));
+  m_positionSource->SetSelection(sight.m_DRBoatPosition ? 1 : 0);
+  positionControls->Add(new wxStaticText(this, wxID_ANY, _("Position source")),
+                        0, wxLEFT | wxRIGHT | wxTOP, 5);
+  positionControls->Add(m_positionSource, 0, wxALL | wxEXPAND, 5);
+  m_positionInfo = new wxStaticText(this, wxID_ANY, wxEmptyString);
+  m_positionInfo->SetMinSize(wxSize(250, -1));
+  positionControls->Add(m_positionInfo, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
+  m_positionSource->SetToolTip(
+      _("Choose the assumed position for the sight's UTC. Boat position "
+        "uses the current fix, which may be wrong for a historical sight."));
+  m_positionSource->Bind(wxEVT_CHOICE,
+                         &FindBodyDialog::ChangePositionSource, this);
   if (!sight.m_DRBoatPosition) {
     m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_Sight.m_DRLat, true));
     m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_Sight.m_DRLon, true));
@@ -86,7 +107,7 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight,
         "Save Changes there to keep the sight."));
   // Reuse the generated controls, but arrange the tool actions alongside the
   // values they affect. Keep all layout customisation out of generated code.
-  m_Body->GetItem(size_t(2))->GetSizer()->Add(reset, 0, wxALL, 5);
+  positionControls->Add(reset, 0, wxALL, 5);
   auto* towards = m_Body->GetItem(size_t(7))->GetSizer();
   auto* away = m_Body->GetItem(size_t(8))->GetSizer();
   m_Body->Detach(towards);
@@ -165,15 +186,113 @@ void FindBodyDialog::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
 
 FindBodyDialog::~FindBodyDialog() {}
 
+CelestialNavigationDialog* FindBodyDialog::NavigationDialog() const {
+  for (wxWindow* parent = GetParent(); parent; parent = parent->GetParent())
+    if (auto* navigation = dynamic_cast<CelestialNavigationDialog*>(parent))
+      return navigation;
+  return nullptr;
+}
+
+void FindBodyDialog::SetCoordinates(double latitude, double longitude) {
+  m_Sight.m_DRLat = latitude;
+  m_Sight.m_DRLon = longitude;
+  m_tLatitude->ChangeValue(toSDMM_PlugIn(1, latitude, true));
+  m_tLongitude->ChangeValue(toSDMM_PlugIn(2, longitude, true));
+}
+
+void FindBodyDialog::ChangePositionSource(wxCommandEvent&) {
+  ApplyPositionSource();
+}
+
+void FindBodyDialog::ApplyPositionSource() {
+  const int source = m_positionSource->GetSelection();
+  double latitude = m_Sight.m_DRLat;
+  double longitude = m_Sight.m_DRLon;
+  wxString info;
+  auto* navigation = NavigationDialog();
+  bool available = true;
+  if (source == 1) {
+    available = navigation && navigation->GetPlugin()->GetBoatPosition(
+                                 &latitude, &longitude);
+    info = _("Current boat fix; check the sight's UTC.");
+  } else if (source == 2) {
+    available = navigation && navigation->GetPlugin()->GetCursorPosition(
+                                 &latitude, &longitude);
+    info = _("Chart cursor position captured.");
+  } else if (source == 3) {
+    wxDateTime calculatedUtc, epochUtc;
+    available = navigation && navigation->GetLastFix(
+                                 &latitude, &longitude, &calculatedUtc,
+                                 &epochUtc);
+    if (available) {
+      if (epochUtc.IsValid())
+        info = wxString::Format(
+            _("Fix epoch: %s UTC"),
+            epochUtc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC).c_str());
+      else
+        info = wxString::Format(
+            _("Calculated: %s UTC; no single fix epoch"),
+            calculatedUtc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC)
+                .c_str());
+    }
+  } else if (source == 4) {
+    const auto waypoints = LoadOpenCpnWaypoints();
+    if (waypoints.empty()) {
+      available = false;
+    } else {
+      WaypointPickerDialog picker(this, waypoints, wxEmptyString);
+      if (picker.ShowModal() != wxID_OK) {
+        m_positionSource->SetSelection(m_appliedPositionSource);
+        return;
+      }
+      const WaypointPosition* waypoint = picker.GetSelectedWaypoint();
+      available = waypoint != nullptr;
+      if (waypoint) {
+        latitude = waypoint->latitude;
+        longitude = waypoint->longitude;
+        info = wxString::Format(_("Waypoint/place: %s"),
+                                waypoint->name.c_str());
+      }
+    }
+  } else {
+    info = _("Enter the DR position at the sight's UTC.");
+  }
+  if (!available) {
+    wxMessageBox(_("This position source is unavailable; the previous "
+                   "coordinates were retained."),
+                 _("Position unavailable"), wxOK | wxICON_INFORMATION, this);
+    m_positionSource->SetSelection(m_appliedPositionSource);
+    return;
+  }
+  m_cbBoatPosition->SetValue(source == 1);
+  m_Sight.m_DRBoatPosition = source == 1;
+  if (source != 0) SetCoordinates(latitude, longitude);
+  m_tLatitude->Enable(source == 0);
+  m_tLongitude->Enable(source == 0);
+  m_positionInfo->SetLabel(info);
+  m_positionInfo->Wrap(250);
+  m_appliedPositionSource = source;
+  Update();
+  GetSizer()->Layout();
+  GetSizer()->Fit(this);
+}
+
 void FindBodyDialog::ResetPosition() {
   m_Sight.m_DRLat = m_initialLatitude;
   m_Sight.m_DRLon = m_initialLongitude;
+  m_positionSource->SetSelection(m_initialBoatPosition ? 1 : 0);
+  m_appliedPositionSource = m_positionSource->GetSelection();
   m_cbBoatPosition->SetValue(m_initialBoatPosition);
   m_Sight.m_DRBoatPosition = m_initialBoatPosition;
   m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_initialLatitude, true));
   m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_initialLongitude, true));
   m_tLatitude->Enable(!m_initialBoatPosition);
   m_tLongitude->Enable(!m_initialBoatPosition);
+  m_positionInfo->SetLabel(m_initialBoatPosition
+                               ? _("Current boat fix; check the sight's UTC.")
+                               : _("Enter the DR position at the sight's UTC."));
+  m_positionInfo->Wrap(250);
+  GetSizer()->Fit(this);
   Update();
 }
 
@@ -215,22 +334,21 @@ void FindBodyDialog::OnUpdateBoatPosition(wxCommandEvent& event) {
 }
 
 void FindBodyDialog::UpdateBoatPosition() {
-  m_Sight.m_DRBoatPosition = m_cbBoatPosition->GetValue();
-  if (m_Sight.m_DRBoatPosition) {
+  if (m_positionSource->GetSelection() == 1) {
     double lat, lon;
     celestial_navigation_pi_BoatPos(lat, lon);
-    m_Sight.m_DRLat = lat;
-    m_Sight.m_DRLon = lon;
+    SetCoordinates(lat, lon);
+    m_Sight.m_DRBoatPosition = true;
     m_tLatitude->Enable(false);
     m_tLongitude->Enable(false);
+    m_positionInfo->SetLabel(_("Current boat fix; check the sight's UTC."));
   } else {
-    m_Sight.m_DRLat = fromDMM_Plugin(m_tLatitude->GetValue());
-    m_Sight.m_DRLon = fromDMM_Plugin(m_tLongitude->GetValue());
+    m_Sight.m_DRBoatPosition = false;
     m_tLatitude->Enable(true);
     m_tLongitude->Enable(true);
+    m_positionInfo->SetLabel(_("Enter the DR position at the sight's UTC."));
   }
-  m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_Sight.m_DRLat, true));
-  m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_Sight.m_DRLon, true));
+  m_cbBoatPosition->SetValue(m_Sight.m_DRBoatPosition);
   Update();
 }
 

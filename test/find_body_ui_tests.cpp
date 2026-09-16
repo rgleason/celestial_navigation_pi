@@ -2,12 +2,14 @@
 #include <wx/app.h>
 #include <wx/button.h>
 #include <wx/checkbox.h>
+#include <wx/choice.h>
 #include <wx/filename.h>
 #include <wx/ffile.h>
 #include <wx/frame.h>
 #include <wx/listctrl.h>
 #include <wx/log.h>
 #include <wx/modalhook.h>
+#include <wx/stattext.h>
 #include <wx/textctrl.h>
 #include <wx/tglbtn.h>
 #include <cstdlib>
@@ -15,6 +17,8 @@
 #include "CelestialNavigationDialog.h"
 #include "FindBodyDialog.h"
 #include "SightDialog.h"
+#include "UtcDateTime.h"
+#include "WaypointPickerDialog.h"
 #include "mock_plugin_api.h"
 #ifdef __WXGTK3__
 #include <gtk/gtk.h>
@@ -37,6 +41,22 @@ wxTextCtrl* Coordinate(wxWindow* root, const wxString& label) {
     if (auto* value = Coordinate(child, label)) return value;
   }
   return nullptr;
+}
+wxChoice* PositionSource(wxWindow* root) {
+  for (auto* child : root->GetChildren()) {
+    if (auto* choice = dynamic_cast<wxChoice*>(child))
+      if (choice->GetName() == "Find position source") return choice;
+    if (auto* value = PositionSource(child)) return value;
+  }
+  return nullptr;
+}
+void SelectPositionSource(wxWindow* root, int source) {
+  auto* choice = PositionSource(root);
+  ASSERT_NE(nullptr, choice);
+  choice->SetSelection(source);
+  wxCommandEvent change(wxEVT_CHOICE, choice->GetId());
+  change.SetEventObject(choice);
+  choice->ProcessWindowEvent(change);
 }
 wxString SavedXml(const wxString& path) {
   if (!wxFileExists(path)) return wxString();
@@ -62,8 +82,14 @@ class Hook : public wxModalDialogHook {
 public:
   std::function<void(SightDialog*)> properties;
   std::function<void(FindBodyDialog*)> finder;
+  std::function<void(WaypointPickerDialog*)> waypoint;
   int Enter(wxDialog* dialog) override {
-    if (auto* value = dynamic_cast<FindBodyDialog*>(dialog))
+    if (auto* value = dynamic_cast<WaypointPickerDialog*>(dialog))
+      wxTheApp->CallAfter([=] {
+        waypoint(value);
+        if (value->IsModal()) value->EndModal(wxID_CANCEL);
+      });
+    else if (auto* value = dynamic_cast<FindBodyDialog*>(dialog))
       wxTheApp->CallAfter([=] {
         finder(value);
         if (value->IsModal()) {
@@ -123,7 +149,56 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
   {
     wxFrame frame(nullptr, wxID_ANY, "Find workflow test");
     celestial_navigation_pi plugin(nullptr);
+    PlugIn_Position_Fix_Ex boat{};
+    boat.Lat = 53.0;
+    boat.Lon = -4.0;
+    plugin.SetPositionFixEx(boat);
+    plugin.SetCursorLatLon(49.0, -4.0);
     Main main(&frame, &plugin);
+    main.SetSize(wxSize(1200, 800));
+    main.Show();
+    main.Layout();
+    const wxRect sightWindow(wxPoint(0, 0), main.GetClientSize());
+    for (const auto& label : {
+             "New", "Duplicate", "Edit", "Delete", "Delete All",
+             "Horizon Event...", "Coastal Sextant...", "Sun && Moon...",
+             "Lunar Tools...", "Analyze Sights...", "Fix...", "Clock Offset",
+             "Eclipses...", "Generate Almanac...", "Documentation",
+             "PDF Documentation"}) {
+      auto* button = Find<wxButton>(&main, label);
+      ASSERT_NE(nullptr, button) << label;
+      EXPECT_TRUE(button->IsShown()) << label;
+      EXPECT_TRUE(sightWindow.Contains(button->GetRect())) << label;
+    }
+    auto* hideSights = Find<wxToggleButton>(&main, "Hide Sights");
+    ASSERT_NE(nullptr, hideSights);
+    EXPECT_TRUE(sightWindow.Contains(hideSights->GetRect()));
+    EXPECT_NE(nullptr, Find<wxToggleButton>(&main, "Hide Time"));
+    EXPECT_LT(Find<wxButton>(&main, "New")->GetPosition().x,
+              Find<wxButton>(&main, "Fix...")->GetPosition().x);
+    EXPECT_LT(Find<wxButton>(&main, "New")->GetPosition().y,
+              Find<wxButton>(&main, "Edit")->GetPosition().y);
+    EXPECT_LT(Find<wxButton>(&main, "Edit")->GetPosition().y,
+              Find<wxButton>(&main, "Analyze Sights...")->GetPosition().y);
+#ifdef __WXGTK3__
+    const auto sightsSize = main.GetSize();
+    GtkAllocation sightsAllocation{0, 0, sightsSize.x, sightsSize.y};
+    gtk_widget_size_allocate(GTK_WIDGET(main.GetHandle()), &sightsAllocation);
+    auto* sightsSurface = cairo_image_surface_create(
+        CAIRO_FORMAT_ARGB32, sightsSize.x, sightsSize.y);
+    auto* sightsCr = cairo_create(sightsSurface);
+    gtk_widget_draw(GTK_WIDGET(main.GetHandle()), sightsCr);
+    EXPECT_EQ(cairo_surface_write_to_png(
+                  sightsSurface, "/tmp/celestial-sights-2859.png"),
+              CAIRO_STATUS_SUCCESS);
+    cairo_destroy(sightsCr);
+    cairo_surface_destroy(sightsSurface);
+#endif
+    main.Hide();
+    wxDateTime fixEpoch;
+    ASSERT_TRUE(fixEpoch.ParseISOCombined("2024-06-13T18:00:00"));
+    main.SetLastFix(48.2, -5.3, UtcDateTime::ToInstant(fixEpoch));
+    SetTestWaypoints({{"chester", "Chester", 53.19, -2.89}});
     auto* timeToggle = Find<wxToggleButton>(&main, "Hide Time");
     ASSERT_NE(nullptr, timeToggle);
     timeToggle->SetValue(false);
@@ -176,6 +251,19 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
         const wxString xmlPath = state + "/plugins/celestial_navigation/Sights.xml";
         const wxString xmlBefore = SavedXml(xmlPath);
         int visits = 0;
+        hook.waypoint = [&](WaypointPickerDialog* picker) {
+          wxListCtrl* list = nullptr;
+          for (auto* child : picker->GetChildren())
+            if ((list = dynamic_cast<wxListCtrl*>(child))) break;
+          ASSERT_NE(nullptr, list);
+          ASSERT_EQ(1, list->GetItemCount());
+          wxListEvent selection(wxEVT_LIST_ITEM_SELECTED, list->GetId());
+          wxListItem item;
+          item.SetData(static_cast<long>(list->GetItemData(0)));
+          selection.SetItem(item);
+          list->ProcessWindowEvent(selection);
+          picker->EndModal(wxID_OK);
+        };
         hook.finder = [&](FindBodyDialog* dialog) {
           ++visits;
           auto* lat = Coordinate(dialog, "Latitude");
@@ -199,6 +287,40 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
             Click(dialog, "Close");
             return;
           }
+          if (route == 0 && action == 0) {
+            auto* source = PositionSource(dialog);
+            ASSERT_NE(nullptr, source);
+            EXPECT_EQ(5u, source->GetCount());
+            EXPECT_EQ(0, source->GetSelection());
+            SelectPositionSource(dialog, 2);
+            EXPECT_NEAR(49.0, dialog->m_Sight.m_DRLat, 1e-6);
+            EXPECT_FALSE(lat->IsEnabled());
+            SelectPositionSource(dialog, 3);
+            EXPECT_NEAR(48.2, dialog->m_Sight.m_DRLat, 1e-6);
+            EXPECT_NE(nullptr, Find<wxStaticText>(
+                                   dialog, "Fix epoch: 2024-06-13 18:00:00 UTC"));
+#ifdef __WXGTK3__
+            dialog->Layout();
+            const auto fixSize = dialog->GetSize();
+            GtkAllocation fixAllocation{0, 0, fixSize.x, fixSize.y};
+            gtk_widget_size_allocate(GTK_WIDGET(dialog->GetHandle()),
+                                     &fixAllocation);
+            auto* fixSurface = cairo_image_surface_create(
+                CAIRO_FORMAT_ARGB32, fixSize.x, fixSize.y);
+            auto* fixCr = cairo_create(fixSurface);
+            gtk_widget_draw(GTK_WIDGET(dialog->GetHandle()), fixCr);
+            EXPECT_EQ(cairo_surface_write_to_png(
+                          fixSurface, "/tmp/find-body-2859-fix.png"),
+                      CAIRO_STATUS_SUCCESS);
+            cairo_destroy(fixCr);
+            cairo_surface_destroy(fixSurface);
+#endif
+            SelectPositionSource(dialog, 4);
+            EXPECT_NEAR(53.19, dialog->m_Sight.m_DRLat, 1e-6);
+            EXPECT_NEAR(-2.89, dialog->m_Sight.m_DRLon, 1e-6);
+            SelectPositionSource(dialog, 0);
+            EXPECT_TRUE(lat->IsEnabled());
+          }
           lat->SetValue("42 N");
           lon->SetValue("70 W");
           wxCommandEvent enter(wxEVT_TEXT_ENTER, lat->GetId());
@@ -212,15 +334,9 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
                 Find<wxButton>(dialog, "Copy estimated Hs")->IsEnabled());
           }
           if (action == 3) {
-            auto* live =
-                Find<wxCheckBox>(dialog, "Current boat position (live)");
-            ASSERT_NE(nullptr, live);
-            live->SetValue(true);
-            wxCommandEvent toggle(wxEVT_CHECKBOX, live->GetId());
-            toggle.SetEventObject(live);
-            live->ProcessWindowEvent(toggle);
+            SelectPositionSource(dialog, 1);
             Click(dialog, "Reset position");
-            EXPECT_FALSE(live->GetValue());
+            EXPECT_EQ(0, PositionSource(dialog)->GetSelection());
             EXPECT_TRUE(lat->IsEnabled());
             EXPECT_TRUE(dialog->IsShown());
             expectedLat = initial.m_DRLat;
@@ -276,7 +392,7 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
             auto* cr = cairo_create(surface);
             gtk_widget_draw(GTK_WIDGET(dialog->GetHandle()), cr);
             EXPECT_EQ(
-                cairo_surface_write_to_png(surface, "/tmp/find-body-2854.png"),
+                cairo_surface_write_to_png(surface, "/tmp/find-body-2859.png"),
                 CAIRO_STATUS_SUCCESS);
             cairo_destroy(cr);
             cairo_surface_destroy(surface);
@@ -298,12 +414,7 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
             expectedLat = initial.m_DRLat;
             expectedLon = initial.m_DRLon;
             if (action == 7) {
-              auto* live =
-                  Find<wxCheckBox>(dialog, "Current boat position (live)");
-              live->SetValue(true);
-              wxCommandEvent toggle(wxEVT_CHECKBOX, live->GetId());
-              toggle.SetEventObject(live);
-              live->ProcessWindowEvent(toggle);
+              SelectPositionSource(dialog, 1);
             }
             lat->SetValue("");  // An accidental blank must not be committed.
           }
@@ -354,6 +465,7 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
       }
   }
   SetTestPrivateDataPath(wxString());
+  SetTestWaypoints({});
   SetTestPluginDataRoot(wxString());
   wxSetAssertHandler(oldAssert);
   wxTheApp->OnExit();

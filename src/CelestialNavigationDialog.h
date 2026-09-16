@@ -66,8 +66,11 @@ public:
   void RunPlannerIntegrationScenario();
   celestial_navigation_pi* GetPlugin() const { return m_Plugin; }
   const Sight* GetSelectedSight() const;
-  bool GetLastFix(double* latitude, double* longitude) const;
-  void SetLastFix(double latitude, double longitude);
+  bool GetLastFix(double* latitude, double* longitude,
+                  wxDateTime* calculatedUtc = nullptr,
+                  wxDateTime* epochUtc = nullptr) const;
+  void SetLastFix(double latitude, double longitude,
+                  const wxDateTime& epochUtc = wxDateTime());
   void CreatePlannedSight(const wxString& body, const wxDateTime& utc,
                           double drLat, double drLon);
   int GetClockCorrection() const { return m_ClockCorrection; }
@@ -168,6 +171,8 @@ private:
   bool m_hasLastFix;
   double m_lastFixLatitude;
   double m_lastFixLongitude;
+  wxDateTime m_lastFixCalculatedUtc;
+  wxDateTime m_lastFixEpochUtc;
 
   wxPoint m_startPos;
   wxPoint m_startMouse;
