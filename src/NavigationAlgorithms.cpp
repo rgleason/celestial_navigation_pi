@@ -6,6 +6,7 @@
 #include "UtcDateTime.h"
 #include "geodesic.h"
 #include "moon.h"
+#include "astrolabe/astrolabe.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -48,6 +49,35 @@ double AngularSeparation(double lat1, double lon1, double lat2, double lon2) {
                              std::cos(a) * std::cos(b) * std::cos(dl),
                          -1.0, 1.0)) /
          kDeg;
+}
+
+double DateObliquity(const wxDateTime& utc) {
+  const double tt = astrolabe::dynamical::ut_to_dt(utc.GetJulianDayNumber());
+  return astrolabe::nutation::obliquity(tt) +
+         astrolabe::nutation::nut_in_obl(tt);
+}
+
+PlannerSkyPoint ToSkyPoint(const wxDateTime& utc, double observerLat,
+                           double observerLon, double sha, double dec,
+                           double ghaAries) {
+  const double hourAngle = Wrap360(ghaAries + sha + observerLon) * kDeg;
+  const double phi = observerLat * kDeg;
+  const double delta = dec * kDeg;
+  PlannerSkyPoint point;
+  point.utc = utc;
+  point.sha = Wrap360(sha);
+  point.declination = dec;
+  point.altitude = std::asin(Clamp(std::sin(phi) * std::sin(delta) +
+                                       std::cos(phi) * std::cos(delta) *
+                                           std::cos(hourAngle),
+                                   -1.0, 1.0)) /
+                   kDeg;
+  point.azimuth = Wrap360(std::atan2(-std::sin(hourAngle) * std::cos(delta),
+                                    std::sin(delta) * std::cos(phi) -
+                                        std::cos(delta) * std::sin(phi) *
+                                            std::cos(hourAngle)) /
+                           kDeg);
+  return point;
 }
 
 double EventValue(const wxString& body, const wxDateTime& utc,
@@ -691,6 +721,150 @@ std::vector<size_t> SightRanker::SkyLabelPriority(
                      return a.state.body.CmpNoCase(b.state.body) < 0;
                    });
   return order;
+}
+
+double PlannerRecommendations::EclipticLatitude(const BodyState& body,
+                                                 const wxDateTime& utc) {
+  const double rightAscension = Wrap360(360.0 - body.sha) * kDeg;
+  const double declination = body.declination * kDeg;
+  const double epsilon = DateObliquity(utc);
+  // Rotate the body's equatorial direction into the ecliptic plane. This is
+  // an angular latitude, not a declination difference at the same SHA.
+  return std::asin(Clamp(std::sin(declination) * std::cos(epsilon) -
+                             std::cos(declination) * std::sin(epsilon) *
+                                 std::sin(rightAscension),
+                         -1.0, 1.0)) /
+         kDeg;
+}
+
+PlanningResult PlannerRecommendations::Calculate(const wxDateTime& utc,
+                                                  double lat, double lon) {
+  PlanningResult result;
+  if (!utc.IsValid() || !std::isfinite(lat) || !std::isfinite(lon) ||
+      std::abs(lat) > 90.0)
+    return result;
+  result.bodies = SightRanker::VisibleBodies(
+      utc, lat, lon, -90.0, 90.0, std::numeric_limits<double>::infinity());
+  result.moon = CalculateMoonInformation(utc, lat, lon);
+  const BodyState moon = CelestialEphemeris::Evaluate("Moon", utc, lat, lon);
+  const BodyState sun = CelestialEphemeris::Evaluate("Sun", utc, lat, lon);
+  const wxDateTime later = AddSeconds(utc, 300.0);
+  const BodyState laterMoon =
+      CelestialEphemeris::Evaluate("Moon", later, lat, lon);
+  for (auto& body : result.bodies) {
+    body.eclipticLatitude = EclipticLatitude(body.state, utc);
+    if (body.state.body == "Moon" || !moon.valid || !laterMoon.valid)
+      continue;
+    const BodyState laterBody =
+        CelestialEphemeris::Evaluate(body.state.body, later, lat, lon);
+    if (!laterBody.valid) continue;
+    body.lunarDistance = AngularSeparation(
+        moon.declination, -moon.gha, body.state.declination, -body.state.gha);
+    const double laterDistance = AngularSeparation(
+        laterMoon.declination, -laterMoon.gha, laterBody.declination,
+        -laterBody.gha);
+    body.lunarRateArcminHour = (laterDistance - body.lunarDistance) * 720.0;
+    const double absoluteRate = std::abs(body.lunarRateArcminHour);
+    body.lunarTimingSeconds =
+        absoluteRate > 0.01 ? 360.0 / absoluteRate
+                            : std::numeric_limits<double>::infinity();
+    const double rate = Clamp(absoluteRate / 30.0, 0.0, 1.0);
+    const double distance =
+        body.lunarDistance < 20.0
+            ? Clamp(body.lunarDistance / 20.0, 0.0, 1.0)
+            : body.lunarDistance > 100.0
+                  ? Clamp(1.0 - (body.lunarDistance - 100.0) / 100.0, 0.0, 1.0)
+                  : 1.0;
+    const double ecliptic =
+        Clamp(1.0 - std::abs(body.eclipticLatitude) / 30.0, 0.0, 1.0);
+    const double altitude = Clamp(std::min(moon.geometricAltitude,
+                                           body.state.geometricAltitude) /
+                                      20.0,
+                                  0.0, 1.0);
+    const double brightness =
+        Clamp((3.0 - body.state.visualMagnitude) / 5.0, 0.0, 1.0);
+    // Provisional ordering only. All candidates remain in the table.
+    body.lunarSuitability = 100.0 *
+        (0.35 * rate + 0.20 * distance + 0.15 * ecliptic +
+         0.20 * altitude + 0.10 * brightness);
+    body.lunarReason = body.lunarSuitability >= 70.0
+                           ? "Promising geometry"
+                           : body.lunarSuitability >= 45.0
+                                 ? "Moderate geometry"
+                                 : "Challenging geometry";
+    if (moon.geometricAltitude < 0.0 || body.state.geometricAltitude < 0.0)
+      body.lunarReason += "; below horizon";
+    if (body.lunarDistance < 20.0)
+      body.lunarReason += "; small LD";
+    if (body.lunarDistance > 100.0)
+      body.lunarReason += "; wide LD";
+    if (absoluteRate < 10.0) body.lunarReason += "; slow LD change";
+    if (body.state.visualMagnitude > 2.5)
+      body.lunarReason += "; faint companion";
+    if (body.state.visualMagnitude > -2.0 &&
+        sun.geometricAltitude > -6.0)
+      body.lunarReason += "; daylight/twilight visibility";
+  }
+  return result;
+}
+
+std::vector<RankedBody> PlannerRecommendations::Order(
+    const PlanningResult& result, PlanningMode mode, bool includeBelowHorizon) {
+  std::vector<RankedBody> bodies;
+  for (const auto& body : result.bodies) {
+    if (!includeBelowHorizon && body.state.geometricAltitude < 0.0) continue;
+    bodies.push_back(body);
+  }
+  std::stable_sort(bodies.begin(), bodies.end(),
+                   [mode](const RankedBody& a, const RankedBody& b) {
+                     if (mode == PlanningMode::ShowAll)
+                       return a.state.body.CmpNoCase(b.state.body) < 0;
+                     if (mode == PlanningMode::BrightBodies &&
+                         a.state.visualMagnitude != b.state.visualMagnitude)
+                       return a.state.visualMagnitude < b.state.visualMagnitude;
+                     const double left = mode == PlanningMode::LunarCandidates
+                                             ? a.lunarSuitability : a.score;
+                     const double right = mode == PlanningMode::LunarCandidates
+                                              ? b.lunarSuitability : b.score;
+                     if (left != right) return left > right;
+                     return a.state.body.CmpNoCase(b.state.body) < 0;
+                   });
+  return bodies;
+}
+
+std::vector<PlannerSkyPoint> PlannerRecommendations::Ecliptic(
+    const wxDateTime& utc, double lat, double lon) {
+  std::vector<PlannerSkyPoint> points;
+  if (!utc.IsValid()) return points;
+  const BodyState moon = CelestialEphemeris::Evaluate("Moon", utc, lat, lon);
+  if (!moon.valid) return points;
+  const double epsilon = DateObliquity(utc);
+  for (int degrees = 0; degrees <= 360; degrees += 3) {
+    double ra = 0.0, dec = 0.0;
+    astrolabe::util::ecl_to_equ(degrees * kDeg, 0.0, epsilon, ra, dec);
+    points.push_back(ToSkyPoint(utc, lat, lon, Wrap360(360.0 - ra / kDeg),
+                                dec / kDeg, moon.ghaAries));
+  }
+  return points;
+}
+
+std::vector<PlannerSkyPoint> PlannerRecommendations::MoonPath(
+    const ObserverMotion& observer, int halfSpanHours) {
+  std::vector<PlannerSkyPoint> points;
+  if (!observer.referenceUtc.IsValid() || halfSpanHours < 1 ||
+      halfSpanHours > 24)
+    return points;
+  for (int minutes = -halfSpanHours * 60; minutes <= halfSpanHours * 60;
+       minutes += 30) {
+    const wxDateTime utc = AddSeconds(observer.referenceUtc, minutes * 60.0);
+    double lat = observer.latitude, lon = observer.longitude;
+    observer.PositionAt(utc, &lat, &lon);
+    const BodyState moon = CelestialEphemeris::Evaluate("Moon", utc, lat, lon);
+    if (!moon.valid) continue;
+    points.push_back({utc, moon.geometricAltitude, moon.azimuthTrue, moon.sha,
+                      moon.declination});
+  }
+  return points;
 }
 
 wxDateTime PlannerFieldsToUtc(const wxDateTime& fields, PlannerTimeBasis basis,

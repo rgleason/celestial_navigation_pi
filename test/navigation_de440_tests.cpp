@@ -9,12 +9,26 @@
 #include "Sight.h"
 #include "UtcDateTime.h"
 
+#include <algorithm>
 #include <cmath>
+#include <tuple>
 #include <wx/utils.h>
+#include <wx/init.h>
 
 namespace {
 double CircularDifference(double a, double b) {
   return std::remainder(a - b, 360.0);
+}
+
+double Separation(const celestial_navigation::De440NavigationSample& a,
+                  const celestial_navigation::De440NavigationSample& b) {
+  constexpr double radians = 3.14159265358979323846 / 180.0;
+  const double da = a.declination_deg * radians;
+  const double db = b.declination_deg * radians;
+  const double gha = CircularDifference(a.gha_deg, b.gha_deg) * radians;
+  const double cosine = std::sin(da) * std::sin(db) +
+                        std::cos(da) * std::cos(db) * std::cos(gha);
+  return std::acos(std::max(-1.0, std::min(1.0, cosine))) / radians;
 }
 
 eclipse::CalendarDateTime PointJudithUtc() {
@@ -41,6 +55,50 @@ TEST(NavigationDe440, PluginProviderIsOptInAndDoesNotTouchStars) {
       "Sirius", utc, &sample, &reason));
   EXPECT_EQ(reason, "Target centre is not in compact DE440s");
   wxUnsetEnv("CELNAV_TEST_DE440_ENABLE");
+}
+
+TEST(NavigationDe440, BobPlannerLunarValuesAgreeWithIndependentKernel) {
+  wxInitializer initializer;
+  ASSERT_TRUE(initializer.IsOk());
+  wxUnsetEnv("CELNAV_TEST_DE440_ENABLE");
+  for (const auto& sample : {
+           std::make_tuple("2025-12-14T10:00:00", 43.0 + 10.0 / 60.0, -77.5),
+           std::make_tuple("2025-12-14T16:00:00", -31.0, 172.0)}) {
+    wxDateTime fields;
+    ASSERT_TRUE(fields.ParseISOCombined(std::get<0>(sample)));
+    const auto plan = PlannerRecommendations::Calculate(
+        UtcDateTime::ToInstant(fields), std::get<1>(sample),
+        std::get<2>(sample));
+    wxSetEnv("CELNAV_TEST_DE440_ENABLE", "1");
+    celestial_navigation::De440NavigationSample moon, laterMoon;
+    std::string reason;
+    const wxDateTime later = fields + wxTimeSpan::Minutes(5);
+    const bool moonOk = celestial_navigation::TryDe440NavigationSample(
+        "Moon", fields, &moon, &reason);
+    const bool laterMoonOk = celestial_navigation::TryDe440NavigationSample(
+        "Moon", later, &laterMoon, &reason);
+    for (const wxString bodyName : {wxString("Sun"), wxString("Venus")}) {
+      celestial_navigation::De440NavigationSample body, laterBody;
+      const bool bodyOk = celestial_navigation::TryDe440NavigationSample(
+          bodyName, fields, &body, &reason);
+      const bool laterBodyOk = celestial_navigation::TryDe440NavigationSample(
+          bodyName, later, &laterBody, &reason);
+      wxUnsetEnv("CELNAV_TEST_DE440_ENABLE");
+      ASSERT_TRUE(moonOk && laterMoonOk && bodyOk && laterBodyOk) << reason;
+      const auto match = std::find_if(plan.bodies.begin(), plan.bodies.end(),
+          [&bodyName](const RankedBody& item) {
+            return item.state.body == bodyName;
+          });
+      ASSERT_NE(match, plan.bodies.end());
+      const double referenceDistance = Separation(moon, body);
+      const double referenceRate =
+          (Separation(laterMoon, laterBody) - referenceDistance) * 720.0;
+      EXPECT_NEAR(referenceDistance, match->lunarDistance, 0.15);
+      EXPECT_NEAR(referenceRate, match->lunarRateArcminHour, 3.0);
+      wxSetEnv("CELNAV_TEST_DE440_ENABLE", "1");
+    }
+    wxUnsetEnv("CELNAV_TEST_DE440_ENABLE");
+  }
 }
 
 TEST(NavigationDe440, PluginBodyLocationUsesVerifiedKernelAndFractionalUtc) {

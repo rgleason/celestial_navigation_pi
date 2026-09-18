@@ -145,6 +145,12 @@ struct RankedBody {
   BodyState state;
   double score = 0.0;
   wxString reason;
+  double eclipticLatitude = 0.0;
+  double lunarDistance = 0.0;
+  double lunarRateArcminHour = 0.0;
+  double lunarTimingSeconds = 0.0;
+  double lunarSuitability = 0.0;
+  wxString lunarReason;
 };
 
 struct RankedCombination {
@@ -168,6 +174,40 @@ public:
       double minimumAltitude, double maximumAltitude);
   static std::vector<size_t> SkyLabelPriority(
       const std::vector<RankedBody>& bodies);
+};
+
+enum class PlanningMode { PracticalFix, BrightBodies, LunarCandidates, ShowAll };
+
+struct PlannerSkyPoint {
+  PlannerSkyPoint() = default;
+  PlannerSkyPoint(const wxDateTime& time, double hc, double zn, double shaDeg,
+                  double decDeg)
+      : utc(time), altitude(hc), azimuth(zn), sha(shaDeg),
+        declination(decDeg) {}
+  wxDateTime utc;
+  double altitude = 0.0;
+  double azimuth = 0.0;
+  double sha = 0.0;
+  double declination = 0.0;
+};
+
+struct PlanningResult {
+  std::vector<RankedBody> bodies;
+  MoonInformation moon;
+};
+
+class PlannerRecommendations {
+public:
+  static PlanningResult Calculate(const wxDateTime& utc, double lat,
+                                  double lon);
+  static std::vector<RankedBody> Order(const PlanningResult& result,
+                                       PlanningMode mode,
+                                       bool includeBelowHorizon);
+  static double EclipticLatitude(const BodyState& body, const wxDateTime& utc);
+  static std::vector<PlannerSkyPoint> Ecliptic(const wxDateTime& utc,
+                                               double lat, double lon);
+  static std::vector<PlannerSkyPoint> MoonPath(const ObserverMotion& observer,
+                                               int halfSpanHours = 3);
 };
 
 enum class PlannerTimeBasis {

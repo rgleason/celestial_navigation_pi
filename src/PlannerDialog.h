@@ -64,6 +64,7 @@ private:
   void RefreshBodies();
   void RebuildBodyList();
   void RefreshSkyPlot();
+  void ExportBodyTable(wxCommandEvent& event);
   void SortBodies(wxListEvent& event);
   void RefreshAlmanac();
   void RefreshSpecial();
@@ -104,10 +105,20 @@ private:
   wxStaticText* m_moonSummary;
   wxListCtrl* m_bodies;
   wxListCtrl* m_combinations;
+  wxListCtrl* m_lunarPairs;
+  wxNotebook* m_resultsNotebook;
+  wxStaticText* m_noRecommendations;
+  wxChoice* m_planningMode;
+  wxCheckBox* m_tableBelowHorizon;
   wxCheckBox* m_limitRecommendationAltitude;
   wxSpinCtrlDouble* m_recommendationMinAltitude;
   wxSpinCtrlDouble* m_recommendationMaxAltitude;
   SkyPlotPanel* m_skyPlot;
+  SkyPlotPanel* m_equatorialPlot;
+  wxNotebook* m_plotNotebook;
+  wxCheckBox* m_showEcliptic;
+  wxCheckBox* m_showMoonPath;
+  wxChoice* m_moonSpan;
   wxChoice* m_plotMagnitude;
   wxCheckBox* m_plotBelowHorizon;
   wxListCtrl* m_almanac;
@@ -122,6 +133,8 @@ private:
   double m_lastValidZoneOffset;
   bool m_zoneOffsetTextValid;
   bool m_updatingZoneOffset;
+  bool m_compactLayout = false;
+  bool m_reflowingLayout = false;
   wxString m_waypointGuid;
   wxString m_waypointName;
   wxTimer m_cursorTimer;
@@ -132,6 +145,7 @@ private:
   int m_waypointIntegrationAttempts;
 #endif
   std::vector<RankedBody> m_rankedBodies;
+  PlanningResult m_planningResult;
   std::vector<AlmanacRow> m_almanacRows;
 };
 
