@@ -209,7 +209,17 @@ double Hc(const FixObservation& observation, const ObserverMotion& baseMotion,
   motion.latitude = epochLat;
   motion.longitude = epochLon;
   double lat, lon;
-  motion.PositionAt(observation.utc, &lat, &lon);
+  if (observation.hasManualDisplacement) {
+    lat = epochLat;
+    lon = epochLon;
+    if (observation.displacementNm != 0.0)
+      ll_gc_ll(epochLat, epochLon,
+               Wrap360(observation.displacementBearingTrue +
+                       (observation.displacementNm > 0.0 ? 180.0 : 0.0)),
+               std::fabs(observation.displacementNm), &lat, &lon);
+  } else {
+    motion.PositionAt(observation.utc, &lat, &lon);
+  }
   return CelestialEphemeris::Evaluate(observation.body, observation.utc, lat,
                                       lon)
       .geometricAltitude;
@@ -762,8 +772,12 @@ RunningFixResult RunningFixSolver::Solve(
         !std::isfinite(sight.observedAltitude) ||
         std::fabs(sight.observedAltitude) > 90 ||
         !std::isfinite(sight.uncertaintyMinutes) ||
-        sight.uncertaintyMinutes <= 0) {
-      result.error = "A sight altitude, time, body or uncertainty is invalid";
+        sight.uncertaintyMinutes <= 0 ||
+        (sight.hasManualDisplacement &&
+         (!std::isfinite(sight.displacementNm) ||
+          !std::isfinite(sight.displacementBearingTrue)))) {
+      result.error =
+          "A sight altitude, time, body, uncertainty or DR Shift is invalid";
       return result;
     }
   }
