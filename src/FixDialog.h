@@ -58,6 +58,7 @@ private:
   wxDateTime ReadEpochUtc() const;
   void SetEpochControls(const wxDateTime& utc);
   void ChangeEpochTimeBasis(wxCommandEvent& event);
+  void ChangeMotionMode(wxCommandEvent& event);
   void UpdateRunningFix(double clock_offset);
   void OnRunningControl(wxCommandEvent& event) { Update(m_clock_offset); }
   void OnGo(wxCommandEvent& event);
@@ -71,6 +72,7 @@ private:
 
   CelestialNavigationDialog* m_Parent;
   wxCheckBox* m_runningFix;
+  wxChoice* m_motionMode;
   wxChoice* m_lunarSolution;
   std::vector<Sight> m_workingSights;
   wxChoice* m_epochTimeBasis;
