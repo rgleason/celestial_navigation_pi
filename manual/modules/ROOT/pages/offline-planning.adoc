@@ -122,14 +122,19 @@ and solved with the running-fix mode described below.
 
 == Time-tagged numerical running fix
 
-Open *Fix…* and enable *Propagate every sight to a common epoch*. Enter the
+Open *Fix…* and enable *Propagate every sight to a common epoch*. When any
+visible altitude or horizon sight already has a non-zero saved DR Shift, the
+dialog selects this option and *Each sight's DR Shift* automatically. Otherwise
+it retains the stationary Fix default. The selection can be changed. Enter the
 common epoch with the calendar and clock controls, selecting UTC or computer
 local civil time as appropriate. Choose *One COG and SOG* when the vessel
 maintained a constant course and speed, then enter COG true and SOG. Choose
 *Each sight's DR Shift* when you have entered the distance and bearing travelled
 from each sight to the selected common epoch; this allows the vessel to tack or
 change speed between sights. The last sight at that epoch normally has a zero
-shift. Do not also apply COG/SOG in this mode. The value is
+shift. The dialog initially chooses the latest visible sight's corrected UTC
+as the common epoch; confirm that the saved shifts were measured to that time.
+Do not also apply COG/SOG in this mode. The value is
 normalized to UTC before calculation. The latitude/longitude labelled DR are
 the initial estimate at that epoch. For each visible altitude or horizon
 event, the solver:
@@ -141,8 +146,11 @@ event, the solver:
 . iterates a two-parameter nonlinear least-squares solution for epoch latitude
   and longitude.
 
-The result includes each sight's residual, RMS and an approximate uncertainty
-ellipse. The selected motion source is applied once: manual DR Shifts are
+The table shows each included sight's saved DR distance and bearing, marking
+magnetic or true bearings and showing the true bearing used by the solver.
+These inputs remain visible if the calculation fails. The result also includes
+each sight's residual, RMS and an approximate uncertainty ellipse. The selected
+motion source is applied once: manual DR Shifts are
 ignored in the COG/SOG mode, and COG/SOG is ignored in the per-sight mode. The
 legacy stationary plane/sphere/cone solvers remain selectable when running-fix
 mode is off; they exclude shifted sights and show the exclusion in the dialog.
