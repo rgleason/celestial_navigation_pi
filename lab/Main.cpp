@@ -174,7 +174,12 @@ public:
     SetTestPluginDataRoot(data_dir);
     SetTestPrivateDataPath(wxStandardPaths::Get().GetUserDataDir());
     const wxString local_kernel = data_dir + "/eclipse/data/de440s.bsp";
-    if (wxFileExists(local_kernel)) kernel_->SetValue(local_kernel);
+    wxString selected_kernel;
+    if (wxGetEnv("CELNAV_LAB_DE440_PATH", &selected_kernel) &&
+        !selected_kernel.empty())
+      kernel_->SetValue(selected_kernel);
+    else if (wxFileExists(local_kernel))
+      kernel_->SetValue(local_kernel);
     CheckKernel();
   }
 
@@ -183,6 +188,8 @@ public:
     Calculate(event);
     if (!analytical_.ok) return false;
     if (!kernel_->GetValue().empty() && !de_.ok) return false;
+    const bool verified_de = de_.ok;
+    const double de_hc = de_.value[3];
     const wxString selected_kernel = kernel_->GetValue();
     kernel_->SetValue(wxEmptyString);
     mode_->SetSelection(1);
@@ -197,8 +204,10 @@ public:
     kernel_->SetValue(selected_kernel);
     std::printf(
         "Celestial Navigation Lab smoke: analytical Hc=%.7f; "
-        "forced-DE failure=%d; automatic fallback=%d\n",
-        analytical_.value[3], explicit_failure, auto_fallback);
+        "DE440s Hc=%s; forced-DE failure=%d; automatic fallback=%d\n",
+        analytical_.value[3],
+        verified_de ? Number(de_hc).ToStdString().c_str() : "unavailable",
+        explicit_failure, auto_fallback);
     return explicit_failure && auto_fallback;
   }
 

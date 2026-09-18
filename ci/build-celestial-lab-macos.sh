@@ -64,6 +64,18 @@ if [[ " $architectures " != *" arm64 "* ||
   exit 1
 fi
 "$app/Contents/MacOS/Celestial Navigation Lab" --smoke-test
+test_kernel="${build_dir}/de440s.bsp"
+curl --fail --location --retry 3 \
+  'https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/de440s.bsp' \
+  --output "$test_kernel"
+expected_kernel_sha='c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2'
+actual_kernel_sha="$(shasum -a 256 "$test_kernel" | awk '{print $1}')"
+if [[ "$actual_kernel_sha" != "$expected_kernel_sha" ]]; then
+  echo "The DE440s test kernel failed SHA-256 verification." >&2
+  exit 1
+fi
+CELNAV_LAB_DE440_PATH="$test_kernel" \
+  "$app/Contents/MacOS/Celestial Navigation Lab" --smoke-test
 cmake -DLAB_APP="$app" -P "$repo_dir/lab/fixup-bundle.cmake"
 codesign --force --deep --sign - "$app"
 codesign --verify --deep --strict --verbose=2 "$app"
@@ -75,5 +87,6 @@ ln -s /Applications "$stage/Applications"
 dmg="${artifact_dir}/Celestial-Navigation-Lab-0.1.0-macOS-universal.dmg"
 hdiutil create -volname 'Celestial Navigation Lab 0.1' \
   -srcfolder "$stage" -format UDZO "$dmg"
-shasum -a 256 "$dmg" > "${dmg}.sha256"
+(cd "$artifact_dir" && shasum -a 256 "$(basename "$dmg")" \
+  > "$(basename "$dmg").sha256")
 echo "Built: $dmg"
