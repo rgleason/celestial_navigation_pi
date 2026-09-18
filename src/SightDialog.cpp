@@ -111,6 +111,17 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   m_tTemperature->SetValue(wxString::Format(_T("%.1f"), m_Sight.m_Temperature));
   m_tPressure->SetValue(wxString::Format(_T("%.2f"), m_Sight.m_Pressure));
   m_tIndexError->SetValue(wxString::Format(_T("%.5f"), m_Sight.m_IndexError));
+  wxBoxSizer* remarksRow = new wxBoxSizer(wxHORIZONTAL);
+  remarksRow->Add(new wxStaticText(m_panel8, wxID_ANY, _("Remarks")), 0,
+                  wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
+  m_remarks = new wxTextCtrl(m_panel8, wxID_ANY, m_Sight.m_Remarks);
+  remarksRow->Add(m_remarks, 1, wxEXPAND);
+  m_panel8->GetSizer()->Add(remarksRow, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,
+                           8);
+  m_remarks->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
+    MarkDirty();
+    m_Sight.m_Remarks = m_remarks->GetValue();
+  });
   m_cbDipShort->SetValue(m_Sight.m_DipShort);
   m_tDipShortDistance->SetValue(
       wxString::Format(_T("%.4f"), m_Sight.m_DipShortDistance));
@@ -745,6 +756,7 @@ void SightDialog::Recompute() {
   m_Sight.m_DipShort = m_cbDipShort->GetValue();
   m_tDipShortDistance->GetValue().ToDouble(&m_Sight.m_DipShortDistance);
   m_Sight.m_ArtificialHorizon = m_cbArtificialHorizon->GetValue();
+  m_Sight.m_Remarks = m_remarks->GetValue();
 
   wxColour fc = m_ColourPicker->GetColour(), c = wxColour(m_Sight.m_ColourName);
   if (c.Red() != fc.Red() || c.Green() != fc.Green() || c.Blue() != fc.Blue())

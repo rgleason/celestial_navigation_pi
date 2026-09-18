@@ -129,6 +129,7 @@ private:
   wxCheckBox* m_lunarMovingObserver;
   wxTextCtrl* m_lunarCourseTrue;
   wxTextCtrl* m_lunarSpeedKnots;
+  wxTextCtrl* m_remarks = nullptr;
 
   int m_lastPanX;
   int m_lastPanY;

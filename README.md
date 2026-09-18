@@ -28,6 +28,8 @@ This contribution adds:
 * a time-tagged numerical running fix which advances each observation to a
   common epoch using either one COG/SOG model or its individually entered
   DR Shift, including passages with changes of course;
+* optional per-sight Remarks and a Sights manager for dated XML backups,
+  importing additional sights, and restoring a complete sight log;
 * a sight-sequence analyzer for residuals, scatter, robust outliers, trend and
   personal bias, plus dedicated noon and Polaris helpers;
 * a rebuilt lunar-distance workflow which supports simultaneous or separately

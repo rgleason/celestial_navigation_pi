@@ -160,6 +160,7 @@ public:
   bool m_bMagneticShiftBearing;  // use magnetic or true for shift
 
   wxString m_ColourName;
+  wxString m_Remarks;  // Optional sight-log note; not used in calculations.
   wxColour m_Colour;  // Color of the sight
 
   virtual void Render(piDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm);

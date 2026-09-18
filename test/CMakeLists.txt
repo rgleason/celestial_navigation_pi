@@ -40,6 +40,7 @@ set(SRC
     lunar_ui_smoke_tests.cpp
     find_body_ui_tests.cpp
     fix_ui_smoke_tests.cpp
+    sight_log_ui_tests.cpp
     lunar_distance_engine_tests.cpp
     lunar_session_engine_tests.cpp
     lunar_session_worker_tests.cpp
