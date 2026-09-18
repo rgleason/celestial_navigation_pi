@@ -25,8 +25,9 @@ This contribution adds:
   voyage-specific direct Hc/Zn lookup tables, universal Ageton reduction
   tables, instructions and forms. Optional planning graphs and booklet
   signature imposition are included;
-* a time-tagged numerical running fix which advances each observation through
-  a COG/SOG motion model to a common epoch;
+* a time-tagged numerical running fix which advances each observation to a
+  common epoch using either one COG/SOG model or its individually entered
+  DR Shift, including passages with changes of course;
 * a sight-sequence analyzer for residuals, scatter, robust outliers, trend and
   personal bias, plus dedicated noon and Polaris helpers;
 * a rebuilt lunar-distance workflow which supports simultaneous or separately
