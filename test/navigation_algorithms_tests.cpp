@@ -529,6 +529,67 @@ TEST(RunningFix, RecoversACommonEpochPositionFromTimeTaggedSights) {
   EXPECT_LT(fix.rmsMinutes, 0.05);
 }
 
+TEST(RunningFix, UsesIndividualDrShiftsAcrossAChangeOfCourse) {
+  const wxDateTime first = Utc("2027-06-01T11:00:00");
+  const wxDateTime second = Utc("2027-06-01T11:30:00");
+  const wxDateTime epoch = Utc("2027-06-01T12:00:00");
+  ObserverMotion truth;
+  truth.referenceUtc = epoch;
+  truth.latitude = 42.25;
+  truth.longitude = -18.75;
+  ObserverTrackLeg firstLeg;
+  firstLeg.startUtc = first;
+  firstLeg.endUtc = second;
+  firstLeg.method = ObserverMotionMethod::CogSog;
+  firstLeg.cogTrue = 35.0;
+  firstLeg.sogKnots = 3.0;
+  ObserverTrackLeg secondLeg = firstLeg;
+  secondLeg.startUtc = second;
+  secondLeg.endUtc = epoch;
+  secondLeg.cogTrue = 125.0;
+  secondLeg.sogKnots = 1.6;
+  truth.track = {firstLeg, secondLeg};
+
+  std::vector<FixObservation> observations = {
+      Synthetic("Sun", first, truth), Synthetic("Moon", second, truth),
+      Synthetic("Venus", epoch, truth)};
+  for (FixObservation& observation : observations) {
+    double sightLat, sightLon;
+    truth.PositionAt(observation.utc, &sightLat, &sightLon);
+    observation.hasManualDisplacement = true;
+    ll_gc_ll_reverse(sightLat, sightLon, truth.latitude, truth.longitude,
+                     &observation.displacementBearingTrue,
+                     &observation.displacementNm);
+  }
+  EXPECT_GT(observations[0].displacementNm,
+            observations[1].displacementNm);
+  EXPECT_GT(std::fabs(observations[0].displacementBearingTrue -
+                          observations[1].displacementBearingTrue), 10.0);
+
+  ObserverMotion stationary;
+  stationary.referenceUtc = epoch;
+  const RunningFixResult fix = RunningFixSolver::Solve(
+      observations, stationary, truth.latitude + 0.2, truth.longitude - 0.2);
+  ASSERT_TRUE(fix.valid) << fix.error;
+  EXPECT_NEAR(truth.latitude, fix.latitude, 0.001);
+  EXPECT_NEAR(truth.longitude, fix.longitude, 0.001);
+  EXPECT_LT(fix.rmsMinutes, 0.02);
+}
+
+TEST(RunningFix, RejectsInvalidManualDisplacement) {
+  ObserverMotion motion;
+  motion.referenceUtc = Utc("2027-06-01T12:00:00");
+  motion.latitude = 42.25;
+  motion.longitude = -18.75;
+  std::vector<FixObservation> observations = {
+      Synthetic("Sun", motion.referenceUtc, motion),
+      Synthetic("Moon", motion.referenceUtc, motion)};
+  observations[0].hasManualDisplacement = true;
+  observations[0].displacementNm = NAN;
+  EXPECT_FALSE(RunningFixSolver::Solve(observations, motion, 42.25, -18.75)
+                   .valid);
+}
+
 TEST(SequenceAnalyzer, FindsBiasTrendAndGrossOutlier) {
   ObserverMotion truth;
   truth.referenceUtc = Utc("2027-06-01T12:00:00");

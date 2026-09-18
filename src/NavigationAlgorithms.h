@@ -199,6 +199,12 @@ struct FixObservation {
   wxDateTime utc;
   double observedAltitude = 0.0;
   double uncertaintyMinutes = 1.0;
+  // When the sight's DR Shift advances its line of position to the common
+  // epoch, move a trial epoch position back by this displacement to evaluate
+  // the observation at its original time. Never combine this with COG/SOG.
+  bool hasManualDisplacement = false;
+  double displacementNm = 0.0;
+  double displacementBearingTrue = 0.0;
   // Sequence analysis can compare a sight at the DR position saved with that
   // sight.  Running-fix observations leave this false because their position
   // is supplied by the common motion model instead.
