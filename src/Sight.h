@@ -148,6 +148,9 @@ public:
   double m_Temperature;       // Temperature in degrees celcius
   double m_Pressure;          // Pressure in millibars
   double m_IndexError;        // Error of measurement in degrees
+  // Defaults to production's automatic DE440s/analytical selection.  The
+  // standalone validation lab can disable DE440s for an A/B calculation.
+  bool m_AllowDe440 = true;
   bool m_DipShort;            // DIP Short ?
   double m_DipShortDistance;  // DIP Short distance
   bool m_ArtificialHorizon;   // Artificial Horizon ?

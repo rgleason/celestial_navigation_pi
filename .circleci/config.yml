@@ -12,6 +12,7 @@ std-filters: &std-filters
             ignore:
             - devel
             - tmp
+            - feature/celnav-lab-v0.1
         tags:
             only: /.*/
 
@@ -58,6 +59,10 @@ workflows:
               <<: *std-filters
           - build-macos-universal:
               <<: *std-filters
+          - build-celnav-lab-macos:
+              filters:
+                  branches:
+                      only: feature/celnav-lab-v0.1
 
 ## -------------------------------------------
 ## OpenCPN 5.6.2 Plugins  Frozen - 28/05/2023
@@ -210,6 +215,19 @@ jobs:
         - deploy-code:
             deploy_use_orb: false
             install_python: false
+    build-celnav-lab-macos:
+        macos:
+            xcode: 15.4.0
+        environment:
+            OCPN_TARGET: macos
+            CMAKE_BUILD_PARALLEL_LEVEL: 2
+            WX_VER: 32
+        steps:
+        - checkout
+        - run: sudo chmod go+w /usr/local
+        - run: bash ci/build-celestial-lab-macos.sh
+        - store_artifacts:
+            path: artifacts/celnav-lab
     build-msvc-wx32-2022:
         executor:
             name: win/server-2022

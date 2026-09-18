@@ -235,7 +235,7 @@ void Sight::BodyLocation(wxDateTime time, double* lat, double* lon,
   const wxDateTime utc_fields =
       timeIsInstant ? UtcDateTime::FromInstant(time) : time;
   celestial_navigation::De440NavigationSample de;
-  if (useDe440 && celestial_navigation::TryDe440NavigationSample(
+  if (useDe440 && m_AllowDe440 && celestial_navigation::TryDe440NavigationSample(
           m_Body, utc_fields, &de, nullptr, dut1OverrideSeconds)) {
     if (usedDe440) *usedDe440 = true;
     m_IsStar = false;
@@ -744,7 +744,7 @@ void Sight::RecomputeAltitude() {
   double planet_dist;
   bool usedDe440 = false;
   BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad, &planet_dist,
-               false, true, std::numeric_limits<double>::quiet_NaN(),
+               false, m_AllowDe440, std::numeric_limits<double>::quiet_NaN(),
                &usedDe440);
 
   m_CalcStr += _("Formulas used to calculate sight\n\n");
