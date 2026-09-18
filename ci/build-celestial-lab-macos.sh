@@ -56,8 +56,13 @@ cmake --build "$build_dir" --target celestial_navigation_lab --parallel 2
 app="${build_dir}/test/Celestial Navigation Lab.app"
 test -f "$app/Contents/Resources/data/vsop87d.txt"
 file "$app/Contents/MacOS/Celestial Navigation Lab"
-lipo -verify_arch arm64 "$app/Contents/MacOS/Celestial Navigation Lab"
-lipo -verify_arch x86_64 "$app/Contents/MacOS/Celestial Navigation Lab"
+architectures="$(lipo -archs "$app/Contents/MacOS/Celestial Navigation Lab")"
+echo "Architectures: $architectures"
+if [[ " $architectures " != *" arm64 "* ||
+      " $architectures " != *" x86_64 "* ]]; then
+  echo "The Lab executable is not universal." >&2
+  exit 1
+fi
 "$app/Contents/MacOS/Celestial Navigation Lab" --smoke-test
 cmake -DLAB_APP="$app" -P "$repo_dir/lab/fixup-bundle.cmake"
 codesign --force --deep --sign - "$app"
