@@ -105,9 +105,9 @@ image::sight-2-date-time-certainty-shift.png["sight 2 date time certainty shift"
 
 image::sights-dr-shift.png["Sights DR Shift Distance and Bearing",width=550,link="_images/sights-dr-shift.png"]
 
-When a DR Shift with values > 0 is entered the Circle of Position will
-shift accordingly, the “Fix” button will not compute and the Fix must be
-done manually.
+When a DR Shift is entered the Circle of Position moves accordingly. The
+stationary Fix calculation excludes shifted sights; choose *Each sight's DR
+Shift* under *Time-tagged running fix* to calculate a numerical fix from them.
 
 The DR Shift is used to “advance” a sight to the time of last sight in a
 “group of sights” which have been taken at different times (usually 1-5
@@ -118,9 +118,9 @@ is to be “advanced” to the last sight of the group.
 . These values are then entered into DR Shift and the program simply
 adjusts the Circle of Position to the time of the last sight of the
 group.
-. The actual “Fix” must be done by manual inspection and dropping a
-waypoint at the selected location and labeling it “Fix” with the date
-and time labeled.
+. The advanced circles can be inspected visually, or the *Fix…* dialog can
+calculate their common-epoch intersection using the individually entered
+shifts. The latest sight normally has a zero shift.
 
 Please see David Burch's xref:#_videos_methodology_with_celestial_navigation_pi[Videos: Methodology_with_Celestial_Navigation_pi] below for a much clearer explanation.
 

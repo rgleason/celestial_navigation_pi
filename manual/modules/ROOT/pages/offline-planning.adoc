@@ -124,7 +124,12 @@ and solved with the running-fix mode described below.
 
 Open *Fix…* and enable *Propagate every sight to a common epoch*. Enter the
 common epoch with the calendar and clock controls, selecting UTC or computer
-local civil time as appropriate, then enter COG true and SOG. The value is
+local civil time as appropriate. Choose *One COG and SOG* when the vessel
+maintained a constant course and speed, then enter COG true and SOG. Choose
+*Each sight's DR Shift* when you have entered the distance and bearing travelled
+from each sight to the selected common epoch; this allows the vessel to tack or
+change speed between sights. The last sight at that epoch normally has a zero
+shift. Do not also apply COG/SOG in this mode. The value is
 normalized to UTC before calculation. The latitude/longitude labelled DR are
 the initial estimate at that epoch. For each visible altitude or horizon
 event, the solver:
@@ -137,9 +142,10 @@ event, the solver:
   and longitude.
 
 The result includes each sight's residual, RMS and an approximate uncertainty
-ellipse. Manual DR Shift values are not added a second time in this mode. The
+ellipse. The selected motion source is applied once: manual DR Shifts are
+ignored in the COG/SOG mode, and COG/SOG is ignored in the per-sight mode. The
 legacy stationary plane/sphere/cone solvers remain selectable when running-fix
-mode is off.
+mode is off; they exclude shifted sights and show the exclusion in the dialog.
 
 == Horizon-event observations
 

@@ -36,6 +36,7 @@
 #include "UtcDateTime.h"
 #include "celestial_navigation_pi.h"
 
+#include <cmath>
 #include <vector>
 #include <wx/choice.h>
 #include <wx/datectrl.h>
@@ -58,6 +59,7 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
       m_fixerror(NAN),
       m_Parent(parent),
       m_runningFix(NULL),
+      m_motionMode(NULL),
       m_epochTimeBasis(NULL),
       m_epochDate(NULL),
       m_epochTime(NULL),
@@ -98,6 +100,16 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
                                 _("Propagate every sight to a common epoch"));
   running->Add(m_runningFix, 0, wxALL, 5);
 
+  wxBoxSizer* motionMode = new wxBoxSizer(wxHORIZONTAL);
+  motionMode->Add(new wxStaticText(this, wxID_ANY, _("Vessel motion")), 0,
+                  wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
+  m_motionMode = new wxChoice(this, wxID_ANY);
+  m_motionMode->Append(_("One COG and SOG"));
+  m_motionMode->Append(_("Each sight's DR Shift"));
+  m_motionMode->SetSelection(0);
+  motionMode->Add(m_motionMode, 0, wxALIGN_CENTER_VERTICAL);
+  running->Add(motionMode, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
+
   wxBoxSizer* epoch = new wxBoxSizer(wxHORIZONTAL);
   epoch->Add(new wxStaticText(this, wxID_ANY, _("Enter epoch as")), 0,
              wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
@@ -132,6 +144,13 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
   m_speedKnots->SetDigits(1);
   motion->Add(m_speedKnots, 0, wxALIGN_CENTER_VERTICAL);
   running->Add(motion, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
+  auto* shiftNote = new wxStaticText(
+      this, wxID_ANY,
+      _("For per-sight DR Shift, enter the distance and bearing travelled "
+        "from each sight to the selected epoch. The latest sight usually "
+        "has zero shift. COG/SOG is not added in this mode."));
+  shiftNote->Wrap(690);
+  running->Add(shiftNote, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 6);
   m_runningSummary = new wxStaticText(
       this, wxID_ANY,
       _("Enable this for sights taken while underway; stationary algorithms remain available above."));
@@ -153,6 +172,7 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
   }
   SetEpochControls(wxDateTime::UNow());
   m_runningFix->Bind(wxEVT_CHECKBOX, &FixDialog::OnRunningControl, this);
+  m_motionMode->Bind(wxEVT_CHOICE, &FixDialog::ChangeMotionMode, this);
   m_epochTimeBasis->Bind(wxEVT_CHOICE, &FixDialog::ChangeEpochTimeBasis,
                          this);
   m_epochDate->Bind(wxEVT_DATE_CHANGED,
@@ -210,6 +230,33 @@ void FixDialog::ChangeEpochTimeBasis(wxCommandEvent&) {
   m_epochTimeBasis->SetSelection(next);
   m_lastEpochTimeBasis = next;
   SetEpochControls(utc);
+  Update(m_clock_offset);
+}
+
+void FixDialog::ChangeMotionMode(wxCommandEvent&) {
+  const bool manual = m_motionMode->GetSelection() == 1;
+  if (manual) m_runningFix->SetValue(true);
+  m_courseTrue->Enable(!manual);
+  m_speedKnots->Enable(!manual);
+  if (manual) {
+    double effective_correction = m_clock_offset;
+    const int selection = m_lunarSolution->GetSelection();
+    if (selection > 0 &&
+        std::size_t(selection - 1) < m_Parent->LunarSolutions().size())
+      effective_correction =
+          m_Parent->LunarSolutions()[selection - 1].TotalCorrection();
+    wxDateTime latest;
+    for (const Sight& sight : m_Parent->m_Sights) {
+      if (!sight.IsVisible() ||
+          (sight.m_Type != Sight::ALTITUDE && sight.m_Type != Sight::HORIZON))
+        continue;
+      const wxDateTime sightUtc =
+          UtcDateTime::ToInstant(UtcDateTime::AddSeconds(sight.m_DateTime,
+                                                        effective_correction));
+      if (!latest.IsValid() || sightUtc.IsLaterThan(latest)) latest = sightUtc;
+    }
+    if (latest.IsValid()) SetEpochControls(latest);
+  }
   Update(m_clock_offset);
 }
 
@@ -352,7 +399,19 @@ void FixDialog::Update(int clock_offset) {
     return;
   }
   if (m_residuals) m_residuals->DeleteAllItems();
-  if (m_runningSummary) m_runningSummary->SetLabel(wxEmptyString);
+  unsigned shifted = 0;
+  for (const Sight& sight : m_workingSights)
+    if (sight.IsVisible() &&
+        (sight.m_Type == Sight::ALTITUDE || sight.m_Type == Sight::HORIZON) &&
+        sight.m_ShiftNm != 0.0)
+      ++shifted;
+  if (m_runningSummary)
+    m_runningSummary->SetLabel(
+        shifted ? wxString::Format(
+                      _("%u visible DR-shifted sights are excluded from the "
+                        "stationary fix. Select per-sight DR Shift above "
+                        "to calculate their common-epoch fix."), shifted)
+                : wxString());
   std::list<std::vector<double> > J;
   std::list<double> R;
 
@@ -373,15 +432,6 @@ again:
       continue;
 
     if (s.m_ShiftNm) {
-      static bool seenwarning = false;
-      if (!seenwarning) {
-        wxMessageDialog mdlg(
-            this, _("Shifted sights are not used to compute a fix, \
-determine fix visually instead.\n"),
-            wxString(_("Fix Position"), wxID_OK | wxICON_WARNING));
-        mdlg.ShowModal();
-        seenwarning = true;
-      }
       continue;
     }
 
@@ -537,6 +587,7 @@ determine fix visually instead.\n"),
 
 void FixDialog::UpdateRunningFix(double clock_offset) {
   const wxDateTime epoch = ReadEpochUtc();
+  const bool manual = m_motionMode->GetSelection() == 1;
   if (!epoch.IsValid()) {
     m_stLatitude->SetValue(_("   N/A   "));
     m_stLongitude->SetValue(_("   N/A   "));
@@ -547,7 +598,7 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
   }
   std::vector<FixObservation> observations;
   for (const Sight& sight : m_workingSights) {
-    if (!sight.IsVisible() || !sight.IsCalculated() ||
+    if (!sight.IsVisible() ||
         (sight.m_Type != Sight::ALTITUDE && sight.m_Type != Sight::HORIZON))
       continue;
     FixObservation observation;
@@ -560,14 +611,40 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
         sight.m_Type == Sight::HORIZON
             ? std::max(1.0, sight.m_HorizonAltitudeUncertainty)
             : std::max(0.1, sight.m_MeasurementCertainty);
+    if (manual) {
+      observation.hasManualDisplacement = true;
+      observation.displacementNm = sight.m_ShiftNm;
+      observation.displacementBearingTrue = sight.m_ShiftBearing;
+      if (sight.m_bMagneticShiftBearing && sight.m_ShiftNm != 0.0) {
+        double longitude = std::fmod(sight.m_DRLon, 360.0);
+        if (longitude < 0.0) longitude += 360.0;
+        observation.displacementBearingTrue +=
+            celestial_navigation_pi_GetWMM(sight.m_DRLat, longitude,
+                                           sight.m_EyeHeight,
+                                           sight.m_CorrectedDateTime);
+      }
+    }
     observations.push_back(observation);
+  }
+  if (manual && observations.size() >= 2) {
+    for (const FixObservation& observation : observations) {
+      if (observation.utc.IsLaterThan(epoch)) {
+        m_stLatitude->SetValue(_("   N/A   "));
+        m_stLongitude->SetValue(_("   N/A   "));
+        m_stFixError->SetValue(_("Bad epoch"));
+        m_runningSummary->SetLabel(
+            _("The common epoch must be at or after every selected sight."));
+        m_bGo->Disable();
+        return;
+      }
+    }
   }
   ObserverMotion motion;
   motion.referenceUtc = epoch;
   motion.latitude = m_sInitialLatitude->GetValue();
   motion.longitude = m_sInitialLongitude->GetValue();
-  motion.courseTrue = m_courseTrue->GetValue();
-  motion.speedKnots = m_speedKnots->GetValue();
+  motion.courseTrue = manual ? 0.0 : m_courseTrue->GetValue();
+  motion.speedKnots = manual ? 0.0 : m_speedKnots->GetValue();
   motion.moving = motion.speedKnots != 0.0;
   const RunningFixResult fix = RunningFixSolver::Solve(
       observations, motion, motion.latitude, motion.longitude);
