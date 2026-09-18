@@ -108,10 +108,12 @@ image::sights-dr-shift.png["Sights DR Shift Distance and Bearing",width=550,link
 When a DR Shift is entered the Circle of Position moves accordingly. The
 stationary Fix calculation excludes shifted sights; choose *Each sight's DR
 Shift* under *Time-tagged running fix* to calculate a numerical fix from them.
+When visible sights have saved DR Shifts, the Fix dialog selects that running
+fix mode on opening and shows the saved distance and bearing for review.
 
 The DR Shift is used to “advance” a sight to the time of last sight in a
 “group of sights” which have been taken at different times (usually 1-5
-minutes apart), so that the fix can e more accurately determined.
+minutes apart), so that the fix can be more accurately determined.
 
 . The navigator first measures the range and bearing of the sight that
 is to be “advanced” to the last sight of the group.
