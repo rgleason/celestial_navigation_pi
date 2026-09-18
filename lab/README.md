@@ -22,9 +22,9 @@ lab version; v0.1 does **not** claim to test them.
 ## Install on macOS
 
 1. Download `Celestial-Navigation-Lab-0.1.0-macOS-universal.dmg` and its
-   `.sha256` file from the **Celestial Navigation Lab macOS DMG** GitHub Actions
-   artifact for the `feature/celnav-lab-v0.1` branch. Verify the checksum if
-   possible.
+   `.sha256` file from the [experimental Lab 0.1.0 release](https://github.com/pob220/celestial_navigation_pi/releases/tag/lab-v0.1.0).
+   Verify the checksum if possible. These are Lab downloads, not OpenCPN
+   plugin packages.
 2. Open the DMG and drag **Celestial Navigation Lab** to **Applications**.
 3. This experimental build is ad-hoc signed, not Apple-notarized. If macOS
    blocks first launch, use Finder's **Open** contextual action and review the
