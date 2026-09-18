@@ -17,6 +17,7 @@ src/AtomicXmlFile.cpp
 src/Dut1UpdatePanel.cpp
 src/BodyCatalog.cpp
 src/NavigationAlgorithms.cpp
+src/NavigationEphemerisProvider.cpp
 src/PlannerDialog.cpp
 src/WaypointPositionSource.cpp
 src/WaypointPickerDialog.cpp

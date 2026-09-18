@@ -44,6 +44,7 @@ set(SRC
     lunar_session_worker_tests.cpp
     sextant_calibration_engine_tests.cpp
     lunar_de440_tests.cpp
+    navigation_de440_tests.cpp
     lunar_observer_tests.cpp
     dut1_update_tests.cpp
     coastal_navigation_tests.cpp
@@ -74,6 +75,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/CoastalNavigationDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/BodyCatalog.cpp
     ${CMAKE_SOURCE_DIR}/src/NavigationAlgorithms.cpp
+    ${CMAKE_SOURCE_DIR}/src/NavigationEphemerisProvider.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacGenerator.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacPaperTables.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacDialog.cpp

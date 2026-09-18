@@ -53,7 +53,7 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
   <p style="text-align: center;"><strong>Experimental v2 documentation</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.5.6<br>Documentation revision 16 September 2026</p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.9.0<br>Documentation revision 18 September 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -743,12 +743,12 @@ stars as a celestial clock. The observed Moon-to-body angular distance is
 corrected (“cleared”) for limb, refraction and parallax, then compared with the
 geocentric ephemeris over a search interval.</p>
 
-<p>For a Moon–Sun calculation, the solver uses the checksum-verified local JPL
-DE440s kernel when it has already been imported for the eclipse module. A
-Moon–planet or Moon–star calculation, or any installation without DE440s,
-uses the bundled analytical ephemeris. The result identifies the ephemeris
-source used. DE440s is optional for ordinary navigation, no calculation
-downloads data, and LOLA terrain is unrelated to lunar-distance clearing.</p>
+<p>When its checksum-verified local JPL DE440s kernel is installed and covers
+the sight date, Moon–Sun, Moon–Mercury and Moon–Venus calculations use it.
+Moon–star and other Moon–planet calculations, or any sight outside the compact
+kernel's range, use the bundled analytical ephemeris. The result identifies
+the source used. DE440s is optional for navigation, no calculation downloads
+data, and LOLA terrain is unrelated to lunar-distance clearing.</p>
 
 <figure>
 <img src="images/09_lunar_distance_observations.png" width="620" height="388" alt="Moon, second body, visible horizon and observer showing lunar distance and the separate altitudes of both bodies.">

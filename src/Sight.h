@@ -29,6 +29,7 @@
 #define _CELESTIAL_NAVIGATION_SIGHT_H_
 
 #include <list>
+#include <limits>
 #include <vector>
 #include "pidc.h"
 #include "LunarDistanceEngine.h"
@@ -37,7 +38,6 @@
 #define _USE_MATH_DEFINES
 #include <float.h>
 #include <iostream>
-#include <limits>
 #include <cmath>
 
 #ifndef NAN
@@ -162,7 +162,11 @@ public:
   virtual void Render(piDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm);
 
   void BodyLocation(wxDateTime time, double* lat, double* lon, double* ghaash,
-                    double* rad, double* dist, bool timeIsInstant = false);
+                    double* rad, double* dist, bool timeIsInstant = false,
+                    bool useDe440 = true,
+                    double dut1OverrideSeconds =
+                        std::numeric_limits<double>::quiet_NaN(),
+                    bool* usedDe440 = nullptr);
   void AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
                        double* hc, double* zn);
   void EstimateHs(double hc, double* hs, double* error);

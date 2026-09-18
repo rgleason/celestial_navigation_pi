@@ -8,6 +8,7 @@
 #include <wx/datetime.h>
 #include <wx/string.h>
 
+#include <limits>
 #include <vector>
 
 enum class ObserverMotionMethod {
@@ -73,7 +74,9 @@ public:
   static BodyState Evaluate(const wxString& body, const wxDateTime& utc,
                             double observerLat, double observerLon,
                             double pressureMb = 1010.0,
-                            double temperatureC = 10.0);
+                            double temperatureC = 10.0,
+                            double dut1OverrideSeconds =
+                                std::numeric_limits<double>::quiet_NaN());
   static double RefractionDegrees(double altitudeDeg, double pressureMb,
                                   double temperatureC);
 };
