@@ -56,7 +56,8 @@ cmake --build "$build_dir" --target celestial_navigation_lab --parallel 2
 app="${build_dir}/test/Celestial Navigation Lab.app"
 test -f "$app/Contents/Resources/data/vsop87d.txt"
 file "$app/Contents/MacOS/Celestial Navigation Lab"
-lipo -verify_arch arm64 x86_64 "$app/Contents/MacOS/Celestial Navigation Lab"
+lipo -verify_arch arm64 "$app/Contents/MacOS/Celestial Navigation Lab"
+lipo -verify_arch x86_64 "$app/Contents/MacOS/Celestial Navigation Lab"
 "$app/Contents/MacOS/Celestial Navigation Lab" --smoke-test
 cmake -DLAB_APP="$app" -P "$repo_dir/lab/fixup-bundle.cmake"
 codesign --force --deep --sign - "$app"
