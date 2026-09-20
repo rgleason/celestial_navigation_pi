@@ -3,6 +3,11 @@ Celestial Navigation Plugin for OpenCPN
 
 Perform sight reductions and plot positions from celestial observations.
 
+Version 2.8.9 corrects ambiguous Horizon Event position estimates and removes
+the misleading filled uncertainty disc. The bundled HTML, PDF and editable
+manuals cover the current running-fix and lunar-planning workflows. See the
+[Horizon Event investigation and documentation audit](docs/horizon-events-2.8.9.md).
+
 This contribution adds:
 
 * a time-integrity panel showing local, UTC, GNSS/NMEA and chrony status;
