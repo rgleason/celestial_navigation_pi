@@ -3,10 +3,10 @@
 == Record Sextant Sights and show Circles of Position to obtain a Fix
 
 Celestial navigation support makes it possible to establish your
-position when other means are not available. Also, users may find this
-plugin, which is still under development, useful for cross checking
-their position fixes obtained in other ways, or to to better visualize a
-celestial fix. You find the forum thread here:
+position when other means are not available. The plugin also supports
+cross-checking positions obtained by other methods and visualizing a
+celestial fix. The source, installation guide and discussion forum are linked
+below.
 
 == Links
 
@@ -47,7 +47,9 @@ coastal sextant methods].
 
 Record the first upper-limb appearance at sunrise or final upper-limb
 disappearance at sunset, optionally with a corrected magnetic or true bearing.
-This supplies a deliberately conservative navigation constraint.
+The event supplies an altitude line of position. An optional bearing can give
+two nominal position candidates; neither is a confidence area or a complete
+fix. See xref:offline-planning.adoc[the horizon-event guide].
 
 === Coastal sextant tools
 
@@ -88,10 +90,10 @@ image::sight-1-degrees-minutes-uncertainty.png["Sight 1 Degrees Minutes Uncertai
 === 3. Sight Properties - Date and Time Tab
 
 Enter Date (based on GMT/UT) and Time in GMT/UT, Certainty and Shift.
-Note that entering a shift removes the calculated numerical fix. This is
-due to the computation method used, which presently does not allow to
-shift COP's. However, a position fix can be established by visually
-observing the COP's (which are graphically shifted) on the chart.
+Shifted sights are excluded by the stationary numerical algorithms. Use
+*Fix… → Propagate every sight to a common epoch → Each sight's DR Shift* to
+include them in a numerical running fix. The chart also shows their advanced
+circles for visual use.
 
 The date and time is populated using current computer time and time zone
 (verify your computer's time), to match the Greenwich UTC Date & Time.
@@ -205,8 +207,9 @@ selected sight moves selection to an adjacent sight when one remains; there is
 therefore no unselected state while the sight list is non-empty.
 
 The old manual DR Shift and visual-fix process remains available. Alternatively,
-*Fix…* can now propagate visible observations along a COG/SOG model to a common
-epoch and solve them numerically without changing the stored raw sight times.
+*Fix…* can propagate visible observations with one COG/SOG model or their saved
+per-sight shifts to a common epoch and solve them numerically without changing
+the stored raw sight times.
 
 == Videos: Methodology with Celestial_Navigation_Pi
 

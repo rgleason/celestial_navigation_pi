@@ -1,9 +1,11 @@
 = Offline planning, running fixes and sight analysis
 
 The navigation-planning tools are designed for offshore use. They perform no
-network access and do not depend on the optional eclipse data packs. Ordinary
-Sun, Moon, planet and star calculations use the same bundled VSOP87D,
-ELP2000/82 and navigational-star implementation used by sight reduction.
+network access and do not require the optional eclipse data packs. In 2.9.0,
+Sun, Moon, Mercury and Venus calculations prefer an installed DE440s kernel
+for supported dates from 1972 onward and use the bundled analytical ephemeris
+when it is unavailable or out of range. Other planets and navigational stars
+retain their bundled models. The calculation source is reported by the plugin.
 
 == Sun, Moon and Sight Planner
 
@@ -187,10 +189,28 @@ can be entered as true, or as magnetic with explicit variation and compass
 deviation. The saved sight retains all of this context and contributes an
 approximate line of position to the ordinary or running fix.
 
-This is deliberately assigned conservative uncertainty. Refraction, haze,
-land or an indistinct horizon normally dominate the result, and a
-bearing-derived estimate without a sextant is not a replacement for a normal
-multi-sight fix.
+The chart shows the time-based altitude LOP and its entered horizon/time
+uncertainty band. A bearing adds all nominal position candidates, often one
+in each hemisphere. Use DR or other observations to distinguish them. The
+markers are not fixes or confidence areas. Bearing error does not convert to
+a constant NM-per-degree radius, so the former filled disc is no longer
+plotted. The Fix solver uses the altitude constraint, not the optional bearing.
+An easterly bearing belongs to sunrise and a westerly bearing to sunset;
+the dialog reports a mismatch instead of plotting an unrelated candidate.
+
+Use the full UTC date as well as the time. Near Hawaii, a sunset at 05:55 UTC
+on 16 July precedes a sunrise at 16:51 UTC that same day: it is the previous
+local evening. Propagate observations taken while underway to one common
+epoch using the running-fix controls. A Sun bearing is a celestial azimuth
+constraint, not a straight terrestrial bearing line through an assumed boat
+position.
+
+The method applies the ordinary astronomical triangle to upper-limb contact
+with the visible sea horizon, with dip, refraction, semidiameter and parallax
+corrections. See the https://aa.usno.navy.mil/faq/RST_defs[US Naval Observatory
+rise/set definitions]. Refraction, haze, land or an indistinct horizon often
+dominate the result; a sub-arcminute horizon uncertainty is usually too
+optimistic. Retain independent navigation evidence.
 
 == Sight Sequence Analyzer
 
