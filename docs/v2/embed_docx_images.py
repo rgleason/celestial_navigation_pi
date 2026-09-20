@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Replace LibreOffice's external DOCX image links with embedded media."""
+"""Embed linked images and fit imported HTML tables to the printable page."""
 
 from __future__ import annotations
 
@@ -81,6 +81,37 @@ def embed_images(docx: Path) -> int:
     document_xml = re.sub(
         r'<wp:inline\b.*?</wp:inline>', fit_inline_image, document_xml, flags=re.DOTALL
     )
+
+    # Writer/Web resolves HTML percentage widths against the web viewport.
+    # Its fixed DOCX table/grid/cell widths can consequently exceed A4's
+    # printable area. Scale all three together, retaining column proportions.
+    page_width = int(re.search(r'<w:pgSz\b[^>]*\bw:w="(\d+)"', document_xml)[1])
+    margins = re.search(r'<w:pgMar\b[^>]*/>', document_xml)[0]
+    left = int(re.search(r'\bw:left="(\d+)"', margins)[1])
+    right = int(re.search(r'\bw:right="(\d+)"', margins)[1])
+    available = page_width - left - right
+
+    def fit_table(match: re.Match[str]) -> str:
+        block = match.group(0)
+        width = re.search(r'<w:tblW\b[^>]*\bw:w="(\d+)"[^>]*/>', block)
+        if not width or 'w:type="dxa"' not in width[0]:
+            return block
+        original = int(width[1])
+        if original <= available:
+            return block
+        scale = available / original
+
+        def scaled_width(tag: re.Match[str]) -> str:
+            return re.sub(
+                r'\bw:w="(\d+)"',
+                lambda value: f'w:w="{round(int(value[1]) * scale)}"',
+                tag[0],
+            )
+
+        return re.sub(r'<w:(?:tblW|gridCol|tcW)\b[^>]*/>', scaled_width, block)
+
+    document_xml = re.sub(r'<w:tbl>.*?</w:tbl>', fit_table, document_xml,
+                          flags=re.DOTALL)
 
     # The HTML cover relies on CSS pagination which Writer/Web does not import.
     # Add the page break directly to the first real heading in the DOCX.

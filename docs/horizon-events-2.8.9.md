@@ -67,6 +67,10 @@ backup/import/restore controls; these are not 2.8 features.
 HTML source, packaged HTML, PDF and DOCX are regenerated together. The manual
 validator now checks the cover against CMake's version, rejects the obsolete
 experimental label, and detects stale generated HTML and DOCX version labels.
+The audit also found imported Word tables wider than the printable A4 area,
+which clipped text in the PDF. The generator now scales table, column and cell
+widths together. Validation rejects oversized tables and any PDF text outside
+the page boundary.
 
 ## Verification
 

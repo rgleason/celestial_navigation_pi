@@ -6,6 +6,7 @@ from __future__ import annotations
 import html
 import re
 import sys
+import subprocess
 import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -104,6 +105,18 @@ def main() -> None:
         require(edition in text, "DOCX cover does not match plugin version")
         require("experimental" not in text.lower(),
                 "DOCX still labels the documentation experimental")
+        word = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+        section = document.find(".//" + word + "sectPr")
+        page = section.find(word + "pgSz")
+        margins = section.find(word + "pgMar")
+        available = (int(page.get(word + "w")) -
+                     int(margins.get(word + "left")) -
+                     int(margins.get(word + "right")))
+        for table in document.iter(word + "tbl"):
+            width = table.find(word + "tblPr/" + word + "tblW")
+            require(width is not None and width.get(word + "type") == "dxa"
+                    and int(width.get(word + "w")) <= available,
+                    "DOCX table extends beyond the printable page")
     require(len(media) == 10, f"DOCX should embed 10 diagrams, found {len(media)}")
     require(
         not re.search(r'relationships/image"[^>]*TargetMode="External"', relationships),
@@ -117,6 +130,16 @@ def main() -> None:
         bundled_pdf.is_file() and bundled_pdf.read_bytes() == pdf.read_bytes(),
         "bundled PDF is missing or stale",
     )
+    pdf_text = subprocess.check_output(["pdftotext", "-bbox", str(pdf), "-"])
+    pdf_tree = ET.fromstring(pdf_text)
+    xhtml = "{http://www.w3.org/1999/xhtml}"
+    for page_number, page in enumerate(pdf_tree.iter(xhtml + "page"), 1):
+        for word in page.iter(xhtml + "word"):
+            require(float(word.get("xMin")) >= 0.0 and
+                    float(word.get("yMin")) >= 0.0 and
+                    float(word.get("xMax")) <= float(page.get("width")) and
+                    float(word.get("yMax")) <= float(page.get("height")),
+                    f"PDF text is clipped on page {page_number}: {word.text}")
     print(
         f"Validated 10 figures, {len(abbreviations)} abbreviations, "
         f"{len(glossary)} glossary terms, embedded DOCX images, scaled offline "
