@@ -32,6 +32,7 @@
 #include <vector>
 #include "pidc.h"
 #include "LunarDistanceEngine.h"
+#include "HorizonPosition.h"
 
 #ifdef __MSVC__
 #define _USE_MATH_DEFINES
@@ -103,8 +104,10 @@ public:
   void RebuildPolygonsHorizon();
 
   double HorizonTrueBearing() const;
+  bool HorizonBearingMatchesEvent() const;
+  std::vector<horizon_position::Position> HorizonPositionCandidates();
   bool HorizonEstimatedPosition(double* lat, double* lon);
-  double HorizonEstimateUncertaintyNm() const;
+  wxString HorizonPositionSummary();
   wxString HorizonEventName() const;
   wxString HorizonMeasurementText() const;
 
@@ -191,10 +194,7 @@ public:
   double m_HorizonAltitudeUncertainty;  // arcminutes
   int m_HorizonQuality;                 // 0 clear, 1 hazy, 2 obstructed
   wxString m_HorizonTimeSource;
-  bool m_HorizonEstimateValid;
-  double m_HorizonEstimateLat;
-  double m_HorizonEstimateLon;
-  double m_HorizonEstimateRadiusNm;
+  std::vector<horizon_position::Position> m_HorizonPositions;
 
   /* for lunar */
   long m_TimeCorrection;
