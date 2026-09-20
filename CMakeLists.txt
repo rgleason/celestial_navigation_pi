@@ -76,7 +76,7 @@ set(VERSION_MAJOR "2")
 set(VERSION_MINOR "9")
 set(VERSION_PATCH "0")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "18/09/2026" )# DD/MM/YYYY format
+set(VERSION_DATE  "20/09/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -245,6 +245,7 @@ SET(HDRS
         src/SightAnalysisDialog.h
         src/UtcDateTime.h
         src/HorizonEventDialog.h
+        src/HorizonPosition.h
         src/HtmlHelp.h
         src/EclipseDialog.h
         src/EclipseDataFiles.h

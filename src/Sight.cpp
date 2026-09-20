@@ -128,10 +128,6 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
       m_HorizonAltitudeUncertainty(10),
       m_HorizonQuality(0),
       m_HorizonTimeSource(_T("System UTC")),
-      m_HorizonEstimateValid(false),
-      m_HorizonEstimateLat(0),
-      m_HorizonEstimateLon(0),
-      m_HorizonEstimateRadiusNm(0),
       m_TimeCorrection(0),
       m_LDC(NAN),
       m_LunarSolutionValid(false),
@@ -597,9 +593,9 @@ void Sight::Render(piDC* dc, PlugIn_ViewPort& VP, double pix_per_mm) {
   dc->SetPen(wxPen(m_Colour, (int)(0.5 * pix_per_mm)));
   DrawPolygon(VP, lines, false);
 
-  if (m_Type == HORIZON && m_HorizonEstimateValid) {
+  for (const auto& position : m_HorizonPositions) {
     wxPoint centre;
-    GetCanvasPixLL(&VP, &centre, m_HorizonEstimateLat, m_HorizonEstimateLon);
+    GetCanvasPixLL(&VP, &centre, position.latitude, position.longitude);
     const int marker = wxMax(4, static_cast<int>(1.5 * pix_per_mm));
     dc->SetPen(wxPen(m_Colour, wxMax(1, static_cast<int>(0.7 * pix_per_mm))));
     dc->StrokeLine(centre.x - marker, centre.y, centre.x + marker, centre.y);
@@ -614,6 +610,7 @@ void Sight::Recompute(double clock_offset) {
   // them instead of displaying geometry copied from an earlier sight type.
   m_bCalculated = false;
   m_CalcStr.clear();
+  m_HorizonPositions.clear();
 
   if (clock_offset)
     m_CalcStr += wxString::Format(
@@ -638,6 +635,7 @@ void Sight::Recompute(double clock_offset) {
 }
 
 void Sight::RebuildPolygons() {
+  m_HorizonPositions.clear();
   if (m_Type == LUNAR) {
     // A sight converted from Altitude/Azimuth must not retain its old plot.
     polygons.clear();
@@ -660,23 +658,31 @@ void Sight::RebuildPolygons() {
   }
 
   /* now shift the vertices as needed */
+  const auto shiftedPoint = [this](double lat, double lon) {
+    if (m_ShiftNm == 0.0) return wxRealPoint(lat, lon);
+    double bearing = m_ShiftBearing;
+    if (m_bMagneticShiftBearing)
+      bearing += celestial_navigation_pi_GetWMM(
+          lat, resolve_heading(lon), m_EyeHeight, m_CorrectedDateTime);
+    return DistancePoint(90.0 - m_ShiftNm / 60.0, bearing, lat, lon);
+  };
   for (std::list<wxRealPointList*>::iterator it = polygons.begin();
        it != polygons.end(); it++) {
     wxRealPointList* area = *it;
     for (wxRealPointList::iterator it2 = area->begin(); it2 != area->end();
          it2++) {
       wxRealPoint* p = *it2;
-      double lat = p->x, lon = p->y;
-
-      double localbearing = m_ShiftBearing;
-      if (m_bMagneticShiftBearing) {
-        lon = resolve_heading(lon);
-        localbearing += celestial_navigation_pi_GetWMM(lat, lon, m_EyeHeight,
-                                                       m_CorrectedDateTime);
-      }
-      double localaltitude = 90 - m_ShiftNm / 60;
-      *p = DistancePoint(localaltitude, localbearing, lat, lon);
+      *p = shiftedPoint(p->x, p->y);
     }
+  }
+
+  // Keep the horizon centreline and markers at the same epoch as its band.
+  if (m_Type == HORIZON)
+    for (auto* point : lines) *point = shiftedPoint(point->x, point->y);
+  for (auto& position : m_HorizonPositions) {
+    const wxRealPoint shifted =
+        shiftedPoint(position.latitude, position.longitude);
+    position = {shifted.x, resolve_heading(shifted.y)};
   }
 
   m_bCalculated = true;
@@ -1030,7 +1036,7 @@ void Sight::RecomputeHorizon() {
   m_Body = _T("Sun");
   m_bMagneticNorth = false;  // horizon corrections are explicitly applied
   m_Measurement = HorizonTrueBearing();
-  m_HorizonEstimateValid = false;
+  m_HorizonPositions.clear();
 
   double rad = 1.0;
   BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad, 0);
@@ -1078,64 +1084,65 @@ void Sight::RecomputeHorizon() {
   }
 }
 
-bool Sight::HorizonEstimatedPosition(double* lat, double* lon) {
-  if (m_Type != HORIZON || !m_HorizonBearingProvided || !lat || !lon)
-    return false;
-
-  double bodyLat, bodyLon;
-  BodyLocation(m_CorrectedDateTime, &bodyLat, &bodyLon, 0, 0, 0);
-  const double target = HorizonTrueBearing();
-
-  double bestTrace = 0;
-  double bestError = 361;
-  for (double trace = -180; trace < 180; trace += 1.0) {
-    const wxRealPoint point =
-        DistancePoint(m_ObservedAltitude, trace, bodyLat, bodyLon);
-    double altitude, bearing;
-    AltitudeAzimuth(point.x, point.y, bodyLat, bodyLon, &altitude, &bearing);
-    const double error = fabs(resolve_heading(bearing - target));
-    if (error < bestError) {
-      bestError = error;
-      bestTrace = trace;
-    }
-  }
-
-  double step = 0.5;
-  for (int iteration = 0; iteration < 24; ++iteration) {
-    double chosenTrace = bestTrace;
-    for (int direction = -1; direction <= 1; direction += 2) {
-      const double trace = bestTrace + direction * step;
-      const wxRealPoint point =
-          DistancePoint(m_ObservedAltitude, trace, bodyLat, bodyLon);
-      double altitude, bearing;
-      AltitudeAzimuth(point.x, point.y, bodyLat, bodyLon, &altitude, &bearing);
-      const double error = fabs(resolve_heading(bearing - target));
-      if (error < bestError) {
-        bestError = error;
-        chosenTrace = trace;
-      }
-    }
-    bestTrace = chosenTrace;
-    step *= 0.5;
-  }
-
-  const wxRealPoint estimate =
-      DistancePoint(m_ObservedAltitude, bestTrace, bodyLat, bodyLon);
-  *lat = estimate.x;
-  *lon = estimate.y;
-  if (*lon > 180) *lon -= 360;
-  if (*lon < -180) *lon += 360;
-  return bestError < 0.05;
+bool Sight::HorizonBearingMatchesEvent() const {
+  const double east = sin(d_to_r(HorizonTrueBearing()));
+  return m_HorizonEvent == SUNRISE ? east > 1e-10 : east < -1e-10;
 }
 
-double Sight::HorizonEstimateUncertaintyNm() const {
-  if (!m_HorizonBearingProvided) return NAN;
-  const double angularDistance = d_to_r(90.0 - m_ObservedAltitude);
-  const double crossTrack =
-      60.0 * fabs(sin(angularDistance)) * m_HorizonBearingUncertainty;
-  const double radial = m_HorizonAltitudeUncertainty;
-  const double timing = 0.25 * m_TimeCertainty;
-  return sqrt(crossTrack * crossTrack + radial * radial + timing * timing);
+std::vector<horizon_position::Position> Sight::HorizonPositionCandidates() {
+  if (m_Type != HORIZON || !m_HorizonBearingProvided ||
+      !HorizonBearingMatchesEvent())
+    return {};
+  double bodyLat, bodyLon;
+  BodyLocation(m_CorrectedDateTime, &bodyLat, &bodyLon, 0, 0, 0);
+  return horizon_position::Candidates(bodyLat, bodyLon, m_ObservedAltitude,
+                                      HorizonTrueBearing());
+}
+
+bool Sight::HorizonEstimatedPosition(double* lat, double* lon) {
+  if (!lat || !lon) return false;
+  const auto positions = HorizonPositionCandidates();
+  if (positions.size() != 1) return false;
+  *lat = positions.front().latitude;
+  *lon = positions.front().longitude;
+  return true;
+}
+
+wxString Sight::HorizonPositionSummary() {
+  wxString summary =
+      _("The chart shows the time-based altitude line of position and its "
+        "horizon/time uncertainty band. Fix uses this altitude constraint; "
+        "the optional bearing is a separate position aid.\n");
+  if (!m_HorizonBearingProvided) return summary;
+  if (!HorizonBearingMatchesEvent())
+    return summary +
+           _("The bearing does not match the selected event: sunrise requires "
+             "an easterly bearing, sunset a westerly bearing. Check the event "
+             "and true/magnetic bearing. No position markers are plotted.");
+
+  const auto positions = HorizonPositionCandidates();
+  if (positions.empty()) {
+    summary +=
+        _("The nominal bearing has no isolated position solution. The inputs "
+          "may be inconsistent or the geometry degenerate. The time-based "
+          "line of position can still be used.\n");
+  } else {
+    summary += positions.size() == 2
+                   ? _("Two nominal positions satisfy the event and bearing; "
+                       "use DR or other sights to distinguish them:\n")
+                   : _("Nominal bearing-derived position:\n");
+    for (const auto& position : positions)
+      summary += wxString::Format(
+          _T("  %s  %s\n"), toSDMM_PlugIn(1, position.latitude, true),
+          toSDMM_PlugIn(2, position.longitude, true));
+  }
+  summary += wxString::Format(
+      _("Bearing uncertainty: +/- %.2f degrees. Markers show nominal "
+        "solutions, not fixes or confidence areas. Bearing errors can move "
+        "them hundreds of miles along the LOP; there is no fixed NM-per-degree "
+        "conversion."),
+      m_HorizonBearingUncertainty);
+  return summary;
 }
 
 lunar_distance::Observation Sight::LunarObservation() const {
@@ -2591,24 +2598,11 @@ void Sight::RebuildPolygonsHorizon() {
   RebuildPolygonsAltitude();
   m_MeasurementCertainty = savedCertainty;
 
-  m_HorizonEstimateValid =
-      HorizonEstimatedPosition(&m_HorizonEstimateLat, &m_HorizonEstimateLon);
-  if (!m_HorizonEstimateValid) return;
-
-  m_HorizonEstimateRadiusNm = HorizonEstimateUncertaintyNm();
-  wxRealPointList* uncertainty = new wxRealPointList;
-  const double altitude = 90.0 - m_HorizonEstimateRadiusNm / 60.0;
-  for (int bearing = 0; bearing <= 360; bearing += 5) {
-    uncertainty->Append(new wxRealPoint(DistancePoint(
-        altitude, bearing, m_HorizonEstimateLat, m_HorizonEstimateLon)));
-  }
-  polygons.push_back(uncertainty);
-
-  m_CalcStr += wxString::Format(
-      _("\nBearing-derived estimate = %s %s\n"
-        "Conservative uncertainty radius = %.1f NM\n"),
-      toSDMM_PlugIn(1, m_HorizonEstimateLat, true),
-      toSDMM_PlugIn(2, m_HorizonEstimateLon, true), m_HorizonEstimateRadiusNm);
+  // A bearing uncertainty is not an isotropic position radius. Keep the
+  // altitude band and mark every nominal branch without covering the chart
+  // with a filled disc or implying that one ambiguous branch is a fix.
+  m_HorizonPositions = HorizonPositionCandidates();
+  m_CalcStr += _T("\n") + HorizonPositionSummary() + _T("\n");
 }
 
 /* Calculate latitude and longitude position for a sight taken with time,
