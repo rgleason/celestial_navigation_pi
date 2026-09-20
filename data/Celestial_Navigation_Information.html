@@ -52,8 +52,8 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
 <section class="cover">
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
-  <p style="text-align: center;"><strong>Experimental v2 documentation</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.5.6<br>Documentation revision 16 September 2026</p>
+  <p style="text-align: center;"><strong>User manual</strong></p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.9<br>Documentation revision 20 September 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -70,9 +70,9 @@ understand why one altitude creates a Circle of Equal Altitude. Then learn why
 that circle is usually treated as a Line of Position. Only after that do we
 introduce the intercept method, running fixes and specialist observations.</div>
 
-<div class="warning"><span class="label">Navigation warning.</span> This is
-experimental software and instructional material, not an approved primary
-means of navigation. Maintain an independent position, a proper dead-reckoning
+<div class="warning"><span class="label">Navigation warning.</span> The plugin
+and this manual support celestial navigation and instruction. Maintain an
+independent position, a proper dead-reckoning
 plot and all equipment and publications required for the voyage. Check results
 for plausibility. Never allow an attractive plot or numerical answer to
 override contrary navigational evidence.</div>
@@ -95,6 +95,9 @@ timezone. Their UTC-labelled astronomical tables and curves could use an
 incorrect epoch. Saved sightings themselves are unaffected.</div>
 
 <h2 id="how-to-use">How to use the manual</h2>
+<p><strong>Current release:</strong> this edition covers the per-sight DR-shift
+running fix, Find position sources, measured lunar-pair guidance and corrected
+Horizon Event display. The descriptions below match the 2.8.9 controls.</p>
 <p><strong>2.8.5.4 Find popup:</strong> <strong>Close</strong> keeps the edited
 DR position and returns to Sight Properties without changing the measured
 altitude. <strong>Copy estimated Hs</strong> deliberately replaces the appropriate
@@ -114,6 +117,15 @@ in the same angle format as Hc. In a lunar Moon/body Find popup it is that
 body's reduced altitude, not the lunar distance. Copy estimated Hs is beside
 its estimate; Reset position is beside the coordinate controls. Neither Find
 Cancel nor Close writes the sights XML file directly.</p>
+<p>The Find position selector offers <strong>Manual</strong>,
+<strong>Current boat position (live)</strong>, <strong>Chart cursor</strong>,
+<strong>Last calculated fix</strong> and <strong>Waypoint or place...</strong>.
+Chart cursor and waypoint choices capture coordinates; only the live boat
+choice follows subsequent boat updates. The last-fix source shows its epoch
+when known. Select Manual to edit coordinates. An unavailable source or a
+cancelled waypoint selection preserves the previous position. These are
+position aids: always check that the position is appropriate to the sight's
+recorded UTC.</p>
 <ul>
   <li>If celestial navigation is new to you, read Chapters 1–6 in order.</li>
   <li>For a first practical altitude sight, use the checklist in Chapter 8.</li>
@@ -689,11 +701,28 @@ epoch.</p>
 
 <h2>10.1 Time-tagged numerical fix</h2>
 <ol class="steps">
-  <li>Preserve each observation's actual timestamp.</li>
-  <li>Choose the fix reference epoch, normally the latest observation.</li>
-  <li>Enter the best available true COG and SOG or equivalent displacement model.</li>
-  <li>Solve, then examine residuals and whether the assumed motion was credible.</li>
+  <li>Preserve each observation's actual timestamp and show the sights to include.</li>
+  <li>Open <strong>Fix…</strong> and enable <strong>Propagate every sight to a common epoch</strong>.</li>
+  <li>Choose the reference epoch with its date, time and UTC or computer-local time basis. Normally this is the latest observation's corrected UTC.</li>
+  <li>Select <strong>One COG and SOG</strong> for constant vessel motion, or <strong>Each sight's DR Shift</strong> for individually recorded displacements.</li>
+  <li>Solve and inspect the included inputs, residuals, RMS and formal uncertainty ellipse.</li>
 </ol>
+
+<p>With <strong>One COG and SOG</strong>, enter the best available true course
+and speed; the solver ignores saved per-sight shifts. With
+<strong>Each sight's DR Shift</strong>, enter each sight's distance and bearing
+travelled from that observation to the chosen epoch, using its DR Shift tab.
+The latest sight normally has zero shift. This supports changes of course or
+speed; the common COG/SOG controls are disabled and are not added again.</p>
+
+<p>If any visible altitude or horizon sight has a non-zero saved shift, opening
+Fix automatically selects the per-sight mode and the latest visible sight's
+corrected UTC. Confirm that all shifts actually refer to that epoch, especially
+after changing the epoch. The results table shows the saved distance, whether
+the bearing is magnetic or true, and the true bearing used. These inputs stay
+visible even if the solution fails. With no saved shifts, the dialog retains
+its stationary default. Stationary plane/sphere/cone algorithms exclude shifted
+sights and report that exclusion; enable the running-fix option to use them.</p>
 
 <p>A long interval can improve azimuth crossing while increasing DR uncertainty.
 A morning-Sun/afternoon-Sun running fix is useful, but its precision depends as
@@ -863,12 +892,14 @@ parameter is an advanced diagnostic; with too few observations it can trade
 against clock correction and should not be treated as a sextant calibration.</div>
 
 <h2>12.6 Lunar pair planner</h2>
-<p><strong>Lunar Tools… → Lunar planner</strong> ranks the offline body
-catalogue for a selected UTC and position. It displays Moon and body altitude,
-centre separation, distance rate in arcminutes per hour and the approximate
-time change corresponding to 0.1′ of distance. A small time value means useful
-time sensitivity. The quality text also penalises hidden/low bodies, awkward
-sextant angles, very unequal altitudes and faint stars.</p>
+<p><strong>Lunar Tools… → Lunar planner</strong> orders pairs by the approximate
+UTC change corresponding to 0.1′ of lunar distance, shortest first, with
+below-horizon pairs last. It shows centre separation, signed distance rate in
+arcminutes per hour, Moon/body altitude and true azimuth, Moon illumination,
+body magnitude and which body is below the geometric horizon. A small time
+value indicates greater timing sensitivity. There is no combined quality
+score: use the measured quantities to assess visibility, sextant range and
+whether the pair is practical to observe.</p>
 
 <p>Lunar Tools defaults to <strong>Nautical: YYYY-MM-DD, 24-hour</strong> UTC
 entry for an unambiguous cross-platform display. Select
@@ -942,6 +973,35 @@ section, so the event date and 24-hour UTC time remain visible.</p>
   <li>Enter bearing uncertainty, height of eye, pressure, temperature, horizon quality and horizon/refraction uncertainty.</li>
   <li>Read the estimated result and retain its stated limitations.</li>
 </ol>
+
+<p><strong>Reading the chart:</strong> the event time supplies an altitude line
+of position (LOP), with a band for the entered time and horizon uncertainty.
+An optional bearing adds nominal candidate markers along that LOP. There can
+be two valid positions, often in different hemispheres: use dead reckoning or
+other sights to distinguish them. Neither marker is a fix or a confidence
+area. The Fix dialog uses the time-based altitude constraint, not the optional
+bearing. A bearing uncertainty in degrees cannot be converted into a fixed
+nautical-mile radius; near weak geometry, small bearing changes can move a
+candidate hundreds of miles. The former filled circular estimate has been
+removed because it did not represent that uncertainty.</p>
+
+<p><strong>UTC dates and a moving vessel:</strong> order observations by their
+full UTC date and time. Near Hawaii, a sunset at 05:55 UTC on 16 July is the
+previous local evening, before a sunrise at 16:51 UTC on 16 July. The sunset
+after that sunrise normally has the next UTC date. When combining events on a
+moving vessel, enable a running fix and enter the vessel's course and speed
+to propagate each observation to a common epoch. The observed Sun bearing is
+an azimuth constraint to a distant celestial body, not a straight terrestrial
+bearing line drawn through an assumed boat position.</p>
+
+<p><strong>Basis of the method:</strong> this is an equal-altitude observation
+at upper-limb contact with the visible sea horizon. It uses the usual
+astronomical triangle with dip, refraction, solar semidiameter and parallax
+corrections. It is not a separate precision-fix method. The
+<a href="https://aa.usno.navy.mil/faq/RST_defs">US Naval Observatory's rise/set
+definitions</a> explain upper-limb contact and the conventional near-horizon
+refraction. Actual refraction varies; a sub-arcminute horizon uncertainty is
+usually too optimistic.</p>
 
 <p>Without a sextant, the apparent instant is affected by waves, observer
 height, abnormal refraction, horizon definition, extinction, limb recognition

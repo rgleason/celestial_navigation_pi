@@ -7,6 +7,7 @@ import html
 import re
 import sys
 import zipfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from PIL import Image
@@ -29,6 +30,15 @@ def require(condition: bool, message: str) -> None:
 
 def main() -> None:
     source = SOURCE.read_text(encoding="utf-8")
+    cmake = (ROOT.parent.parent / "CMakeLists.txt").read_text(encoding="utf-8")
+    version = ".".join(
+        re.search(r'set\(VERSION_' + part + r'\s+"(\d+)"\)', cmake).group(1)
+        for part in ("MAJOR", "MINOR", "PATCH")
+    )
+    edition = "Celestial Navigation plugin " + version
+    require(edition in source, "manual cover does not match plugin version")
+    require("experimental" not in source.lower(),
+            "manual still labels the documentation experimental")
     ids = set(re.findall(r'\bid="([^"]+)"', source))
     anchors = re.findall(r'href="#([^"]+)"', source)
     missing_anchors = sorted(set(anchors) - ids)
@@ -65,6 +75,8 @@ def main() -> None:
     )
 
     prepared = output_html.read_text(encoding="utf-8")
+    require(re.sub(r' height="\d+"', "", prepared) == source,
+            "generated HTML differs from the current manual source")
     prepared_images = re.findall(
         r'<img\b[^>]*\bsrc="([^"]+)"[^>]*\bwidth="(\d+)"[^>]*\bheight="(\d+)"',
         prepared,
@@ -87,6 +99,11 @@ def main() -> None:
     with zipfile.ZipFile(docx) as package:
         media = [name for name in package.namelist() if name.startswith("word/media/")]
         relationships = package.read("word/_rels/document.xml.rels").decode("utf-8")
+        document = ET.fromstring(package.read("word/document.xml"))
+        text = "".join(document.itertext())
+        require(edition in text, "DOCX cover does not match plugin version")
+        require("experimental" not in text.lower(),
+                "DOCX still labels the documentation experimental")
     require(len(media) == 10, f"DOCX should embed 10 diagrams, found {len(media)}")
     require(
         not re.search(r'relationships/image"[^>]*TargetMode="External"', relationships),
