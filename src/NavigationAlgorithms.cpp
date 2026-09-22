@@ -379,6 +379,7 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
   bool usedDe440 = false;
   sight.BodyLocation(utc, &result.latitude, &result.longitude, &ghaast, &radius,
                      &distance, true, true, dut1OverrideSeconds, &usedDe440);
+  result.usedDe440 = usedDe440;
   sight.AltitudeAzimuth(observerLat, observerLon, result.latitude,
                         result.longitude, &result.geometricAltitude,
                         &result.azimuthTrue);
@@ -403,6 +404,7 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
     // BodyLocation/geocentric_planet returns planetary distance in kilometres.
     result.horizontalParallax = std::asin(EARTH_RADIUS / distance) / kDeg;
   }
+  result.geocentricSemidiameter = result.semidiameter;
   if (result.horizontalParallax != 0.0)
     topocentricAltitude -=
         result.horizontalParallax * std::cos(result.geometricAltitude * kDeg);

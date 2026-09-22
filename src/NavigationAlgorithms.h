@@ -49,6 +49,7 @@ struct ObserverMotion {
 
 struct BodyState {
   bool valid = false;
+  bool usedDe440 = false;  // Actual source of the geocentric ephemeris.
   wxString body;
   wxDateTime utc;
   double latitude = 0.0;   // geographic position (declination)
@@ -61,6 +62,7 @@ struct BodyState {
   double apparentAltitude = 0.0;
   double azimuthTrue = 0.0;
   double semidiameter = 0.0;
+  double geocentricSemidiameter = 0.0;  // Universal almanac SD, before augmentation.
   double horizontalParallax = 0.0;
   double distance = 0.0;
   double visualMagnitude = 0.0;

@@ -57,6 +57,7 @@ set(SRC
     numerical_audit_tests.cpp
     waypoint_position_source_tests.cpp
     almanac_generator_tests.cpp
+    almanac_ui_tests.cpp
     time_status_tests.cpp
     utf8_translation_tests.cpp
     common.cpp
