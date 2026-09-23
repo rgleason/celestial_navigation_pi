@@ -70,6 +70,7 @@ private:
   void RefreshSpecial();
   void ExportAlmanac(wxCommandEvent& event);
   void CreateSelectedSight(wxCommandEvent& event);
+  void FindLunarWindows(wxCommandEvent& event);
   void SolveSpecialLatitude(wxCommandEvent& event);
 #ifdef CELESTIAL_PLANNER_INTEGRATION_TEST
   bool SelectWaypointForIntegration(const wxString& name);
@@ -106,6 +107,7 @@ private:
   wxListCtrl* m_bodies;
   wxListCtrl* m_combinations;
   wxListCtrl* m_lunarPairs;
+  wxChoice* m_lunarOrder;
   wxNotebook* m_resultsNotebook;
   wxStaticText* m_noRecommendations;
   wxChoice* m_planningMode;

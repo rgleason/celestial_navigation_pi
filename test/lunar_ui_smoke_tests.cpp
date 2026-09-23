@@ -13,6 +13,8 @@
 #include "FindBodyDialog.h"
 #include "PlannerDialog.h"
 #include "SightDialog.h"
+#include "SightPalette.h"
+#include "pidc.h"
 #include "NavigationAlgorithms.h"
 #include "UtcDateTime.h"
 #include "mock_plugin_api.h"
@@ -47,12 +49,23 @@ class InspectSightDialog : public SightDialog {
   using SightDialogBase::m_cType;
   using SightDialogBase::m_sCertaintySeconds;
   using SightDialogBase::m_tMeasurement;
+  using SightDialogBase::m_notebook1;
+  using SightDialogBase::m_ColourPicker;
+};
+class OverlayPreviewSight : public Sight {
+ public:
+  using Sight::Sight;
+  using Sight::lines;
+  using Sight::polygons;
 };
 
 bool ContainsStaticText(wxWindow* window, const wxString& text) {
   for (auto* child : window->GetChildren()) {
-    if (auto* label = dynamic_cast<wxStaticText*>(child))
-      if (label->GetLabel().Contains(text)) return true;
+    if (auto* label = dynamic_cast<wxStaticText*>(child)) {
+      wxString readable = label->GetLabel();
+      readable.Replace("\n", " ");
+      if (readable.Contains(text)) return true;
+    }
     if (ContainsStaticText(child, text)) return true;
   }
   return false;
@@ -127,6 +140,162 @@ wxListCtrl* FindListWithColumn(wxWindow* window, const wxString& heading) {
   return nullptr;
 }
 }  // namespace
+
+TEST(DisplayUi, PaletteChartControlsAndAstronomyPathsFit) {
+  if (!std::getenv("CELESTIAL_RUN_UI_TESTS")) GTEST_SKIP();
+  int argc = 1;
+  char name[] = "celestial-display-ui-test";
+  char* argv[] = {name, nullptr};
+  wxApp::SetInstance(new wxApp);
+  ASSERT_TRUE(wxEntryStart(argc, argv));
+  ASSERT_TRUE(wxTheApp->CallOnInit());
+  wxInitAllImageHandlers();
+  const auto oldHandler = wxSetAssertHandler(
+      [](const wxString&, int line, const wxString&, const wxString& condition,
+         const wxString& message) {
+        ADD_FAILURE() << line << " " << condition.ToStdString() << " "
+                      << message.ToStdString();
+      });
+  delete wxLog::SetActiveTarget(new wxLogStderr);
+  const wxString privatePath = wxFileName::CreateTempFileName("celestial-display-");
+  ASSERT_TRUE(wxRemoveFile(privatePath));
+  ASSERT_TRUE(wxFileName::Mkdir(privatePath + "/plugins/celestial_navigation",
+                               0700, wxPATH_MKDIR_FULL));
+  SetTestPrivateDataPath(privatePath);
+  SetTestPluginDataRoot(wxFileName(__FILE__).GetPath() + "/..");
+  GetOCPNConfigObject()->Write("/PlugIns/CelestialNavigation/ShowTimeIntegrity", false);
+  auto capture = [](wxWindow& window, const wxString& path) {
+    window.Layout();
+    for (int i = 0; i < 6; ++i) { wxTheApp->Yield(); wxMilliSleep(20); }
+#ifdef __WXGTK3__
+    const auto size = window.GetSize();
+    GtkAllocation allocation{0, 0, size.x, size.y};
+    gtk_widget_size_allocate(GTK_WIDGET(window.GetHandle()), &allocation);
+    auto* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.x, size.y);
+    auto* cr = cairo_create(surface);
+    gtk_widget_draw(GTK_WIDGET(window.GetHandle()), cr);
+    EXPECT_EQ(cairo_surface_write_to_png(surface, path.utf8_str()), CAIRO_STATUS_SUCCESS);
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
+#endif
+  };
+  // Exercise the production COP renderer on light and dark backgrounds. The
+  // host shim supplies a deterministic projection; this is not a GL-driver test.
+  for (int scale : {1, 2}) {
+    wxBitmap bitmap(720, 360);
+    wxMemoryDC memory(bitmap);
+    memory.SetBackground(wxBrush(wxColour(245, 241, 224)));
+    memory.Clear();
+    memory.SetPen(*wxTRANSPARENT_PEN);
+    memory.SetBrush(wxBrush(wxColour(24, 34, 44)));
+    memory.DrawRectangle(360, 0, 360, 360);
+    {
+      piDC dc(memory);
+      PlugIn_ViewPort viewport{};
+      viewport.pix_width = 720;
+      viewport.pix_height = 360;
+      dc.SetVP(&viewport);
+      for (size_t index = 0; index < SightPalette().size(); ++index) {
+        OverlayPreviewSight sight(Sight::ALTITUDE, "Sun", Sight::LOWER,
+                                   wxDateTime::Now(), 0, 30, 0.2);
+        sight.m_Colour = SightPalette()[index].Colour(150);
+        const double latitude = 75.0 - double(index) * 20.0;
+        for (int lon = -160; lon <= 160; lon += 20)
+          sight.lines.Append(new wxRealPoint(latitude, lon));
+        for (int lon : {-160, 20}) {
+          auto* band = new wxRealPointList;
+          band->Append(new wxRealPoint(latitude - 4, lon));
+          band->Append(new wxRealPoint(latitude + 4, lon));
+          band->Append(new wxRealPoint(latitude + 4, lon + 140));
+          band->Append(new wxRealPoint(latitude - 4, lon + 140));
+          sight.polygons.push_back(band);
+        }
+        SightDisplayStyle style;
+        style.bandOpacityPercent = 50;
+        sight.Render(&dc, viewport, scale * 96.0 / 25.4, style);
+      }
+    }
+    memory.SelectObject(wxNullBitmap);
+    ASSERT_TRUE(bitmap.SaveFile(wxString::Format(
+        "/tmp/celestial-cop-palette-%dx.png", scale), wxBITMAP_TYPE_PNG));
+  }
+  {
+    wxFrame frame(nullptr, wxID_ANY, "Display UI test");
+    celestial_navigation_pi plugin(nullptr);
+    CelestialNavigationDialog main(&frame, &plugin);
+    main.Show();
+    capture(main, "/tmp/celestial-display-main.png");
+    ExpectUnclippedNonOverlappingChildren(&main);
+    wxButton* display = nullptr;
+    for (auto* child : main.GetChildren())
+      if (auto* button = dynamic_cast<wxButton*>(child))
+        if (button->GetLabel() == "Chart display...") display = button;
+    ASSERT_NE(display, nullptr);
+    wxTheApp->CallAfter([&]() {
+      for (auto* child : main.GetChildren()) {
+        auto* modal = dynamic_cast<wxDialog*>(child);
+        if (!modal || modal->GetTitle() != "Chart sight display") continue;
+        capture(*modal, "/tmp/celestial-display-settings.png");
+        ExpectUnclippedNonOverlappingChildren(modal);
+        for (auto* control : modal->GetChildren()) {
+          if (auto* spin = dynamic_cast<wxSpinCtrlDouble*>(control)) spin->SetValue(0.8);
+          else if (auto* spin = dynamic_cast<wxSpinCtrl*>(control)) spin->SetValue(45);
+        }
+        modal->EndModal(wxID_OK);
+      }
+    });
+    wxCommandEvent click(wxEVT_BUTTON, display->GetId());
+    display->ProcessWindowEvent(click);
+    EXPECT_DOUBLE_EQ(main.m_chartStyle.lineWidthMm, 0.8);
+    EXPECT_EQ(main.m_chartStyle.bandOpacityPercent, 45);
+    main.Hide();
+    {
+      CelestialNavigationDialog reopened(&frame, &plugin);
+      EXPECT_DOUBLE_EQ(reopened.m_chartStyle.lineWidthMm, 0.8);
+      EXPECT_EQ(reopened.m_chartStyle.bandOpacityPercent, 45);
+    }
+    Sight sight(Sight::ALTITUDE, "Sun", Sight::LOWER, wxDateTime::Now(), 0, 30, 0.2);
+    sight.m_Colour = wxColour(18, 171, 239, 150);
+    {
+      InspectSightDialog editor(&frame, sight, 0);
+      editor.Show();
+      int configPage = -1;
+      for (size_t i = 0; i < editor.m_notebook1->GetPageCount(); ++i)
+        if (editor.m_notebook1->GetPageText(i) == "Config") configPage = i;
+      ASSERT_GE(configPage, 0);
+      editor.m_notebook1->SetSelection(configPage);
+      capture(editor, "/tmp/celestial-display-palette.png");
+      auto* page = editor.m_notebook1->GetPage(configPage);
+      ExpectUnclippedNonOverlappingChildren(page);
+      wxChoice* palette = nullptr;
+      for (auto* child : page->GetChildren())
+        if (auto* choice = dynamic_cast<wxChoice*>(child)) palette = choice;
+      ASSERT_NE(palette, nullptr);
+      EXPECT_EQ(palette->GetStringSelection(), "Custom (#12ABEF)");
+      EXPECT_EQ(editor.m_ColourPicker->GetColour().Red(), 18);
+      palette->SetSelection(0);
+      wxCommandEvent changed(wxEVT_CHOICE, palette->GetId());
+      palette->ProcessWindowEvent(changed);
+      EXPECT_EQ(sight.m_ColourName, "Blue");
+      EXPECT_EQ(sight.m_Colour.Blue(), 178);
+      editor.Hide();
+    }
+    {
+      EclipseDialog eclipse(&frame, &plugin);
+      eclipse.Show();
+      capture(eclipse, "/tmp/celestial-display-astronomy.png");
+      ExpectUnclippedNonOverlappingChildren(&eclipse);
+      EXPECT_TRUE(ContainsStaticText(&eclipse, "de440s.bsp"));
+      eclipse.Hide();
+    }
+  }
+  SetTestPrivateDataPath(wxEmptyString);
+  SetTestPluginDataRoot(wxEmptyString);
+  wxFileName::Rmdir(privatePath, wxPATH_RMDIR_RECURSIVE);
+  wxTheApp->OnExit();
+  wxSetAssertHandler(oldHandler);
+  wxEntryCleanup();
+}
 
 // Explicit opt-in: run alone with a display, separate from non-GUI tests.
 TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
@@ -266,6 +435,7 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       EXPECT_TRUE(ContainsStaticText(&dialog, "Saved DR used"));
       EXPECT_TRUE(ContainsStaticText(&dialog, "ΔZn"));
       EXPECT_TRUE(ContainsStaticText(&dialog, "effective crossing"));
+      EXPECT_TRUE(ContainsStaticText(&dialog, "not measurements to average"));
       dialog.Show();
       dialog.Layout();
       for (int i = 0; i < 4; ++i) {
@@ -273,6 +443,9 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
         wxMilliSleep(30);
       }
       EXPECT_GE(dialog.GetClientSize().x, 740);
+      for (auto* child : dialog.GetChildren())
+        if (auto* notebook = dynamic_cast<wxNotebook*>(child))
+          ExpectUnclippedNonOverlappingChildren(notebook->GetPage(0));
 #ifdef __WXGTK3__
       const auto resultSize = dialog.GetSize();
       GtkAllocation resultAllocation{0, 0, resultSize.x, resultSize.y};
@@ -383,6 +556,17 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       EXPECT_EQ(FindListWithColumn(lunarPlannerPage, wxString::FromUTF8("0.1′ time")),
                 lunarPlannerList);
       ASSERT_GT(lunarPlannerList->GetItemCount(), 0);
+      wxChoice* lunarOrder = nullptr;
+      for (auto* child : lunarPlannerPage->GetChildren())
+        if (auto* choice = dynamic_cast<wxChoice*>(child))
+          if (choice->FindString("Lunar order: timing sensitivity") != wxNOT_FOUND)
+            lunarOrder = choice;
+      ASSERT_NE(lunarOrder, nullptr);
+      EXPECT_EQ(0, lunarOrder->GetSelection());
+      lunarOrder->SetSelection(1);
+      wxCommandEvent orderChanged(wxEVT_CHOICE, lunarOrder->GetId());
+      orderChanged.SetEventObject(lunarOrder);
+      lunarOrder->ProcessWindowEvent(orderChanged);
       bool sawBelowHorizon = false;
       double previousTime = -1.0;
       for (long index = 0; index < lunarPlannerList->GetItemCount(); ++index) {

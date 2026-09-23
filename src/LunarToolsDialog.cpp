@@ -430,8 +430,9 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
   auto* top = new wxBoxSizer(wxVERTICAL);
   auto* note = new wxStaticText(
       page, wxID_ANY,
-      CN_UTF8_("Pairs are ordered by 0.1′ time (shortest first), with pairs "
-               "below the geometric horizon last. The time is the approximate "
+      CN_UTF8_("Pairs use the same ordering as Bodies & Best Sights: fewest "
+               "planning cautions, then 0.1′ time; timing-first is optional. "
+               "Below-horizon pairs come last. The time is the approximate "
                "UTC change corresponding to 0.1′ of lunar distance. "
                "Visibility and instrument range require your judgement."));
   note->Wrap(820);
@@ -464,6 +465,12 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
                wxRIGHT, 6);
   controls->Add(timeRow, 0, wxEXPAND);
   top->Add(controls, 0, wxEXPAND | wxALL, 6);
+  m_plannerOrder = new wxChoice(page, wxID_ANY);
+  m_plannerOrder->Append(_("Lunar order: fewest cautions, then timing"));
+  m_plannerOrder->Append(_("Lunar order: timing sensitivity"));
+  m_plannerOrder->SetSelection(0);
+  m_plannerOrder->Bind(wxEVT_CHOICE, &LunarToolsDialog::CalculatePlanner, this);
+  top->Add(m_plannerOrder, 0, wxALL, 6);
   m_plannerList = new wxListCtrl(page, wxID_ANY, wxDefaultPosition,
                                  wxDefaultSize, wxLC_REPORT | wxBORDER_SUNKEN);
   const wxString columns[] = {
@@ -938,6 +945,10 @@ void LunarToolsDialog::ShowCandidate(std::size_t index) {
                                 candidate.common_index_bias_arcmin);
   for (const auto& warning : m_sequenceResult.warnings)
     summary += CN_UTF8_(" — ") + wxString::FromUTF8(warning.c_str());
+  if (m_sequenceResult.candidates.size() > 1)
+    summary += _(" Multiple solutions remain: these are unresolved alternatives, "
+                 "not repeated measurements to average. Use another observation "
+                 "or independent position/time evidence to distinguish them.");
   m_sequenceSummary->SetLabel(summary);
   m_sequenceSummary->Wrap(1000);
   m_sequenceResiduals->DeleteAllItems();
@@ -993,20 +1004,11 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
       instant, observerLatitude, observerLongitude);
   const BodyState moon = CelestialEphemeris::Evaluate(
       "Moon", instant, observerLatitude, observerLongitude);
-  std::vector<RankedBody> rows;
-  for (const auto& body : plan.bodies)
-    if (body.state.body != "Moon") rows.push_back(body);
-  std::sort(rows.begin(), rows.end(),
-            [&moon](const RankedBody& a, const RankedBody& b) {
-              const bool aAbove = moon.geometricAltitude >= 0.0 &&
-                                  a.state.geometricAltitude >= 0.0;
-              const bool bAbove = moon.geometricAltitude >= 0.0 &&
-                                  b.state.geometricAltitude >= 0.0;
-              if (aAbove != bAbove) return aAbove;
-              if (a.lunarTimingSeconds != b.lunarTimingSeconds)
-                return a.lunarTimingSeconds < b.lunarTimingSeconds;
-              return a.state.body.CmpNoCase(b.state.body) < 0;
-            });
+  auto rows = PlannerRecommendations::Order(
+      plan, PlanningMode::LunarCandidates, true,
+      m_plannerOrder->GetSelection() == 1);
+  rows.erase(std::remove_if(rows.begin(), rows.end(),
+      [](const RankedBody& b) { return !b.lunarValid; }), rows.end());
   for (std::size_t index = 0; index < rows.size(); ++index) {
     const RankedBody& row = rows[index];
     const long item = m_plannerList->InsertItem(index, row.state.body);

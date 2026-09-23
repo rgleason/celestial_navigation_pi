@@ -108,6 +108,7 @@ public:
 private:
   void ApplyFindPosition(const Sight& candidate);
   void MarkDirty();
+  void UpdateColourChoice();
   void OnWindowClose(wxCloseEvent& event);
   double BodyAltitude(wxString body);
 #ifdef __OCPN__ANDROID__
@@ -115,6 +116,7 @@ private:
 #endif
 
   Sight& m_Sight;
+  wxChoice* m_colourPalette = nullptr;
   int m_clock_offset;
   bool m_breadytorecompute;
   DialogTransactionState m_transaction;

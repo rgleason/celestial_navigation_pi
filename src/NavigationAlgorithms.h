@@ -151,7 +151,9 @@ struct RankedBody {
   double lunarDistance = 0.0;
   double lunarRateArcminHour = 0.0;
   double lunarTimingSeconds = 0.0;
-  double lunarSuitability = 0.0;
+  int lunarConstraints = 0;  // Count of explicitly reported planning cautions.
+  bool lunarBelowHorizon = false;
+  bool lunarValid = false;
   wxString lunarReason;
 };
 
@@ -198,13 +200,25 @@ struct PlanningResult {
   MoonInformation moon;
 };
 
+struct LunarObservingWindow {
+  wxDateTime startUtc, endUtc, bestUtc;
+  RankedBody best;
+  double moonAltitude = 0.0;
+};
+
 class PlannerRecommendations {
 public:
   static PlanningResult Calculate(const wxDateTime& utc, double lat,
                                   double lon);
   static std::vector<RankedBody> Order(const PlanningResult& result,
                                        PlanningMode mode,
-                                       bool includeBelowHorizon);
+                                       bool includeBelowHorizon,
+                                       bool lunarTimingFirst = false);
+  static RankedBody LunarPair(const wxString& body, const wxDateTime& utc,
+                              double lat, double lon);
+  static std::vector<LunarObservingWindow> ObservingWindows(
+      const wxString& body, const ObserverMotion& observer,
+      unsigned hours = 24, unsigned stepMinutes = 10);
   static double EclipticLatitude(const BodyState& body, const wxDateTime& utc);
   static std::vector<PlannerSkyPoint> Ecliptic(const wxDateTime& utc,
                                                double lat, double lon);

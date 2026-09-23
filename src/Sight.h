@@ -34,6 +34,7 @@
 #include "pidc.h"
 #include "LunarDistanceEngine.h"
 #include "HorizonPosition.h"
+#include "SightOverlay.h"
 
 #ifdef __MSVC__
 #define _USE_MATH_DEFINES
@@ -166,7 +167,10 @@ public:
   wxString m_Remarks;  // Optional sight-log note; not used in calculations.
   wxColour m_Colour;  // Color of the sight
 
-  virtual void Render(piDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm);
+  virtual void Render(piDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm,
+                      const SightDisplayStyle& style = SightDisplayStyle());
+  std::vector<std::pair<wxPoint, wxPoint>> ScreenSegments(PlugIn_ViewPort& vp);
+  double ChartDistance(PlugIn_ViewPort& vp, const wxPoint& cursor);
 
   void BodyLocation(wxDateTime time, double* lat, double* lon, double* ghaash,
                     double* rad, double* dist, bool timeIsInstant = false,

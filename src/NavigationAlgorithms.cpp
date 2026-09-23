@@ -641,8 +641,19 @@ std::vector<RankedCombination> SightRanker::BestCombinations(
     const std::vector<RankedBody>& bodies, unsigned count,
     unsigned maximumResults) {
   std::vector<RankedCombination> combinations;
-  if ((count != 2 && count != 3) || bodies.size() < count) return combinations;
-  const size_t limit = std::min<size_t>(bodies.size(), 18);
+  if (!maximumResults || (count != 2 && count != 3) || bodies.size() < count)
+    return combinations;
+  auto keep = [&](RankedCombination combination) {
+    auto position = std::upper_bound(combinations.begin(), combinations.end(),
+        combination.score, [](double score, const RankedCombination& item) {
+          return score > item.score;
+        });
+    if (position == combinations.end() && combinations.size() >= maximumResults)
+      return;
+    combinations.insert(position, std::move(combination));
+    if (combinations.size() > maximumResults) combinations.pop_back();
+  };
+  const size_t limit = bodies.size();
   for (size_t i = 0; i < limit; ++i) {
     for (size_t j = i + 1; j < limit; ++j) {
       const double d1 = std::abs(
@@ -654,7 +665,7 @@ std::vector<RankedCombination> SightRanker::BestCombinations(
         c.score = 0.55 * (bodies[i].score + bodies[j].score) / 2.0 +
                   45.0 * Clamp(geometry, 0.0, 1.0);
         c.reason = wxString::Format("Crossing angle %.0f%c", d1, 0x00b0);
-        combinations.push_back(c);
+        keep(std::move(c));
       } else {
         for (size_t k = j + 1; k < limit; ++k) {
           const double d2 = std::abs(Wrap180(bodies[i].state.azimuthTrue -
@@ -682,7 +693,7 @@ std::vector<RankedCombination> SightRanker::BestCombinations(
           c.reason =
               wxString::Format("Geometry %.0f%%; closest bearings %.0f%c",
                                geometry * 100.0, smallest, 0x00b0);
-          combinations.push_back(c);
+          keep(std::move(c));
         }
       }
     }
@@ -698,13 +709,14 @@ std::vector<RankedCombination> SightRanker::BestCombinations(
 std::vector<RankedBody> SightRanker::RecommendationCandidates(
     const std::vector<RankedBody>& bodies, bool limitAltitude,
     double minimumAltitude, double maximumAltitude) {
-  if (!limitAltitude) return bodies;
   std::vector<RankedBody> candidates;
-  if (minimumAltitude >= maximumAltitude) return candidates;
+  if (limitAltitude && minimumAltitude >= maximumAltitude) return candidates;
   std::copy_if(bodies.begin(), bodies.end(), std::back_inserter(candidates),
-               [minimumAltitude, maximumAltitude](const RankedBody& body) {
-                 return body.state.geometricAltitude >= minimumAltitude &&
-                        body.state.geometricAltitude <= maximumAltitude;
+               [limitAltitude, minimumAltitude, maximumAltitude](const RankedBody& body) {
+                 return body.state.geometricAltitude >= 0 &&
+                        (!limitAltitude ||
+                         (body.state.geometricAltitude >= minimumAltitude &&
+                          body.state.geometricAltitude <= maximumAltitude));
                });
   return candidates;
 }
@@ -739,99 +751,141 @@ double PlannerRecommendations::EclipticLatitude(const BodyState& body,
          kDeg;
 }
 
+namespace {
+void LunarDetails(RankedBody& body, const BodyState& moon,
+                  const BodyState& sun, const BodyState& laterMoon,
+                  const BodyState& laterBody, const wxDateTime& utc) {
+  body.eclipticLatitude = PlannerRecommendations::EclipticLatitude(body.state, utc);
+  body.lunarTimingSeconds = std::numeric_limits<double>::infinity();
+  if (body.state.body == "Moon" || !body.state.valid || !moon.valid ||
+      !sun.valid || !laterMoon.valid || !laterBody.valid) return;
+  body.lunarValid = true;
+  body.lunarDistance = AngularSeparation(
+      moon.declination, -moon.gha, body.state.declination, -body.state.gha);
+  body.lunarRateArcminHour = (AngularSeparation(
+      laterMoon.declination, -laterMoon.gha, laterBody.declination,
+      -laterBody.gha) - body.lunarDistance) * 720.0;
+  const double rate = std::abs(body.lunarRateArcminHour);
+  if (rate > 0.01) body.lunarTimingSeconds = 360.0 / rate;
+  body.lunarBelowHorizon = moon.geometricAltitude < 0 ||
+                          body.state.geometricAltitude < 0;
+  auto caution = [&body](const wxString& text) {
+    if (!body.lunarReason.empty()) body.lunarReason += "; ";
+    body.lunarReason += text;
+    ++body.lunarConstraints;
+  };
+  if (body.lunarBelowHorizon) caution(_("Moon or companion below horizon"));
+  else if (std::min(moon.geometricAltitude, body.state.geometricAltitude) < 10 ||
+           std::max(moon.geometricAltitude, body.state.geometricAltitude) > 75)
+    caution(_("Moon/body altitude outside 10-75 degrees"));
+  if (body.lunarDistance < 20 || body.lunarDistance > 100)
+    caution(_("LD outside preferred 20-100 degrees"));
+  if (rate < 10) caution(_("LD rate below 10 arcmin/hour"));
+  if (body.state.visualMagnitude > 2.5) caution(_("Companion fainter than magnitude 2.5"));
+  if (body.state.visualMagnitude > -2 && sun.geometricAltitude > -6)
+    caution(_("Sun above -6 degrees: check companion visibility"));
+  if (body.lunarReason.empty())
+    body.lunarReason = _("Within planning limits; check glare, weather and horizon");
+}
+}  // namespace
+
+RankedBody PlannerRecommendations::LunarPair(const wxString& name,
+    const wxDateTime& utc, double lat, double lon) {
+  RankedBody body;
+  if (!utc.IsValid() || !std::isfinite(lat) || !std::isfinite(lon) ||
+      std::abs(lat) > 90) return body;
+  body.state = CelestialEphemeris::Evaluate(name, utc, lat, lon);
+  const auto later = AddSeconds(utc, 300);
+  LunarDetails(body, CelestialEphemeris::Evaluate("Moon", utc, lat, lon),
+      CelestialEphemeris::Evaluate("Sun", utc, lat, lon),
+      CelestialEphemeris::Evaluate("Moon", later, lat, lon),
+      CelestialEphemeris::Evaluate(name, later, lat, lon), utc);
+  return body;
+}
+
 PlanningResult PlannerRecommendations::Calculate(const wxDateTime& utc,
                                                   double lat, double lon) {
   PlanningResult result;
   if (!utc.IsValid() || !std::isfinite(lat) || !std::isfinite(lon) ||
-      std::abs(lat) > 90.0)
-    return result;
+      std::abs(lat) > 90.0) return result;
   result.bodies = SightRanker::VisibleBodies(
-      utc, lat, lon, -90.0, 90.0, std::numeric_limits<double>::infinity());
+      utc, lat, lon, -90, 90, std::numeric_limits<double>::infinity());
   result.moon = CalculateMoonInformation(utc, lat, lon);
-  const BodyState moon = CelestialEphemeris::Evaluate("Moon", utc, lat, lon);
-  const BodyState sun = CelestialEphemeris::Evaluate("Sun", utc, lat, lon);
-  const wxDateTime later = AddSeconds(utc, 300.0);
-  const BodyState laterMoon =
-      CelestialEphemeris::Evaluate("Moon", later, lat, lon);
-  for (auto& body : result.bodies) {
-    body.eclipticLatitude = EclipticLatitude(body.state, utc);
-    if (body.state.body == "Moon" || !moon.valid || !laterMoon.valid)
-      continue;
-    const BodyState laterBody =
-        CelestialEphemeris::Evaluate(body.state.body, later, lat, lon);
-    if (!laterBody.valid) continue;
-    body.lunarDistance = AngularSeparation(
-        moon.declination, -moon.gha, body.state.declination, -body.state.gha);
-    const double laterDistance = AngularSeparation(
-        laterMoon.declination, -laterMoon.gha, laterBody.declination,
-        -laterBody.gha);
-    body.lunarRateArcminHour = (laterDistance - body.lunarDistance) * 720.0;
-    const double absoluteRate = std::abs(body.lunarRateArcminHour);
-    body.lunarTimingSeconds =
-        absoluteRate > 0.01 ? 360.0 / absoluteRate
-                            : std::numeric_limits<double>::infinity();
-    const double rate = Clamp(absoluteRate / 30.0, 0.0, 1.0);
-    const double distance =
-        body.lunarDistance < 20.0
-            ? Clamp(body.lunarDistance / 20.0, 0.0, 1.0)
-            : body.lunarDistance > 100.0
-                  ? Clamp(1.0 - (body.lunarDistance - 100.0) / 100.0, 0.0, 1.0)
-                  : 1.0;
-    const double ecliptic =
-        Clamp(1.0 - std::abs(body.eclipticLatitude) / 30.0, 0.0, 1.0);
-    const double altitude = Clamp(std::min(moon.geometricAltitude,
-                                           body.state.geometricAltitude) /
-                                      20.0,
-                                  0.0, 1.0);
-    const double brightness =
-        Clamp((3.0 - body.state.visualMagnitude) / 5.0, 0.0, 1.0);
-    // Provisional ordering only. All candidates remain in the table.
-    body.lunarSuitability = 100.0 *
-        (0.35 * rate + 0.20 * distance + 0.15 * ecliptic +
-         0.20 * altitude + 0.10 * brightness);
-    body.lunarReason = body.lunarSuitability >= 70.0
-                           ? "Promising geometry"
-                           : body.lunarSuitability >= 45.0
-                                 ? "Moderate geometry"
-                                 : "Challenging geometry";
-    if (moon.geometricAltitude < 0.0 || body.state.geometricAltitude < 0.0)
-      body.lunarReason += "; below horizon";
-    if (body.lunarDistance < 20.0)
-      body.lunarReason += "; small LD";
-    if (body.lunarDistance > 100.0)
-      body.lunarReason += "; wide LD";
-    if (absoluteRate < 10.0) body.lunarReason += "; slow LD change";
-    if (body.state.visualMagnitude > 2.5)
-      body.lunarReason += "; faint companion";
-    if (body.state.visualMagnitude > -2.0 &&
-        sun.geometricAltitude > -6.0)
-      body.lunarReason += "; daylight/twilight visibility";
-  }
+  const auto moon = CelestialEphemeris::Evaluate("Moon", utc, lat, lon);
+  const auto sun = CelestialEphemeris::Evaluate("Sun", utc, lat, lon);
+  const auto later = AddSeconds(utc, 300);
+  const auto laterMoon = CelestialEphemeris::Evaluate("Moon", later, lat, lon);
+  for (auto& body : result.bodies)
+    LunarDetails(body, moon, sun, laterMoon,
+        CelestialEphemeris::Evaluate(body.state.body, later, lat, lon), utc);
   return result;
 }
 
 std::vector<RankedBody> PlannerRecommendations::Order(
-    const PlanningResult& result, PlanningMode mode, bool includeBelowHorizon) {
+    const PlanningResult& result, PlanningMode mode, bool includeBelowHorizon,
+    bool lunarTimingFirst) {
   std::vector<RankedBody> bodies;
   for (const auto& body : result.bodies) {
-    if (!includeBelowHorizon && body.state.geometricAltitude < 0.0) continue;
+    if (!includeBelowHorizon && body.state.geometricAltitude < 0) continue;
     bodies.push_back(body);
   }
   std::stable_sort(bodies.begin(), bodies.end(),
-                   [mode](const RankedBody& a, const RankedBody& b) {
-                     if (mode == PlanningMode::ShowAll)
-                       return a.state.body.CmpNoCase(b.state.body) < 0;
-                     if (mode == PlanningMode::BrightBodies &&
-                         a.state.visualMagnitude != b.state.visualMagnitude)
-                       return a.state.visualMagnitude < b.state.visualMagnitude;
-                     const double left = mode == PlanningMode::LunarCandidates
-                                             ? a.lunarSuitability : a.score;
-                     const double right = mode == PlanningMode::LunarCandidates
-                                              ? b.lunarSuitability : b.score;
-                     if (left != right) return left > right;
-                     return a.state.body.CmpNoCase(b.state.body) < 0;
-                   });
+      [mode, lunarTimingFirst](const RankedBody& a, const RankedBody& b) {
+    if (mode == PlanningMode::ShowAll)
+      return a.state.body.CmpNoCase(b.state.body) < 0;
+    if (mode == PlanningMode::LunarCandidates) {
+      if (a.lunarValid != b.lunarValid) return a.lunarValid;
+      if (a.lunarBelowHorizon != b.lunarBelowHorizon) return !a.lunarBelowHorizon;
+      if (!lunarTimingFirst && a.lunarConstraints != b.lunarConstraints)
+        return a.lunarConstraints < b.lunarConstraints;
+      if (a.lunarTimingSeconds != b.lunarTimingSeconds)
+        return a.lunarTimingSeconds < b.lunarTimingSeconds;
+    } else {
+      if (mode == PlanningMode::BrightBodies &&
+          a.state.visualMagnitude != b.state.visualMagnitude)
+        return a.state.visualMagnitude < b.state.visualMagnitude;
+      if (a.score != b.score) return a.score > b.score;
+    }
+    return a.state.body.CmpNoCase(b.state.body) < 0;
+  });
   return bodies;
+}
+
+std::vector<LunarObservingWindow> PlannerRecommendations::ObservingWindows(
+    const wxString& body, const ObserverMotion& observer,
+    unsigned hours, unsigned stepMinutes) {
+  std::vector<LunarObservingWindow> windows;
+  if (!observer.referenceUtc.IsValid() || !hours || hours > 48 ||
+      !stepMinutes || stepMinutes > 60) return windows;
+  bool open = false;
+  for (unsigned minute = 0; minute <= hours * 60; minute += stepMinutes) {
+    const auto utc = AddSeconds(observer.referenceUtc, minute * 60.0);
+    double lat = 0, lon = 0;
+    observer.PositionAt(utc, &lat, &lon);
+    const auto pair = LunarPair(body, utc, lat, lon);
+    if (!pair.lunarValid || pair.lunarConstraints != 0) {
+      open = false;
+      continue;
+    }
+    if (!open) {
+      LunarObservingWindow window;
+      window.startUtc = window.endUtc = window.bestUtc = utc;
+      window.best = pair;
+      window.moonAltitude = CelestialEphemeris::Evaluate(
+          "Moon", utc, lat, lon).geometricAltitude;
+      windows.push_back(window);
+      open = true;
+    }
+    auto& window = windows.back();
+    window.endUtc = utc;
+    if (pair.lunarTimingSeconds < window.best.lunarTimingSeconds) {
+      window.bestUtc = utc;
+      window.best = pair;
+      window.moonAltitude = CelestialEphemeris::Evaluate(
+          "Moon", utc, lat, lon).geometricAltitude;
+    }
+  }
+  return windows;
 }
 
 std::vector<PlannerSkyPoint> PlannerRecommendations::Ecliptic(

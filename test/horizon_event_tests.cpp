@@ -10,6 +10,15 @@
 #include <wx/stattext.h>
 
 #include "Sight.h"
+#include "SightPalette.h"
+
+TEST(SightPalette, NamesExactRgbAndPreservesCustomColours) {
+  EXPECT_EQ(SightColourLabel(wxColour(0, 114, 178, 12)), "Blue");
+  EXPECT_EQ(SightColourLabel(wxColour(18, 171, 239)), "Custom (#12ABEF)");
+  EXPECT_EQ(SightPaletteIndex(wxColour(18, 171, 239)), -1);
+  for (size_t i = 0; i < SightPalette().size(); ++i)
+    EXPECT_EQ(SightPaletteIndex(SightPalette()[i].Colour()), int(i));
+}
 #include "HorizonEventDialog.h"
 
 #ifdef __WXGTK3__
@@ -45,6 +54,62 @@ Sight MakeHorizonSight() {
 }
 
 }  // namespace
+
+TEST(SightOverlay, SegmentDistanceClampsEndpointsAndDegenerateSegments) {
+  EXPECT_DOUBLE_EQ(3, SightSegmentDistance({5, 3}, {0, 0}, {10, 0}));
+  EXPECT_DOUBLE_EQ(5, SightSegmentDistance({13, 4}, {0, 0}, {10, 0}));
+  EXPECT_DOUBLE_EQ(5, SightSegmentDistance({3, 4}, {0, 0}, {0, 0}));
+}
+
+TEST(SightOverlay, NominalAltitudeCircleUsesCentralTimeAndFollowsDrShift) {
+  struct OverlaySight : Sight {
+    explicit OverlaySight(const Sight& other) : Sight(other) {}
+    using Sight::lines;
+  } sight(MakeHorizonSight());
+  sight.m_Type = Sight::ALTITUDE;
+  sight.m_Measurement = 40;
+  sight.m_TimeCertainty = 30;
+  sight.m_MeasurementCertainty = 5;
+  sight.Recompute(0);
+  sight.RebuildPolygons();
+  ASSERT_EQ(361u, sight.lines.size());
+  double lat = 0, lon = 0;
+  sight.BodyLocation(sight.m_CorrectedDateTime, &lat, &lon, nullptr, nullptr, nullptr);
+  for (auto* point : sight.lines) {
+    double hc = 0, zn = 0;
+    sight.AltitudeAzimuth(point->x, point->y, lat, lon, &hc, &zn);
+    EXPECT_NEAR(sight.m_ObservedAltitude, hc, 1e-8);
+  }
+  const auto before = *sight.lines.front();
+  sight.m_ShiftNm = 12;
+  sight.m_ShiftBearing = 75;
+  sight.m_bMagneticShiftBearing = false;
+  sight.RebuildPolygons();
+  const auto expected = Destination(90.0 - 12.0 / 60.0, 75, before.x, before.y);
+  EXPECT_NEAR(expected.x, sight.lines.front()->x, 1e-8);
+  EXPECT_NEAR(0, resolve_heading(expected.y - sight.lines.front()->y), 1e-8);
+}
+
+TEST(SightOverlay, HoverIgnoresHiddenSightsAndChartSeam) {
+  struct OverlaySight : Sight {
+    explicit OverlaySight(const Sight& other) : Sight(other) {}
+    using Sight::lines;
+  } sight(MakeHorizonSight());
+  sight.lines.clear();
+  sight.lines.Append(new wxRealPoint(0, -5));
+  sight.lines.Append(new wxRealPoint(0, 5));
+  PlugIn_ViewPort viewport{};
+  viewport.clon = 0;
+  sight.m_bVisible = true;
+  EXPECT_DOUBLE_EQ(0, sight.ChartDistance(viewport, {360, 180}));
+  sight.m_bVisible = false;
+  EXPECT_TRUE(std::isinf(sight.ChartDistance(viewport, {360, 180})));
+  sight.m_bVisible = true;
+  sight.lines.clear();
+  sight.lines.Append(new wxRealPoint(0, 179));
+  sight.lines.Append(new wxRealPoint(0, -179));
+  EXPECT_TRUE(sight.ScreenSegments(viewport).empty());
+}
 
 TEST(HorizonEvent, StandardSeaLevelAltitudeIsAboutMinusFiftyMinutes) {
   Sight sight = MakeHorizonSight();

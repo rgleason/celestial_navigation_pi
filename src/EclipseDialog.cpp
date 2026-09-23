@@ -282,6 +282,23 @@ void EclipseDialog::BuildInterface() {
   imports->Add(m_import_de, 0, wxRIGHT, 5);
   imports->Add(m_optional_data, 0);
   data->Add(imports, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
+  auto* folder = new wxButton(this, wxID_ANY, _("Open astronomy data folder"));
+  folder->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    if (!wxFileName::DirExists(DataDirectory()) &&
+        !wxFileName::Mkdir(DataDirectory(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL)) {
+      wxMessageBox(_("Could not open the astronomy data directory."),
+                   _("Offline astronomy data"), wxOK | wxICON_ERROR, this);
+      return;
+    }
+    if (!wxLaunchDefaultApplication(DataDirectory()))
+      wxMessageBox(DataDirectory(), _("Data folder path"), wxOK, this);
+  });
+  data->Add(folder, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
+  auto* paths = new wxStaticText(this, wxID_ANY,
+      _("Data directory: ") + DataDirectory() +
+      "\n" + _("Files: de440s.bsp; moon_pa_de440_200625.bpc; lola64-pa.bin"));
+  paths->Wrap(880);
+  data->Add(paths, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
   data->Add(m_cancel_install, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
   root->Add(data, 0, wxEXPAND | wxALL, 6);
 
@@ -310,6 +327,8 @@ void EclipseDialog::BuildInterface() {
   m_event_list->InsertColumn(1, _("Type"));
   m_event_list->InsertColumn(2, _("Greatest position"));
   m_event_list->InsertColumn(3, _("Magnitude"));
+  for (int column = 0; column < 4; ++column)
+    m_event_list->SetColumnWidth(column, wxLIST_AUTOSIZE_USEHEADER);
   root->Add(m_event_list, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 6);
 
   wxBoxSizer* plot = new wxBoxSizer(wxVERTICAL);

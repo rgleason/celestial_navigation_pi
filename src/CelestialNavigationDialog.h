@@ -57,6 +57,7 @@ public:
   ClockCorrectionDialog* m_ClockCorrectionDialog;
   FixDialog* m_FixDialog;
   double m_pix_per_mm;
+  SightDisplayStyle m_chartStyle;
   std::vector<Sight> m_Sights;
 
   void OnFixClose();
@@ -98,6 +99,7 @@ private:
 
   void RebuildList(bool persist = true);
   void OnManageSights(wxCommandEvent& event);
+  void OnChartDisplay(wxCommandEvent& event);
   void BackupSights();
   void ImportSights(bool replace);
   bool ApplyImportedSights(std::vector<Sight> incoming, int correction,

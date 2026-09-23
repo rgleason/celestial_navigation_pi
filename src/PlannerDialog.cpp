@@ -36,7 +36,8 @@ namespace {
 void AddColumn(wxListCtrl* list, int column, const wxString& title,
                int width = wxLIST_AUTOSIZE_USEHEADER) {
   list->InsertColumn(column, title);
-  list->SetColumnWidth(column, width);
+  list->SetColumnWidth(column, width < 0 ? width
+      : std::max(width, list->GetTextExtent(title).x + 24));
 }
 
 class SkyPlotPanelImpl : public wxPanel {
@@ -52,6 +53,7 @@ public:
     m_daylight = daylight;
     Refresh();
   }
+  void SetSelectedBody(const wxString& body) { m_selected = body; Refresh(); }
   void SetOverlays(const std::vector<PlannerSkyPoint>& ecliptic,
                    const std::vector<PlannerSkyPoint>& moonPath,
                    bool showEcliptic, bool showMoonPath) {
@@ -73,9 +75,40 @@ private:
                    center.y - static_cast<int>(radial * std::cos(angle)));
   }
 
+  void DrawTrackTime(wxDC& dc, const PlannerSkyPoint& sample,
+                     const wxPoint& point, const wxRect& bounds,
+                     const wxColour& colour, std::vector<wxRect>& labels) {
+    const wxString text = sample.utc.Format("%H:%MZ", wxDateTime::UTC);
+    const wxSize extent = dc.GetTextExtent(text);
+    for (int row : {-1, 1, -2, 2, -3, 3, -4, 4}) {
+      for (int side : {1, -1}) {
+        wxRect label(
+            std::max(bounds.x, std::min(point.x +
+                (side > 0 ? 8 : -extent.x - 8), bounds.GetRight() - extent.x)),
+            std::max(bounds.y, std::min(point.y + row * (extent.y + 3),
+                                       bounds.GetBottom() - extent.y)),
+            extent.x, extent.y);
+        wxRect padded = label;
+        padded.Inflate(2);
+        if (std::any_of(labels.begin(), labels.end(),
+            [&](const wxRect& used) { return used.Intersects(padded); })) continue;
+        dc.SetPen(wxPen(colour, 1));
+        dc.DrawLine(point, wxPoint(label.x + extent.x / 2, label.y + extent.y / 2));
+        dc.SetPen(*wxTRANSPARENT_PEN);
+        dc.SetBrush(wxBrush(GetBackgroundColour()));
+        dc.DrawRectangle(padded);
+        dc.SetTextForeground(colour);
+        dc.DrawText(text, label.GetPosition());
+        labels.push_back(padded);
+        return;
+      }
+    }
+  }
+
   void DrawLocalTrack(wxDC& dc, const std::vector<PlannerSkyPoint>& track,
                       const wxPoint& center, int radius,
-                      const wxColour& colour, bool markTimes) {
+                      const wxColour& colour, bool markTimes,
+                      std::vector<wxRect>& labels) {
     dc.SetPen(wxPen(colour, 2));
     wxPoint previous;
     bool previousVisible = false;
@@ -87,6 +120,8 @@ private:
           (i == 0 || i == track.size() / 2 || i + 1 == track.size())) {
         dc.SetBrush(wxBrush(colour));
         dc.DrawCircle(point, i == track.size() / 2 ? 5 : 3);
+        DrawTrackTime(dc, track[i], point, GetClientRect(), colour, labels);
+        dc.SetPen(wxPen(colour, 2));
       }
       previous = point;
       previousVisible = visible;
@@ -94,6 +129,7 @@ private:
   }
 
   void PaintEquatorial(wxDC& dc, const wxSize& size) {
+    std::vector<wxRect> labels;
     const wxRect chart(42, 20, std::max(30, size.x - 57),
                        std::max(30, size.y - 52));
     dc.SetPen(wxPen(wxColour(215, 220, 225)));
@@ -126,6 +162,9 @@ private:
         for (size_t i : {size_t(0), track.size() / 2, track.size() - 1}) {
           const wxPoint p = xy(track[i]);
           dc.DrawCircle(p, i == track.size() / 2 ? 5 : 3);
+          DrawTrackTime(dc, track[i], p, chart, colour, labels);
+          dc.SetPen(wxPen(colour, 2));
+          dc.SetBrush(wxBrush(colour));
         }
       }
     };
@@ -133,10 +172,8 @@ private:
       drawTrack(m_ecliptic, wxColour(200, 120, 20), false);
     if (m_showMoonPath)
       drawTrack(m_moonPath, wxColour(38, 100, 210), true);
-    std::vector<wxRect> labels;
     unsigned drawnLabels = 0;
     for (size_t index : SightRanker::SkyLabelPriority(m_bodies)) {
-      if (drawnLabels >= 10) break;
       const auto& body = m_bodies[index];
       if (body.state.declination < -60.0 || body.state.declination > 60.0)
         continue;
@@ -153,6 +190,11 @@ private:
       dc.SetPen(wxPen(colour));
       dc.SetBrush(wxBrush(colour));
       dc.DrawCircle(p, 3);
+      if (body.state.body == m_selected) {
+        dc.SetBrush(*wxTRANSPARENT_BRUSH);
+        dc.DrawCircle(p, 7);
+      }
+      if (drawnLabels >= 10 && body.state.body != m_selected) continue;
       const wxSize extent = dc.GetTextExtent(body.state.body);
       wxRect label(std::min(p.x + 5, chart.GetRight() - extent.x),
                    std::max(chart.y, std::min(p.y - extent.y / 2,
@@ -192,12 +234,13 @@ private:
     dc.DrawText("E", center.x + radius + 4, center.y - 8);
     dc.DrawText("S", center.x - 5, center.y + radius + 2);
     dc.DrawText("W", center.x - radius - 18, center.y - 8);
+    std::vector<wxRect> labels;
     if (m_showEcliptic)
       DrawLocalTrack(dc, m_ecliptic, center, radius, wxColour(200, 120, 20),
-                     false);
+                     false, labels);
     if (m_showMoonPath)
       DrawLocalTrack(dc, m_moonPath, center, radius, wxColour(38, 100, 210),
-                     true);
+                     true, labels);
     struct PlottedBody {
       wxPoint point;
       wxColour colour;
@@ -224,13 +267,16 @@ private:
       dc.SetPen(wxPen(colour));
       dc.SetBrush(belowHorizon ? *wxTRANSPARENT_BRUSH : wxBrush(colour));
       dc.DrawCircle(p, belowHorizon ? 4 : 3);
+      if (body.state.body == m_selected) {
+        dc.SetBrush(*wxTRANSPARENT_BRUSH);
+        dc.DrawCircle(p, 7);
+      }
       plotted.push_back({p, colour});
     }
 
     // Label the brightest bodies first, while reserving a fair share of the
     // available space for each compass quadrant. Collision suppression still
     // has final authority on compact displays.
-    std::vector<wxRect> labels;
     std::array<unsigned, 4> quadrantLabels = {{0, 0, 0, 0}};
     const unsigned labelsPerQuadrant = 2;
     for (const size_t index : SightRanker::SkyLabelPriority(m_bodies)) {
@@ -271,6 +317,7 @@ private:
   bool m_equatorial = false;
   bool m_showEcliptic = true;
   bool m_showMoonPath = false;
+  wxString m_selected;
 };
 
 }  // namespace
@@ -281,6 +328,7 @@ public:
       : SkyPlotPanelImpl(parent, equatorial) {}
   using SkyPlotPanelImpl::SetBodies;
   using SkyPlotPanelImpl::SetOverlays;
+  using SkyPlotPanelImpl::SetSelectedBody;
 };
 
 void PlannerDialog::SelectPageForIntegration(unsigned page) {
@@ -333,6 +381,10 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_longitude = new NavigationAngleCtrl(this, NavigationAngleKind::Longitude,
                                         0.0, -180.0, 180.0, wxSize(145, -1));
   grid->Add(m_longitude);
+  for (auto* coordinate : {m_latitude, m_longitude})
+    coordinate->SetMinSize(wxSize(std::max(145,
+        coordinate->GetTextExtent(FormatNavigationAngle(-179.99999,
+            NavigationAngleKind::Longitude, true)).x + 24), -1));
 
   grid->Add(new wxStaticText(this, wxID_ANY, _("Time")), 0,
             wxALIGN_CENTER_VERTICAL);
@@ -413,10 +465,8 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
 
   wxBoxSizer* motion = new wxBoxSizer(wxHORIZONTAL);
   m_moving = new wxCheckBox(this, wxID_ANY, _("Time-tagged moving observer"));
+  m_moving->SetToolTip(_("The entered position is at the reference time above. Course and speed propagate it to each planning instant."));
   motion->Add(m_moving, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 14);
-  motion->Add(
-      new wxStaticText(this, wxID_ANY, _("Reference time is the entry above")),
-      0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 14);
   motion->Add(new wxStaticText(this, wxID_ANY, _("COG (true)")), 0,
               wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
   m_course =
@@ -545,7 +595,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   AddColumn(m_bodies, 3, _("GHA"), 115);
   AddColumn(m_bodies, 4, _("Dec"), 125);
   AddColumn(m_bodies, 5, _("Mag"), 55);
-  AddColumn(m_bodies, 6, _("Score"), 60);
+  AddColumn(m_bodies, 6, _("Observability"), 110);
   AddColumn(m_bodies, 7, _("Ecliptic lat"), 100);
   AddColumn(m_bodies, 8, _("Why"), 290);
   m_bodies->SetMinSize(wxSize(400, 180));
@@ -559,10 +609,24 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   bodyActions->Add(createSight, 0, wxRIGHT, 8);
   bodyActions->Add(exportBodies, 0);
   allBodiesSizer->Add(bodyActions, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
+  auto* windows = new wxButton(allBodiesPage, wxID_ANY,
+                               _("Lunar windows for selected body..."));
+  windows->Bind(wxEVT_BUTTON, &PlannerDialog::FindLunarWindows, this);
+  allBodiesSizer->Add(windows, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
   allBodiesPage->SetSizer(allBodiesSizer);
   m_resultsNotebook->AddPage(allBodiesPage, _("All bodies"), true);
   wxPanel* recommendationsPage = new wxPanel(m_resultsNotebook);
   wxBoxSizer* recommendationSizer = new wxBoxSizer(wxVERTICAL);
+  m_lunarOrder = new wxChoice(recommendationsPage, wxID_ANY);
+  m_lunarOrder->Append(_("Lunar order: fewest cautions, then timing"));
+  m_lunarOrder->Append(_("Lunar order: timing sensitivity"));
+  m_lunarOrder->SetSelection(0);
+  m_lunarOrder->SetToolTip(_("Both lunar planners use the same ordering. Below-horizon pairs come last. Ecliptic latitude is shown for context, not used as a second timing score."));
+  recommendationSizer->Add(m_lunarOrder, 0, wxALL, 5);
+  m_lunarOrder->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
+    m_bodySortColumn = -1;
+    RefreshBodies();
+  });
   m_combinations = new wxListCtrl(recommendationsPage, wxID_ANY,
                                   wxDefaultPosition, wxDefaultSize,
                                   wxLC_REPORT | wxLC_HRULES);
@@ -579,7 +643,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   AddColumn(m_lunarPairs, 2, _("Rate '/h"), 90);
   AddColumn(m_lunarPairs, 3, _("0.1' time"), 95);
   AddColumn(m_lunarPairs, 4, _("Ecliptic lat"), 95);
-  AddColumn(m_lunarPairs, 5, _("Fit"), 60);
+  AddColumn(m_lunarPairs, 5, _("Cautions"), 80);
   AddColumn(m_lunarPairs, 6, _("Moon/body Hc, Zn; guidance"), 440);
   m_lunarPairs->SetMinSize(wxSize(400, 180));
   recommendationSizer->Add(m_lunarPairs, 1, wxALL | wxEXPAND, 5);
@@ -710,10 +774,11 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   root->Add(buttons, 0, wxALL | wxEXPAND, 6);
   SetSizer(root);
 
-  Bind(wxEVT_SIZE, [this, grid, bodiesRoot, bodiesPage](wxSizeEvent& event) {
+  const int wideContextWidth = std::max(1120, grid->CalcMin().x + 24);
+  Bind(wxEVT_SIZE, [this, grid, bodiesRoot, bodiesPage, wideContextWidth](wxSizeEvent& event) {
     event.Skip();
     if (m_reflowingLayout) return;
-    const bool compact = event.GetSize().x < 1120;
+    const bool compact = event.GetSize().x < wideContextWidth;
     if (compact == m_compactLayout) return;
     m_reflowingLayout = true;
     grid->RemoveGrowableCol(m_compactLayout ? 3 : 5);
@@ -831,6 +896,13 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_tableBelowHorizon->Bind(wxEVT_CHECKBOX,
                              [this](wxCommandEvent&) { RefreshBodies(); });
   m_bodies->Bind(wxEVT_LIST_COL_CLICK, &PlannerDialog::SortBodies, this);
+  m_bodies->Bind(wxEVT_LIST_ITEM_SELECTED, [this](wxListEvent& event) {
+    const long index = m_bodies->GetItemData(event.GetIndex());
+    if (index >= 0 && size_t(index) < m_rankedBodies.size()) {
+      m_skyPlot->SetSelectedBody(m_rankedBodies[index].state.body);
+      m_equatorialPlot->SetSelectedBody(m_rankedBodies[index].state.body);
+    }
+  });
   m_plotMagnitude->Bind(wxEVT_CHOICE,
                         [this](wxCommandEvent&) { RefreshSkyPlot(); });
   m_plotBelowHorizon->Bind(wxEVT_CHECKBOX,
@@ -1519,14 +1591,16 @@ void PlannerDialog::RefreshBodies() {
   const PlanningMode mode =
       static_cast<PlanningMode>(m_planningMode->GetSelection());
   m_rankedBodies = PlannerRecommendations::Order(
-      m_planningResult, mode, m_tableBelowHorizon->GetValue());
+      m_planningResult, mode, m_tableBelowHorizon->GetValue(),
+      m_lunarOrder->GetSelection() == 1);
   const bool lunar = mode == PlanningMode::LunarCandidates;
   m_lunarPairs->Show(lunar);
+  m_lunarOrder->Show(lunar);
   m_combinations->Show(!lunar && mode != PlanningMode::ShowAll);
   m_noRecommendations->Show(mode == PlanningMode::ShowAll);
   m_lunarPairs->GetParent()->Layout();
   wxListItem scoreColumn;
-  scoreColumn.SetText(lunar ? _("Lunar fit") : _("Observability"));
+  scoreColumn.SetText(lunar ? _("Cautions") : _("Observability"));
   m_bodies->SetColumn(6, scoreColumn);
   RebuildBodyList();
   if (lunar) {
@@ -1549,7 +1623,7 @@ void PlannerDialog::RefreshBodies() {
                             wxString::Format("%+.1f%c", body.eclipticLatitude,
                                              0x00b0));
       m_lunarPairs->SetItem(row, 5,
-                            wxString::Format("%.0f", body.lunarSuitability));
+                            wxString::Format("%d", body.lunarConstraints));
       m_lunarPairs->SetItem(
           row, 6,
           wxString::Format("Moon %.0f%c/%.0f%c; body %.0f%c/%.0f%c; "
@@ -1652,9 +1726,9 @@ void PlannerDialog::RebuildBodyList() {
                     break;
                   default:
                     av = m_planningMode->GetSelection() == 2
-                             ? a.lunarSuitability : a.score;
+                             ? a.lunarConstraints : a.score;
                     bv = m_planningMode->GetSelection() == 2
-                             ? b.lunarSuitability : b.score;
+                             ? b.lunarConstraints : b.score;
                     break;
                 }
                 comparison = av < bv ? -1 : av > bv ? 1 : 0;
@@ -1685,7 +1759,7 @@ void PlannerDialog::RebuildBodyList() {
     m_bodies->SetItem(row, 6,
                       wxString::Format("%.0f",
                           m_planningMode->GetSelection() == 2
-                              ? body.lunarSuitability : body.score));
+                              ? double(body.lunarConstraints) : body.score));
     m_bodies->SetItem(row, 7,
                       wxString::Format("%+.1f%c", body.eclipticLatitude,
                                        0x00b0));
@@ -1838,7 +1912,7 @@ void PlannerDialog::ExportBodyTable(wxCommandEvent&) {
   };
   const ObserverMotion motion = ReadMotion(false);
   wxString csv = "UTC,Mode,Body,Hc deg,Zn true deg,GHA deg,Dec deg,"
-                 "Magnitude,Observability,Lunar suitability,Ecliptic latitude "
+                 "Magnitude,Observability,Lunar cautions,Ecliptic latitude "
                  "deg,LD deg,Signed LD rate arcmin/h,Seconds per 0.1 arcmin,"
                  "Moon illumination %,Explanation\n";
   for (long row = 0; row < m_bodies->GetItemCount(); ++row) {
@@ -1855,7 +1929,7 @@ void PlannerDialog::ExportBodyTable(wxCommandEvent&) {
                             body.state.geometricAltitude, body.state.azimuthTrue,
                             body.state.gha, body.state.declination,
                             body.state.visualMagnitude, body.score,
-                            body.lunarSuitability, body.eclipticLatitude,
+                            double(body.lunarConstraints), body.eclipticLatitude,
                             body.lunarDistance, body.lunarRateArcminHour) +
            (std::isfinite(body.lunarTimingSeconds)
                 ? wxString::Format("%.2f", body.lunarTimingSeconds)
@@ -1869,6 +1943,54 @@ void PlannerDialog::ExportBodyTable(wxCommandEvent&) {
   if (!file.IsOpened() || !file.Write(csv))
     wxMessageBox(_("Could not write the selected file."), _("Export failed"),
                  wxOK | wxICON_ERROR, this);
+}
+
+void PlannerDialog::FindLunarWindows(wxCommandEvent&) {
+  const long selected = m_bodies->GetNextItem(
+      -1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+  const long index = selected < 0 ? -1 : m_bodies->GetItemData(selected);
+  if (index < 0 || size_t(index) >= m_rankedBodies.size() ||
+      m_rankedBodies[index].state.body == "Moon") {
+    wxMessageBox(_("Select a companion body in All bodies first."),
+                 _("Lunar observing windows"), wxOK | wxICON_INFORMATION, this);
+    return;
+  }
+  const auto motion = ReadMotion(true);
+  if (!motion.referenceUtc.IsValid()) return;
+  const auto body = m_rankedBodies[index].state.body;
+  const auto windows = [&]() {
+    wxBusyCursor busy;
+    return PlannerRecommendations::ObservingWindows(body, motion);
+  }();
+  wxString text = _("Next 24 hours from the planning instant, sampled every 10 minutes.\n"
+      "Times are UTC; boundaries and best time are approximate sampled values.\n"
+      "Both altitudes 10-75 degrees; LD 20-100 degrees; rate at least 10 arcmin/hour;\n"
+      "companion magnitude <= 2.5; Sun <= -6 degrees for companions fainter than -2.\n"
+      "These preferences do not establish visibility: check glare, weather and horizon.\n\n");
+  text += motion.moving ? _("Uses entered course and speed.\n\n")
+                        : _("Uses a stationary observer.\n\n");
+  if (windows.empty()) text += _("No sampled interval meets all planning limits.\n"
+      "Try another body or planning date; the full candidate table remains available.");
+  for (const auto& window : windows) {
+    text += wxString::Format(
+        _("Moon + %s\n%s to %s UTC\nBest sampled timing: %s UTC\n"
+          "LD %.2f deg; rate %+.1f arcmin/hour; 0.1' time %.1f s\n"
+          "Moon Hc %.1f deg; body Hc %.1f deg\n\n"),
+        body.c_str(), window.startUtc.Format("%Y-%m-%d %H:%M", wxDateTime::UTC),
+        window.endUtc.Format("%Y-%m-%d %H:%M", wxDateTime::UTC),
+        window.bestUtc.Format("%Y-%m-%d %H:%M", wxDateTime::UTC),
+        window.best.lunarDistance, window.best.lunarRateArcminHour,
+        window.best.lunarTimingSeconds, window.moonAltitude,
+        window.best.state.geometricAltitude);
+  }
+  wxDialog dialog(this, wxID_ANY, _("Lunar observing windows"), wxDefaultPosition,
+                  wxSize(760, 460), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+  auto* sizer = new wxBoxSizer(wxVERTICAL);
+  sizer->Add(new wxTextCtrl(&dialog, wxID_ANY, text, wxDefaultPosition,
+      wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY), 1, wxALL | wxEXPAND, 8);
+  sizer->Add(dialog.CreateButtonSizer(wxOK), 0, wxALL | wxALIGN_RIGHT, 8);
+  dialog.SetSizer(sizer);
+  dialog.ShowModal();
 }
 
 void PlannerDialog::CreateSelectedSight(wxCommandEvent&) {

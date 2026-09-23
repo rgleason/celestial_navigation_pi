@@ -37,6 +37,8 @@
 #include <wx/statbox.h>
 #include <wx/utils.h>
 #include <wx/textdlg.h>
+#include <wx/spinctrl.h>
+#include <wx/checkbox.h>
 #include <wx/clipbrd.h>
 
 #include "tinyxml.h"
@@ -47,6 +49,7 @@
 
 #include "celestial_navigation_pi.h"
 #include "Sight.h"
+#include "SightPalette.h"
 #include "SightDialog.h"
 #include "HorizonEventDialog.h"
 #include "PlannerDialog.h"
@@ -251,13 +254,19 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   addAction(m_coastalButton);       actionButtons->AddSpacer(0);
   addAction(m_plannerButton);       actionButtons->AddSpacer(0);
   addAction(m_lunarToolsButton);    actionButtons->AddSpacer(0);
-  addAction(m_analyzeButton);       addAction(m_tbHide);
+  addAction(m_analyzeButton);
+  auto* chartDisplay = new wxButton(this, wxID_ANY, _("Chart display..."));
+  chartDisplay->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnChartDisplay, this);
+  addAction(chartDisplay);
 
   m_lSights->InsertColumn(rmVISIBLE, wxT(""));
   for (int i = 1; i < rmMAX; i++) {
     m_lSights->InsertColumn(i, columns[i]);
   }
   m_lSights->SetColumnWidth(rmREMARKS, 190);
+  for (int column = 0; column < rmREMARKS; ++column)
+    m_lSights->SetColumnWidth(column, column == rmVISIBLE
+        ? 28 : wxLIST_AUTOSIZE_USEHEADER);
 
   m_sights_path = celestial_navigation_pi::StandardPath() + _T("Sights.xml");
 
@@ -277,6 +286,11 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   bool showTimeIntegrity = true;
   pConf->Read(_T("ShowTimeIntegrity"), &showTimeIntegrity, true);
   BuildTimeIntegrityPanel(showTimeIntegrity);
+  pConf->Read("ChartLineWidthMm", &m_chartStyle.lineWidthMm, 0.5);
+  m_chartStyle.lineWidthMm = std::max(0.2, std::min(2.0, m_chartStyle.lineWidthMm));
+  pConf->Read("ChartBandOpacity", &m_chartStyle.bandOpacityPercent, 100);
+  pConf->Read("ChartContrastHalo", &m_chartStyle.contrastHalo, true);
+  pConf->Read("ChartHoverLabels", &m_chartStyle.hoverLabels, true);
   m_timeTimer.SetOwner(this);
   Bind(wxEVT_TIMER, &CelestialNavigationDialog::OnTimeTimer, this,
        m_timeTimer.GetId());
@@ -290,7 +304,8 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   double mmx = PlugInGetDisplaySizeMM();
   int sx, sy;
   wxDisplaySize(&sx, &sy);
-  m_pix_per_mm = ((double)sx) / (mmx);
+  m_pix_per_mm = std::isfinite(mmx) && mmx > 0 ? double(sx) / mmx
+                                              : 96.0 / 25.4;
 
 #ifdef __OCPN__ANDROID__
   GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
@@ -307,8 +322,10 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   // A sight log needs room for its time, measurement and Remarks columns.
   // Existing users may still have the original narrow dialog size stored.
   const int minimumWidth = std::min(1100, std::max(580, sx - 40));
-  SetMinSize(wxSize(minimumWidth, -1));
-  if (GetSize().x < minimumWidth) SetSize(minimumWidth, GetSize().y);
+  const wxSize minimum = ClientToWindowSize(GetSizer()->CalcMin());
+  SetMinSize(wxSize(minimumWidth, minimum.y));
+  SetSize(std::max(GetSize().x, minimumWidth),
+          std::max(GetSize().y, minimum.y));
 #endif
   dialog_geometry::EnsureVisible(this);
 }
@@ -424,6 +441,9 @@ void CelestialNavigationDialog::BuildTimeIntegrityPanel(bool visible) {
   title->SetFont(titleFont);
   header->Add(title, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
   header->AddStretchSpacer();
+  m_tbHide->SetLabel(_("Hide sight log"));
+  m_tbHide->SetToolTip(_("Collapse the list. Use its eye symbols to show or hide chart sights."));
+  header->Add(m_tbHide, 0, wxRIGHT, 6);
   m_timeIntegrityToggle =
       new wxToggleButton(this, wxID_ANY,
                          visible ? _("Hide Time") : _("Show Time"));
@@ -552,7 +572,7 @@ void CelestialNavigationDialog::SetTimeIntegrityVisible(bool visible,
   wxSize minimum = GetSizer()->CalcMin();
   if (visible) minimum.x = wxMax(minimum.x, 590);
   SetMinSize(minimum);
-  if (resize && visible) {
+  if (resize) {
     const wxSize current = GetSize();
     SetSize(wxMax(current.x, minimum.x), wxMax(current.y, minimum.y));
   }
@@ -1293,7 +1313,7 @@ void CelestialNavigationDialog::RebuildList(bool persist) {
           _("Time Correction") +
               wxString::Format(_T(": %ld s"), s.m_TimeCorrection));
     else
-      m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName);
+      m_lSights->SetItem(idx, rmCOLOR, SightColourLabel(s.m_Colour));
     m_lSights->SetItem(idx, rmREMARKS, s.m_Remarks);
 
     if (s.IsSelected()) {
@@ -1328,7 +1348,7 @@ void CelestialNavigationDialog::UpdateSight(int idx) {
                        _("Time Correction") +
                            wxString::Format(_T(": %ld s"), s.m_TimeCorrection));
   else
-    m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName);
+    m_lSights->SetItem(idx, rmCOLOR, SightColourLabel(s.m_Colour));
   m_lSights->SetItem(idx, rmREMARKS, s.m_Remarks);
 
   UpdateButtons();
@@ -1860,15 +1880,53 @@ void CelestialNavigationDialog::OnPdfDocumentation(wxCommandEvent& event) {
   }
 }
 
+void CelestialNavigationDialog::OnChartDisplay(wxCommandEvent&) {
+  wxDialog dialog(this, wxID_ANY, _("Chart sight display"));
+  auto* layout = new wxBoxSizer(wxVERTICAL);
+  layout->Add(new wxStaticText(&dialog, wxID_ANY, _("Nominal line width (mm)")),
+              0, wxALL, 6);
+  auto* width = new wxSpinCtrlDouble(&dialog, wxID_ANY, wxEmptyString,
+      wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0.2, 2.0,
+      m_chartStyle.lineWidthMm, 0.1);
+  width->SetDigits(1);
+  layout->Add(width, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 6);
+  auto* halo = new wxCheckBox(&dialog, wxID_ANY, _("Contrasting outline"));
+  halo->SetValue(m_chartStyle.contrastHalo);
+  layout->Add(halo, 0, wxALL, 6);
+  layout->Add(new wxStaticText(&dialog, wxID_ANY,
+      _("Uncertainty shading (% of sight opacity)")), 0, wxALL, 6);
+  auto* opacity = new wxSpinCtrl(&dialog, wxID_ANY, wxEmptyString,
+      wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 100,
+      m_chartStyle.bandOpacityPercent);
+  layout->Add(opacity, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 6);
+  auto* hover = new wxCheckBox(&dialog, wxID_ANY, _("Show body and UTC near chart cursor"));
+  hover->SetValue(m_chartStyle.hoverLabels);
+  layout->Add(hover, 0, wxALL, 6);
+  layout->Add(dialog.CreateButtonSizer(wxOK | wxCANCEL), 0, wxALL | wxALIGN_RIGHT, 8);
+  dialog.SetSizerAndFit(layout);
+  if (dialog.ShowModal() != wxID_OK) return;
+  m_chartStyle.lineWidthMm = width->GetValue();
+  m_chartStyle.bandOpacityPercent = opacity->GetValue();
+  m_chartStyle.contrastHalo = halo->GetValue();
+  m_chartStyle.hoverLabels = hover->GetValue();
+  auto* config = GetOCPNConfigObject();
+  config->SetPath("/PlugIns/CelestialNavigation");
+  config->Write("ChartLineWidthMm", m_chartStyle.lineWidthMm);
+  config->Write("ChartBandOpacity", m_chartStyle.bandOpacityPercent);
+  config->Write("ChartContrastHalo", m_chartStyle.contrastHalo);
+  config->Write("ChartHoverLabels", m_chartStyle.hoverLabels);
+  RequestRefresh(GetOCPNCanvasWindow());
+}
+
 void CelestialNavigationDialog::OnHide(wxCommandEvent& event) {
   if (m_tbHide->GetValue()) {
-    m_tbHide->SetLabel(_("Show Sights"));
+    m_tbHide->SetLabel(_("Show sight log"));
     m_fullSize = GetSize();
     m_lSights->Hide();
     Layout();
     Fit();
   } else {
-    m_tbHide->SetLabel(_("Hide Sights"));
+    m_tbHide->SetLabel(_("Hide sight log"));
     m_lSights->Show();
     Layout();
     Fit();

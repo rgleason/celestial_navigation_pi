@@ -32,6 +32,7 @@
 #endif  // precompiled headers
 
 #include <wx/stdpaths.h>
+#include <algorithm>
 
 #include "OcpnApiCompat.h"
 
@@ -61,7 +62,9 @@ extern "C" DECL_EXP void destroy_pi(opencpn_plugin* p) { delete p; }
 
 celestial_navigation_pi::celestial_navigation_pi(void* ppimgr)
     : opencpn_plugin_118(ppimgr),
+      m_parent_window(nullptr),
       m_route_almanac_menu_id(-1),
+      m_pCelestialNavigationDialog(nullptr),
       m_hasPositionFix(false),
       m_hasCursorPosition(false),
       m_cursorLatitude(0.0),
@@ -103,6 +106,11 @@ celestial_navigation_pi::~celestial_navigation_pi(void) {}
 //---------------------------------------------------------------------------------------------------------
 
 int celestial_navigation_pi::Init(void) {
+  m_hoverTimer.SetOwner(this);
+  Bind(wxEVT_TIMER, [this](wxTimerEvent&) {
+    if (m_pCelestialNavigationDialog && m_pCelestialNavigationDialog->IsShown())
+      RequestRefresh(m_parent_window);
+  }, m_hoverTimer.GetId());
   celestial_navigation::LoadInstalledDut1Update();
   AddLocaleCatalog(_T("opencpn-celestial_navigation_pi"));
 
@@ -162,6 +170,7 @@ int celestial_navigation_pi::Init(void) {
 }
 
 bool celestial_navigation_pi::DeInit(void) {
+  m_hoverTimer.Stop();
   if (m_route_almanac_menu_id >= 0) {
     RemoveCanvasMenuItem(m_route_almanac_menu_id, "Route");
     m_route_almanac_menu_id = -1;
@@ -339,9 +348,70 @@ bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
   if (!m_pCelestialNavigationDialog || !m_pCelestialNavigationDialog->IsShown())
     return false;
 
+#if wxCHECK_VERSION(3, 1, 0)
+  // Use logical drawing units on this canvas, including when it moves between
+  // displays. GetDPI already incorporates the platform's UI scaling.
+  if (m_parent_window && m_parent_window->GetDPI().x > 0)
+    m_pCelestialNavigationDialog->m_pix_per_mm =
+        m_parent_window->GetDPI().x / 25.4;
+#endif
+
   /* draw sights */
   for (Sight& s : m_pCelestialNavigationDialog->m_Sights) {
-    s.Render(dc, *vp, m_pCelestialNavigationDialog->m_pix_per_mm);
+    s.Render(dc, *vp, m_pCelestialNavigationDialog->m_pix_per_mm,
+             m_pCelestialNavigationDialog->m_chartStyle);
+  }
+
+  // Hit-test precisely the nominal segments drawn above, including DR shifts.
+  // A bounded list preserves identity where several COPs overlap.
+  const wxPoint mouse = wxGetMousePosition();
+  const wxPoint cursor = m_parent_window->ScreenToClient(mouse);
+  if (m_pCelestialNavigationDialog->m_chartStyle.hoverLabels &&
+      m_parent_window->GetClientRect().Contains(cursor) &&
+      !m_pCelestialNavigationDialog->GetScreenRect().Contains(mouse)) {
+    std::vector<std::pair<double, wxString>> hits;
+    const double tolerance = std::max(6.0,
+        2.0 * m_pCelestialNavigationDialog->m_pix_per_mm);
+    size_t number = 0;
+    for (auto& sight : m_pCelestialNavigationDialog->m_Sights) {
+      ++number;
+      const double distance = sight.ChartDistance(*vp, cursor);
+      if (distance > tolerance) continue;
+      wxString label = wxString::Format("#%lu %s | %s UTC",
+          static_cast<unsigned long>(number), sight.m_Body.c_str(),
+          sight.m_CorrectedDateTime.Format("%Y-%m-%d %H:%M:%S"));
+      if (sight.m_ShiftNm != 0)
+        label += wxString::Format(_(" | shifted %.2f NM"), sight.m_ShiftNm);
+      hits.emplace_back(distance, label);
+    }
+    std::stable_sort(hits.begin(), hits.end(),
+        [](const std::pair<double, wxString>& a,
+           const std::pair<double, wxString>& b) { return a.first < b.first; });
+    if (!hits.empty()) {
+      std::vector<wxString> labels;
+      for (size_t i = 0; i < std::min(size_t(4), hits.size()); ++i)
+        labels.push_back(hits[i].second);
+      if (hits.size() > 4)
+        labels.push_back(wxString::Format(_("... and %lu more sights"),
+            static_cast<unsigned long>(hits.size() - 4)));
+      dc->SetFont(*wxNORMAL_FONT);
+      wxCoord width = 0, lineHeight = 0;
+      for (const auto& label : labels) {
+        wxCoord w = 0, h = 0;
+        dc->GetTextExtent(label, &w, &h);
+        width = std::max(width, w);
+        lineHeight = std::max(lineHeight, h + 2);
+      }
+      const int height = lineHeight * labels.size();
+      const int x = std::max(0, std::min(cursor.x + 15, vp->pix_width - width - 12));
+      const int y = std::max(0, std::min(cursor.y + 15, vp->pix_height - height - 12));
+      dc->SetPen(wxPen(*wxBLACK, 1));
+      dc->SetBrush(wxBrush(wxColour(255, 255, 225)));
+      dc->DrawRoundedRectangle(x, y, width + 12, height + 12, 3);
+      dc->SetTextForeground(*wxBLACK);
+      for (size_t i = 0; i < labels.size(); ++i)
+        dc->DrawText(labels[i], x + 6, y + 6 + i * lineHeight);
+    }
   }
 
   m_pCelestialNavigationDialog->RenderEclipse(dc, vp);
@@ -432,6 +502,10 @@ void celestial_navigation_pi::SetCursorLatLon(double lat, double lon) {
   m_hasCursorPosition = std::isfinite(lat) && std::isfinite(lon) &&
                         lat >= -90.0 && lat <= 90.0 && lon >= -180.0 &&
                         lon <= 180.0;
+  if (m_pCelestialNavigationDialog && m_pCelestialNavigationDialog->IsShown() &&
+      m_pCelestialNavigationDialog->m_chartStyle.hoverLabels &&
+      !m_hoverTimer.IsRunning())
+    m_hoverTimer.StartOnce(80);
 }
 
 void celestial_navigation_pi_BoatPos(double& lat, double& lon) {

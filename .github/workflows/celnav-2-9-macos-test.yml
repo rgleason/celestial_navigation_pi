@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - feature/planner-modes-ecliptic-v2.9
+      - feature/celnav-v2.9.0-alpha
+      - pob220-improvements
   workflow_dispatch:
 
 permissions:
