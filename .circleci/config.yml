@@ -13,7 +13,6 @@ std-filters: &std-filters
             - devel
             - tmp
             - feature/celnav-lab-v0.1
-            - feature/planner-modes-ecliptic-v2.9
         tags:
             only: /.*/
 
@@ -60,10 +59,6 @@ workflows:
               <<: *std-filters
           - build-macos-universal:
               <<: *std-filters
-          - build-macos-2-9-test:
-              filters:
-                  branches:
-                      only: feature/planner-modes-ecliptic-v2.9
           - build-celnav-lab-macos:
               filters:
                   branches:
@@ -220,22 +215,6 @@ jobs:
         - deploy-code:
             deploy_use_orb: false
             install_python: false
-    build-macos-2-9-test:
-        macos:
-            xcode: 15.4.0
-        environment:
-            OCPN_TARGET: macos
-            CMAKE_BUILD_PARALLEL_LEVEL: 2
-            WX_VER: 32
-        steps:
-        - checkout
-        - run: sudo chmod go+w /usr/local
-        - run: chmod a+x ci/*.sh
-        - run: chmod a+x cmake/*.sh
-        - run: ci/circleci-build-macos-universal.sh
-        - run: bash ci/make-importable-test-package.sh build artifacts/celnav-2.9-macos
-        - store_artifacts:
-            path: artifacts/celnav-2.9-macos
     build-celnav-lab-macos:
         macos:
             xcode: 15.4.0
