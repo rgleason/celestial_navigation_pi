@@ -29,15 +29,17 @@
 #define _CELESTIAL_NAVIGATION_SIGHT_H_
 
 #include <list>
+#include <limits>
 #include <vector>
 #include "pidc.h"
 #include "LunarDistanceEngine.h"
+#include "HorizonPosition.h"
+#include "SightOverlay.h"
 
 #ifdef __MSVC__
 #define _USE_MATH_DEFINES
 #include <float.h>
 #include <iostream>
-#include <limits>
 #include <cmath>
 
 #ifndef NAN
@@ -103,8 +105,10 @@ public:
   void RebuildPolygonsHorizon();
 
   double HorizonTrueBearing() const;
+  bool HorizonBearingMatchesEvent() const;
+  std::vector<horizon_position::Position> HorizonPositionCandidates();
   bool HorizonEstimatedPosition(double* lat, double* lon);
-  double HorizonEstimateUncertaintyNm() const;
+  wxString HorizonPositionSummary();
   wxString HorizonEventName() const;
   wxString HorizonMeasurementText() const;
 
@@ -148,6 +152,9 @@ public:
   double m_Temperature;       // Temperature in degrees celcius
   double m_Pressure;          // Pressure in millibars
   double m_IndexError;        // Error of measurement in degrees
+  // Defaults to production's automatic DE440s/analytical selection.  The
+  // standalone validation lab can disable DE440s for an A/B calculation.
+  bool m_AllowDe440 = true;
   bool m_DipShort;            // DIP Short ?
   double m_DipShortDistance;  // DIP Short distance
   bool m_ArtificialHorizon;   // Artificial Horizon ?
@@ -157,12 +164,20 @@ public:
   bool m_bMagneticShiftBearing;  // use magnetic or true for shift
 
   wxString m_ColourName;
+  wxString m_Remarks;  // Optional sight-log note; not used in calculations.
   wxColour m_Colour;  // Color of the sight
 
-  virtual void Render(piDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm);
+  virtual void Render(piDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm,
+                      const SightDisplayStyle& style = SightDisplayStyle());
+  std::vector<std::pair<wxPoint, wxPoint>> ScreenSegments(PlugIn_ViewPort& vp);
+  double ChartDistance(PlugIn_ViewPort& vp, const wxPoint& cursor);
 
   void BodyLocation(wxDateTime time, double* lat, double* lon, double* ghaash,
-                    double* rad, double* dist, bool timeIsInstant = false);
+                    double* rad, double* dist, bool timeIsInstant = false,
+                    bool useDe440 = true,
+                    double dut1OverrideSeconds =
+                        std::numeric_limits<double>::quiet_NaN(),
+                    bool* usedDe440 = nullptr);
   void AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
                        double* hc, double* zn);
   void EstimateHs(double hc, double* hs, double* error);
@@ -191,10 +206,7 @@ public:
   double m_HorizonAltitudeUncertainty;  // arcminutes
   int m_HorizonQuality;                 // 0 clear, 1 hazy, 2 obstructed
   wxString m_HorizonTimeSource;
-  bool m_HorizonEstimateValid;
-  double m_HorizonEstimateLat;
-  double m_HorizonEstimateLon;
-  double m_HorizonEstimateRadiusNm;
+  std::vector<horizon_position::Position> m_HorizonPositions;
 
   /* for lunar */
   long m_TimeCorrection;

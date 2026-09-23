@@ -11,6 +11,7 @@
 #include <wx/listctrl.h>
 #include <wx/notebook.h>
 #include <wx/panel.h>
+#include <wx/scrolwin.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
@@ -50,7 +51,8 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
       m_sight(sight) {
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
   wxNotebook* pages = new wxNotebook(this, wxID_ANY);
-  wxPanel* resultsPage = new wxPanel(pages);
+  auto* resultsPage = new wxScrolledWindow(pages);
+  resultsPage->SetScrollRate(10, 10);
   wxBoxSizer* results = new wxBoxSizer(wxVERTICAL);
   wxStaticText* explanation = new wxStaticText(
       resultsPage, wxID_ANY,
@@ -111,6 +113,7 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
                                       : _("LD cleared"));
   m_candidates->InsertColumn(3, _("Local rate"));
   m_candidates->InsertColumn(4, _("UTC uncertainty"));
+  m_candidates->SetMinSize(wxSize(-1, std::max(130, 6 * GetCharHeight())));
   results->Add(m_candidates, 1, wxLEFT | wxRIGHT | wxEXPAND, 10);
 
   results->Add(new wxStaticText(
@@ -289,8 +292,9 @@ void LunarResultsDialog::UpdateResults() {
             ? _("One UTC solution was found in the selected search interval.")
             : _("%zu possible UTC solutions were found. The default uses "
                 "proximity to DR when available, otherwise proximity to entered "
-                "UTC. Check the DR and all candidates; use another observation "
-                "if the choice remains ambiguous."),
+                "UTC. Even closely spaced solutions are unresolved alternatives, "
+                "not measurements to average. Check all candidates; use another "
+                "observation or independent position/time evidence to distinguish them."),
         m_sight.m_LunarCandidates.size()));
   }
   m_status->Wrap(880);
@@ -460,6 +464,10 @@ void LunarResultsDialog::UpdatePositions(long candidate_index) {
   for (int column = 0; column < 5; ++column)
     m_positions->SetColumnWidth(column, wxLIST_AUTOSIZE_USEHEADER);
   Layout();
+  if (auto* page = dynamic_cast<wxScrolledWindow*>(m_positions->GetParent())) {
+    page->Layout();
+    page->FitInside();
+  }
 }
 
 void LunarResultsDialog::ApplySelectedWatchOffset(wxCommandEvent&) {

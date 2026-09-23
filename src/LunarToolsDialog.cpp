@@ -430,8 +430,9 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
   auto* top = new wxBoxSizer(wxVERTICAL);
   auto* note = new wxStaticText(
       page, wxID_ANY,
-      CN_UTF8_("Pairs are ordered by 0.1′ time (shortest first), with pairs "
-               "below the geometric horizon last. The time is the approximate "
+      CN_UTF8_("Pairs use the same ordering as Bodies & Best Sights: fewest "
+               "planning cautions, then 0.1′ time; timing-first is optional. "
+               "Below-horizon pairs come last. The time is the approximate "
                "UTC change corresponding to 0.1′ of lunar distance. "
                "Visibility and instrument range require your judgement."));
   note->Wrap(820);
@@ -464,6 +465,12 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
                wxRIGHT, 6);
   controls->Add(timeRow, 0, wxEXPAND);
   top->Add(controls, 0, wxEXPAND | wxALL, 6);
+  m_plannerOrder = new wxChoice(page, wxID_ANY);
+  m_plannerOrder->Append(_("Lunar order: fewest cautions, then timing"));
+  m_plannerOrder->Append(_("Lunar order: timing sensitivity"));
+  m_plannerOrder->SetSelection(0);
+  m_plannerOrder->Bind(wxEVT_CHOICE, &LunarToolsDialog::CalculatePlanner, this);
+  top->Add(m_plannerOrder, 0, wxALL, 6);
   m_plannerList = new wxListCtrl(page, wxID_ANY, wxDefaultPosition,
                                  wxDefaultSize, wxLC_REPORT | wxBORDER_SUNKEN);
   const wxString columns[] = {
@@ -471,9 +478,11 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
       _("Rate"),          CN_UTF8_("0.1′ time"),
       _("Moon altitude"), _("Body altitude"),
       _("Moon Zn true"),  _("Body Zn true"),
-      _("Moon illum."),   _("Magnitude")};
-  const int widths[] = {145, 125, 125, 100, 100, 130, 130, 105, 105, 100, 95};
-  for (int index = 0; index < 11; ++index) {
+      _("Moon illum."),   _("Magnitude"),
+      _("Ecliptic lat"),  _("Guidance")};
+  const int widths[] = {145, 125, 125, 100, 100, 130, 130, 105, 105,
+                        100, 95, 110, 320};
+  for (int index = 0; index < 13; ++index) {
     m_plannerList->InsertColumn(index, columns[index]);
     m_plannerList->SetColumnWidth(index, widths[index]);
   }
@@ -936,6 +945,10 @@ void LunarToolsDialog::ShowCandidate(std::size_t index) {
                                 candidate.common_index_bias_arcmin);
   for (const auto& warning : m_sequenceResult.warnings)
     summary += CN_UTF8_(" — ") + wxString::FromUTF8(warning.c_str());
+  if (m_sequenceResult.candidates.size() > 1)
+    summary += _(" Multiple solutions remain: these are unresolved alternatives, "
+                 "not repeated measurements to average. Use another observation "
+                 "or independent position/time evidence to distinguish them.");
   m_sequenceSummary->SetLabel(summary);
   m_sequenceSummary->Wrap(1000);
   m_sequenceResiduals->DeleteAllItems();
@@ -986,89 +999,55 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
   const wxDateTime utc = ReadUtcEntry(
       m_plannerUtc, m_entryFormat->GetSelection(), true, _("Lunar planner"));
   if (!utc.IsValid()) return;
-  Sight sky;
-  sky.m_CorrectedDateTime = utc;
-  double moon_lat = 0.0, moon_lon = 0.0;
-  sky.m_Body = _("Moon");
-  sky.BodyLocation(utc, &moon_lat, &moon_lon, nullptr, nullptr, nullptr);
-  const wxDateTime later = UtcDateTime::AddSeconds(utc, 300.0);
-  double moon_lat_later = 0.0, moon_lon_later = 0.0;
-  sky.BodyLocation(later, &moon_lat_later, &moon_lon_later, nullptr, nullptr,
-                   nullptr);
-  struct Row {
-    wxString body;
-    double moon_alt;
-    double moon_az;
-    double body_alt;
-    double body_az;
-    double distance;
-    double rate;
-    double sensitivity;
-    double illumination;
-    double magnitude;
-  };
-  const MoonInformation moonInformation =
-      CalculateMoonInformation(utc, observerLatitude, observerLongitude);
-  std::vector<Row> rows;
-  for (const auto& info : BodyCatalog::All()) {
-    if (info.kind == CelestialBodyKind::Moon) continue;
-    double body_lat = 0.0, body_lon = 0.0;
-    sky.m_Body = info.name;
-    sky.BodyLocation(utc, &body_lat, &body_lon, nullptr, nullptr, nullptr);
-    double moon_alt = 0.0, moon_az = 0.0, body_alt = 0.0, body_az = 0.0;
-    sky.AltitudeAzimuth(observerLatitude, observerLongitude, moon_lat, moon_lon,
-                        &moon_alt, &moon_az);
-    sky.AltitudeAzimuth(observerLatitude, observerLongitude, body_lat, body_lon,
-                        &body_alt, &body_az);
-    const double distance =
-        AngularDistance(moon_lat, moon_lon, body_lat, body_lon);
-    double body_lat_later = 0.0, body_lon_later = 0.0;
-    sky.BodyLocation(later, &body_lat_later, &body_lon_later, nullptr, nullptr,
-                     nullptr);
-    const double distance_later = AngularDistance(
-        moon_lat_later, moon_lon_later, body_lat_later, body_lon_later);
-    const double rate = (distance_later - distance) * 60.0 * 12.0;
-    const double sensitivity =
-        std::fabs(rate) > 0.01 ? 360.0 / std::fabs(rate) : INFINITY;
-    rows.push_back({info.name, moon_alt, moon_az, body_alt, body_az, distance,
-                    rate, sensitivity,
-                    moonInformation.illuminatedFraction * 100.0,
-                    info.visualMagnitude});
-  }
-  std::sort(rows.begin(), rows.end(),
-            [](const Row& a, const Row& b) {
-              const bool a_above = a.moon_alt >= 0.0 && a.body_alt >= 0.0;
-              const bool b_above = b.moon_alt >= 0.0 && b.body_alt >= 0.0;
-              if (a_above != b_above) return a_above;
-              if (a.sensitivity != b.sensitivity)
-                return a.sensitivity < b.sensitivity;
-              return a.body.CmpNoCase(b.body) < 0;
-            });
+  const wxDateTime instant = UtcDateTime::ToInstant(utc);
+  const PlanningResult plan = PlannerRecommendations::Calculate(
+      instant, observerLatitude, observerLongitude);
+  const BodyState moon = CelestialEphemeris::Evaluate(
+      "Moon", instant, observerLatitude, observerLongitude);
+  auto rows = PlannerRecommendations::Order(
+      plan, PlanningMode::LunarCandidates, true,
+      m_plannerOrder->GetSelection() == 1);
+  rows.erase(std::remove_if(rows.begin(), rows.end(),
+      [](const RankedBody& b) { return !b.lunarValid; }), rows.end());
   for (std::size_t index = 0; index < rows.size(); ++index) {
-    const Row& row = rows[index];
-    long item = m_plannerList->InsertItem(index, row.body);
-    if (row.moon_alt < 0.0 && row.body_alt < 0.0)
+    const RankedBody& row = rows[index];
+    const long item = m_plannerList->InsertItem(index, row.state.body);
+    if (moon.geometricAltitude < 0.0 && row.state.geometricAltitude < 0.0)
       m_plannerList->SetItem(item, 1, _("Both"));
-    else if (row.moon_alt < 0.0)
+    else if (moon.geometricAltitude < 0.0)
       m_plannerList->SetItem(item, 1, _("Moon"));
-    else if (row.body_alt < 0.0)
+    else if (row.state.geometricAltitude < 0.0)
       m_plannerList->SetItem(item, 1, _("Body"));
-    m_plannerList->SetItem(item, 2, FormatNavigationAngle(row.distance));
+    m_plannerList->SetItem(item, 2,
+                           FormatNavigationAngle(row.lunarDistance));
     m_plannerList->SetItem(item, 3,
-                           wxString::Format(CN_UTF8_("%+.1f′/h"), row.rate));
+                           wxString::Format(CN_UTF8_("%+.1f′/h"),
+                                            row.lunarRateArcminHour));
     m_plannerList->SetItem(item, 4,
-                           std::isfinite(row.sensitivity)
-                               ? wxString::Format("%.1f s", row.sensitivity)
+                           std::isfinite(row.lunarTimingSeconds)
+                               ? wxString::Format("%.1f s",
+                                                  row.lunarTimingSeconds)
                                : CN_UTF8_("—"));
-    m_plannerList->SetItem(item, 5, FormatPlannerAltitude(row.moon_alt));
-    m_plannerList->SetItem(item, 6, FormatPlannerAltitude(row.body_alt));
+    m_plannerList->SetItem(item, 5,
+                           FormatPlannerAltitude(moon.geometricAltitude));
+    m_plannerList->SetItem(item, 6,
+                           FormatPlannerAltitude(row.state.geometricAltitude));
     m_plannerList->SetItem(item, 7,
-                           wxString::Format(CN_UTF8_("%.1f°"), row.moon_az));
+                           wxString::Format(CN_UTF8_("%.1f°"),
+                                            moon.azimuthTrue));
     m_plannerList->SetItem(item, 8,
-                           wxString::Format(CN_UTF8_("%.1f°"), row.body_az));
-    m_plannerList->SetItem(item, 9,
-                           wxString::Format("%.1f%%", row.illumination));
-    m_plannerList->SetItem(item, 10, wxString::Format("%.1f", row.magnitude));
+                           wxString::Format(CN_UTF8_("%.1f°"),
+                                            row.state.azimuthTrue));
+    m_plannerList->SetItem(
+        item, 9,
+        wxString::Format("%.1f%%",
+                         plan.moon.illuminatedFraction * 100.0));
+    m_plannerList->SetItem(item, 10,
+                           wxString::Format("%.1f", row.state.visualMagnitude));
+    m_plannerList->SetItem(item, 11,
+                           wxString::Format(CN_UTF8_("%+.1f°"),
+                                            row.eclipticLatitude));
+    m_plannerList->SetItem(item, 12, row.lunarReason);
   }
 }
 

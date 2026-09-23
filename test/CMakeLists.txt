@@ -40,11 +40,13 @@ set(SRC
     lunar_ui_smoke_tests.cpp
     find_body_ui_tests.cpp
     fix_ui_smoke_tests.cpp
+    sight_log_ui_tests.cpp
     lunar_distance_engine_tests.cpp
     lunar_session_engine_tests.cpp
     lunar_session_worker_tests.cpp
     sextant_calibration_engine_tests.cpp
     lunar_de440_tests.cpp
+    navigation_de440_tests.cpp
     lunar_observer_tests.cpp
     dut1_update_tests.cpp
     coastal_navigation_tests.cpp
@@ -55,6 +57,8 @@ set(SRC
     numerical_audit_tests.cpp
     waypoint_position_source_tests.cpp
     almanac_generator_tests.cpp
+    almanac_reference_audit_tests.cpp
+    almanac_ui_tests.cpp
     time_status_tests.cpp
     utf8_translation_tests.cpp
     common.cpp
@@ -75,6 +79,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/CoastalNavigationDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/BodyCatalog.cpp
     ${CMAKE_SOURCE_DIR}/src/NavigationAlgorithms.cpp
+    ${CMAKE_SOURCE_DIR}/src/NavigationEphemerisProvider.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacGenerator.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacPaperTables.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacDialog.cpp
@@ -162,6 +167,58 @@ target_link_libraries(celestial_tests
         ocpn::plugin-dc
         celestial::eclipse_core
 )
+
+# The first standalone validation application deliberately compiles the same
+# numerical source and test host shim as celestial_tests.  It does not load an
+# OpenCPN plugin or require a running OpenCPN instance.
+option(CELESTIAL_BUILD_LAB "Build Celestial Navigation Lab" OFF)
+if(CELESTIAL_BUILD_LAB)
+    set(LAB_SRC ${SRC})
+    list(FILTER LAB_SRC EXCLUDE REGEX "(^|/)[A-Za-z0-9_]+_tests\\.cpp$")
+    list(FILTER LAB_SRC EXCLUDE REGEX "(^|/)common\\.cpp$")
+    add_executable(celestial_navigation_lab MACOSX_BUNDLE
+        ${LAB_SRC}
+        ${CMAKE_SOURCE_DIR}/lab/Main.cpp)
+    target_compile_definitions(celestial_navigation_lab PRIVATE
+        USE_MOCK_DEFS UNIT_TESTS CELESTIAL_LAB
+        CELNAV_LAB_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+        TESTDATA="${CMAKE_CURRENT_LIST_DIR}/testdata"
+        ECLIPSE_DE440_TEST_PATH=""
+        TIXML_USE_STL)
+    target_include_directories(celestial_navigation_lab PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/test
+        ${CMAKE_SOURCE_DIR}/opencpn-libs/${PKG_API_LIB}/include
+        ${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml/include
+        ${CMAKE_SOURCE_DIR}/opencpn-libs/wxJSON/include
+        ${CMAKE_SOURCE_DIR}/src/plugin_dc/dc_utils/include
+        ${wxWidgets_INCLUDE_DIRS})
+    target_link_libraries(celestial_navigation_lab PRIVATE
+        ${wxWidgets_LIBRARIES} ocpn::api ocpn::tinyxml ocpn::wxjson
+        ocpn::plugin-dc celestial::eclipse_core)
+    if(GTK3_LIBRARIES)
+        target_link_libraries(celestial_navigation_lab PRIVATE ${GTK3_LIBRARIES})
+    endif()
+    set_target_properties(celestial_navigation_lab PROPERTIES
+        OUTPUT_NAME "Celestial Navigation Lab"
+        MACOSX_BUNDLE_BUNDLE_NAME "Celestial Navigation Lab"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "org.opencpn.celestial-navigation-lab"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
+        MACOSX_BUNDLE_BUNDLE_VERSION "0.1.0")
+    if(APPLE)
+        set(LAB_VSOP "${CMAKE_SOURCE_DIR}/data/vsop87d.txt")
+        set_source_files_properties(${LAB_VSOP} PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources/data")
+        target_sources(celestial_navigation_lab PRIVATE ${LAB_VSOP})
+        if(LAB_ICON_ICNS)
+            set_source_files_properties(${LAB_ICON_ICNS} PROPERTIES
+                MACOSX_PACKAGE_LOCATION "Resources")
+            target_sources(celestial_navigation_lab PRIVATE ${LAB_ICON_ICNS})
+            set_target_properties(celestial_navigation_lab PROPERTIES
+                MACOSX_BUNDLE_ICON_FILE "CelestialNavigationLab.icns")
+        endif()
+    endif()
+endif()
 
 # Set optimization level for debug builds
 if (NOT MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")

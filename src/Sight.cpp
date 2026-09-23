@@ -45,11 +45,15 @@
 
 #include "celestial_navigation_pi.h"
 #include "Sight.h"
+#include "SightPalette.h"
 #include "LunarCandidateSelection.h"
 #include "UtcDateTime.h"
+#include "NavigationEphemerisProvider.h"
 #include "transform_star.hpp"
 #include "moon.h"
 #include "eclipse/astronomy.h"
+#include "eclipse/data_pack.h"
+#include "eclipse/navigation.h"
 #include "eclipse/mutex.h"
 #include "eclipse/spk.h"
 #include "eclipse/time.h"
@@ -125,10 +129,6 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
       m_HorizonAltitudeUncertainty(10),
       m_HorizonQuality(0),
       m_HorizonTimeSource(_T("System UTC")),
-      m_HorizonEstimateValid(false),
-      m_HorizonEstimateLat(0),
-      m_HorizonEstimateLon(0),
-      m_HorizonEstimateRadiusNm(0),
       m_TimeCorrection(0),
       m_LDC(NAN),
       m_LunarSolutionValid(false),
@@ -149,57 +149,9 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
   pConf->Read(_T("DefaultDIPShortDistance"), &m_DipShortDistance, 0);
   pConf->Read(_T("DefaultArtificialHorizon"), &m_ArtificialHorizon, 0);
 
-  const wxString sightcolornames[] = {_T("MEDIUM VIOLET RED"),
-                                      _T("MIDNIGHT BLUE"),
-                                      _T("ORANGE"),
-                                      _T("PLUM"),
-                                      _T("PURPLE"),
-                                      _T("RED"),
-                                      _T("SALMON"),
-                                      _T("SLATE BLUE"),
-                                      _T("SPRING GREEN"),
-                                      _T("ORANGE RED"),
-                                      _T("ORCHID"),
-                                      _T("PALE GREEN"),
-                                      _T("PINK"),
-                                      _T("BROWN"),
-                                      _T("BLUE"),
-                                      _T("GREEN YELLOW"),
-                                      _T("GOLDENROD"),
-                                      _T("BLUE VIOLET"),
-                                      _T("AQUAMARINE"),
-                                      _T("CADET BLUE"),
-                                      _T("CORAL"),
-                                      _T("CORNFLOWER BLUE"),
-                                      _T("FOREST GREEN"),
-                                      _T("GOLD"),
-                                      _T("THISTLE"),
-                                      _T("TURQUOISE"),
-                                      _T("VIOLET"),
-                                      _T("SEA GREEN"),
-                                      _T("SKY BLUE"),
-                                      _T("YELLOW GREEN"),
-                                      _T("INDIAN RED"),
-                                      _T("LIGHT BLUE"),
-                                      _T("LIME GREEN"),
-                                      _T("MAGENTA"),
-                                      _T("MAROON"),
-                                      _T("MEDIUM GOLDENROD"),
-                                      _T("MEDIUM ORCHID"),
-                                      _T("MEDIUM SEA GREEN"),
-                                      _T("VIOLET RED"),
-                                      _T("YELLOW")};
-
-  m_ColourName = sightcolornames[s_lastsightcolor].Lower();
-  m_Colour = wxColour(m_ColourName);
-  if (m_Colour.IsOk())
-    m_Colour.Set(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(), 150);
-  else
-    m_Colour.Set(25, 25, 112, 150);  // headless unit-test fallback
-
-  if (++s_lastsightcolor ==
-      (sizeof sightcolornames) / (sizeof *sightcolornames))
-    s_lastsightcolor = 0;
+  m_Colour = SightPalette()[s_lastsightcolor].Colour(150);
+  m_ColourName = SightColourLabel(m_Colour);
+  s_lastsightcolor = (s_lastsightcolor + 1) % SightPalette().size();
   m_bCalculated = false;
   m_bSelected = false;
 }
@@ -226,7 +178,34 @@ using astrolabe::util::ecl_to_equ;
  * time */
 void Sight::BodyLocation(wxDateTime time, double* lat, double* lon,
                          double* ghaast, double* rad, double* dist,
-                         bool timeIsInstant) {
+                         bool timeIsInstant, bool useDe440,
+                         double dut1OverrideSeconds, bool* usedDe440) {
+  if (usedDe440) *usedDe440 = false;
+  const wxDateTime utc_fields =
+      timeIsInstant ? UtcDateTime::FromInstant(time) : time;
+  celestial_navigation::De440NavigationSample de;
+  if (useDe440 && m_AllowDe440 && celestial_navigation::TryDe440NavigationSample(
+          m_Body, utc_fields, &de, nullptr, dut1OverrideSeconds)) {
+    if (usedDe440) *usedDe440 = true;
+    m_IsStar = false;
+    m_IsPlanet = m_Body == "Mercury" || m_Body == "Venus";
+    if (lat) *lat = de.declination_deg;
+    if (lon) *lon = resolve_heading(-de.gha_deg);
+    if (ghaast) *ghaast = de.aries_gha_deg;
+    if (rad) *rad = m_Body == "Moon" ? de.range_km : de.sun_range_au;
+    if (dist) *dist = m_IsPlanet ? de.range_km : 0.0;
+    return;
+  }
+
+  if (std::isfinite(dut1OverrideSeconds)) {
+    // The analytical fallback models UT1 by shifting its legacy input epoch.
+    // The DE440s branch above instead keeps UTC, TT and UT1 distinct.
+    if (timeIsInstant)
+      time += wxTimeSpan::Milliseconds(static_cast<long long>(
+          std::llround(dut1OverrideSeconds * 1000.0)));
+    else
+      time = UtcDateTime::AddSeconds(time, dut1OverrideSeconds);
+  }
   astrolabe::globals::vsop87d_text_path = celestial_navigation_pi_DataDir();
   astrolabe::globals::vsop87d_text_path.append("/data/");
   astrolabe::globals::vsop87d_text_path.append("vsop87d.txt");
@@ -550,13 +529,47 @@ double Sight::ComputeStepSize(double certainty, double stepsize, double min,
 }
 
 /* render the area of position for this sight */
-void Sight::Render(piDC* dc, PlugIn_ViewPort& VP, double pix_per_mm) {
+std::vector<std::pair<wxPoint, wxPoint>> Sight::ScreenSegments(PlugIn_ViewPort& vp) {
+  std::vector<std::pair<wxPoint, wxPoint>> segments;
+  wxPoint previous;
+  double previousLon = 0;
+  bool havePrevious = false;
+  for (auto* point : lines) {
+    if (!std::isfinite(point->x) || !std::isfinite(point->y)) {
+      havePrevious = false;
+      continue;
+    }
+    wxPoint pixel;
+    GetCanvasPixLL(&vp, &pixel, point->x, resolve_heading(point->y));
+    const double lon = resolve_heading(point->y - vp.clon);
+    if (havePrevious && std::abs(lon - previousLon) <= 180)
+      segments.emplace_back(previous, pixel);
+    previous = pixel;
+    previousLon = lon;
+    havePrevious = true;
+  }
+  return segments;
+}
+
+double Sight::ChartDistance(PlugIn_ViewPort& vp, const wxPoint& cursor) {
+  double distance = std::numeric_limits<double>::infinity();
+  if (!m_bVisible) return distance;
+  for (const auto& segment : ScreenSegments(vp))
+    distance = std::min(distance, SightSegmentDistance(cursor, segment.first,
+                                                       segment.second));
+  return distance;
+}
+
+void Sight::Render(piDC* dc, PlugIn_ViewPort& VP, double pix_per_mm,
+                   const SightDisplayStyle& style) {
   if (!m_bVisible) return;
 
   m_dc = dc;
 
   dc->SetPen(wxPen(m_Colour, 0, wxPENSTYLE_TRANSPARENT));
-  dc->SetBrush(wxBrush(m_Colour));
+  wxColour band(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(),
+                m_Colour.Alpha() * std::max(0, std::min(100, style.bandOpacityPercent)) / 100);
+  dc->SetBrush(wxBrush(band));
 
   std::list<wxRealPointList*>::iterator it = polygons.begin();
   while (it != polygons.end()) {
@@ -564,12 +577,26 @@ void Sight::Render(piDC* dc, PlugIn_ViewPort& VP, double pix_per_mm) {
     ++it;
   }
 
-  dc->SetPen(wxPen(m_Colour, (int)(0.5 * pix_per_mm)));
-  DrawPolygon(VP, lines, false);
+  const wxColour nominal(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue());
+  const int width = std::max(1, int(std::lround(style.lineWidthMm * pix_per_mm)));
+  const auto segments = ScreenSegments(VP);
+  auto stroke = [&](const wxColour& colour, int thickness) {
+    dc->SetPen(wxPen(colour, thickness));
+    for (const auto& segment : segments)
+      dc->StrokeLine(segment.first.x, segment.first.y,
+                     segment.second.x, segment.second.y);
+  };
+  if (style.contrastHalo) {
+    const int luminance = 299 * nominal.Red() + 587 * nominal.Green() +
+                          114 * nominal.Blue();
+    stroke(luminance >= 140000 ? *wxBLACK : *wxWHITE,
+           width + std::max(2, int(std::lround(0.6 * pix_per_mm))));
+  }
+  stroke(nominal, width);
 
-  if (m_Type == HORIZON && m_HorizonEstimateValid) {
+  for (const auto& position : m_HorizonPositions) {
     wxPoint centre;
-    GetCanvasPixLL(&VP, &centre, m_HorizonEstimateLat, m_HorizonEstimateLon);
+    GetCanvasPixLL(&VP, &centre, position.latitude, position.longitude);
     const int marker = wxMax(4, static_cast<int>(1.5 * pix_per_mm));
     dc->SetPen(wxPen(m_Colour, wxMax(1, static_cast<int>(0.7 * pix_per_mm))));
     dc->StrokeLine(centre.x - marker, centre.y, centre.x + marker, centre.y);
@@ -584,6 +611,7 @@ void Sight::Recompute(double clock_offset) {
   // them instead of displaying geometry copied from an earlier sight type.
   m_bCalculated = false;
   m_CalcStr.clear();
+  m_HorizonPositions.clear();
 
   if (clock_offset)
     m_CalcStr += wxString::Format(
@@ -608,6 +636,7 @@ void Sight::Recompute(double clock_offset) {
 }
 
 void Sight::RebuildPolygons() {
+  m_HorizonPositions.clear();
   if (m_Type == LUNAR) {
     // A sight converted from Altitude/Azimuth must not retain its old plot.
     polygons.clear();
@@ -630,23 +659,30 @@ void Sight::RebuildPolygons() {
   }
 
   /* now shift the vertices as needed */
+  const auto shiftedPoint = [this](double lat, double lon) {
+    if (m_ShiftNm == 0.0) return wxRealPoint(lat, lon);
+    double bearing = m_ShiftBearing;
+    if (m_bMagneticShiftBearing)
+      bearing += celestial_navigation_pi_GetWMM(
+          lat, resolve_heading(lon), m_EyeHeight, m_CorrectedDateTime);
+    return DistancePoint(90.0 - m_ShiftNm / 60.0, bearing, lat, lon);
+  };
   for (std::list<wxRealPointList*>::iterator it = polygons.begin();
        it != polygons.end(); it++) {
     wxRealPointList* area = *it;
     for (wxRealPointList::iterator it2 = area->begin(); it2 != area->end();
          it2++) {
       wxRealPoint* p = *it2;
-      double lat = p->x, lon = p->y;
-
-      double localbearing = m_ShiftBearing;
-      if (m_bMagneticShiftBearing) {
-        lon = resolve_heading(lon);
-        localbearing += celestial_navigation_pi_GetWMM(lat, lon, m_EyeHeight,
-                                                       m_CorrectedDateTime);
-      }
-      double localaltitude = 90 - m_ShiftNm / 60;
-      *p = DistancePoint(localaltitude, localbearing, lat, lon);
+      *p = shiftedPoint(p->x, p->y);
     }
+  }
+
+  // Keep every nominal line at the same shifted epoch as its uncertainty band.
+  for (auto* point : lines) *point = shiftedPoint(point->x, point->y);
+  for (auto& position : m_HorizonPositions) {
+    const wxRealPoint shifted =
+        shiftedPoint(position.latitude, position.longitude);
+    position = {shifted.x, resolve_heading(shifted.y)};
   }
 
   m_bCalculated = true;
@@ -662,14 +698,25 @@ wxString Sight::Alminac(wxDateTime time, double lat, double lon, double ghaast,
 
   double dec = lat;
 
+  celestial_navigation::De440NavigationSample de;
+  const bool uses_de440 = celestial_navigation::TryDe440NavigationSample(
+      m_Body, time, &de);
+
   time.MakeFromUTC();
   double jdu = time.GetJulianDayNumber();
   double jdd = ut_to_dt(jdu);
   double deltaT = deltaT_seconds(jdu);
+  if (uses_de440) {
+    deltaT = de.tai_minus_utc_seconds + 32.184 - de.dut1_seconds;
+    // jdu labels UTC, not UT1. TT-UTC includes TAI-UTC + 32.184.
+    jdd = jdu + (de.tai_minus_utc_seconds + 32.184) / 86400.0;
+  }
 
   return _("Almanac Data For ") + m_Body +
          wxString::Format(_("\n\
 Date = %s\n\
+Ephemeris = %s\n\
+DUT1 = %s\n\
 JD = %.6f\n\
 DeltaT = %.4f\n\
 TT = %.6f\n\
@@ -680,7 +727,16 @@ GHA = %.4f%c = %s\n\
 Dec = %.4f%c = %s\n\
 SD = %.4f'\n\
 HP = %.4f'\n\n"),
-                          time.Format("%Y-%m-%d %H:%M:%S", time.UTC), jdu,
+                          time.Format("%Y-%m-%d %H:%M:%S", time.UTC),
+                          uses_de440 ? _T("DE440s (verified; analytical fallback outside coverage)")
+                                     : _T("Analytical"),
+                          uses_de440 ?
+                              (de.dut1_available ?
+                                   wxString::Format("%+.3f s (offline table)",
+                                                    de.dut1_seconds) :
+                                   _T("0 s (UT1=UTC fallback; table unavailable)")) :
+                              _T("analytical time model"),
+                          jdu,
                           deltaT, jdd, lat, 0x00B0, lon, 0x00B0,
                           toSDMM_PlugIn(1, lat, true),
                           toSDMM_PlugIn(2, lon, true), ghaast, 0x00B0,
@@ -693,7 +749,10 @@ HP = %.4f'\n\n"),
 void Sight::RecomputeAltitude() {
   double rad;
   double planet_dist;
-  BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad, &planet_dist);
+  bool usedDe440 = false;
+  BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad, &planet_dist,
+               false, m_AllowDe440, std::numeric_limits<double>::quiet_NaN(),
+               &usedDe440);
 
   m_CalcStr += _("Formulas used to calculate sight\n\n");
 
@@ -821,13 +880,13 @@ ra = %.4f, lc = 0.266564/ra = %.4f%c = %s\n"),
   }
 
   if (!m_Body.Cmp(_T("Moon"))) {
-    wxDateTime time = m_CorrectedDateTime;
-    time.MakeFromUTC();
-    double jdu = time.GetJulianDayNumber();
-    double jdd = ut_to_dt(jdu);
-    double moon_dist = moon_distance(jdd);
+    // BodyLocation supplied the same ephemeris distance as the Moon GP.
+    // Recomputing it analytically here would mix DE440s and ELP2000 in a
+    // single sight's limb and parallax corrections.
+    const double moon_dist = rad;
     HP = r_to_d(asin(EARTH_RADIUS / moon_dist));
-    SD = r_to_d(asin(K_MOON * sin(d_to_r(HP))));
+    SD = r_to_d(asin((usedDe440 ? 1737.4 : MOON_MEAN_RADIUS) /
+                       moon_dist));
     // convert to topocentric SD, see Meeus (chapter 55)
     topoSD = SD * (1 + sin(d_to_r(ApparentAltitude)) * sin(d_to_r(HP)));
     lc = r_to_d(asin(d_to_r(topoSD)));
@@ -978,7 +1037,7 @@ void Sight::RecomputeHorizon() {
   m_Body = _T("Sun");
   m_bMagneticNorth = false;  // horizon corrections are explicitly applied
   m_Measurement = HorizonTrueBearing();
-  m_HorizonEstimateValid = false;
+  m_HorizonPositions.clear();
 
   double rad = 1.0;
   BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad, 0);
@@ -1026,64 +1085,65 @@ void Sight::RecomputeHorizon() {
   }
 }
 
-bool Sight::HorizonEstimatedPosition(double* lat, double* lon) {
-  if (m_Type != HORIZON || !m_HorizonBearingProvided || !lat || !lon)
-    return false;
-
-  double bodyLat, bodyLon;
-  BodyLocation(m_CorrectedDateTime, &bodyLat, &bodyLon, 0, 0, 0);
-  const double target = HorizonTrueBearing();
-
-  double bestTrace = 0;
-  double bestError = 361;
-  for (double trace = -180; trace < 180; trace += 1.0) {
-    const wxRealPoint point =
-        DistancePoint(m_ObservedAltitude, trace, bodyLat, bodyLon);
-    double altitude, bearing;
-    AltitudeAzimuth(point.x, point.y, bodyLat, bodyLon, &altitude, &bearing);
-    const double error = fabs(resolve_heading(bearing - target));
-    if (error < bestError) {
-      bestError = error;
-      bestTrace = trace;
-    }
-  }
-
-  double step = 0.5;
-  for (int iteration = 0; iteration < 24; ++iteration) {
-    double chosenTrace = bestTrace;
-    for (int direction = -1; direction <= 1; direction += 2) {
-      const double trace = bestTrace + direction * step;
-      const wxRealPoint point =
-          DistancePoint(m_ObservedAltitude, trace, bodyLat, bodyLon);
-      double altitude, bearing;
-      AltitudeAzimuth(point.x, point.y, bodyLat, bodyLon, &altitude, &bearing);
-      const double error = fabs(resolve_heading(bearing - target));
-      if (error < bestError) {
-        bestError = error;
-        chosenTrace = trace;
-      }
-    }
-    bestTrace = chosenTrace;
-    step *= 0.5;
-  }
-
-  const wxRealPoint estimate =
-      DistancePoint(m_ObservedAltitude, bestTrace, bodyLat, bodyLon);
-  *lat = estimate.x;
-  *lon = estimate.y;
-  if (*lon > 180) *lon -= 360;
-  if (*lon < -180) *lon += 360;
-  return bestError < 0.05;
+bool Sight::HorizonBearingMatchesEvent() const {
+  const double east = sin(d_to_r(HorizonTrueBearing()));
+  return m_HorizonEvent == SUNRISE ? east > 1e-10 : east < -1e-10;
 }
 
-double Sight::HorizonEstimateUncertaintyNm() const {
-  if (!m_HorizonBearingProvided) return NAN;
-  const double angularDistance = d_to_r(90.0 - m_ObservedAltitude);
-  const double crossTrack =
-      60.0 * fabs(sin(angularDistance)) * m_HorizonBearingUncertainty;
-  const double radial = m_HorizonAltitudeUncertainty;
-  const double timing = 0.25 * m_TimeCertainty;
-  return sqrt(crossTrack * crossTrack + radial * radial + timing * timing);
+std::vector<horizon_position::Position> Sight::HorizonPositionCandidates() {
+  if (m_Type != HORIZON || !m_HorizonBearingProvided ||
+      !HorizonBearingMatchesEvent())
+    return {};
+  double bodyLat, bodyLon;
+  BodyLocation(m_CorrectedDateTime, &bodyLat, &bodyLon, 0, 0, 0);
+  return horizon_position::Candidates(bodyLat, bodyLon, m_ObservedAltitude,
+                                      HorizonTrueBearing());
+}
+
+bool Sight::HorizonEstimatedPosition(double* lat, double* lon) {
+  if (!lat || !lon) return false;
+  const auto positions = HorizonPositionCandidates();
+  if (positions.size() != 1) return false;
+  *lat = positions.front().latitude;
+  *lon = positions.front().longitude;
+  return true;
+}
+
+wxString Sight::HorizonPositionSummary() {
+  wxString summary =
+      _("The chart shows the time-based altitude line of position and its "
+        "horizon/time uncertainty band. Fix uses this altitude constraint; "
+        "the optional bearing is a separate position aid.\n");
+  if (!m_HorizonBearingProvided) return summary;
+  if (!HorizonBearingMatchesEvent())
+    return summary +
+           _("The bearing does not match the selected event: sunrise requires "
+             "an easterly bearing, sunset a westerly bearing. Check the event "
+             "and true/magnetic bearing. No position markers are plotted.");
+
+  const auto positions = HorizonPositionCandidates();
+  if (positions.empty()) {
+    summary +=
+        _("The nominal bearing has no isolated position solution. The inputs "
+          "may be inconsistent or the geometry degenerate. The time-based "
+          "line of position can still be used.\n");
+  } else {
+    summary += positions.size() == 2
+                   ? _("Two nominal positions satisfy the event and bearing; "
+                       "use DR or other sights to distinguish them:\n")
+                   : _("Nominal bearing-derived position:\n");
+    for (const auto& position : positions)
+      summary += wxString::Format(
+          _T("  %s  %s\n"), toSDMM_PlugIn(1, position.latitude, true),
+          toSDMM_PlugIn(2, position.longitude, true));
+  }
+  summary += wxString::Format(
+      _("Bearing uncertainty: +/- %.2f degrees. Markers show nominal "
+        "solutions, not fixes or confidence areas. Bearing errors can move "
+        "them hundreds of miles along the LOP; there is no fixed NM-per-degree "
+        "conversion."),
+      m_HorizonBearingUncertainty);
+  return summary;
 }
 
 lunar_distance::Observation Sight::LunarObservation() const {
@@ -1175,14 +1235,14 @@ void Sight::RecomputeLunar(int preferred_candidate) {
     double body_distance = 0.0;
     m_Body = selected_body;
     BodyLocation(time, &body_dec, &body_hour_angle, nullptr, &body_rad,
-                 &body_distance);
+                 &body_distance, false, false);
     const bool body_is_planet = m_IsPlanet;
     const bool body_is_star = m_IsStar;
 
     double moon_dec = 0.0, moon_hour_angle = 0.0, moon_rad = 0.0;
     m_Body = _T("Moon");
     BodyLocation(time, &moon_dec, &moon_hour_angle, nullptr, &moon_rad,
-                 nullptr);
+                 nullptr, false, false);
     m_Body = selected_body;
 
     const double delta_hour_angle =
@@ -1198,12 +1258,14 @@ void Sight::RecomputeLunar(int preferred_candidate) {
     sample->moon_geographic_longitude_deg = moon_hour_angle;
     bool used_de440 = false;
 
-    if (!selected_body.Cmp(_T("Sun"))) {
-      static thread_local std::shared_ptr<LunarKernelContext> context(new LunarKernelContext);
-      eclipse::MutexGuard lock(context->mutex);
-      eclipse::SpkKernel& kernel=context->kernel;
+    const int de_body_target = selected_body == "Sun" ? 10 :
+                               selected_body == "Mercury" ? 199 :
+                               selected_body == "Venus" ? 299 : 0;
+    if (de_body_target != 0) {
+      static thread_local std::shared_ptr<LunarKernelContext> context;
       static thread_local wxString opened_path;
-      static thread_local bool attempted = false;
+      static thread_local time_t opened_mtime = 0;
+      static thread_local bool verified = false;
 #ifdef UNIT_TESTS
       // wxStandardPaths requires a running wxApp.  The sight tests are
       // deliberately headless, so exercise the same kernel against the
@@ -1214,13 +1276,23 @@ void Sight::RecomputeLunar(int preferred_candidate) {
                             _T("eclipse") + wxFileName::GetPathSeparator() +
                             _T("de440s.bsp");
 #endif
-      if (!attempted || opened_path != path) {
-        attempted = true;
+      const wxDateTime path_mtime = wxFileName(path).GetModificationTime();
+      const time_t modified = path_mtime.IsValid() ?
+          path_mtime.GetTicks() : 0;
+      if (!context || opened_path != path || opened_mtime != modified) {
+        // Prior observer callbacks retain their original verified kernel.
+        // Replacing a pack never changes an in-flight lunar solution's data.
+        context.reset(new LunarKernelContext);
         opened_path = path;
+        opened_mtime = modified;
+        verified = eclipse::VerifyDe440s(path.ToStdString()).valid;
         std::string open_error;
-        kernel.Open(path.ToStdString(), &open_error);
+        if (verified)
+          verified = context->kernel.Open(path.ToStdString(), &open_error);
       }
-      if (kernel.IsOpen()) {
+      if (verified && context->kernel.IsOpen()) {
+        eclipse::MutexGuard lock(context->mutex);
+        eclipse::SpkKernel& kernel = context->kernel;
         eclipse::CalendarDateTime utc;
         utc.year = time.GetYear();
         utc.month = static_cast<int>(time.GetMonth()) + 1;
@@ -1230,7 +1302,8 @@ void Sight::RecomputeLunar(int preferred_candidate) {
         utc.second = time.GetSecond() + time.GetMillisecond() / 1000.0;
         double utc_jd = 0.0;
         std::string time_error;
-        if (eclipse::CalendarToJulianDate(utc, &utc_jd, &time_error)) {
+        if (utc.year >= 1972 &&
+            eclipse::CalendarToJulianDate(utc, &utc_jd, &time_error)) {
           const auto dut1 = eclipse::LookupDut1(utc_jd);
           double tai_minus_utc = std::isfinite(dut1.tai_minus_utc) ? dut1.tai_minus_utc
                                                : eclipse::TaiMinusUtcSeconds(utc);
@@ -1242,9 +1315,10 @@ void Sight::RecomputeLunar(int preferred_candidate) {
           eclipse::Vector3 moon_vector;
           eclipse::Vector3 sun_vector;
           std::string de_error;
-          if (eclipse::ApparentGeocentricPosition(kernel, 301, et, &moon_vector,
+          if (eclipse::ApparentNavigationPosition(kernel, 301, et, &moon_vector,
                                                   &de_error) &&
-              eclipse::ApparentGeocentricPosition(kernel, 10, et, &sun_vector,
+              eclipse::ApparentNavigationPosition(kernel, de_body_target, et,
+                                                   &sun_vector,
                                                   &de_error)) {
             const double denominator = moon_vector.Norm() * sun_vector.Norm();
             if (denominator > 0.0) {
@@ -1257,8 +1331,8 @@ void Sight::RecomputeLunar(int preferred_candidate) {
                   r_to_d(asin(1737.4 / moon_vector.Norm()));
               sample->body_horizontal_parallax_deg =
                   r_to_d(asin(6378.137 / sun_vector.Norm()));
-              sample->body_semidiameter_deg =
-                  r_to_d(asin(695700.0 / sun_vector.Norm()));
+              sample->body_semidiameter_deg = de_body_target == 10 ?
+                  r_to_d(asin(695700.0 / sun_vector.Norm())) : 0.0;
               // The separation and the altitude constraints must use the
               // same apparent vectors. Mixing DE440 distances with analytical
               // GPs made simultaneous and time-tagged solutions disagree.
@@ -1276,13 +1350,22 @@ void Sight::RecomputeLunar(int preferred_candidate) {
               // Freeze this epoch, not the trial observer. The provider uses
               // the same model for individual, sequential and watch solves.
               const auto retained_context = context;
-              sample->observer_direction = [retained_context, et, orientation](
+              sample->observer_direction = [retained_context, et, orientation,
+                                            de_body_target](
                   double lat, double lon, double height, bool moon,
                   double* alt, double* az, double* sd) {
                 eclipse::MutexGuard guard(retained_context->mutex);
                 std::string error;
-                return eclipse::ObserverApparentDirection(retained_context->kernel,
-                    et, orientation, lat, lon, height, moon, alt, az, sd, &error);
+                if (moon || de_body_target == 10)
+                  return eclipse::ObserverApparentDirection(
+                      retained_context->kernel, et, orientation, lat, lon,
+                      height, moon, alt, az, sd, &error);
+                double range = 0.0;
+                *sd = 0.0;
+                return eclipse::ObserverApparentTargetDirection(
+                    retained_context->kernel, de_body_target, et, orientation,
+                    lat, lon, height, alt, az, &range, &error,
+                    de_body_target == 299);
               };
               const auto moon_fixed =
                   eclipse::IcrfToEarthFixed(moon_vector, orientation);
@@ -1397,7 +1480,7 @@ void Sight::RecomputeLunar(int preferred_candidate) {
           ? _("Ephemeris                     = local JPL DE440s apparent "
               "directions (offline)\n")
           : _("Ephemeris                     = bundled analytical fallback "
-              "(offline; reduced accuracy)\n");
+              "(offline; high navigational accuracy)\n");
   m_CalcStr +=
       _("Earth model                   = WGS84 ellipsoid; geodetic observer "
         "latitude\n"
@@ -1427,7 +1510,7 @@ void Sight::RecomputeLunar(int preferred_candidate) {
     } else {
       m_CalcStr += _("WARNING: DUT1 unavailable at reference UTC; UT1=UTC fallback, reduced accuracy.\n");
     }
-    m_CalcStr += _("Sun-Moon astrometry           = observer-specific light time and combined annual/diurnal aberration\n"
+    m_CalcStr += _("Moon-body astrometry          = observer-specific light time and combined annual/diurnal aberration\n"
                   "Polar motion and geoid/local vertical are not modelled.\n");
     if (unavailable_dut1->load())
       m_CalcStr += _("WARNING: part of this search is outside available DUT1 coverage; those trials use UT1=UTC with reduced accuracy.\n");
@@ -2508,6 +2591,13 @@ void Sight::RebuildPolygonsAltitude() {
   timestep = wxMax(2 * m_TimeCertainty, 1);
   BuildAltitudeLineOfPosition(1, altitudemin, altitudemax, altitudestep,
                               timemin, timemax, timestep);
+  // The nominal COP is evaluated at the corrected observation, not averaged
+  // between uncertainty extrema (nor joined between different time samples).
+  double lat = 0, lon = 0;
+  BodyLocation(m_CorrectedDateTime, &lat, &lon, nullptr, nullptr, nullptr);
+  if (std::isfinite(m_ObservedAltitude) && std::abs(m_ObservedAltitude) <= 90)
+    for (int trace = -180; trace <= 180; ++trace)
+      lines.Append(new wxRealPoint(DistancePoint(m_ObservedAltitude, trace, lat, lon)));
 }
 
 void Sight::RebuildPolygonsHorizon() {
@@ -2516,24 +2606,11 @@ void Sight::RebuildPolygonsHorizon() {
   RebuildPolygonsAltitude();
   m_MeasurementCertainty = savedCertainty;
 
-  m_HorizonEstimateValid =
-      HorizonEstimatedPosition(&m_HorizonEstimateLat, &m_HorizonEstimateLon);
-  if (!m_HorizonEstimateValid) return;
-
-  m_HorizonEstimateRadiusNm = HorizonEstimateUncertaintyNm();
-  wxRealPointList* uncertainty = new wxRealPointList;
-  const double altitude = 90.0 - m_HorizonEstimateRadiusNm / 60.0;
-  for (int bearing = 0; bearing <= 360; bearing += 5) {
-    uncertainty->Append(new wxRealPoint(DistancePoint(
-        altitude, bearing, m_HorizonEstimateLat, m_HorizonEstimateLon)));
-  }
-  polygons.push_back(uncertainty);
-
-  m_CalcStr += wxString::Format(
-      _("\nBearing-derived estimate = %s %s\n"
-        "Conservative uncertainty radius = %.1f NM\n"),
-      toSDMM_PlugIn(1, m_HorizonEstimateLat, true),
-      toSDMM_PlugIn(2, m_HorizonEstimateLon, true), m_HorizonEstimateRadiusNm);
+  // A bearing uncertainty is not an isotropic position radius. Keep the
+  // altitude band and mark every nominal branch without covering the chart
+  // with a filled disc or implying that one ambiguous branch is a fix.
+  m_HorizonPositions = HorizonPositionCandidates();
+  m_CalcStr += _T("\n") + HorizonPositionSummary() + _T("\n");
 }
 
 /* Calculate latitude and longitude position for a sight taken with time,
@@ -2592,21 +2669,14 @@ void Sight::BuildAltitudeLineOfPosition(double tracestep, double altitudemin,
     wxRealPointList *p, *l = new wxRealPointList;
     for (double trace = -180; trace <= 180; trace += tracestep) {
       p = new wxRealPointList;
-      double mx = 0;
-      double my = 0;
-      int mc = 0;
       for (double altitude = altitudemin;
            altitude <= altitudemax && fabs(altitude) <= 90;
            altitude += altitudestep) {
         wxRealPoint* point =
             new wxRealPoint(DistancePoint(altitude, trace, lat, lon));
         p->Append(point);
-        mx += point->x;
-        my += point->y;
-        mc++;
         if (altitudestep == 0) break;
       }
-      if (mc > 0) lines.Append(new wxRealPoint(mx / mc, my / mc));
       wxRealPointList* m = MergePoints(l, p);
       wxRealPointList* n = ReduceToConvexPolygon(m);
       polygons.push_back(n);

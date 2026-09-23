@@ -5,6 +5,7 @@
 #include "NavigationAlgorithms.h"
 #include "UtcDateTime.h"
 #include "version.h"
+#include "eclipse/dut1.h"
 
 #include <wx/filefn.h>
 #include <wx/filename.h>
@@ -13,6 +14,7 @@
 #include <cmath>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 #include <map>
 #include <sstream>
 
@@ -38,6 +40,76 @@ wxDateTime ShiftInstant(const wxDateTime& instant, double seconds) {
   return instant + wxTimeSpan::Milliseconds(
                        static_cast<long long>(std::llround(seconds * 1000)));
 }
+
+double AlmanacDut1(const AlmanacRequest& request, const wxDateTime& utc) {
+  if (request.dut1Known) return request.dut1Seconds;
+  const auto value = eclipse::LookupDut1(utc.GetJulianDayNumber());
+  return value.available ? value.seconds :
+      std::numeric_limits<double>::quiet_NaN();
+}
+
+double AnalyticalDut1(double seconds) {
+  return std::isfinite(seconds) ? seconds : 0.0;
+}
+
+// Record the source returned by the engine, including interpolation endpoints.
+// Do not infer kernel availability from a filename or from the first date.
+struct AlmanacSourceAudit {
+  std::map<wxString, std::pair<unsigned, unsigned>> bodies;
+  unsigned datedDut1 = 0;
+  unsigned zeroDut1 = 0;
+  unsigned invalid = 0;
+
+  BodyState Evaluate(const AlmanacRequest& request, const wxString& body,
+                     const wxDateTime& utc) {
+    const double dut1 = AlmanacDut1(request, utc);
+    if (!request.dut1Known) {
+      if (std::isfinite(dut1)) ++datedDut1;
+      else ++zeroDut1;
+    }
+    const BodyState state = CelestialEphemeris::Evaluate(
+        body, utc, 0, 0, 1010.0, 10.0, dut1);
+    if (!state.valid) ++invalid;
+    else if (state.usedDe440) ++bodies[body].first;
+    else ++bodies[body].second;
+    return state;
+  }
+
+  AlmanacPage Page(const AlmanacRequest& request) const {
+    AlmanacPage page;
+    page.section = "Sources and conventions";
+    page.title = "Astronavigation tables - sources and conventions";
+    page.subtitle = "Actual sources for tabulated ephemerides, including interpolation endpoints.";
+    AlmanacTable table;
+    table.headings = {"Body / group", "Source used"};
+    bool stars = false;
+    for (const auto& entry : bodies) {
+      const CelestialBodyInfo* info = BodyCatalog::Find(entry.first);
+      if (info && info->kind == CelestialBodyKind::Star) {
+        stars = true;
+        continue;
+      }
+      table.rows.push_back({entry.first,
+          entry.second.first && entry.second.second ? "Mixed DE440s / analytical" :
+          entry.second.first ? "DE440s" : "Analytical"});
+    }
+    if (stars) table.rows.push_back({"Stars / Polaris", "Stellar catalogue and analytical apparent place"});
+    if (request.includeAries)
+      table.rows.push_back({"Aries", "Earth rotation and equinox model; not a DE440s body"});
+    page.tables.push_back(table);
+    page.paragraphs = {
+      request.dut1Known
+          ? wxString::Format("DUT1: user override %+.3f seconds throughout. A single value is not a dated Earth-rotation forecast.", request.dut1Seconds)
+          : wxString::Format("DUT1: %u tabulated evaluations used dated offline IERS data; %u used UT1=UTC fallback. Counts include hourly endpoints and star data.", datedDut1, zeroDut1),
+      "Hours label UTC. Earth rotation uses UT1 = UTC + DUT1; ephemeris dynamics use the engine's dynamical timescale. Fractional seconds are retained internally.",
+      "GHA and declination are geocentric apparent quantities; apply the printed altitude corrections to the sextant reading separately. GHA is westward, SHA is westward from Aries, and longitude is east-positive in the LHA formula.",
+      "Angles are rounded to 0.1 arcminute for printing. Signed d is hourly declination change. v is excess over the stated base GHA rate; use the matching increment tables. Rounded agreement does not imply zero physical error.",
+      "DE440s is used automatically for supported body centres and dates when installed. This edition retains analytical Mars, Jupiter and Saturn rather than substituting planetary-system barycentres. DE440s Venus includes the engine's almanac phase correction.",
+      "The hourly layout and independent Ageton/direct reduction tables are not reproductions of Reeds or its versine/ABC method. Compact output omits optional planning and exhaustive direct tables, not hourly samples."};
+    if (invalid) page.paragraphs.push_back("WARNING: some ephemeris evaluations were invalid; do not use affected entries.");
+    return page;
+  }
+};
 
 unsigned InclusiveDays(const AlmanacRequest& request) {
   const wxDateTime from = AtHour(request.fromUtc, 0);
@@ -128,7 +200,8 @@ double ForwardGhaChange(double from, double to) {
 }
 
 std::vector<AlmanacTable> UniversalTables(const AlmanacRequest& request,
-                                          const wxDateTime& day) {
+                                          const wxDateTime& day,
+                                          AlmanacSourceAudit* audit) {
   AlmanacTable sunTable;
   sunTable.headings.push_back("UTC");
   if (request.includeAries) sunTable.headings.push_back("Aries GHA");
@@ -144,15 +217,17 @@ std::vector<AlmanacTable> UniversalTables(const AlmanacRequest& request,
     moonTable.headings = {"UTC", "Moon GHA", "v", "Moon Dec", "d", "HP", "SD"};
   for (int hour = 0; hour < 24; ++hour) {
     const wxDateTime utc = AtHour(day, hour);
-    const wxDateTime ut1 = ShiftInstant(utc, request.dut1Seconds);
-    const wxDateTime nextUt1 = ShiftInstant(ut1, 3600.0);
-    const BodyState sun = CelestialEphemeris::Evaluate("Sun", ut1, 0, 0);
-    const BodyState moon = CelestialEphemeris::Evaluate("Moon", ut1, 0, 0);
-    const BodyState nextSun = CelestialEphemeris::Evaluate("Sun", nextUt1, 0, 0);
-    const BodyState nextMoon = CelestialEphemeris::Evaluate("Moon", nextUt1, 0, 0);
+    const double dut1 = AlmanacDut1(request, utc);
+    const wxDateTime ut1 = ShiftInstant(utc, AnalyticalDut1(dut1));
+    const wxDateTime nextUtc = ShiftInstant(utc, 3600.0);
+    const BodyState sun = audit->Evaluate(request, "Sun", utc);
+    const BodyState moon = audit->Evaluate(request, "Moon", utc);
+    const BodyState nextSun = audit->Evaluate(request, "Sun", nextUtc);
+    const BodyState nextMoon = audit->Evaluate(request, "Moon", nextUtc);
     const BodyState polaris =
         CelestialEphemeris::Evaluate("Polaris", ut1, 0, 0);
-    const double aries = Wrap360(polaris.gha - polaris.sha);
+    const double aries = sun.valid ? sun.ghaAries :
+                         Wrap360(polaris.gha - polaris.sha);
     std::vector<wxString> sunRow{wxString::Format("%02d", hour)};
     if (request.includeAries) sunRow.push_back(Angle(aries));
     if (request.includeSun) {
@@ -161,7 +236,7 @@ std::vector<AlmanacTable> UniversalTables(const AlmanacRequest& request,
       sunRow.push_back(wxString::Format("%+.1f'",
           (nextSun.declination - sun.declination) * 60.0));
       sunRow.push_back(wxString::Format("%.1f'", sun.horizontalParallax * 60.0));
-      sunRow.push_back(wxString::Format("%.1f'", sun.semidiameter * 60.0));
+      sunRow.push_back(wxString::Format("%.1f'", sun.geocentricSemidiameter * 60.0));
     }
     sunTable.rows.push_back(sunRow);
     if (request.includeMoon) {
@@ -173,7 +248,7 @@ std::vector<AlmanacTable> UniversalTables(const AlmanacRequest& request,
            wxString::Format("%+.1f'",
                             (nextMoon.declination - moon.declination) * 60.0),
            wxString::Format("%.1f'", moon.horizontalParallax * 60.0),
-           wxString::Format("%.1f'", moon.semidiameter * 60.0)});
+           wxString::Format("%.1f'", moon.geocentricSemidiameter * 60.0)});
     }
   }
   std::vector<AlmanacTable> tables;
@@ -188,12 +263,14 @@ AlmanacTable PlanetTable(const AlmanacRequest& request,
   table.headings = {"Body", "00h GHA", "00h Dec", "12h GHA", "12h Dec"};
   const char* names[] = {"Venus", "Mars", "Jupiter", "Saturn"};
   for (const char* name : names) {
+    const wxDateTime midnight = AtHour(day, 0);
+    const wxDateTime noon = AtHour(day, 12);
     const BodyState at0 = CelestialEphemeris::Evaluate(
-        name, ShiftInstant(AtHour(day, 0), request.dut1Seconds), 0,
-        0);
+        name, midnight, 0, 0, 1010.0, 10.0,
+        AlmanacDut1(request, midnight));
     const BodyState at12 = CelestialEphemeris::Evaluate(
-        name, ShiftInstant(AtHour(day, 12), request.dut1Seconds), 0,
-        0);
+        name, noon, 0, 0, 1010.0, 10.0,
+        AlmanacDut1(request, noon));
     table.rows.push_back({name, Angle(at0.gha), Angle(at0.declination, true),
                           Angle(at12.gha),
                           Angle(at12.declination, true)});
@@ -202,7 +279,8 @@ AlmanacTable PlanetTable(const AlmanacRequest& request,
 }
 
 std::vector<AlmanacTable> PlanetHourlyTables(const AlmanacRequest& request,
-                                             const wxDateTime& day) {
+                                            const wxDateTime& day,
+                                            AlmanacSourceAudit* audit) {
   const char* names[] = {"Venus", "Mars", "Jupiter", "Saturn"};
   std::vector<AlmanacTable> tables;
   for (unsigned pair = 0; pair < 2; ++pair) {
@@ -218,13 +296,12 @@ std::vector<AlmanacTable> PlanetHourlyTables(const AlmanacRequest& request,
     }
     for (int hour = 0; hour < 24; ++hour) {
       std::vector<wxString> row{wxString::Format("%02d", hour)};
-      const wxDateTime utc = ShiftInstant(
-          AtHour(day, hour), request.dut1Seconds);
+      const wxDateTime utc = AtHour(day, hour);
+      const wxDateTime nextUtc = ShiftInstant(utc, 3600.0);
       for (unsigned offset = 0; offset < 2; ++offset) {
         const char* name = names[pair * 2 + offset];
-        const BodyState state = CelestialEphemeris::Evaluate(name, utc, 0, 0);
-        const BodyState next = CelestialEphemeris::Evaluate(
-            name, ShiftInstant(utc, 3600.0), 0, 0);
+        const BodyState state = audit->Evaluate(request, name, utc);
+        const BodyState next = audit->Evaluate(request, name, nextUtc);
         const double v = ForwardGhaChange(state.gha, next.gha) * 60.0 - 900.0;
         row.push_back(Angle(state.gha));
         row.push_back(wxString::Format("%+.1f'", v));
@@ -232,7 +309,7 @@ std::vector<AlmanacTable> PlanetHourlyTables(const AlmanacRequest& request,
         row.push_back(wxString::Format("%+.1f'",
                                        (next.declination - state.declination) * 60.0));
         row.push_back(wxString::Format("%.1f/%.1f'",
-            state.horizontalParallax * 60.0, state.semidiameter * 60.0));
+            state.horizontalParallax * 60.0, state.geocentricSemidiameter * 60.0));
       }
       table.rows.push_back(row);
     }
@@ -600,13 +677,31 @@ void AlmanacGenerator::ApplyPreset(AlmanacPreset preset,
     request->runningFixForms = 5;
     request->noonPolarisForms = request->lunarForms = 4;
     request->watchForms = 3;
+  } else if (preset == AlmanacPreset::CompactAstronavigation) {
+    request->coverage = AlmanacCoverage::Global;
+    request->safety = AlmanacSafety::CalculatorFree;
+    request->selfContained = true;
+    request->includeStars = true;
+    request->includeCorrections = request->includeInstructions = true;
+    request->includeEmergencyGuide = true;
+    request->includeIncrementTables = true;
+    request->includeCompactReductionTables = true;
+    request->includeAltitudeCorrectionTables = true;
+    request->includeEvents = request->includeMoonInformation = false;
+    request->includeRecommendations = request->includeStarCharts = false;
+    request->includeVisualAids = request->includeLunar = false;
+    request->planningIntervalDays = 0;
+    request->monthlyStarData = true;
+    request->sightForms = 2;
+    request->runningFixForms = request->noonPolarisForms = 1;
+    request->lunarForms = request->watchForms = 0;
   }
 }
 
 AlmanacDocument AlmanacGenerator::Estimate(const AlmanacRequest& request) {
   AlmanacDocument document;
   const unsigned days = InclusiveDays(request);
-  unsigned pages = 2;  // cover and contents
+  unsigned pages = 3;  // cover, contents and sources/conventions
   if (request.preset != AlmanacPreset::PassageBrief) pages += days;
   if (request.preset != AlmanacPreset::PassageBrief && request.includePlanets)
     pages += days;
@@ -781,16 +876,22 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
   document.title = request.voyageName.empty() ? "OpenCPN Voyage Almanac"
                                               : request.voyageName;
   document.generatedUtc = UtcDateTime::FormatIsoUtc(UtcDateTime::Now());
+  AlmanacSourceAudit audit;
   document.manifest = wxString::Format(
-      "Celestial Navigation %d.%d.%d.%d; VSOP87D/ELP astronomical engine; DUT1 "
-      "%+.3f s (%s)",
+      "Celestial Navigation %d.%d.%d.%d; DE440s for available Sun, Moon, "
+      "Mercury and Venus centres, otherwise analytical VSOP87D/ELP; "
+      "DUT1 %s",
       PLUGIN_VERSION_MAJOR, PLUGIN_VERSION_MINOR, PLUGIN_VERSION_PATCH,
-      PLUGIN_VERSION_TWEAK, request.dut1Seconds,
-      request.dut1Known ? "user supplied" : "assumed");
-  if (!request.dut1Known)
+      PLUGIN_VERSION_TWEAK,
+      request.dut1Known ?
+          wxString::Format("%+.3f s (user supplied)", request.dut1Seconds) :
+          "offline date table where covered; UT1=UTC fallback otherwise");
+  if (!request.dut1Known &&
+      (!std::isfinite(AlmanacDut1(request, AtHour(request.fromUtc, 0))) ||
+       !std::isfinite(AlmanacDut1(request, AtHour(request.toUtc, 23)))))
     document.warnings.push_back(
-        "DUT1 is assumed to be 0.000 s. Obtain a current offline value before "
-        "relying on sub-second UT1 work.");
+        "DUT1 is outside the offline table for at least part of this voyage; "
+        "UT1=UTC fallback applies on uncovered dates unless a value is supplied.");
   if (request.safety == AlmanacSafety::PlanningReference)
     document.warnings.push_back(
         "Planning reference only: this preset intentionally omits some "
@@ -827,7 +928,7 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
       ephemeris.title = UtcDateTime::FormatUtc(day, "%A %d %B %Y");
       ephemeris.subtitle =
           "Hourly geocentric quantities. UTC labels; Earth rotation evaluated using UTC + DUT1.";
-      const std::vector<AlmanacTable> universal = UniversalTables(request, day);
+      const std::vector<AlmanacTable> universal = UniversalTables(request, day, &audit);
       ephemeris.tables.insert(ephemeris.tables.end(), universal.begin(), universal.end());
       document.pages.push_back(ephemeris);
       if (request.includePlanets) {
@@ -838,7 +939,7 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
         planets.subtitle =
             "Hourly geocentric GHA and declination. Mercury is not a Nautical Almanac navigational planet.";
         const std::vector<AlmanacTable> planetTables =
-            PlanetHourlyTables(request, day);
+            PlanetHourlyTables(request, day, &audit);
         planets.tables.insert(planets.tables.end(), planetTables.begin(),
                               planetTables.end());
         document.pages.push_back(planets);
@@ -1086,16 +1187,15 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
       page.section = "Star data";
       page.title = wxString::Format("57 navigational stars - part %u", part + 1);
       page.subtitle = wxString::Format(
-          "SHA and declination epoch %s 00:00 UT1.",
+          "SHA and declination epoch %s 00:00 UTC; DUT1 follows the document setting.",
           UtcDateTime::FormatUtc(epoch, "%d %b %Y"));
       AlmanacTable table;
       table.headings = {"No.", "Star", "SHA", "Declination", "Magnitude"};
       const size_t first = part * 19;
       const size_t last = std::min(stars.size(), first + 19);
       for (size_t index = first; index < last; ++index) {
-        const BodyState state = CelestialEphemeris::Evaluate(
-            stars[index], ShiftInstant(AtHour(epoch,0), request.dut1Seconds),
-            0, 0);
+        const wxDateTime midnight = AtHour(epoch, 0);
+        const BodyState state = audit.Evaluate(request, stars[index], midnight);
         const CelestialBodyInfo* info = BodyCatalog::Find(stars[index]);
         table.rows.push_back({wxString::Format("%u", static_cast<unsigned>(index + 1)),
                               stars[index], Angle(state.sha),
@@ -1105,8 +1205,8 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
       }
       page.tables.push_back(table);
       if (part == 2) {
-        const BodyState polaris = CelestialEphemeris::Evaluate(
-            "Polaris", ShiftInstant(AtHour(epoch,0), request.dut1Seconds), 0, 0);
+        const wxDateTime midnight = AtHour(epoch, 0);
+        const BodyState polaris = audit.Evaluate(request, "Polaris", midnight);
         page.paragraphs.push_back(wxString::Format(
             "Polaris (supplementary): SHA %s; declination %s. Use the dedicated Polaris correction workflow.",
             Angle(polaris.sha), Angle(polaris.declination, true)));
@@ -1114,6 +1214,13 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
       document.pages.push_back(page);
      }
     }
+  }
+
+  document.pages.insert(document.pages.begin() + 1, audit.Page(request));
+  if (audit.zeroDut1) {
+    const wxString warning = "Some tabulated epochs (including interpolation endpoints) have no dated DUT1; UT1=UTC fallback was used. See Sources and conventions.";
+    document.warnings.push_back(warning);
+    document.pages.front().paragraphs.push_back(warning);
   }
 
   AlmanacPage contents;

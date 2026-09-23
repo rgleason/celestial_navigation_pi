@@ -19,6 +19,7 @@
 #include <wx/spinctrl.h>
 #include <wx/statbox.h>
 #include <wx/stattext.h>
+#include <wx/textctrl.h>
 
 #include "OcpnApiCompat.h"
 #include "DialogGeometry.h"
@@ -150,7 +151,7 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
       new wxStaticBoxSizer(wxVERTICAL, m_scroller, _("Bearing (optional)"));
   m_hasBearing = new wxCheckBox(
       m_scroller, wxID_ANY,
-      _("Include a compass bearing to obtain a rough position estimate"));
+      _("Include a bearing to show possible positions along the event LOP"));
   m_hasBearing->SetValue(sight.m_HorizonBearingProvided);
   bearingBox->Add(m_hasBearing, 0, wxALL, 6);
   wxFlexGridSizer* bearingGrid = new wxFlexGridSizer(0, 2, 5, 10);
@@ -208,6 +209,13 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   conditions->Add(conditionsGrid, 0, wxEXPAND | wxALL, 6);
   root->Add(conditions, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
 
+  wxBoxSizer* remarksRow = new wxBoxSizer(wxHORIZONTAL);
+  remarksRow->Add(new wxStaticText(m_scroller, wxID_ANY, _("Remarks")), 0,
+                  wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
+  m_remarks = new wxTextCtrl(m_scroller, wxID_ANY, sight.m_Remarks);
+  remarksRow->Add(m_remarks, 1, wxEXPAND);
+  root->Add(remarksRow, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
+
   wxStaticBoxSizer* result =
       new wxStaticBoxSizer(wxVERTICAL, m_scroller, _("Estimated result"));
   m_preview = new wxStaticText(m_scroller, wxID_ANY, wxEmptyString);
@@ -258,6 +266,7 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
                    &HorizonEventDialog::OnCalendarChanged, this);
   m_horizonQuality->Bind(wxEVT_CHOICE, &HorizonEventDialog::OnQualityChanged,
                          this);
+  m_remarks->Bind(wxEVT_TEXT, &HorizonEventDialog::OnInputChanged, this);
   for (wxSpinCtrl* control : {m_hours, m_minutes, m_seconds})
     control->Bind(wxEVT_TEXT, &HorizonEventDialog::OnInputChanged, this);
   for (wxSpinCtrlDouble* control :
@@ -317,6 +326,7 @@ void HorizonEventDialog::ReadControls(Sight& sight) const {
   sight.m_Pressure = m_pressure->GetValue();
   sight.m_HorizonQuality = m_horizonQuality->GetSelection();
   sight.m_HorizonAltitudeUncertainty = m_altitudeUncertainty->GetValue();
+  sight.m_Remarks = m_remarks->GetValue();
 }
 
 void HorizonEventDialog::UpdateBearingControls() {
@@ -337,9 +347,8 @@ void HorizonEventDialog::UpdatePreview() {
 
   if (!candidate.m_HorizonBearingProvided) {
     m_trueBearing->SetLabel(_("Not supplied"));
-    m_preview->SetLabel(
-        _("This observation will plot a horizon-event line of position. Add "
-          "another sight or event to obtain a fix."));
+    m_preview->SetLabel(candidate.HorizonPositionSummary());
+    m_preview->Wrap(560);
     RelayoutContent();
     return;
   }
@@ -353,7 +362,6 @@ void HorizonEventDialog::UpdatePreview() {
       candidate.m_HorizonBearingMagnetic ? candidate.m_HorizonDeviation : 0,
       0x00B0));
 
-  double lat, lon;
   wxString warning;
   double sunLat;
   candidate.BodyLocation(candidate.m_CorrectedDateTime, &sunLat, 0, 0, 0, 0);
@@ -366,22 +374,11 @@ void HorizonEventDialog::UpdatePreview() {
         _(" An obstructed horizon may introduce a large systematic "
           "error.");
 
-  if (candidate.HorizonEstimatedPosition(&lat, &lon)) {
-    if (fabs(lat) > 65.0)
-      warning +=
-          _(" High-latitude geometry is unusually sensitive to "
-            "refraction.");
-    m_preview->SetLabel(wxString::Format(
-        _("Rough bearing-derived estimate: %s  %s\n"
-          "Conservative uncertainty radius: %.1f NM.%s"),
-        toSDMM_PlugIn(1, lat, true), toSDMM_PlugIn(2, lon, true),
-        candidate.HorizonEstimateUncertaintyNm(), warning));
-  } else {
-    m_preview->SetLabel(
-        _("The supplied event and bearing did not produce a stable position "
-          "estimate. The time-based line of position can still be saved.") +
-        warning);
-  }
+  if (candidate.m_HorizonAltitudeUncertainty < 1.0)
+    warning += _(" Sub-arcminute horizon uncertainty is very optimistic: "
+                 "near-horizon refraction varies with atmospheric conditions.");
+  m_preview->SetLabel(candidate.HorizonPositionSummary() + warning);
+  m_preview->Wrap(560);
   RelayoutContent();
 }
 

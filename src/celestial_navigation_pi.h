@@ -28,6 +28,7 @@
 #define _CELESTIAL_NAVIGATIONPI_H_
 
 #include <wx/wx.h>
+#include <wx/timer.h>
 
 #include "version.h"
 
@@ -112,6 +113,7 @@ private:
   bool m_hasCursorPosition;
   double m_cursorLatitude;
   double m_cursorLongitude;
+  wxTimer m_hoverTimer;
 };
 
 extern void celestial_navigation_pi_BoatPos(double& lat, double& lon);

@@ -18,7 +18,9 @@ manual.
 Run `./build_manual.sh` to regenerate diagrams, synchronise the plugin HTML,
 embed images in the DOCX, produce and bundle the PDF, prepare aspect-ratio-safe
 images for wxHTML and run structural/portability checks. LibreOffice, Python 3,
-Matplotlib and Pillow are required.
+Matplotlib, Pillow and Poppler (`pdftotext`) are required. Imported DOCX tables
+are fitted to the printable page; validation checks cover versions, generated
+HTML freshness, table widths and PDF text clipping as well as embedded images.
 
 The DOCX is deliberately provided so contributors can review and suggest
 changes using ordinary word-processing tools. Accepted content changes should

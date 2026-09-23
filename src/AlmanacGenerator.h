@@ -16,7 +16,8 @@ enum class AlmanacPreset {
   CalculatorFreeVoyage,
   CelestialNavigator,
   FullGlobalAlmanac,
-  Custom
+  Custom,
+  CompactAstronavigation
 };
 enum class AlmanacCoverage { PlannedRoute, FixedPosition, LatitudeBand, Global };
 enum class AlmanacSafety {

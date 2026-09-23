@@ -5,6 +5,7 @@
 #include "SextantCalibrationEngine.h"
 #include "Sight.h"
 #include "UtcDateTime.h"
+#include "eclipse/dut1.h"
 
 #include <cmath>
 #include <limits>
@@ -248,8 +249,12 @@ TEST(NumericalAudit, AlmanacRowsAndCurvesUseLabelledUtcEpoch) {
             if (table.headings[col] == "Sun GHA") {
               ASSERT_EQ(24u, table.rows.size());
               for (size_t hour = 0; hour < 24; ++hour) {
+                const wxDateTime utc = midnight + wxTimeSpan::Hours(hour);
+                const auto dut1 = eclipse::LookupDut1(utc.GetJulianDayNumber());
                 const auto state = CelestialEphemeris::Evaluate(
-                    "Sun", midnight + wxTimeSpan::Hours(hour), 0, 0);
+                    "Sun", utc, 0, 0, 1010.0, 10.0,
+                    dut1.available ? dut1.seconds :
+                        std::numeric_limits<double>::quiet_NaN());
                 EXPECT_NEAR(
                     0,
                     std::remainder(

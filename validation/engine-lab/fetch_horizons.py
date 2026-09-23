@@ -14,6 +14,7 @@ import urllib.parse
 import urllib.request
 
 LAB = Path(__file__).resolve().parent
+BODY_IDS = {"moon": "301", "sun": "10", "mercury": "199", "venus": "299"}
 
 
 def first_row(result):
@@ -28,6 +29,8 @@ def first_row(result):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--bodies", nargs="+", choices=tuple(BODY_IDS),
+                        default=["moon", "sun"])
     args = parser.parse_args()
     # mkdir with exist_ok=False prevents accidental reference replacement.
     args.output.mkdir(parents=True, exist_ok=False)
@@ -39,7 +42,8 @@ def main():
         expected = {}
         provenance = []
         instant = dt.datetime.fromisoformat(site["utc"].replace("Z", "+00:00"))
-        for body, target in (("moon", "301"), ("sun", "10")):
+        for body in args.bodies:
+            target = BODY_IDS[body]
             for center in ("geocentric", "topocentric"):
                 params = {
                     "format": "json", "COMMAND": f"'{target}'",

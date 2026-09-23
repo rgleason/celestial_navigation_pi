@@ -59,6 +59,7 @@ private:
   void SetEpochControls(const wxDateTime& utc);
   void ChangeEpochTimeBasis(wxCommandEvent& event);
   void ChangeMotionMode(wxCommandEvent& event);
+  void SetEpochToLatestVisibleSight(double clock_offset);
   void UpdateRunningFix(double clock_offset);
   void OnRunningControl(wxCommandEvent& event) { Update(m_clock_offset); }
   void OnGo(wxCommandEvent& event);

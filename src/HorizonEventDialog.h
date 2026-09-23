@@ -19,6 +19,7 @@ class wxScrolledWindow;
 class wxSpinCtrl;
 class wxSpinCtrlDouble;
 class wxStaticText;
+class wxTextCtrl;
 
 class HorizonEventDialog : public wxDialog {
 public:
@@ -68,6 +69,7 @@ private:
   wxSpinCtrlDouble* m_altitudeUncertainty;
   wxStaticText* m_trueBearing;
   wxStaticText* m_preview;
+  wxTextCtrl* m_remarks;
 };
 
 #endif

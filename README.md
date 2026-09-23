@@ -3,6 +3,11 @@ Celestial Navigation Plugin for OpenCPN
 
 Perform sight reductions and plot positions from celestial observations.
 
+Version 2.8.9 corrects ambiguous Horizon Event position estimates and removes
+the misleading filled uncertainty disc. The bundled HTML, PDF and editable
+manuals cover the current running-fix and lunar-planning workflows. See the
+[Horizon Event investigation and documentation audit](docs/horizon-events-2.8.9.md).
+
 This contribution adds:
 
 * a time-integrity panel showing local, UTC, GNSS/NMEA and chrony status;
@@ -28,6 +33,8 @@ This contribution adds:
 * a time-tagged numerical running fix which advances each observation to a
   common epoch using either one COG/SOG model or its individually entered
   DR Shift, including passages with changes of course;
+* optional per-sight Remarks and a Sights manager for dated XML backups,
+  importing additional sights, and restoring a complete sight log;
 * a sight-sequence analyzer for residuals, scatter, robust outliers, trend and
   personal bias, plus dedicated noon and Polaris helpers;
 * a rebuilt lunar-distance workflow which supports simultaneous or separately
@@ -58,12 +65,17 @@ offline. See
 [eclipse/DATA.md](eclipse/DATA.md) for exact files, provenance, checksums and
 storage sizes.
 
-The ordinary navigation planner is independent of the eclipse data packs. It
-uses the plugin's bundled VSOP87D, ELP2000 and navigational-star data, works
-without DE440 or LOLA, and never requires a network connection. Moon–Sun lunar
-distances use the locally installed DE440s kernel when it is present;
-Moon–planet, Moon–star and installations without DE440s use the bundled
-analytical catalogue. LOLA is never required for lunar-distance work.
+The ordinary navigation planner remains fully offline and usable without any
+optional data pack. When the verified DE440s kernel is installed and its
+1849–2150 coverage includes the sight date (with modern UTC from 1972 onward),
+the Sun, Moon, Mercury and Venus centres use it for supported sight, planner,
+almanac and lunar-distance
+calculations. Stars and other planets remain on the bundled analytical
+catalogue; unavailable or out-of-range DE440s falls back automatically.
+DE440s uses the applicable offline Earth-rotation table, retains fractional
+seconds, and does not require either optional lunar-orientation or LOLA data.
+See the [2.9.0 navigation ephemeris note](docs/de440s-navigation-2.9.md)
+for scope, fallbacks and validation limits.
 See the
 [offline planning and running-fix guide](manual/modules/ROOT/pages/offline-planning.adoc).
 The separate
@@ -121,7 +133,7 @@ Compiling
 The three separately distributed eclipse files are:
 
 * [`de440s.bsp`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/de440s.bsp)
-  (required for the eclipse planner);
+  (optional navigation refinement; required for the eclipse planner);
 * [`moon_pa_de440_200625.bpc`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/moon_pa_de440_200625.bpc)
   (optional lunar-orientation refinement); and
 * [`lola64-pa.bin`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/lola64-pa.bin)
@@ -129,8 +141,9 @@ The three separately distributed eclipse files are:
 
 Their sizes and SHA-256 digests are pinned in the adjacent manifests. The
 normal celestial-navigation, planning and almanac features do not require
-these files. DE440s is required only by the eclipse planner; the orientation
-and LOLA files add optional lunar-limb contact refinement.
+these files. DE440s improves supported Sun/Moon/Mercury/Venus ephemerides when
+available; the orientation and LOLA files add optional eclipse contact
+refinement only.
 
 Under windows, you must find the file "opencpn.lib" (Visual Studio) or "libopencpn.dll.a" (mingw) which is built in the build directory after compiling opencpn.  This file must be copied to the plugin directory.
 

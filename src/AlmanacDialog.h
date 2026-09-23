@@ -64,6 +64,7 @@ private:
   wxCheckBox* m_aries;
   wxCheckBox* m_planets;
   wxCheckBox* m_stars;
+  wxCheckBox* m_monthlyStars;
   wxCheckBox* m_usefulPlanets;
   wxCheckBox* m_events;
   wxCheckBox* m_moonInfo;

@@ -57,6 +57,7 @@ public:
   ClockCorrectionDialog* m_ClockCorrectionDialog;
   FixDialog* m_FixDialog;
   double m_pix_per_mm;
+  SightDisplayStyle m_chartStyle;
   std::vector<Sight> m_Sights;
 
   void OnFixClose();
@@ -74,6 +75,10 @@ public:
   void CreatePlannedSight(const wxString& body, const wxDateTime& utc,
                           double drLat, double drLon);
   int GetClockCorrection() const { return m_ClockCorrection; }
+  // Noninteractive file operations used by the manager and its regression tests.
+  bool BackupSightsTo(const wxString& path, wxString* error);
+  bool ImportSightsFile(const wxString& path, bool replace,
+                        wxString* safetyBackup, wxString* error);
   void ApplyClockCorrection(int correction_seconds);
   bool SaveLunarSolution(LunarSolutionRecord record);
   void ShowLunarSolutions(wxWindow* parent);
@@ -85,10 +90,22 @@ public:
 
 private:
   bool OpenXML(bool reportfailure);
+  bool ReadSightsXml(const wxString& path, std::vector<Sight>* sights,
+                     int* clockCorrection,
+                     std::vector<LunarSolutionRecord>* lunarSolutions,
+                     wxString* errorOut, bool strict = true);
   bool SaveXML();
   std::vector<LunarSolutionRecord> m_lunarSolutions;
 
-  void RebuildList();
+  void RebuildList(bool persist = true);
+  void OnManageSights(wxCommandEvent& event);
+  void OnChartDisplay(wxCommandEvent& event);
+  void BackupSights();
+  void ImportSights(bool replace);
+  bool ApplyImportedSights(std::vector<Sight> incoming, int correction,
+                           std::vector<LunarSolutionRecord> solutions,
+                           bool replace, wxString* safetyBackup,
+                           wxString* error);
   void UpdateButtons();  // Correct button state
   void UpdateFix();
   void BuildTimeIntegrityPanel(bool visible);
@@ -162,6 +179,7 @@ private:
   wxButton* m_lunarToolsButton;
   wxButton* m_almanacButton;
   wxButton* m_pdfDocumentationButton;
+  wxButton* m_manageSightsButton;
   EclipseDialog* m_eclipseDialog;
   CoastalNavigationDialog* m_coastalDialog;
   wxTimer m_timeTimer;

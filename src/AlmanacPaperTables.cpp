@@ -3,10 +3,12 @@
 #include "BodyCatalog.h"
 #include "NavigationAlgorithms.h"
 #include "UtcDateTime.h"
+#include "eclipse/dut1.h"
 
 #include <algorithm>
 #include <cmath>
 #include <climits>
+#include <limits>
 #include <set>
 
 namespace {
@@ -440,9 +442,14 @@ std::vector<int> DirectDeclinations(const AlmanacRequest& request) {
     wxDateTime last(request.toUtc.GetDay(), request.toUtc.GetMonth(),
                     request.toUtc.GetYear(), 0, 0, 0);
     while (!day.IsLaterThan(last)) {
+      const wxDateTime instant = UtcDateTime::ToInstant(day);
+      const auto tabulated = eclipse::LookupDut1(instant.GetJulianDayNumber());
+      const double dut1 = request.dut1Known ? request.dut1Seconds :
+          tabulated.available ? tabulated.seconds :
+          std::numeric_limits<double>::quiet_NaN();
       for (const CelestialBodyInfo& body : bodies) {
         const BodyState state = CelestialEphemeris::Evaluate(
-            body.name, UtcDateTime::AddSeconds(day, request.dut1Seconds), 0, 0);
+            body.name, instant, 0, 0, 1010.0, 10.0, dut1);
         if (!state.valid) continue;
         values.insert(std::max(-89, std::min(
             89, static_cast<int>(std::floor(state.declination)))));

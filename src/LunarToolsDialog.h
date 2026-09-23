@@ -101,6 +101,7 @@ private:
   NavigationAngleCtrl* m_plannerLongitude;
   UtcEntryControls m_plannerUtc;
   wxListCtrl* m_plannerList;
+  wxChoice* m_plannerOrder;
 
   NavigationAngleCtrl* m_calLatitude;
   NavigationAngleCtrl* m_calLongitude;
