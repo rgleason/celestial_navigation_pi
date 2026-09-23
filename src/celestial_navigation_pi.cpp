@@ -348,7 +348,7 @@ bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
   if (!m_pCelestialNavigationDialog || !m_pCelestialNavigationDialog->IsShown())
     return false;
 
-#if wxCHECK_VERSION(3, 1, 0)
+#if wxCHECK_VERSION(3, 1, 3)
   // Use logical drawing units on this canvas, including when it moves between
   // displays. GetDPI already incorporates the platform's UI scaling.
   if (m_parent_window && m_parent_window->GetDPI().x > 0)

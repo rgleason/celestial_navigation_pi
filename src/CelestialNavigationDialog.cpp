@@ -1062,8 +1062,13 @@ void CelestialNavigationDialog::OnManageSights(wxCommandEvent&) {
 }
 
 void CelestialNavigationDialog::BackupSights() {
+#if wxCHECK_VERSION(3, 1, 0)
   wxString directory =
       wxStandardPaths::Get().GetUserDir(wxStandardPaths::Dir_Downloads);
+#else
+  // wx 3.0 has no portable Downloads lookup; keep the save location selectable.
+  wxString directory = wxStandardPaths::Get().GetDocumentsDir();
+#endif
   if (!wxFileName::DirExists(directory)) directory = wxGetHomeDir();
   const wxString filename =
       "Sights-" + wxDateTime::Now().Format("%Y%m%d-%H%M%S") + ".xml";

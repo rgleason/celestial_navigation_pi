@@ -2593,7 +2593,6 @@ void Sight::RebuildPolygonsAltitude() {
                               timemin, timemax, timestep);
   // The nominal COP is evaluated at the corrected observation, not averaged
   // between uncertainty extrema (nor joined between different time samples).
-  lines.clear();
   double lat = 0, lon = 0;
   BodyLocation(m_CorrectedDateTime, &lat, &lon, nullptr, nullptr, nullptr);
   if (std::isfinite(m_ObservedAltitude) && std::abs(m_ObservedAltitude) <= 90)
@@ -2670,21 +2669,14 @@ void Sight::BuildAltitudeLineOfPosition(double tracestep, double altitudemin,
     wxRealPointList *p, *l = new wxRealPointList;
     for (double trace = -180; trace <= 180; trace += tracestep) {
       p = new wxRealPointList;
-      double mx = 0;
-      double my = 0;
-      int mc = 0;
       for (double altitude = altitudemin;
            altitude <= altitudemax && fabs(altitude) <= 90;
            altitude += altitudestep) {
         wxRealPoint* point =
             new wxRealPoint(DistancePoint(altitude, trace, lat, lon));
         p->Append(point);
-        mx += point->x;
-        my += point->y;
-        mc++;
         if (altitudestep == 0) break;
       }
-      if (mc > 0) lines.Append(new wxRealPoint(mx / mc, my / mc));
       wxRealPointList* m = MergePoints(l, p);
       wxRealPointList* n = ReduceToConvexPolygon(m);
       polygons.push_back(n);
