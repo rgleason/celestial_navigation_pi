@@ -63,12 +63,21 @@ offline. See
 [eclipse/DATA.md](eclipse/DATA.md) for exact files, provenance, checksums and
 storage sizes.
 
-The ordinary navigation planner is independent of the eclipse data packs. It
-uses the plugin's bundled VSOP87D, ELP2000 and navigational-star data, works
-without DE440 or LOLA, and never requires a network connection. Moon–Sun lunar
-distances use the locally installed DE440s kernel when it is present;
-Moon–planet, Moon–star and installations without DE440s use the bundled
-analytical catalogue. LOLA is never required for lunar-distance work.
+Version 2.8.10 automatically uses a verified, locally installed DE440s kernel
+for supported Sun, Moon, Mercury and Venus calculations, including planning,
+sights and generated Almanacs. Modern UTC dates from 1972 within the kernel's
+coverage are supported. Other bodies, earlier dates, missing/unusable packs
+and dates outside coverage retain the bundled analytical calculation.
+Moon–Sun, Moon–Mercury and Moon–Venus lunar pairs use consistent DE440s
+observer geometry when available. Mars, Jupiter, Saturn and stars remain
+analytical; planetary-system barycentres are not substituted for body centres.
+Aries is an Earth-rotation/equinox calculation, not a DE440s body.
+The Almanac uses dated offline IERS DUT1 by default, allows a manual override,
+and records actual sources and fallback in a Sources and conventions page.
+Navigation remains fully offline and usable without optional data packs;
+no calculation downloads data. Lunar orientation and LOLA remain optional
+eclipse refinements, not requirements for navigation. See the
+[2.8.10 release notes](docs/de440s-navigation-2.8.10.md).
 See the
 [offline planning and running-fix guide](manual/modules/ROOT/pages/offline-planning.adoc).
 The separate
@@ -134,7 +143,8 @@ The three separately distributed eclipse files are:
 
 Their sizes and SHA-256 digests are pinned in the adjacent manifests. The
 normal celestial-navigation, planning and almanac features do not require
-these files. DE440s is required only by the eclipse planner; the orientation
+these files. DE440s improves supported navigation and Almanac calculations
+when installed, and is required by the eclipse planner. The orientation
 and LOLA files add optional lunar-limb contact refinement.
 
 Under windows, you must find the file "opencpn.lib" (Visual Studio) or "libopencpn.dll.a" (mingw) which is built in the build directory after compiling opencpn.  This file must be copied to the plugin directory.

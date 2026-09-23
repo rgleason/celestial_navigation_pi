@@ -258,13 +258,15 @@ wxString EclipseDialog::LolaPath() const {
 void EclipseDialog::BuildInterface() {
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
   wxStaticBoxSizer* data =
-      new wxStaticBoxSizer(wxVERTICAL, this, _("Eclipse astronomy data"));
+      new wxStaticBoxSizer(wxVERTICAL, this, _("Offline astronomy data"));
   m_data_status = new wxStaticText(this, wxID_ANY, _("Checking data..."));
   data->Add(m_data_status, 0, wxEXPAND | wxALL, 5);
   wxStaticText* data_note = new wxStaticText(
       this, wxID_ANY,
-      _("DE440s is required only for the eclipse planner. Lunar-orientation "
-        "and LOLA terrain files are optional refinements."));
+      _("DE440s improves supported Sun, Moon, Mercury and Venus navigation "
+        "calculations and is required for the eclipse planner. Navigation "
+        "continues analytically without it. Lunar-orientation and LOLA "
+        "terrain files are optional eclipse refinements only."));
   data_note->Wrap(880);
   data->Add(data_note, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
   wxBoxSizer* imports = new wxBoxSizer(wxHORIZONTAL);

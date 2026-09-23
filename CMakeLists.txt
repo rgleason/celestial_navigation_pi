@@ -70,13 +70,13 @@ set(SHORT_DESCRIPTION
 	"Celestial Navigation Plugin for OpenCPN"
 )
 set(LONG_DESCRIPTION
-	"Offline nautical almanac, sight planning and ranking, time-tagged running fixes, sequence analysis, horizon events, time integrity and a DE440 solar-eclipse planner."
+	"Offline nautical almanac and navigation with optional DE440s accuracy, analytical fallback, sight planning, running fixes, sequence analysis, horizon events, time integrity and a solar-eclipse planner."
 )
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "8")
-set(VERSION_PATCH "9")
+set(VERSION_PATCH "10")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "20/09/2026" )# DD/MM/YYYY format
+set(VERSION_DATE  "23/09/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -191,6 +191,7 @@ SET(SRCS
         src/Dut1UpdatePanel.cpp
         src/BodyCatalog.cpp
         src/NavigationAlgorithms.cpp
+        src/NavigationEphemerisProvider.cpp
         src/PlannerDialog.cpp
         src/WaypointPositionSource.cpp
         src/WaypointPickerDialog.cpp

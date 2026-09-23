@@ -8,6 +8,7 @@
 #include <wx/datetime.h>
 #include <wx/string.h>
 
+#include <limits>
 #include <vector>
 
 enum class ObserverMotionMethod {
@@ -48,6 +49,7 @@ struct ObserverMotion {
 
 struct BodyState {
   bool valid = false;
+  bool usedDe440 = false;  // Actual source of the geocentric ephemeris.
   wxString body;
   wxDateTime utc;
   double latitude = 0.0;   // geographic position (declination)
@@ -60,6 +62,7 @@ struct BodyState {
   double apparentAltitude = 0.0;
   double azimuthTrue = 0.0;
   double semidiameter = 0.0;
+  double geocentricSemidiameter = 0.0;  // Universal almanac SD, before augmentation.
   double horizontalParallax = 0.0;
   double distance = 0.0;
   double visualMagnitude = 0.0;
@@ -73,7 +76,9 @@ public:
   static BodyState Evaluate(const wxString& body, const wxDateTime& utc,
                             double observerLat, double observerLon,
                             double pressureMb = 1010.0,
-                            double temperatureC = 10.0);
+                            double temperatureC = 10.0,
+                            double dut1OverrideSeconds =
+                                std::numeric_limits<double>::quiet_NaN());
   static double RefractionDegrees(double altitudeDeg, double pressureMb,
                                   double temperatureC);
 };

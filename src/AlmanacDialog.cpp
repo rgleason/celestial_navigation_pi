@@ -143,14 +143,18 @@ void AlmanacDialog::BuildInterface() {
   AddLabelled(setupSizer, setup, _("Latitude-band south"), m_latSouth);
   AddLabelled(setupSizer, setup, _("Latitude-band north"), m_latNorth);
   m_dut1Known = new wxCheckBox(setup, wxID_ANY,
-      _("Use the following current DUT1 (UT1 - UTC) value"));
+      _("Use one DUT1 value for the whole document"));
   setupSizer->Add(m_dut1Known, 0, wxTOP | wxBOTTOM, 5);
   m_dut1 = Coordinate(setup, -0.9, 0.9, 0.0);
   m_dut1->SetDigits(3);
   AddLabelled(setupSizer, setup, _("DUT1 (seconds)"), m_dut1);
-  setupSizer->Add(new wxStaticText(setup, wxID_ANY,
-      _("No network access is used. Leave unchecked to document the explicit 0.000 s assumption.")),
-      0, wxTOP | wxBOTTOM, 6);
+  wxStaticText* sources = new wxStaticText(setup, wxID_ANY,
+      _("Automatic offline ephemeris: DE440s where installed and supported; "
+        "analytical fallback otherwise. Leave DUT1 unchecked to use dated "
+        "offline IERS data, with UT1=UTC on uncovered dates. "
+        "The PDF reports the sources actually used."));
+  sources->Wrap(340);
+  setupSizer->Add(sources, 0, wxEXPAND | wxTOP | wxBOTTOM, 6);
   setup->SetSizer(setupSizer);
   m_notebook->AddPage(setup, _("Voyage && coverage"));
 
@@ -159,8 +163,8 @@ void AlmanacDialog::BuildInterface() {
   wxBoxSizer* contentSizer = new wxBoxSizer(wxVERTICAL);
   m_safety = new wxChoice(content, wxID_ANY);
   m_safety->Append(_("Planning reference"));
-  m_safety->Append(_("Self-contained with scientific calculator"));
-  m_safety->Append(_("Self-contained calculator-free paper backup"));
+  m_safety->Append(_("Self-contained: calculator"));
+  m_safety->Append(_("Self-contained: paper only"));
   m_safety->SetSelection(1);
   AddLabelled(contentSizer, content, _("Safety level"), m_safety);
   m_selfContained = Check(content, contentSizer,

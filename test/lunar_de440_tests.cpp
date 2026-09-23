@@ -146,6 +146,28 @@ TEST(LunarDe440, PointJudithReferenceAndCoincidentTimeModes) {
                 sight.m_LunarCandidates[i].offset_seconds, 0.15);
 }
 
+TEST(LunarDe440, InnerPlanetPairsUseConsistentCentreAndObserverGeometry) {
+  for (const char* body : {"Mercury", "Venus"}) {
+    Sight sight = PointJudith();
+    sight.m_Body = body;
+    sight.Recompute(0);
+    lunar_distance::EphemerisSample sample;
+    std::string error;
+    ASSERT_TRUE(sight.LunarEphemeris()(0.0, &sample, &error)) << error;
+    EXPECT_TRUE(sight.m_LunarUsesDe440) << body;
+    EXPECT_GT(sample.body_horizontal_parallax_deg, 0.0) << body;
+    EXPECT_EQ(sample.body_semidiameter_deg, 0.0) << body;
+    ASSERT_TRUE(static_cast<bool>(sample.observer_direction));
+    double altitude = 0.0, azimuth = 0.0, semidiameter = -1.0;
+    ASSERT_TRUE(sample.observer_direction(
+        41.3666666667, -71.4833333333, 6.1, false,
+        &altitude, &azimuth, &semidiameter)) << body;
+    EXPECT_TRUE(std::isfinite(altitude)) << body;
+    EXPECT_TRUE(std::isfinite(azimuth)) << body;
+    EXPECT_EQ(semidiameter, 0.0) << body;
+  }
+}
+
 TEST(LunarDe440, Wgs84AirlessMoonAltitudeMatchesHorizons) {
   Sight sight = PointJudith();
   sight.Recompute(0);

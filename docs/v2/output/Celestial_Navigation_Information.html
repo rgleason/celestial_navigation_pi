@@ -772,12 +772,19 @@ stars as a celestial clock. The observed Moon-to-body angular distance is
 corrected (“cleared”) for limb, refraction and parallax, then compared with the
 geocentric ephemeris over a search interval.</p>
 
-<p>For a Moon–Sun calculation, the solver uses the checksum-verified local JPL
-DE440s kernel when it has already been imported for the eclipse module. A
-Moon–planet or Moon–star calculation, or any installation without DE440s,
-uses the bundled analytical ephemeris. The result identifies the ephemeris
-source used. DE440s is optional for ordinary navigation, no calculation
-downloads data, and LOLA terrain is unrelated to lunar-distance clearing.</p>
+<p><strong>2.8.10 precision update:</strong> a verified local DE440s kernel
+is used automatically for supported Sun, Moon, Mercury and Venus positions,
+including sights, planning and generated Almanacs. Moon–Sun, Moon–Mercury
+and Moon–Venus lunar pairs use it consistently. Automatic UTC handling
+starts in 1972 and requires a date within the kernel coverage. Other bodies,
+earlier dates and unavailable data retain the analytical fallback.</p>
+<p>Install the optional kernel through <strong>Eclipses… &gt; Download and
+install DE440s…</strong>, or import a local copy. Navigation still works
+offline without it. Neither lunar orientation nor LOLA terrain is required.
+The Almanac uses dated offline IERS DUT1 unless overridden and records
+sources and fallback on its <strong>Sources and conventions</strong> page.
+DE440s improves the ephemeris foundation, but exact agreement with a printed
+Almanac also depends on its conventions, time assumptions and rounding.</p>
 
 <figure>
 <img src="images/09_lunar_distance_observations.png" width="620" height="388" alt="Moon, second body, visible horizon and observer showing lunar distance and the separate altitudes of both bodies.">
