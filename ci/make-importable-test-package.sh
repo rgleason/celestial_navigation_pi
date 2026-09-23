@@ -53,8 +53,10 @@ with tarfile.open(sys.argv[1], "r:gz") as archive:
     if len(metadata) != 1:
         raise SystemExit("Package must contain exactly one metadata.xml")
     root = ET.fromstring(archive.extractfile(metadata[0]).read())
-    extension = ".dylib" if root.findtext("target", "").strip() == "macos" else ".so"
+    target = root.findtext("target", "").strip()
+    extension = ".dylib" if target == "macos" or target.startswith("darwin") else ".so"
     if not any(m.name.endswith("libcelestial_navigation_pi" + extension) for m in members):
-        raise SystemExit("Package does not contain the plugin binary")
+        found = [m.name for m in members if m.name.endswith((".dylib", ".so"))]
+        raise SystemExit(f"Package does not contain the plugin binary for {target}: {found}")
 PY
-echo "Importable OpenCPN macOS test package: $output"
+echo "Importable OpenCPN test package: $output"
