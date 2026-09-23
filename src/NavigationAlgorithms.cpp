@@ -2,6 +2,7 @@
 
 #include "BodyCatalog.h"
 #include "Sight.h"
+#include "NavigationEphemerisProvider.h"
 #include "UtcDateTime.h"
 #include "geodesic.h"
 #include "moon.h"
@@ -332,7 +333,8 @@ double CelestialEphemeris::RefractionDegrees(double altitudeDeg,
 BodyState CelestialEphemeris::Evaluate(const wxString& body,
                                        const wxDateTime& utc,
                                        double observerLat, double observerLon,
-                                       double pressureMb, double temperatureC) {
+                                       double pressureMb, double temperatureC,
+                                       double dut1OverrideSeconds) {
   BodyState result;
   result.body = body;
   result.utc = utc;
@@ -344,8 +346,10 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
 
   Sight sight(Sight::ALTITUDE, info->name, Sight::CENTER, utc, 0.0, 0.0, 1.0);
   double ghaast = 0.0, radius = 0.0, distance = 0.0;
+  bool usedDe440 = false;
   sight.BodyLocation(utc, &result.latitude, &result.longitude, &ghaast, &radius,
-                     &distance, true);
+                     &distance, true, true, dut1OverrideSeconds, &usedDe440);
+  result.usedDe440 = usedDe440;
   sight.AltitudeAzimuth(observerLat, observerLon, result.latitude,
                         result.longitude, &result.geometricAltitude,
                         &result.azimuthTrue);
@@ -370,9 +374,21 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
     // BodyLocation/geocentric_planet returns planetary distance in kilometres.
     result.horizontalParallax = std::asin(EARTH_RADIUS / distance) / kDeg;
   }
+  result.geocentricSemidiameter = result.semidiameter;
   if (result.horizontalParallax != 0.0)
     topocentricAltitude -=
         result.horizontalParallax * std::cos(result.geometricAltitude * kDeg);
+  if (usedDe440) {
+    celestial_navigation::De440ObserverDirection observer;
+    if (celestial_navigation::TryDe440ObserverDirection(
+            body, UtcDateTime::FromInstant(utc), observerLat, observerLon,
+            0.0, &observer, nullptr, dut1OverrideSeconds)) {
+      topocentricAltitude = observer.airless_altitude_deg;
+      result.azimuthTrue = Wrap360(observer.azimuth_deg);
+      if (observer.semidiameter_deg > 0.0)
+        result.semidiameter = observer.semidiameter_deg;
+    }
+  }
   result.apparentAltitude =
       topocentricAltitude +
       RefractionDegrees(topocentricAltitude, pressureMb, temperatureC);

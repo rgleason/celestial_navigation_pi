@@ -29,6 +29,7 @@ add_library(eclipse_core STATIC
   src/engine.cpp
   src/geometry.cpp
   src/lunar_limb.cpp
+  src/navigation.cpp
   src/observer.cpp
   src/pck.cpp
   src/spk.cpp
@@ -73,6 +74,10 @@ if(ECLIPSE_BUILD_CLI)
   target_link_libraries(eclipse_cli PRIVATE celestial::eclipse_core)
   target_compile_features(eclipse_cli PRIVATE cxx_std_11)
   set_target_properties(eclipse_cli PROPERTIES OUTPUT_NAME eclipse-cli)
+  add_executable(navigation_cli apps/navigation_cli.cpp)
+  target_link_libraries(navigation_cli PRIVATE celestial::eclipse_core)
+  target_compile_features(navigation_cli PRIVATE cxx_std_11)
+  set_target_properties(navigation_cli PROPERTIES OUTPUT_NAME navigation-cli)
 endif()
 
 if(ECLIPSE_BUILD_TESTS)
