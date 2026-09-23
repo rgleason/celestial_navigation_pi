@@ -13,6 +13,7 @@
 #include <cmath>
 #include <tuple>
 #include <wx/utils.h>
+#include <wx/filename.h>
 #include <wx/init.h>
 
 namespace {
@@ -41,6 +42,63 @@ eclipse::CalendarDateTime PointJudithUtc() {
   return utc;
 }
 }  // namespace
+
+TEST(NavigationDe440, MissingOrInvalidKernelFallsBackAndRecovers) {
+  const wxString invalid = wxFileName::CreateTempFileName("celnav-invalid-kernel-");
+  ASSERT_FALSE(invalid.empty());
+  struct Cleanup {
+    wxString path;
+    ~Cleanup() {
+      wxUnsetEnv("CELNAV_TEST_DE440_PATH");
+      wxUnsetEnv("CELNAV_TEST_DE440_ENABLE");
+      wxRemoveFile(path);
+    }
+  } cleanup{invalid};
+  wxSetEnv("CELNAV_TEST_DE440_ENABLE", "1");
+  const wxDateTime utc(13, wxDateTime::Jun, 2024, 19, 26, 0);
+  const wxDateTime instant = UtcDateTime::ToInstant(utc);
+  // An earlier test may already have cached a valid kernel. Neither a
+  // missing replacement nor an invalid replacement may reuse it silently.
+  for (const wxString& path : {invalid + ".missing", invalid}) {
+    wxSetEnv("CELNAV_TEST_DE440_PATH", path);
+    celestial_navigation::De440NavigationSample sample;
+    std::string reason;
+    EXPECT_FALSE(celestial_navigation::TryDe440NavigationSample(
+        "Moon", utc, &sample, &reason));
+    EXPECT_FALSE(reason.empty());
+    const auto fallback = CelestialEphemeris::Evaluate("Moon", instant, 0, 0);
+    EXPECT_TRUE(fallback.valid);
+    EXPECT_FALSE(fallback.usedDe440);
+    EXPECT_TRUE(std::isfinite(fallback.gha));
+  }
+  wxUnsetEnv("CELNAV_TEST_DE440_PATH");
+  const auto restored = CelestialEphemeris::Evaluate("Moon", instant, 0, 0);
+  EXPECT_TRUE(restored.valid);
+  EXPECT_TRUE(restored.usedDe440);
+}
+
+TEST(NavigationDe440, OfficialAirAlmanacMoonRoundingBoundaries) {
+  eclipse::SpkKernel kernel;
+  std::string error;
+  ASSERT_TRUE(kernel.Open(ECLIPSE_DE440_TEST_PATH, &error)) << error;
+  // Official USNO 2026 Air Almanac p. 5 (PDF physical p. 7).
+  // https://aa.usno.navy.mil/downloads/publications/aira26_all.pdf
+  // Preface specifies DeltaT=69.0 s. Calendar below is UT1, not UTC;
+  // the effective TAI argument is only a test adapter for that convention.
+  struct Row { int hour, minute; double gha_arcmin; };
+  for (const auto& row : {Row{1,0,19*60+20}, Row{3,20,52*60+48},
+                          Row{5,10,79*60+6}}) {
+    eclipse::CalendarDateTime time;
+    time.year=2026; time.month=1; time.day=3;
+    time.hour=row.hour; time.minute=row.minute;
+    eclipse::NavigationEpoch epoch;
+    ASSERT_TRUE(eclipse::MakeNavigationEpoch(time, 0, 69.0-32.184,
+                                             0, 0, &epoch, &error));
+    eclipse::NavigationGeocentricState state;
+    ASSERT_TRUE(eclipse::GeocentricNavigationState(kernel,301,epoch,&state,&error));
+    EXPECT_EQ(std::round(state.gha_deg*60), row.gha_arcmin);
+  }
+}
 
 TEST(NavigationDe440, PluginProviderIsOptInAndDoesNotTouchStars) {
   wxUnsetEnv("CELNAV_TEST_DE440_ENABLE");

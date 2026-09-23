@@ -708,7 +708,8 @@ wxString Sight::Alminac(wxDateTime time, double lat, double lon, double ghaast,
   double deltaT = deltaT_seconds(jdu);
   if (uses_de440) {
     deltaT = de.tai_minus_utc_seconds + 32.184 - de.dut1_seconds;
-    jdd = jdu + deltaT / 86400.0;
+    // jdu labels UTC, not UT1. TT-UTC includes TAI-UTC + 32.184.
+    jdd = jdu + (de.tai_minus_utc_seconds + 32.184) / 86400.0;
   }
 
   return _("Almanac Data For ") + m_Body +

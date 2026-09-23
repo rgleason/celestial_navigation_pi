@@ -38,6 +38,8 @@ wxString KernelPath() {
   wxString enabled;
   if (!wxGetEnv("CELNAV_TEST_DE440_ENABLE", &enabled) || enabled != "1")
     return wxString();
+  wxString test_path;
+  if (wxGetEnv("CELNAV_TEST_DE440_PATH", &test_path)) return test_path;
   return wxString::FromUTF8(ECLIPSE_DE440_TEST_PATH);
 #else
   return celestial_navigation_pi::StandardPath() + "eclipse" +
