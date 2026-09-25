@@ -170,7 +170,7 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
       EXPECT_TRUE(button->IsShown()) << label;
       EXPECT_TRUE(sightWindow.Contains(button->GetRect())) << label;
     }
-    auto* hideSights = Find<wxToggleButton>(&main, "Hide Sights");
+    auto* hideSights = Find<wxToggleButton>(&main, "Hide sight log");
     ASSERT_NE(nullptr, hideSights);
     EXPECT_TRUE(sightWindow.Contains(hideSights->GetRect()));
     EXPECT_NE(nullptr, Find<wxToggleButton>(&main, "Hide Time"));

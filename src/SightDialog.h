@@ -108,6 +108,7 @@ public:
 private:
   void ApplyFindPosition(const Sight& candidate);
   void MarkDirty();
+  void UpdateColourChoice();
   void OnWindowClose(wxCloseEvent& event);
   double BodyAltitude(wxString body);
 #ifdef __OCPN__ANDROID__
@@ -115,6 +116,7 @@ private:
 #endif
 
   Sight& m_Sight;
+  wxChoice* m_colourPalette = nullptr;
   int m_clock_offset;
   bool m_breadytorecompute;
   DialogTransactionState m_transaction;
@@ -129,6 +131,7 @@ private:
   wxCheckBox* m_lunarMovingObserver;
   wxTextCtrl* m_lunarCourseTrue;
   wxTextCtrl* m_lunarSpeedKnots;
+  wxTextCtrl* m_remarks = nullptr;
 
   int m_lastPanX;
   int m_lastPanY;

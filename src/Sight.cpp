@@ -45,6 +45,7 @@
 
 #include "celestial_navigation_pi.h"
 #include "Sight.h"
+#include "SightPalette.h"
 #include "LunarCandidateSelection.h"
 #include "UtcDateTime.h"
 #include "NavigationEphemerisProvider.h"
@@ -148,57 +149,9 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
   pConf->Read(_T("DefaultDIPShortDistance"), &m_DipShortDistance, 0);
   pConf->Read(_T("DefaultArtificialHorizon"), &m_ArtificialHorizon, 0);
 
-  const wxString sightcolornames[] = {_T("MEDIUM VIOLET RED"),
-                                      _T("MIDNIGHT BLUE"),
-                                      _T("ORANGE"),
-                                      _T("PLUM"),
-                                      _T("PURPLE"),
-                                      _T("RED"),
-                                      _T("SALMON"),
-                                      _T("SLATE BLUE"),
-                                      _T("SPRING GREEN"),
-                                      _T("ORANGE RED"),
-                                      _T("ORCHID"),
-                                      _T("PALE GREEN"),
-                                      _T("PINK"),
-                                      _T("BROWN"),
-                                      _T("BLUE"),
-                                      _T("GREEN YELLOW"),
-                                      _T("GOLDENROD"),
-                                      _T("BLUE VIOLET"),
-                                      _T("AQUAMARINE"),
-                                      _T("CADET BLUE"),
-                                      _T("CORAL"),
-                                      _T("CORNFLOWER BLUE"),
-                                      _T("FOREST GREEN"),
-                                      _T("GOLD"),
-                                      _T("THISTLE"),
-                                      _T("TURQUOISE"),
-                                      _T("VIOLET"),
-                                      _T("SEA GREEN"),
-                                      _T("SKY BLUE"),
-                                      _T("YELLOW GREEN"),
-                                      _T("INDIAN RED"),
-                                      _T("LIGHT BLUE"),
-                                      _T("LIME GREEN"),
-                                      _T("MAGENTA"),
-                                      _T("MAROON"),
-                                      _T("MEDIUM GOLDENROD"),
-                                      _T("MEDIUM ORCHID"),
-                                      _T("MEDIUM SEA GREEN"),
-                                      _T("VIOLET RED"),
-                                      _T("YELLOW")};
-
-  m_ColourName = sightcolornames[s_lastsightcolor].Lower();
-  m_Colour = wxColour(m_ColourName);
-  if (m_Colour.IsOk())
-    m_Colour.Set(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(), 150);
-  else
-    m_Colour.Set(25, 25, 112, 150);  // headless unit-test fallback
-
-  if (++s_lastsightcolor ==
-      (sizeof sightcolornames) / (sizeof *sightcolornames))
-    s_lastsightcolor = 0;
+  m_Colour = SightPalette()[s_lastsightcolor].Colour(150);
+  m_ColourName = SightColourLabel(m_Colour);
+  s_lastsightcolor = (s_lastsightcolor + 1) % SightPalette().size();
   m_bCalculated = false;
   m_bSelected = false;
 }
@@ -231,7 +184,7 @@ void Sight::BodyLocation(wxDateTime time, double* lat, double* lon,
   const wxDateTime utc_fields =
       timeIsInstant ? UtcDateTime::FromInstant(time) : time;
   celestial_navigation::De440NavigationSample de;
-  if (useDe440 && celestial_navigation::TryDe440NavigationSample(
+  if (useDe440 && m_AllowDe440 && celestial_navigation::TryDe440NavigationSample(
           m_Body, utc_fields, &de, nullptr, dut1OverrideSeconds)) {
     if (usedDe440) *usedDe440 = true;
     m_IsStar = false;
@@ -576,13 +529,47 @@ double Sight::ComputeStepSize(double certainty, double stepsize, double min,
 }
 
 /* render the area of position for this sight */
-void Sight::Render(piDC* dc, PlugIn_ViewPort& VP, double pix_per_mm) {
+std::vector<std::pair<wxPoint, wxPoint>> Sight::ScreenSegments(PlugIn_ViewPort& vp) {
+  std::vector<std::pair<wxPoint, wxPoint>> segments;
+  wxPoint previous;
+  double previousLon = 0;
+  bool havePrevious = false;
+  for (auto* point : lines) {
+    if (!std::isfinite(point->x) || !std::isfinite(point->y)) {
+      havePrevious = false;
+      continue;
+    }
+    wxPoint pixel;
+    GetCanvasPixLL(&vp, &pixel, point->x, resolve_heading(point->y));
+    const double lon = resolve_heading(point->y - vp.clon);
+    if (havePrevious && std::abs(lon - previousLon) <= 180)
+      segments.emplace_back(previous, pixel);
+    previous = pixel;
+    previousLon = lon;
+    havePrevious = true;
+  }
+  return segments;
+}
+
+double Sight::ChartDistance(PlugIn_ViewPort& vp, const wxPoint& cursor) {
+  double distance = std::numeric_limits<double>::infinity();
+  if (!m_bVisible) return distance;
+  for (const auto& segment : ScreenSegments(vp))
+    distance = std::min(distance, SightSegmentDistance(cursor, segment.first,
+                                                       segment.second));
+  return distance;
+}
+
+void Sight::Render(piDC* dc, PlugIn_ViewPort& VP, double pix_per_mm,
+                   const SightDisplayStyle& style) {
   if (!m_bVisible) return;
 
   m_dc = dc;
 
   dc->SetPen(wxPen(m_Colour, 0, wxPENSTYLE_TRANSPARENT));
-  dc->SetBrush(wxBrush(m_Colour));
+  wxColour band(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(),
+                m_Colour.Alpha() * std::max(0, std::min(100, style.bandOpacityPercent)) / 100);
+  dc->SetBrush(wxBrush(band));
 
   std::list<wxRealPointList*>::iterator it = polygons.begin();
   while (it != polygons.end()) {
@@ -590,8 +577,22 @@ void Sight::Render(piDC* dc, PlugIn_ViewPort& VP, double pix_per_mm) {
     ++it;
   }
 
-  dc->SetPen(wxPen(m_Colour, (int)(0.5 * pix_per_mm)));
-  DrawPolygon(VP, lines, false);
+  const wxColour nominal(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue());
+  const int width = std::max(1, int(std::lround(style.lineWidthMm * pix_per_mm)));
+  const auto segments = ScreenSegments(VP);
+  auto stroke = [&](const wxColour& colour, int thickness) {
+    dc->SetPen(wxPen(colour, thickness));
+    for (const auto& segment : segments)
+      dc->StrokeLine(segment.first.x, segment.first.y,
+                     segment.second.x, segment.second.y);
+  };
+  if (style.contrastHalo) {
+    const int luminance = 299 * nominal.Red() + 587 * nominal.Green() +
+                          114 * nominal.Blue();
+    stroke(luminance >= 140000 ? *wxBLACK : *wxWHITE,
+           width + std::max(2, int(std::lround(0.6 * pix_per_mm))));
+  }
+  stroke(nominal, width);
 
   for (const auto& position : m_HorizonPositions) {
     wxPoint centre;
@@ -676,9 +677,8 @@ void Sight::RebuildPolygons() {
     }
   }
 
-  // Keep the horizon centreline and markers at the same epoch as its band.
-  if (m_Type == HORIZON)
-    for (auto* point : lines) *point = shiftedPoint(point->x, point->y);
+  // Keep every nominal line at the same shifted epoch as its uncertainty band.
+  for (auto* point : lines) *point = shiftedPoint(point->x, point->y);
   for (auto& position : m_HorizonPositions) {
     const wxRealPoint shifted =
         shiftedPoint(position.latitude, position.longitude);
@@ -708,7 +708,7 @@ wxString Sight::Alminac(wxDateTime time, double lat, double lon, double ghaast,
   double deltaT = deltaT_seconds(jdu);
   if (uses_de440) {
     deltaT = de.tai_minus_utc_seconds + 32.184 - de.dut1_seconds;
-    // jdu still labels UTC here, not UT1. TT-UTC includes TAI-UTC + 32.184.
+    // jdu labels UTC, not UT1. TT-UTC includes TAI-UTC + 32.184.
     jdd = jdu + (de.tai_minus_utc_seconds + 32.184) / 86400.0;
   }
 
@@ -751,7 +751,7 @@ void Sight::RecomputeAltitude() {
   double planet_dist;
   bool usedDe440 = false;
   BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad, &planet_dist,
-               false, true, std::numeric_limits<double>::quiet_NaN(),
+               false, m_AllowDe440, std::numeric_limits<double>::quiet_NaN(),
                &usedDe440);
 
   m_CalcStr += _("Formulas used to calculate sight\n\n");
@@ -2591,6 +2591,13 @@ void Sight::RebuildPolygonsAltitude() {
   timestep = wxMax(2 * m_TimeCertainty, 1);
   BuildAltitudeLineOfPosition(1, altitudemin, altitudemax, altitudestep,
                               timemin, timemax, timestep);
+  // The nominal COP is evaluated at the corrected observation, not averaged
+  // between uncertainty extrema (nor joined between different time samples).
+  double lat = 0, lon = 0;
+  BodyLocation(m_CorrectedDateTime, &lat, &lon, nullptr, nullptr, nullptr);
+  if (std::isfinite(m_ObservedAltitude) && std::abs(m_ObservedAltitude) <= 90)
+    for (int trace = -180; trace <= 180; ++trace)
+      lines.Append(new wxRealPoint(DistancePoint(m_ObservedAltitude, trace, lat, lon)));
 }
 
 void Sight::RebuildPolygonsHorizon() {
@@ -2662,21 +2669,14 @@ void Sight::BuildAltitudeLineOfPosition(double tracestep, double altitudemin,
     wxRealPointList *p, *l = new wxRealPointList;
     for (double trace = -180; trace <= 180; trace += tracestep) {
       p = new wxRealPointList;
-      double mx = 0;
-      double my = 0;
-      int mc = 0;
       for (double altitude = altitudemin;
            altitude <= altitudemax && fabs(altitude) <= 90;
            altitude += altitudestep) {
         wxRealPoint* point =
             new wxRealPoint(DistancePoint(altitude, trace, lat, lon));
         p->Append(point);
-        mx += point->x;
-        my += point->y;
-        mc++;
         if (altitudestep == 0) break;
       }
-      if (mc > 0) lines.Append(new wxRealPoint(mx / mc, my / mc));
       wxRealPointList* m = MergePoints(l, p);
       wxRealPointList* n = ReduceToConvexPolygon(m);
       polygons.push_back(n);

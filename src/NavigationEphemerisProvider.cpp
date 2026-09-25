@@ -28,7 +28,11 @@ int TargetId(const wxString& body) {
 }
 
 wxString KernelPath() {
-#ifdef UNIT_TESTS
+#ifdef CELESTIAL_LAB
+  wxString selected;
+  if (wxGetEnv("CELNAV_LAB_DE440_PATH", &selected)) return selected;
+  return wxString();
+#elif defined(UNIT_TESTS)
   // Baseline tests deliberately remain analytical. Dedicated integration
   // tests opt into the same DE440s path without requiring wxStandardPaths.
   wxString enabled;

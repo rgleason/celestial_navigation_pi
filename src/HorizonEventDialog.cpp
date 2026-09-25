@@ -19,6 +19,7 @@
 #include <wx/spinctrl.h>
 #include <wx/statbox.h>
 #include <wx/stattext.h>
+#include <wx/textctrl.h>
 
 #include "OcpnApiCompat.h"
 #include "DialogGeometry.h"
@@ -208,6 +209,13 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   conditions->Add(conditionsGrid, 0, wxEXPAND | wxALL, 6);
   root->Add(conditions, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
 
+  wxBoxSizer* remarksRow = new wxBoxSizer(wxHORIZONTAL);
+  remarksRow->Add(new wxStaticText(m_scroller, wxID_ANY, _("Remarks")), 0,
+                  wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
+  m_remarks = new wxTextCtrl(m_scroller, wxID_ANY, sight.m_Remarks);
+  remarksRow->Add(m_remarks, 1, wxEXPAND);
+  root->Add(remarksRow, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
+
   wxStaticBoxSizer* result =
       new wxStaticBoxSizer(wxVERTICAL, m_scroller, _("Estimated result"));
   m_preview = new wxStaticText(m_scroller, wxID_ANY, wxEmptyString);
@@ -258,6 +266,7 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
                    &HorizonEventDialog::OnCalendarChanged, this);
   m_horizonQuality->Bind(wxEVT_CHOICE, &HorizonEventDialog::OnQualityChanged,
                          this);
+  m_remarks->Bind(wxEVT_TEXT, &HorizonEventDialog::OnInputChanged, this);
   for (wxSpinCtrl* control : {m_hours, m_minutes, m_seconds})
     control->Bind(wxEVT_TEXT, &HorizonEventDialog::OnInputChanged, this);
   for (wxSpinCtrlDouble* control :
@@ -317,6 +326,7 @@ void HorizonEventDialog::ReadControls(Sight& sight) const {
   sight.m_Pressure = m_pressure->GetValue();
   sight.m_HorizonQuality = m_horizonQuality->GetSelection();
   sight.m_HorizonAltitudeUncertainty = m_altitudeUncertainty->GetValue();
+  sight.m_Remarks = m_remarks->GetValue();
 }
 
 void HorizonEventDialog::UpdateBearingControls() {

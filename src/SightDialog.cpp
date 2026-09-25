@@ -36,6 +36,7 @@
 #include "OcpnApiCompat.h"
 
 #include "Sight.h"
+#include "SightPalette.h"
 #include "SightDialog.h"
 #include "NauticalTimeCtrl.h"
 #include "UtcDateTime.h"
@@ -111,6 +112,17 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   m_tTemperature->SetValue(wxString::Format(_T("%.1f"), m_Sight.m_Temperature));
   m_tPressure->SetValue(wxString::Format(_T("%.2f"), m_Sight.m_Pressure));
   m_tIndexError->SetValue(wxString::Format(_T("%.5f"), m_Sight.m_IndexError));
+  wxBoxSizer* remarksRow = new wxBoxSizer(wxHORIZONTAL);
+  remarksRow->Add(new wxStaticText(m_panel8, wxID_ANY, _("Remarks")), 0,
+                  wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
+  m_remarks = new wxTextCtrl(m_panel8, wxID_ANY, m_Sight.m_Remarks);
+  remarksRow->Add(m_remarks, 1, wxEXPAND);
+  m_panel8->GetSizer()->Add(remarksRow, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,
+                           8);
+  m_remarks->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
+    MarkDirty();
+    m_Sight.m_Remarks = m_remarks->GetValue();
+  });
   m_cbDipShort->SetValue(m_Sight.m_DipShort);
   m_tDipShortDistance->SetValue(
       wxString::Format(_T("%.4f"), m_Sight.m_DipShortDistance));
@@ -146,6 +158,32 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   m_ColourPicker->SetColour(wxColour(m_Sight.m_Colour.Red(),
                                      m_Sight.m_Colour.Green(),
                                      m_Sight.m_Colour.Blue()));
+  auto* colourSizer = m_ColourPicker->GetContainingSizer();
+  auto* colourControls = new wxBoxSizer(wxVERTICAL);
+  size_t colourIndex = 0;
+  while (colourSizer->GetItem(colourIndex)->GetWindow() != m_ColourPicker)
+    ++colourIndex;
+  colourSizer->Detach(m_ColourPicker);
+  colourSizer->Insert(colourIndex, colourControls, 0, wxALL | wxEXPAND, 5);
+  m_colourPalette = new wxChoice(m_ColourPicker->GetParent(), wxID_ANY);
+  for (const auto& colour : SightPalette())
+    m_colourPalette->Append(wxGetTranslation(colour.name));
+  m_colourPalette->Append(_("Custom"));
+  colourControls->Add(m_colourPalette, 0, wxEXPAND | wxBOTTOM, 4);
+  colourControls->Add(m_ColourPicker, 0, wxEXPAND);
+  m_ColourPicker->SetToolTip(_("Choose any custom colour; existing colours are preserved."));
+  UpdateColourChoice();
+  m_colourPalette->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
+    const int selection = m_colourPalette->GetSelection();
+    if (selection >= 0 && size_t(selection) < SightPalette().size()) {
+      m_ColourPicker->SetColour(SightPalette()[selection].Colour());
+      MarkDirty();
+      Recompute();
+    } else {
+      // The native picker below remains the custom-colour editor.
+      m_ColourPicker->SetFocus();
+    }
+  });
 
   m_tLunarMoonAltitude->SetValue(
       toSDMM_PlugIn(0, m_Sight.m_LunarMoonAltitude, true));
@@ -745,10 +783,11 @@ void SightDialog::Recompute() {
   m_Sight.m_DipShort = m_cbDipShort->GetValue();
   m_tDipShortDistance->GetValue().ToDouble(&m_Sight.m_DipShortDistance);
   m_Sight.m_ArtificialHorizon = m_cbArtificialHorizon->GetValue();
+  m_Sight.m_Remarks = m_remarks->GetValue();
 
-  wxColour fc = m_ColourPicker->GetColour(), c = wxColour(m_Sight.m_ColourName);
-  if (c.Red() != fc.Red() || c.Green() != fc.Green() || c.Blue() != fc.Blue())
-    m_Sight.m_ColourName = fc.GetAsString();
+  wxColour fc = m_ColourPicker->GetColour();
+  m_Sight.m_ColourName = SightColourLabel(fc);
+  UpdateColourChoice();
 
   m_Sight.m_Colour =
       wxColour(fc.Red(), fc.Green(), fc.Blue(), m_sTransparency->GetValue());
@@ -766,6 +805,15 @@ void SightDialog::Recompute() {
   m_tCalculations->SetValue(m_Sight.m_CalcStr);
 
   Refresh();
+}
+
+void SightDialog::UpdateColourChoice() {
+  if (!m_colourPalette) return;
+  const auto colour = m_ColourPicker->GetColour();
+  const int index = SightPaletteIndex(colour);
+  m_colourPalette->SetString(SightPalette().size(), index < 0
+      ? SightColourLabel(colour) : _("Custom"));
+  m_colourPalette->SetSelection(index < 0 ? SightPalette().size() : index);
 }
 
 double SightDialog::BodyAltitude(wxString body) {

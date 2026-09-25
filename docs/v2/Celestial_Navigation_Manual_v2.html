@@ -53,7 +53,7 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
   <p style="text-align: center;"><strong>User manual</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.9<br>Documentation revision 20 September 2026</p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.9.0<br>Documentation revision 23 September 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -95,9 +95,10 @@ timezone. Their UTC-labelled astronomical tables and curves could use an
 incorrect epoch. Saved sightings themselves are unaffected.</div>
 
 <h2 id="how-to-use">How to use the manual</h2>
-<p><strong>Current release:</strong> this edition covers the per-sight DR-shift
+<p><strong>This edition:</strong> the manual covers the per-sight DR-shift
 running fix, Find position sources, measured lunar-pair guidance and corrected
-Horizon Event display. The descriptions below match the 2.8.9 controls.</p>
+Horizon Event display, together with 2.9.0 planning modes, sky overlays,
+per-sight remarks and sight-log management.</p>
 <p><strong>2.8.5.4 Find popup:</strong> <strong>Close</strong> keeps the edited
 DR position and returns to Sight Properties without changing the measured
 altitude. <strong>Copy estimated Hs</strong> deliberately replaces the appropriate
@@ -401,7 +402,7 @@ for azimuth to preserve the correct quadrant.</p>
 
 <h2>7.1 Main Sights window</h2>
 <p>The main list contains stored observations. Its columns show sight type,
-body, UTC time, measurement and colour. The eye symbol controls whether a
+body, UTC time, measurement, colour and remarks. The eye symbol controls whether a
 sight is plotted and included where a workflow uses visible sights.</p>
 
 <table>
@@ -416,11 +417,26 @@ sight is plotted and included where a workflow uses visible sights.</p>
 <tr><td>Eclipses…</td><td>Search, plot and calculate offline solar-eclipse circumstances.</td></tr>
 <tr><td>Coastal Sextant…</td><td>Use vertical-angle ranging or horizontal-sextant-angle fixing.</td></tr>
 <tr><td>Duplicate / Edit / Delete</td><td>Manage a selected stored sight. Duplicate is useful for a run of sights.</td></tr>
+<tr><td>Manage Sights…</td><td>Save a dated XML backup, add sights from another log, or restore a complete log.</td></tr>
 <tr><td>Clock Offset</td><td>Apply a common correction to stored sight times.</td></tr>
-<tr><td>Hide Sights / Show Sights</td><td>Collapse or restore the sight list and controls.</td></tr>
+<tr><td>Hide sight log / Show sight log</td><td>Collapse or restore the sight list; this does not hide its chart plots.</td></tr>
+<tr><td>Chart display…</td><td>Adjust nominal line width, contrasting outline, uncertainty shading and hover labels for all sights.</td></tr>
 <tr><td>Documentation</td><td>Open this completely offline manual in the plugin's internal viewer.</td></tr>
 <tr><td>PDF Documentation</td><td>Open the fixed-layout manual in the system PDF viewer. If no external viewer is available, the plugin safely opens the internal HTML manual instead.</td></tr>
 </table>
+
+<p>The nominal COP is an opaque central stroke in the sight colour, with an
+automatic black or white outline. Its default width is 0.5 mm, scaled for the
+display. <strong>Chart display…</strong> remembers a global width (0.2–2.0 mm)
+and an independent shading multiplier; reducing uncertainty shading does not
+fade or move the nominal line. The per-sight transparency remains available.
+The shaded region represents input uncertainty, not a guaranteed position bound.</p>
+<p>Hover near a plotted nominal line to see the body, corrected UTC and sight
+number. Overlapping COPs list up to four nearby sights and report any further
+matches. In a sight's <strong>Config</strong> tab, choose a named colour or use
+the custom colour picker. Non-palette colours are labelled
+<strong>Custom (#RRGGBB)</strong>. Existing colours are retained; use the sight
+log and hover labels, not colour alone, to identify observations.</p>
 
 <p>Editors use task-specific actions: <strong>Create Sight</strong> or
 <strong>Create Event</strong> for new records, and <strong>Save Changes</strong>
@@ -434,6 +450,21 @@ later changes.</p>
 <p>Creating a sight selects it and clears the previous selection. Deleting a
 selected sight moves the selection to an adjacent sight when one remains, so
 there is deliberately no unselected state while the list is non-empty.</p>
+
+<p><strong>Remarks</strong> stores a short note with an observation without
+altering its calculation. Enter it on the Sight Properties Parameters tab or
+in the Horizon Event editor. It is also shown in the main list.</p>
+
+<p>The current log is saved automatically in <code>Sights.xml</code>.
+<strong>Manage Sights… → Save backup of all sights...</strong> offers a dated
+XML copy, initially in Downloads; choose another location if preferred.
+<strong>Import sights (add to current log)...</strong> adds sights and saved
+lunar solutions from another log and requires the same global clock correction.
+<strong>Restore sights (replace current log)...</strong> replaces both the log
+and its clock correction. Both operations validate the file and save a dated
+safety backup before changing the current log. Older files open with empty
+Remarks; older plugin versions may discard remarks when rewriting a newer
+file, so retain a backup before returning to an older version.</p>
 
 <h2>7.2 Time integrity panel</h2>
 <p>The panel displays computer local time with time zone, UTC, GNSS/NMEA UTC
@@ -540,13 +571,39 @@ the resolved planning instant; local display dates may therefore differ near
 the date line.</p>
 
 <h2>9.3 Bodies &amp; Best Sights</h2>
-<p>The body list shows every catalogued body whose geometric Hc is at or above
-the horizon. Click any column heading to sort the table; click it again to
-reverse the order. <strong>Limit recommendations by Hc</strong> optionally
+<p>Choose a planning mode: <strong>Practical Fix</strong> favours observable
+bodies and pair/triad geometry; <strong>Bright Bodies</strong> puts brightness
+first; <strong>Lunar Candidates</strong> compares potential companions with
+the Moon; <strong>Show All</strong> lists bodies alphabetically.</p>
+
+<p>The full body list remains available in each mode. It includes bodies above
+the geometric horizon; <strong>Include below-horizon bodies</strong> adds the
+rest. Click a column heading to sort it and again to reverse the order.
+<strong>Limit recommendations by Hc</strong> optionally
 applies the adjacent, editable minimum and maximum only to suggested pairs and
 triads. The initial preferred range is 10°–75°. Bodies outside it remain in the
 table and are marked below or above the preferred Hc; disabling the option
-makes every listed body eligible for recommendations.</p>
+makes every above-horizon body eligible for recommendations. All eligible
+bodies are considered for pair/triad geometry, not just a brightness shortlist.</p>
+
+<p><strong>Lunar Candidates</strong> shows predicted geocentric Moon-body
+distance, signed distance rate, the seconds represented by 0.1′, companion
+ecliptic latitude, both altitudes and bearings, illumination and guidance.
+A positive rate means increasing distance. Both planners use the same
+explainable default: fewest planning cautions, then strongest timing sensitivity.
+Choose <strong>Lunar order: timing sensitivity</strong> to put timing first.
+Below-horizon pairs remain last. Cautions flag altitude outside 10°–75°,
+distance outside 20°–100°, absolute rate below 10′/hour, companion magnitude
+above 2.5, or Sun altitude above −6° for companions fainter than magnitude −2.
+These preferences do not establish visibility. Ecliptic latitude is descriptive,
+not an additional weight on top of the calculated rate.</p>
+
+<p>Select a companion in <strong>All bodies</strong>, then choose
+<strong>Lunar windows for selected body…</strong> to search the next 24 hours
+in 10-minute samples. Results show intervals meeting the above preferences and
+the best sampled timing within each interval. The search uses the entered
+moving-observer course and speed when enabled. Boundaries are approximate;
+an empty result does not prove that the pair cannot be observed.</p>
 
 <p>The individual score gives 65% weight to altitude near 40° and 35% to
 brightness, with a daylight/twilight penalty for stars. Planets currently
@@ -562,6 +619,16 @@ below-horizon bodies are hollow. Labels favour the brightest bodies and share
 the available label allowance across the four compass quadrants. The allowance
 adapts to the plot size, and labels are still suppressed when they would
 overlap; an unlabeled dot does not mean the body is absent from the catalogue.</p>
+
+<p><strong>Show ecliptic</strong> and <strong>Show Moon path</strong> are
+independent overlays. The ecliptic defaults on and the Moon path off; the path
+can span ±3, ±6 or ±12 hours around the planning instant. <strong>Local
+sky</strong> shows altitude and true bearing at the planning position.
+<strong>SHA / Declination</strong> shows celestial coordinates and is useful
+for a longer Moon track. The ecliptic follows the date's obliquity and the Moon
+path follows the selected ephemeris, with UTC labels at its start, middle and
+end. Selecting a body highlights its plotted symbol. Neither overlay replaces
+a visibility check.</p>
 
 <p>These rankings and the sky plot are planning aids, not commands. Weather,
 deck obstruction, glare, horizon quality and a navigator's ability to identify
@@ -772,19 +839,12 @@ stars as a celestial clock. The observed Moon-to-body angular distance is
 corrected (“cleared”) for limb, refraction and parallax, then compared with the
 geocentric ephemeris over a search interval.</p>
 
-<p><strong>2.8.10 precision update:</strong> a verified local DE440s kernel
-is used automatically for supported Sun, Moon, Mercury and Venus positions,
-including sights, planning and generated Almanacs. Moon–Sun, Moon–Mercury
-and Moon–Venus lunar pairs use it consistently. Automatic UTC handling
-starts in 1972 and requires a date within the kernel coverage. Other bodies,
-earlier dates and unavailable data retain the analytical fallback.</p>
-<p>Install the optional kernel through <strong>Eclipses… &gt; Download and
-install DE440s…</strong>, or import a local copy. Navigation still works
-offline without it. Neither lunar orientation nor LOLA terrain is required.
-The Almanac uses dated offline IERS DUT1 unless overridden and records
-sources and fallback on its <strong>Sources and conventions</strong> page.
-DE440s improves the ephemeris foundation, but exact agreement with a printed
-Almanac also depends on its conventions, time assumptions and rounding.</p>
+<p>When its checksum-verified local JPL DE440s kernel is installed and covers
+the sight date, Moon–Sun, Moon–Mercury and Moon–Venus calculations use it.
+Moon–star and other Moon–planet calculations, or any sight outside the compact
+kernel's range, use the bundled analytical ephemeris. The result identifies
+the source used. DE440s is optional for navigation, no calculation downloads
+data, and LOLA terrain is unrelated to lunar-distance clearing.</p>
 
 <figure>
 <img src="images/09_lunar_distance_observations.png" width="620" alt="Moon, second body, visible horizon and observer showing lunar distance and the separate altitudes of both bodies.">
@@ -899,14 +959,22 @@ parameter is an advanced diagnostic; with too few observations it can trade
 against clock correction and should not be treated as a sextant calibration.</div>
 
 <h2>12.6 Lunar pair planner</h2>
-<p><strong>Lunar Tools… → Lunar planner</strong> orders pairs by the approximate
-UTC change corresponding to 0.1′ of lunar distance, shortest first, with
-below-horizon pairs last. It shows centre separation, signed distance rate in
+<p><strong>Lunar Tools… → Lunar planner</strong> uses the same default ordering
+and optional timing-first choice as <strong>Bodies &amp; Best Sights</strong>,
+with below-horizon pairs last. It shows centre separation, signed distance rate in
 arcminutes per hour, Moon/body altitude and true azimuth, Moon illumination,
 body magnitude and which body is below the geometric horizon. A small time
 value indicates greater timing sensitivity. There is no combined quality
 score: use the measured quantities to assess visibility, sextant range and
 whether the pair is practical to observe.</p>
+<p>In 2.9.0 this table also shows the companion's signed ecliptic latitude and
+guidance derived from the same planning model as the main planner.</p>
+
+<p>When a lunar solution reports several candidate UTCs, even very close values
+are <strong>unresolved alternatives, not measurements to average</strong>.
+Use another observation or independent position/time evidence to distinguish
+them. A preferred candidate chosen by proximity to DR or entered UTC does not
+establish that the ambiguity has been resolved.</p>
 
 <p>Lunar Tools defaults to <strong>Nautical: YYYY-MM-DD, 24-hour</strong> UTC
 entry for an unambiguous cross-platform display. Select
@@ -1103,6 +1171,12 @@ user request or imported from a local copy.</p>
   <li><strong>Lunar orientation:</strong> optional orientation support for refined limb work.</li>
   <li><strong>LOLA pack:</strong> optional lunar-topography refinement of contact timing; not required for ordinary eclipse use.</li>
 </ul>
+
+<p>The Eclipse window displays the local astronomy-data directory and expected
+filenames: <code>de440s.bsp</code>, <code>moon_pa_de440_200625.bpc</code> and
+<code>lola64-pa.bin</code>. <strong>Open astronomy data folder…</strong> opens
+that directory. Use the import controls to install and verify downloaded files;
+merely placing a file there does not establish that it is valid.</p>
 
 <p>Select <strong>Download and install DE440s… (31.2 MiB)</strong> for the
 base eclipse data. The download is staged, checked for its exact size and

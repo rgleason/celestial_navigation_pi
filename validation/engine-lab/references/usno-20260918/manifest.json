@@ -1,0 +1,867 @@
+{
+  "schema_version": 1,
+  "kind": "USNO_celnav_reference",
+  "grid_sha256": "988d9f8f0e8869a3154efbeebbfbcf3b559252746d0728d527a47bbd8ac947db",
+  "retrieved_utc": "2026-09-17T23:34:47.717445+00:00",
+  "time_note": "USNO input is UT1; integer UTC seconds were supplied. Account for DUT1 when assessing sub-arcsecond residuals.",
+  "cases": [
+    {
+      "id": "1972-july",
+      "utc": "1972-07-01T12:00:00Z",
+      "position": [
+        0,
+        0
+      ],
+      "file": "1972-july.json",
+      "sha256": "135cf2925203802cbe22b3e9a194b0a3ee1a20540a86dd092847ba91a35549a6",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=1972-07-01&time=12%3A00%3A00&coords=0.0000000000%2C0.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "12:00:00",
+      "values": {
+        "Sun": {
+          "dec": 23.0872,
+          "gha": 359.052352,
+          "hc": 66.894422,
+          "zn": 2.221889
+        },
+        "Venus": {
+          "dec": 18.912352,
+          "gha": 20.819478,
+          "hc": 62.158794,
+          "zn": 313.948882
+        },
+        "ARIES": {
+          "gha": 99.63687555191426
+        }
+      }
+    },
+    {
+      "id": "1982-pacific",
+      "utc": "1982-07-05T16:00:00Z",
+      "position": [
+        46,
+        -128
+      ],
+      "file": "1982-pacific.json",
+      "sha256": "dbcee3b55d5a569a3d11fc5482c2d717de01e9bef80374d1815e217657c96e79",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=1982-07-05&time=16%3A00%3A00&coords=46.0000000000%2C-128.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "16:00:00",
+      "values": {
+        "Sun": {
+          "dec": 22.776579,
+          "gha": 58.875844,
+          "hc": 30.445537,
+          "zn": 87.833885
+        },
+        "Venus": {
+          "dec": 20.843625,
+          "gha": 92.573256,
+          "hc": 51.716702,
+          "zn": 119.027687
+        },
+        "ARIES": {
+          "gha": 163.31976344042448
+        }
+      }
+    },
+    {
+      "id": "2000-january",
+      "utc": "2000-01-15T12:00:00Z",
+      "position": [
+        35,
+        0
+      ],
+      "file": "2000-january.json",
+      "sha256": "4a894e3f626fd78fe9e0ea73ad870e660803290e988ba84492d6dac1e820b628",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2000-01-15&time=12%3A00%3A00&coords=35.0000000000%2C0.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "12:00:00",
+      "values": {
+        "Sun": {
+          "dec": -21.194734,
+          "gha": 357.694998,
+          "hc": 33.762667,
+          "zn": 177.414756
+        },
+        "Venus": {
+          "dec": -21.388173,
+          "gha": 36.524457,
+          "hc": 23.813692,
+          "zn": 217.282757
+        },
+        "ARIES": {
+          "gha": 294.2562192043533
+        }
+      }
+    },
+    {
+      "id": "2010-april",
+      "utc": "2010-04-20T12:00:00Z",
+      "position": [
+        0,
+        0
+      ],
+      "file": "2010-april.json",
+      "sha256": "d5e5185bd32140912ad272dbd7b95805ceae4df1404efdd9beabd2e6c52d1411",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2010-04-20&time=12%3A00%3A00&coords=0.0000000000%2C0.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "12:00:00",
+      "values": {
+        "Sun": {
+          "dec": 11.578832,
+          "gha": 0.267497,
+          "hc": 78.41812,
+          "zn": 358.694638
+        },
+        "Moon": {
+          "dec": 22.792761,
+          "gha": 283.328678,
+          "hc": 12.270932,
+          "zn": 66.643141
+        },
+        "Venus": {
+          "dec": 19.161053,
+          "gha": 336.671166,
+          "hc": 60.155135,
+          "zn": 48.734836
+        },
+        "ARIES": {
+          "gha": 28.46997851226262
+        }
+      }
+    },
+    {
+      "id": "before-2016-leap",
+      "utc": "2016-12-31T23:59:59Z",
+      "position": [
+        -30,
+        180
+      ],
+      "file": "before-2016-leap.json",
+      "sha256": "1f73a8dc69978bd81901030c4747cb9b70a4eb9f53b34484281b5b396865073f",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2016-12-31&time=23%3A59%3A59&coords=-30.0000000000%2C180.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "23:59:59",
+      "values": {
+        "Sun": {
+          "dec": -22.999,
+          "gha": 179.135471,
+          "hc": 82.95647,
+          "zn": 6.503577
+        },
+        "Moon": {
+          "dec": -15.33636,
+          "gha": 147.096906,
+          "hc": 56.455494,
+          "zn": 71.449939
+        },
+        "Venus": {
+          "dec": -13.69794,
+          "gha": 130.638336,
+          "hc": 41.788758,
+          "zn": 81.415008
+        },
+        "ARIES": {
+          "gha": 100.8321175079226
+        }
+      }
+    },
+    {
+      "id": "after-2016-leap",
+      "utc": "2017-01-01T00:00:00Z",
+      "position": [
+        -30,
+        180
+      ],
+      "file": "after-2016-leap.json",
+      "sha256": "0fadc027ce45e8547b1eae1dfaae46aee3cd899ea592bc7d6dd58d807ad1e6b5",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2017-01-01&time=00%3A00%3A00&coords=-30.0000000000%2C180.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "00:00:00",
+      "values": {
+        "Sun": {
+          "dec": -22.998999,
+          "gha": 179.139636,
+          "hc": 82.956877,
+          "zn": 6.472485
+        },
+        "Moon": {
+          "dec": -15.336331,
+          "gha": 147.100934,
+          "hc": 56.458786,
+          "zn": 71.446207
+        },
+        "Venus": {
+          "dec": -13.697935,
+          "gha": 130.642502,
+          "hc": 41.792323,
+          "zn": 81.412438
+        },
+        "ARIES": {
+          "gha": 100.83629556001799
+        }
+      }
+    },
+    {
+      "id": "2020-leap-day",
+      "utc": "2020-02-29T12:00:00Z",
+      "position": [
+        0,
+        0
+      ],
+      "file": "2020-leap-day.json",
+      "sha256": "e788e651314731a2ad61ab63f94fba69e93f7b5724b428e25993f485cccfc792",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2020-02-29&time=12%3A00%3A00&coords=0.0000000000%2C0.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "12:00:00",
+      "values": {
+        "Sun": {
+          "dec": -7.681041,
+          "gha": 356.890055,
+          "hc": 81.716756,
+          "zn": 158.087058
+        },
+        "Moon": {
+          "dec": 12.290585,
+          "gha": 295.838609,
+          "hc": 25.204384,
+          "zn": 76.392537
+        },
+        "Venus": {
+          "dec": 10.628346,
+          "gha": 316.117181,
+          "hc": 45.104383,
+          "zn": 74.852153
+        },
+        "ARIES": {
+          "gha": 338.76362430171696
+        }
+      }
+    },
+    {
+      "id": "march-quarter",
+      "utc": "2024-03-17T12:00:00Z",
+      "position": [
+        25,
+        0
+      ],
+      "file": "march-quarter.json",
+      "sha256": "38c54ed0818332c258fe015ab27efa54fabc86abdd75bfd9da106cc8fbbd7a6a",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-03-17&time=12%3A00%3A00&coords=25.0000000000%2C0.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "12:00:00",
+      "values": {
+        "Sun": {
+          "dec": -1.039529,
+          "gha": 357.952487,
+          "hc": 63.885063,
+          "zn": 175.345029
+        },
+        "Moon": {
+          "dec": 28.5296,
+          "gha": 264.14799,
+          "hc": 6.93032,
+          "zn": 61.693624
+        },
+        "Venus": {
+          "dec": -10.113834,
+          "gha": 16.445456,
+          "hc": 51.399008,
+          "zn": 206.533202
+        },
+        "ARIES": {
+          "gha": 355.5534919545092
+        }
+      }
+    },
+    {
+      "id": "april-conjunction",
+      "utc": "2024-04-08T18:00:00Z",
+      "position": [
+        25,
+        -105
+      ],
+      "file": "april-conjunction.json",
+      "sha256": "71b5f6f2822f0be24a714da186a7a869762f8d8b71f835757759854fad378c59",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-04-08&time=18%3A00%3A00&coords=25.0000000000%2C-105.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "18:00:00",
+      "values": {
+        "Sun": {
+          "dec": 7.587055,
+          "gha": 89.591172,
+          "hc": 67.202526,
+          "zn": 137.177414
+        },
+        "Moon": {
+          "dec": 7.81557,
+          "gha": 89.905353,
+          "hc": 67.574867,
+          "zn": 137.444174
+        },
+        "Venus": {
+          "dec": 0.385844,
+          "gha": 102.82687,
+          "hc": 65.296334,
+          "zn": 174.7944
+        },
+        "ARIES": {
+          "gha": 107.48393407377071
+        }
+      }
+    },
+    {
+      "id": "june-conjunction",
+      "utc": "2024-06-06T12:00:00Z",
+      "position": [
+        0,
+        0
+      ],
+      "file": "june-conjunction.json",
+      "sha256": "c46f140aef94ade8f822a24291129f7bb3abb54642fd6525359138b2091844ad",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-06-06&time=12%3A00%3A00&coords=0.0000000000%2C0.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "12:00:00",
+      "values": {
+        "Sun": {
+          "dec": 22.730611,
+          "gha": 0.302593,
+          "hc": 67.267481,
+          "zn": 359.277754
+        },
+        "Moon": {
+          "dec": 27.152527,
+          "gha": 1.191934,
+          "hc": 62.82331,
+          "zn": 357.677453
+        },
+        "Venus": {
+          "dec": 22.795549,
+          "gha": 359.761574,
+          "hc": 67.20327,
+          "zn": 0.567297
+        },
+        "ARIES": {
+          "gha": 75.39099283999334
+        }
+      }
+    },
+    {
+      "id": "point-judith",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        41.36666666666667,
+        -71.48333333333333
+      ],
+      "file": "point-judith.json",
+      "sha256": "0ad284ead8ed046339fbfee76a17d6ee393cca1bbddb7f85f76042d4d18f0ba6",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-06-13&time=19%3A26%3A00&coords=41.3666666667%2C-71.4833333333",
+      "api_version": "4.0.1",
+      "returned_time": "19:26:00",
+      "values": {
+        "Sun": {
+          "dec": 23.267001,
+          "gha": 111.434162,
+          "hc": 52.147597,
+          "zn": 254.016954
+        },
+        "Moon": {
+          "dec": 6.343757,
+          "gha": 23.584431,
+          "hc": 34.966995,
+          "zn": 115.860311
+        },
+        "Venus": {
+          "dec": 23.672939,
+          "gha": 108.730508,
+          "hc": 54.340743,
+          "zn": 251.966024
+        },
+        "ARIES": {
+          "gha": 194.09595020643212
+        }
+      }
+    },
+    {
+      "id": "june-equator",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        0,
+        -45
+      ],
+      "file": "june-equator.json",
+      "sha256": "2bc1460f76995c3e8213e2d80d1b72d1271592c185998ddd413b55d77e63604c",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-06-13&time=19%3A26%3A00&coords=0.0000000000%2C-45.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "19:26:00",
+      "values": {
+        "Sun": {
+          "dec": 23.267001,
+          "gha": 111.434162,
+          "hc": 21.548474,
+          "zn": 295.131672
+        },
+        "Moon": {
+          "dec": 6.343757,
+          "gha": 23.584431,
+          "hc": 67.707028,
+          "zn": 73.065642
+        },
+        "Venus": {
+          "dec": 23.672939,
+          "gha": 108.730508,
+          "hc": 23.913096,
+          "zn": 296.053938
+        },
+        "ARIES": {
+          "gha": 194.09595020643212
+        }
+      }
+    },
+    {
+      "id": "june-south",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        -30,
+        -60
+      ],
+      "file": "june-south.json",
+      "sha256": "9ed77fff1237b2ff2fa678676fae6a7bfb065b71c33156dfb468eaeeb3ab35ac",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-06-13&time=19%3A26%3A00&coords=-30.0000000000%2C-60.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "19:26:00",
+      "values": {
+        "Sun": {
+          "dec": 23.267001,
+          "gha": 111.434162,
+          "hc": 17.36612,
+          "zn": 311.18299
+        },
+        "Moon": {
+          "dec": 6.343757,
+          "gha": 23.584431,
+          "hc": 39.598572,
+          "zn": 49.97029
+        },
+        "Venus": {
+          "dec": 23.672939,
+          "gha": 108.730508,
+          "hc": 18.808507,
+          "zn": 313.347808
+        },
+        "ARIES": {
+          "gha": 194.09595020643212
+        }
+      }
+    },
+    {
+      "id": "june-high-north",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        65,
+        -50
+      ],
+      "file": "june-high-north.json",
+      "sha256": "f90935c9c1e05f5cddaa3768e7b5eba081d3b1aba61285a95fecd70bfc7c5fe5",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-06-13&time=19%3A26%3A00&coords=65.0000000000%2C-50.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "19:26:00",
+      "values": {
+        "Sun": {
+          "dec": 23.267001,
+          "gha": 111.434162,
+          "hc": 32.93277,
+          "zn": 254.01154
+        },
+        "Moon": {
+          "dec": 6.343757,
+          "gha": 23.584431,
+          "hc": 28.445103,
+          "zn": 149.810389
+        },
+        "Venus": {
+          "dec": 23.672939,
+          "gha": 108.730508,
+          "hc": 34.388628,
+          "zn": 251.550477
+        },
+        "ARIES": {
+          "gha": 194.09595020643212
+        }
+      }
+    },
+    {
+      "id": "june-low-sun",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        0,
+        -24
+      ],
+      "file": "june-low-sun.json",
+      "sha256": "7aae05a7cbd9c9193fffbbc4996c3bea451b9e1362c63a5a6bebf171906aa912",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-06-13&time=19%3A26%3A00&coords=0.0000000000%2C-24.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "19:26:00",
+      "values": {
+        "Sun": {
+          "dec": 23.267001,
+          "gha": 111.434162,
+          "hc": 2.357046,
+          "zn": 293.287864
+        },
+        "Moon": {
+          "dec": 6.343757,
+          "gha": 23.584431,
+          "hc": 83.642701,
+          "zn": 3.732681
+        },
+        "Venus": {
+          "dec": 23.672939,
+          "gha": 108.730508,
+          "hc": 4.824976,
+          "zn": 293.7623
+        },
+        "ARIES": {
+          "gha": 194.09595020643212
+        }
+      }
+    },
+    {
+      "id": "june-low-moon",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        0,
+        -110
+      ],
+      "file": "june-low-moon.json",
+      "sha256": "95737ab5b9921a82e5c8959ac6ca7cbc255bdb43c827bf1054bb3bded13d0012",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-06-13&time=19%3A26%3A00&coords=0.0000000000%2C-110.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "19:26:00",
+      "values": {
+        "Sun": {
+          "dec": 23.267001,
+          "gha": 111.434162,
+          "hc": 66.691293,
+          "zn": 356.668733
+        },
+        "Moon": {
+          "dec": 6.343757,
+          "gha": 23.584431,
+          "hc": 3.562454,
+          "zn": 83.64391
+        },
+        "Venus": {
+          "dec": 23.672939,
+          "gha": 108.730508,
+          "hc": 66.295003,
+          "zn": 2.893
+        },
+        "ARIES": {
+          "gha": 194.09595020643212
+        }
+      }
+    },
+    {
+      "id": "june-zenith-sun",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        23.26,
+        -111.43
+      ],
+      "file": "june-zenith-sun.json",
+      "sha256": "486e8c850c59255acc15b41040b743e9881245bccad3aeee94f554d794d12456",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-06-13&time=19%3A26%3A00&coords=23.2600000000%2C-111.4300000000",
+      "api_version": "4.0.1",
+      "returned_time": "19:26:00",
+      "values": {
+        "Sun": {
+          "dec": 23.267001,
+          "gha": 111.434162,
+          "hc": 89.992023,
+          "zn": 331.357601
+        },
+        "Moon": {
+          "dec": 6.343757,
+          "gha": 23.584431,
+          "hc": 4.471339,
+          "zn": 85.007644
+        },
+        "Venus": {
+          "dec": 23.672939,
+          "gha": 108.730508,
+          "hc": 87.489624,
+          "zn": 79.996565
+        },
+        "ARIES": {
+          "gha": 194.09595020643212
+        }
+      }
+    },
+    {
+      "id": "june-zenith-moon",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        6.34,
+        -23.59
+      ],
+      "file": "june-zenith-moon.json",
+      "sha256": "05caeeb93d7d124329e79d0414164c5f144533a0a2def36830d052cc75ca7ec1",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-06-13&time=19%3A26%3A00&coords=6.3400000000%2C-23.5900000000",
+      "api_version": "4.0.1",
+      "returned_time": "19:26:00",
+      "values": {
+        "Sun": {
+          "dec": 23.267001,
+          "gha": 111.434162,
+          "hc": 4.47177,
+          "zn": 292.952726
+        },
+        "Moon": {
+          "dec": 6.343757,
+          "gha": 23.584431,
+          "hc": 89.99331,
+          "zn": 55.830111
+        },
+        "Venus": {
+          "dec": 23.672939,
+          "gha": 108.730508,
+          "hc": 6.975692,
+          "zn": 293.166487
+        },
+        "ARIES": {
+          "gha": 194.09595020643212
+        }
+      }
+    },
+    {
+      "id": "june-opposition",
+      "utc": "2024-06-21T12:00:00Z",
+      "position": [
+        60,
+        0
+      ],
+      "file": "june-opposition.json",
+      "sha256": "6fa32c61acadb7b20b312e4f264b86e5c5271e528ff503a2fc3bd11d8555cf9a",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-06-21&time=12%3A00%3A00&coords=60.0000000000%2C0.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "12:00:00",
+      "values": {
+        "Sun": {
+          "dec": 23.436843,
+          "gha": 359.519475,
+          "hc": 53.435291,
+          "zn": 179.25992
+        },
+        "Venus": {
+          "dec": 23.929339,
+          "gha": 354.481343,
+          "hc": 53.723705,
+          "zn": 171.456143
+        },
+        "ARIES": {
+          "gha": 90.17589925315808
+        }
+      }
+    },
+    {
+      "id": "september-opposition",
+      "utc": "2024-09-18T02:00:00Z",
+      "position": [
+        0,
+        -90
+      ],
+      "file": "september-opposition.json",
+      "sha256": "23fc873a98af490d98feb303ac8e31ae7ea94a85cf97091359715af0df1adf33",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-09-18&time=02%3A00%3A00&coords=0.0000000000%2C-90.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "02:00:00",
+      "values": {
+        "Moon": {
+          "dec": -2.81423,
+          "gha": 31.373686,
+          "hc": 31.33156,
+          "zn": 93.295177
+        },
+        "ARIES": {
+          "gha": 27.488210026575366
+        }
+      }
+    },
+    {
+      "id": "december-south",
+      "utc": "2024-12-15T12:00:00Z",
+      "position": [
+        -65,
+        0
+      ],
+      "file": "december-south.json",
+      "sha256": "df596bc559ff662aaeca618da24de16f4b3d0602ff36561e0722edce87c92959",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-12-15&time=12%3A00%3A00&coords=-65.0000000000%2C0.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "12:00:00",
+      "values": {
+        "Sun": {
+          "dec": -23.302549,
+          "gha": 1.163646,
+          "hc": 48.295655,
+          "zn": 358.393487
+        },
+        "Venus": {
+          "dec": -20.029338,
+          "gha": 312.125503,
+          "hc": 35.221604,
+          "zn": 58.53674
+        },
+        "ARIES": {
+          "gha": 264.63611697723394
+        }
+      }
+    },
+    {
+      "id": "march-2025-west",
+      "utc": "2025-03-05T15:00:00Z",
+      "position": [
+        20,
+        -45
+      ],
+      "file": "march-2025-west.json",
+      "sha256": "a7c3535ec360bab3ab6c238e13bec3eab960ec8cf43724f037fcf1ce1982dad2",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2025-03-05&time=15%3A00%3A00&coords=20.0000000000%2C-45.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "15:00:00",
+      "values": {
+        "Sun": {
+          "dec": -5.797944,
+          "gha": 42.15708,
+          "hc": 64.050987,
+          "zn": 173.52507
+        },
+        "Moon": {
+          "dec": 25.106109,
+          "gha": 330.308713,
+          "hc": 21.701791,
+          "zn": 70.055059
+        },
+        "Venus": {
+          "dec": 11.027368,
+          "gha": 21.873167,
+          "hc": 66.013516,
+          "zn": 108.499044
+        },
+        "ARIES": {
+          "gha": 28.611662779341138
+        }
+      }
+    },
+    {
+      "id": "march-2025-east",
+      "utc": "2025-03-05T15:00:00Z",
+      "position": [
+        20,
+        20
+      ],
+      "file": "march-2025-east.json",
+      "sha256": "392c84eab791591933af37591b482dbc7638259e03c6094202c378fae288c3ce",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2025-03-05&time=15%3A00%3A00&coords=20.0000000000%2C20.0000000000",
+      "api_version": "4.0.1",
+      "returned_time": "15:00:00",
+      "values": {
+        "Sun": {
+          "dec": -5.797944,
+          "gha": 42.15708,
+          "hc": 23.708673,
+          "zn": 253.903806
+        },
+        "Moon": {
+          "dec": 25.106109,
+          "gha": 330.308713,
+          "hc": 79.701032,
+          "zn": 58.497871
+        },
+        "Venus": {
+          "dec": 11.027368,
+          "gha": 21.873167,
+          "hc": 48.782974,
+          "zn": 263.881378
+        },
+        "ARIES": {
+          "gha": 28.611662779341138
+        }
+      }
+    },
+    {
+      "id": "point-judith-before",
+      "utc": "2024-06-13T19:24:30Z",
+      "position": [
+        41.36666666666667,
+        -71.48333333333333
+      ],
+      "file": "point-judith-before.json",
+      "sha256": "69e5e2810549f92e79fc664b1e2a780ac982035421daaf816b46a42da1e7f7e5",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-06-13&time=19%3A24%3A30&coords=41.3666666667%2C-71.4833333333",
+      "api_version": "4.0.1",
+      "returned_time": "19:24:30",
+      "values": {
+        "Sun": {
+          "dec": 23.26695,
+          "gha": 111.059217,
+          "hc": 52.417845,
+          "zn": 253.667843
+        },
+        "Moon": {
+          "dec": 6.349514,
+          "gha": 23.219414,
+          "hc": 34.724361,
+          "zn": 115.531611
+        },
+        "Venus": {
+          "dec": 23.672857,
+          "gha": 108.355877,
+          "hc": 54.607756,
+          "zn": 251.595206
+        },
+        "ARIES": {
+          "gha": 193.71992352791625
+        }
+      }
+    },
+    {
+      "id": "point-judith-after",
+      "utc": "2024-06-13T19:28:00Z",
+      "position": [
+        41.36666666666667,
+        -71.48333333333333
+      ],
+      "file": "point-judith-after.json",
+      "sha256": "463ea5c9c1b5363458f998847f63edc20443ea4db24bfe408b5e67ecbb80524b",
+      "url": "https://aa.usno.navy.mil/api/celnav?date=2024-06-13&time=19%3A28%3A00&coords=41.3666666667%2C-71.4833333333",
+      "api_version": "4.0.1",
+      "returned_time": "19:28:00",
+      "values": {
+        "Sun": {
+          "dec": 23.267068,
+          "gha": 111.934089,
+          "hc": 51.786538,
+          "zn": 254.477651
+        },
+        "Moon": {
+          "dec": 6.336082,
+          "gha": 24.071121,
+          "hc": 35.289421,
+          "zn": 116.301296
+        },
+        "Venus": {
+          "dec": 23.673048,
+          "gha": 109.230017,
+          "hc": 53.983858,
+          "zn": 252.454868
+        },
+        "ARIES": {
+          "gha": 194.59731911111115
+        }
+      }
+    }
+  ]
+}

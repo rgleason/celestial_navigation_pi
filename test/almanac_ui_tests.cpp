@@ -59,7 +59,7 @@ void Bounds(wxWindow* root) {
 }
 }
 
-TEST(AlmanacUi, SourceControlsFitSmallAndLargeDialogs) {
+TEST(AlmanacUi, CompactPresetAndReductionChoicesFitSmallAndLargeDialogs) {
   if (!std::getenv("CELESTIAL_RUN_UI_TESTS")) GTEST_SKIP() << "Run alone with a display";
   int argc = 1;
   char name[] = "almanac-ui-test";
@@ -71,9 +71,21 @@ TEST(AlmanacUi, SourceControlsFitSmallAndLargeDialogs) {
   {
     AlmanacDialog dialog(nullptr);
     dialog.Show();
-    auto* override = Check(&dialog, "Use one DUT1 value for the whole document");
-    ASSERT_NE(override, nullptr);
-    EXPECT_FALSE(override->GetValue());
+    auto* preset = Choice(&dialog, "Compact astronavigation tables");
+    Select(preset, "Compact astronavigation tables");
+    auto* method = Choice(&dialog, "Paper only: Ageton");
+    ASSERT_NE(method, nullptr);
+    EXPECT_EQ(method->GetStringSelection(), "Paper only: Ageton");
+    auto* monthly = Check(&dialog, "Monthly star data (otherwise voyage midpoint)");
+    ASSERT_NE(monthly, nullptr);
+    EXPECT_TRUE(monthly->GetValue());
+    Select(method, "Scientific calculator");
+    EXPECT_EQ(preset->GetStringSelection(), "Custom");
+    EXPECT_TRUE(monthly->GetValue());
+    EXPECT_FALSE(Check(&dialog, "Compact universal Ageton reduction tables (46 pages)")->GetValue());
+    Select(method, "Paper only: Ageton");
+    EXPECT_TRUE(Check(&dialog, "Compact universal Ageton reduction tables (46 pages)")->GetValue());
+    Select(preset, "Compact astronavigation tables");
     for (const auto size : {wxSize(1080, 760), wxSize(760, 560)}) {
       dialog.SetSize(size);
       for (int page = 0; page < 3; ++page) {
@@ -96,7 +108,7 @@ TEST(AlmanacUi, SourceControlsFitSmallAndLargeDialogs) {
         auto* cr = cairo_create(surface);
         gtk_widget_draw(GTK_WIDGET(dialog.GetHandle()), cr);
         EXPECT_EQ(cairo_surface_write_to_png(surface,
-            wxString::Format("/tmp/celnav-2810-almanac-ui-%d-%d-%d.png", size.x, page, end).utf8_str()),
+            wxString::Format("/tmp/celnav-almanac-ui-%d-%d-%d.png", size.x, page, end).utf8_str()),
             CAIRO_STATUS_SUCCESS);
         cairo_destroy(cr);
         cairo_surface_destroy(surface);

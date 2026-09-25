@@ -70,11 +70,11 @@ set(SHORT_DESCRIPTION
 	"Celestial Navigation Plugin for OpenCPN"
 )
 set(LONG_DESCRIPTION
-	"Offline nautical almanac and navigation with optional DE440s accuracy, analytical fallback, sight planning, running fixes, sequence analysis, horizon events, time integrity and a solar-eclipse planner."
+	"Offline nautical almanac, sight planning and ranking, time-tagged running fixes, sequence analysis, horizon events, time integrity, optional DE440s navigation precision and a solar-eclipse planner."
 )
 set(VERSION_MAJOR "2")
-set(VERSION_MINOR "8")
-set(VERSION_PATCH "11")
+set(VERSION_MINOR "9")
+set(VERSION_PATCH "0")
 set(VERSION_TWEAK "0")
 set(VERSION_DATE  "23/09/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
