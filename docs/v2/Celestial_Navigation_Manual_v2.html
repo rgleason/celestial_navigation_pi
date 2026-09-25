@@ -53,7 +53,7 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
   <p style="text-align: center;"><strong>User manual</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.9<br>Documentation revision 20 September 2026</p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.8.12<br>Documentation revision 25 September 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -97,7 +97,7 @@ incorrect epoch. Saved sightings themselves are unaffected.</div>
 <h2 id="how-to-use">How to use the manual</h2>
 <p><strong>Current release:</strong> this edition covers the per-sight DR-shift
 running fix, Find position sources, measured lunar-pair guidance and corrected
-Horizon Event display. The descriptions below match the 2.8.9 controls.</p>
+Horizon Event display. The descriptions below match the 2.8.12 controls.</p>
 <p><strong>2.8.5.4 Find popup:</strong> <strong>Close</strong> keeps the edited
 DR position and returns to Sight Properties without changing the measured
 altitude. <strong>Copy estimated Hs</strong> deliberately replaces the appropriate
@@ -349,10 +349,18 @@ possible outliers and personal bias. Do not discard a point merely because a
 program labels it unusual; first look for a physical explanation.</p>
 
 <h2>5.4 Uncertainty fields</h2>
-<p>Measurement certainty controls the plotted band around a COP/LOP. Time
-certainty represents uncertainty in the observation epoch. These values should
-describe the observation honestly; reducing the number only draws a thinner
-line and does not improve the sight.</p>
+<p>For an altitude or bearing sight, angular measurement certainty sets the
+width of the plotted COP/LOP band. It does not limit the geographic positions
+considered by a lunar solution. The running-fix solver also uses altitude
+measurement uncertainty to weight observations, so changing it can affect a
+weighted fix and its reported uncertainty. It does not alter the recorded
+sextant altitude or the predicted altitude.</p>
+<p>For a lunar sight, angular measurement uncertainty describes the measured
+Moon-body distance and contributes to the estimated UTC uncertainty; the
+separate Moon and body altitude uncertainties contribute as well. The
+<strong>Total UTC search span (seconds)</strong> is different: it limits the
+time interval searched for a lunar solution. None of these settings makes a
+recorded observation more precise merely by reducing its value.</p>
 </section>
 
 <section>
@@ -833,6 +841,13 @@ Recorded observations remain unchanged.</p>
   <li>Select <strong>Time</strong>. Use <strong>Results</strong> for the operational candidates and <strong>Calculations</strong> for the complete auditable working.</li>
   <li>Use rough DR, hemisphere, an additional altitude sight or independent evidence to select the physical solution.</li>
 </ol>
+<p><strong>UTC search span:</strong> a new lunar sight defaults to 86,400 seconds,
+searching 12 hours either side of its entered watch time. Older saved sights
+can retain narrower spans. If no UTC solution is found, first check the
+observation, limbs and watch reading; then widen the span if the true UTC may
+lie outside it. This changes the times searched, not the recorded observation
+or its measurement uncertainty. A wider span can also reveal additional
+candidate solutions.</p>
 
 <p>The lunar result window deliberately has two pages. <strong>Results</strong>
 is the concise operational view: possible UTC values, watch correction,
@@ -1141,7 +1156,7 @@ celestial-navigation fix.</p>
 <table class="troubleshooting" width="650" style="width: 650px; table-layout: fixed;">
 <colgroup><col width="195"><col width="455"></colgroup>
 <tr><th>Symptom</th><th>Checks</th></tr>
-<tr><td>No COP is visible</td><td>Confirm the eye icon is enabled; zoom out; check UTC/date, body, Hs and limb; increase plotted certainty temporarily; verify the circle is not far from the current viewport.</td></tr>
+<tr><td>No COP is visible</td><td>Confirm the eye icon is enabled; zoom out; check UTC/date, body, Hs and limb; increase plotted certainty temporarily to locate the circle, then restore the observation's honest uncertainty; verify the circle is not far from the current viewport.</td></tr>
 <tr><td>Hc or Zn is implausible</td><td>Check AP/DR latitude and longitude signs, UTC conversion, selected body, and whether “boat position” moved after the sight.</td></tr>
 <tr><td>Intercept is enormous</td><td>Check degrees/minutes entry, west/east longitude, upper/lower limb, time zone/date rollover and double-applied clock correction.</td></tr>
 <tr><td>Sunrise/sunset differs by about an hour</td><td>Distinguish UTC from local civil time and daylight-saving time. Verify the planner's independent entry-time and display-time selectors.</td></tr>
@@ -1152,6 +1167,7 @@ celestial-navigation fix.</p>
 <tr><td>An invalid planner date or time leaves no results</td><td>This is intentional: the plugin clears previously calculated events, bodies, almanac and helper results so stale output cannot be mistaken for the invalid planning context. Correct the entry using YYYY-MM-DD and HH:MM:SS.</td></tr>
 <tr><td>GNSS UTC unavailable</td><td>Confirm a valid NMEA RMC or ZDA sentence is reaching OpenCPN. The plugin does not infer GNSS time from position alone.</td></tr>
 <tr><td>Chrony status unavailable</td><td>The computer may use another synchronisation service, chrony may not be installed, or its query interface may be unavailable. UTC display still uses the system clock.</td></tr>
+<tr><td>No lunar UTC solution is found</td><td>Check watch reading, date, lunar distance, contact/limbs and altitudes. An older sight may retain a narrow UTC search span; widen it if the true time may lie outside the selected interval. Angular COP width is not the UTC search control.</td></tr>
 <tr><td>Lunar solver finds several times</td><td>Narrow the search only when justified; check contact/limbs and altitudes; use DR/hemisphere or another sight to resolve candidates.</td></tr>
 <tr><td>Lunar solution is unstable</td><td>Review distance and altitude uncertainties, sextant side/index error, body geometry, separate timestamps and vessel motion.</td></tr>
 <tr><td>Joint lunar solution has alternates</td><td>Do not choose by RMS alone. Add observations with different bodies/geometry, narrow the time range only from independent evidence, and compare the candidate positions with DR or known hemisphere.</td></tr>
