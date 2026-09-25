@@ -22,10 +22,10 @@ workflows:
 ## ----------------------
 ## OpenCPN 5.8 Plugins  (Also work in 5.10)
 ## ----------------------
-          - build-android-arm64:
-              <<: *std-filters
-          - build-android-armhf:
-                <<: *std-filters
+#         - build-android-arm64:
+#              <<: *std-filters
+#          - build-android-armhf:
+#                <<: *std-filters
           - build-flatpak-aarch64-2208:
               <<: *std-filters
           - build-flatpak-x86-2208:
