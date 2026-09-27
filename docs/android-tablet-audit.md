@@ -1796,3 +1796,90 @@ change and explicit −20/100 boundary assertions now pass the Android UTC/angle
 boundary script. That source change is not in the installed build71 and needs
 new packaging and physical retest. Full P01–P08 and the wider function matrix
 remain incomplete; no publication is authorized.
+
+### 2026-09-27 23:21–23:31 BST: committed build72 import and planned sight Save
+
+Commit `61b00666ae15609a16cab4cf35c49b0e2abd5256` includes the Android
+ordinary-coordinate decimal display correction and boundary assertions. The
+ARM64 archive `celestial_navigation_pi-2.8.13.0-android-arm64-16-android-arm64.tar.gz`
+hashes to `3ab6eae5ac6c2cbaf3eedf166b55d5800c9ab5db2fa89afef6a75d0a6c99130a`.
+Android and desktop builds, package creation and the Android UTC/angle boundary
+script passed (`build72-android-final.log`, `build72-desktop.log`,
+`package72.log` and boundary logs). Plugin Manager imported the exact archive;
+the installed library SHA256 `d8e12dc343daf5d51bfa4a0130df4e23b7160bca4c8e110250f4bc97d67800ff`
+matched its payload. PID16493 survived hot import. A selected Fiji DR latitude
+now appears as `-20` rather than `-2e+01` in physical Plan context.
+
+Selecting the pre-existing Sun2 observation transferred its exact DR
+43.2366916666667,-77.533415 and 2025-07-20 17:16:33 UTC into Plan. Typing
+33.987 seconds switched to Manual and gave 17:16:33.987 UTC in context and
+Bodies. Selecting Venus and Create sight opened the editor with Venus and the
+same fractional instant. I selected the centre limb, entered measurement
+47.7667°, and saved. Independently read `Sights-after-planned72.xml` has five
+observations, including Venus with `BodyLimb=1`, `Milliseconds=987`, the exact
+date/time, measurement and DR coordinates; the original four attribute sets
+were unchanged. The file SHA256 is
+`e8fece5a0c5493397fc22154d8f2648fbd42b5ad7e822ac89beadde3706bb93e`.
+A deliberate force-stop/cold launch created PID18454, and the Venus card with
+the fractional timestamp and the other four records were visible. I selected
+and deleted only the disposable Venus sight through the UI; this action showed
+no separate confirmation. The resulting independently read file hashes exactly
+to the pretest four-sight snapshot:
+`030d4193395b4cb8bddce684d00fb1477c00e56bc0661a70f2af81cd9bcc1020`.
+Screens `resume72-*.png`, both XML snapshots, import/build logs and post-run
+crash/ANR checks are retained. Font scale1.15 and autorotation were restored.
+This closes the planned-sight Save/cold-reopen example, not the remaining
+Planner sorting, filtering, sky or export flows.
+
+### 2026-09-27 23:33–23:40 BST: physical time-tagged moving observer
+
+On the installed `61b0066` build, selected Sun2 supplied DR
+43.2366916666667,-77.533415. Planner Now resolved to 2026-09-27
+22:34:02.431 UTC. I enabled Time-tagged moving observer and entered true
+COG90°, SOG10 kn; physical Context showed both values and Results ready.
+Events showed nautical dusk at 00:21:39 UTC with observer
+43°07.4875′N, 082°35.4195′W, and sunrise at 11:12:50 UTC with observer
+43°12.4449′N, 080°07.2713′W. Independently calculated positions using
+PROJ `geod +ellps=WGS84` from the selected DR, course and signed elapsed
+times are 43.1247889984,-82.5903826194 and
+43.2074139759,-80.1212016611. WGS84 inverse distances to the displayed
+coordinates are 4.698 m and 1.089 m. Exact method/output is retained in
+`planner-motion73-geod.txt`, with `resume73-{motion-final,events-on}.png`.
+
+Planner Close/reopen preserved checked motion and 90/10 inputs while Now
+refreshed its reference instant. Turning motion off restored each visible
+event observer to fixed 43°14.2015′N, 077°32.0049′W, matching the DR; sunrise
+became 11:02:29 UTC in that stationary run. The saved Sights.xml after all
+these changes remained byte-identical to the four-sight pretest snapshot
+(`030d4193395b4cb8bddce684d00fb1477c00e56bc0661a70f2af81cd9bcc1020`).
+Screens `resume73-{reopen-lower,motion-off,events-off}.png` retain the mode
+comparison. PID18454 was continuous.
+
+A rapid two-tap page-selection attempt yielded a black Planner surface for
+several seconds; Android Back returned to the workspace with PID18454
+continuous. A later separately observed menu selection did not reproduce the
+condition (`resume73-{context-return,context-wait,back-black,menu-repro,
+context-repro}.png`). Its cause remains unconfirmed and warrants repetition
+in cross-cutting acceptance. This focused P07 check does not cover alternate
+context sources, reference times, invalid COG/SOG, or other Planner pages.
+
+### 2026-09-27 23:40–23:42 BST: physical Almanac CSV Replace
+
+The real Planner Almanac showed 175 rows from the selected context's Now
+instant 2026-09-27 22:37:49.441 UTC. I retained the existing disposable
+`celestial-reports/planner-worksheet65.csv` before mutation, SHA256
+`fdf48d51f899d30a29187d0535cbeabf306f8890c5a3067473d5da9b66afc0d3`
+(`planner-worksheet65-before-replace74.csv`). Through Export CSV, the custom
+OpenCPN file picker, the existing filename selection, Save, and the explicit
+Replace button, I wrote the current result to that same path. The app returned
+to responsive Almanac with PID18454 continuous. Directly read device bytes
+(`planner-worksheet65-after-replace74.csv`) hash to
+`bad4a535a2ad738f664cd7e8ddcdd4b547aedf54eff6f0c32ca78b0914d785be`.
+Independent CSV parsing found 175 data rows, seven expected body identities,
+25 unique hourly instants, and nine columns. The first Sun Hc2.890668°
+matches the on-screen 2°53.4401′ and its UTC retains .441; the final Polaris
+record is at 2026-09-28 22:37:49.441 UTC. `Sights-after-export74.xml` remains
+byte-identical to the four-sight pretest file. Screens
+`resume74-{almanac,picker,reports,existing,confirm,replaced}.png` retain the
+whole UI path. This verifies Replace for this disposable file and context;
+other export destinations and failure cases are still open.
