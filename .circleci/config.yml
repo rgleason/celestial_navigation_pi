@@ -102,7 +102,7 @@ commands:
         steps:
             - run:
                 name: Retain exact platform packages and provenance
-                command: python3 ci/retain-build-artifacts.py
+                command: bash ci/retain-build-artifacts.sh
             - store_artifacts:
                 path: retained-artifacts
             - store_artifacts:

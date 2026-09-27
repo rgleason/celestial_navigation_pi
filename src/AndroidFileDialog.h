@@ -6,6 +6,7 @@
 using CelestialFileDialog = wxFileDialog;
 #else
 #include "AndroidSurface.h"
+#include "AndroidDocumentImport.h"
 #include <QDir>
 #include <QFileInfo>
 #include <QListWidget>
@@ -24,6 +25,7 @@ class CelestialFileDialog {
   int ShowModal() {
     using namespace celestial_android;
     path_.clear();
+    imported_.reset();
     wxDialog sheet(parent_, wxID_ANY, title_);
     sheet.GetHandle()->setProperty("cnDocumentSurface", true);
     auto* body = new wxBoxSizer(wxVERTICAL);
@@ -33,7 +35,6 @@ class CelestialFileDialog {
     const QString privatePath = QString::fromUtf8(GetpPrivateApplicationDataLocation()->utf8_str());
     locations->addItem("OpenCPN files", privatePath);
     if (!directory_.empty()) locations->addItem("Current folder", QString::fromUtf8(directory_.utf8_str()));
-    locations->addItem("Downloads (if accessible)", "/storage/emulated/0/Download");
     locations->setItemDelegate(new CN_AndroidChoiceDelegate(locations));
     layout->addWidget(locations);
     auto* navigation = new QHBoxLayout;
@@ -48,6 +49,8 @@ class CelestialFileDialog {
     auto* name = new QLineEdit(QString::fromUtf8(name_.utf8_str()), panel->GetHandle());
     name->setPlaceholderText("File name"); layout->addWidget(name);
     auto* error = new QLabel(panel->GetHandle()); error->setWordWrap(true); error->setStyleSheet("color: #9e2525;"); layout->addWidget(error);
+    auto* device = new QPushButton("Choose from device...", panel->GetHandle());
+    if (!(flags_ & wxFD_SAVE)) layout->addWidget(device); else device->hide();
     auto* choose = new QPushButton(flags_ & wxFD_SAVE ? "Save" : "Open", panel->GetHandle());
     layout->addWidget(choose);
     panel->GetHandle()->setStyleSheet(QString("QPushButton, QLineEdit, QComboBox { min-height: %1px; font-size: %2pt; } QLabel, QListWidget { font-size: %2pt; }")
@@ -58,6 +61,18 @@ class CelestialFileDialog {
     const auto parts = QString::fromUtf8(masks_.utf8_str()).split('|');
     for (int i = 1; i < parts.size(); i += 2) masks.append(parts[i].split(';', QString::SkipEmptyParts));
     if (masks.isEmpty()) masks << "*";
+    masks.replaceInStrings("*.*", "*");
+    QObject::connect(device, &QPushButton::clicked, panel->GetHandle(), [&]() {
+      wxString failure;
+      auto imported = ChooseDeviceDocument(&sheet, masks, &failure);
+      if (!imported) {
+        if (!failure.empty()) error->setText(QString::fromUtf8(failure.utf8_str()));
+        return;
+      }
+      imported_ = imported;
+      path_ = wxString::FromUTF8(imported->path.toUtf8().constData());
+      sheet.EndModal(wxID_OK);
+    });
     auto refresh = [&]() {
       files->clear(); folder->setText(directory.absolutePath()); up->setEnabled(!directory.isRoot());
       const auto entries = directory.entryInfoList(masks, QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot,
@@ -66,7 +81,7 @@ class CelestialFileDialog {
         auto* item = new QListWidgetItem((entry.isDir() ? "Folder: " : "") + entry.fileName(), files);
         item->setData(Qt::UserRole, entry.absoluteFilePath()); item->setData(Qt::UserRole + 1, entry.isDir());
       }
-      error->setText(entries.empty() ? "No matching files. Scoped storage can restrict folders; use OpenCPN files or import into that folder." : "");
+      error->setText(entries.empty() ? "No matching files here. Use Choose from device to open a file from Downloads or another provider." : "");
     };
     QObject::connect(up, &QPushButton::clicked, panel->GetHandle(), [&]() { directory.cdUp(); refresh(); });
     QObject::connect(locations, static_cast<void(QComboBox::*)(int)>(&QComboBox::activated), panel->GetHandle(), [&](int index) {
@@ -99,9 +114,11 @@ class CelestialFileDialog {
     return ModalResult(sheet) == wxID_OK && !path_.empty() ? wxID_OK : wxID_CANCEL;
   }
   wxString GetPath() const { return path_; }
+  std::shared_ptr<celestial_android::ImportedDocument> GetImportLease() const { return imported_; }
  private:
   wxWindow* parent_;
   wxString title_, directory_, name_, masks_, path_;
   long flags_;
+  std::shared_ptr<celestial_android::ImportedDocument> imported_;
 };
 #endif

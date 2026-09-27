@@ -27,6 +27,9 @@
 
 #include "wx/wxprec.h"
 #include "Dut1UpdatePanel.h"
+#ifdef __OCPN__ANDROID__
+#include "AndroidDocumentImport.h"
+#endif
 
 #ifndef WX_PRECOMP
 #include "wx/wx.h"
@@ -110,6 +113,9 @@ celestial_navigation_pi::~celestial_navigation_pi(void) {}
 //---------------------------------------------------------------------------------------------------------
 
 int celestial_navigation_pi::Init(void) {
+#ifdef __OCPN__ANDROID__
+  celestial_android::CleanAbandonedImports();
+#endif
   celestial_navigation::LoadInstalledDut1Update();
   AddLocaleCatalog(_T("opencpn-celestial_navigation_pi"));
 

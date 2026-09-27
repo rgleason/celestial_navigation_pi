@@ -43,18 +43,18 @@ actual output/files, screenshots, persistence, Cancel/Back and invalid cases.
 | L05 | Lunar pair planning, measured guidance, bodies and timing | Plan > Lunar pairs | PENDING |
 | S01 | Sextant body pair/contact prediction, index correction, repeats, remove | Tools > Sextant check | PENDING |
 | S02 | Calibration profiles/name/serial, build/save/select/persistence | Sextant check > Profiles | PENDING |
-| C01 | Vertical-angle above/below-horizon modes, object heights/eye/angle/uncertainty, range | Tools > Coastal > Vertical | PARTIAL: waterline-to-top independent reference 0.974 NM and retained reopen; confirmed New resets entries/results; sea-horizon cases pending |
-| C02 | Optional true/magnetic bearing, variation/WMM/deviation, waypoint/place selection | Coastal > Bearing / positions | PARTIAL: true bearing75.22°, independently matching position; magnetic/WMM/waypoint pending |
+| C01 | Vertical-angle above/below-horizon modes, object heights/eye/angle/uncertainty, range | Tools > Coastal > Vertical | PARTIAL: waterline reference 0.974 NM; sea-horizon 2.9′/2.8′ references 9.676/9.797 NM, including negative corrected angle; retained reopen and reset checked; remaining invalid/uncertainty cases pending |
+| C02 | Optional true/magnetic bearing, variation/WMM/deviation, waypoint/place selection | Coastal > Bearing / positions | PARTIAL: true bearings 75.22° waterline and 65.22° sea-horizon positions match independent references; magnetic/WMM/waypoint pending |
 | C03 | Horizontal angles, three objects, observer DR, sequential times/motion, fix | Coastal > Horizontal | PARTIAL: Bob revision 1 second fix and 0.149 NM formal uncertainty match; chart/reopen/empty-input rejection checked; sequential motion pending |
 | C04 | Range circles/arcs/fix overlay, New/clear observation, clear plots, hide/reopen | Coastal > Results / Chart | PARTIAL: vertical circle/bearing and horizontal loci/fix visible; device rotation, reopen, clearing without input loss, reset/refusal checked; confirmation Back ignored in 29 and fixed/retested in 31; chart heading rotation pending |
 | A01 | Presets, route GUID/position/band/global coverage, dates, DUT1 | Plan > Voyage almanac > Coverage | PENDING |
 | A02 | All content toggles, planning cadence, safety/calculator/paper self-contained modes | Almanac > Content | PENDING |
 | A03 | Direct/universal tables, forms counts, paper sizes, booklet/signature, page estimate | Almanac > Paper / Forms | PENDING |
 | A04 | Preview, in-process PDF generation, output/overwrite/cancel, viewer, actual bytes | Almanac > Preview / Generate | PARTIAL: real 28-page PDF, independently inspected bytes/pages/sources (iteration 22); page entry and last-page rendering repaired and exercised; cancellation/overwrite and other outputs pending |
-| E01 | Year-span eclipse search/list/selection | Plan > Eclipses > Search | PENDING |
+| E01 | Year-span eclipse search/list/selection | Plan > Eclipses > Search | PARTIAL: 2027 two-event search, full UT1/date/coordinate cards and synchronized August selection exercised in 35; long/invalid/cancel cases pending |
 | E02 | Path/partial magnitude contours, plot selected/clear, pan/zoom/rotation | Eclipses > Chart | PENDING |
-| E03 | Local position/boat, contact circumstances, LOLA refine | Eclipses > Local | PENDING |
-| E04 | DE440s download/import, optional orientation/LOLA, hash/format/coverage verification and cancel | Tools > Data / Eclipses > Data | PENDING |
+| E03 | Local position/boat, contact circumstances, LOLA refine | Eclipses > Local | PARTIAL: precise reference coordinates, standard total duration 382.44 s versus NASA 382.6 s (1 s tolerance), real LOLA calculation, portrait/landscape final results; independent terrain accuracy/invalid cases pending |
+| E04 | DE440s download/import, optional orientation/LOLA, hash/format/coverage verification and cancel | Tools > Data / Eclipses > Data | PARTIAL: all three local imports through native scoped-storage picker, independent official hashes, cold re-verification and effective 506 MiB copy Cancel with temporary cleanup/previous-file preservation; download/invalid/coverage cases pending |
 | D01 | Offline HTML manual/definitions, long scrolling and links | Tools > Manual | PENDING |
 | D02 | Bundled PDF manual, current version, actual viewer | Tools > PDF manual | PARTIAL: 2.8.13, 42 pages, last page rendered and Next disabled; keyboard-only Back retained viewer. More cross-cutting cases pending |
 | D03 | Host colour scheme, sight display controls, workspace/chart visibility | Tools > Display; Chart | PENDING |

@@ -7,6 +7,7 @@
 
 #include <wx/string.h>
 #include <wx/thread.h>
+#include "PlatformWorkerThread.h"
 
 #include "LunarSessionEngine.h"
 
@@ -42,7 +43,7 @@ private:
       const lunar_session::Options& options);
 
   SolveFunction m_solve;
-  mutable wxCriticalSection m_result_lock;
+  mutable CelestialWorkerMutex m_result_lock;
   lunar_session::Result m_result;
   bool m_result_ready;
   WorkerThread* m_thread;

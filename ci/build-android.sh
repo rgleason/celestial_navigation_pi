@@ -25,6 +25,9 @@ support_sha256=c4110c532e9a0bcf071bbd10fe6f7627d7e91380c803c52ac0e89ce5f993db9b
 tools_sha256=2d2d50857e4eb553af5a6dc3ad507a17adf43d115264b1afc116f95c92e5e258
 
 mkdir -p "$work_dir" "$support_cache" "$artifacts/package"
+source "$source_dir/ci/ensure-android-cmake.sh"
+celnav_prepare_cmake "$work_dir/tools"
+cmake --version | tee "$artifacts/cmake-version.log"
 
 if [[ -z "${NDK_HOME:-}" ]]; then
   sdkmanager="$sdk_root/cmdline-tools/latest/bin/sdkmanager"

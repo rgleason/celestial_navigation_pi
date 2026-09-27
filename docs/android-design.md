@@ -133,3 +133,28 @@ acceptance, with root metadata.xml and no catalogue publication. On 27 September
 verification on this tablet, a pob220 OpenCPN fork and a focused upstream master
 PR if the fix succeeds. Preserve the existing Celestial greyscale/black icon;
 no replacement artwork or jigsaw fallback is required.
+
+## Eclipse refinement after physical testing, 27 September 2026
+
+The tablet exposed clipped event dates and coordinates in the inherited eclipse
+table. Before further implementation, the Android eclipse sheet is divided into
+three visible task pages using the existing section selector:
+
+- **Search & chart:** full-width starting/ending year fields, Find eclipses,
+  selectable event cards showing the complete UT1 instant, type, magnitude and
+  separate latitude/longitude lines; central-path and contour choices, Plot
+  selected, Clear plot. A selected-event summary makes selection explicit.
+- **Local circumstances:** the selected-event summary, full-width latitude and
+  longitude fields, Use boat position, the optional LOLA choice, Calculate and
+  a touch-scrollable results document. Coordinates keep the shared precise
+  parser and formatting; no numerical precision is reduced for presentation.
+- **Data:** verified/missing/invalid status, DE440 coverage and analytical
+  fallback explanation, separate full-width download/import actions, optional
+  lunar data and the visible installation-cancellation action.
+
+The close action stays in the sheet header. Search and calculation retain the
+existing cancellable worker and unchanged shared engines. Event selection must
+remain consistent across pages, repeated searches, and chart output. Native
+cards have readable multiline text and a scrollable list; all pages require
+physical portrait/landscape, font-size, final-control and Back checks. Desktop
+layout and business handlers remain unchanged behind Android guards.

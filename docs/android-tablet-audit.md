@@ -433,3 +433,196 @@ legacy parameters on retain-code invocations, and retains all 19 build jobs and
 publication approval gate. Existing official CircleCI CLI reports configuration
 valid (circleci-config-after31.log); this is not a remote build pass. No stored
 CLI token or CIRCLE_TOKEN/CIRCLECI_TOKEN is available.
+
+## Coastal sea-horizon references and fresh local builds, 13:39–13:52 BST
+
+Installed development 31, library 4ff8de8ea524e029f9a6f88351ee34cbaf72c6b5d80d8c79e7f60f6277954ec1,
+PID 23529. Target 50.6616666666667 N, -1.5916666666667 E;
+sea horizon to top, height 24 m, water level 0 m, eye 3 m, index error -0.15′.
+Observed 2.9′ (0.0483333333333333 degrees) produced 9.676 NM and corrected
++0°00.0051′. With checked true bearing 65.22°, position 50°35.6333′ N,
+001°49.3301′ W matches the independent Bob coastal fixture within 0.000002
+degrees; range tolerance 0.0006 NM. The genuinely enabled bearing field was
+verified before entry; earlier taps on the reference combo or disabled field
+were automation errors and are not evidence of a successful bearing entry.
+The actual chart shows the blue range circle and southwest fix marker;
+2 NM scale is consistent with the 9.676 NM radius. New > Android Back on this
+nonempty observation preserved its entered bearing, range and result.
+
+Observed 2.8′ (0.0466666666666667 degrees), with all other inputs retained,
+produced 9.797 NM and **-0°00.0949′**, agreeing with the independent 9.797358 NM
+and -0.094945′ reference within displayed rounding. This verifies that a
+negative corrected sea-horizon angle is preserved rather than clamped to zero.
+Evidence: slice31-coastal-sea-bearing-entered/result, sea-chart,
+nonempty-new-prompt/back and negative-result.png.
+
+The remaining desktop GUI suites FixUi, FindBodyUi and AlmanacUi each passed
+alone after 31; all six requested desktop UI suites now have actual executed
+passes (logs/XML desktop-*-after31). No broader shared numerical rerun was
+needed for Android-only adapters.
+
+Fresh support-archive extraction builds passed for exact committed source
+e7e0cf7ac6e6ddf30eaf5ec6cb202ba9957ad199, both ARM64 and ARMHF. Archive SHA256:
+ARM64 93e41a8b2048e68c844171fea6e18657e9e87bba9b445a4ccf81c45343052c8a;
+ARMHF f62836b9ef7c70a8a02af9499e5f17481e7846e6da8a416201cdce4881458e9c.
+Artifacts/android-*/package include root metadata and exact source provenance.
+These archives have planned, unpublished development URLs; neither is a public
+download or final tablet acceptance package. The local ARMHF build has not
+been device-tested. Existing verified core libraries were used; the support
+archives were freshly extracted, and required support headers restored by
+the reproducible checksum/provenance step. Full logs fresh-*-e7e0cf7.log retained.
+
+The user's documentation worktree remains at 4435de5088666933fb46ee9663a36fbb42baea87;
+its new untracked validation/stelian-study directory is untouched. Its study
+identifies baseline analytical DUT1/light-deflection limitations. These are
+not Android regressions and must be respected in reference tolerances; shared
+numerical changes are outside this release's documentation-only desktop scope.
+
+Iteration 32 addresses the genuine scoped-storage gap in the app folder
+browser: visible Choose from device uses ACTION_OPEN_DOCUMENT, a Qt-owned
+asynchronous result receiver, and a cancellable 256 KiB worker copy. No host
+Java chooser copy executes. Staging files have leases; eclipse verification
+retains its lease until verification/installation finishes. Android final
+installation also uses a cancellable worker and atomic commit. Abandoned
+plugin-owned staging files are removed at plugin initialization. Desktop file
+dialogs and installation paths remain unchanged. Build and physical acceptance
+of this adapter are tracked separately; no physical pass claimed yet.
+
+## Scoped-storage imports, worker crash and eclipse pages, 13:53–14:23 BST
+
+The first iteration-32 import archive accidentally used the older CPack filename
+with the repeated target suffix. Its installed library was 95ee6d956cdf64deb85e38ac578d8d8b780d82370f1457b188ded6c3286c3728,
+not the newly built adapter. Missing Choose from device exposed this packaging
+mistake. No new-adapter pass is attributed to that archive. The corrected 32b
+archive used the plain incremental CPack filename and actual installed library
+c35158cc02422e1b4f46f0abf7e76b34d1730faa97c049bd0fc72b9207dfeaa0.
+Its matching unstripped file is slice32-unstripped.so (SHA256
+c9b565f2479abad6d51e542d807df94fe6e50e68d5ad040b7f7aa2746bff9f71).
+
+32b copied DE440s successfully but crashed at 13:58:24.983 in
+EclipseVerificationWorker::Start. Symbolication traced wxMutex::Lock to the
+wxThread constructor: the statically linked wxQt thread module had an
+uninitialized global mutex in this plugin. PID 23529 died. This was a plugin
+adapter defect, not a host import restriction. Complete logcat and Android
+exit information are retained as slice32b-import-crash-logcat.log and
+slice32b-import-exit-info.txt. Explicit app recovery created PID 29230.
+
+33 uses std::thread/std::mutex for the two Android background verification and
+lunar-session workers. Desktop aliases retain wxThread and wxCriticalSection;
+shared numerical algorithms are unchanged. Android and desktop builds passed,
+and eight real desktop worker regression tests passed, including verification
+of the official DE440s file. The rebuilt test target was executed under Xvfb;
+desktop-workers-after33.log/xml retain the results.
+
+33 installed through Plugin Manager at 14:02 and matched library
+243eaa0085130f9792d149555362a5155295d54600654c2f6617c76f2d0e4324.
+DE440s then imported through Choose from device, verified, and independently
+matched official SHA256 c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2.
+The 2027 search found annular magnitude 0.9281 and total magnitude 1.0790, but
+the inherited table clipped dates and coordinates, so it was not accepted as
+a readable result. The optional-data custom modal action was also lost by wxQt
+ShowModal; 34 uses the explicit wx return code on Android.
+
+The design document was extended before implementing three Android eclipse
+pages: Search & chart, Local circumstances, Data. 34 built on Android and
+desktop and installed through Plugin Manager at 14:16; actual library SHA256
+e5a0862a78dea6645933eda831b16c1ee484f67df66d9483192e252079a04d14.
+Visible 2027 cards showed complete UT1 dates and coordinates. Font encoding
+and selection synchronization defects were found: the highlighted August card
+could leave the model pointing at February. 35 makes the visible native card
+index authoritative for Android and fixes the UTF-8 labels. Neither defect is
+marked passed until the rebuilt UI is exercised.
+
+On 34, the repaired optional import actions opened the correct native picker.
+Orientation and LOLA were imported from Downloads and verified/installed.
+Independent run-as hashes of the actual installed files matched:
+
+- moon_pa_de440_200625.bpc: 60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f
+- lola64-pa.bin: f59edf8437442b05525345b3c29b65f0f31af8fc96420abf2dd18af3480f7ff4
+
+The plugin-owned celestial-imports staging directory was empty afterwards.
+PID 29230 remained continuous. The first large-copy cancellation attempt was
+too late: the screenshot already showed verification and installation completed.
+This is a successful verified import, **not** a cancellation pass. Effective
+copy/verification cancellation, invalid imports, cold-restart persistence,
+terrain-refined contacts and orientation/font regressions still require tests.
+
+34 and 35 are development builds from e7e0cf7 plus uncommitted adapters.
+Their provenance JSON explicitly records the dirty worktree and saved source
+snapshots source-development34/35. Proposed archive URLs are unpublished;
+neither tarball is a final acceptance package or an exact e7e0cf7 binary.
+
+## Eclipse reference, cancellation and cold restart, 14:24–14:42 BST
+
+Development 35 installed through Plugin Manager. Archive SHA256 is
+efa76c3690d80acc2fbe07dc82c18739b358c12aef1b87b50bdb7152f07d7e74;
+independently read installed library SHA256 is
+eb17900c528d0890469e24fbd2ebb67bbbb1bba13b902971ceab05213b322781.
+Matching unstripped binary slice35-unstripped.so has SHA256
+d8e52464c5da43611d48a9d616690d1ce93f5fab9ced7850e3ce8ee1f277caa0.
+These remain dirty development builds, with source-development35 snapshots.
+
+The 2027 search returned two complete readable cards. Selecting August visibly
+changed both the selected summary and Local circumstances calculation to the
+August 2 total eclipse. At 25.505 degrees N, 33.18333333333333 degrees E,
+standard totality was 382.44 seconds, within the existing independent NASA
+fixture's 382.6 seconds ±1 second. The UI used its modeled ΔT of 76.06 seconds;
+the NASA fixture uses 71.7 seconds. Thus absolute UT1 contacts/longitude are
+not asserted to match a fixture with different ΔT. Standard contacts were
+08:41:29.78, 10:03:19.93, maximum 10:06:31.37, 10:09:42.37 and 11:27:35.95 UT1.
+Real LOLA refinement produced contacts 08:41:31.97, 10:03:18.28,
+10:06:31.37, 10:09:43.86 and 11:27:35.83, duration 385.58 seconds.
+Terrain-dependent execution is demonstrated; independent accuracy of those
+terrain contacts remains pending. See slice35-local-nasa-unrefined.png and
+slice35-local-nasa-lola.png. Rotation with the sheet open preserved selection,
+inputs and results; a real landscape swipe exposed the final ΔT/terrain line
+(slice35-eclipse-landscape-bottom.png). Other page/orientation cases remain.
+
+Repeated Local calculation exposed normalization of editable coordinates into
+rounded DMM text. Development 36 preserves the original Android entry text
+and clarifies signed decimal versus DMM labels; desktop normalization is
+unchanged. Android and desktop compilation passed. The corrected precision
+behavior has not yet been installed or physically verified.
+
+At 14:36, the 506 MiB LOLA import was cancelled during actual copying. The
+before screenshot showed 6 MiB copied; the cancellation tap occurred 0.807
+seconds after selection. The browser returned, the plugin-owned staging folder
+was empty, and the independently read installed LOLA hash remained unchanged.
+See slice35-fast-copy-before-cancel.png, slice35-fast-copy-after-cancel.png and
+slice35-data-after-copy-cancel.png. Verification cancellation and remote-provider
+interruption are separate pending cases.
+
+Automation had accidentally activated native route creation and created one
+disposable five-point route. This was not a plugin-output pass. Route creation
+and chart-follow were turned off. With OpenCPN normally exited, the actual
+navobj.db was backed up and only the identified test route, its five uniquely
+referenced points and five links were removed. SQLite integrity passed, and
+every original row across all eight tables exactly matched the original
+baseline. Private evidence is host-object-cleanup35.json and
+navobj-pre-cleanup35.db under /tmp/celnav-android-20260927; these user-data files
+must not be uploaded. Cleaned database SHA256 is
+abd5f9627eeaaa546d240cd29dfb56bfa92e4ac4ada2987bc9b6fcd46b932393.
+
+PID 29230 exited normally (EXIT_SELF, status 0) at 14:31; explicit cold launch
+at 14:32 created PID 31948. Saved observations retained fractional angle/time
+values, and all three optional packs reverified successfully. Complete logs
+collected at 14:33 showed no new fatal crash/ANR after the repaired worker was
+installed. This is an explicit restart, not continuity across the two PIDs.
+
+## First full remote CI results and repairs
+
+The public CircleCI workflow 861ec2da-f3e8-42d6-bfc2-636c290c29dd ran exact
+e7e0cf7ac6e6ddf30eaf5ec6cb202ba9957ad199: 16 of 19 platforms passed (ARM64,
+macOS and all fourteen Linux targets). Both Windows jobs compiled/packaged but
+failed artifact retention because python3 was absent. ARMHF built core but
+failed plugin configuration: CMake 3.16 expected the obsolete NDK platforms
+layout. CircleCI reports oss=true. Publication jobs did not run.
+
+The repair selects an available Python 3 interpreter on Windows and pins
+Kitware CMake 3.31.6 with upstream SHA256 for both Android jobs. Shell checks,
+real Linux artifact retention, official CircleCI config validation and an empty
+ARMHF configure using the pinned CMake passed locally. A complete new ARMHF
+build and a new exact-source remote workflow are still required; these local
+checks do not change the failed remote jobs into passes. Logs are retained
+under /tmp/celnav-android-20260927/circleci-e7-* and
+armhf-cmake31-configure36.log.
