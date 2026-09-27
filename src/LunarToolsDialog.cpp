@@ -655,8 +655,8 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
 #ifdef __OCPN__ANDROID__
   // Nested sizer items retain their desktop width flags even when their
   // orientation changes. Expand the labelled groups as well as each control.
-  for (wxSizer* group : {static_cast<wxSizer*>(row1), utcRow, row2, row3,
-                         entry, static_cast<wxSizer*>(profile)})
+  const std::vector<wxSizer*> fieldGroups{row1, utcRow, row2, row3, entry, profile};
+  for (wxSizer* group : fieldGroups)
     for (auto* item : group->GetChildren()) {
       item->SetProportion(0);
       item->SetFlag(wxEXPAND | wxALL);
