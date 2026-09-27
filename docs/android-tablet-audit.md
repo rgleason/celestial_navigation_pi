@@ -1344,3 +1344,30 @@ xGRIB/xWeatherRouting. PID23025 continuous. Memory and crash buffers retained
 as memory-fix55.txt/crash-fix55.txt. Final import candidate57 combines the
 residual-model workaround with the motion-event fix;56 was built/packaged
 but not installed or counted as passed.
+
+### 18:55–19:01 BST — iteration57 physical fixes and sequence review
+
+Exact0cae732 imported through Plugin Manager; tar SHA256
+4f73069b8bb994dcd39b8062fa79ab7a30716b6b95d99191d9fd7a08ddda0c7e,
+actual installed library b25215efa1e9632446e12ca0475a35df2b2352ff01d53da2b4284d9ae96e9d8b.
+PID23025 continuous. Each residual now displays its own full date/time with
+milliseconds, Hc and signed Ho-Hc, plus actual saved shift/bearings when used.
+Stationary residuals +0.95′,-0.06′,+0.96′ agree with independent worksheet
+least-squares calculation to0.1′. Typed COG90/SOG5 immediately changes RMS
+to18.08′ and residuals to+22.09′,-1.46′,+22.14′ without a trigger workaround.
+UTC21:18:20 converts to local22:18:20, date20 July2025; summary UTC epoch
+and fix unchanged. All last controls and labels visible after genuine swipes.
+Sights-fix57.xml independently confirms the four observations' retained values.
+Desktop57 full build and existing FixUi smoke passed.
+
+Sequence analysis: three saved-DR Sun sights, mean-1.13′/SD4.03′/median-1.49′/
+MAD3.47′/trend+0.51′h. Independent worksheet intercepts give-1.12869/4.02558/
+-1.48390/3.480999/+0.50856, within0.1′(and0.1′h). Moving checkbox with the
+earliest saved DR, COG90/SOG5 and explicit Analyze gives mean+13.04′/SD28.09′/
+median-1.49′/MAD3.30′/trend-0.73′h; final sight45.4′ marked outlier and red
+in plot. Independent GeographicLib+worksheet residuals-1.48390,-4.79264,45.41056
+match0.1′, robust threshold excludes final sight and remaining trend-0.73649′h.
+Complete reference calculations retained as worksheet-*-independent.json.
+Physical table truncates dates/Ho/Hc: FAIL presentation. Android vertical
+result cards and explicit numeric commit/label relayout prepared for build58.
+No sequence inputs changed the saved observations.

@@ -191,6 +191,12 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   m_results->InsertColumn(4, _("Ho-Hc"), wxLIST_FORMAT_LEFT, 90);
   m_results->InsertColumn(5, _("Assessment"), wxLIST_FORMAT_LEFT, 220);
   root->Add(m_results, 1, wxALL | wxEXPAND, 8);
+#ifdef __OCPN__ANDROID__
+  m_androidResults = new wxStaticText(this, wxID_ANY, wxEmptyString);
+  root->Replace(m_results, m_androidResults);
+  root->GetItem(m_androidResults)->SetProportion(0);
+  m_results->Hide();
+#endif
   wxStdDialogButtonSizer* buttons = new wxStdDialogButtonSizer();
   buttons->AddButton(new wxButton(this, wxID_CLOSE));
   buttons->Realize();
@@ -244,6 +250,14 @@ SightAnalysisDialog::~SightAnalysisDialog() {
 }
 
 void SightAnalysisDialog::Analyze(wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+  celestial_android::CommitNumbers(this);
+  m_androidResults->SetLabel(wxEmptyString);
+  struct RefreshLayout {
+    SightAnalysisDialog* dialog;
+    ~RefreshLayout() { celestial_android::LayoutScrolls(dialog); }
+  } refreshLayout{this};
+#endif
   std::vector<FixObservation> observations;
   unsigned liveBoatPositionSights = 0;
   const Sight* selected = m_parent->GetSelectedSight();
@@ -330,6 +344,20 @@ void SightAnalysisDialog::Analyze(wxCommandEvent&) {
     }
   }
   m_summary->SetLabel(summary);
+#ifdef __OCPN__ANDROID__
+  wxString details;
+  for (const auto& residual : analysis.residuals) {
+    details += residual.body + " | " +
+        UtcDateTime::FormatInstant(residual.utc, "%Y-%m-%d %H:%M:%S.%l") +
+        " UTC\n" + _("Ho: ") +
+        FormatNavigationAngle(residual.calculatedAltitude + residual.interceptMinutes / 60.0) +
+        " | " + _("Hc: ") + FormatNavigationAngle(residual.calculatedAltitude) +
+        "\n" + _("Ho minus Hc: ") + wxString::Format("%+.2f'", residual.interceptMinutes) +
+        " | " + (residual.outlier ? _("Possible outlier: inspect") :
+                                  _("Within robust sequence spread")) + "\n\n";
+  }
+  m_androidResults->SetLabel(details);
+#endif
   for (const auto& residual : analysis.residuals) {
     const long row = m_results->InsertItem(
         m_results->GetItemCount(),
