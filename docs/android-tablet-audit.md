@@ -1093,3 +1093,19 @@ is not continuity. The wx-wrapper cleanup alone is insufficient. Revision
 50 captures guarded native handles before destroying wx wrappers, clears
 handler properties and synchronously deletes surviving owned native roots.
 Real import and editor/worker regression are pending. Desktop 49 compiled.
+
+### 27 September 17:09–17:13 BST — native roots released; Qt deferred helper
+
+Revision 50 ab28c3e installed library ca7586891ba14f2ad97f7e6eda848242e9e9039713df848001071624b4e83da2;
+archive 5e467b83c0b2432cbd7aea45b9ca06331be28714888f4a4015b7ce1b4718cf1c.
+Backup-before-ab28c3e manifest retains original library/profile/sights hashes.
+Actual lunar calculation/results, Sight Save and Clock Cancel ran before
+native tarball import. DeInit now left zero native objects in widget trees,
+but acknowledgement still crashed at 17:11:57, PID 15297 to 15808.
+Sights-import50.xml retains one sight and all three stored solutions.
+Qt notify_helper disassembly identifies a receiver's unmapped vtable.
+Pinned wxWindow destructor disassembly calls deleteLater for the parentless
+wxQtShortcutHandler as well as widgets. Such helpers escape the tree scan.
+Next revision completes only Qt's already-posted DeferredDelete events while
+plugin code is mapped, without pumping input/timers/workers. Desktop 50 and
+its existing LunarUiSmoke regression passed. No hot-import pass yet.

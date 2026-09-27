@@ -265,6 +265,11 @@ bool celestial_navigation_pi::DeInit(void) {
     native->blockSignals(true);
     delete native.data();
   }
+  // wxWindow's Qt destructor also posts deleteLater for its parentless
+  // wxQtShortcutHandler. Those objects cannot be found in a widget tree.
+  // Complete only already-scheduled Qt deletions while our vtables remain
+  // mapped; do not pump input, timers, paint or worker completion callbacks.
+  QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
   qInfo() << "Celestial Android owned sheets released before unload:" << ownedWindows.size();
   // Verify native plugin objects have been released before unloading.
   Dl_info module{};
