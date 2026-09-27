@@ -33,12 +33,44 @@
 #include <cmath>
 #include <limits>
 #ifdef __OCPN__ANDROID__
+#include "AndroidAlmanacCsv.h"
 #include <QListWidget>
+#include <QScrollBar>
 #include <QVBoxLayout>
 #endif
 
 namespace {
 #ifdef __OCPN__ANDROID__
+// The retained Qt build needs explicit ScrollPrepare/Scroll geometry for a
+// native list embedded beneath a wx scrolling viewport.
+class PlannerListScroll : public QObject {
+ public:
+  explicit PlannerListScroll(QListWidget* list) : QObject(list), m_list(list) {
+    list->viewport()->installEventFilter(this);
+  }
+ protected:
+  bool eventFilter(QObject*, QEvent* event) override {
+    auto* bar = m_list->verticalScrollBar();
+    if (event->type() == QEvent::ScrollPrepare) {
+      auto* prepare = static_cast<QScrollPrepareEvent*>(event);
+      prepare->setViewportSize(m_list->viewport()->size());
+      prepare->setContentPosRange(QRectF(0, bar->minimum(), 0,
+                                        bar->maximum() - bar->minimum()));
+      prepare->setContentPos(QPointF(0, bar->value()));
+      prepare->accept();
+      return true;
+    }
+    if (event->type() == QEvent::Scroll) {
+      bar->setValue(qRound(static_cast<QScrollEvent*>(event)->contentPos().y()));
+      event->accept();
+      return true;
+    }
+    return false;
+  }
+ private:
+  QListWidget* m_list;
+};
+
 // Height follows the actual viewport and Android font, including rotation.
 class PlannerCardDelegate : public QStyledItemDelegate {
  public:
@@ -83,6 +115,7 @@ QListWidget* PlannerCards(wxWindow* parent, wxSizer* root, bool selectable) {
     const auto index = cards->indexAt(p);
     if (index.isValid()) cards->setCurrentRow(index.row());
   }, list->viewport());
+  new PlannerListScroll(list);
   layout->addWidget(list);
   root->Add(panel, 0, wxEXPAND | wxALL, 8);
   return list;
@@ -1078,6 +1111,10 @@ void PlannerDialog::ScheduleRefresh() {
 }
 
 void PlannerDialog::OnRefreshTimer(wxTimerEvent&) {
+#ifdef __OCPN__ANDROID__
+  QElapsedTimer elapsed;
+  elapsed.start();
+#endif
   UpdateAutomaticZoneOffset();
   const ObserverMotion motion = ReadMotion(false);
   if (!motion.referenceUtc.IsValid()) {
@@ -1093,6 +1130,9 @@ void PlannerDialog::OnRefreshTimer(wxTimerEvent&) {
   RefreshSpecial();
   m_status->SetLabel(
       _("Planning context updated; calculations remain fully offline."));
+#ifdef __OCPN__ANDROID__
+  qDebug() << "Celnav planner context refresh milliseconds:" << elapsed.elapsed();
+#endif
 }
 
 ObserverMotion PlannerDialog::ReadMotion(bool showErrors) {
@@ -1371,6 +1411,10 @@ wxString PlannerDialog::DisplayTime(const wxDateTime& utc) const {
 }
 
 void PlannerDialog::RefreshAll(wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+  QElapsedTimer elapsed;
+  elapsed.start();
+#endif
   ApplyPositionSource();
   UpdateAutomaticZoneOffset();
   ApplyTimeSource();
@@ -1388,6 +1432,9 @@ void PlannerDialog::RefreshAll(wxCommandEvent&) {
   RefreshBodies();
   RefreshAlmanac();
   RefreshSpecial();
+#ifdef __OCPN__ANDROID__
+  qDebug() << "Celnav planner full refresh milliseconds:" << elapsed.elapsed();
+#endif
 }
 
 void PlannerDialog::ClearCalculatedResults(const wxString& status) {
@@ -1804,7 +1851,12 @@ void PlannerDialog::ExportAlmanac(wxCommandEvent&) {
                       wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
   if (dialog.ShowModal() != wxID_OK) return;
   wxFFile file(dialog.GetPath(), "wb");
+#ifdef __OCPN__ANDROID__
+  const wxString csv = AndroidAlmanacCsv(m_almanacRows);
+  if (!file.IsOpened() || !file.Write(csv))
+#else
   if (!file.IsOpened() || !file.Write(AlmanacToCsv(m_almanacRows)))
+#endif
     CelestialMessageBox(_("Could not write the selected file."), _("Export failed"),
                  wxOK | wxICON_ERROR, this);
 }

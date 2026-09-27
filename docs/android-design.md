@@ -82,6 +82,12 @@ workflow, precise corrected Ho, Solve latitude and the full wrapped result.
 Invalid context clears all outputs and gives guidance on every result page;
 creating a sight or exporting a table cannot use an invalid or stale context.
 
+Android CSV exports retain nonzero milliseconds in the ISO UTC column while
+keeping the existing columns and numeric serialization. Whole-second rows
+retain their legacy representation. This is an Android presentation/output
+adapter over the shared AlmanacRow formatter; desktop CSV behavior stays the
+same. The stored UTC instant, rather than a local calendar, supplies this field.
+
 Editors are focused sheets with persistent explicit **Save/Apply** and
 **Cancel** actions above scrollable content. Measurement, time, corrections,
 DR/motion, appearance and calculation details are separate labelled sections.

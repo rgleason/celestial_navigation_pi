@@ -28,6 +28,7 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml ${CMAKE_CURRENT_BINARY
 
 set(SRC
     atomic_xml_file_tests.cpp
+    android_almanac_csv_tests.cpp
     dialog_geometry_tests.cpp
     dialog_transaction_state_tests.cpp
     eclipse_data_files_tests.cpp
