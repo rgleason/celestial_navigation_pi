@@ -65,72 +65,85 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
       m_systemTimeSummary(systemTimeSummary),
       m_scroller(NULL) {
   wxBoxSizer* dialogRoot = new wxBoxSizer(wxVERTICAL);
+  wxWindow* formParent = this;
+  wxBoxSizer* formRoot = dialogRoot;
+#ifdef __OCPN__ANDROID__
+  // The calendar is taller than a phone viewport. Give the entire form one
+  // scrollable area instead of squeezing its lower controls into a thin strip.
+  m_scroller = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition,
+                                    wxDefaultSize,
+                                    wxVSCROLL | wxTAB_TRAVERSAL | wxBORDER_NONE);
+  m_scroller->SetScrollRate(0, 12);
+  m_scroller->SetBackgroundColour(GetBackgroundColour());
+  formParent = m_scroller;
+  formRoot = new wxBoxSizer(wxVERTICAL);
+#endif
 
   wxStaticText* explanation = new wxStaticText(
-      this, wxID_ANY,
+      formParent, wxID_ANY,
       _("Record first upper-limb appearance at sunrise or final upper-limb "
         "disappearance at sunset. The result is an approximate navigation "
         "constraint, not a sextant-quality fix."));
   explanation->Wrap(590);
-  dialogRoot->Add(explanation, 0, wxEXPAND | wxALL, 8);
+  formRoot->Add(explanation, 0, wxEXPAND | wxALL, 8);
 
   wxStaticBoxSizer* observation = new wxStaticBoxSizer(
-      wxVERTICAL, this, CN_UTF8_("Observation — always visible"));
+      wxVERTICAL, formParent, CN_UTF8_("Observation — always visible"));
   wxFlexGridSizer* obsGrid = new wxFlexGridSizer(0, 2, 5, 10);
   obsGrid->AddGrowableCol(1);
 
-  obsGrid->Add(new wxStaticText(this, wxID_ANY, _("Event")), 0,
+  obsGrid->Add(new wxStaticText(formParent, wxID_ANY, _("Event")), 0,
                wxALIGN_CENTER_VERTICAL);
-  m_event = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxSize(310, -1));
+  m_event = new wxChoice(formParent, wxID_ANY, wxDefaultPosition, wxSize(310, -1));
   m_event->Append(CN_UTF8_("Sunrise — first upper limb"));
   m_event->Append(CN_UTF8_("Sunset — last upper limb"));
   m_event->SetSelection(static_cast<int>(sight.m_HorizonEvent));
   obsGrid->Add(m_event, 0);
 
-  obsGrid->Add(new wxStaticText(this, wxID_ANY, _("UTC date")), 0,
+  obsGrid->Add(new wxStaticText(formParent, wxID_ANY, _("UTC date")), 0,
                wxALIGN_CENTER_VERTICAL);
-  m_calendar = new wxCalendarCtrl(this, wxID_ANY, UtcDateTime::CalendarDate(sight.m_DateTime));
+  m_calendar = new wxCalendarCtrl(formParent, wxID_ANY, UtcDateTime::CalendarDate(sight.m_DateTime));
   obsGrid->Add(m_calendar, 0);
 
-  obsGrid->Add(new wxStaticText(this, wxID_ANY, _("UTC time (24-hour)")), 0,
+  obsGrid->Add(new wxStaticText(formParent, wxID_ANY, _("UTC time (24-hour)")), 0,
                wxALIGN_CENTER_VERTICAL);
   wxBoxSizer* timeRow = new wxBoxSizer(wxHORIZONTAL);
-  m_hours = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
+  m_hours = new wxSpinCtrl(formParent, wxID_ANY, wxEmptyString, wxDefaultPosition,
                            wxSize(65, -1), wxSP_ARROW_KEYS, 0, 23,
                            UtcDateTime::Fields(sight.m_DateTime).hour);
-  m_minutes = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
+  m_minutes = new wxSpinCtrl(formParent, wxID_ANY, wxEmptyString, wxDefaultPosition,
                              wxSize(65, -1), wxSP_ARROW_KEYS, 0, 59,
                              UtcDateTime::Fields(sight.m_DateTime).min);
 #ifdef __OCPN__ANDROID__
-  m_seconds = new wxSpinCtrlDouble(this, wxID_ANY);
+  m_seconds = new wxSpinCtrlDouble(formParent, wxID_ANY);
   m_seconds->SetDigits(3);
   m_seconds->SetRange(0, 59.999);
   m_seconds->SetIncrement(.001);
   m_seconds->SetValue(UtcDateTime::Fields(sight.m_DateTime).sec + sight.m_DateTime.GetMillisecond() / 1000.0);
 #else
-  m_seconds = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
+  m_seconds = new wxSpinCtrl(formParent, wxID_ANY, wxEmptyString, wxDefaultPosition,
                              wxSize(65, -1), wxSP_ARROW_KEYS, 0, 59,
                              UtcDateTime::Fields(sight.m_DateTime).sec);
 #endif
   timeRow->Add(m_hours);
-  timeRow->Add(new wxStaticText(this, wxID_ANY, ":"), 0,
+  timeRow->Add(new wxStaticText(formParent, wxID_ANY, ":"), 0,
                wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 3);
   timeRow->Add(m_minutes);
-  timeRow->Add(new wxStaticText(this, wxID_ANY, ":"), 0,
+  timeRow->Add(new wxStaticText(formParent, wxID_ANY, ":"), 0,
                wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 3);
   timeRow->Add(m_seconds);
-  wxButton* capture = new wxButton(this, wxID_ANY, _("Capture current UTC"));
+  wxButton* capture = new wxButton(formParent, wxID_ANY, _("Capture current UTC"));
   timeRow->Add(capture, 0, wxLEFT, 10);
   obsGrid->Add(timeRow, 0);
 
   m_timeUncertainty =
-      AddNumber(this, obsGrid, _("Time uncertainty"), sight.m_TimeCertainty, 0,
+      AddNumber(formParent, obsGrid, _("Time uncertainty"), sight.m_TimeCertainty, 0,
                 600, 1, 1, _("seconds"));
 
-  obsGrid->Add(new wxStaticText(this, wxID_ANY, _("Time source")), 0,
+  obsGrid->Add(new wxStaticText(formParent, wxID_ANY, _("Time source")), 0,
                wxALIGN_CENTER_VERTICAL);
   m_timeSource =
-      new wxChoice(this, wxID_ANY, wxDefaultPosition, wxSize(310, -1));
+      new wxChoice(formParent, wxID_ANY, wxDefaultPosition, wxSize(310, -1));
   m_timeSource->Append(_("System UTC capture"));
   m_timeSource->Append(_("Synchronised watch / manual entry"));
   m_timeSource->Append(_("Other manual entry"));
@@ -141,23 +154,30 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   obsGrid->Add(m_timeSource, 0);
   observation->Add(obsGrid, 0, wxEXPAND | wxALL, 6);
   wxStaticText* clock = new wxStaticText(
-      this, wxID_ANY, _("Current system timing: ") + m_systemTimeSummary);
+      formParent, wxID_ANY, _("Current system timing: ") + m_systemTimeSummary);
   clock->Wrap(590);
   observation->Add(clock, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 6);
-  dialogRoot->Add(observation, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
+  formRoot->Add(observation, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
 
   wxStaticText* lowerHint = new wxStaticText(
-      this, wxID_ANY,
+      formParent, wxID_ANY,
       _("Bearing, horizon conditions and the result are below; scroll this "
         "lower section when necessary."));
-  dialogRoot->Add(lowerHint, 0, wxLEFT | wxRIGHT | wxBOTTOM, 8);
+  formRoot->Add(lowerHint, 0, wxLEFT | wxRIGHT | wxBOTTOM, 8);
 
+#ifndef __OCPN__ANDROID__
   m_scroller =
       new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
                            wxVSCROLL | wxTAB_TRAVERSAL | wxBORDER_NONE);
   m_scroller->SetScrollRate(0, 12);
   m_scroller->SetBackgroundColour(GetBackgroundColour());
-  wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
+#endif
+  wxBoxSizer* root =
+#ifdef __OCPN__ANDROID__
+      formRoot;
+#else
+      new wxBoxSizer(wxVERTICAL);
+#endif
 
   wxStaticBoxSizer* bearingBox =
       new wxStaticBoxSizer(wxVERTICAL, m_scroller, _("Bearing (optional)"));
