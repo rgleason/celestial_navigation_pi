@@ -1798,6 +1798,12 @@ void CelestialNavigationDialog::OnSightListLeftDown(wxMouseEvent& event) {
 }
 
 void CelestialNavigationDialog::OnSightSelected(wxListEvent& event) {
+#ifdef __OCPN__ANDROID__
+  // The hidden desktop table is a compatibility view, not the selection owner.
+  // Qt focus/modal transitions can emit its selection events asynchronously
+  // after a card has set the model selection. Never let those events undo it.
+  return;
+#else
   long selectedIndex =
       m_lSights->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
   if (selectedIndex < 0) return;
@@ -1805,6 +1811,7 @@ void CelestialNavigationDialog::OnSightSelected(wxListEvent& event) {
   for (Sight& s : m_Sights) s.SetSelected(false);
   m_Sights[selectedIndex].SetSelected(true);
   UpdateButtons();
+#endif
 }
 
 void CelestialNavigationDialog::OnColumnHeaderClick(wxListEvent& event) {
