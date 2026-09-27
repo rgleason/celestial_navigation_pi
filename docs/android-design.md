@@ -305,3 +305,17 @@ the controller model but hide their clipped desktop columns on Android. Use
 a focused labelled name sheet explaining that saving snapshots a derived
 solution and changes neither recorded times nor global correction. Resize/
 show must settle wrapped labels without requiring a preliminary swipe.
+
+### Sextant check refinement, 28 September 00:14, before implementation
+
+The physical page still has desktop multi-field rows: pressure/temperature/IE
+labels and values are clipped, and its seven-column repeat list has only one
+line of height. Keep this page inside the existing single form viewport, stack
+the labelled prediction, measurement and profile controls vertically on
+Android, and use model-backed selectable repeat cards with every value/unit.
+Never derive these cards from wxQt column getters. Remove operates on the
+explicit selected model index. Reflow dynamic prediction/profile text and
+repeat cards after calculations, add/remove and rotation. Desktop controls,
+engines and persisted profiles remain unchanged. Verify actual prediction,
+index/residual arithmetic, add/remove, profile persistence, complete final
+swipes and both orientations on the next committed binary.

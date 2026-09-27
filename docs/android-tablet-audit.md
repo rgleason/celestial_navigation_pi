@@ -1942,3 +1942,39 @@ Screens resume77-{cold-five,reopen,delete-controls,cleanup}.png retain the
 workflow. PID20871 stayed continuous after the intentional restart. Full
 crash77.txt, lastanr77.txt and meminfo77.txt retained. Bearing/branches,
 alternate conditions, invalids and edited Cancel/Back remain open.
+
+### 2026-09-28 00:07–00:12 BST: native Horizon input/provenance correction
+
+48bcd97 adds Android-only native spin notifications, an owned coalescing
+preview timer, and manual provenance when UTC fields/calendar change. Capture
+current UTC suppresses these manual notifications while populating fields.
+Android/desktop compilation and isolated actual-display HorizonEventUi passed
+(184ms). Package78 archive SHA256
+d30ea6b846ffca887405260990d27cfea69752eb9cc5445979a9098e75fdc7cc
+was actually imported through Plugin Manager. Installed78.so independently
+hashes to8cd5c9efcc0fb9b23cde306d18ad1a50f8580f10defaadcabbf6cf283b827b09,
+matching its payload; PID20871 continuous. Toolbar ordering changed during
+hot import; an unintended Dashboard toggle was immediately restored before
+opening CelNav at its observed new location.
+
+Typing hour11 automatically changed System UTC capture to Other manual entry;
+Capture current UTC restored23:10:36.509 and System UTC capture. Selecting
+calendar28September changed source back to Other manual entry. With magnetic
+bearing90°, typed east variation+5° immediately produced95° true; typed west
+deviation−2° produced93° true, matching independent90+5−2 arithmetic. Choosing
+Hazy or indistinct horizon changed the default altitude uncertainty from10′
+to20′ and added the haze warning. Actual final swipe showed both position
+branches and the entire explanation/warning. Those geographic branches have
+not yet been compared to an independent horizon reference.
+
+Android Back discarded the unsaved new event directly, without a confirmation
+sheet. This is not the desktop close-veto confirmation path; screenshot name
+resume78-discard-prompt does not establish a prompt. Independently read
+Sights-after-back78.xml retained the exact original four-sight SHA256
+030d4193395b4cb8bddce684d00fb1477c00e56bc0661a70f2af81cd9bcc1020.
+Screens resume78-{manual,capture,date-manual,variation,deviation,haze,
+discard-prompt}.png retain actual outcomes. Numeric keyboard Back briefly
+left the host action-bar region black while the complete plugin form remained
+visible/responsive; the bar restored on the next edit. This rendering symptom
+is retained, not claimed resolved. Full bearing Save/reopen/chart/independent
+geometry and other Horizon variants remain open.
