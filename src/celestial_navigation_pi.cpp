@@ -202,8 +202,11 @@ bool celestial_navigation_pi::DeInit(void) {
   auto* hostPending = host ? reinterpret_cast<wxList*>(dlsym(host, "wxPendingDelete")) : nullptr;
   if (host) dlclose(host);
   std::vector<wxWeakRef<wxWindow>> ownedWindows;
-  for (auto node = wxTopLevelWindows.GetFirst(); node; node = node->GetNext())
+  std::vector<QPointer<QWidget>> ownedNativeWindows;
+  for (auto node = wxTopLevelWindows.GetFirst(); node; node = node->GetNext()) {
     ownedWindows.emplace_back(node->GetData());
+    ownedNativeWindows.emplace_back(node->GetData()->GetHandle());
+  }
   auto removePending = [hostPending](wxWindow* window) {
     wxPendingDelete.DeleteObject(window);
     if (hostPending && hostPending != &wxPendingDelete)
@@ -244,6 +247,23 @@ bool celestial_navigation_pi::DeInit(void) {
     if (!window) continue;
     removePending(window.get());
     delete window.get();
+  }
+  // This pinned wxQt defers native widget destruction even after the wx
+  // wrapper is gone. A queued Qt event can then call a plugin vtable after
+  // dlclose. Retain guarded handles before destroying the wrappers, clear
+  // their wx handler properties, and release these exact owned native roots
+  // while plugin code is still mapped. A parent may delete another root:
+  // QPointer makes the later entry harmless in that case.
+  for (auto& native : ownedNativeWindows) {
+    if (!native) continue;
+    const auto widgets = native->findChildren<QWidget*>();
+    for (auto* widget : widgets) {
+      wxWindow::QtStoreWindowPointer(widget, nullptr);
+      widget->blockSignals(true);
+    }
+    wxWindow::QtStoreWindowPointer(native.data(), nullptr);
+    native->blockSignals(true);
+    delete native.data();
   }
   qInfo() << "Celestial Android owned sheets released before unload:" << ownedWindows.size();
   // Verify native plugin objects have been released before unloading.

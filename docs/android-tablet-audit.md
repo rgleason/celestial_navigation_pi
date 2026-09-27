@@ -1084,3 +1084,12 @@ from both local and host pending queues, and releases surviving owned
 windows synchronously after main-dialog deletion. The retained host
 exports wxPendingDelete, verified llvm-nm. No other plugin/host windows
 are selected for cleanup. This full hot-import sequence remains pending.
+
+Revision 49 removed two wx window wrappers but still left 147 native objects
+in the workspace and clock dialogs. At 17:06:01 PID 14892 crashed while
+waiting at the import completion modal, without acknowledgement. Full
+crash-before50.log and logcat-before50.log retained; replacement PID 15180
+is not continuity. The wx-wrapper cleanup alone is insufficient. Revision
+50 captures guarded native handles before destroying wx wrappers, clears
+handler properties and synchronously deletes surviving owned native roots.
+Real import and editor/worker regression are pending. Desktop 49 compiled.
