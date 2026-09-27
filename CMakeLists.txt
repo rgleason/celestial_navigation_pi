@@ -74,9 +74,9 @@ set(LONG_DESCRIPTION
 )
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "8")
-set(VERSION_PATCH "12")
+set(VERSION_PATCH "13")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "25/09/2026" )# DD/MM/YYYY format
+set(VERSION_DATE  "27/09/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -186,6 +186,7 @@ SET(SRCS
         src/astrolabe/vsop87d.cpp
         src/geomag/geomag.c
         src/CelestialNavigationDialog.cpp
+        src/AndroidWorkspace.cpp
         src/DialogGeometry.cpp
         src/AtomicXmlFile.cpp
         src/Dut1UpdatePanel.cpp
@@ -304,6 +305,9 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/geomag)
 # ==============================================================
 
 target_sources(${PACKAGE_NAME} PUBLIC ${SRC} )
+if(QT_ANDROID)
+  target_link_options(${PACKAGE_NAME} PRIVATE "-Wl,--exclude-libs,ALL")
+endif()
 
 # The eclipse numerical core is also usable as a standalone library/CLI. The
 # plugin embeds only the network-free runtime library; development tools and

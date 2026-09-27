@@ -1,3 +1,7 @@
+#include "AndroidFileDialog.h"
+#ifdef __OCPN__ANDROID__
+#include "AndroidJob.h"
+#endif
 #include "EclipseDialog.h"
 #include "DialogGeometry.h"
 
@@ -216,6 +220,13 @@ EclipseDialog::EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin)
   m_invalid_data[0] = m_invalid_data[1] = m_invalid_data[2] = false;
   BuildInterface();
   dialog_geometry::Restore(this, _T("Eclipse"), wxSize(960, 720));
+#ifdef __OCPN__ANDROID__
+  m_androidVerificationPoll = new QTimer(GetHandle());
+  QObject::connect(m_androidVerificationPoll, &QTimer::timeout, GetHandle(), [this]() {
+    if (m_verifying) { wxTimerEvent event(m_verification_timer); OnVerificationTimer(event); }
+  });
+  m_androidVerificationPoll->start(100);
+#endif
   UpdateDataStatus();
   StartInstalledDataCheck();
   wxCommandEvent initial_position;
@@ -223,6 +234,10 @@ EclipseDialog::EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin)
 }
 
 EclipseDialog::~EclipseDialog() {
+#ifdef __OCPN__ANDROID__
+  delete m_androidVerificationPoll;
+  m_androidVerificationPoll = nullptr;
+#endif
   dialog_geometry::Save(this, _T("Eclipse"));
   m_verification_timer.Stop();
   Unbind(wxEVT_TIMER, &EclipseDialog::OnVerificationTimer, this,
@@ -491,7 +506,7 @@ void EclipseDialog::SelectAndImport(EclipseDataKind kind) {
     title = _("Select moon_pa_de440_200625.bpc");
   else
     title = _("Select converted LOLA principal-axes limb pack");
-  wxFileDialog dialog(this, title, wxEmptyString, wxEmptyString,
+  CelestialFileDialog dialog(this, title, wxEmptyString, wxEmptyString,
                       _("All files (*.*)|*.*"),
                       wxFD_OPEN | wxFD_FILE_MUST_EXIST);
   if (dialog.ShowModal() != wxID_OK) return;
@@ -864,11 +879,30 @@ void EclipseDialog::OnFind(wxCommandEvent&) {
       !eclipse::CalendarToJulianDate(end, &end_jd, &error))
     return;
   wxBusyCursor busy;
+#ifdef __OCPN__ANDROID__
+  wxString workerError;
+  bool found = false;
+  std::vector<eclipse::EclipseEvent> events;
+  const bool completed = celestial_android::RunJob(this, _("Search eclipses"),
+      [&](celestial_android::JobState& state) {
+        state.Progress("Searching the selected ephemeris date range...");
+        m_engine.SetAndroidCheckpoint([&]() { state.Checkpoint(); });
+        found = m_engine.FindEvents(start_jd, end_jd, &events, &error);
+      }, &workerError);
+  m_engine.SetAndroidCheckpoint({});
+  if (!completed && workerError.empty()) return;
+  if (!workerError.empty()) error = workerError.ToStdString();
+  if (!found) {
+#else
   if (!m_engine.FindEvents(start_jd, end_jd, &m_events, &error)) {
+#endif
     wxMessageBox(wxString::FromUTF8(error.c_str()), _("Eclipse search failed"),
                  wxOK | wxICON_ERROR, this);
     return;
   }
+#ifdef __OCPN__ANDROID__
+  m_events = std::move(events);
+#endif
   m_event_list->DeleteAllItems();
   for (std::size_t index = 0; index < m_events.size(); ++index) {
     const eclipse::EclipseEvent& event = m_events[index];
@@ -910,6 +944,32 @@ void EclipseDialog::OnPlot(wxCommandEvent&) {
     return;
   }
   std::string error;
+#ifdef __OCPN__ANDROID__
+  const bool wantPath = m_plot_path->GetValue(), wantContours = m_plot_contours->GetValue();
+  std::vector<eclipse::PathPoint> path;
+  std::vector<eclipse::MagnitudeContour> contours;
+  wxString workerError;
+  const bool completed = celestial_android::RunJob(this, _("Calculate eclipse geometry"),
+      [&](celestial_android::JobState& state) {
+        m_engine.SetAndroidCheckpoint([&]() { state.Checkpoint(); });
+        if (wantPath && event.type != eclipse::kPartialEclipse) {
+          state.Progress("Calculating the central path...");
+          if (!m_engine.BuildCentralPath(event, 120.0, &path, &error)) throw std::runtime_error(error);
+        }
+        if (wantContours) {
+          state.Progress("Calculating magnitude contours...");
+          const double values[] = {0.2, 0.4, 0.6, 0.8, 0.9};
+          if (!m_engine.BuildMagnitudeContours(event, std::vector<double>(values, values + 5), 2.0, 300.0, &contours, &error)) throw std::runtime_error(error);
+        }
+      }, &workerError);
+  m_engine.SetAndroidCheckpoint({});
+  if (!completed) {
+    if (!workerError.empty()) wxMessageBox(workerError, _("Eclipse geometry"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+  m_path = std::move(path); m_contours = std::move(contours);
+  m_plotted_delta_t = event.delta_t_seconds;
+#else
   wxBusyCursor busy;
   m_path.clear();
   m_contours.clear();
@@ -930,6 +990,7 @@ void EclipseDialog::OnPlot(wxCommandEvent&) {
       return;
     }
   }
+#endif
   RequestRefresh(GetOCPNCanvasWindow());
 }
 
@@ -981,6 +1042,28 @@ void EclipseDialog::OnLocal(wxCommandEvent&) {
       observer.longitude_deg, NavigationAngleKind::Longitude, true));
   std::string error;
   eclipse::LocalContacts contacts;
+#ifdef __OCPN__ANDROID__
+  const bool terrain = m_use_lola->GetValue();
+  const std::string pckPath = PckPath().ToStdString(), lolaPath = LolaPath().ToStdString();
+  wxString workerError;
+  const bool completed = celestial_android::RunJob(this, _("Calculate local eclipse"),
+      [&](celestial_android::JobState& state) {
+        m_engine.SetAndroidCheckpoint([&]() { state.Checkpoint(); });
+        state.Progress("Solving local contacts...");
+        if (!m_engine.SolveLocalContacts(event, observer, 0.0, &contacts, &error)) throw std::runtime_error(error);
+        if (terrain && contacts.c1.valid) {
+          state.Progress("Refining contacts using verified lunar terrain...");
+          eclipse::PckKernel pck; eclipse::LunarLimbGrid lola;
+          if (!pck.Open(pckPath, &error) || !lola.Open(lolaPath, &error) ||
+              !m_engine.RefineContactsWithLola(event, observer, 0.0, pck, lola, &contacts, &error)) throw std::runtime_error(error);
+        }
+      }, &workerError);
+  m_engine.SetAndroidCheckpoint({});
+  if (!completed) {
+    if (!workerError.empty()) wxMessageBox(workerError, _("Local eclipse"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+#else
   wxBusyCursor busy;
   if (!m_engine.SolveLocalContacts(event, observer, 0.0, &contacts, &error)) {
     wxMessageBox(wxString::FromUTF8(error.c_str()),
@@ -999,6 +1082,7 @@ void EclipseDialog::OnLocal(wxCommandEvent&) {
       return;
     }
   }
+#endif
   if (!contacts.c1.valid) {
     m_local_results->SetValue(
         _("This eclipse is not visible from the entered position."));

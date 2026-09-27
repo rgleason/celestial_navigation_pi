@@ -9,6 +9,9 @@
 #include <wx/string.h>
 
 #include <vector>
+#ifdef __OCPN__ANDROID__
+#include <functional>
+#endif
 
 enum class AlmanacPreset {
   PassageBrief,
@@ -32,6 +35,10 @@ struct AlmanacRoutePoint {
 };
 
 struct AlmanacRequest {
+#ifdef __OCPN__ANDROID__
+  std::function<void(unsigned, unsigned, const char*)> androidProgress;
+  std::function<bool(const std::function<bool()>&)> androidCommit;
+#endif
   AlmanacPreset preset = AlmanacPreset::VoyageAlmanac;
   AlmanacCoverage coverage = AlmanacCoverage::FixedPosition;
   AlmanacSafety safety = AlmanacSafety::CalculatorComplete;

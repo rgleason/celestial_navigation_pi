@@ -19,7 +19,13 @@ class wxPanel;
 class wxSpinCtrlDouble;
 class wxStaticText;
 class wxTextCtrl;
+#ifdef __OCPN__ANDROID__
+#include "NauticalTimeCtrl.h"
+using CelestialTimePicker = NauticalTimeCtrl;
+#else
 class wxTimePickerCtrl;
+using CelestialTimePicker = wxTimePickerCtrl;
+#endif
 
 class LunarToolsDialog : public wxDialog {
 public:
@@ -32,7 +38,7 @@ private:
     wxPanel* dateContainer = nullptr;
     wxPanel* timeContainer = nullptr;
     wxDatePickerCtrl* nativeDate = nullptr;
-    wxTimePickerCtrl* nativeTime = nullptr;
+    CelestialTimePicker* nativeTime = nullptr;
     wxTextCtrl* nauticalDate = nullptr;
     wxTextCtrl* nauticalTime = nullptr;
   };

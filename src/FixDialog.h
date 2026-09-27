@@ -41,7 +41,13 @@
 class Sight;
 class wxChoice;
 class wxDatePickerCtrl;
+#ifdef __OCPN__ANDROID__
+#include "NauticalTimeCtrl.h"
+using CelestialTimePicker = NauticalTimeCtrl;
+#else
 class wxTimePickerCtrl;
+using CelestialTimePicker = wxTimePickerCtrl;
+#endif
 class wxCloseEvent;
 
 class FixDialog : public FixDialogBase {
@@ -78,7 +84,7 @@ private:
   std::vector<Sight> m_workingSights;
   wxChoice* m_epochTimeBasis;
   wxDatePickerCtrl* m_epochDate;
-  wxTimePickerCtrl* m_epochTime;
+  CelestialTimePicker* m_epochTime;
   wxSpinCtrlDouble* m_courseTrue;
   wxSpinCtrlDouble* m_speedKnots;
   wxStaticText* m_runningSummary;

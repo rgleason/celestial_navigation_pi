@@ -333,7 +333,7 @@ void SightAnalysisDialog::Analyze(wxCommandEvent&) {
   for (const auto& residual : analysis.residuals) {
     const long row = m_results->InsertItem(
         m_results->GetItemCount(),
-        residual.utc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
+        UtcDateTime::FormatInstant(residual.utc, "%Y-%m-%d %H:%M:%S"));
     m_results->SetItem(row, 1, residual.body);
     m_results->SetItem(row, 2,
                        FormatNavigationAngle(residual.calculatedAltitude +

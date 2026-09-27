@@ -3,6 +3,9 @@
  ******************************************************************************/
 
 #include "TimeStatus.h"
+#ifdef __OCPN__ANDROID__
+#include "UtcDateTime.h"
+#endif
 
 #include <cmath>
 #include <vector>
@@ -77,11 +80,16 @@ bool BuildUtc(int day, int month, int year, int hour, int minute, int second,
   if (day > static_cast<int>(wxDateTime::GetNumberOfDays(wxMonth, year)))
     return false;
 
+#ifdef __OCPN__ANDROID__
+  *utc = UtcDateTime::Create(year, month, day, hour, minute, second, millisecond);
+  return utc->IsValid();
+#else
   wxDateTime value(day, wxMonth, year, hour, minute, second, millisecond);
   if (!value.IsValid()) return false;
   value.MakeFromTimezone(wxDateTime::UTC);
   *utc = value;
   return true;
+#endif
 }
 
 bool VerifyChecksum(const wxString& sentence, size_t dollar, size_t star) {

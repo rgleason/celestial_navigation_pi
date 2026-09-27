@@ -1,3 +1,6 @@
+#ifdef __OCPN__ANDROID__
+#include "AndroidJob.h"
+#endif
 #include "LunarToolsDialog.h"
 #include "Dut1UpdatePanel.h"
 
@@ -43,6 +46,9 @@ wxSpinCtrlDouble* Spin(wxWindow* parent, double minimum, double maximum,
   control->SetValue(value);
   control->SetIncrement(increment);
   control->SetDigits(digits);
+#ifdef __OCPN__ANDROID__
+  control->SetDigits(15); control->SetValue(value);
+#endif
   return control;
 }
 
@@ -55,11 +61,17 @@ wxBoxSizer* LabelControl(wxWindow* parent, const wxString& label,
   return sizer;
 }
 
-wxDateTime PickerUtc(wxDatePickerCtrl* date, wxTimePickerCtrl* time) {
+wxDateTime PickerUtc(wxDatePickerCtrl* date, CelestialTimePicker* time) {
   const wxDateTime d = date->GetValue();
   const wxDateTime t = time->GetValue();
+#ifdef __OCPN__ANDROID__
+  const auto fields = UtcDateTime::Fields(t);
+  return UtcDateTime::FromCalendar(d, fields.hour, fields.min,
+                                  fields.sec + fields.msec / 1000.0);
+#else
   return wxDateTime(d.GetDay(), d.GetMonth(), d.GetYear(), t.GetHour(),
                     t.GetMinute(), t.GetSecond());
+#endif
 }
 
 double AngularDistance(double lat1, double lon1, double lat2, double lon2) {
@@ -172,7 +184,7 @@ void LunarToolsDialog::CreateUtcEntry(wxWindow* parent,
   controls->timeContainer = new wxPanel(parent);
   auto* timeSizer = new wxBoxSizer(wxVERTICAL);
   controls->nativeTime =
-      new wxTimePickerCtrl(controls->timeContainer, wxID_ANY);
+      new CelestialTimePicker(controls->timeContainer, wxID_ANY);
   controls->nauticalTime =
       new wxTextCtrl(controls->timeContainer, wxID_ANY, wxEmptyString,
                      wxDefaultPosition, wxSize(145, -1), wxTE_PROCESS_ENTER);
@@ -186,7 +198,11 @@ void LunarToolsDialog::CreateUtcEntry(wxWindow* parent,
 void LunarToolsDialog::SetUtcEntry(UtcEntryControls* controls,
                                    const wxDateTime& utc) {
   if (!controls || !utc.IsValid()) return;
+#ifdef __OCPN__ANDROID__
+  controls->nativeDate->SetValue(UtcDateTime::CalendarDate(utc));
+#else
   controls->nativeDate->SetValue(utc);
+#endif
   controls->nativeTime->SetValue(utc);
   controls->nauticalDate->ChangeValue(FormatNauticalPlannerDate(utc));
   controls->nauticalTime->ChangeValue(FormatNauticalPlannerTime(utc));
@@ -817,6 +833,25 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
     completedStarts.store(completed);
     totalStarts.store(total);
   };
+#ifdef __OCPN__ANDROID__
+  bool userCancelled = false;
+  wxString workerError;
+  lunar_session::Result candidate;
+  const bool completedJob = celestial_android::RunJob(this, _("Solve lunar session"),
+      [&](celestial_android::JobState& state) {
+        options.cancel_requested = [&]() { return state.cancel.load(); };
+        options.progress = [&](std::size_t completed, std::size_t total) {
+          state.Progress("Testing bounded solution " + std::to_string(completed) + " of " + std::to_string(total));
+        };
+        candidate = lunar_session::Solve(entries, options);
+      }, &workerError);
+  if (!completedJob) {
+    m_sequenceSummary->SetLabel(workerError.empty() ? _("Lunar session cancelled. Observations unchanged.") : workerError);
+    celestial_android::LayoutScrolls(this);
+    return;
+  }
+  m_sequenceResult = std::move(candidate);
+#else
   celestial_navigation::LunarSessionWorker worker;
   wxString workerError;
   if (!worker.Start(entries, options, &workerError)) {
@@ -850,6 +885,7 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
     wxYieldIfNeeded();
   }
   if (!userCancelled) progress.Update(100, _("Lunar sequence complete."));
+#endif
   if (std::any_of(snapshots.begin(),snapshots.end(),
                  [](const std::shared_ptr<Sight>& sight) { return sight->m_LunarDut1Fallback; }))
     m_sequenceResult.warnings.push_back(

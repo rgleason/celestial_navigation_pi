@@ -39,6 +39,10 @@ wxSpinCtrlDouble* AddNumber(wxWindow* parent, wxFlexGridSizer* grid,
       wxDefaultPosition, wxSize(145, -1), wxSP_ARROW_KEYS, min, max, value,
       increment);
   control->SetDigits(digits);
+#ifdef __OCPN__ANDROID__
+  control->SetDigits(15);
+  control->SetValue(value);
+#endif
   row->Add(control, 0);
   if (!units.empty())
     row->Add(new wxStaticText(parent, wxID_ANY, units), 0,
@@ -84,7 +88,7 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
 
   obsGrid->Add(new wxStaticText(this, wxID_ANY, _("UTC date")), 0,
                wxALIGN_CENTER_VERTICAL);
-  m_calendar = new wxCalendarCtrl(this, wxID_ANY, sight.m_DateTime);
+  m_calendar = new wxCalendarCtrl(this, wxID_ANY, UtcDateTime::CalendarDate(sight.m_DateTime));
   obsGrid->Add(m_calendar, 0);
 
   obsGrid->Add(new wxStaticText(this, wxID_ANY, _("UTC time (24-hour)")), 0,
@@ -92,13 +96,21 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   wxBoxSizer* timeRow = new wxBoxSizer(wxHORIZONTAL);
   m_hours = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
                            wxSize(65, -1), wxSP_ARROW_KEYS, 0, 23,
-                           sight.m_DateTime.GetHour());
+                           UtcDateTime::Fields(sight.m_DateTime).hour);
   m_minutes = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
                              wxSize(65, -1), wxSP_ARROW_KEYS, 0, 59,
-                             sight.m_DateTime.GetMinute());
+                             UtcDateTime::Fields(sight.m_DateTime).min);
+#ifdef __OCPN__ANDROID__
+  m_seconds = new wxSpinCtrlDouble(this, wxID_ANY);
+  m_seconds->SetDigits(3);
+  m_seconds->SetRange(0, 59.999);
+  m_seconds->SetIncrement(.001);
+  m_seconds->SetValue(UtcDateTime::Fields(sight.m_DateTime).sec + sight.m_DateTime.GetMillisecond() / 1000.0);
+#else
   m_seconds = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
                              wxSize(65, -1), wxSP_ARROW_KEYS, 0, 59,
-                             sight.m_DateTime.GetSecond());
+                             UtcDateTime::Fields(sight.m_DateTime).sec);
+#endif
   timeRow->Add(m_hours);
   timeRow->Add(new wxStaticText(this, wxID_ANY, ":"), 0,
                wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 3);
@@ -258,7 +270,11 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
                    &HorizonEventDialog::OnCalendarChanged, this);
   m_horizonQuality->Bind(wxEVT_CHOICE, &HorizonEventDialog::OnQualityChanged,
                          this);
+#ifdef __OCPN__ANDROID__
+  for (wxWindow* control : {static_cast<wxWindow*>(m_hours), static_cast<wxWindow*>(m_minutes), static_cast<wxWindow*>(m_seconds)})
+#else
   for (wxSpinCtrl* control : {m_hours, m_minutes, m_seconds})
+#endif
     control->Bind(wxEVT_TEXT, &HorizonEventDialog::OnInputChanged, this);
   for (wxSpinCtrlDouble* control :
        {m_timeUncertainty, m_bearing, m_variation, m_deviation,
@@ -295,10 +311,15 @@ void HorizonEventDialog::ReadControls(Sight& sight) const {
       static_cast<Sight::HorizonEvent>(m_event->GetSelection());
 
   wxDateTime date = m_calendar->GetDate();
+#ifdef __OCPN__ANDROID__
+  date = UtcDateTime::FromCalendar(date, m_hours->GetValue(),
+                                  m_minutes->GetValue(), m_seconds->GetValue());
+#else
   date.SetHour(m_hours->GetValue());
   date.SetMinute(m_minutes->GetValue());
   date.SetSecond(m_seconds->GetValue());
   date.SetMillisecond(0);
+#endif
   sight.m_DateTime = date;
   sight.m_TimeCertainty = m_timeUncertainty->GetValue();
   if (m_timeSource->GetSelection() == 0)
@@ -375,10 +396,14 @@ void HorizonEventDialog::UpdatePreview() {
 void HorizonEventDialog::OnCaptureNow(wxCommandEvent& event) {
   MarkDirty();
   const wxDateTime now = UtcDateTime::Now();
-  m_calendar->SetDate(now);
-  m_hours->SetValue(now.GetHour());
-  m_minutes->SetValue(now.GetMinute());
-  m_seconds->SetValue(now.GetSecond());
+  m_calendar->SetDate(UtcDateTime::CalendarDate(now));
+  m_hours->SetValue(UtcDateTime::Fields(now).hour);
+  m_minutes->SetValue(UtcDateTime::Fields(now).min);
+#ifdef __OCPN__ANDROID__
+  m_seconds->SetValue(UtcDateTime::Fields(now).sec + now.GetMillisecond() / 1000.0);
+#else
+  m_seconds->SetValue(UtcDateTime::Fields(now).sec);
+#endif
   m_timeSource->SetSelection(0);
   UpdatePreview();
 }

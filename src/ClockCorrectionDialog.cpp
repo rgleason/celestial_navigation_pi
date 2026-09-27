@@ -31,6 +31,9 @@
 
 #include "OcpnApiCompat.h"
 #include "Sight.h"
+#ifdef __OCPN__ANDROID__
+#include "AndroidSurface.h"
+#endif
 
 ClockCorrectionDialog::ClockCorrectionDialog(CelestialNavigationDialog* parent,
                                              int value)
@@ -44,6 +47,9 @@ ClockCorrectionDialog::ClockCorrectionDialog(CelestialNavigationDialog* parent,
   SetAffirmativeId(wxID_OK);
   SetEscapeId(wxID_CANCEL);
   Bind(wxEVT_CLOSE_WINDOW, &ClockCorrectionDialog::OnWindowClose, this);
+#ifdef __OCPN__ANDROID__
+  celestial_android::Decorate(this, _("Clock correction"), [this]() { Close(); });
+#endif
 }
 
 void ClockCorrectionDialog::OnUpdate(wxSpinEvent& event) {}

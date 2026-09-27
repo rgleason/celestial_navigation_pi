@@ -13,6 +13,10 @@
  ***************************************************************************/
 
 #include "HtmlHelp.h"
+#ifdef __OCPN__ANDROID__
+#include "AndroidDocument.h"
+#include "AndroidPdf.h"
+#endif
 
 #include <wx/button.h>
 #include <wx/filename.h>
@@ -41,6 +45,10 @@ bool ShowBundledHtmlHelp(wxWindow* parent, const wxString& title,
     return false;
   }
 
+#ifdef __OCPN__ANDROID__
+  celestial_android::ShowDocument(parent, title, path, true);
+  return true;
+#else
   InformationDialog dialog(parent, wxID_ANY, title, wxDefaultPosition,
                            wxSize(760, 650));
   if (wxWindow* close = dialog.FindWindow(wxID_OK))
@@ -57,9 +65,14 @@ bool ShowBundledHtmlHelp(wxWindow* parent, const wxString& title,
   dialog.ShowModal();
   dialog_geometry::Save(&dialog, _T("Documentation"));
   return true;
+#endif
 }
 
 bool OpenBundledDocumentExternally(const wxString& filename) {
   const wxString path = BundledDataPath(filename);
+#ifdef __OCPN__ANDROID__
+  return wxFileName::FileExists(path) && celestial_android::ShowPdf(GetCanvasByIndex(0), _("Celestial Navigation manual"), path);
+#else
   return wxFileName::FileExists(path) && wxLaunchDefaultApplication(path);
+#endif
 }

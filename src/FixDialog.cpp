@@ -125,7 +125,7 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
   epoch->Add(m_epochDate, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 12);
   epoch->Add(new wxStaticText(this, wxID_ANY, _("Time")), 0,
              wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-  m_epochTime = new wxTimePickerCtrl(this, wxID_ANY);
+  m_epochTime = new CelestialTimePicker(this, wxID_ANY);
   epoch->Add(m_epochTime, 0, wxALIGN_CENTER_VERTICAL);
   running->Add(epoch, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
 
@@ -210,11 +210,7 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
   Bind(wxEVT_CLOSE_WINDOW, &FixDialog::OnWindowClose, this);
 
 #ifdef __OCPN__ANDROID__
-  GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
-  GetHandle()->grabGesture(Qt::PanGesture);
-  Connect(wxEVT_QT_PANGESTURE,
-          (wxObjectEventFunction)(wxEventFunction)&FixDialog::OnEvtPanGesture,
-          NULL, this);
+  // The Android surface owns scrolling and both halves of Back.
 #endif
 }
 
@@ -230,20 +226,39 @@ wxDateTime FixDialog::ReadEpochUtc() const {
   const wxDateTime date = m_epochDate->GetValue();
   const wxDateTime time = m_epochTime->GetValue();
   if (!date.IsValid() || !time.IsValid()) return wxDateTime();
+#ifdef __OCPN__ANDROID__
+  const auto f = UtcDateTime::Fields(time);
+  const wxDateTime entered = UtcDateTime::FromCalendar(date, f.hour, f.min,
+                                         f.sec + f.msec / 1000.0);
+  return m_epochTimeBasis->GetSelection() == 1
+             ? UtcDateTime::LocalWallToInstant(entered) : entered;
+#else
   wxDateTime entered(date.GetDay(), date.GetMonth(), date.GetYear(),
                      time.GetHour(), time.GetMinute(), time.GetSecond());
   return m_epochTimeBasis->GetSelection() == 1
              ? entered
              : UtcDateTime::ToInstant(entered);
+#endif
 }
 
 void FixDialog::SetEpochControls(const wxDateTime& utc) {
   if (!utc.IsValid()) return;
   wxDateTime value = m_epochTimeBasis->GetSelection() == 1
                          ? utc
+#ifdef __OCPN__ANDROID__
+                         : UtcDateTime::FromInstant(utc);
+#else
                          : UtcDateTime::CopyFields(utc.ToUTC());
+#endif
+#ifdef __OCPN__ANDROID__
+  value = m_epochTimeBasis->GetSelection() == 1
+              ? UtcDateTime::InstantToLocalWall(utc) : utc;
+  m_epochDate->SetValue(UtcDateTime::CalendarDate(value));
+  m_epochTime->SetValue(value);
+#else
   m_epochDate->SetValue(value);
   m_epochTime->SetValue(value);
+#endif
 }
 
 void FixDialog::ChangeEpochTimeBasis(wxCommandEvent&) {
@@ -645,7 +660,7 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
     observations.push_back(observation);
     const long row = m_residuals->InsertItem(
         m_residuals->GetItemCount(),
-        observation.utc.Format("%m-%d %H:%M:%S", wxDateTime::UTC));
+        UtcDateTime::FormatInstant(observation.utc, "%m-%d %H:%M:%S"));
     m_residuals->SetItem(row, 1, observation.body);
     m_residuals->SetItem(row, 4,
                          wxString::Format("%.2f", sight.m_ShiftNm));
@@ -711,7 +726,7 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
   m_stFixError->SetValue(wxString::Format(_("%.2f' RMS"), fix.rmsMinutes));
   m_runningSummary->SetLabel(wxString::Format(
       _("Common epoch %s UTC | %u iterations | RMS %.2f' | uncertainty ellipse %.2f x %.2f NM at %.0f%c"),
-      fix.epochUtc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC).c_str(),
+      UtcDateTime::FormatInstant(fix.epochUtc, "%Y-%m-%d %H:%M:%S").c_str(),
       fix.iterations, fix.rmsMinutes, fix.semiMajorNm, fix.semiMinorNm,
       fix.ellipseBearing, 0x00b0));
   m_runningSummary->Wrap(660);
@@ -736,6 +751,10 @@ void FixDialog::OnGo(wxCommandEvent& event) {
   if (scale > 1e-3) scale = 1e-3;
 
   JumpToPosition(m_fixlat, m_fixlon, scale);
+#ifdef __OCPN__ANDROID__
+  m_Parent->OnFixClose();
+  m_Parent->Hide();
+#endif
 }
 
 void FixDialog::OnClose(wxCommandEvent& event) { m_Parent->OnFixClose(); }

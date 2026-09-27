@@ -98,14 +98,32 @@ public:
   wxDateTime DateTime();
   void Recompute();
   void RecomputeDMM();
+  bool Accepted() const {
+#ifdef __OCPN__ANDROID__
+    return m_androidAccepted;
+#else
+    return GetReturnCode() == wxID_OK;
+#endif
+  }
   void UpdateLunarTimeControls();
+#ifdef __OCPN__ANDROID__
+  double RelativeWatchSeconds(NauticalTimeCtrl* control) const;
+#else
   int RelativeWatchSeconds(NauticalTimeCtrl* control) const;
+#endif
   void SetClockOffset(int seconds) {
     m_clock_offset = seconds;
     Recompute();
   }
 
 private:
+#ifdef __OCPN__ANDROID__
+  wxSpinCtrlDouble* m_androidSeconds = nullptr;
+  wxSpinCtrlDouble* m_androidTimeCertainty = nullptr;
+  bool m_androidAccepted = false;
+  bool AndroidInputsValid(wxString* error) const;
+  wxButton* m_androidCalculateLunar = nullptr;
+#endif
   void ApplyFindPosition(const Sight& candidate);
   void MarkDirty();
   void OnWindowClose(wxCloseEvent& event);

@@ -1,3 +1,6 @@
+#ifdef __OCPN__ANDROID__
+#include "AndroidJob.h"
+#endif
 #include "LunarResultsDialog.h"
 
 #include "DialogGeometry.h"
@@ -353,7 +356,23 @@ void LunarResultsDialog::UpdatePositions(long candidate_index) {
   if (!checking && candidate_index >= 0 &&
       static_cast<std::size_t>(candidate_index) <
           m_sight.m_LunarCandidates.size()) {
+#ifdef __OCPN__ANDROID__
+    Sight candidate = m_sight;
+    wxString error;
+    const bool completed = celestial_android::RunJob(this, _("Inspect lunar solution"),
+        [&](celestial_android::JobState& state) {
+          candidate.m_androidCheckpoint = [&state]() { state.Checkpoint(); };
+          candidate.RecomputeLunar(static_cast<int>(candidate_index));
+        }, &error);
+    candidate.m_androidCheckpoint = {};
+    if (!completed) {
+      if (!error.empty()) wxMessageBox(error, _("Lunar result"), wxOK | wxICON_ERROR, this);
+      return;
+    }
+    m_sight = candidate;
+#else
     m_sight.RecomputeLunar(static_cast<int>(candidate_index));
+#endif
     m_details->SetValue(m_sight.m_CalcStr);
     time_candidate =
         &m_sight.m_LunarCandidates[static_cast<std::size_t>(candidate_index)];

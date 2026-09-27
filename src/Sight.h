@@ -29,6 +29,10 @@
 #define _CELESTIAL_NAVIGATION_SIGHT_H_
 
 #include <list>
+#ifdef __OCPN__ANDROID__
+#include <functional>
+#include <string>
+#endif
 #include <limits>
 #include <vector>
 #include "pidc.h"
@@ -131,6 +135,12 @@ public:
 
   wxDateTime m_DateTime;  // Time for the sight
   double m_TimeCertainty;
+#ifdef __OCPN__ANDROID__
+  bool m_androidLunarSearch = false;
+  std::function<void()> m_androidCheckpoint;
+  std::string m_androidLunarInputs;
+  std::string AndroidLunarInputs(double clockOffset) const;
+#endif
 
   double m_Measurement;  // Measurement angle in degrees (NaN is valid for all)
   double m_MeasurementCertainty;
@@ -141,8 +151,13 @@ public:
   double m_LunarBodyAltitudeUncertainty;
   bool m_LunarSeparateTimes;
   bool m_LunarTimeIsWatch = false;
+#ifdef __OCPN__ANDROID__
+  double m_LunarMoonTimeOffsetSeconds;
+  double m_LunarBodyTimeOffsetSeconds;
+#else
   int m_LunarMoonTimeOffsetSeconds;
   int m_LunarBodyTimeOffsetSeconds;
+#endif
   bool m_LunarMovingObserver;
   double m_LunarCourseTrue;
   double m_LunarSpeedKnots;

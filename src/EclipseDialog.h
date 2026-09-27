@@ -22,6 +22,9 @@ class wxSpinCtrl;
 class wxStaticText;
 class wxTextCtrl;
 class celestial_navigation_pi;
+#ifdef __OCPN__ANDROID__
+class QTimer;
+#endif
 
 class EclipseDialog : public wxDialog {
 public:
@@ -106,6 +109,9 @@ private:
   bool m_cancel_requested;
 
   wxTimer m_verification_timer;
+#ifdef __OCPN__ANDROID__
+  QTimer* m_androidVerificationPoll = nullptr;
+#endif
   celestial_navigation::EclipseVerificationWorker m_verification_worker;
   bool m_verifying;
   int m_verification_purpose;

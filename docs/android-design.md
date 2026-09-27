@@ -119,3 +119,17 @@ LOLA retain verification, coverage checks and honest fallback/error messages.
 6. Recheck local/remote HEAD, rebuild exact committed source, rerun affected
    workflows, retain binaries and evidence, and prepare the full CI candidate.
    Publication stays behind the repository's explicit release approval gate.
+
+Tester handoff extension, 27 September 2026: after physical tablet acceptance,
+provide an independently installable Android tarball and download URL, with
+root metadata, tested manual import and verified hosted checksum. Keep this
+manual tester channel separate from catalogue publication.
+
+## Additional authorized host and tester work
+
+The user requested a downloadable manual-import Android tarball URL after tablet
+acceptance, with root metadata.xml and no catalogue publication. On 27 September
+2026 they also authorized an isolated minimal Android core import fix, physical
+verification on this tablet, a pob220 OpenCPN fork and a focused upstream master
+PR if the fix succeeds. Preserve the existing Celestial greyscale/black icon;
+no replacement artwork or jigsaw fallback is required.

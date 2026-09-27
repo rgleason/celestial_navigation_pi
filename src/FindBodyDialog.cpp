@@ -1,3 +1,4 @@
+#include "UtcDateTime.h"
 /******************************************************************************
  *
  * Project:  OpenCPN
@@ -44,7 +45,18 @@
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
+#include "AndroidAngleEntry.h"
 #endif
+
+namespace {
+inline double ReadSightAngle(const wxString& text) {
+#ifdef __OCPN__ANDROID__
+  return celestial_android::AngleTextValue(text);
+#else
+  return fromDMM_Plugin(text);
+#endif
+}
+}
 
 FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight,
                                CopyHsHandler copyHs)
@@ -73,8 +85,13 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight,
   m_positionSource->Bind(wxEVT_CHOICE,
                          &FindBodyDialog::ChangePositionSource, this);
   if (!sight.m_DRBoatPosition) {
+#ifdef __OCPN__ANDROID__
+    m_tLatitude->ChangeValue(wxString::Format("%.17g", m_Sight.m_DRLat));
+    m_tLongitude->ChangeValue(wxString::Format("%.17g", m_Sight.m_DRLon));
+#else
     m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_Sight.m_DRLat, true));
     m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_Sight.m_DRLon, true));
+#endif
   }
   m_cbBoatPosition->SetValue(sight.m_DRBoatPosition);
   m_cbMagneticAzimuth->SetValue(sight.m_DRMagneticAzimuth);
@@ -146,20 +163,27 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight,
   m_tLongitude->SetMinSize(wxSize(coordinateWidth, -1));
 
 #ifdef __OCPN__ANDROID__
-  GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
-  GetHandle()->grabGesture(Qt::PanGesture);
-  Connect(
-      wxEVT_QT_PANGESTURE,
-      (wxObjectEventFunction)(wxEventFunction)&FindBodyDialog::OnEvtPanGesture,
-      NULL, this);
+  m_sFindDialogButtonOK->SetId(wxID_ANY);
+  close->SetId(wxID_OK);
+  close->SetLabel(_("Use position"));
+  SetAffirmativeId(wxID_OK);
+  celestial_android::AddAngleEntry(m_tLatitude, 1, -90, 90);
+  celestial_android::AddAngleEntry(m_tLongitude, 2, -180, 180);
 #endif
 
   UpdateBoatPosition();
   m_initialLatitude = m_Sight.m_DRLat;
   m_initialLongitude = m_Sight.m_DRLon;
   m_initialBoatPosition = m_Sight.m_DRBoatPosition;
+#ifdef __OCPN__ANDROID__
+  celestial_android::LayoutScrolls(this);
+#else
   GetSizer()->Fit(this);
+#endif
   Centre();
+#ifdef __OCPN__ANDROID__
+  celestial_android::Decorate(this, GetTitle(), [this]() { CancelPosition(); });
+#endif
 }
 
 #ifdef __OCPN__ANDROID__
@@ -196,8 +220,13 @@ CelestialNavigationDialog* FindBodyDialog::NavigationDialog() const {
 void FindBodyDialog::SetCoordinates(double latitude, double longitude) {
   m_Sight.m_DRLat = latitude;
   m_Sight.m_DRLon = longitude;
+  #ifdef __OCPN__ANDROID__
+  m_tLatitude->ChangeValue(wxString::Format("%.17g", latitude));
+  m_tLongitude->ChangeValue(wxString::Format("%.17g", longitude));
+#else
   m_tLatitude->ChangeValue(toSDMM_PlugIn(1, latitude, true));
   m_tLongitude->ChangeValue(toSDMM_PlugIn(2, longitude, true));
+#endif
 }
 
 void FindBodyDialog::ChangePositionSource(wxCommandEvent&) {
@@ -228,11 +257,11 @@ void FindBodyDialog::ApplyPositionSource() {
       if (epochUtc.IsValid())
         info = wxString::Format(
             _("Fix epoch: %s UTC"),
-            epochUtc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC).c_str());
+            UtcDateTime::FormatInstant(epochUtc, "%Y-%m-%d %H:%M:%S").c_str());
       else
         info = wxString::Format(
             _("Calculated: %s UTC; no single fix epoch"),
-            calculatedUtc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC)
+            UtcDateTime::FormatInstant(calculatedUtc, "%Y-%m-%d %H:%M:%S")
                 .c_str());
     }
   } else if (source == 4) {
@@ -241,7 +270,11 @@ void FindBodyDialog::ApplyPositionSource() {
       available = false;
     } else {
       WaypointPickerDialog picker(this, waypoints, wxEmptyString);
+#ifdef __OCPN__ANDROID__
+      if (celestial_android::ModalResult(picker) != wxID_OK) {
+#else
       if (picker.ShowModal() != wxID_OK) {
+#endif
         m_positionSource->SetSelection(m_appliedPositionSource);
         return;
       }
@@ -270,11 +303,17 @@ void FindBodyDialog::ApplyPositionSource() {
   m_tLatitude->Enable(source == 0);
   m_tLongitude->Enable(source == 0);
   m_positionInfo->SetLabel(info);
+#ifndef __OCPN__ANDROID__
   m_positionInfo->Wrap(250);
+#endif
   m_appliedPositionSource = source;
   Update();
   GetSizer()->Layout();
+#ifdef __OCPN__ANDROID__
+  celestial_android::LayoutScrolls(this);
+#else
   GetSizer()->Fit(this);
+#endif
 }
 
 void FindBodyDialog::ResetPosition() {
@@ -284,15 +323,26 @@ void FindBodyDialog::ResetPosition() {
   m_appliedPositionSource = m_positionSource->GetSelection();
   m_cbBoatPosition->SetValue(m_initialBoatPosition);
   m_Sight.m_DRBoatPosition = m_initialBoatPosition;
+  #ifdef __OCPN__ANDROID__
+  m_tLatitude->ChangeValue(wxString::Format("%.17g", m_initialLatitude));
+  m_tLongitude->ChangeValue(wxString::Format("%.17g", m_initialLongitude));
+#else
   m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_initialLatitude, true));
   m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_initialLongitude, true));
+#endif
   m_tLatitude->Enable(!m_initialBoatPosition);
   m_tLongitude->Enable(!m_initialBoatPosition);
   m_positionInfo->SetLabel(m_initialBoatPosition
                                ? _("Current boat fix; check the sight's UTC.")
                                : _("Enter the DR position at the sight's UTC."));
+#ifndef __OCPN__ANDROID__
   m_positionInfo->Wrap(250);
+#endif
+#ifdef __OCPN__ANDROID__
+  celestial_android::LayoutScrolls(this);
+#else
   GetSizer()->Fit(this);
+#endif
   Update();
 }
 
@@ -303,7 +353,7 @@ void FindBodyDialog::CopyEstimatedHs() {
   m_copyHs(value);
   // Refresh the popup's intercept against the deliberately copied altitude.
   // Retain the already corrected epoch, limb and reduction settings.
-  m_Sight.m_Measurement = fromDMM_Plugin(value);
+  m_Sight.m_Measurement = ReadSightAngle(value);
   m_Sight.m_CalcStr.clear();
   m_Sight.RecomputeAltitude();
   Update();
@@ -358,8 +408,8 @@ void FindBodyDialog::Update() {
 
   m_Sight.m_DRMagneticAzimuth = m_cbMagneticAzimuth->GetValue();
   if (!m_Sight.m_DRBoatPosition) {
-    m_Sight.m_DRLat = fromDMM_Plugin(m_tLatitude->GetValue());
-    m_Sight.m_DRLon = fromDMM_Plugin(m_tLongitude->GetValue());
+    m_Sight.m_DRLat = ReadSightAngle(m_tLatitude->GetValue());
+    m_Sight.m_DRLon = ReadSightAngle(m_tLongitude->GetValue());
   }
 
   m_Sight.CalculateAtDR(&hc, &zn);

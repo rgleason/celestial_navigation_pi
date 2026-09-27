@@ -4,7 +4,7 @@ version: 2.1
 parameters:
     run_workflow_deploy:
         type: boolean
-        default: true
+        default: false
 
 std-filters: &std-filters
     filters:
@@ -66,12 +66,53 @@ workflows:
           - build-msvc-2022:
               <<: *std-filters
 
+          - approve-publication:
+              type: approval
+              <<: *std-filters
+              requires:
+                  - build-android-arm64
+                  - build-android-armhf
+                  - build-macos-universal
+                  - build-msvc-wx32-2022
+                  - build-flatpak-aarch64-2208
+                  - build-flatpak-x86-2208
+                  - build-flatpak-aarch64-2408
+                  - build-flatpak-x86-2408
+                  - build-debian-arm64-13-trixie
+                  - build-debian-armhf-13-trixie
+                  - build-debian-x86_64-13-trixie
+                  - build-debian-arm64-12-bookworm
+                  - build-debian-armhf-12-bookworm
+                  - build-debian-x86_64-12-bookworm
+                  - build-debian-armhf-11-bullseye
+                  - build-debian-arm64-11-bullseye
+                  - build-debian-x86_64-11-bullseye
+                  - build-ubuntu-x86_64-2204-jammy
+                  - build-msvc-2022
+          - publish-reviewed:
+              <<: *std-filters
+              requires:
+                  - approve-publication
+
 orbs:
     cloudsmith: cloudsmith/cloudsmith@1.0.5
     win: circleci/windows@5.1.0
     jq: circleci/jq@3.0.2
 
 commands:
+    retain-code:
+        steps:
+            - run:
+                name: Retain exact platform packages and provenance
+                command: python3 ci/retain-build-artifacts.py
+            - store_artifacts:
+                path: retained-artifacts
+            - store_artifacts:
+                path: artifacts
+            - persist_to_workspace:
+                root: .
+                paths:
+                    - retained-artifacts
     deploy-code:
         parameters:
             install_python:
@@ -161,7 +202,7 @@ jobs:
         - checkout
         - run: chmod a+x ci/*.sh
         - run: bash ci/circleci-build-android-arm64.sh
-        - deploy-code:
+        - retain-code:
             install_python: true
     build-android-armhf:
         docker:
@@ -175,7 +216,7 @@ jobs:
         - checkout
         - run: chmod a+x ci/*.sh
         - run: bash ci/circleci-build-android-armhf.sh
-        - deploy-code:
+        - retain-code:
             install_python: true
     build-macos-universal:
         macos:
@@ -207,7 +248,7 @@ jobs:
               sh -c "otool -L build/*.dylib"
         - run: >
               sh -c "cat build/*.xml"
-        - deploy-code:
+        - retain-code:
             deploy_use_orb: false
             install_python: false
     build-msvc-wx32-2022:
@@ -226,7 +267,7 @@ jobs:
             shell: cmd.exe
             command: ci\circleci-build-msvc.bat
             no_output_timeout: 30m
-        - deploy-code:
+        - retain-code:
             deploy_use_orb: false
     build-flatpak-aarch64-2208:
         machine:
@@ -244,7 +285,7 @@ jobs:
         - run: chmod a+x ci/*.sh
         - run:
             command: bash ci/circleci-build-flatpak.sh
-        - deploy-code
+        - retain-code
     build-flatpak-x86-2208:
         machine:
             image: ubuntu-2404:current
@@ -261,7 +302,7 @@ jobs:
         - run:
             command: bash ci/circleci-build-flatpak.sh
             no_output_timeout: 30m
-        - deploy-code
+        - retain-code
     build-flatpak-aarch64-2408:
         machine:
             image: ubuntu-2404:current
@@ -278,7 +319,7 @@ jobs:
         - run: chmod a+x ci/*.sh
         - run:
             command: bash ci/circleci-build-flatpak.sh
-        - deploy-code
+        - retain-code
     build-flatpak-x86-2408:
         machine:
             image: ubuntu-2404:current
@@ -295,7 +336,7 @@ jobs:
         - run:
             command: bash ci/circleci-build-flatpak.sh
             no_output_timeout: 30m
-        - deploy-code
+        - retain-code
     build-debian-arm64-13-trixie:
         machine:
             image: ubuntu-2204:current
@@ -314,7 +355,7 @@ jobs:
         - run:
             command: ci/circleci-build-ubuntu-docker.sh
             no_output_timeout: 30m
-        - deploy-code
+        - retain-code
     build-debian-armhf-13-trixie:
         machine:
             image: ubuntu-2204:current
@@ -333,7 +374,7 @@ jobs:
         - run:
             command: ci/circleci-build-ubuntu-docker.sh
             no_output_timeout: 30m
-        - deploy-code
+        - retain-code
     build-debian-x86_64-13-trixie:
         machine:
             image: ubuntu-2404:current
@@ -350,7 +391,7 @@ jobs:
         - run:
             command: ci/circleci-build-ubuntu-docker.sh
             no_output_timeout: 30m
-        - deploy-code
+        - retain-code
     build-debian-arm64-12-bookworm:
         machine:
             image: ubuntu-2204:current
@@ -369,7 +410,7 @@ jobs:
         - run:
             command: ci/circleci-build-ubuntu-docker.sh
             no_output_timeout: 30m
-        - deploy-code
+        - retain-code
     build-debian-armhf-12-bookworm:
         machine:
             image: ubuntu-2204:current
@@ -388,7 +429,7 @@ jobs:
         - run:
             command: ci/circleci-build-ubuntu-docker.sh
             no_output_timeout: 30m
-        - deploy-code
+        - retain-code
     build-debian-x86_64-12-bookworm:
         machine:
             image: ubuntu-2404:current
@@ -405,7 +446,7 @@ jobs:
         - run:
             command: ci/circleci-build-ubuntu-docker.sh
             no_output_timeout: 30m
-        - deploy-code
+        - retain-code
     build-debian-armhf-11-bullseye:
         machine:
             image: ubuntu-2204:current
@@ -423,7 +464,7 @@ jobs:
         - run:
             command: ci/circleci-build-ubuntu-docker.sh
             no_output_timeout: 30m
-        - deploy-code
+        - retain-code
     build-debian-arm64-11-bullseye:
         machine:
             image: ubuntu-2204:current
@@ -441,7 +482,7 @@ jobs:
         - run:
             command: ci/circleci-build-ubuntu-docker.sh
             no_output_timeout: 30m
-        - deploy-code
+        - retain-code
     build-debian-x86_64-11-bullseye:
         docker:
         - image: circleci/buildpack-deps:bullseye-scm
@@ -461,7 +502,7 @@ jobs:
         - run: cat /etc/apt/sources.list
         - run: chmod a+x ci/*.sh
         - run: ci/circleci-build-debian.sh
-        - deploy-code
+        - retain-code
 ## KEEP needed for OpenCPN v5.8 Jammy wx32 build
     build-ubuntu-x86_64-2204-jammy:
         docker:
@@ -483,7 +524,7 @@ jobs:
         - run: cat /etc/apt/sources.list
         - run: chmod a+x ci/*.sh
         - run: ci/circleci-build-debian.sh
-        - deploy-code
+        - retain-code
 ## ---------------------
 ## OpenCPN 5.6.2 Plugins
 ## ---------------------
@@ -507,5 +548,22 @@ jobs:
             shell: cmd.exe
             command: ci\circleci-build-msvc.bat
             no_output_timeout: 30m
-        - deploy-code:
+        - retain-code:
             deploy_use_orb: false
+
+    publish-reviewed:
+        docker:
+            - image: cimg/python:3.12
+        steps:
+            - checkout
+            - attach_workspace:
+                at: .
+            - when:
+                condition: <<pipeline.parameters.run_workflow_deploy>>
+                steps:
+                    - run: python3 -m pip install cloudsmith-cli
+                    - run: bash ci/deploy-reviewed-artifacts.sh
+            - unless:
+                condition: <<pipeline.parameters.run_workflow_deploy>>
+                steps:
+                    - run: echo "Publication is disabled; reviewed packages are retained as CI artifacts."

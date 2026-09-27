@@ -35,6 +35,10 @@ using std::map;
 using std::string;
 using std::vector;
 
+#ifdef __OCPN__ANDROID__
+#include <mutex>
+#endif
+
 using astrolabe::Coords;
 using astrolabe::vPlanets;
 using astrolabe::calendar::jd_to_jcent;
@@ -98,10 +102,15 @@ astrolabe::vsop87d::VSOP87d::VSOP87d() {
   only once to save time and space.
 
   */
+#ifdef __OCPN__ANDROID__
+  static std::once_flag loaded;
+  std::call_once(loaded, []() { load_vsop87d_text_db(); });
+#else
   if (!_first_time) return;
   //    cout << "loading text db..." << endl;
   load_vsop87d_text_db();
   _first_time = false;
+#endif
 }
 
 double astrolabe::vsop87d::VSOP87d::dimension(double jd, vPlanets planet,
@@ -125,7 +134,13 @@ double astrolabe::vsop87d::VSOP87d::dimension(double jd, vPlanets planet,
   double X = 0.0;
   double tauN = 1.0;
   const double tau = jd_to_jcent(jd) / 10.0;
+#ifdef __OCPN__ANDROID__
+  const auto found = _planets.find(Key(planet, dim));
+  if (found == _planets.end()) throw Error("Analytical planet data is missing");
+  const list<Series>& series = found->second;
+#else
   const list<Series>& series = _planets[Key(planet, dim)];
+#endif
 
   for (std::list<Series>::const_iterator p = series.begin(); p != series.end();
        ++p) {

@@ -121,7 +121,11 @@ inline bool PrepareLunarFixSights(const std::vector<Sight>& recorded,
                                   wxString* error) {
   working->clear();
   wxDateTime reference;
+#ifdef __OCPN__ANDROID__
+  if (solution && !UtcDateTime::ParseUtc(solution->reference_time, &reference)) {
+#else
   if (solution && !reference.ParseISOCombined(solution->reference_time, ' ')) {
+#endif
     *error = "The saved solution has no usable reference epoch.";
     return false;
   }

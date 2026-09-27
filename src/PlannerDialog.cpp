@@ -1,3 +1,4 @@
+#include "AndroidFileDialog.h"
 #include "PlannerDialog.h"
 #include "WaypointPickerDialog.h"
 
@@ -223,7 +224,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   grid->Add(m_timeLabel, 0, wxALIGN_CENTER_VERTICAL);
   m_timeContainer = new wxPanel(this);
   wxBoxSizer* timeSizer = new wxBoxSizer(wxVERTICAL);
-  m_utcTime = new wxTimePickerCtrl(m_timeContainer, wxID_ANY);
+  m_utcTime = new CelestialTimePicker(m_timeContainer, wxID_ANY);
   m_nauticalTime =
       new wxTextCtrl(m_timeContainer, wxID_ANY, wxEmptyString,
                      wxDefaultPosition, wxSize(145, -1), wxTE_PROCESS_ENTER);
@@ -716,6 +717,13 @@ wxDateTime PlannerDialog::ReadUtc(bool showErrors) {
   const wxDateTime utc = PlannerFieldsToUtc(
       entered, static_cast<PlannerTimeBasis>(m_inputTimeBasis->GetSelection()),
       ZoneOffsetHours());
+#ifdef __OCPN__ANDROID__
+  if (!utc.IsValid()) {
+    if (showErrors) wxMessageBox(_("This local clock time is missing or repeated at a daylight-saving transition. Choose UTC and enter the intended instant."),
+        _("Local time needs clarification"), wxOK | wxICON_WARNING, this);
+    return wxDateTime();
+  }
+#endif
   if (utc.GetYear() < 1900 || utc.GetYear() > 2100) {
     if (showErrors)
       wxMessageBox(_("The ordinary offline planner is supported from 1900 "
@@ -743,8 +751,13 @@ wxDateTime PlannerDialog::ReadEntryFields(int format, bool showErrors) {
   const wxDateTime date = m_utcDate->GetValue();
   const wxDateTime time = m_utcTime->GetValue();
   if (date.IsValid() && time.IsValid())
+#ifdef __OCPN__ANDROID__
+    entered = UtcDateTime::FromCalendar(date, UtcDateTime::Fields(time).hour,
+       UtcDateTime::Fields(time).min, UtcDateTime::Fields(time).sec + time.GetMillisecond() / 1000.0);
+#else
     entered = wxDateTime(date.GetDay(), date.GetMonth(), date.GetYear(),
                          time.GetHour(), time.GetMinute(), time.GetSecond());
+#endif
   if (!entered.IsValid() && showErrors)
     wxMessageBox(_("Select a valid date and time."), _("Invalid time"),
                  wxOK | wxICON_ERROR, this);
@@ -756,7 +769,11 @@ void PlannerDialog::SetUtcControls(const wxDateTime& utc) {
   const wxDateTime value = UtcToPlannerFields(
       utc, static_cast<PlannerTimeBasis>(m_inputTimeBasis->GetSelection()),
       ZoneOffsetHours());
+#ifdef __OCPN__ANDROID__
+  m_utcDate->SetValue(UtcDateTime::CalendarDate(value));
+#else
   m_utcDate->SetValue(value);
+#endif
   m_utcTime->SetValue(value);
   m_nauticalDate->ChangeValue(FormatNauticalPlannerDate(value));
   m_nauticalTime->ChangeValue(FormatNauticalPlannerTime(value));
@@ -782,7 +799,11 @@ void PlannerDialog::ChangeEntryFormat(wxCommandEvent&) {
   m_lastEntryFormat = m_entryFormat->GetSelection();
   UpdateEntryFormatControls();
   if (fields.IsValid()) {
+#ifdef __OCPN__ANDROID__
+    m_utcDate->SetValue(UtcDateTime::CalendarDate(fields));
+#else
     m_utcDate->SetValue(fields);
+#endif
     m_utcTime->SetValue(fields);
     m_nauticalDate->ChangeValue(FormatNauticalPlannerDate(fields));
     m_nauticalTime->ChangeValue(FormatNauticalPlannerTime(fields));
@@ -844,7 +865,7 @@ void PlannerDialog::UpdateResolvedUtc(const wxDateTime& utc) {
     return;
   }
   m_resolvedUtc->SetLabel(_("Resolved UTC: ") +
-                          utc.Format("%Y-%m-%d %H:%M:%S UTC", wxDateTime::UTC));
+                          UtcDateTime::FormatInstant(utc, "%Y-%m-%d %H:%M:%S UTC"));
 }
 
 void PlannerDialog::ContextPositionEdited(wxCommandEvent&) {
@@ -1088,7 +1109,11 @@ bool PlannerDialog::ChooseWaypoint() {
     return false;
   }
   WaypointPickerDialog dialog(this, waypoints, m_waypointGuid);
+#ifdef __OCPN__ANDROID__
+  if (celestial_android::ModalResult(dialog) != wxID_OK) return false;
+#else
   if (dialog.ShowModal() != wxID_OK) return false;
+#endif
   const WaypointPosition* waypoint = dialog.GetSelectedWaypoint();
   if (!waypoint) return false;
   m_waypointGuid = waypoint->guid;
@@ -1144,8 +1169,8 @@ wxString PlannerDialog::DisplayTime(const wxDateTime& utc) const {
     offset = static_cast<long>(std::lround(ZoneOffsetHours() * 3600.0));
     suffix = wxString::Format("UTC%+.1f", ZoneOffsetHours());
   }
-  return (utc + wxTimeSpan::Seconds(offset))
-             .Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC) +
+  return UtcDateTime::FormatInstant(utc + wxTimeSpan::Seconds(offset),
+                                      "%Y-%m-%d %H:%M:%S") +
          " " + suffix;
 }
 
@@ -1191,7 +1216,7 @@ void PlannerDialog::RefreshEvents() {
     const long row = m_events->InsertItem(
         m_events->GetItemCount(), HorizonEventCalculator::Name(event.kind));
     m_events->SetItem(row, 1,
-                      event.utc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
+                      UtcDateTime::FormatInstant(event.utc, "%Y-%m-%d %H:%M:%S"));
     m_events->SetItem(row, 2, DisplayTime(event.utc));
     m_events->SetItem(row, 3,
                       wxString::Format("%.1f%c", event.bearingTrue, 0x00b0));
@@ -1208,7 +1233,7 @@ void PlannerDialog::RefreshEvents() {
     const long row =
         m_events->InsertItem(m_events->GetItemCount(), _("Next ") + phase.name);
     m_events->SetItem(row, 1,
-                      phase.utc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
+                      UtcDateTime::FormatInstant(phase.utc, "%Y-%m-%d %H:%M:%S"));
     m_events->SetItem(row, 2, DisplayTime(phase.utc));
     m_events->SetItem(row, 3, CN_UTF8_("—"));
     m_events->SetItem(row, 4, _("Geocentric phase"));
@@ -1389,7 +1414,7 @@ void PlannerDialog::RefreshAlmanac() {
   for (const auto& item : m_almanacRows) {
     const long row = m_almanac->InsertItem(
         m_almanac->GetItemCount(),
-        item.utc.Format("%Y-%m-%d %H:%M", wxDateTime::UTC));
+        UtcDateTime::FormatInstant(item.utc, "%Y-%m-%d %H:%M"));
     m_almanac->SetItem(row, 1, item.body);
     m_almanac->SetItem(row, 2, FormatNavigationAngle(item.gha));
     m_almanac->SetItem(row, 3, FormatNavigationAngle(item.sha));
@@ -1431,7 +1456,7 @@ void PlannerDialog::RefreshSpecial() {
             "Enter corrected Ho above to estimate latitude; longitude comes "
             "primarily from noon timing."),
           0x00b0,
-          event.utc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC).c_str(),
+          UtcDateTime::FormatInstant(event.utc, "%Y-%m-%d %H:%M:%S").c_str(),
           FormatNavigationAngle(event.observerLatitude,
                                 NavigationAngleKind::Latitude, true)
               .c_str(),
@@ -1444,7 +1469,7 @@ void PlannerDialog::RefreshSpecial() {
 }
 
 void PlannerDialog::ExportAlmanac(wxCommandEvent&) {
-  wxFileDialog dialog(this, _("Export offline celestial almanac"),
+  CelestialFileDialog dialog(this, _("Export offline celestial almanac"),
                       wxEmptyString, "celestial-almanac.csv",
                       _("CSV files (*.csv)|*.csv"),
                       wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
@@ -1511,6 +1536,6 @@ void PlannerDialog::SolveSpecialLatitude(wxCommandEvent&) {
       body.c_str(),
       FormatNavigationAngle(latitude, NavigationAngleKind::Latitude, true)
           .c_str(),
-      time.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC).c_str(),
+      UtcDateTime::FormatInstant(time, "%Y-%m-%d %H:%M:%S").c_str(),
       state.azimuthTrue, 0x00b0));
 }

@@ -48,6 +48,12 @@ using namespace std;
 // the class factories, used to create and destroy instances of the PlugIn
 
 extern "C" DECL_EXP opencpn_plugin* create_pi(void* ppimgr) {
+#ifdef __OCPN__ANDROID__
+  // The Android support archive supplies private static wx libraries. Their
+  // stock lists are not initialized by the host's separate wxApp instance.
+  // Colour pickers dereference this database even for an explicit RGB colour.
+  if (!wxTheColourDatabase) wxInitializeStockLists();
+#endif
   return (opencpn_plugin*)new celestial_navigation_pi(ppimgr);
 }
 
@@ -319,6 +325,10 @@ bool celestial_navigation_pi::RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp) {
 
 bool celestial_navigation_pi::RenderGLOverlay(wxGLContext* pcontext,
                                               PlugIn_ViewPort* vp) {
+#ifdef __OCPN__ANDROID__
+  GLint previousProgram = 0;
+  glGetIntegerv(GL_CURRENT_PROGRAM, &previousProgram);
+#endif
 #ifdef CELESTIAL_ECLIPSE_INTEGRATION_TEST
   static bool logged_gl_overlay = false;
   if (!logged_gl_overlay && m_pCelestialNavigationDialog &&
@@ -332,12 +342,17 @@ bool celestial_navigation_pi::RenderGLOverlay(wxGLContext* pcontext,
   pidc->SetVP(vp);
   bool ret = RenderOverlayAll(pidc, vp);
   delete pidc;
+#ifdef __OCPN__ANDROID__
+  glUseProgram(previousProgram);
+#endif
   return ret;
 }
 
 bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
-  if (!m_pCelestialNavigationDialog || !m_pCelestialNavigationDialog->IsShown())
-    return false;
+  if (!m_pCelestialNavigationDialog) return false;
+#ifndef __OCPN__ANDROID__
+  if (!m_pCelestialNavigationDialog->IsShown()) return false;
+#endif
 
   /* draw sights */
   for (Sight& s : m_pCelestialNavigationDialog->m_Sights) {
@@ -347,9 +362,10 @@ bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
   m_pCelestialNavigationDialog->RenderEclipse(dc, vp);
   m_pCelestialNavigationDialog->RenderCoastal(dc, vp);
 
-  if (!m_pCelestialNavigationDialog->m_FixDialog ||
-      !m_pCelestialNavigationDialog->m_FixDialog->IsShown())
-    return true;
+  if (!m_pCelestialNavigationDialog->m_FixDialog) return true;
+#ifndef __OCPN__ANDROID__
+  if (!m_pCelestialNavigationDialog->m_FixDialog->IsShown()) return true;
+#endif
 
   /* now render fix */
   double lat = m_pCelestialNavigationDialog->m_FixDialog->m_fixlat;
@@ -457,6 +473,11 @@ void celestial_navigation_pi::SetPluginMessage(wxString& message_id,
 }
 
 void celestial_navigation_pi::OnDialogClose() {
+#ifdef __OCPN__ANDROID__
+  if (m_pCelestialNavigationDialog) m_pCelestialNavigationDialog->Hide();
+  RequestRefresh(m_parent_window);
+  return;
+#endif
   CelestialNavigationDialog* dialog = m_pCelestialNavigationDialog;
   m_pCelestialNavigationDialog = NULL;
   if (!dialog) return;
@@ -466,12 +487,18 @@ void celestial_navigation_pi::OnDialogClose() {
 
 double celestial_navigation_pi_GetWMM(double lat, double lon, double altitude,
                                       wxDateTime date) {
+#ifdef __OCPN__ANDROID__
+  const auto utc = UtcDateTime::Fields(date);
+  const int year = utc.year, month = utc.mon, day = utc.mday;
+#else
+  const int year = date.GetYear(), month = date.GetMonth(), day = date.GetDay();
+#endif
   wxJSONValue v;
   v[_T("Lat")] = lat;
   v[_T("Lon")] = lon;
-  v[_T("Year")] = date.GetYear();
-  v[_T("Month")] = date.GetMonth();
-  v[_T("Day")] = date.GetDay();
+  v[_T("Year")] = year;
+  v[_T("Month")] = month;
+  v[_T("Day")] = day;
 
   wxJSONWriter w;
   wxString out;
@@ -481,8 +508,8 @@ double celestial_navigation_pi_GetWMM(double lat, double lon, double altitude,
   SendPluginMessage(wxString(_T("WMM_VARIATION_REQUEST")), out);
   if (gQueryVar == 360) {
     double results[14];
-    geomag_calc(lat, lon, altitude / 1000, date.GetDay(), date.GetMonth(),
-                date.GetYear(), results);
+    geomag_calc(lat, lon, altitude / 1000, day, month,
+                year, results);
     return results[0];
   }
 

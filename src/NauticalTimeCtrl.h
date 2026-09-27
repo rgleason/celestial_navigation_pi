@@ -6,16 +6,17 @@
 #include <wx/stattext.h>
 #include <wx/dateevt.h>
 #include <wx/timectrl.h>
+#include "UtcDateTime.h"
 
 // Locale-independent 24-hour HH:MM:SS entry. Native time pickers use AM/PM
 // on some hosts even when the surrounding sight form says UTC.
 class NauticalTimeCtrl : public wxPanel {
 public:
-  NauticalTimeCtrl(wxWindow* parent, wxWindowID id, const wxDateTime& value)
+  NauticalTimeCtrl(wxWindow* parent, wxWindowID id, const wxDateTime& value = UtcDateTime::Now())
       : wxPanel(parent, id), date_(value) {
     auto* row = new wxBoxSizer(wxHORIZONTAL);
-    const int values[] = {value.GetHour(), value.GetMinute(),
-                          value.GetSecond()};
+    const auto fields = UtcDateTime::Fields(value);
+    const int values[] = {fields.hour, fields.min, fields.sec};
     for (int i = 0; i < 3; ++i) {
       controls_[i] =
           new wxSpinCtrl(this, wxID_ANY, wxString::Format("%02d", values[i]),
@@ -31,26 +32,71 @@ public:
     }
     for (int i = 0; i < 3; ++i) {
       controls_[i]->Bind(wxEVT_SPINCTRL, [this](wxSpinEvent&) {
+#ifdef __OCPN__ANDROID__
+        if (setting_) return;
+#endif
         wxDateEvent event(this, GetValue(), wxEVT_TIME_CHANGED);
         ProcessWindowEvent(event);
       });
       controls_[i]->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+        if (setting_) return;
+#endif
         wxDateEvent event(this, GetValue(), wxEVT_TIME_CHANGED);
         ProcessWindowEvent(event);
       });
     }
+#ifdef __OCPN__ANDROID__
+    row->Detach(controls_[2]);
+    controls_[2]->Hide();
+    seconds_ = new wxSpinCtrlDouble(this, wxID_ANY);
+    seconds_->SetDigits(3);
+    seconds_->SetRange(0, 59.999);
+    seconds_->SetIncrement(.001);
+    seconds_->SetValue(fields.sec + fields.msec / 1000.0);
+    seconds_->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) {
+      if (setting_) return;
+      wxDateEvent event(this, GetValue(), wxEVT_TIME_CHANGED);
+      ProcessWindowEvent(event);
+    });
+    row->Add(seconds_, 1, wxEXPAND);
+    for (int i = 0; i < 2; ++i) controls_[i]->SetMinSize(wxSize(120, -1));
+#endif
     SetSizer(row);
   }
   wxDateTime GetValue() const {
+#ifdef __OCPN__ANDROID__
+    const auto f = UtcDateTime::Fields(date_);
+    const double second = seconds_ ? seconds_->GetValue() : controls_[2]->GetValue();
+    return UtcDateTime::Create(f.year, f.mon + 1, f.mday,
+      controls_[0]->GetValue(), controls_[1]->GetValue(), static_cast<int>(second),
+      std::lround((second - std::floor(second)) * 1000));
+#else
     wxDateTime value = date_;
     value.SetHour(controls_[0]->GetValue());
     value.SetMinute(controls_[1]->GetValue());
     value.SetSecond(controls_[2]->GetValue());
     value.SetMillisecond(0);
     return value;
+#endif
   }
-
+#ifdef __OCPN__ANDROID__
+  void SetValue(const wxDateTime& value) {
+    if (!value.IsValid()) return;
+    setting_ = true;
+    date_ = value;
+    const auto f = UtcDateTime::Fields(value);
+    controls_[0]->SetValue(f.hour); controls_[1]->SetValue(f.min);
+    controls_[2]->SetValue(f.sec);
+    if (seconds_) seconds_->SetValue(f.sec + f.msec / 1000.0);
+    setting_ = false;
+  }
+#endif
 private:
+#ifdef __OCPN__ANDROID__
+  wxSpinCtrlDouble* seconds_ = nullptr;
+  bool setting_ = false;
+#endif
   wxDateTime date_;
   wxSpinCtrl* controls_[3];
 };

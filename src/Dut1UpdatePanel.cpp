@@ -1,3 +1,4 @@
+#include "AndroidFileDialog.h"
 #include "Dut1UpdatePanel.h"
 #include "Utf8Translation.h"
 #include "AtomicXmlFile.h"
@@ -84,7 +85,7 @@ class UpdatePanel : public wxScrolledWindow {
     Bind(wxEVT_SIZE,[this](wxSizeEvent& event) { Rewrap(); event.Skip(); });
     download_->Bind(wxEVT_BUTTON,[this](wxCommandEvent&) { Download(); });
     import_->Bind(wxEVT_BUTTON,[this](wxCommandEvent&) {
-      wxFileDialog dialog(this,_("Import IERS Earth-rotation data"),wxEmptyString,
+      CelestialFileDialog dialog(this,_("Import IERS Earth-rotation data"),wxEmptyString,
                           "finals2000A.all",_("All files (*)|*"),wxFD_OPEN|wxFD_FILE_MUST_EXIST);
       if (dialog.ShowModal()==wxID_OK) Install(dialog.GetPath());
     });
