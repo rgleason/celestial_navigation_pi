@@ -66,6 +66,9 @@ QListWidget* PlannerCards(wxWindow* parent, wxSizer* root, bool selectable) {
   list->setTextElideMode(Qt::ElideNone);
   list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   list->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+  // Register the inner gesture so the ancestor wx scroll viewport cannot
+  // claim a drag that began on a native card. Tap activation remains deferred.
+  QScroller::grabGesture(list->viewport(), QScroller::TouchGesture);
   list->setSelectionMode(selectable ? QAbstractItemView::SingleSelection
                                     : QAbstractItemView::NoSelection);
   list->setItemDelegate(new PlannerCardDelegate(list));
