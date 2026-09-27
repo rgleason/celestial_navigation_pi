@@ -1003,3 +1003,28 @@ inputs were unchanged. Evidence: clock-discard44.png, clock-reopen120-44.png,
 Sights-clock-before44.xml, Sights-clock-apply44.xml, Sights-clock-reset44.xml.
 This does not yet test corrected chart geometry, restart at a nonzero
 correction, or GNSS status under stale/offline conditions.
+
+### 27 September 16:39–16:45 BST — revision 45 failed hot import
+
+Exact dea5511 imported through Plugin Manager; installed library matched
+0e05a09da556416c378130dc4f44af4e0e75f2de63300d4340f993e73ad7fb5e.
+Archive 0edd666b894b3e1f441211f6bcb4c1e4a0a5c1910c127d915a29812b4beaffea.
+Acknowledging the success message crashed PID 11968 at 16:39:05, Qt Widgets
+notify_helper frame, fault address in unloaded code. GPSServer restarted as
+12925; this is not a Plugin Manager pass. Complete logcat45/crash45/exit-info45
+and exact previous/new binaries retained.
+
+The plugin has local hidden wxPendingDelete and wxTopLevelWindows symbols
+(verified llvm-nm), distinct from the host idle loop. Closed modal dialogs
+use deferred Destroy. Next revision drains that plugin-owned queue before
+unload; physical proof pending. This is a plugin lifecycle defect until
+resolved, not a confirmed external limitation.
+
+Cold launch of revision 45 fixed initial label wrapping without a swipe.
+Lunar card checks failed: the wx accessor repeated column zero in every
+field, dynamic cards had not been styled because the styling helper
+processes children, and a modal worker delivered refresh before position
+rows were repopulated. Next revision reads native model cells, styles
+the containing panels, and schedules a final refresh after branch commit.
+Desktop lunar UI regression passed with display access (desktop-lunar45.log);
+the initial sandbox run could not open the display and was not a plugin test.

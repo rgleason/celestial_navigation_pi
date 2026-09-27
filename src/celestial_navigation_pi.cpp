@@ -29,6 +29,7 @@
 #include "Dut1UpdatePanel.h"
 #ifdef __OCPN__ANDROID__
 #include "AndroidDocumentImport.h"
+#include <QDebug>
 #endif
 
 #ifndef WX_PRECOMP
@@ -192,6 +193,18 @@ bool celestial_navigation_pi::DeInit(void) {
     dialog->Hide();
     delete dialog;
   }
+#ifdef __OCPN__ANDROID__
+  // Static wxQt gives this plugin its own deferred-delete queue. The host's
+  // idle loop drains a different queue. Closed modal sheets otherwise leave
+  // Qt widgets/event filters alive with vtables in a library about to unload.
+  const size_t pending = wxPendingDelete.GetCount();
+  while (auto node = wxPendingDelete.GetFirst()) {
+    auto* object = node->GetData();
+    wxPendingDelete.DeleteNode(node);
+    delete object;
+  }
+  qInfo() << "Celestial Android unload drained closed objects:" << pending;
+#endif
   return true;
 }
 
