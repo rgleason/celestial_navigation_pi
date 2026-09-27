@@ -339,6 +339,7 @@ inline void CN_EnableAndroidChoiceScrolling(QComboBox* combo) {
   combo->setProperty("cnChoiceDrag", true);
   new CN_AndroidButtonDragFilter(combo);
   auto* view = combo->view();
+  view->window()->setProperty("cnChoiceOwner", QVariant::fromValue<QObject*>(combo));
   view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
   QPointer<QComboBox> safeCombo(combo);
   QPointer<QAbstractItemView> safeView(view);

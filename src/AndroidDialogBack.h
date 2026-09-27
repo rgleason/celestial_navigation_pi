@@ -7,6 +7,9 @@
 #include <QTimer>
 #include <QPointer>
 #include <QWidget>
+#include <QComboBox>
+#include <QAbstractItemView>
+#include <QScroller>
 #include <functional>
 #include <wx/dialog.h>
 #include <wx/toplevel.h>
@@ -55,7 +58,18 @@ class CelestialAndroidBackFilter : public QObject {
         QGuiApplication::inputMethod()->hide();
         QTimer::singleShot(0, dialog_->GetHandle(), []() { QGuiApplication::inputMethod()->hide(); });
       }
-      else if (popupGesture_) { if (popup_) popup_->hide(); }
+      else if (popupGesture_) {
+        if (popup_) {
+          auto* combo = qobject_cast<QComboBox*>(
+              popup_->property("cnChoiceOwner").value<QObject*>());
+          if (combo) {
+            QScroller::scroller(combo->view()->viewport())->stop();
+            combo->hidePopup();
+          } else popup_->close();
+          dialog_->GetHandle()->setFocus(Qt::OtherFocusReason);
+          dialog_->GetHandle()->update();
+        }
+      }
       else action_();
       return true;
     }

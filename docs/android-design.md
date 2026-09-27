@@ -187,3 +187,14 @@ the collapsed control. A drag scrolls the popup; only a stationary release
 sets the model index, closes the popup and emits the existing wxQt activation
 signal once. Preserve native/programmatic selection and 48 dp delegate rows.
 Verify catalogue movement, tap selection and Back cancellation on the tablet.
+
+# Popup Back lifecycle refinement, 27 September 2026
+
+Physical Back on a combo popup left a persistent black surface with the host
+PID still alive. The sheet must dismiss an owned combo through QComboBox's
+hidePopup lifecycle, which resets the combo's internal popup state, rather
+than hiding its private container directly. Record the combo owner on its
+popup, stop active scrolling, consume both Back halves, and keep the editor
+visible with uncommitted values unchanged. Other native popups close through
+their normal close lifecycle. Retest popup Back, editor Cancel, Save/reopen,
+and rotation with the popup open.

@@ -802,3 +802,30 @@ Android ABIs. Approval is on hold and publish-reviewed blocked. No publication
 was approved. These are CI build passes, not completion of physical acceptance
 or validation of the later local fixes. Latest job state retained as
 circleci-pipeline-5-jobs-latest.json.
+
+## 15:42–15:47: verified package and popup regression
+
+Installed f04d483 through Plugin Manager, archive SHA256
+9238b55d131d9f8e34208f33fd6a9fc657c9af82b32c0afbe878db834f38f1c7.
+Independently read installed library exactly equals intended packaged bytes,
+SHA256 5727e76fd48dd0db1a06b58014434074d9d8f2404c1f2180603e5af7cab0afc5;
+unstripped fc87091105afb8acb5c361b2de957d07679a15fa60129a52438d16ca1f30753a.
+The intended executable code is eff1655; f04d483 only added packaging/docs.
+Exact binaries and root metadata retained in committed-f04d483/arm64.
+
+Actual body-popup swipe moved Sun/planets/A-stars to Capella–Polaris without
+closing or committing. A later visible row tap selected Polaris, Save and
+reopen retained it. Independent Sights-saved40.xml compared with before38
+changes only that duplicated record's Body from Venus to Polaris; all entered
+angles, uncertainties and millisecond epoch remained identical and the eight
+zero-offset attributes returned. First tap after the inertial screenshot chose
+Pollux; the subsequent settled popup screenshot and tap y930 selected Polaris
+exactly. Evidence body-popup-*40, body-exact-tap40 and body-reopened40.
+
+Popup Back exposed a separate defect: its container hid but the whole rendered
+app surface remained black for more than two seconds and subsequent captures.
+PID 5177 and foreground QtActivity remained unchanged. Controls still accepted
+a tap and restored the display; this is a failed Back presentation check.
+A design refinement precedes an Android-only owner-aware hidePopup change,
+which also stops active popup scrolling and retains the editor. Android build
+41 passed. Physical lifecycle regression remains pending.
