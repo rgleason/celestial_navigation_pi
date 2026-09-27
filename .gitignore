@@ -5,6 +5,7 @@ temp
 tmp
 master.zip
 build-eclipse/
+build-eclipse-acceptance/
 build-test/
 build-implementation/
 

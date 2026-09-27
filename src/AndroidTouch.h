@@ -218,14 +218,15 @@ inline void CN_EnableAndroidScrolling(wxScrolledWindow* window) {
     window->Bind(type, afterScroll);
 }
 
-// A swipe beginning over a wxQt button otherwise releases as a click. Forward
-// that gesture to the nearest scrolling sheet and click only a stationary tap.
+// Forward drags to the scrolling sheet or an explicit native viewport; perform
+// an action only on a stationary release, never on the initial press.
 class CN_AndroidButtonDragFilter : public QObject {
 public:
-  explicit CN_AndroidButtonDragFilter(QWidget* widget, std::function<void(QPoint)> tap = {})
+  explicit CN_AndroidButtonDragFilter(QWidget* widget, std::function<void(QPoint)> tap = {},
+                                     QWidget* scrollTarget = nullptr)
       : QObject(widget), m_widget(widget), m_tap(std::move(tap)),
         m_button(qobject_cast<QAbstractButton*>(widget)),
-        m_combo(qobject_cast<QComboBox*>(widget)) {
+        m_combo(qobject_cast<QComboBox*>(widget)), m_scrollTarget(scrollTarget) {
     widget->setAttribute(Qt::WA_AcceptTouchEvents);
     widget->installEventFilter(this);
   }
@@ -266,9 +267,10 @@ protected:
       m_moved = false;
       m_origin = global;
       m_clock.start();
-      m_scroll = nullptr;
-      for (QWidget* parent = m_widget->parentWidget(); parent; parent = parent->parentWidget())
-        if (parent->property("cnTouchScroll").toBool()) { m_scroll = parent; break; }
+      m_scroll = m_scrollTarget;
+      if (!m_scroll)
+        for (QWidget* parent = m_widget->parentWidget(); parent; parent = parent->parentWidget())
+          if (parent->property("cnTouchScroll").toBool()) { m_scroll = parent; break; }
       if (!m_button && !m_combo && !m_scroll && !m_tap) {
         m_active = m_touchActive = false;
         return false;
@@ -304,6 +306,7 @@ private:
   std::function<void(QPoint)> m_tap;
   QAbstractButton* m_button;
   QComboBox* m_combo;
+  QPointer<QWidget> m_scrollTarget;
   QPointer<QWidget> m_scroll;
   QPoint m_origin;
   QElapsedTimer m_clock;

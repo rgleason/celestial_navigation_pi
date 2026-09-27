@@ -497,7 +497,13 @@ void EclipseDialog::BuildAndroidInterface() {
       "QListWidget::item { padding: 12px; border-bottom: 1px solid #afbdc4; } "
       "QListWidget::item:selected { background: #d1e8f1; color: #102e3b; }")
       .arg(CN_FontPointSize()));
-  QScroller::grabGesture(m_androidEvents->viewport(), QScroller::TouchGesture);
+  QPointer<QListWidget> eventCards(m_androidEvents);
+  new CN_AndroidButtonDragFilter(m_androidEvents->viewport(),
+      [eventCards](QPoint point) {
+        if (!eventCards) return;
+        const auto index = eventCards->indexAt(point);
+        if (index.isValid()) eventCards->setCurrentRow(index.row());
+      }, m_androidEvents->viewport());
   cardLayout->addWidget(m_androidEvents);
   searches->Add(cards, 0, wxEXPAND | wxALL, 8);
   QObject::connect(m_androidEvents, &QListWidget::currentRowChanged,

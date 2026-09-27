@@ -681,3 +681,29 @@ on chart centres on the event and hides the workspace after successful geometry
 calculation. Android and desktop compilation passed for this small conditional
 change (iteration 37); physical chart acceptance is pending. Desktop plotting
 and shared geometry algorithms are unchanged.
+# Acceptance continuation: native lists and CI portability
+
+Automatic triggering is now verified: adding run-ci to draft PR #1 started
+workflow b568cb91-b510-4d1e-991d-7670277d7b1f on exact source
+6346ba96df409629b9ef6cd869e48859d08dfdec. Subsequent reviewed pushes can use
+the same label trigger without a manual CircleCI website action.
+The dcbb4ee workflow passed both Android ABIs, both Windows targets and all
+14 Linux targets. macOS compiled and packaged but failed artifact retention:
+its Bash 3.2 rejects an empty array expansion under nounset. The wrapper now
+branches explicitly for the Windows py launcher, avoiding that expansion.
+Its real Linux retention run passed; the next macOS run must verify the fix.
+
+The installed dcbb4ee full 1850–2100 search completed on the tablet, with PID
+31948 unchanged. Results moved from 1850 to 1851 on a swipe, but Qt also selected
+the card at the initial press. This is a defect, not a touch acceptance pass.
+The next adapter consumes that press and selects only on stationary release;
+the native file list uses the same rule and defers folder refresh until after
+the callback. Compilation passed; physical regression remains pending.
+
+Standalone eclipse acceptance tests were configured and built from this source
+and executed with the official DE440s, lunar PCK and LOLA pack paths. CTest
+passed in 17.76 seconds. Existing independent fixtures cover 571 NASA catalog
+events over 1850–2100, published path/local circumstances and independent DE440
+states; optional LOLA checks cover validation and plausibility. They do not
+establish independent terrain-contact accuracy. Logs: eclipse-independent-*.log
+in the retained audit directory. No shared astronomy algorithm was changed.

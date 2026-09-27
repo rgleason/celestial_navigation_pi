@@ -44,7 +44,14 @@ class CelestialFileDialog {
     auto* files = new QListWidget(panel->GetHandle());
     files->setItemDelegate(new CN_AndroidChoiceDelegate(files));
     files->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-    QScroller::grabGesture(files->viewport(), QScroller::TouchGesture);
+    QPointer<QListWidget> safeFiles(files);
+    new CN_AndroidButtonDragFilter(files->viewport(), [safeFiles](QPoint point) {
+      if (!safeFiles) return;
+      const auto index = safeFiles->indexAt(point);
+      if (!index.isValid()) return;
+      safeFiles->setCurrentRow(index.row());
+      emit safeFiles->itemClicked(safeFiles->item(index.row()));
+    }, files->viewport());
     layout->addWidget(files, 1);
     auto* name = new QLineEdit(QString::fromUtf8(name_.utf8_str()), panel->GetHandle());
     name->setPlaceholderText("File name"); layout->addWidget(name);
@@ -90,7 +97,12 @@ class CelestialFileDialog {
       else { directory = candidate; refresh(); }
     });
     QObject::connect(files, &QListWidget::itemClicked, panel->GetHandle(), [&](QListWidgetItem* item) {
-      if (item->data(Qt::UserRole + 1).toBool()) { directory = QDir(item->data(Qt::UserRole).toString()); refresh(); }
+      if (item->data(Qt::UserRole + 1).toBool()) {
+        const auto folderPath = item->data(Qt::UserRole).toString();
+        QTimer::singleShot(0, files, [&, folderPath]() {
+          directory = QDir(folderPath); refresh();
+        });
+      }
       else name->setText(QFileInfo(item->data(Qt::UserRole).toString()).fileName());
     });
     QObject::connect(choose, &QPushButton::clicked, panel->GetHandle(), [&]() {

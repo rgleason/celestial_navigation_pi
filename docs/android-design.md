@@ -167,3 +167,15 @@ the eclipse sheet retains its event/coordinates/results; Clear plot removes
 only eclipse geometry. This follows the existing Android sight/fix chart
 journey and avoids requiring a navigator to pan from an unrelated chart area.
 Desktop Plot selected retains its existing behavior.
+# Eclipse card gesture refinement, 27 September 2026
+
+Physical testing of the complete 1850–2100 result list showed that Qt selected
+the card underneath the initial press before recognising a swipe. Selection
+must occur only when a stationary tap is released. A drag must move the native
+list without changing the event used by Local circumstances or Plot. Use the
+existing Android touch filter with an explicit native scroll viewport; consume
+the press and synthesised mouse sequence, and select the card only in its tap
+callback. Programmatic selection remains available to the shared model. Apply
+the same rule to the native file list so a folder cannot open during a swipe.
+Verify actual list movement, unchanged selection after repeated swipes, ordinary
+tap selection, and access to the final card. Desktop controls remain unchanged.
