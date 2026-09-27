@@ -683,6 +683,9 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
   const bool manual = m_motionMode->GetSelection() == 1;
   m_residuals->DeleteAllItems();
   std::vector<FixObservation> observations;
+#ifdef __OCPN__ANDROID__
+  std::vector<wxString> androidShiftDetails;
+#endif
   for (const Sight& sight : m_workingSights) {
     if (!sight.IsVisible() ||
         (sight.m_Type != Sight::ALTITUDE && sight.m_Type != Sight::HORIZON))
@@ -712,6 +715,20 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
       }
     }
     observations.push_back(observation);
+#ifdef __OCPN__ANDROID__
+    wxString shift = _("Saved DR shift: ") +
+        celestial_android::NumberText(sight.m_ShiftNm) + " NM";
+    if (sight.m_ShiftNm != 0.0) {
+      shift += " | " + _("Saved bearing: ") +
+          celestial_android::NumberText(sight.m_ShiftBearing) +
+          (sight.m_bMagneticShiftBearing ? " deg M" : " deg T");
+      if (manual)
+        shift += " | " + _("Used true bearing: ") +
+            celestial_android::NumberText(std::fmod(
+                observation.displacementBearingTrue + 360.0, 360.0)) + " deg T";
+    }
+    androidShiftDetails.push_back(shift);
+#endif
     const long row = m_residuals->InsertItem(
         m_residuals->GetItemCount(),
         UtcDateTime::FormatInstant(observation.utc, "%m-%d %H:%M:%S"));
@@ -806,16 +823,13 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
 #ifdef __OCPN__ANDROID__
   wxString details;
   for (size_t index = 0; index < fix.residuals.size(); ++index) {
-    const long row = static_cast<long>(index);
+    const auto& residual = fix.residuals[index];
     details += observations[index].body + " | " +
-        UtcDateTime::FormatInstant(observations[index].utc, "%Y-%m-%d %H:%M:%S") +
-        " UTC\n" + _("Hc: ") + m_residuals->GetItemText(row, 2) +
-        " | " + _("Ho minus Hc: ") + m_residuals->GetItemText(row, 3) +
-        "\n" + _("Saved DR shift: ") + m_residuals->GetItemText(row, 4) + " NM";
-    if (!m_residuals->GetItemText(row, 5).empty())
-      details += " | " + _("Saved bearing: ") + m_residuals->GetItemText(row, 5);
-    if (!m_residuals->GetItemText(row, 6).empty())
-      details += " | " + _("Used true bearing: ") + m_residuals->GetItemText(row, 6);
+        UtcDateTime::FormatInstant(observations[index].utc, "%Y-%m-%d %H:%M:%S.%l") +
+        " UTC\n" + _("Hc: ") + FormatNavigationAngle(residual.calculatedAltitude) +
+        " | " + _("Ho minus Hc: ") +
+        wxString::Format("%+.2f'", residual.interceptMinutes) +
+        "\n" + androidShiftDetails[index];
     details += "\n\n";
   }
   m_androidResiduals->SetLabel(details);

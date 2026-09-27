@@ -1302,3 +1302,23 @@ integer-only initial DR and clipped running summary/7-column residual table.
 Android replacements are prepared; none is marked passed before tablet retest.
 The baseline OnGo only centres the chart; corrected the inventory/design's
 incorrect reference to fix-waypoint creation. No working command was removed.
+
+### 18:44–18:50 BST — iteration55 Cone2 and precise seed retest
+
+Exact060fa55c892fe3696553f1cfa7247317c34b02f2 imported via native Downloads
+chooser. Tar SHA2569ee72b7bc574ef494f976a07eec1937f135e2061ab6ef84c1ed21aaaec5118a9,
+actual installed library52a79efd628f1b591bc6f896ffaeaacca3cccd3bedee9619092c709911248078.
+Acknowledgement and Fix input accepted; PID23025 continuous. Full algorithm
+field tap opens four72px/48dp popup rows without keyboard. Repaired Cone2
+now43°18.8682′N77°35.3489′W,Error0.000329 from distant boat seed
+53.17950631666666,-2.858162016666667; nearby precise43.2366916666667,-77.533415
+seed gives same fix. Within0.3NM of independent worksheet result. Invalid91°
+latitude gives N/A, explicit Invalid DR position and disabled chart action.
+Latitude DMM opens with43°14.201500000002′ and unmodified Apply retains the
+exact seed text. Summary wraps visibly, final clock-source control reachable.
+Residual presentation FAIL: wxQt GetItemText(row,col) returned the first-column
+time for every requested column. Corrected Android presentation is prepared
+to read observations/residuals directly, not depend on hidden list text; next
+physical build remains pending. Shared seven-check ctest suite and explicit
+existing desktop FixUi regression passed; initial xvfb-run unavailable, actual
+available display run succeeded. No desktop runtime formula changed.
