@@ -849,3 +849,60 @@ geometry extending below the landscape viewport (popup-rotation41). The next
 Android-only refinement closes the owner popup on screen-geometry change
 without activating a row, so it can reopen at correct new bounds. Build 42
 passed; physical rotation/reopen verification pending.
+
+## 15:53–16:00: rotation, precision, UTC and package provenance
+
+Installed d804ecd0a88a838fa68581844d505d24883390e1 through Plugin Manager;
+archive SHA256 3d435eb53483c438b8cf27027a0fa1744fe936d6a99eb2dadd9f59aa6da7c55c;
+independently read installed library 1b4938fc2bba13d41dd63a661d44ded476a301220b0f6488d20171634ebf2d9d
+exactly equals intended packaged bytes. Retained binaries/root metadata in
+committed-d804ecd/arm64; backups/hashes in backup-before42.json.
+Native import briefly showed a black transition frame; settled installation
+confirmation was visible and PID stayed 5177.
+
+Portrait popup to landscape rotation dismissed the popup, retaining Polaris
+and the visible editor. Reopening fit landscape bounds. Swipes reached the
+final Zubenelgenubi row. Native highlight moved during scrolling, but Back
+retained Polaris, so no model activation occurred. Evidence popup-rotation42,
+popup-landscape-reopen42, body-final-landscape42 and body-drag-cancel42.
+
+Entered seconds 12.987 and time uncertainty 1.234567891234123 in the real UTC
+editor, then saved/reopened. Independently read XML contains Milliseconds=987
+and the identical double value (17-digit serialization 1.2345678912341229).
+Selected October 25 on the calendar and entered 01:30:12.987 UTC at the autumn
+DST transition. Independent Python UTC epoch is 1792891812.987. Temporarily
+set device timezone America/New_York with automatic timezone disabled. Reopen
+kept October 25, 01:30:12.987 and uncertainty, while device clock changed to
+10:58. Restored Europe/London and auto_time_zone=1 in a finally block after
+cold start. Settled cold PID 8481, workspace card retains exact UTC instant;
+Sights-after-cold42.xml equals Sights-dst42.xml byte-for-byte. Evidence time-
+edited42, utc-october-calendar42, dst-entered42, dst-new-york-reopened42 and
+cold-workspace42. Spring DST and planner local-time variants remain pending.
+
+Downloaded and independently inspected actual artifacts for all 19 successful
+7f68c9f CI targets. Every build-provenance.json records exact full source SHA;
+every XML has Celestial Navigation/2.8.13.0 and its intended platform identity.
+Both Android archives have exactly one root metadata.xml. Hashes, actual
+archives/XML, Android full logs and validation results retained in
+ci-platforms-7f68c9f/verification.json. Desktop archives retain the existing
+packaging format. None were published, and approval remains on hold.
+
+Source review found Android-only uncertainty error text incorrectly naming
+arcseconds and lunar time incorrectly naming half-span. The shared engine
+uses arcminutes and total span, as the preserved 2.8.12 documentation states.
+The next source corrects wording without changing numeric values, and gives
+Android observation sections navigator-facing names. Build passed; physical
+wording/lunar and invalid-uncertainty checks remain pending.
+
+## 16:07–16:09: final observation deletion and empty selection
+
+On installed d804ecd, successive explicit Delete actions removed exactly one
+selected record each: four to three, two, one and zero. Independently read
+Sights-delete1-42.xml and Sights-delete-final-42.xml confirm the final one/zero
+counts. The empty screen displays guidance, disables Edit/Duplicate/Include/
+Delete, and keeps New available. The visible Chart action gives an explicit
+“Select an observation first” message. Empty Fix shows N/A results and disabled
+Go. PID remained 8481. Evidence delete1-42, delete-final-42, empty-chart42 and
+empty-fix-result42. Restored the exact backed-up disposable four-record XML
+with OpenCPN stopped and independently checked identical bytes before restart.
+No original host objects, charts or other plugins were changed.

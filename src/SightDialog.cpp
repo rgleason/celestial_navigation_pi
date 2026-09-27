@@ -415,6 +415,12 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
 
   dialog_geometry::Restore(this, _T("Sight"), GetSize());
 #ifdef __OCPN__ANDROID__
+  const wxString sections[] = {_("Measurement"), _("Time (UTC)"), _("Motion"),
+                               _("Display"), _("Corrections"), _("Calculations")};
+  for (size_t i = 0; i < m_notebook1->GetPageCount() &&
+                     i < sizeof(sections) / sizeof(sections[0]); ++i)
+    m_notebook1->SetPageText(i, sections[i]);
+  m_staticText8->SetLabel(_("Angular uncertainty (arcminutes)"));
   celestial_android::AddAngleEntry(m_tMeasurement, 0, 0, 360);
   celestial_android::AddAngleEntry(m_tLunarMoonAltitude, 0, 0, 90);
   celestial_android::AddAngleEntry(m_tLunarBodyAltitude, 0, 0, 90);
@@ -447,7 +453,7 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   m_androidTimeCertainty->SetValue(m_Sight.m_TimeCertainty);
   m_sCertaintySeconds->GetContainingSizer()->Insert(0, m_androidTimeCertainty, 0, wxEXPAND | wxALL, 8);
   m_androidTimeCertainty->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) { MarkDirty(); Recompute(); });
-  m_staticText13->SetLabel(m_Sight.m_Type == Sight::LUNAR ? _("UTC search half-span (seconds)") : _("Time uncertainty (seconds)"));
+  m_staticText13->SetLabel(m_Sight.m_Type == Sight::LUNAR ? _("Total UTC search span (seconds)") : _("Time uncertainty (seconds)"));
   m_androidSeconds = new wxSpinCtrlDouble(m_sSeconds->GetParent(), wxID_ANY);
   m_androidSeconds->SetDigits(3);
   m_androidSeconds->SetRange(0, 59.999);
@@ -489,7 +495,7 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
     wxString error;
     const bool completed = celestial_android::RunJob(this, _("Search lunar UTC"),
         [&](celestial_android::JobState& state) {
-          state.Progress("Searching the recorded UTC half-span...");
+          state.Progress("Searching the total UTC span around the entered time...");
           candidate.m_androidLunarSearch = true;
           candidate.m_androidCheckpoint = [&state]() { state.Checkpoint(); };
           candidate.Recompute(m_clock_offset);
@@ -837,7 +843,7 @@ bool SightDialog::AndroidInputsValid(wxString* error) const {
     return false;
   };
   if (!angle(m_tMeasurement, _("measured angle"), m_cType->GetSelection() == AZIMUTH ? 360.0 : 180.0) ||
-      !number(m_tMeasurementCertainty, _("measurement uncertainty (arcseconds)"), 0) ||
+      !number(m_tMeasurementCertainty, _("measurement uncertainty (arcminutes)"), 0) ||
       !number(m_tEyeHeight, _("eye height (m)"), 0) ||
       !number(m_tTemperature, _("temperature (C; above absolute zero)"), std::nextafter(-273.15, unlimited)) ||
       !number(m_tPressure, _("pressure (hPa; positive)"), std::numeric_limits<double>::min()) ||
@@ -848,8 +854,8 @@ bool SightDialog::AndroidInputsValid(wxString* error) const {
   if (m_cType->GetSelection() == LUNAR &&
       (!angle(m_tLunarMoonAltitude, _("Moon altitude"), 180) ||
        !angle(m_tLunarBodyAltitude, _("body altitude"), 180) ||
-       !number(m_lunarMoonAltitudeUncertainty, _("Moon altitude uncertainty (arcseconds)"), 0) ||
-       !number(m_lunarBodyAltitudeUncertainty, _("body altitude uncertainty (arcseconds)"), 0) ||
+       !number(m_lunarMoonAltitudeUncertainty, _("Moon altitude uncertainty (arcminutes)"), 0) ||
+       !number(m_lunarBodyAltitudeUncertainty, _("body altitude uncertainty (arcminutes)"), 0) ||
        !number(m_lunarCourseTrue, _("course (degrees true)"), 0, 360) ||
        !number(m_lunarSpeedKnots, _("speed (knots)"), 0))) return false;
   return true;
@@ -971,7 +977,7 @@ void SightDialog::Recompute() {
   m_Sight.m_DateTime = DateTime();
 #ifdef __OCPN__ANDROID__
   m_Sight.m_TimeCertainty = m_androidTimeCertainty ? m_androidTimeCertainty->GetValue() : m_Sight.m_TimeCertainty;
-  m_staticText13->SetLabel(m_Sight.m_Type == Sight::LUNAR ? _("UTC search half-span (seconds)") : _("Time uncertainty (seconds)"));
+  m_staticText13->SetLabel(m_Sight.m_Type == Sight::LUNAR ? _("Total UTC search span (seconds)") : _("Time uncertainty (seconds)"));
 #else
   m_Sight.m_TimeCertainty = m_sCertaintySeconds->GetValue();
 #endif

@@ -7,18 +7,18 @@ actual output/files, screenshots, persistence, Cancel/Back and invalid cases.
 
 | ID | Working baseline function / source | Visible Android destination | Physical status |
 |---|---|---|---|
-| O01 | New/edit altitude, Sun/Moon/5 planets/catalogue stars; SightDialog | Observe > New / Edit > Measurement | PARTIAL: Sun reference; Venus entry; f04d483 catalogue swipe and exact Polaris selection/Save/reopen retained all other XML fields. fc9a98e popup Back fixed in both orientations; rotation-popup bounds refinement pending. Other bodies/variants pending |
+| O01 | New/edit altitude, Sun/Moon/5 planets/catalogue stars; SightDialog | Observe > New / Edit > Measurement | PARTIAL: Sun reference; Venus entry; f04d483 catalogue swipe and exact Polaris selection/Save/reopen retained all other XML fields. fc9a98e popup Back fixed in both orientations; d804ecd rotation closes popup, landscape reopening fits and swipes reach final catalogue row without model activation. Other bodies/variants pending |
 | O02 | Celestial azimuth, true/magnetic; SightDialog | Measurement > Azimuth | PENDING |
 | O03 | Lower/centre/upper limbs, lunar near/far/body contacts | Measurement > Limb/contact | PENDING |
-| O04 | Angle and time uncertainties, lunar search span | Measurement / Time | PENDING |
+| O04 | Angle and time uncertainties, lunar search span | Measurement / Time | PARTIAL: d804ecd actual 1.234567891234123 s input/save/reopen serialized identical double; angular and lunar variants pending |
 | O05 | Eye height, temperature, pressure, index error, short dip, artificial horizon, saved defaults | Corrections | PENDING |
-| O06 | UTC calendar/time, marked UTC application | Time; header Mark time | PENDING |
+| O06 | UTC calendar/time, marked UTC application | Time; header Mark time | PARTIAL: d804ecd UTC calendar October 25 01:30:12.987 at autumn DST, New York device-zone reopen and cold persistence; spring DST/marked UTC pending |
 | O07 | DR position via Find Body; per-sight DR shift, magnetic shift | Position / Motion | PENDING |
 | O08 | Colour/transparency; definitions and calculation log | Appearance / Details | PENDING |
-| O09 | Duplicate/delete/delete final/delete all, selection, sorting | Observe cards / Sort / actions | PARTIAL: dcbb4ee Duplicate created identical fourth Venus record, independently read XML and 7f68c9f replacement retained it; deletion and remaining sorting pending |
-| O10 | Visibility/inclusion and chart polygons | Card Include/Exclude; Chart | PENDING |
+| O09 | Duplicate/delete/delete final/delete all, selection, sorting | Observe cards / Sort / actions | PARTIAL: dcbb4ee Duplicate created identical fourth Venus record, independently read XML and 7f68c9f replacement retained it; d804ecd explicit one-at-a-time deletion through the final record, XML counts, stable empty selection and disabled edits; Delete All and sorting pending |
+| O10 | Visibility/inclusion and chart polygons | Card Include/Exclude; Chart | PARTIAL: d804ecd Exclude saved Visible=0 and card Excluded; Include restored exact XML. Empty Chart gives selection guidance. Geometry variants pending |
 | O11 | Automatic atomic Sights.xml load/save incl. all fields | Save / reopen / cold restart | PARTIAL: three-record cold reopen and unchanged Save identical (iteration 19); remaining variants pending |
-| F01 | Fix algorithms, initial position, error/residuals | Fix > Calculate fix | PENDING |
+| F01 | Fix algorithms, initial position, error/residuals | Fix > Calculate fix | PARTIAL: d804ecd empty input shows N/A and disables Go; valid algorithms pending |
 | F02 | Running fix COG/SOG, per-sight DR shift, UTC/local epoch | Fix > Motion | PENDING |
 | F03 | Saved lunar solution selection in fix | Fix > Clock source | PENDING |
 | F04 | Fix chart geometry, waypoint output | Fix > Results > Chart / waypoint | PENDING |

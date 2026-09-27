@@ -204,3 +204,20 @@ popup height beyond the landscape screen. On screen geometry change, close
 that popup through its owner and retain the editor's selection/unsaved fields.
 The navigator can reopen a correctly placed popup in the new orientation.
 Do not commit a highlighted row during rotation.
+
+# Observation uncertainty wording, before implementation
+
+Android's angular validation error incorrectly says arcseconds although the
+shared model and generated desktop control use arcminutes. Label the Android
+field Angular uncertainty (arcminutes) and correct its validation wording,
+including Moon/body altitude uncertainties. The Android lunar time label also
+says half-span while the engine searches plus/minus half of the entered total.
+Use Total UTC search span (seconds), consistent with the preserved 2.8.12
+manual; 86,400 seconds means 12 hours on either side. These are Android
+presentation corrections only; keep numerical values, engines and compatible
+saved records unchanged.
+
+The observation section picker uses Measurement, Time (UTC), Motion, Display,
+Corrections and Calculations. Replace generated Config/Parameters labels only
+on Android so navigators can find the corrections without knowing desktop
+implementation names. Keep the same controls and handlers on each page.
