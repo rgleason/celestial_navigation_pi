@@ -167,3 +167,43 @@ Use the calculated event records directly for wrapped reports rather than
 reading hidden wxQt table columns. Inspect the actual keyboard before issuing
 Back during automation, and confirm screenshot dimensions before counting a
 rotation as landscape. A settling wait is not a measured performance result.
+
+## Planner nested scrolling and numerical work
+
+A native card list inside a wx scrolling form had two competing drag owners.
+Registering the inner gesture or supplying native ScrollPrepare geometry alone
+did not repair it. Give long result lists their own full-height page, with
+actions above, and move supporting forms to a separate single-scroll page.
+Verify actual different rows and the complete final record, not scrollbar movement.
+
+Measure refresh dispatch and computation separately. Hidden display tables were
+removed without changing models, but the physical refresh still blocked for
+3.5seconds. An owned persistent numerical worker kept GUI dispatch to0–4ms.
+Reject stale generations, cancel at numerical evaluation boundaries, keep all
+widgets on the GUI thread, and join before unload. Temporary numerical Sight
+objects must not read mutable UI configuration or advance the observation colour
+cycle. Keep the worker's verified optional-data cache alive across refreshes.
+Physical Cancel must remain cleared after the old calculation's completion time;
+Close/Back must return to an actually tappable workspace with PID continuity.
+
+The planner's horizontal orientation can show a scrollable list yet hide every
+last-card calculation field below a shallow viewport. Put Sort/Direction and
+selection/Create on shared rows, remove the redundant footer Close, and keep
+the native list as the page's remaining-height owner. Test complete first and
+final cards, including Hc/Zn, at normal and enlarged font on the tablet.
+
+Run opt-in desktop GUI smoke cases separately when their fixtures say "run
+alone". A combined process can execute a worker test without wxApp, then
+retain wx image handlers and UI state across suites. The combined build71 run
+failed Find Body's Hide Time lookup and segfaulted in Fix, while each of those
+families passed in its own fresh process on the actual display. Retain the
+combined failure and the isolating runs; neither compiler success nor a
+combined run with skipped UI tests proves desktop GUI behavior.
+
+Round-trip-safe compact number formatting can choose scientific notation for
+ordinary integer coordinates: Qt's one-significant-digit `g` renders −20 as
+`-2e+01`. Prefer a decimal representation when it still round-trips exactly;
+retain scientific notation for very small/large values where fixed decimals
+cannot do so. Exercise both the Qt and wx parsers, signed zero and adjacent
+double values. This is an Android entry adapter; saved XML and numerical
+calculations are unchanged.

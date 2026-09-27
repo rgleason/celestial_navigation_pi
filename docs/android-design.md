@@ -103,6 +103,15 @@ before plugin unload. The worker stays alive while the planner is open so its
 verified thread-local optional-data cache is retained. Numerical algorithms,
 sampling, precision, optional-data verification and desktop behavior stay intact.
 
+Landscape refinement before implementation at 22:50 BST: the full-height list
+scrolls, but stacked sort/direction and selection/Create rows leave too little
+height for a complete body card. Place sort and direction side by side, then
+selection and the short **Create sight** action side by side, retaining 48dp
+minimum control heights. The persistent header Close replaces the redundant
+bottom Close. Invalid body results use a concise selection status; complete
+validation guidance remains on Context and the relevant result pages. Retest
+actual final-card fields after rotation and font scaling.
+
 Android CSV exports retain nonzero milliseconds in the ISO UTC column while
 keeping the existing columns and numeric serialization. Whole-second rows
 retain their legacy representation. This is an Android presentation/output

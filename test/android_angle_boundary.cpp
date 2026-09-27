@@ -24,6 +24,8 @@ int main() {
   assert(celestial_android::NumberText(.2) == "0.2");
   assert(celestial_android::NumberText(46.415) == "46.415");
   assert(celestial_android::NumberText(-77.533415) == "-77.533415");
+  assert(celestial_android::NumberText(-20.0) == "-20");
+  assert(celestial_android::NumberText(100.0) == "100");
   assert(celestial_android::NumberText(std::nextafter(1.0, 2.0)) == "1.0000000000000002");
   const auto exact = [&](double expected) {
     const wxString text = celestial_android::NumberText(expected);

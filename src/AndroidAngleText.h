@@ -17,8 +17,19 @@ inline wxString NumberText(double value) {
     const QString text = QString::number(value, 'g', precision);
     bool ok = false;
     const double parsed = text.toDouble(&ok);
-    if (ok && parsed == value)
+    if (ok && parsed == value) {
+      // Keep ordinary navigational values in decimal form.  One significant
+      // digit formats -20 as -2e+01, which is exact but awkward in an editor.
+      if (text.contains('e') && std::abs(value) >= 1e-12 &&
+          std::abs(value) < 1e12) {
+        for (int places = 0; places <= 17; ++places) {
+          const QString decimal = QString::number(value, 'f', places);
+          if (decimal.toDouble(&ok) == value && ok)
+            return wxString::FromUTF8(decimal.toUtf8().constData());
+        }
+      }
       return wxString::FromUTF8(text.toUtf8().constData());
+    }
   }
   return wxString::FromUTF8(QString::number(value, 'g', 17).toUtf8().constData());
 }

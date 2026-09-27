@@ -1596,3 +1596,203 @@ remained continuous. Private screenshots `chart64-north-final.png` and
 `chart64-north-saved.png`, and `profile64-north-restored.conf`, remain in
 `/tmp/celnav-android-20260927/`. This is preference restoration, not an additional
 celestial calculation acceptance pass.
+
+### 2026-09-27 21:55–22:17 BST: Planner body cards and real CSV output
+
+Design refinement preceded implementation. Android-only revision
+`aa861d3ce065f6d2edb579ba281d6ac8c35922b2` replaced the clipped Bodies and
+Almanac tables with complete cards, explicit sorting and native selection,
+wrapped pair/triad recommendations, and invalid-context output clearing.
+Desktop controls and calculations remain unchanged. Android and desktop builds
+passed; explicit desktop LunarUiSmoke plus six PlannerTime cases passed in
+6416 ms. Candidate tar SHA256
+`30407aa06f91ce2b60696bfb6956b043897397c9a206a6b35ce12830a5429292`;
+installed library SHA256
+`bc186431732579bf4cb3856ced9ad439cecc9d227b160565ac12874bfaa117fb`.
+The real Plugin Manager import retained PID5462, and a deliberate cold restart
+created PID9674. Both imports were independently checked against actual
+`manPlug/libcelestial_navigation_pi.so` bytes. Backup
+`before65-profile-sights-library.tar` SHA256
+`c81f19ab93569787a419e0a46247406583e189a01e107a11c676c28ab4112823`
+contains the pre-replacement binary, private profile and observations.
+
+Selected the worksheet Sun record at2025-07-20 17:16:33 UTC, then selected
+Planner **Selected sight DR** and **Selected sight** time. Actual coordinates
+43.2366916666667 / -77.533415 were retained. Almanac Sun Hc displayed
+67°16.5692′; CSV Hc67.276154° and declination20.512846° agree with worksheet
+references67.27614828° and20.5129° within0.1 arcminute. The complete displayed
+UTC, GHA, SHA, Aries angles, declination, Hc and true azimuth were inspected.
+Exported through the real touch save browser into
+`celestial-reports/planner-worksheet65.csv`, then independently read the file:
+175 rows, seven bodies, nine columns,25 distinct UTC epochs separated by3600 s.
+CSV SHA256 `fdf48d51f899d30a29187d0535cbeabf306f8890c5a3067473d5da9b66afc0d3`.
+This verifies that worksheet Sun case and output serialization; it is not an
+independent accuracy pass for every body. Keyboard Back retained the chooser,
+then visible Save wrote the actual file. Overwrite refusal remains pending.
+
+Body selection enabled Create sight. The full recommendations, final magnitude
+choice, below-horizon toggle, sky plot and legend were reached by real outer
+page swipes. The below-horizon toggle visibly added bodies at the horizon.
+However, iteration65 card swipes moved the ancestor page instead of the native
+list: **FAIL**, not a scrolling pass. Revision
+`03f9cf68b1cb7ec50ad5a0c69ad5fcf1a0ef1dd9` registered the inner gesture;
+tar SHA256 `0972098566f6447038d853da0e5bdc9c6c709b06d02e784d36abe6d247c71ddb`,
+library SHA256 `d3311d3dcf37f30d23e468d342a926e0c20a2f6ad42b6d96a55ccd5a9204e67d`.
+Actual import retained PID9674. This stopped ancestor movement but still did
+not move list content: **FAIL**. Hc descending sorting retained the selected
+Moon identity; adjacent Aldebaran39°23.9484′ and Moon39°21.0676′ were correctly
+ordered. A later screenshot had a small left offset; sizing regression remains
+open. Early navigation sequences which opened Polar or an unsaved New sight
+were rejected automation; the unsaved sight was explicitly cancelled.
+
+Revision `d88e38a097a54bd5ed25c01537a6ad2d33c7cbd2` supplies explicit native
+ScrollPrepare/Scroll geometry and an Android CSV adapter retaining each
+nonzero fractional UTC without changing shared numeric columns. The new
+regression covers two different millisecond instants within the same whole
+second, a whole-second row, negative values, empty output and unchanged legacy
+numeric serialization. Desktop build and eight explicit UI/time/CSV cases
+passed6349 ms. Candidate tar SHA256
+`6a2aab6f0b4f9b85649605d0d0e314506e9428d0108b49f24058b1da69025fd0`,
+actual installed library SHA256
+`ef9b8ff01c1b28c57bb664a3ef5d410406ec4b91362b9778ed06e3edb549fc7d`;
+Plugin Manager import retained PID9674. Physical scrolling and fractional CSV
+verification of this revision are still in progress at this entry.
+
+All binaries, full configure/compiler/test logs, screenshots and exported test
+files remain under `/tmp/celnav-android-20260927/`. No release was published;
+19-platform CI at9db3965 does not validate these later runtime revisions.
+
+### 2026-09-27 22:17–22:40 BST: Planner scroll repair and responsive calculation
+
+Iteration67 still failed native-card scrolling: the ancestor moved while body
+cards stayed fixed. Actual refresh durations were3415/3538ms, so neither scroll
+nor responsiveness was accepted. A design revision preceded iteration68:
+Bodies and Almanac now own one full-height native list, while recommendation
+limits, pairs/triads and sky are a separate scrolling task page. Hidden desktop
+output tables are no longer populated on Android. Source
+`047ce08` tarSHA256 `c0ec5e131c577fb4687ce06f1490094142afc9cdb9011d9b5b1d8c6262cabe37`,
+actual installed librarySHA256
+`5b27560f3a9c1304a55349b3275746d8c4c8cd1346a9ffeb1159a4d69ffa6bc0`.
+Plugin Manager import retained PID9674; deliberate cold restart created12582.
+Eight explicit desktop UI/time/CSV checks passed6355ms.
+
+Real body-card swipes now moved Moon/Venus to Jupiter/Sun and through the final
+Adhara card, with every final field visible. Selected Moon identity and the
+fixed sort/Create actions remained unchanged. Screenshots
+`planner68-bodies-before.png`, `planner68-bodies-after.png`,
+`planner68-bodies-last.png` retain actual movement/final-row evidence. This
+repairs the observed portrait failure; landscape/font acceptance is separate.
+Refresh still took3408/3550ms, disproving hidden-table work as the main cause.
+
+Design revision preceded `5846bf1`: one owned persistent worker snapshots
+validated context and computes the unchanged horizon/phase/body/almanac models.
+Android-only cancellation is checked at ephemeris boundaries. A calculation-only
+Sight constructor avoids reading GUI preferences or changing the observation
+colour cycle on this worker. Generation numbers reject superseded results;
+widget updates stay on the GUI thread, and Close cancels/joins before unload.
+New regressions verify cancellation scope isolation, obsolete-generation refusal,
+175 almanac rows, exact987ms epoch and independent worksheet Sun Hc/declination
+within0.1arcminute. Ten explicit UI/time/CSV/worker tests passed7888ms.
+
+Iteration69 tarSHA256
+`b9d66ac37c445848c4988bfcb2f9a6145fe2a6093694565b51c7d7ce1449bc50`;
+actual installed librarySHA256
+`e8f5e387b1a81489313edbe2c2f8ddb5161514f3420d2b1651c5a40aadb0e293`.
+Import retained12582; deliberate cold restart created13480. The Planner appeared
+while work was active. Log timestamps show full dispatch0ms and context dispatch
+4ms; background calculation3550ms. Cancel was tapped during an active selected-
+sight context calculation, before its normal completion time. The cancelled
+Almanac remained empty with Export disabled after waiting another4s. Close and
+Android Back during separate active calculations returned to a responsive Plan
+workspace with PID13480 continuous. Files `planner69-progress.png`,
+`planner69-cancel.png`, `planner69-cancel-almanac.png`,
+`planner69-close-active.png`, `planner69-back-active.png`,
+`logcat69-planner.txt` retain evidence. The initial progress ellipsis rendered
+incorrectly; the full regression run caught the same UTF8-literal defect.
+Six suites passed, one failed; the encoding repair's targeted check passed.
+
+`Sights-before69.xml` and `Sights-after69-cancel.xml` both hash to
+`030d4193395b4cb8bddce684d00fb1477c00e56bc0661a70f2af81cd9bcc1020`,
+also identical to the pre65 reference. These tests did not change observations.
+Remaining Planner families and final candidate lifecycle acceptance are open.
+
+### 2026-09-27 22:40–23:05 BST: fractional Planner and independent references
+
+On installed runtime70 (`761e83c`), the selected Sun2 context used DR
+43.2366916666667,-77.533415 and manual 2025-07-20 17:16:33.987 UTC,
+motion off and eye height 2 m. Entering 33.987 switched the time source to
+Manual. The actual exported `celestial-reports/planner-fraction70.csv` has
+175 rows, 25 hourly instants, seven bodies, nine columns, and every epoch ends
+in 987000 microseconds. Independently copied SHA256
+`9b472d65b2f29319bfaf00890d19596deb881d10519d56b1da0b5b94f52ce8d8`;
+Sun Hc67.276152° and Dec20.512843°. Portrait swipes reached the final Polaris
+2025-07-21 17:16:33.987 and all fields. Landscape Hc/Zn were still clipped
+below the viewport on runtime70; the next layout requires retest.
+
+Disposable `planner-worksheet65.csv` overwrite refusal used explicit No,
+confirmation Back and browser Back. Independent post-action SHA256 remained
+`fdf48d51f899d30a29187d0535cbeabf306f8890c5a3067473d5da9b66afc0d3`.
+Explicit Replace/write remains pending. Public USNO JSON and hash manifest are
+under `validation/android-usno-20260927/`. The fractional API request echoed
+.987 but returned the preceding whole-second values; the independent check
+therefore brackets at seconds33/34 and interpolates. Executing
+`test/android_usno_reference.py` against the physical CSV passes Hc and Dec
+for Sun, Moon, Venus, Mars, Jupiter and Polaris within0.1 arcminute. Saturn is
+below the service's visibility threshold. GHA/Zn use different frames/time
+conventions and are reported but not asserted equivalent. These data are
+public references, not a plugin self-comparison.
+
+Actual corrected Ho67.1934 noon input gave43°19.1667′N versus independent
+90−Ho+worksheet Dec20.5129° =43°19.1700′N (0.0033′). Actual Polaris Ho43.404855°
+gave43°14.2044′N versus independent DR43°14.2015′N (0.0029′). Ho91° reported
+Invalid Altitude and Back dismissed it. Southern and below-horizon branches
+remain untested. Evidence `planner70-*.png`, physical CSV and public reference
+files are retained; these focused passes do not complete P01–P08.
+
+### 2026-09-27 23:09–23:18 BST: resumed build71 layout acceptance
+
+The prepared `8ea2e0b2b918805bb2a902fcebeb21a9e05329ed` archive hash is
+`dce95a559ad4875160d60a88e4d15d403cc39f2ebe50144799d77a022e1e5e25`.
+Before replacement `before-resume71.tar` captured the installed library.
+The attempted absolute-path additions to that tar failed, so it is not a
+profile/Sights backup; the earlier verified original backups remain intact.
+After the workflow, `Sights-after-resume71.xml` independently matched the
+pre69 snapshot byte-for-byte (SHA256 `030d4193395b4cb8bddce684d00fb1477c00e56bc0661a70f2af81cd9bcc1020`).
+The profile was separately retained as `profile-after-resume71.conf`.
+Real Plugin Manager Downloads import displayed success;
+independently read `manPlug/libcelestial_navigation_pi.so` SHA256
+`48142cf06de4d5c50c25cf77ebdfab8aaeae211004729043e12a57e6a1b340c7`
+matches the intended package. PID14136 survived import acknowledgement and
+Settings close. Deliberate force-stop/cold launch created PID16493, and the
+chart and four saved observation cards opened visibly.
+
+At font1.15, the Bodies landscape viewport contains the complete first Venus
+card, unlike runtime70. Real swipes moved through the list to final Alioth,
+including its magnitude, score and complete recommendation reason; fixed Sort,
+Direction, selection and Create sight remained visible. A stationary final-card
+tap selected Alioth and enabled Create sight; that action opened the observation
+editor with Alioth as the body. Cancel returned without saving the disposable
+sight. The Almanac landscape scrollbar reached its final Polaris 2026-09-28
+22:13:04.202 row with GHA, SHA, Aries values, declination, Hc and true azimuth
+visible. At temporary font1.3 the complete first body card and final Polaris
+almanac fields remained visible. Screens `resume71-{bodies-portrait,bodies-
+landscape,bodies-last,body-selected,create-preview,almanac-last,font-bodies,
+font-almanac-real-last}.png`. The current Now-based instant changed between
+opening contexts; no cross-screenshot numerical equality is claimed.
+
+Two desktop enabled-display failures from the earlier combined eight-case run
+were investigated using the tests' required separate fresh processes on actual
+DISPLAY=:1: `FindBodyUi.*` passed (54.807 s) and `FixUi.*` passed (0.286 s).
+The combined run had first executed a worker test without wxApp and a Lunar
+UI test before Find Body; its missing Hide Time and later SIGSEGV are retained
+as an invalid combined-harness result, not erased or asserted to be a desktop
+runtime regression. Exact logs/XML: `desktop71-{find,fix}-alone.*` and
+`ui71-desktop-display.log`. All seven CTest checks had passed earlier on build70;
+the isolated build71 runs here cover only these two GUI families.
+
+Physical context showed latitude `-2e+01` for selected Fiji DR −20°. This is
+an exact value but poor navigator-facing text. An Android-only decimal-display
+change and explicit −20/100 boundary assertions now pass the Android UTC/angle
+boundary script. That source change is not in the installed build71 and needs
+new packaging and physical retest. Full P01–P08 and the wider function matrix
+remain incomplete; no publication is authorized.
