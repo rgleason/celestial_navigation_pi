@@ -1883,3 +1883,62 @@ byte-identical to the four-sight pretest file. Screens
 `resume74-{almanac,picker,reports,existing,confirm,replaced}.png` retain the
 whole UI path. This verifies Replace for this disposable file and context;
 other export destinations and failure cases are still open.
+
+### 2026-09-27 23:43–23:55 BST: Horizon viewport failure and corrected retest
+
+On runtime72 the fixed observation/calendar consumed most of the native
+Horizon sheet, leaving approximately90px for its nested lower scroller.
+The first repair, ea2bf9c, put the complete form into a wxScrolledWindow;
+AndroidSurface already supplied another viewport, and physical build75
+collapsed the inner form to roughly28px. This candidate was rejected despite
+successful compilation and import. Its archive SHA256 is
+1654631c5848e12d0ef5aefdc15f77f1401e4feaf4524b193c95381b78eea394,
+library8541e1d9282ac14ac7e9719256b932556aee64682197bf8781df4bfc6ccda156;
+resume75-fixed-horizon.png retains the failure. Full CTest passed54.10s on
+that source, which did not establish tablet layout acceptance.
+
+4145edc keeps Android controls directly in the complete content sizer so
+AndroidSurface owns the single viewport; the desktop scroller is preserved.
+Android and desktop compilation passed. The actual-display isolated
+HorizonEventUi suite passed181ms (desktop76-horizon-display.log/xml).
+The first sandbox display attempt failed wxEntryStart and is retained;
+it was not counted as an executed GUI test.
+
+Build76 archive SHA256
+a26aae6e220b5ec43de2e0586630ea7e50a116fe953bcfbb0cffc21bfbf6ad0a
+was imported through Plugin Manager from celnav76-4145edc.tar.gz. Independently
+read installed library SHA256
+b69a03bff16ab8034b72e6087a8c2959e44a11aaa5b663bf2d82c5fb6b0cc6b5
+matches the payload; hot PID18454 was continuous. Real swipes now reach all
+bearing inputs, weather, horizon quality and the entire final explanation in
+portrait and landscape (resume76-{horizon-open,bearing,conditions,final,
+landscape-real-final}.png). Font setting1.3 was exercised but no visibly larger
+Qt text was established; do not count that as rendered-font scaling acceptance.
+Back returned to workspace; Sights-after-horizon76.xml remained the exact
+four-sight snapshot. Font1.15 and autorotation restored.
+
+### 2026-09-27 23:56–2026-09-28 00:00 BST: Sunrise Save and cold persistence
+
+On build76 I selected Sunrise and typed 11:02:29.987 UTC on27September2026.
+Manual typing left System UTC capture selected, so I explicitly selected
+Other manual entry before Create Event. Automatic provenance switching is
+not verified and this build does not implement it. Default inputs were
+time uncertainty2s, eye2m, temperature10C, pressure1013hPa, clear horizon,
+refraction uncertainty10′ and no bearing. Actual Save produced five cards;
+Sights-after-sunrise77.xml independently records Type3/HorizonEvent0/Sun,
+upper limb, Milliseconds987, the explicit source and all these inputs.
+The original four attribute sets were preserved. SHA256:
+e6864235c036673e7e6b1f9a024dba6d850afca0249f11a130c4bf4fbfec82f1.
+No DR location was entered; this is persistence evidence, not an independently
+verified sunrise position calculation.
+
+A deliberate cold restart at23:58BST created PID20871. The five cards and
+fractional timestamp were present; Edit reopened the exact date/time/source.
+Unchanged Save produced byte-identical Sights-after-sunrise77-reopen.xml.
+After actual scrolling to the action buttons, Delete removed only the
+disposable sunrise. Sights-after-cleanup77.xml exactly matches the original
+four-sight SHA256030d4193395b4cb8bddce684d00fb1477c00e56bc0661a70f2af81cd9bcc1020.
+Screens resume77-{cold-five,reopen,delete-controls,cleanup}.png retain the
+workflow. PID20871 stayed continuous after the intentional restart. Full
+crash77.txt, lastanr77.txt and meminfo77.txt retained. Bearing/branches,
+alternate conditions, invalids and edited Cancel/Back remain open.

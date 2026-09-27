@@ -207,3 +207,12 @@ retain scientific notation for very small/large values where fixed decimals
 cannot do so. Exercise both the Qt and wx parsers, signed zero and adjacent
 double values. This is an Android entry adapter; saved XML and numerical
 calculations are unchanged.
+
+AndroidSurface already wraps non-notebook forms in its own scrolling viewport.
+Adding a second whole-form wxScrolledWindow can collapse that nested viewport
+to one line on the pinned wxQt. Keep form controls directly in the dialog's
+content sizer for Android; retain the original desktop scroller conditionally.
+Verify actual swipes to bearing, conditions and the complete last result in
+both orientations. The first Horizon repair compiled but failed this physical
+check; the single-viewport repair passed. A larger system font setting alone
+does not prove that Qt actually rendered larger text.
