@@ -32,8 +32,60 @@
 #include <array>
 #include <cmath>
 #include <limits>
+#ifdef __OCPN__ANDROID__
+#include <QListWidget>
+#include <QVBoxLayout>
+#endif
 
 namespace {
+#ifdef __OCPN__ANDROID__
+// Height follows the actual viewport and Android font, including rotation.
+class PlannerCardDelegate : public QStyledItemDelegate {
+ public:
+  explicit PlannerCardDelegate(QListWidget* list)
+      : QStyledItemDelegate(list), m_list(list) {}
+  QSize sizeHint(const QStyleOptionViewItem& option,
+                 const QModelIndex& index) const override {
+    const int width = qMax(100, m_list->viewport()->width() - 40);
+    const QRect bounds = QFontMetrics(option.font).boundingRect(
+        QRect(0, 0, width, 10000), Qt::TextWordWrap,
+        index.data(Qt::DisplayRole).toString());
+    return QSize(0, qMax(CN_TouchHeight(), bounds.height() + 40));
+  }
+ private:
+  QListWidget* m_list;
+};
+
+QListWidget* PlannerCards(wxWindow* parent, wxSizer* root, bool selectable) {
+  auto* panel = new wxPanel(parent);
+  panel->SetMinSize(wxSize(0, CN_TouchHeight() * 7));
+  auto* layout = new QVBoxLayout(panel->GetHandle());
+  layout->setContentsMargins(0, 0, 0, 0);
+  auto* list = new QListWidget(panel->GetHandle());
+  list->setWordWrap(true);
+  list->setTextElideMode(Qt::ElideNone);
+  list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  list->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+  list->setSelectionMode(selectable ? QAbstractItemView::SingleSelection
+                                    : QAbstractItemView::NoSelection);
+  list->setItemDelegate(new PlannerCardDelegate(list));
+  list->setStyleSheet(QString(
+      "QListWidget { font-size: %1pt; background: #f5f8fa; color: #17313e; } "
+      "QListWidget::item { padding: 12px; border-bottom: 1px solid #afbdc4; } "
+      "QListWidget::item:selected { background: #d1e8f1; color: #102e3b; }")
+      .arg(CN_FontPointSize()));
+  QPointer<QListWidget> cards(list);
+  new CN_AndroidButtonDragFilter(list->viewport(), [cards, selectable](QPoint p) {
+    if (!cards || !selectable) return;
+    const auto index = cards->indexAt(p);
+    if (index.isValid()) cards->setCurrentRow(index.row());
+  }, list->viewport());
+  layout->addWidget(list);
+  root->Add(panel, 0, wxEXPAND | wxALL, 8);
+  return list;
+}
+#endif
+
 void AddColumn(wxListCtrl* list, int column, const wxString& title,
                int width = wxLIST_AUTOSIZE_USEHEADER) {
   list->InsertColumn(column, title);
@@ -515,6 +567,65 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   eventsSizer->Detach(m_events);
   m_androidEvents = new wxStaticText(eventsPage, wxID_ANY, wxEmptyString);
   eventsSizer->Insert(0, m_androidEvents, 0, wxEXPAND | wxALL, 8);
+
+  // Retain desktop controllers and shared models; replace clipped tables.
+  for (auto* child : bodiesPage->GetChildren()) child->Hide();
+  plotSizer->Detach(plotControls);  // Keep this nested sizer alive across Clear.
+  bodiesRoot->Clear(false);
+  bodiesRoot->SetOrientation(wxVERTICAL);
+  m_bodies->Hide();
+  m_combinations->Hide();
+  auto add = [](wxWindow* page, wxSizer* sizer, const wxString& text) {
+    auto* label = new wxStaticText(page, wxID_ANY, text);
+    sizer->Add(label, 0, wxEXPAND | wxALL, 8);
+    return label;
+  };
+  add(bodiesPage, bodiesRoot, _("Sort bodies"));
+  auto* sort = new wxChoice(bodiesPage, wxID_ANY);
+  for (const auto& name : {_("Body"), _("Hc"), _("Zn true"), _("GHA"),
+                           _("Declination"), _("Magnitude"), _("Score"),
+                           _("Reason")}) sort->Append(name);
+  sort->SetSelection(m_bodySortColumn);
+  bodiesRoot->Add(sort, 0, wxEXPAND | wxALL, 8);
+  auto* direction = new wxChoice(bodiesPage, wxID_ANY);
+  direction->Append(_("Ascending"));
+  direction->Append(_("Descending"));
+  direction->SetSelection(m_bodySortAscending ? 0 : 1);
+  bodiesRoot->Add(direction, 0, wxEXPAND | wxALL, 8);
+  sort->Bind(wxEVT_CHOICE, [this, sort](wxCommandEvent&) {
+    m_bodySortColumn = sort->GetSelection(); RebuildBodyList();
+  });
+  direction->Bind(wxEVT_CHOICE, [this, direction](wxCommandEvent&) {
+    m_bodySortAscending = direction->GetSelection() == 0; RebuildBodyList();
+  });
+  m_androidSelectedBody = add(bodiesPage, bodiesRoot,
+                              _("Select a body card to create a sight."));
+  bodiesRoot->Add(createSight, 0, wxEXPAND | wxALL, 8);
+  m_androidCreateSight = createSight;
+  createSight->Enable(false);
+  m_androidBodies = PlannerCards(bodiesPage, bodiesRoot, true);
+  QObject::connect(m_androidBodies, &QListWidget::currentRowChanged,
+                   GetHandle(), [this](int) { UpdateAndroidBodySelection(); });
+  bodiesRoot->Add(m_limitRecommendationAltitude, 0, wxEXPAND | wxALL, 8);
+  add(bodiesPage, bodiesRoot, _("Minimum recommended Hc (degrees)"));
+  bodiesRoot->Add(m_recommendationMinAltitude, 0, wxEXPAND | wxALL, 8);
+  add(bodiesPage, bodiesRoot, _("Maximum recommended Hc (degrees)"));
+  bodiesRoot->Add(m_recommendationMaxAltitude, 0, wxEXPAND | wxALL, 8);
+  bodiesRoot->Add(recommendationNote, 0, wxEXPAND | wxALL, 8);
+  m_androidCombinations = add(bodiesPage, bodiesRoot, wxEmptyString);
+  bodiesRoot->Add(plotControls, 0, wxEXPAND | wxALL, 8);
+  m_skyPlot->SetMinSize(wxSize(0, CN_TouchHeight() * 5));
+  bodiesRoot->Add(m_skyPlot, 0, wxEXPAND | wxALL, 8);
+  bodiesRoot->Add(plotLegend, 0, wxEXPAND | wxALL, 8);
+  bodiesRoot->ShowItems(true);
+
+  m_almanac->Hide();
+  almanacSizer->Detach(m_almanac);
+  almanacSizer->Detach(exportButton);
+  almanacSizer->Add(exportButton, 0, wxEXPAND | wxALL, 8);
+  m_androidExport = exportButton;
+  m_androidAlmanacStatus = add(almanacPage, almanacSizer, wxEmptyString);
+  m_androidAlmanac = PlannerCards(almanacPage, almanacSizer, false);
 #endif
 
   // On GTK, notebook pages which were hidden while their list controls were
@@ -1287,7 +1398,15 @@ void PlannerDialog::ClearCalculatedResults(const wxString& status) {
   m_almanac->DeleteAllItems();
   m_specialSummary->SetLabel(wxEmptyString);
 #ifdef __OCPN__ANDROID__
-  m_androidEvents->SetLabel(wxEmptyString);
+  m_androidEvents->SetLabel(status);
+  m_androidBodies->clear();
+  m_androidSelectedBody->SetLabel(status);
+  m_androidCreateSight->Enable(false);
+  m_androidCombinations->SetLabel(wxEmptyString);
+  m_androidAlmanac->clear();
+  m_androidAlmanacStatus->SetLabel(status);
+  m_androidExport->Enable(false);
+  m_specialSummary->SetLabel(status);
   celestial_android::LayoutScrolls(this);
 #endif
   m_status->SetLabel(status);
@@ -1371,6 +1490,9 @@ void PlannerDialog::RefreshEvents() {
 
 void PlannerDialog::RefreshBodies() {
   m_combinations->DeleteAllItems();
+#ifdef __OCPN__ANDROID__
+  wxString combinations;
+#endif
   const ObserverMotion motion = ReadMotion(false);
   m_rankedBodies = SightRanker::VisibleBodies(
       motion.referenceUtc, motion.latitude, motion.longitude, 0.0, 90.0,
@@ -1385,6 +1507,11 @@ void PlannerDialog::RefreshBodies() {
   if (limitAltitude && minimumAltitude >= maximumAltitude) {
     m_combinations->InsertItem(
         0, _("Set the minimum recommended Hc below the maximum."));
+#ifdef __OCPN__ANDROID__
+    m_androidCombinations->SetLabel(
+        _("Set the minimum recommended Hc below the maximum."));
+    celestial_android::LayoutScrolls(this);
+#endif
     RefreshSkyPlot();
     return;
   }
@@ -1402,12 +1529,28 @@ void PlannerDialog::RefreshBodies() {
     m_combinations->SetItem(row, 1,
                             wxString::Format("%.0f", combination.score));
     m_combinations->SetItem(row, 2, combination.reason);
+#ifdef __OCPN__ANDROID__
+    combinations += names + wxString::Format(_("\nScore: %.0f\n"),
+        combination.score) + combination.reason + "\n\n";
+#endif
   }
+#ifdef __OCPN__ANDROID__
+  m_androidCombinations->SetLabel(combinations.empty()
+      ? _("No pairs or triads meet these recommendation limits.") : combinations);
+  celestial_android::LayoutScrolls(this);
+#endif
   RefreshSkyPlot();
 }
 
 void PlannerDialog::RebuildBodyList() {
   m_bodies->DeleteAllItems();
+#ifdef __OCPN__ANDROID__
+  const QString selectedName = m_androidBodies->currentItem()
+      ? m_androidBodies->currentItem()->data(Qt::UserRole + 1).toString()
+      : QString();
+  m_androidBodies->blockSignals(true);
+  m_androidBodies->clear();
+#endif
   std::vector<size_t> order;
   for (size_t index = 0; index < m_rankedBodies.size(); ++index)
     order.push_back(index);
@@ -1489,8 +1632,42 @@ void PlannerDialog::RebuildBodyList() {
     m_bodies->SetItem(row, 7, reason);
     if (daylight && body.state.isStar)
       m_bodies->SetItemTextColour(row, wxColour(150, 150, 150));
+#ifdef __OCPN__ANDROID__
+    const wxString text = body.state.body + "\n" +
+        _("Hc: ") + FormatNavigationAngle(body.state.geometricAltitude) + "\n" +
+        wxString::Format(_("Azimuth true: %.2f degrees\n"), body.state.azimuthTrue) +
+        _("GHA: ") + FormatNavigationAngle(body.state.gha) + "\n" +
+        _("Declination: ") + FormatNavigationAngle(body.state.declination,
+            NavigationAngleKind::Latitude) + "\n" +
+        wxString::Format(_("Magnitude: %.1f; score: %.0f\n"),
+            body.state.visualMagnitude, body.score) + reason;
+    auto* card = new QListWidgetItem(QString::fromUtf8(text.utf8_str()),
+                                     m_androidBodies);
+    card->setData(Qt::UserRole, static_cast<int>(index));
+    const QString name = QString::fromUtf8(body.state.body.utf8_str());
+    card->setData(Qt::UserRole + 1, name);
+    if (!selectedName.isEmpty() && selectedName == name)
+      m_androidBodies->setCurrentItem(card);
+#endif
   }
+#ifdef __OCPN__ANDROID__
+  m_androidBodies->blockSignals(false);
+  UpdateAndroidBodySelection();
+  celestial_android::LayoutScrolls(this);
+#endif
 }
+
+#ifdef __OCPN__ANDROID__
+void PlannerDialog::UpdateAndroidBodySelection() {
+  auto* item = m_androidBodies->currentItem();
+  m_androidCreateSight->Enable(item != nullptr);
+  m_androidSelectedBody->SetLabel(item
+      ? _("Selected: ") + wxString::FromUTF8(
+          item->data(Qt::UserRole + 1).toString().toUtf8().constData())
+      : _("Select a body card to create a sight."));
+  celestial_android::LayoutScrolls(this);
+}
+#endif
 
 void PlannerDialog::RefreshSkyPlot() {
   const ObserverMotion motion = ReadMotion(false);
@@ -1518,6 +1695,9 @@ void PlannerDialog::SortBodies(wxListEvent& event) {
 
 void PlannerDialog::RefreshAlmanac() {
   m_almanac->DeleteAllItems();
+#ifdef __OCPN__ANDROID__
+  m_androidAlmanac->clear();
+#endif
   const ObserverMotion motion = ReadMotion(false);
   m_almanacRows = BuildAlmanac(
       motion.referenceUtc, 24,
@@ -1536,7 +1716,27 @@ void PlannerDialog::RefreshAlmanac() {
         FormatNavigationAngle(item.declination, NavigationAngleKind::Latitude));
     m_almanac->SetItem(row, 7, FormatNavigationAngle(item.altitude));
     m_almanac->SetItem(row, 8, wxString::Format("%.1f", item.azimuth));
+#ifdef __OCPN__ANDROID__
+    const wxString text = item.body + "\n" + _("UTC: ") +
+        UtcDateTime::FormatInstant(item.utc, "%Y-%m-%d %H:%M:%S.%l") + "\n" +
+        _("GHA: ") + FormatNavigationAngle(item.gha) + "\n" +
+        _("SHA: ") + FormatNavigationAngle(item.sha) + "\n" +
+        _("GHA Aries: ") + FormatNavigationAngle(item.ghaAries) + "\n" +
+        _("LHA Aries: ") + FormatNavigationAngle(item.lhaAries) + "\n" +
+        _("Declination: ") + FormatNavigationAngle(item.declination,
+            NavigationAngleKind::Latitude) + "\n" +
+        _("Hc: ") + FormatNavigationAngle(item.altitude) + "\n" +
+        wxString::Format(_("Azimuth true: %.2f degrees"), item.azimuth);
+    new QListWidgetItem(QString::fromUtf8(text.utf8_str()), m_androidAlmanac);
+#endif
   }
+#ifdef __OCPN__ANDROID__
+  m_androidExport->Enable(!m_almanacRows.empty());
+  m_androidAlmanacStatus->SetLabel(wxString::Format(
+      _("%zu rows. Export CSV retains all shared table values."),
+      m_almanacRows.size()));
+  celestial_android::LayoutScrolls(this);
+#endif
 }
 
 void PlannerDialog::RefreshSpecial() {
@@ -1548,6 +1748,9 @@ void PlannerDialog::RefreshSpecial() {
       m_specialSummary->SetLabel(
           _("Polaris is below the horizon and is not observable from the "
             "selected position and time."));
+#ifdef __OCPN__ANDROID__
+      celestial_android::LayoutScrolls(this);
+#endif
       return;
     }
     m_specialSummary->SetLabel(wxString::Format(
@@ -1555,6 +1758,9 @@ void PlannerDialog::RefreshSpecial() {
           "Enter corrected Ho above to estimate latitude."),
         FormatNavigationAngle(polaris.geometricAltitude).c_str(),
         polaris.azimuthTrue, 0x00b0));
+#ifdef __OCPN__ANDROID__
+    celestial_android::LayoutScrolls(this);
+#endif
     return;
   }
   const DailyEventsResult events =
@@ -1577,9 +1783,18 @@ void PlannerDialog::RefreshSpecial() {
       break;
     }
   }
+#ifdef __OCPN__ANDROID__
+  celestial_android::LayoutScrolls(this);
+#endif
 }
 
 void PlannerDialog::ExportAlmanac(wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+  if (!ReadMotion(false).referenceUtc.IsValid() || m_almanacRows.empty()) {
+    ClearCalculatedResults(_("Enter a valid Context before exporting."));
+    return;
+  }
+#endif
   CelestialFileDialog dialog(this, _("Export offline celestial almanac"),
                       wxEmptyString, "celestial-almanac.csv",
                       _("CSV files (*.csv)|*.csv"),
@@ -1592,9 +1807,18 @@ void PlannerDialog::ExportAlmanac(wxCommandEvent&) {
 }
 
 void PlannerDialog::CreateSelectedSight(wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+  if (!ReadMotion(false).referenceUtc.IsValid()) {
+    ClearCalculatedResults(_("Enter a valid Context before creating a sight."));
+    return;
+  }
+  const long bodyIndex = m_androidBodies->currentItem()
+      ? m_androidBodies->currentItem()->data(Qt::UserRole).toInt() : -1;
+#else
   const long selected =
       m_bodies->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
   const long bodyIndex = selected < 0 ? -1 : m_bodies->GetItemData(selected);
+#endif
   if (bodyIndex < 0 ||
       static_cast<size_t>(bodyIndex) >= m_rankedBodies.size()) {
     CelestialMessageBox(_("Select a body first."), _("Sight Planner"),
@@ -1608,6 +1832,12 @@ void PlannerDialog::CreateSelectedSight(wxCommandEvent&) {
 
 void PlannerDialog::SolveSpecialLatitude(wxCommandEvent&) {
   ObserverMotion motion = ReadMotion(false);
+#ifdef __OCPN__ANDROID__
+  if (!motion.referenceUtc.IsValid()) {
+    ClearCalculatedResults(_("Enter a valid Context before solving latitude."));
+    return;
+  }
+#endif
   wxString body = m_specialBody->GetSelection() == 0 ? "Sun" : "Polaris";
   wxDateTime time = motion.referenceUtc;
   if (body == "Sun") {
@@ -1636,6 +1866,9 @@ void PlannerDialog::SolveSpecialLatitude(wxCommandEvent&) {
       body, time, motion.longitude, observedAltitude, motion.latitude);
   if (!std::isfinite(latitude)) {
     m_specialSummary->SetLabel(_("No converged latitude solution. Check Ho, time, longitude and approximate latitude."));
+#ifdef __OCPN__ANDROID__
+    celestial_android::LayoutScrolls(this);
+#endif
     return;
   }
   const BodyState state =
@@ -1649,4 +1882,7 @@ void PlannerDialog::SolveSpecialLatitude(wxCommandEvent&) {
           .c_str(),
       UtcDateTime::FormatInstant(time, "%Y-%m-%d %H:%M:%S").c_str(),
       state.azimuthTrue, 0x00b0));
+#ifdef __OCPN__ANDROID__
+  celestial_android::LayoutScrolls(this);
+#endif
 }

@@ -64,6 +64,24 @@ service; Android reports that limitation rather than pretending it ran.
 
 ## Editors and reports
 
+### Planner results refinement, 27 September 2026, before implementation
+
+**Bodies and best sights** uses an explicit Sort selector and ascending or
+descending choice, a selected-body summary and Create selected sight action.
+Full-width selectable cards show body, Hc, true azimuth, GHA, declination,
+magnitude, score and the complete recommendation reason. Card selection occurs
+on a stationary release; swipes scroll without changing selection. Hc limits,
+the recommended pairs/triads report, magnitude filter, below-horizon toggle and
+sky plot remain visible in the same scrolling page. Context refresh preserves a
+selected body by its catalogue name where that body remains visible.
+
+**Almanac** has an explicit Export CSV action above scrollable cards containing
+the complete UTC instant, body and every existing table column. The actual CSV
+continues to come from the shared AlmanacRow model. **Noon and Polaris** stacks
+workflow, precise corrected Ho, Solve latitude and the full wrapped result.
+Invalid context clears all outputs and gives guidance on every result page;
+creating a sight or exporting a table cannot use an invalid or stale context.
+
 Editors are focused sheets with persistent explicit **Save/Apply** and
 **Cancel** actions above scrollable content. Measurement, time, corrections,
 DR/motion, appearance and calculation details are separate labelled sections.

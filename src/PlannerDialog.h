@@ -22,6 +22,8 @@ class wxStaticText;
 class wxTextCtrl;
 #ifdef __OCPN__ANDROID__
 #include "NauticalTimeCtrl.h"
+class QListWidget;
+class wxButton;
 using CelestialTimePicker = NauticalTimeCtrl;
 #else
 class wxTimePickerCtrl;
@@ -110,6 +112,14 @@ private:
 #ifdef __OCPN__ANDROID__
   wxStaticText* m_androidEvents = nullptr;
   QTimer* m_androidRefresh = nullptr;
+  QListWidget* m_androidBodies = nullptr;
+  QListWidget* m_androidAlmanac = nullptr;
+  wxStaticText* m_androidSelectedBody = nullptr;
+  wxStaticText* m_androidCombinations = nullptr;
+  wxStaticText* m_androidAlmanacStatus = nullptr;
+  wxButton* m_androidCreateSight = nullptr;
+  wxButton* m_androidExport = nullptr;
+  void UpdateAndroidBodySelection();
 #endif
   wxStaticText* m_moonSummary;
   wxListCtrl* m_bodies;
