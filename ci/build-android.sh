@@ -156,7 +156,8 @@ test "${#metadata[@]}" -eq 1
 filename=$(basename "${packages[0]}")
 base_url=${CELESTIAL_ANDROID_TARBALL_BASE_URL:-https://github.com/pob220/celestial_navigation_pi/releases/download/android-v2.8.13.0-rc1}
 python3 "$source_dir/ci/package-android-import.py" "${packages[0]}" "${metadata[0]}" \
-  "$artifacts/package/$filename" --url "$base_url/$filename" --source-sha "$(git -C "$source_dir" rev-parse HEAD)"
+  "$artifacts/package/$filename" --url "$base_url/$filename" --source-sha "$(git -C "$source_dir" rev-parse HEAD)" \
+  --library "$plugin_build/lib${package_name}.so"
 cp "$plugin_build/lib${package_name}.so" "$artifacts/lib${package_name}-unstripped.so"
 "$tool_base/bin/llvm-readelf" -h "$plugin_build/lib${package_name}.so" | grep -E "Machine:.*$machine"
 "$tool_base/bin/llvm-readelf" -d "$plugin_build/lib${package_name}.so" | tee "$artifacts/library-dependencies.txt"

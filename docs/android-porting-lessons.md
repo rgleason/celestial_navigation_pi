@@ -79,3 +79,14 @@ Stop that mode, identify only test-created GUIDs, retain a backup, and verify
 all original database rows before cleanup. No user route, waypoint, chart or
 other plugin may be removed as a shortcut. Restore changed rotation, font and
 chart-follow settings after testing.
+
+## Compare package runtime sections with the intended build
+
+An incremental CMake build may use a different CPack filename from a fresh CI
+configure with OCPN_TARGET exported. Never select a cached archive by guessing
+its suffix. Celestial's local 39 import accidentally used an initial-slice
+archive while rewriting metadata to a newer SHA. Installed-library hashes and
+exact symbols exposed this error. Root metadata alone cannot establish binary
+provenance. Require the intended unstripped build library and compare all
+allocated ELF sections/ABI identity with the packaged stripped library; reject
+before replacing output. Preserve rejected archives and their actual symbols.

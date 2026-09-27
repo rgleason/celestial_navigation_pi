@@ -764,3 +764,41 @@ one activation after the callback. Native file-location and PDF zoom combos
 use the same adapter and minimum-row delegate. Android compile passed (39).
 Physical catalogue/Back regression remains pending. Shared astronomy and
 desktop controls are unchanged.
+
+## 15:30–15:40: stale local archive rejected and provenance repair
+
+An incremental CPack build generated the current library in the plain
+`*-android-arm64-16.tar.gz` filename. My packaging invocation mistakenly read
+a cached `*-16-android-arm64.tar.gz` from the initial vertical slice instead.
+The resulting import-development39 archive SHA256
+a376264d3f42c7fdfb6f86ff91cbecd2a30420722009a3e2f513d434a334bb1d
+therefore does **not** represent eff1655, despite its rewritten provenance.
+Its installed library was 9ea782d383fb2bb4ec23303f7c59a2b082b42c03bc75c7be944a440d2d7c038b.
+No physical 39 acceptance is valid. The valid 38 evidence above remains valid.
+
+At 15:30:33, that old binary crashed PID 31948 in Adreno memcpy from the old
+piDC::DrawPolygon GLES path. Exact initial-slice symbols resolve plugin frames
+0x8a88a8 / 0x48e130 / 0x48e28c / 0x538204 / 0x53848c to pidc.cpp:2088,
+Sight::DrawPolygon:556, Sight::Render:589 and overlay calls:346/333. The host
+automatically restarted to PID 5177; recovery is not a crash acceptance pass.
+Retained crash39-logcat.log, crash39-exit-info.txt, recovered39-maps.txt and
+both the old installed library and intended unstripped 39 library. XML retained
+all four sights/numerical values; the old writer omitted eight zero-valued
+Android lunar measurement-offset attributes. Nonzero offsets were not present.
+
+The import packager now requires the intended build library and compares every
+allocated ELF section plus ABI identity, allowing debug stripping but rejecting
+old runtime code/data before replacing any output. Actual negative test rejected
+the stale archive and retained an existing output byte-for-byte, with no staging
+file left. Actual positive tests passed the current incremental archive and both
+fresh arm64/armhf packages against their own unstripped libraries. CI supplies
+this required library explicitly and provenance records its SHA256. This is a
+packaging correctness check, with no desktop runtime change. Correct replacement
+and physical popup regression remain pending.
+
+CircleCI pipeline 5 completed all 19 platform builds successfully for exact
+7f68c9f4a66fe99ca2aeeb4935343d3a2e571f81, including macOS retention and both
+Android ABIs. Approval is on hold and publish-reviewed blocked. No publication
+was approved. These are CI build passes, not completion of physical acceptance
+or validation of the later local fixes. Latest job state retained as
+circleci-pipeline-5-jobs-latest.json.
