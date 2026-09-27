@@ -44,6 +44,13 @@
 
 namespace {
 
+// POBsoft (1985-2026): touch forms have one full-width field per row.
+#ifdef __OCPN__ANDROID__
+constexpr int kToolFormOrientation = wxVERTICAL;
+#else
+constexpr int kToolFormOrientation = wxHORIZONTAL;
+#endif
+
 wxSpinCtrlDouble* Spin(wxWindow* parent, double minimum, double maximum,
                        double value, double increment, int digits = 2) {
   auto* control = new wxSpinCtrlDouble(parent, wxID_ANY);
@@ -59,10 +66,16 @@ wxSpinCtrlDouble* Spin(wxWindow* parent, double minimum, double maximum,
 
 wxBoxSizer* LabelControl(wxWindow* parent, const wxString& label,
                          wxWindow* control) {
-  auto* sizer = new wxBoxSizer(wxHORIZONTAL);
+  auto* sizer = new wxBoxSizer(kToolFormOrientation);
   sizer->Add(new wxStaticText(parent, wxID_ANY, label), 0,
              wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-  sizer->Add(control, 1, wxEXPAND);
+  sizer->Add(control,
+#ifdef __OCPN__ANDROID__
+             0,
+#else
+             1,
+#endif
+             wxEXPAND);
   return sizer;
 }
 
@@ -303,7 +316,7 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
         "Moon altitude, body altitude and lunar distance."));
   explanation->Wrap(1000);
   top->Add(explanation, 0, wxEXPAND | wxALL, 8);
-  auto* upper = new wxBoxSizer(wxHORIZONTAL);
+  auto* upper = new wxBoxSizer(kToolFormOrientation);
   m_sequenceSights = new wxCheckListBox(page, wxID_ANY);
   const Sight* highlighted = m_parentDialog->GetSelectedSight();
   wxDateTime highlightedUtc;
@@ -324,8 +337,15 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
       m_sequenceSights->Check(m_sequenceSights->GetCount() - 1, true);
   }
   auto* sightColumn = new wxBoxSizer(wxVERTICAL);
+#ifdef __OCPN__ANDROID__
+  m_sequenceSights->Hide();
+  m_androidSequenceCards = new wxPanel(page);
+  m_androidSequenceCards->SetSizer(new wxBoxSizer(wxVERTICAL));
+  sightColumn->Add(m_androidSequenceCards, 0, wxEXPAND | wxALL, 5);
+#else
   sightColumn->Add(m_sequenceSights, 1, wxEXPAND | wxALL, 5);
-  auto* selectionButtons = new wxBoxSizer(wxHORIZONTAL);
+#endif
+  auto* selectionButtons = new wxBoxSizer(kToolFormOrientation);
   auto* selectVisible =
       new wxButton(page, wxID_ANY, _("Select visible sights"));
   auto* clearSelection = new wxButton(page, wxID_ANY, _("Clear selection"));
@@ -335,7 +355,13 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
   m_sequenceReference = new wxStaticText(page, wxID_ANY, wxEmptyString);
   sightColumn->Add(m_sequenceReference, 0,
                    wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
-  upper->Add(sightColumn, 1, wxEXPAND);
+  upper->Add(sightColumn,
+#ifdef __OCPN__ANDROID__
+             0,
+#else
+             1,
+#endif
+             wxEXPAND);
   auto* settings = new wxStaticBoxSizer(wxVERTICAL, page, _("Solution"));
   m_sequenceMode = new wxChoice(page, wxID_ANY);
   m_sequenceMode->Append(_("Recover time and position"));
@@ -357,7 +383,7 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
   settings->Add(
       LabelControl(page, _("Initial / known longitude"), m_sequenceLongitude),
       0, wxEXPAND | wxALL, 3);
-  auto* positionRow = new wxBoxSizer(wxHORIZONTAL);
+  auto* positionRow = new wxBoxSizer(kToolFormOrientation);
   m_sequencePositionSource = new wxStaticText(page, wxID_ANY, wxEmptyString);
   auto* useEarliest =
       new wxButton(page, wxID_ANY, _("Use earliest selected DR"));
@@ -383,7 +409,7 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
   settings->Add(m_sequenceRobust, 0, wxALL, 3);
   settings->Add(m_sequenceBias, 0, wxALL, 3);
   settings->Add(m_sequenceMotion, 0, wxALL, 3);
-  auto* motion = new wxBoxSizer(wxHORIZONTAL);
+  auto* motion = new wxBoxSizer(kToolFormOrientation);
   m_sequenceCog = Spin(page, 0.0, 359.9, 0.0, 1.0, 1);
   m_sequenceSog = Spin(page, 0.0, 80.0, 0.0, 0.1, 1);
   motion->Add(LabelControl(page, _("COG true"), m_sequenceCog), 1,
@@ -394,9 +420,15 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
   solve->Bind(wxEVT_BUTTON, &LunarToolsDialog::SolveSequence, this);
   settings->Add(solve, 0, wxEXPAND | wxALL, 5);
   upper->Add(settings, 0, wxEXPAND | wxALL, 5);
-  top->Add(upper, 1, wxEXPAND);
+  top->Add(upper,
+#ifdef __OCPN__ANDROID__
+           0,
+#else
+           1,
+#endif
+           wxEXPAND);
 
-  auto* resultHeader = new wxBoxSizer(wxHORIZONTAL);
+  auto* resultHeader = new wxBoxSizer(kToolFormOrientation);
   m_sequenceCandidate = new wxChoice(page, wxID_ANY);
   m_sequenceCandidate->Bind(wxEVT_CHOICE, &LunarToolsDialog::SelectCandidate,
                             this);
@@ -424,7 +456,23 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
     m_sequenceResiduals->InsertColumn(index, columns[index]);
     m_sequenceResiduals->SetColumnWidth(index, widths[index]);
   }
+#ifdef __OCPN__ANDROID__
+  m_sequenceResiduals->Hide();
+  m_androidSequenceResiduals = new wxPanel(page);
+  m_androidSequenceResiduals->SetSizer(new wxBoxSizer(wxVERTICAL));
+  top->Add(m_androidSequenceResiduals, 0, wxEXPAND | wxALL, 6);
+  // Remove desktop horizontal/stretch flags also from nested labelled groups.
+  const std::vector<wxSizer*> groups = {sightColumn, selectionButtons, settings,
+      positionRow, motion, resultHeader};
+  for (auto* group : groups)
+    for (auto* item : group->GetChildren()) {
+      item->SetProportion(0);
+      item->SetFlag(wxEXPAND | wxALL);
+      item->SetBorder(8);
+    }
+#else
   top->Add(m_sequenceResiduals, 1, wxEXPAND | wxALL, 6);
+#endif
   page->SetSizer(top);
 
   m_sequenceSights->Bind(wxEVT_CHECKLISTBOX, [this](wxCommandEvent&) {
@@ -458,7 +506,7 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
   note->Wrap(820);
   top->Add(note, 0, wxEXPAND | wxALL, 8);
   auto* controls = new wxBoxSizer(wxVERTICAL);
-  auto* positionRow = new wxBoxSizer(wxHORIZONTAL);
+  auto* positionRow = new wxBoxSizer(kToolFormOrientation);
   m_plannerLatitude =
       new NavigationAngleCtrl(page, NavigationAngleKind::Latitude,
                               m_defaultLatitude, -90.0, 90.0, wxSize(155, -1));
@@ -478,7 +526,7 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
   calculate->Bind(wxEVT_BUTTON, &LunarToolsDialog::CalculatePlanner, this);
   positionRow->Add(calculate, 0);
   controls->Add(positionRow, 0, wxEXPAND | wxBOTTOM, 5);
-  auto* timeRow = new wxBoxSizer(wxHORIZONTAL);
+  auto* timeRow = new wxBoxSizer(kToolFormOrientation);
   timeRow->Add(LabelControl(page, _("UTC date"), m_plannerUtc.dateContainer), 1,
                wxRIGHT, 6);
   timeRow->Add(LabelControl(page, _("UTC time"), m_plannerUtc.timeContainer), 1,
@@ -498,7 +546,21 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
     m_plannerList->InsertColumn(index, columns[index]);
     m_plannerList->SetColumnWidth(index, widths[index]);
   }
+#ifdef __OCPN__ANDROID__
+  m_plannerList->Hide();
+  m_androidPairCards = new wxPanel(page);
+  m_androidPairCards->SetSizer(new wxBoxSizer(wxVERTICAL));
+  top->Add(m_androidPairCards, 0, wxEXPAND | wxALL, 6);
+  const std::vector<wxSizer*> groups = {positionRow, timeRow};
+  for (auto* group : groups)
+    for (auto* item : group->GetChildren()) {
+      item->SetProportion(0);
+      item->SetFlag(wxEXPAND | wxALL);
+      item->SetBorder(8);
+    }
+#else
   top->Add(m_plannerList, 1, wxEXPAND | wxALL, 6);
+#endif
   page->SetSizer(top);
 }
 
@@ -680,6 +742,13 @@ void LunarToolsDialog::PopulateBodies(wxChoice* choice, bool includeMoon) {
 }
 
 void LunarToolsDialog::UpdateSequenceSelection(bool refreshAutomaticPosition) {
+#ifdef __OCPN__ANDROID__
+  m_applySequence->Enable(false);
+  m_sequenceResult.valid = false;
+  m_sequenceCandidate->Clear();
+  m_sequenceSummary->SetLabel(_("Select at least two saved lunar observations, then solve the session."));
+  RefreshAndroidSequence();
+#endif
   const Sight* earliest = nullptr;
   const Sight* latest = nullptr;
   unsigned selected = 0;
@@ -734,6 +803,11 @@ void LunarToolsDialog::UseEarliestSequencePosition(wxCommandEvent&) {
 }
 
 void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+  m_sequenceResult.valid = false;
+  m_sequenceCandidate->Clear();
+  RefreshAndroidSequence();
+#endif
   m_applySequence->Enable(false);
   m_sequenceRecords.clear();
   double sequenceLatitude = 0.0;
@@ -1010,7 +1084,9 @@ void LunarToolsDialog::ShowCandidate(std::size_t index) {
   for (const auto& warning : m_sequenceResult.warnings)
     summary += CN_UTF8_(" — ") + wxString::FromUTF8(warning.c_str());
   m_sequenceSummary->SetLabel(summary);
+#ifndef __OCPN__ANDROID__
   m_sequenceSummary->Wrap(1000);
+#endif
   m_sequenceResiduals->DeleteAllItems();
   auto residual_text = [](double value) {
     return std::isfinite(value) ? wxString::Format("%+0.2f'", value)
@@ -1032,6 +1108,9 @@ void LunarToolsDialog::ShowCandidate(std::size_t index) {
                                                      residual.standardized_max)
                                   : _("Consistent"));
   }
+#ifdef __OCPN__ANDROID__
+  RefreshAndroidSequence();
+#endif
 }
 
 void LunarToolsDialog::ApplySequenceCorrection(wxCommandEvent&) {
@@ -1045,6 +1124,10 @@ void LunarToolsDialog::ApplySequenceCorrection(wxCommandEvent&) {
 }
 
 void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+  m_androidPairCards->GetSizer()->Clear(true);
+  celestial_android::LayoutScrolls(this);
+#endif
   m_plannerList->DeleteAllItems();
   double observerLatitude = 0.0;
   double observerLongitude = 0.0;
@@ -1119,6 +1202,20 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
             });
   for (std::size_t index = 0; index < rows.size(); ++index) {
     const Row& row = rows[index];
+#ifdef __OCPN__ANDROID__
+    wxString caption = row.body + "\n" + _("Below horizon: ") +
+        (row.moon_alt < 0.0 && row.body_alt < 0.0 ? _("Both") :
+         row.moon_alt < 0.0 ? _("Moon") : row.body_alt < 0.0 ? _("Body") : _("Neither"));
+    caption += "\n" + _("Distance: ") + FormatNavigationAngle(row.distance);
+    caption += wxString::Format(CN_UTF8_("\nRate: %+.1f′/h\n0.1′ time: "), row.rate);
+    caption += std::isfinite(row.sensitivity) ? wxString::Format("%.1f s", row.sensitivity) : CN_UTF8_("—");
+    caption += "\n" + _("Moon altitude: ") + FormatPlannerAltitude(row.moon_alt);
+    caption += "\n" + _("Body altitude: ") + FormatPlannerAltitude(row.body_alt);
+    caption += wxString::Format(CN_UTF8_("\nMoon Zn true: %.1f°\nBody Zn true: %.1f°\nMoon illumination: %.1f%%\nMagnitude: %.1f"),
+        row.moon_az, row.body_az, row.illumination, row.magnitude);
+    m_androidPairCards->GetSizer()->Add(new wxStaticText(m_androidPairCards, wxID_ANY, caption),
+        0, wxEXPAND | wxALL, 12);
+#else
     long item = m_plannerList->InsertItem(index, row.body);
     if (row.moon_alt < 0.0 && row.body_alt < 0.0)
       m_plannerList->SetItem(item, 1, _("Both"));
@@ -1142,7 +1239,12 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
     m_plannerList->SetItem(item, 9,
                            wxString::Format("%.1f%%", row.illumination));
     m_plannerList->SetItem(item, 10, wxString::Format("%.1f", row.magnitude));
+#endif
   }
+#ifdef __OCPN__ANDROID__
+  CN_StyleAndroidControls(m_androidPairCards);
+  celestial_android::LayoutScrolls(this);
+#endif
 }
 
 wxDateTime LunarToolsDialog::CalibrationUtc() const {
@@ -1423,6 +1525,61 @@ void LunarToolsDialog::UpdateProfileCorrection() {
 }
 
 #ifdef __OCPN__ANDROID__
+void LunarToolsDialog::RefreshAndroidSequence() {
+  if (!m_androidSequenceCards || m_androidSequencePending) return;
+  m_androidSequencePending = true;
+  wxWeakRef<LunarToolsDialog> weak(this);
+  // POBsoft (1985-2026): finish the originating touch callback before rebuilding.
+  QTimer::singleShot(0, GetHandle(), [weak]() {
+    if (!weak) return;
+    auto* self = weak.get();
+    self->m_androidSequencePending = false;
+    auto* selection = self->m_androidSequenceCards->GetSizer();
+    selection->Clear(true);
+    if (!self->m_sequenceSights->GetCount())
+      selection->Add(new wxStaticText(self->m_androidSequenceCards, wxID_ANY,
+          _("No saved lunar observations.")), 0, wxEXPAND | wxALL, 8);
+    for (unsigned index = 0; index < self->m_sequenceSights->GetCount(); ++index) {
+      auto* card = new wxPanel(self->m_androidSequenceCards, wxID_ANY);
+      auto* fields = new wxBoxSizer(wxVERTICAL);
+      auto* toggle = new wxButton(card, wxID_ANY, wxString::Format(
+          self->m_sequenceSights->IsChecked(index) ? _("Deselect observation %u") : _("Select observation %u"), index + 1));
+      toggle->Bind(wxEVT_BUTTON, [weak, index](wxCommandEvent&) {
+        if (!weak || index >= weak->m_sequenceSights->GetCount()) return;
+        weak->m_sequenceSights->Check(index, !weak->m_sequenceSights->IsChecked(index));
+        weak->UpdateSequenceSelection();
+      });
+      fields->Add(toggle, 0, wxEXPAND | wxALL, 8);
+      fields->Add(new wxStaticText(card, wxID_ANY, self->m_sequenceSights->GetString(index)),
+          0, wxEXPAND | wxALL, 8);
+      card->SetSizer(fields);
+      selection->Add(card, 0, wxEXPAND | wxALL, 8);
+    }
+    auto* residuals = self->m_androidSequenceResiduals->GetSizer();
+    residuals->Clear(true);
+    const int selected = self->m_sequenceCandidate->GetSelection();
+    if (self->m_sequenceResult.valid && selected >= 0 &&
+        static_cast<size_t>(selected) < self->m_sequenceResult.candidates.size()) {
+      auto number = [](double value) {
+        return std::isfinite(value) ? wxString::Format(CN_UTF8_("%+.2f′"), value) : _("Shared/not used");
+      };
+      for (const auto& value : self->m_sequenceResult.candidates[selected].residuals) {
+        wxString caption = wxString::FromUTF8(value.label.c_str());
+        caption += "\n" + _("Distance residual: ") + number(value.distance_arcmin);
+        caption += "\n" + _("Moon-alt residual: ") + number(value.moon_altitude_arcmin);
+        caption += "\n" + _("Body-alt residual: ") + number(value.body_altitude_arcmin);
+        caption += "\n" + _("Assessment: ") + (value.possible_outlier
+            ? wxString::Format(CN_UTF8_("Inspect: %.1fσ"), value.standardized_max) : _("Consistent"));
+        residuals->Add(new wxStaticText(self->m_androidSequenceResiduals, wxID_ANY, caption),
+            0, wxEXPAND | wxALL, 12);
+      }
+    }
+    CN_StyleAndroidControls(self->m_androidSequenceCards);
+    CN_StyleAndroidControls(self->m_androidSequenceResiduals);
+    celestial_android::LayoutScrolls(self);
+  });
+}
+
 void LunarToolsDialog::RefreshAndroidCalibration() {
   if (!m_androidCalReadings || m_androidCalibrationPending) return;
   m_androidCalibrationPending = true;

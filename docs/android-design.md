@@ -331,3 +331,18 @@ sqrt(1/sum(1/sigma²)). Equal independent ±0.20′ readings then give at least
 unchanged, explicitly test the Android-compiled engine branch with equal and
 unequal uncertainties and nonzero scatter, and rebuild/retest the same
 disposable profile on the tablet. Existing saved profiles are not rewritten.
+
+### Lunar session and pair layout, 28 September 00:45, before implementation
+
+The actual Lunar sequence page still uses two desktop columns: the sight
+label is clipped horizontally and selection actions disappear below the
+viewport. Pair planner retains an eleven-column wxQt table. Stack Android
+settings/selection/result headers vertically in the existing single form
+viewport. Represent lunar selection and result residuals with complete model
+cards; keep explicit check state in the existing selection model and defer
+card rebuild until the native callback returns. Pair outputs are complete
+labelled cards made directly from immutable computed row values, including
+all eleven fields, never wxQt table column getters. Hide desktop tables only
+on Android. Preserve all shared numerical calculations and worker ownership.
+Physically verify final swipes, selection/clear, earliest DR, invalid inputs,
+worker Cancel/Back, candidate results and both orientations before acceptance.

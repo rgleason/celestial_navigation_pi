@@ -2005,3 +2005,92 @@ its Android compilation failed due mixed pointer types in an initializer list
 (build80-android.log), while desktop compiled. 5b8267c uses explicitly typed
 sizer pointers. Build81 and physical retest are the next gate; none of the
 Sextant layout, numerical or persistence acceptance is closed by these builds.
+
+### 2026-09-28 00:24–00:35 BST: Sextant repeats/profile, uncertainty failure
+
+Runtime81/5b8267c was imported through Plugin Manager. Independently read
+installed81.so SHA2561dfbda34c03d89a86b1e25a533ebbb7ec686d6d9565f76cb6b0290be00052c05
+matches its payload; archive SHA256
+a39d7c365925c8c92ed065effd93c92a22cbdb95ec94e7ad7313f892e328ce1f.
+PID20871 stayed continuous. The width fix exposes complete coordinate, body,
+weather, observed and profile inputs (resume81-width-{first,bodies}.png).
+
+At observer53.179512700000004,−2.85813665 and fixed UTC
+2026-09-27 23:24:33.746, Deneb/Vega centre prediction was23°50.0312′
+(23.833854159275464deg), with apparent altitudes60°29.9715′/38°11.5544′
+and an explicit equal-altitude preference warning. This astronomical
+prediction has not yet been independently referenced. Actual body catalogue
+selection/scroll is retained in resume81-star-{menu,scroll}.png.
+
+With raw observed angle equal to prediction and typed IE+1.50′, Add repeat
+produced complete model cards: After IE23°48.5312′, residual to add+1.50′,
+uncertainty±0.20′. Independent subtraction confirms these values. Two actual
+repeats and saved disposable profile RESUME81-Disposable-Sextant/TEST81
+are shown in resume81-{repeat1,repeat2,profile-name,profile-ready,profile-saved}.
+Independent config-after-sextant81.conf records one point
+23.80885416,1.5,0,2 with repeatability0. No original profiles existed in the
+before snapshot; original sights remain byte-identical SHA256
+030d4193395b4cb8bddce684d00fb1477c00e56bc0661a70f2af81cd9bcc1020.
+Landscape final swipe shows the complete summary/explanation
+(resume81-landscape-final.png); portrait was restored.
+
+The saved point incorrectly reports uncertainty±0.00′ despite both entered
+±0.20′ errors. This is a numerical failure, not accepted profile precision.
+Android-only refinement was designed before coding: the independent formal
+weighted-mean error bounds the existing scatter estimate. Reference examples
+include equal0.2′ repeats→0.1414213562′, unequal0.2′/0.4′→0.1788854382′,
+and ±1′ scatter dominating the measurement floor. Runtime1e0aae4 implements
+this guarded correction; actual Android compilation and four host tests of
+the Android engine branch pass. Tablet profile rebuilding remains pending.
+Desktop numerical code remains unchanged.
+
+Removing selected repeat2 leaves one complete card. Attempting Build/save
+with one gives explicit at-least-two validation (resume82-before.png), Back
+dismisses it with the saved profile retained (resume82-one-rejected.png).
+Removing the final repeat shows No repeat readings added, preserving the
+saved profile (resume82-no-repeats.png). Two Back presses return safely to
+chart, PID20871 unchanged. Cold profile persistence remains pending.
+
+### 2026-09-28 00:36–00:44 BST: corrected Sextant profile verified
+
+Runtime1e0aae4 package82 SHA256
+5837fde94eaeecce5c42bb9f9faeeb8d4dd141437c0dfe43f59c327965070288
+was actually imported. Independently read installed82.so SHA256
+08480fe32318ac41f6943b067b3c23bca9b2d1215d7bbacb25e65339ef0754ec
+matches payload, PID20871 continuous. The retained observer/time/pair and
+IE+1.50′ were re-entered. Prediction/raw and both repeat cards agree with
+runtime81. Rebuilding the same named profile replaces it, leaving Count1;
+config-after-sextant82.conf independently contains
+23.80885416,1.5,0.1414213562,2. Display±0.14′ agrees with independent0.2/√2.
+The old profile was not changed by loading/importing; only explicit rebuild
+changed it. Screens resume82-{prediction,repeat1,repeat2,profile-corrected}.png.
+
+Deliberate cold restart created PID24643. Actual reopened final fields show
+the same name/serial, loaded point and ±0.14′ correction, with no unsaved
+repeat cards (resume82-profile-cold-final.png). Saved config-cold-sextant82.conf
+retains the point. Sights-after-sextant82.xml SHA matches original four.
+Complete crash82.txt contains no fatal newer than historical27Sep17:19:57;
+lastanr82.txt reports none since boot, meminfo82.txt retained. First cold
+page swipes before layout settled did not move; later actual swipes reached
+final controls. No claim that every rapid-open gesture succeeds.
+
+Full eight CTest checks passed53.76s, including host execution of the Android
+engine branch; isolated actual-display LunarUiSmoke passed6371ms with retained
+missing testdata icon warning. These are not all-platform final CI acceptance.
+
+Automatic approval review rejected transmitting the exact boat location/time
+to USNO. No bypass or retry with those inputs occurred. A safer independent
+reference was retrieved for public Greenwich51.4779,0 at2024-06-21 22:00 UT1.
+USNO Deneb/Vega apparent-centre separation from published Hc, Zn and refraction
+is23.8357759454deg; physical entry/comparison remains pending.
+
+### 2026-09-28 00:46: Lunar layout build gate
+
+Android candidate83 failed compilation because newly written card styling
+called a nonexistent namespaced helper. Build83-android.log retains this
+failure; no package/import occurred. Candidate84 calls the established
+CN_StyleAndroidControls helper and Android compilation passes. Session
+selection and residual cards plus pair-planner full-field cards are pending
+physical validation, and remain unaccepted. Selection changes clear Android
+candidates and disable saved-result actions so stale results cannot be saved.
+Desktop layout/numerical branches retain the original behavior.

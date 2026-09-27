@@ -65,6 +65,11 @@ private:
   void PersistProfiles();
 #ifdef __OCPN__ANDROID__
   void RefreshAndroidCalibration();
+  void RefreshAndroidSequence();
+  wxPanel* m_androidSequenceCards = nullptr;
+  wxPanel* m_androidSequenceResiduals = nullptr;
+  wxPanel* m_androidPairCards = nullptr;
+  bool m_androidSequencePending = false;
   wxPanel* m_androidCalReadings = nullptr;
   long m_androidSelectedReading = -1;
   bool m_androidCalibrationPending = false;
