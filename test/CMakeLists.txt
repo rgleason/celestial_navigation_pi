@@ -176,6 +176,15 @@ endif()
 
 # Add the test
 add_test(NAME celestial_tests COMMAND celestial_tests)
+# Exercise the actual Android numerical branch on the build host without
+# requiring Android UI libraries. Physical ABI/UI acceptance is separate.
+add_executable(android_sextant_uncertainty_tests
+    android_sextant_uncertainty_tests.cpp
+    ${CMAKE_SOURCE_DIR}/src/SextantCalibrationEngine.cpp)
+target_compile_definitions(android_sextant_uncertainty_tests PRIVATE __OCPN__ANDROID__)
+target_include_directories(android_sextant_uncertainty_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(android_sextant_uncertainty_tests PRIVATE GTest::GTest GTest::Main)
+add_test(NAME android_sextant_uncertainty COMMAND android_sextant_uncertainty_tests)
 if(UNIX)
     # Separate processes avoid wx/libc timezone caches masking UTC-boundary bugs.
     foreach(zone UTC Europe/London America/New_York Asia/Kolkata)

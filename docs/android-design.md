@@ -319,3 +319,15 @@ repeat cards after calculations, add/remove and rotation. Desktop controls,
 engines and persisted profiles remain unchanged. Verify actual prediction,
 index/residual arithmetic, add/remove, profile persistence, complete final
 swipes and both orientations on the next committed binary.
+
+### Sextant uncertainty refinement, 28 September 00:31, before implementation
+
+Two identical ±0.20′ readings produced a saved correction-point uncertainty
+of zero: the baseline uses only repeat scatter after using the entered
+uncertainties as weights. On Android preserve the correction, binning and
+repeatability, but bound the formal uncertainty of each weighted mean by
+sqrt(1/sum(1/sigma²)). Equal independent ±0.20′ readings then give at least
+0.141421′, even with zero repeat scatter. Keep desktop numerical behaviour
+unchanged, explicitly test the Android-compiled engine branch with equal and
+unequal uncertainties and nonzero scatter, and rebuild/retest the same
+disposable profile on the tablet. Existing saved profiles are not rewritten.
