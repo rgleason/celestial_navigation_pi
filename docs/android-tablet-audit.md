@@ -906,3 +906,27 @@ Go. PID remained 8481. Evidence delete1-42, delete-final-42, empty-chart42 and
 empty-fix-result42. Restored the exact backed-up disposable four-record XML
 with OpenCPN stopped and independently checked identical bytes before restart.
 No original host objects, charts or other plugins were changed.
+
+## 16:10–16:13: committed 5992863 wording check
+
+Plugin Manager installed archive dc45d1ffe776c6f98983d98d059840681f58dd3c20ba8de69f021b2863e06990; installed library 50f72c3333e8378d15712b651dbbe3564d61ab994a982ac404003f7248441e46
+was independently compared byte-for-byte to retained committed-5992863/arm64.
+PID 10171 is the intentional cold restart after restoring test observations.
+Entered -0.25 angular uncertainty. Save rejected it with an explicit arcminute
+error; two Back actions dismissed warning/cancelled editor and independently
+read Sights.xml equals backup-before43-sights exactly. Screens measurement43
+and negative-uncertainty43. Actual section selector still had old names: Restore
+consumes the notebook before the subsequent rename runs. Source moves the
+rename before that transformation; do not count section names as passed yet.
+
+Pushed exact 5992863444a5055d4f6186a6358138c6c797ff20 and cycled the existing
+run-ci PR label. CircleCI pipeline 6 (5bf60f44-2592-48ad-9ff8-65ed050eda55)
+confirms that exact checkout SHA. No browser trigger or publication approval
+was needed. Full matrix results remain pending.
+
+Real lunar type switching showed “Total UTC search span (seconds)” (lunar-
+time43). A swipe reached both separate fractional time controls and the final
+vessel motion row (lunar-time-end43), but course/speed labels were clipped in
+that horizontal desktop row. The next Android-only adapter stacks meaningful
+labelled rows and puts timing units above the entry, retaining colon-separated
+time fields. These layout changes require physical regression verification.

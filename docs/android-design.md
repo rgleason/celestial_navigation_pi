@@ -221,3 +221,13 @@ The observation section picker uses Measurement, Time (UTC), Motion, Display,
 Corrections and Calculations. Replace generated Config/Parameters labels only
 on Android so navigators can find the corrections without knowing desktop
 implementation names. Keep the same controls and handlers on each page.
+
+### Tablet review refinement: multiple labelled fields (16:15)
+
+The lunar timing and running-fix screenshots show horizontal desktop rows
+clipping the course/speed labels, and the uncertainty units following their
+entry. Android form rows with meaningful labels will stack vertically, while
+colon-separated hour/minute/second rows stay together. Present observation
+timing units above the uncertainty field. Keep exact controls/model values and
+all desktop layout unchanged. Verify final motion controls by actual swipes,
+not scrollbar movement alone.

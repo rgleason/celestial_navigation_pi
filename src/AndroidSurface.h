@@ -41,9 +41,14 @@ inline void StackForms(wxSizer* sizer) {
   if (!sizer) return;
   if (auto* row = dynamic_cast<wxBoxSizer*>(sizer)) {
     int labels = 0, entries = 0;
+    bool meaningfulLabel = false;
     for (auto* item : row->GetChildren()) {
       auto* window = item->GetWindow();
-      labels += window && wxDynamicCast(window, wxStaticText);
+      if (auto* label = wxDynamicCast(window, wxStaticText)) {
+        ++labels;
+        wxString text = label->GetLabel();
+        meaningfulLabel |= !text.Trim().Trim(false).empty() && text != ":";
+      }
       entries += window && (wxDynamicCast(window, wxTextCtrl) ||
                           wxDynamicCast(window, wxChoice) ||
                           wxDynamicCast(window, wxSpinCtrl) ||
@@ -51,9 +56,10 @@ inline void StackForms(wxSizer* sizer) {
                           wxDynamicCast(window, wxDatePickerCtrl) ||
                           window->GetHandle()->findChild<QAbstractSpinBox*>());
     }
-    // A single label/value row needs stacking in portrait. Multi-part time
-    // rows (hour : minute : second) must keep their meaningful grouping.
-    if (row->GetOrientation() == wxHORIZONTAL && labels == 1 && entries == 1) {
+    // Labelled form rows need stacking in portrait, including mixed motion
+    // checkboxes/course/speed. Colon-separated hour/minute/second rows retain
+    // their grouping; action-button rows have no labels or entries.
+    if (row->GetOrientation() == wxHORIZONTAL && labels && entries && meaningfulLabel) {
       row->SetOrientation(wxVERTICAL);
       for (auto* item : row->GetChildren()) item->SetProportion(0);
     }

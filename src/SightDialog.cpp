@@ -413,13 +413,16 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
 #ifdef __OCPN__ANDROID__
 #endif
 
-  dialog_geometry::Restore(this, _T("Sight"), GetSize());
 #ifdef __OCPN__ANDROID__
+  // Rename before Restore transforms the notebook into a native selector.
   const wxString sections[] = {_("Measurement"), _("Time (UTC)"), _("Motion"),
                                _("Display"), _("Corrections"), _("Calculations")};
   for (size_t i = 0; i < m_notebook1->GetPageCount() &&
                      i < sizeof(sections) / sizeof(sections[0]); ++i)
     m_notebook1->SetPageText(i, sections[i]);
+#endif
+  dialog_geometry::Restore(this, _T("Sight"), GetSize());
+#ifdef __OCPN__ANDROID__
   m_staticText8->SetLabel(_("Angular uncertainty (arcminutes)"));
   celestial_android::AddAngleEntry(m_tMeasurement, 0, 0, 360);
   celestial_android::AddAngleEntry(m_tLunarMoonAltitude, 0, 0, 90);
@@ -451,7 +454,12 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   m_androidTimeCertainty->SetRange(0, 172800);
   m_androidTimeCertainty->SetIncrement(.001);
   m_androidTimeCertainty->SetValue(m_Sight.m_TimeCertainty);
-  m_sCertaintySeconds->GetContainingSizer()->Insert(0, m_androidTimeCertainty, 0, wxEXPAND | wxALL, 8);
+  auto* uncertaintySizer = m_sCertaintySeconds->GetContainingSizer();
+  uncertaintySizer->Detach(m_staticText13);
+  uncertaintySizer->Insert(0, m_staticText13, 0, wxEXPAND | wxALL, 8);
+  uncertaintySizer->Insert(1, m_androidTimeCertainty, 0, wxEXPAND | wxALL, 8);
+  if (auto* heading = wxDynamicCast(m_staticText13->GetParent(), wxStaticBox))
+    heading->SetLabel(_("Observation timing"));
   m_androidTimeCertainty->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) { MarkDirty(); Recompute(); });
   m_staticText13->SetLabel(m_Sight.m_Type == Sight::LUNAR ? _("Total UTC search span (seconds)") : _("Time uncertainty (seconds)"));
   m_androidSeconds = new wxSpinCtrlDouble(m_sSeconds->GetParent(), wxID_ANY);
