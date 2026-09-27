@@ -341,6 +341,28 @@ inline int ModalResult(wxDialog& dialog) {
   return dialog.GetReturnCode() ? dialog.GetReturnCode() : nativeResult;
 }
 
+// Qt's stock Yes/No message box ignores Back. Owned confirmations use the
+// same cancellation/lifecycle handling as editors, with no destructive default.
+inline bool Confirm(wxWindow* parent, const wxString& title,
+                    const wxString& message, const wxString& accept = _("Yes")) {
+  wxDialog sheet(parent, wxID_ANY, title);
+  sheet.GetHandle()->setProperty("cnCancellable", true);
+  auto* body = new wxBoxSizer(wxVERTICAL);
+  auto* text = new wxStaticText(&sheet, wxID_ANY, message);
+  text->Wrap(520);
+  body->Add(text, 0, wxEXPAND | wxALL, 16);
+  auto* row = new wxBoxSizer(wxHORIZONTAL);
+  auto* no = new wxButton(&sheet, wxID_ANY, _("No"));
+  auto* yes = new wxButton(&sheet, wxID_ANY, accept);
+  no->Bind(wxEVT_BUTTON, [&sheet](wxCommandEvent&) { sheet.EndModal(wxID_NO); });
+  yes->Bind(wxEVT_BUTTON, [&sheet](wxCommandEvent&) { sheet.EndModal(wxID_YES); });
+  row->Add(no, 1, wxEXPAND | wxALL, 8);
+  row->Add(yes, 1, wxEXPAND | wxALL, 8);
+  body->Add(row, 0, wxEXPAND);
+  sheet.SetSizer(body);
+  return ModalResult(sheet) == wxID_YES;
+}
+
 // wxQt's generic date picker embeds a desktop-sized text/popup composite.
 // Keep its model/controller, but expose a full touch button and an explicit
 // calendar transaction. A date is calendar fields, never a relabelled instant.

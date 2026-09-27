@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 #include "AndroidFileDialog.h"
 #include "AlmanacDialog.h"
 #ifdef __OCPN__ANDROID__
@@ -667,7 +668,7 @@ void AlmanacDialog::OnPreview(wxCommandEvent&) {
   wxString error;
   AlmanacRequest request = ReadRequest(&error);
   if (!error.empty()) {
-    wxMessageBox(error, _("Generate Almanac"), wxOK | wxICON_WARNING, this);
+    CelestialMessageBox(error, _("Generate Almanac"), wxOK | wxICON_WARNING, this);
     return;
   }
 #ifdef __OCPN__ANDROID__
@@ -686,7 +687,7 @@ void AlmanacDialog::OnPreview(wxCommandEvent&) {
       }, &error);
   request.androidProgress = {};
   if (!completed) {
-    if (!error.empty()) wxMessageBox(error, _("Almanac calculation"), wxOK | wxICON_ERROR, this);
+    if (!error.empty()) CelestialMessageBox(error, _("Almanac calculation"), wxOK | wxICON_ERROR, this);
     return;
   }
 #else
@@ -728,7 +729,7 @@ void AlmanacDialog::OnGenerate(wxCommandEvent&) {
   wxString error;
   AlmanacRequest request = ReadRequest(&error);
   if (!error.empty()) {
-    wxMessageBox(error, _("Generate Almanac"), wxOK | wxICON_WARNING, this);
+    CelestialMessageBox(error, _("Generate Almanac"), wxOK | wxICON_WARNING, this);
     return;
   }
 #ifdef __OCPN__ANDROID__
@@ -737,13 +738,13 @@ void AlmanacDialog::OnGenerate(wxCommandEvent&) {
   wxString output = m_output->GetPath();
 #endif
   if (output.empty()) {
-    wxMessageBox(_("Choose an output PDF first."), _("Generate Almanac"),
+    CelestialMessageBox(_("Choose an output PDF first."), _("Generate Almanac"),
                  wxOK | wxICON_WARNING, this);
     return;
   }
   if (!output.Lower().EndsWith(".pdf")) output += ".pdf";
 #ifdef __OCPN__ANDROID__
-  if (wxFileExists(output) && wxMessageBox(_("Replace the existing PDF?"), _("Output already exists"),
+  if (wxFileExists(output) && CelestialMessageBox(_("Replace the existing PDF?"), _("Output already exists"),
       wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION, this) != wxYES) return;
 #endif
   wxBusyCursor busy;
@@ -763,7 +764,7 @@ void AlmanacDialog::OnGenerate(wxCommandEvent&) {
       }, &error);
   request.androidProgress = {};
   if (!completed) {
-    if (!error.empty()) wxMessageBox(error, _("Almanac calculation"), wxOK | wxICON_ERROR, this);
+    if (!error.empty()) CelestialMessageBox(error, _("Almanac calculation"), wxOK | wxICON_ERROR, this);
     return;
   }
 #else
@@ -787,13 +788,13 @@ void AlmanacDialog::OnGenerate(wxCommandEvent&) {
 #else
   if (!AlmanacPdfWriter::Write(document, request, output, &error)) {
 #endif
-    wxMessageBox(error, _("Generate Almanac"), wxOK | wxICON_ERROR, this);
+    CelestialMessageBox(error, _("Generate Almanac"), wxOK | wxICON_ERROR, this);
     return;
   }
 #ifdef __OCPN__ANDROID__
   celestial_android::ShowPdf(this, _("Voyage almanac"), output);
 #else
-  wxMessageBox(wxString::Format(
+  CelestialMessageBox(wxString::Format(
                    _("Created %u-page voyage almanac:\n%s"),
                    static_cast<unsigned>(document.pages.size()), output),
                _("Generate Almanac"), wxOK | wxICON_INFORMATION, this);

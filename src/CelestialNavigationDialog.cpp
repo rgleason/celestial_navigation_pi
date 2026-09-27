@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 /******************************************************************************
  *
  * Project:  OpenCPN
@@ -882,7 +883,7 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
 failed:
 
   if (reportfailure) {
-    wxMessageDialog mdlg(this, error, _("Celestial Navigation"),
+    CelestialMessageDialog mdlg(this, error, _("Celestial Navigation"),
                          wxOK | wxICON_ERROR);
     mdlg.ShowModal();
   }
@@ -1007,7 +1008,7 @@ bool CelestialNavigationDialog::SaveXML() {
 
   if (!celestial_navigation::SaveXmlDocumentAtomically(
           doc, m_sights_path)) {
-    wxMessageDialog mdlg(this, _("Failed to save xml file: ") + m_sights_path,
+    CelestialMessageDialog mdlg(this, _("Failed to save xml file: ") + m_sights_path,
                          _("Celestial Navigation"), wxOK | wxICON_ERROR);
     mdlg.ShowModal();
     return false;
@@ -1559,7 +1560,7 @@ void CelestialNavigationDialog::OnDelete(wxCommandEvent& event) {
 }
 
 void CelestialNavigationDialog::OnDeleteAll(wxCommandEvent& event) {
-  wxMessageDialog mdlg(this, _("Are you sure you want to delete all sights?"),
+  CelestialMessageDialog mdlg(this, _("Are you sure you want to delete all sights?"),
                        _("Celestial Navigation"), wxYES_NO);
   if (mdlg.ShowModal() == wxID_YES) {
     m_lSights->DeleteAllItems();

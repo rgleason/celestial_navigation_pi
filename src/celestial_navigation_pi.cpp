@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 /******************************************************************************
  *
  * Project:  OpenCPN
@@ -270,7 +271,7 @@ void celestial_navigation_pi::OnToolbarToolCallback(int id) {
           message += "(" + _("too many models") + ")\n";
           break;
       }
-      wxMessageDialog mdlg(m_parent_window,
+      CelestialMessageDialog mdlg(m_parent_window,
                            message + _("Magnetic data will not be available "
                                        "for the celestial navigation plugin."),
                            wxString(_("OpenCPN Alert"), wxOK | wxICON_ERROR));

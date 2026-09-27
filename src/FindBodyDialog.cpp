@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 #include "UtcDateTime.h"
 /******************************************************************************
  *
@@ -291,7 +292,7 @@ void FindBodyDialog::ApplyPositionSource() {
     info = _("Enter the DR position at the sight's UTC.");
   }
   if (!available) {
-    wxMessageBox(_("This position source is unavailable; the previous "
+    CelestialMessageBox(_("This position source is unavailable; the previous "
                    "coordinates were retained."),
                  _("Position unavailable"), wxOK | wxICON_INFORMATION, this);
     m_positionSource->SetSelection(m_appliedPositionSource);

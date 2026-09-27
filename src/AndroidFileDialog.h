@@ -91,7 +91,7 @@ class CelestialFileDialog {
         error->setText("This folder is not writable. Choose OpenCPN files."); return;
       }
       if ((flags_ & wxFD_SAVE) && (flags_ & wxFD_OVERWRITE_PROMPT) && QFileInfo(path).exists() &&
-          wxMessageBox(_("Replace the existing file?"), title_, wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION, &sheet) != wxYES) return;
+          !Confirm(&sheet, title_, _("Replace the existing file?"), _("Replace"))) return;
       path_ = wxString::FromUTF8(path.toUtf8().constData()); sheet.EndModal(wxID_OK);
     });
     body->Add(panel, 1, wxEXPAND); sheet.SetSizer(body);

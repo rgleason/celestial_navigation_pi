@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 /******************************************************************************
  *
  * Project:  OpenCPN
@@ -303,7 +304,7 @@ void Sight::BodyLocation(wxDateTime time, double* lat, double* lon,
       wxString err;
       const char* what = e.what();
       while (*what) err += *what++;
-      wxMessageDialog mdlg(NULL,
+      CelestialMessageDialog mdlg(NULL,
                            _("Astrolab failed, data unavailable:\n") + err +
                                _("\nDid you forget to install vsop87d.txt?\n") +
                                _("The plugin will not work correctly"),

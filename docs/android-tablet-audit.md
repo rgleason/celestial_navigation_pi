@@ -350,3 +350,86 @@ remaining physical matrix. This is not release acceptance: most lunar, planner,
 fix, calibration, eclipse/optional-data and invalid/cancellation workflows remain
 pending. All retained development packages so far were built from an uncommitted
 work tree above design commit eb5fd64; a final committed-source build is required.
+
+Implementation checkpoint cf161ce06934b67f564c8f94a4d5aa64ed94a821 was committed
+locally and pushed to the new android/celnav-2.8.13 branch without changing any
+existing remote branch or publishing a release. Source is reviewable at
+https://github.com/pob220/celestial_navigation_pi/tree/cf161ce06934b67f564c8f94a4d5aa64ed94a821.
+At13:06–13:08 GitHub statuses had no CircleCI entries. GitHub Actions run
+36317831149 passed only the existing dummy-check/echo ok; it is explicitly not
+a build validation. Public CircleCI project API returned404; no authenticated
+CircleCI tool/token or enabled browser is available (CUA inventory empty).
+User was asked asynchronously to trigger the existing project with deployment
+false or make CI access available. Physical acceptance continues independently.
+
+## Horizontal coastal reference and clearing, 13:10–13:21 BST
+
+Actual UI inputs from Bob revision 1, existing independent PDF-linked fixture:
+left 43.9166666666667/-69.2616666666667, centre 43.965/-69.0733333333333,
+right 43.7833333333333/-68.855, angles 70/107 degrees, index error -0.15
+arcmin, uncertainty 60 arcmin, initial DR 43.8283333333333/-69.0766666666667,
+observer motion disabled. Result 43°51.3588′ N, 069°05.3779′ W, residuals
++0.0000′/-0.0000′, formal 1-sigma 0.149 NM, condition 2.0 matches the
+reference within 0.000002 degrees and displayed rounding.
+
+Evidence slice29-horizontal-result.png, horizontal-reopen.png and
+current-workspace.png. The initially named horizontal-chart screenshot caught
+the preceding vertical chart before the asynchronous jump settled; it is not
+horizontal evidence. The subsequent current-workspace screenshot shows Maine
+basemap, both magenta/orange horizontal loci and the red fix marker. Chart
+centres the solved position; editor close/reopen retains the result.
+
+New observation > No retained result. Clear chart plots disabled the chart
+action but retained the result/inputs; actual chart showed no coastal layers
+(slice29-coastal-cleared-plots/chart). Confirmed New reset both pages' entries
+and results; empty HSA solve reported the missing left latitude/longitude and
+created no plot (reset/empty-invalid screenshots). PID 23529 remained continuous.
+Dashboard was restored to hidden using its visible toolbar button.
+
+Back on the stock Yes/No New confirmation was ignored (new-back screenshot);
+No remained usable. Iteration 30 replaces Android coastal/file overwrite
+confirmations with owned, cancellable sheets and explicit destructive labels,
+while preserving desktop prompts. Physical retest is pending. Iteration 30 also
+adds the visible Android quick guide and pins SDK tools SHA256
+2d2d50857e4eb553af5a6dc3ad507a17adf43d115264b1afc116f95c92e5e258,
+verified against Google's repository2-3.xml SHA1 for cmdline-tools;12.0 Linux.
+Publication metadata now explicitly sets the approved Cloudsmith URL even when
+the retained Android XML already contains a development URL. Local verification
+covered that and legacy placeholders without publishing anything.
+
+User is creating the CircleCI project through the website. Its setup preview
+shows default-branch configuration with deployment true; instructions identify
+android/celnav-2.8.13 configuration/checkout and deployment false for validation.
+GitHub CLI already has authenticated pob220 repository/workflow access; no new
+device login was initiated and no credentials were requested.
+
+## Development 31 import and prompt regression, 13:25–13:30 BST
+
+Archive f378a0eaab6d648e30a21120f027be2af8c731b4badd334ff2bb20dd36e6912e;
+installed library 4ff8de8ea524e029f9a6f88351ee34cbaf72c6b5d80d8c79e7f60f6277954ec1;
+unstripped fae29c49e2c211a85c33f169df440674cc51fe5dbd6e119fd4790ebca6b2f4b5.
+Built above cf161ce with uncommitted iteration 31 changes. Exact binaries retained.
+Public Downloads Plugin Manager import succeeded while a coastal window had
+been retained in 29; installed run-as hash matched and PID 23529 stayed continuous.
+The three saved sight cards reopened with fractional times/measurements intact.
+
+31 extends the Android owned-sheet adapter to all plugin message boxes and the
+existing custom-label message dialogs. Desktop names preprocess to the original
+wx symbols/classes. Stock informational warnings also ignored Back in 29;
+31 replaces these as well as confirmations. Coastal New > Back now returns to
+the coastal editor without resetting it or exiting the host (new-prompt/back).
+Android quick guide is visibly available in Tools, genuinely swipes to its final
+paragraph, and Back returns to Tools (quick-guide-top/bottom). Other prompts,
+unsaved custom labels, rotation and nonempty refusal need further physical checks.
+Desktop build passed; CoastalUiSmoke, HorizonEventUi and LunarUiSmoke each passed
+alone. The first HorizonEventUiSmoke filter matched zero tests and is not a pass;
+it was corrected to HorizonEventUi and that real test passed.
+
+CircleCI project creation completed through user browser. Pipeline #1 at
+12:28:25 UTC targeted exact cf161ce and deployment false but stopped before any
+workflow: inherited uncertified cloudsmith orb blocked by organization policy.
+31 removes the unused cloudsmith/jq orbs and obsolete deployment command, fixes
+legacy parameters on retain-code invocations, and retains all 19 build jobs and
+publication approval gate. Existing official CircleCI CLI reports configuration
+valid (circleci-config-after31.log); this is not a remote build pass. No stored
+CLI token or CIRCLE_TOKEN/CIRCLECI_TOKEN is available.

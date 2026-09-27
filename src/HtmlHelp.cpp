@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 /******************************************************************************
  *
  * Project:  OpenCPN
@@ -39,7 +40,7 @@ bool ShowBundledHtmlHelp(wxWindow* parent, const wxString& title,
                          const wxString& filename) {
   const wxString path = BundledDataPath(filename);
   if (!wxFileName::FileExists(path)) {
-    wxMessageBox(wxString::Format(
+    CelestialMessageBox(wxString::Format(
                      _("The documentation file could not be found:\n%s"), path),
                  title, wxOK | wxICON_ERROR, parent);
     return false;
@@ -56,7 +57,7 @@ bool ShowBundledHtmlHelp(wxWindow* parent, const wxString& title,
   dialog.SetMinSize(wxSize(600, 450));
   dialog_geometry::Restore(&dialog, _T("Documentation"), wxSize(760, 650));
   if (!dialog.m_htmlInformation->LoadPage(path)) {
-    wxMessageBox(wxString::Format(
+    CelestialMessageBox(wxString::Format(
                      _("The documentation file could not be opened:\n%s"), path),
                  title, wxOK | wxICON_ERROR, parent);
     return false;

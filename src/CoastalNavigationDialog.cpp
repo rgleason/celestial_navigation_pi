@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 #include "CoastalNavigationDialog.h"
 #include "WaypointPickerDialog.h"
 #include "Utf8Translation.h"
@@ -375,7 +376,7 @@ void CoastalNavigationDialog::AddWaypointPicker(wxSizer* layout,wxWindow* page,
   button->SetToolTip(_("Copy coordinates from an OpenCPN mark or route point. The coordinates stay editable; target height must be checked separately."));
   button->Bind(wxEVT_BUTTON,[this,latitude,longitude](wxCommandEvent&) {
     const auto points=LoadOpenCpnWaypoints();
-    if(points.empty()) { wxMessageBox(_("No OpenCPN waypoints or marks are available."),_("Select waypoint"),wxOK|wxICON_INFORMATION,this); return; }
+    if(points.empty()) { CelestialMessageBox(_("No OpenCPN waypoints or marks are available."),_("Select waypoint"),wxOK|wxICON_INFORMATION,this); return; }
     WaypointPickerDialog picker(this,points,wxEmptyString);
 #ifdef __OCPN__ANDROID__
     if(celestial_android::ModalResult(picker)!=wxID_OK) return;
@@ -430,7 +431,7 @@ wxTextCtrl* CoastalNavigationDialog::AddField(wxSizer* sizer, wxWindow* parent,
 bool CoastalNavigationDialog::ReadDouble(wxTextCtrl* control,
                                          const wxString& label, double* value) {
   if (control->GetValue().ToDouble(value) && std::isfinite(*value)) return true;
-  wxMessageBox(label + _(" is not a valid number."), _("Coastal navigation"),
+  CelestialMessageBox(label + _(" is not a valid number."), _("Coastal navigation"),
                wxOK | wxICON_ERROR, this);
   return false;
 }
@@ -447,7 +448,7 @@ bool CoastalNavigationDialog::ReadAngle(wxTextCtrl* control,
 #endif
     return true;
   }
-  wxMessageBox(
+  CelestialMessageBox(
       label + _(" is not a valid angle. Decimal degrees, degrees and minutes, "
                 "and degrees/minutes/seconds are accepted."),
       _("Coastal navigation"), wxOK | wxICON_ERROR, this);
@@ -466,7 +467,7 @@ cn::GeoPoint CoastalNavigationDialog::ReadPoint(wxTextCtrl* latitude,
                            NavigationAngleKind::Longitude, -180.0, 180.0,
                            &point.longitude_deg);
   if (!*ok) {
-    wxMessageBox(
+    CelestialMessageBox(
         label + _(" must contain a valid latitude and longitude. Decimal "
                   "degrees, degrees and minutes, and degrees/minutes/seconds "
                   "are accepted."),
@@ -475,7 +476,7 @@ cn::GeoPoint CoastalNavigationDialog::ReadPoint(wxTextCtrl* latitude,
   }
   if (*ok && (point.latitude_deg <= -90.0 || point.latitude_deg >= 90.0 ||
               point.longitude_deg < -180.0 || point.longitude_deg > 180.0)) {
-    wxMessageBox(label + _(" is outside the valid latitude/longitude range."),
+    CelestialMessageBox(label + _(" is outside the valid latitude/longitude range."),
                  _("Coastal navigation"), wxOK | wxICON_ERROR, this);
     *ok = false;
   }
@@ -698,11 +699,17 @@ void CoastalNavigationDialog::UpdateBearingControls() {
 }
 
 void CoastalNavigationDialog::NewObservation(wxCommandEvent&) {
-  if (wxMessageBox(
+#ifdef __OCPN__ANDROID__
+  if (!celestial_android::Confirm(this, _("New coastal observation"),
+          _("Clear the retained coastal-observation entries and chart plots?"),
+          _("Clear observations"))) return;
+#else
+  if (CelestialMessageBox(
           _("Clear the retained coastal-observation entries and chart plots?"),
           _("New coastal observation"),
           wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION, this) != wxYES)
     return;
+#endif
   const CelestialNavigationDefaults defaults =
       LoadCelestialNavigationDefaults();
   double boatLatitude = 0.0, boatLongitude = 0.0;

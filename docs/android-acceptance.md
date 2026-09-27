@@ -43,10 +43,10 @@ actual output/files, screenshots, persistence, Cancel/Back and invalid cases.
 | L05 | Lunar pair planning, measured guidance, bodies and timing | Plan > Lunar pairs | PENDING |
 | S01 | Sextant body pair/contact prediction, index correction, repeats, remove | Tools > Sextant check | PENDING |
 | S02 | Calibration profiles/name/serial, build/save/select/persistence | Sextant check > Profiles | PENDING |
-| C01 | Vertical-angle above/below-horizon modes, object heights/eye/angle/uncertainty, range | Tools > Coastal > Vertical | PARTIAL: waterline-to-top independent reference0.974NM and retained reopen; sea horizon, invalid and clearing pending |
+| C01 | Vertical-angle above/below-horizon modes, object heights/eye/angle/uncertainty, range | Tools > Coastal > Vertical | PARTIAL: waterline-to-top independent reference 0.974 NM and retained reopen; confirmed New resets entries/results; sea-horizon cases pending |
 | C02 | Optional true/magnetic bearing, variation/WMM/deviation, waypoint/place selection | Coastal > Bearing / positions | PARTIAL: true bearing75.22°, independently matching position; magnetic/WMM/waypoint pending |
-| C03 | Horizontal angles, three objects, observer DR, sequential times/motion, fix | Coastal > Horizontal | PENDING |
-| C04 | Range circles/arcs/fix overlay, New/clear observation, clear plots, hide/reopen | Coastal > Results / Chart | PARTIAL: real vertical circle/fix, scale/bearing correct, Chart hides workspace and retains geometry; horizontal/clear/rotation pending |
+| C03 | Horizontal angles, three objects, observer DR, sequential times/motion, fix | Coastal > Horizontal | PARTIAL: Bob revision 1 second fix and 0.149 NM formal uncertainty match; chart/reopen/empty-input rejection checked; sequential motion pending |
+| C04 | Range circles/arcs/fix overlay, New/clear observation, clear plots, hide/reopen | Coastal > Results / Chart | PARTIAL: vertical circle/bearing and horizontal loci/fix visible; device rotation, reopen, clearing without input loss, reset/refusal checked; confirmation Back ignored in 29 and fixed/retested in 31; chart heading rotation pending |
 | A01 | Presets, route GUID/position/band/global coverage, dates, DUT1 | Plan > Voyage almanac > Coverage | PENDING |
 | A02 | All content toggles, planning cadence, safety/calculator/paper self-contained modes | Almanac > Content | PENDING |
 | A03 | Direct/universal tables, forms counts, paper sizes, booklet/signature, page estimate | Almanac > Paper / Forms | PENDING |

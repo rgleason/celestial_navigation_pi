@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 /******************************************************************************
  * Horizon event observation entry for the Celestial Navigation plugin.
  ******************************************************************************/
@@ -445,7 +446,7 @@ void HorizonEventDialog::OnOK(wxCommandEvent& event) {
 
 void HorizonEventDialog::OnWindowClose(wxCloseEvent& event) {
   if (m_transaction.HasUnsavedChanges() && event.CanVeto()) {
-    wxMessageDialog confirm(
+    CelestialMessageDialog confirm(
         this, _("Discard your changes?"), _("Unsaved Horizon Event"),
         wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
     confirm.SetYesNoLabels(_("Discard Changes"), _("Keep Editing"));

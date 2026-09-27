@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 // Android's in-process PDF renderer. One page/bitmap at a time, API 21+.
 #pragma once
 #ifdef __OCPN__ANDROID__
@@ -141,7 +142,7 @@ inline bool ShowPdf(wxWindow* parent, const wxString& title, const wxString& pat
     if (!RunJob(&sheet, _("Open PDF"), [&](JobState& state) {
       page = RenderPdfPage(path, number, width, &count, state);
     }, &error)) {
-      if (!error.empty()) wxMessageBox(error, title, wxOK | wxICON_ERROR, &sheet);
+      if (!error.empty()) CelestialMessageBox(error, title, wxOK | wxICON_ERROR, &sheet);
       selector->blockSignals(true); selector->setValue(current + 1); selector->blockSignals(false);
       return false;
     }

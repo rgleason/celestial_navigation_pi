@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 #ifdef __OCPN__ANDROID__
 #include "AndroidJob.h"
 #endif
@@ -217,7 +218,7 @@ wxDateTime LunarToolsDialog::ReadUtcEntry(const UtcEntryControls& controls,
                                      controls.nauticalTime->GetValue(), &utc))
       return utc;
     if (showErrors)
-      wxMessageBox(_("Enter UTC date as YYYY-MM-DD and 24-hour time as "
+      CelestialMessageBox(_("Enter UTC date as YYYY-MM-DD and 24-hour time as "
                      "HH:MM:SS."),
                    title, wxOK | wxICON_ERROR,
                    const_cast<LunarToolsDialog*>(this));
@@ -703,7 +704,7 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
   double sequenceLongitude = 0.0;
   if (!m_sequenceLatitude->GetAngle(&sequenceLatitude) ||
       !m_sequenceLongitude->GetAngle(&sequenceLongitude)) {
-    wxMessageBox(_("Enter a valid initial or known position."),
+    CelestialMessageBox(_("Enter a valid initial or known position."),
                  _("Lunar sequence"), wxOK | wxICON_ERROR, this);
     return;
   }
@@ -723,12 +724,12 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
       latest = sight.m_DateTime;
   }
   if (selectedLists.size() < 2) {
-    wxMessageBox(_("Select at least two lunar observations."),
+    CelestialMessageBox(_("Select at least two lunar observations."),
                  _("Lunar sequence"), wxOK | wxICON_INFORMATION, this);
     return;
   }
   if (selectedLists.size() > 12) {
-    wxMessageBox(
+    CelestialMessageBox(
         _("A lunar sequence is one watch/session. Select no more than 12 "
           "observations; use Clear selection or Select visible sights to "
           "choose a coherent group."),
@@ -738,7 +739,7 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
   const double sessionSpan =
       std::fabs(UtcDateTime::SecondsBetween(latest, reference));
   if (sessionSpan > 24.0 * 3600.0) {
-    wxMessageBox(
+    CelestialMessageBox(
         _("The selected observations span more than 24 hours. They do not "
           "represent one watch/session; select a coherent group before "
           "solving."),
@@ -1013,7 +1014,7 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
   double observerLongitude = 0.0;
   if (!m_plannerLatitude->GetAngle(&observerLatitude) ||
       !m_plannerLongitude->GetAngle(&observerLongitude)) {
-    wxMessageBox(_("Enter a valid planner latitude and longitude."),
+    CelestialMessageBox(_("Enter a valid planner latitude and longitude."),
                  _("Lunar planner"), wxOK | wxICON_ERROR, this);
     return;
   }
@@ -1209,14 +1210,14 @@ void LunarToolsDialog::PredictCalibrationPair(wxCommandEvent&) {
 
 void LunarToolsDialog::AddCalibrationReading(wxCommandEvent&) {
   if (!std::isfinite(m_lastPredictionDeg)) {
-    wxMessageBox(_("Calculate a valid pair prediction first."),
+    CelestialMessageBox(_("Calculate a valid pair prediction first."),
                  _("Sextant check"), wxOK | wxICON_INFORMATION, this);
     return;
   }
   sextant_calibration::CheckReading reading;
   reading.predicted_deg = m_lastPredictionDeg;
   if (!m_calObservedAngle->GetAngle(&reading.observed_deg)) {
-    wxMessageBox(_("Enter a valid observed angle."), _("Sextant check"),
+    CelestialMessageBox(_("Enter a valid observed angle."), _("Sextant check"),
                  wxOK | wxICON_ERROR, this);
     return;
   }
@@ -1254,7 +1255,7 @@ void LunarToolsDialog::RemoveCalibrationReading(wxCommandEvent&) {
 
 void LunarToolsDialog::SaveCalibrationProfile(wxCommandEvent&) {
   if (m_calibrationReadings.size() < 2) {
-    wxMessageBox(_("Add at least two repeated or multi-angle checks."),
+    CelestialMessageBox(_("Add at least two repeated or multi-angle checks."),
                  _("Sextant profile"), wxOK | wxICON_INFORMATION, this);
     return;
   }

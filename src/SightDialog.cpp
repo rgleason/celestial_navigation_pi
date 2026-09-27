@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 #ifdef __OCPN__ANDROID__
 #include "AndroidJob.h"
 #endif
@@ -476,12 +477,12 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
     celestial_android::CommitNumbers(this);
     wxString inputError;
     if (!AndroidInputsValid(&inputError)) {
-      wxMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
+      CelestialMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
       return;
     }
     Recompute();
     if (m_Sight.m_Type != Sight::LUNAR) {
-      wxMessageBox(_("Select Lunar distance as the sight type first."), _("Lunar calculation"), wxOK | wxICON_INFORMATION, this);
+      CelestialMessageBox(_("Select Lunar distance as the sight type first."), _("Lunar calculation"), wxOK | wxICON_INFORMATION, this);
       return;
     }
     Sight candidate = m_Sight;
@@ -495,13 +496,13 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
         }, &error);
     candidate.m_androidCheckpoint = {}; candidate.m_androidLunarSearch = false;
     if (completed) { m_Sight = candidate; m_tCalculations->SetValue(m_Sight.m_CalcStr); }
-    else if (!error.empty()) wxMessageBox(error, _("Lunar calculation"), wxOK | wxICON_ERROR, this);
+    else if (!error.empty()) CelestialMessageBox(error, _("Lunar calculation"), wxOK | wxICON_ERROR, this);
   });
   m_sdbSizer1OK->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
     celestial_android::CommitNumbers(this);
     wxString error;
     if (!AndroidInputsValid(&error)) {
-      wxMessageBox(error,
+      CelestialMessageBox(error,
           _("Invalid observation"), wxOK | wxICON_WARNING, this);
       m_tCalculations->SetValue(error);
       return;
@@ -556,7 +557,7 @@ void SightDialog::MarkDirty() {
 
 void SightDialog::OnWindowClose(wxCloseEvent& event) {
   if (m_transaction.HasUnsavedChanges() && event.CanVeto()) {
-    wxMessageDialog confirm(
+    CelestialMessageDialog confirm(
         this, _("Discard your changes?"), _("Unsaved Sight"),
         wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
     confirm.SetYesNoLabels(_("Discard Changes"), _("Keep Editing"));
@@ -605,7 +606,7 @@ void SightDialog::OnFindBody(wxCommandEvent& event) {
   celestial_android::CommitNumbers(this);
   wxString inputError;
   if (!AndroidInputsValid(&inputError)) {
-    wxMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
+    CelestialMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
     return;
   }
   Recompute();
@@ -636,7 +637,7 @@ void SightDialog::OnFindLunarMoon(wxCommandEvent& event) {
   celestial_android::CommitNumbers(this);
   wxString inputError;
   if (!AndroidInputsValid(&inputError)) {
-    wxMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
+    CelestialMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
     return;
   }
   Recompute();
@@ -666,7 +667,7 @@ void SightDialog::OnFindLunarBody(wxCommandEvent& event) {
   celestial_android::CommitNumbers(this);
   wxString inputError;
   if (!AndroidInputsValid(&inputError)) {
-    wxMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
+    CelestialMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
     return;
   }
   Recompute();
@@ -759,7 +760,7 @@ void SightDialog::OnSetDefaults(wxCommandEvent& event) {
 #ifdef __OCPN__ANDROID__
   wxString error;
   if (!AndroidInputsValid(&error)) {
-    wxMessageBox(error, _("Invalid observation"), wxOK | wxICON_WARNING, this);
+    CelestialMessageBox(error, _("Invalid observation"), wxOK | wxICON_WARNING, this);
     return;
   }
 #endif
@@ -787,7 +788,7 @@ void SightDialog::RecomputeDMM() {
   celestial_android::CommitNumbers(this);
   wxString inputError;
   if (!AndroidInputsValid(&inputError)) {
-    wxMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
+    CelestialMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
     return;
   }
   Recompute();
@@ -960,7 +961,7 @@ void SightDialog::Recompute() {
   m_Sight.m_BodyLimb = (Sight::BodyLimb)m_cLimb->GetSelection();
 
   if (!m_Sight.m_Body.Cmp(_T("Moon")) && m_cType->GetSelection() == LUNAR) {
-    wxMessageDialog w(
+    CelestialMessageDialog w(
         m_parent,
         _("Lunar shot will be invalid taking distance from moon to itself"),
         _("Warning"), wxOK | wxICON_WARNING);

@@ -19,6 +19,10 @@ package_name=celestial_navigation_pi
 ndk_version=26.1.10909125
 core_commit=91f3b674366068a6ecd61a5e9aba204bba85f57e
 support_sha256=c4110c532e9a0bcf071bbd10fe6f7627d7e91380c803c52ac0e89ce5f993db9b
+# Google repository2-3.xml: cmdline-tools;12.0, Linux, 153607504 bytes.
+# The upstream SHA1 d313adb7aedccf6cf0cfca51ec180f0059f5f8f8 was
+# independently verified before recording this stronger archive digest.
+tools_sha256=2d2d50857e4eb553af5a6dc3ad507a17adf43d115264b1afc116f95c92e5e258
 
 mkdir -p "$work_dir" "$support_cache" "$artifacts/package"
 
@@ -29,6 +33,7 @@ if [[ -z "${NDK_HOME:-}" ]]; then
     curl --fail --location --retry 3 \
       https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
       --output "$tools_zip"
+    printf '%s  %s\n' "$tools_sha256" "$tools_zip" | sha256sum --check
     mkdir -p "$sdk_root/cmdline-tools/latest"
     unzip -q "$tools_zip" -d "$work_dir/cmdline-tools-unpacked"
     cp -a "$work_dir/cmdline-tools-unpacked/cmdline-tools/." \

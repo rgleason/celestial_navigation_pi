@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 #ifdef __OCPN__ANDROID__
 #include "AndroidJob.h"
 #endif
@@ -366,7 +367,7 @@ void LunarResultsDialog::UpdatePositions(long candidate_index) {
         }, &error);
     candidate.m_androidCheckpoint = {};
     if (!completed) {
-      if (!error.empty()) wxMessageBox(error, _("Lunar result"), wxOK | wxICON_ERROR, this);
+      if (!error.empty()) CelestialMessageBox(error, _("Lunar result"), wxOK | wxICON_ERROR, this);
       return;
     }
     m_sight = candidate;
@@ -486,7 +487,7 @@ void LunarResultsDialog::ApplySelectedWatchOffset(wxCommandEvent&) {
       -1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
   if (selected < 0 ||
       static_cast<std::size_t>(selected) >= m_sight.m_LunarCandidates.size()) {
-    wxMessageBox(_("Select a UTC candidate first."), _("Lunar distance"),
+    CelestialMessageBox(_("Select a UTC candidate first."), _("Lunar distance"),
                  wxOK | wxICON_INFORMATION, this);
     return;
   }

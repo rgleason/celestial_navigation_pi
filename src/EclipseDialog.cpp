@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 #include "AndroidFileDialog.h"
 #ifdef __OCPN__ANDROID__
 #include "AndroidJob.h"
@@ -433,7 +434,7 @@ bool EclipseDialog::OpenEngine(bool report_error) {
     return true;
   }
   if (report_error) {
-    wxMessageBox(status.error.empty()
+    CelestialMessageBox(status.error.empty()
                      ? wxString::FromUTF8(error.c_str())
                      : wxString::FromUTF8(status.error.c_str()),
                  _("Eclipse data unavailable"), wxOK | wxICON_ERROR, this);
@@ -512,7 +513,7 @@ void EclipseDialog::SelectAndImport(EclipseDataKind kind) {
   if (dialog.ShowModal() != wxID_OK) return;
   if (!wxFileName::Mkdir(DataDirectory(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL) &&
       !wxFileName::DirExists(DataDirectory())) {
-    wxMessageBox(_("Unable to create the private eclipse-data directory."),
+    CelestialMessageBox(_("Unable to create the private eclipse-data directory."),
                  _("Import failed"), wxOK | wxICON_ERROR, this);
     return;
   }
@@ -562,7 +563,7 @@ bool EclipseDialog::EnsureInstallationSpace(
   const std::uint64_t required =
       celestial_navigation::RequiredWorkingSpaceBytes(plan);
   if (available >= static_cast<double>(required)) return true;
-  wxMessageBox(
+  CelestialMessageBox(
       wxString::Format(
           _("This verified installation needs approximately %s of free "
             "working space, but only %s is available."),
@@ -575,7 +576,7 @@ bool EclipseDialog::EnsureInstallationSpace(
 void EclipseDialog::BeginInstall(EclipseDataKind requested) {
   if (m_download_kind >= 0 || m_verifying) return;
   if (DataVerified(requested)) {
-    wxMessageBox(_("That astronomy data file is already installed and "
+    CelestialMessageBox(_("That astronomy data file is already installed and "
                    "verified."),
                  _("Astronomy data"), wxOK | wxICON_INFORMATION, this);
     return;
@@ -584,7 +585,7 @@ void EclipseDialog::BeginInstall(EclipseDataKind requested) {
   std::vector<EclipseDataKind> plan =
       celestial_navigation::BuildEclipseDataInstallPlan(requested, pck_ok);
   if (requested == EclipseDataKind::LolaLimb && !pck_ok) {
-    const int answer = wxMessageBox(
+    const int answer = CelestialMessageBox(
         wxString::Format(
             _("LOLA refinement also requires the 12.3 MiB lunar-orientation "
               "file. Download and verify both files?\n\nTotal download: "
@@ -598,7 +599,7 @@ void EclipseDialog::BeginInstall(EclipseDataKind requested) {
   }
   if (!wxFileName::Mkdir(DataDirectory(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL) &&
       !wxFileName::DirExists(DataDirectory())) {
-    wxMessageBox(_("Unable to create the private astronomy-data directory."),
+    CelestialMessageBox(_("Unable to create the private astronomy-data directory."),
                  _("Installation failed"), wxOK | wxICON_ERROR, this);
     return;
   }
@@ -831,7 +832,7 @@ void EclipseDialog::FinishInstallation(bool success, const wxString& message) {
   UpdateDataStatus();
   SetInstallationControls(false);
   if (!message.empty())
-    wxMessageBox(
+    CelestialMessageBox(
         message,
         success ? _("Astronomy data ready") : _("Astronomy-data installation"),
         wxOK | (success ? wxICON_INFORMATION : wxICON_WARNING), this);
@@ -865,7 +866,7 @@ void EclipseDialog::StartNextInstalledDataCheck() {
 void EclipseDialog::OnFind(wxCommandEvent&) {
   if (!OpenEngine(true)) return;
   if (m_end_year->GetValue() < m_start_year->GetValue()) {
-    wxMessageBox(_("The ending year must not precede the starting year."),
+    CelestialMessageBox(_("The ending year must not precede the starting year."),
                  _("Invalid search"), wxOK | wxICON_WARNING, this);
     return;
   }
@@ -896,7 +897,7 @@ void EclipseDialog::OnFind(wxCommandEvent&) {
 #else
   if (!m_engine.FindEvents(start_jd, end_jd, &m_events, &error)) {
 #endif
-    wxMessageBox(wxString::FromUTF8(error.c_str()), _("Eclipse search failed"),
+    CelestialMessageBox(wxString::FromUTF8(error.c_str()), _("Eclipse search failed"),
                  wxOK | wxICON_ERROR, this);
     return;
   }
@@ -939,7 +940,7 @@ bool EclipseDialog::SelectedEvent(eclipse::EclipseEvent* event) const {
 void EclipseDialog::OnPlot(wxCommandEvent&) {
   eclipse::EclipseEvent event;
   if (!SelectedEvent(&event)) {
-    wxMessageBox(_("Select an eclipse first."), _("Eclipse planner"),
+    CelestialMessageBox(_("Select an eclipse first."), _("Eclipse planner"),
                  wxOK | wxICON_INFORMATION, this);
     return;
   }
@@ -964,7 +965,7 @@ void EclipseDialog::OnPlot(wxCommandEvent&) {
       }, &workerError);
   m_engine.SetAndroidCheckpoint({});
   if (!completed) {
-    if (!workerError.empty()) wxMessageBox(workerError, _("Eclipse geometry"), wxOK | wxICON_ERROR, this);
+    if (!workerError.empty()) CelestialMessageBox(workerError, _("Eclipse geometry"), wxOK | wxICON_ERROR, this);
     return;
   }
   m_path = std::move(path); m_contours = std::move(contours);
@@ -976,7 +977,7 @@ void EclipseDialog::OnPlot(wxCommandEvent&) {
   m_plotted_delta_t = event.delta_t_seconds;
   if (m_plot_path->GetValue() && event.type != eclipse::kPartialEclipse &&
       !m_engine.BuildCentralPath(event, 120.0, &m_path, &error)) {
-    wxMessageBox(wxString::FromUTF8(error.c_str()),
+    CelestialMessageBox(wxString::FromUTF8(error.c_str()),
                  _("Path calculation failed"), wxOK | wxICON_ERROR, this);
     return;
   }
@@ -985,7 +986,7 @@ void EclipseDialog::OnPlot(wxCommandEvent&) {
     if (!m_engine.BuildMagnitudeContours(
             event, std::vector<double>(values, values + 5), 2.0, 300.0,
             &m_contours, &error)) {
-      wxMessageBox(wxString::FromUTF8(error.c_str()),
+      CelestialMessageBox(wxString::FromUTF8(error.c_str()),
                    _("Contour calculation failed"), wxOK | wxICON_ERROR, this);
       return;
     }
@@ -1032,7 +1033,7 @@ void EclipseDialog::OnLocal(wxCommandEvent&) {
   eclipse::EclipseEvent event;
   eclipse::GeoPoint observer;
   if (!SelectedEvent(&event) || !Observer(&observer)) {
-    wxMessageBox(_("Select an eclipse and enter a valid latitude/longitude."),
+    CelestialMessageBox(_("Select an eclipse and enter a valid latitude/longitude."),
                  _("Local circumstances"), wxOK | wxICON_WARNING, this);
     return;
   }
@@ -1060,13 +1061,13 @@ void EclipseDialog::OnLocal(wxCommandEvent&) {
       }, &workerError);
   m_engine.SetAndroidCheckpoint({});
   if (!completed) {
-    if (!workerError.empty()) wxMessageBox(workerError, _("Local eclipse"), wxOK | wxICON_ERROR, this);
+    if (!workerError.empty()) CelestialMessageBox(workerError, _("Local eclipse"), wxOK | wxICON_ERROR, this);
     return;
   }
 #else
   wxBusyCursor busy;
   if (!m_engine.SolveLocalContacts(event, observer, 0.0, &contacts, &error)) {
-    wxMessageBox(wxString::FromUTF8(error.c_str()),
+    CelestialMessageBox(wxString::FromUTF8(error.c_str()),
                  _("Local calculation failed"), wxOK | wxICON_ERROR, this);
     return;
   }
@@ -1077,7 +1078,7 @@ void EclipseDialog::OnLocal(wxCommandEvent&) {
         !lola.Open(LolaPath().ToStdString(), &error) ||
         !m_engine.RefineContactsWithLola(event, observer, 0.0, pck, lola,
                                          &contacts, &error)) {
-      wxMessageBox(wxString::FromUTF8(error.c_str()),
+      CelestialMessageBox(wxString::FromUTF8(error.c_str()),
                    _("LOLA refinement failed"), wxOK | wxICON_ERROR, this);
       return;
     }

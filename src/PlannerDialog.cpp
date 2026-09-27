@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 #include "AndroidFileDialog.h"
 #include "PlannerDialog.h"
 #include "WaypointPickerDialog.h"
@@ -719,14 +720,14 @@ wxDateTime PlannerDialog::ReadUtc(bool showErrors) {
       ZoneOffsetHours());
 #ifdef __OCPN__ANDROID__
   if (!utc.IsValid()) {
-    if (showErrors) wxMessageBox(_("This local clock time is missing or repeated at a daylight-saving transition. Choose UTC and enter the intended instant."),
+    if (showErrors) CelestialMessageBox(_("This local clock time is missing or repeated at a daylight-saving transition. Choose UTC and enter the intended instant."),
         _("Local time needs clarification"), wxOK | wxICON_WARNING, this);
     return wxDateTime();
   }
 #endif
   if (utc.GetYear() < 1900 || utc.GetYear() > 2100) {
     if (showErrors)
-      wxMessageBox(_("The ordinary offline planner is supported from 1900 "
+      CelestialMessageBox(_("The ordinary offline planner is supported from 1900 "
                      "through 2100."),
                    _("Time outside supported range"), wxOK | wxICON_ERROR,
                    this);
@@ -741,7 +742,7 @@ wxDateTime PlannerDialog::ReadEntryFields(int format, bool showErrors) {
     if (!ParseNauticalPlannerDateTime(m_nauticalDate->GetValue(),
                                       m_nauticalTime->GetValue(), &entered)) {
       if (showErrors)
-        wxMessageBox(
+        CelestialMessageBox(
             _("Enter date as YYYY-MM-DD and 24-hour time as HH:MM:SS."),
             _("Invalid time"), wxOK | wxICON_ERROR, this);
       return wxDateTime();
@@ -759,7 +760,7 @@ wxDateTime PlannerDialog::ReadEntryFields(int format, bool showErrors) {
                          time.GetHour(), time.GetMinute(), time.GetSecond());
 #endif
   if (!entered.IsValid() && showErrors)
-    wxMessageBox(_("Select a valid date and time."), _("Invalid time"),
+    CelestialMessageBox(_("Select a valid date and time."), _("Invalid time"),
                  wxOK | wxICON_ERROR, this);
   return entered;
 }
@@ -905,7 +906,7 @@ ObserverMotion PlannerDialog::ReadMotion(bool showErrors) {
   if (!m_latitude->GetAngle(&motion.latitude) ||
       !m_longitude->GetAngle(&motion.longitude)) {
     if (showErrors)
-      wxMessageBox(
+      CelestialMessageBox(
           _("Enter a valid latitude and longitude. Decimal degrees, degrees "
             "and minutes, and degrees/minutes/seconds are accepted."),
           _("Invalid position"), wxOK | wxICON_ERROR, this);
@@ -1103,7 +1104,7 @@ bool PlannerDialog::SelectWaypointForIntegration(const wxString& name) {
 bool PlannerDialog::ChooseWaypoint() {
   const std::vector<WaypointPosition> waypoints = LoadWaypoints();
   if (waypoints.empty()) {
-    wxMessageBox(_("No OpenCPN waypoints or marks are available."),
+    CelestialMessageBox(_("No OpenCPN waypoints or marks are available."),
                  _("Select waypoint or place"), wxOK | wxICON_INFORMATION,
                  this);
     return false;
@@ -1476,7 +1477,7 @@ void PlannerDialog::ExportAlmanac(wxCommandEvent&) {
   if (dialog.ShowModal() != wxID_OK) return;
   wxFFile file(dialog.GetPath(), "wb");
   if (!file.IsOpened() || !file.Write(AlmanacToCsv(m_almanacRows)))
-    wxMessageBox(_("Could not write the selected file."), _("Export failed"),
+    CelestialMessageBox(_("Could not write the selected file."), _("Export failed"),
                  wxOK | wxICON_ERROR, this);
 }
 
@@ -1486,7 +1487,7 @@ void PlannerDialog::CreateSelectedSight(wxCommandEvent&) {
   const long bodyIndex = selected < 0 ? -1 : m_bodies->GetItemData(selected);
   if (bodyIndex < 0 ||
       static_cast<size_t>(bodyIndex) >= m_rankedBodies.size()) {
-    wxMessageBox(_("Select a body first."), _("Sight Planner"),
+    CelestialMessageBox(_("Select a body first."), _("Sight Planner"),
                  wxOK | wxICON_INFORMATION, this);
     return;
   }
@@ -1507,7 +1508,7 @@ void PlannerDialog::SolveSpecialLatitude(wxCommandEvent&) {
     const BodyState planned = CelestialEphemeris::Evaluate(
         body, time, motion.latitude, motion.longitude);
     if (!planned.valid || planned.geometricAltitude < 0.0) {
-      wxMessageBox(
+      CelestialMessageBox(
           _("Polaris is below the horizon and is not observable from the "
             "selected position and time."),
           _("Polaris not observable"), wxOK | wxICON_INFORMATION, this);
@@ -1516,7 +1517,7 @@ void PlannerDialog::SolveSpecialLatitude(wxCommandEvent&) {
   }
   double observedAltitude = 0.0;
   if (!m_specialAltitude->GetAngle(&observedAltitude)) {
-    wxMessageBox(_("Enter a valid corrected observed altitude."),
+    CelestialMessageBox(_("Enter a valid corrected observed altitude."),
                  _("Invalid altitude"), wxOK | wxICON_ERROR, this);
     return;
   }

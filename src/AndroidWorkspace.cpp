@@ -1,9 +1,11 @@
+#include "PlatformMessageBox.h"
 #ifdef __OCPN__ANDROID__
 #include "CelestialNavigationDialog.h"
 #include "AndroidSurface.h"
 #include "Sight.h"
 #include "celestial_navigation_pi.h"
 #include "UtcDateTime.h"
+#include "HtmlHelp.h"
 
 void CelestialNavigationDialog::BuildAndroidWorkspace() {
   using namespace celestial_android;
@@ -85,7 +87,7 @@ void CelestialNavigationDialog::BuildAndroidWorkspace() {
   auto* showSight = new wxButton(contents[0], wxID_ANY, _("Show selected sight on chart"));
   showSight->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
     const Sight* sight = GetSelectedSight();
-    if (!sight) { wxMessageBox(_("Select an observation first."), _("Sight chart"), wxOK | wxICON_INFORMATION, this); return; }
+    if (!sight) { CelestialMessageBox(_("Select an observation first."), _("Sight chart"), wxOK | wxICON_INFORMATION, this); return; }
     double latitude = sight->m_DRLat, longitude = sight->m_DRLon;
     if (sight->m_DRBoatPosition) celestial_navigation_pi_BoatPos(latitude, longitude);
     JumpToPosition(latitude, longitude, 0.003);
@@ -120,6 +122,11 @@ void CelestialNavigationDialog::BuildAndroidWorkspace() {
   move(m_lunarToolsButton, 3, _("Lunar sessions, pairs and sextant check"));
   move(m_coastalButton, 3, _("Coastal sextant"));
   move(m_bClockOffset, 3, _("Apply clock correction"));
+  auto* guide = new wxButton(contents[3], wxID_ANY, _("Android quick guide"));
+  guide->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    ShowBundledHtmlHelp(this, _("Android quick guide"), _("Android_Quick_Guide.html"));
+  });
+  layouts[3]->Add(guide, 0, wxEXPAND | wxALL, 6);
   move(m_bDocumentation, 3, _("Offline manual"));
   move(m_pdfDocumentationButton, 3, _("PDF manual"));
   if (m_timeIntegrityPanel->GetContainingSizer())

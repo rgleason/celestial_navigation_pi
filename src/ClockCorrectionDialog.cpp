@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 /******************************************************************************
  *
  * Project:  OpenCPN
@@ -56,7 +57,7 @@ void ClockCorrectionDialog::OnUpdate(wxSpinEvent& event) {}
 
 void ClockCorrectionDialog::OnWindowClose(wxCloseEvent& event) {
   if (m_sClockCorrection->GetValue() != m_initialValue && event.CanVeto()) {
-    wxMessageDialog confirm(
+    CelestialMessageDialog confirm(
         this, _("Discard your changes?"), _("Unsaved Clock Correction"),
         wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
     confirm.SetYesNoLabels(_("Discard Changes"), _("Keep Editing"));
