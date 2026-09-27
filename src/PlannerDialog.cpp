@@ -584,6 +584,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
 #ifdef __OCPN__ANDROID__
   // Keep the context accessible at any orientation instead of reserving a
   // six-column desktop grid above every result page. Retain all controllers.
+  root->Hide(buttons); // The Android surface supplies the persistent Close.
   auto* contextPage = new wxPanel(m_notebook);
   root->Detach(context);
   std::vector<wxWindow*> contextChildren;
@@ -620,21 +621,28 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
                            _("Declination"), _("Magnitude"), _("Score"),
                            _("Reason")}) sort->Append(name);
   sort->SetSelection(m_bodySortColumn);
-  bodiesRoot->Add(sort, 0, wxEXPAND | wxALL, 8);
+  auto* sortRow = new wxBoxSizer(wxHORIZONTAL);
+  sortRow->Add(sort, 1, wxEXPAND | wxALL, 8);
   auto* direction = new wxChoice(bodiesPage, wxID_ANY);
   direction->Append(_("Ascending"));
   direction->Append(_("Descending"));
   direction->SetSelection(m_bodySortAscending ? 0 : 1);
-  bodiesRoot->Add(direction, 0, wxEXPAND | wxALL, 8);
+  sortRow->Add(direction, 1, wxEXPAND | wxALL, 8);
+  bodiesRoot->Add(sortRow, 0, wxEXPAND);
   sort->Bind(wxEVT_CHOICE, [this, sort](wxCommandEvent&) {
     m_bodySortColumn = sort->GetSelection(); RebuildBodyList();
   });
   direction->Bind(wxEVT_CHOICE, [this, direction](wxCommandEvent&) {
     m_bodySortAscending = direction->GetSelection() == 0; RebuildBodyList();
   });
-  m_androidSelectedBody = add(bodiesPage, bodiesRoot,
-                              _("Select a body card to create a sight."));
-  bodiesRoot->Add(createSight, 0, wxEXPAND | wxALL, 8);
+  auto* selectionRow = new wxBoxSizer(wxHORIZONTAL);
+  m_androidSelectedBody = new wxStaticText(bodiesPage, wxID_ANY, _("Select a body card"));
+  selectionRow->Add(m_androidSelectedBody, 1, wxALIGN_CENTER_VERTICAL | wxALL, 8);
+  createSight->SetLabel(_("Create sight"));
+  if (auto* native = qobject_cast<QAbstractButton*>(createSight->GetHandle()))
+    native->setText(QString::fromUtf8(_("Create sight").utf8_str()));
+  selectionRow->Add(createSight, 0, wxALL, 8);
+  bodiesRoot->Add(selectionRow, 0, wxEXPAND);
   m_androidCreateSight = createSight;
   createSight->Enable(false);
   m_androidBodies = PlannerCards(bodiesPage, bodiesRoot, true);
@@ -1515,7 +1523,8 @@ void PlannerDialog::ClearCalculatedResults(const wxString& status) {
   m_androidSolve->Enable(false);
   m_androidEvents->SetLabel(status);
   m_androidBodies->clear();
-  m_androidSelectedBody->SetLabel(status);
+  m_androidProgress->SetLabel(_("Results unavailable"));
+  m_androidSelectedBody->SetLabel(_("No valid body results"));
   m_androidCreateSight->Enable(false);
   m_androidCombinations->SetLabel(wxEmptyString);
   m_androidAlmanac->clear();
@@ -1862,7 +1871,7 @@ void PlannerDialog::UpdateAndroidBodySelection() {
   m_androidSelectedBody->SetLabel(item
       ? _("Selected: ") + wxString::FromUTF8(
           item->data(Qt::UserRole + 1).toString().toUtf8().constData())
-      : _("Select a body card to create a sight."));
+      : _("Select a body card"));
   celestial_android::LayoutScrolls(this);
 }
 #endif
