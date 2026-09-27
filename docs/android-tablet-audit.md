@@ -1322,3 +1322,25 @@ to read observations/residuals directly, not depend on hidden list text; next
 physical build remains pending. Shared seven-check ctest suite and explicit
 existing desktop FixUi regression passed; initial xvfb-run unavailable, actual
 available display run succeeded. No desktop runtime formula changed.
+
+### 18:51–18:53 BST — motion-event failure isolated
+
+On installed55, calendar selected20 July2025 and time21:18:20.000 UTC.
+Typed COG90.0/SOG5.0 appeared correctly but the old zero-motion result stayed
+visible: FAIL. Toggling running mode forced recalculation using those exact
+values and produced43°17.7620′N77°06.1079′W,18.08′RMS. An independent
+worksheet GHA/Dec/Ho calculation, GeographicLib2.1 WGS84 backward travel
+and SciPy angular least squares gives43.2960015966,-77.1015520798,RMS18.07617156′.
+Agreement within0.1NM and0.1arcmin. These stationary observations deliberately
+contradict the imposed5kn eastward motion; large residuals are expected, not
+a claim that this is a good navigation fix. Source issue: pinned wxQt typed
+double values do not emit wxSPINCTRLDOUBLE. Android native valueChanged now
+schedules a coalesced, dialog-owned recalculation after input callbacks, installed
+only after programmatic initialization. Physical rerun is pending.
+
+Show fix on chart hid both sheets and centred the red cross at the computed
+position; Sun loci and prior eclipse geometry remained visible alongside
+xGRIB/xWeatherRouting. PID23025 continuous. Memory and crash buffers retained
+as memory-fix55.txt/crash-fix55.txt. Final import candidate57 combines the
+residual-model workaround with the motion-event fix;56 was built/packaged
+but not installed or counted as passed.

@@ -231,6 +231,22 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
 #ifdef __OCPN__ANDROID__
   m_androidInitialLatitude->Bind(wxEVT_TEXT, &FixDialog::OnRunningControl, this);
   m_androidInitialLongitude->Bind(wxEVT_TEXT, &FixDialog::OnRunningControl, this);
+  // Pinned wxQt does not send its spin event for typed double values. Native
+  // valueChanged must request a calculation too, after the input callback.
+  // Install only after programmatic initialization, and let dialog ownership
+  // cancel the timer on Close/unload. Consecutive edits coalesce into one update.
+  auto* motionUpdate = new QTimer(GetHandle());
+  motionUpdate->setSingleShot(true);
+  wxWeakRef<FixDialog> weakFix(this);
+  QObject::connect(motionUpdate, &QTimer::timeout, GetHandle(), [weakFix]() {
+    if (weakFix) weakFix->Update(weakFix->m_clock_offset);
+  });
+  for (auto* control : {m_courseTrue, m_speedKnots}) {
+    if (auto* native = qobject_cast<QDoubleSpinBox*>(control->GetHandle()))
+      QObject::connect(native,
+          static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
+          motionUpdate, [motionUpdate](double) { motionUpdate->start(0); });
+  }
 #endif
   GetSizer()->Fit(this);
   SetMinSize(wxSize(700, 480));
