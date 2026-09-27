@@ -15,7 +15,7 @@ actual output/files, screenshots, persistence, Cancel/Back and invalid cases.
 | O06 | UTC calendar/time, marked UTC application | Time; header Mark time | PENDING |
 | O07 | DR position via Find Body; per-sight DR shift, magnetic shift | Position / Motion | PENDING |
 | O08 | Colour/transparency; definitions and calculation log | Appearance / Details | PENDING |
-| O09 | Duplicate/delete/delete final/delete all, selection, sorting | Observe cards / Sort / actions | PENDING |
+| O09 | Duplicate/delete/delete final/delete all, selection, sorting | Observe cards / Sort / actions | PARTIAL: dcbb4ee Duplicate created identical fourth Venus record, independently read XML and 7f68c9f replacement retained it; deletion and remaining sorting pending |
 | O10 | Visibility/inclusion and chart polygons | Card Include/Exclude; Chart | PENDING |
 | O11 | Automatic atomic Sights.xml load/save incl. all fields | Save / reopen / cold restart | PARTIAL: three-record cold reopen and unchanged Save identical (iteration 19); remaining variants pending |
 | F01 | Fix algorithms, initial position, error/residuals | Fix > Calculate fix | PENDING |
@@ -51,8 +51,8 @@ actual output/files, screenshots, persistence, Cancel/Back and invalid cases.
 | A02 | All content toggles, planning cadence, safety/calculator/paper self-contained modes | Almanac > Content | PENDING |
 | A03 | Direct/universal tables, forms counts, paper sizes, booklet/signature, page estimate | Almanac > Paper / Forms | PENDING |
 | A04 | Preview, in-process PDF generation, output/overwrite/cancel, viewer, actual bytes | Almanac > Preview / Generate | PARTIAL: real 28-page PDF, independently inspected bytes/pages/sources (iteration 22); page entry and last-page rendering repaired and exercised; cancellation/overwrite and other outputs pending |
-| E01 | Year-span eclipse search/list/selection | Plan > Eclipses > Search | PARTIAL: committed dcbb4ee 2027 cards/selection, reverse-year rejection and 1850–2100 worker Back cancellation retaining previous result; completed long-list/font cases pending |
-| E02 | Path/partial magnitude contours, plot selected/clear, pan/zoom/rotation | Eclipses > Chart | PENDING |
+| E01 | Year-span eclipse search/list/selection | Plan > Eclipses > Search | PARTIAL: committed dcbb4ee 2027 cards/selection, reverse-year rejection and 1850–2100 worker Back cancellation retaining previous result; 7f68c9f completed full-span search, background/resume, swipe without selection, final 2100 card and tap-to-Local selection; larger fonts pending |
+| E02 | Path/partial magnitude contours, plot selected/clear, pan/zoom/rotation | Eclipses > Chart | PARTIAL: 7f68c9f August 2027 path/contours, chart centre/hide, real pan/zoom, device landscape/portrait, reopen and Clear preserving other geometry; nonzero heading rotation and plot option combinations pending |
 | E03 | Local position/boat, contact circumstances, LOLA refine | Eclipses > Local | PARTIAL: standard duration 382.44 s versus NASA 382.6 s (1 s tolerance), real LOLA calculation, portrait/landscape final results; dcbb4ee precise decimal retention through repeat/reopen and latitude-range rejection; independent terrain accuracy/boat/remaining cases pending |
 | E04 | DE440s download/import, optional orientation/LOLA, hash/format/coverage verification and cancel | Tools > Data / Eclipses > Data | PARTIAL: all three scoped-storage imports, independent official hashes, cold re-verification and effective 506 MiB copy Cancel; invalid-size rejection/native chooser Back retained previous file and cleaned staging; checksum/download/coverage cases pending |
 | D01 | Offline HTML manual/definitions, long scrolling and links | Tools > Manual | PENDING |

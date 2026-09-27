@@ -36,6 +36,7 @@ class CelestialFileDialog {
     locations->addItem("OpenCPN files", privatePath);
     if (!directory_.empty()) locations->addItem("Current folder", QString::fromUtf8(directory_.utf8_str()));
     locations->setItemDelegate(new CN_AndroidChoiceDelegate(locations));
+    CN_EnableAndroidChoiceScrolling(locations);
     layout->addWidget(locations);
     auto* navigation = new QHBoxLayout;
     auto* up = new QPushButton("Up", panel->GetHandle());

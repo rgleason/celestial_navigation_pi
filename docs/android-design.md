@@ -179,3 +179,11 @@ callback. Programmatic selection remains available to the shared model. Apply
 the same rule to the native file list so a folder cannot open during a swipe.
 Verify actual list movement, unchanged selection after repeated swipes, ordinary
 tap selection, and access to the final card. Desktop controls remain unchanged.
+# Body popup refinement, 27 September 2026
+
+A physical catalogue swipe activated Acamar on release instead of scrolling.
+Extend the Android combo adapter to own the popup viewport gesture as well as
+the collapsed control. A drag scrolls the popup; only a stationary release
+sets the model index, closes the popup and emits the existing wxQt activation
+signal once. Preserve native/programmatic selection and 48 dp delegate rows.
+Verify catalogue movement, tap selection and Back cancellation on the tablet.

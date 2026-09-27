@@ -338,6 +338,24 @@ inline void CN_EnableAndroidChoiceScrolling(QComboBox* combo) {
   if (combo->property("cnChoiceDrag").toBool()) return;
   combo->setProperty("cnChoiceDrag", true);
   new CN_AndroidButtonDragFilter(combo);
+  auto* view = combo->view();
+  view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+  QPointer<QComboBox> safeCombo(combo);
+  QPointer<QAbstractItemView> safeView(view);
+  new CN_AndroidButtonDragFilter(view->viewport(),
+      [safeCombo, safeView](QPoint point) {
+        if (!safeCombo || !safeView) return;
+        const auto index = safeView->indexAt(point);
+        if (!index.isValid() || !(index.flags() & Qt::ItemIsEnabled)) return;
+        const int row = index.row();
+        safeCombo->hidePopup();
+        // wx handlers can rebuild forms. Finish the viewport callback first.
+        QTimer::singleShot(0, safeCombo, [safeCombo, row]() {
+          if (!safeCombo || row >= safeCombo->count()) return;
+          safeCombo->setCurrentIndex(row);
+          emit safeCombo->activated(row);
+        });
+      }, view->viewport());
 }
 
 inline void CN_EnableAndroidButton(wxButton* control) {

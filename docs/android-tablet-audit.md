@@ -707,3 +707,60 @@ events over 1850–2100, published path/local circumstances and independent DE44
 states; optional LOLA checks cover validation and plausibility. They do not
 establish independent terrain-contact accuracy. Logs: eclipse-independent-*.log
 in the retained audit directory. No shared astronomy algorithm was changed.
+
+## 15:18–15:24: committed touch and chart acceptance
+
+Installed exact 7f68c9f4a66fe99ca2aeeb4935343d3a2e571f81 through the patched
+host Plugin Manager. Archive SHA256
+00f249ca79278a6e5652da099715ccb9718165818c48cf2d8d954f0a75fc005d; actual
+installed library 5f66db31d2a25e19167721a8c26714eb87e00e3fb086cb4b8760581aa7ab81ce;
+unstripped 72801d695cd6396b939a62f6b4ee1a9450741f9480e78c1b35f42c33252a3292.
+Matching binaries/logs in committed-7f68c9f/arm64. Before replacement, independently
+retained settings, Sights.xml and old library with backup-before38.json hashes.
+Original assets are also retained in the previous exact package and original
+profile backups; optional packs were not replaced. Proposed URL is unpublished.
+
+The complete 1850–2100 search completed. Sending Home and resuming while the
+progress sheet was still running preserved PID 31948 and continued the work.
+A swipe starting over the second card moved content to 1851 without changing
+the selected February 1850 event. The scrollbar reached the final September
+2100 event; tapping that card selected precisely 2100-09-04 08:45:55.93 UT1
+on Local. Evidence full-search-*38, search-resume38, cards-swipe38,
+cards-last38 and last-selected-local38. The file-list adapter remains untested.
+
+A 2027 search and August selection plotted path plus magnitude contours, centred
+the chart and hid the workspace. At settled rendering, the path crosses Egypt
+and the Red Sea; pan and zoom retained alignment with the basemap. Portrait to
+landscape briefly exposed host resize composition before the settled landscape
+chart filled the viewport and retained geometry. Reopen kept the August
+selection. Clear plot removed all eclipse lines while retaining existing sight/
+coastal geometry. xGRIB and xWeatherRouting stayed enabled. Evidence eclipse-
+plot38, eclipse-zoom-out38, eclipse-pan-course38, eclipse-landscape-ready38,
+eclipse-reopened-after-chart38 and eclipse-cleared38. Compass mode was cycled
+back to north-up; no nonzero heading rotation was demonstrated, so that case
+remains pending. PID stayed 31948; full logcat retained as post-chart38-logcat.log.
+
+Before replacement, a real Duplicate selected sight action created a fourth
+record. Its body, measurement and fractional instant match the source Venus
+record in independently read XML; package replacement preserved all four.
+Deletion/Cancel/other sorting cases remain pending. Full automatic CI pipeline
+5 checked out the exact 7f68c9f SHA. Pipeline 4 passed 18 platforms and failed
+only macOS retention; its build itself completed. Pipeline 5 is still running.
+
+## 15:25–15:28: observation Back and body popup defect
+
+On installed 7f68c9f, changed duplicated Venus measurement to 42.1234567890.
+First Back dismissed keyboard and retained editor/text; second Back cancelled
+and returned to observations with PID 31948 unchanged. Independently read
+Sights-after-cancel38.xml is byte-identical to Sights-after38.xml. Screenshots
+edit-keyboard-back38 and edit-cancel-back38.
+
+Body combo rows measured 72 px = 48 dp at actual density 1.5. However a swipe
+from y1620 to y600 closed the popup and selected Acamar. The edit was explicitly
+cancelled. This is a defect, not catalogue scrolling acceptance. After recording
+the popup refinement design, the shared Android choice adapter now filters the
+popup viewport: drag forwards to its native scroller; stationary release queues
+one activation after the callback. Native file-location and PDF zoom combos
+use the same adapter and minimum-row delegate. Android compile passed (39).
+Physical catalogue/Back regression remains pending. Shared astronomy and
+desktop controls are unchanged.

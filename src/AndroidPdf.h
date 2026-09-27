@@ -104,6 +104,8 @@ inline bool ShowPdf(wxWindow* parent, const wxString& title, const wxString& pat
   auto* next = new QPushButton("Next", panel->GetHandle());
   auto* go = new QPushButton("Go to page", panel->GetHandle());
   auto* zoom = new QComboBox(panel->GetHandle());
+  zoom->setItemDelegate(new CN_AndroidChoiceDelegate(zoom));
+  CN_EnableAndroidChoiceScrolling(zoom);
   zoom->addItem("Fit width", 1.0); zoom->addItem("150%", 1.5); zoom->addItem("200%", 2.0);
   selector->setButtonSymbols(QAbstractSpinBox::NoButtons);
   row->addWidget(previous); row->addWidget(next); row->addWidget(zoom);
