@@ -930,3 +930,76 @@ vessel motion row (lunar-time-end43), but course/speed labels were clipped in
 that horizontal desktop row. The next Android-only adapter stacks meaningful
 labelled rows and puts timing units above the entry, retaining colon-separated
 time fields. These layout changes require physical regression verification.
+
+## 16:18–16:22: readable sections, marked UTC and honest sort evidence
+
+Installed 966c5a7 through Plugin Manager; archive 29d8d731ffb7432b9ebf3f2cdca41813f9fdf66c3c88f7748555709f3b790937 and exact independently compared library 049b0462f6219c6c6990f88054f2ee300a1c601ef2d6d81290e7faa27b1f3f66.
+PID stayed 10171. Settled section selector displays Measurement/Time (UTC)/
+Motion/Display/Corrections/Calculations (sections44-ready). A real swipe reaches
+fully labelled COG true and SOG kn fields; units now precede the uncertainty
+entry (lunar-time44/lunar-motion44). Static-box heading still shows Certainty
+because that caption was transformed before its rename; harmless wording
+cleanup remains.
+
+Clock status reports London BST UTC+01:00, real UTC and fresh RMC with delivery
+latency, and honestly unavailable chrony status. Mark held local/UTC while RMC
+continued live. New sight initially uses creation time; the explicit visible
+Use marked UTC button applies the hold. Copied instant is
+2026-09-27T15:19:59.638Z; applied/saved/reopened XML independently contains
+15:19:59 and Milliseconds=638. Screens marked-copy44/marked-applied44 and
+Sights-marked-applied44.xml. Released the held clock afterwards.
+
+Delete All Back retained all four complete records. A previous sort changed
+their order, so byte equality against the pre-sort backup is inappropriate;
+parsed complete attribute dictionaries match exactly. The attempted batched
+sort coordinates selected different entries as the native popup moved around
+its current selection. Screens show actual labels, and do not establish all
+sort choices passed. Re-run each choice using the observed popup rows.
+
+## 16:23–16:28: real lunar search and stored reference solution
+
+Loaded a disposable compatible XML fixture from existing test/lunar_fiji_tests.cpp
+(Use Case 7a screenshot inputs), with the previous five test records retained
+in Sights-before-fiji44.xml, SHA256 47c582c19a5e613b7127d66815d8fc734420d25bb4ccaf429cf6f359e37d9d39.
+This is fixture loading, not a claim all reference fields were typed through
+the UI. Input XML/hash and explicit expectations are retained in Sights-lunar-
+fiji44-input.xml and lunar-fiji44-expectations.json. Cold PID 11968.
+
+Real Calculate lunar UTC completed with analytical fallback; the trail shows
+5400 s total span as -2700 to +2700, 30 s coarse scan and 0.050 s refinement.
+Results selected the southern branch near saved 20S/179.75E DR, distance 0.7 NM
+from that independent worksheet position (1 NM tolerance). Explicit Save lunar
+solution produced XML LunarSolution with additionalCorrectionSeconds=7.0458984375
+and timeSigmaSeconds=18.832016803283018. Existing numerical regression expects
+7.046 +/-0.2 s; that UTC number is a regression, not an independent reference.
+Actual stored report/input snapshot retained in Sights-lunar-stored44.xml.
+No global correction was applied. Screens fiji-calculated44/results-scroll44.
+
+Initial explanation was narrowly wrapped until a swipe forced layout, and
+desktop result columns clipped UTC/coordinates. Native name prompt lost its
+explanation. These are failed usability checks. Designed the next revision
+with selectable complete candidate cards, readable position cards, resize
+layout settling and a labelled name sheet. Physical verification pending.
+
+Independent saved-file comparison shows raw UTC/angles/limbs/uncertainties,
+weather and DR unchanged numerically. Decimal strings expand to 17-digit
+serialization; derived legacy TimeCorrection changes from 0 to 7 after lunar
+calculation. Global ClockError remains 0. This derived field is not a changed
+recorded observation time.
+
+CircleCI pipeline 6 finished all 19 platform builds for exact 5992863.
+Workflow 2f2b80fb-edba-4c39-8e53-57c09c132fe1 has approve-publication on hold
+and publish-reviewed blocked. Newer local Android layout/result changes still
+require their own final CI validation. No archive was published.
+
+### 27 September 16:36–16:38 BST — clock correction persistence
+
+Revision 44/PID 11968: typed +120 seconds, Cancel opened the explicit
+Discard Changes/Keep Editing confirmation; Discard Changes retained the
+original saved XML. Apply committed ClockError Seconds=120, and reopening
+showed 120. Restoring zero returned the complete parsed XML, including
+the nested stored lunar solution, to its original state. Recorded sight
+inputs were unchanged. Evidence: clock-discard44.png, clock-reopen120-44.png,
+Sights-clock-before44.xml, Sights-clock-apply44.xml, Sights-clock-reset44.xml.
+This does not yet test corrected chart geometry, restart at a nonzero
+correction, or GNSS status under stale/offline conditions.

@@ -231,3 +231,15 @@ colon-separated hour/minute/second rows stay together. Present observation
 timing units above the uncertainty field. Keep exact controls/model values and
 all desktop layout unchanged. Verify final motion controls by actual swipes,
 not scrollbar movement alone.
+
+### Lunar solution interpretation refinement (16:27)
+
+After calculation, show each UTC candidate as a visible selectable card with
+full UTC, additional correction, cleared distance, rate and time uncertainty.
+Show position branches underneath with latitude/longitude, distance from DR
+and horizontal RMS uncertainty. Selection remains explicit; Save lunar
+solution stays reachable below the page. Retain the shared candidate lists as
+the controller model but hide their clipped desktop columns on Android. Use
+a focused labelled name sheet explaining that saving snapshots a derived
+solution and changes neither recorded times nor global correction. Resize/
+show must settle wrapped labels without requiring a preliminary swipe.

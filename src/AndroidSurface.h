@@ -204,11 +204,17 @@ class Surface : public QObject {
  protected:
   bool eventFilter(QObject* target, QEvent* event) override {
     if (event->type() == QEvent::Show ||
-        (event->type() == QEvent::Resize && target == canvas_)) Schedule();
+        (event->type() == QEvent::Resize &&
+         (target == canvas_ || (dialog_ && target == dialog_->GetHandle())))) Schedule();
     return false;
   }
  private:
-  void Schedule() { QTimer::singleShot(150, this, [this]() { Fit(); }); }
+  void Schedule() {
+    if (pending_) return;
+    pending_ = true;
+    QTimer::singleShot(150, this, [this]() { pending_ = false; Fit(); });
+  }
+  bool pending_ = false;
   wxWeakRef<wxDialog> dialog_;
   CelestialAndroidBackFilter back_;
   QPointer<QWidget> canvas_;

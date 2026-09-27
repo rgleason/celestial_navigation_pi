@@ -364,7 +364,11 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
     wxButton* applyMarked = new wxButton(
         m_panel2, wxID_ANY,
         _("Use marked UTC: ") +
-            UtcDateTime::FormatUtc(markedUtc, "%Y-%m-%d %H:%M:%S"));
+            UtcDateTime::FormatUtc(markedUtc, "%Y-%m-%d %H:%M:%S")
+#ifdef __OCPN__ANDROID__
+            + wxString::Format(".%03d UTC", markedUtc.GetMillisecond())
+#endif
+            );
     m_panel2->GetSizer()->Add(applyMarked, 0, wxLEFT | wxRIGHT | wxBOTTOM, 8);
     applyMarked->Bind(wxEVT_BUTTON, [this, markedUtc](wxCommandEvent&) {
       MarkDirty();
@@ -420,6 +424,8 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   for (size_t i = 0; i < m_notebook1->GetPageCount() &&
                      i < sizeof(sections) / sizeof(sections[0]); ++i)
     m_notebook1->SetPageText(i, sections[i]);
+  if (auto* heading = wxDynamicCast(m_staticText13->GetParent(), wxStaticBox))
+    heading->SetLabel(_("Observation timing"));
 #endif
   dialog_geometry::Restore(this, _T("Sight"), GetSize());
 #ifdef __OCPN__ANDROID__
@@ -458,8 +464,6 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   uncertaintySizer->Detach(m_staticText13);
   uncertaintySizer->Insert(0, m_staticText13, 0, wxEXPAND | wxALL, 8);
   uncertaintySizer->Insert(1, m_androidTimeCertainty, 0, wxEXPAND | wxALL, 8);
-  if (auto* heading = wxDynamicCast(m_staticText13->GetParent(), wxStaticBox))
-    heading->SetLabel(_("Observation timing"));
   m_androidTimeCertainty->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) { MarkDirty(); Recompute(); });
   m_staticText13->SetLabel(m_Sight.m_Type == Sight::LUNAR ? _("Total UTC search span (seconds)") : _("Time uncertainty (seconds)"));
   m_androidSeconds = new wxSpinCtrlDouble(m_sSeconds->GetParent(), wxID_ANY);

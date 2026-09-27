@@ -1641,17 +1641,43 @@ void CelestialNavigationDialog::ApplyClockCorrection(int correction_seconds) {
 bool CelestialNavigationDialog::SaveLunarSolution(LunarSolutionRecord record) {
   if (!std::isfinite(record.TotalCorrection()) || record.inputs.empty())
     return false;
+#ifdef __OCPN__ANDROID__
+  wxDialog name(this, wxID_ANY, _("Save lunar solution"));
+  auto* layout = new wxBoxSizer(wxVERTICAL);
+  layout->Add(new wxStaticText(&name, wxID_ANY,
+      _("Name this watch/session. Saving preserves an input snapshot and a "
+        "derived solution; no sight times or global clock correction change.")),
+      0, wxEXPAND | wxALL, 12);
+  layout->Add(new wxStaticText(&name, wxID_ANY, _("Watch/session name")),
+      0, wxEXPAND | wxALL, 12);
+  auto* field = new wxTextCtrl(&name, wxID_ANY, record.reference_time);
+  layout->Add(field, 0, wxEXPAND | wxALL, 12);
+  auto* error = new wxStaticText(&name, wxID_ANY, wxEmptyString);
+  layout->Add(error, 0, wxEXPAND | wxALL, 12);
+  auto* save = new wxButton(&name, wxID_OK, _("Save lunar solution"));
+  save->GetHandle()->setProperty("cnActionText", "Save lunar solution");
+  save->Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
+    wxString value = field->GetValue();
+    if (value.Trim().Trim(false).empty()) {
+      error->SetLabel(_("Enter a watch/session name."));
+      celestial_android::LayoutScrolls(&name);
+      return;
+    }
+    name.EndModal(wxID_OK);
+  });
+  layout->Add(save, 0, wxEXPAND | wxALL, 12);
+  name.SetSizer(layout);
+  if (celestial_android::ModalResult(name) != wxID_OK) return false;
+  record.name = field->GetValue();
+#else
   wxTextEntryDialog name(
       this,
       _("Name this watch/session. Saving preserves an input snapshot and a "
         "derived solution; no sight times or global clock correction change."),
       _("Save lunar solution"), record.reference_time);
-#ifdef __OCPN__ANDROID__
-  if (celestial_android::ModalResult(name) != wxID_OK) return false;
-#else
   if (name.ShowModal() != wxID_OK) return false;
-#endif
   record.name = name.GetValue();
+#endif
   record.created_utc =
       UtcDateTime::FormatUtc(UtcDateTime::Now(), "%Y-%m-%d %H:%M:%S UTC");
   m_lunarSolutions.push_back(record);

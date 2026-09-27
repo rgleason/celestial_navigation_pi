@@ -12,10 +12,10 @@ actual output/files, screenshots, persistence, Cancel/Back and invalid cases.
 | O03 | Lower/centre/upper limbs, lunar near/far/body contacts | Measurement > Limb/contact | PENDING |
 | O04 | Angle and time uncertainties, lunar search span | Measurement / Time | PARTIAL: d804ecd actual 1.234567891234123 s input/save/reopen serialized identical double; angular and lunar variants pending |
 | O05 | Eye height, temperature, pressure, index error, short dip, artificial horizon, saved defaults | Corrections | PENDING |
-| O06 | UTC calendar/time, marked UTC application | Time; header Mark time | PARTIAL: d804ecd UTC calendar October 25 01:30:12.987 at autumn DST, New York device-zone reopen and cold persistence; spring DST/marked UTC pending |
+| O06 | UTC calendar/time, marked UTC application | Time; header Mark time | PARTIAL: d804ecd UTC calendar October 25 01:30:12.987 at autumn DST, New York device-zone reopen and cold persistence; 966c5a7 explicit Use marked UTC/copy round trip retained all 638 ms. Spring DST pending |
 | O07 | DR position via Find Body; per-sight DR shift, magnetic shift | Position / Motion | PENDING |
 | O08 | Colour/transparency; definitions and calculation log | Appearance / Details | PENDING |
-| O09 | Duplicate/delete/delete final/delete all, selection, sorting | Observe cards / Sort / actions | PARTIAL: dcbb4ee Duplicate created identical fourth Venus record, independently read XML and 7f68c9f replacement retained it; d804ecd explicit one-at-a-time deletion through the final record, XML counts, stable empty selection and disabled edits; Delete All and sorting pending |
+| O09 | Duplicate/delete/delete final/delete all, selection, sorting | Observe cards / Sort / actions | PARTIAL: dcbb4ee Duplicate created identical fourth Venus record, independently read XML and 7f68c9f replacement retained it; d804ecd explicit one-at-a-time deletion through the final record, XML counts, stable empty selection and disabled edits; 966c5a7 Delete All Back retained all complete records; explicit Yes/No and sorting pending |
 | O10 | Visibility/inclusion and chart polygons | Card Include/Exclude; Chart | PARTIAL: d804ecd Exclude saved Visible=0 and card Excluded; Include restored exact XML. Empty Chart gives selection guidance. Geometry variants pending |
 | O11 | Automatic atomic Sights.xml load/save incl. all fields | Save / reopen / cold restart | PARTIAL: three-record cold reopen and unchanged Save identical (iteration 19); remaining variants pending |
 | F01 | Fix algorithms, initial position, error/residuals | Fix > Calculate fix | PARTIAL: d804ecd empty input shows N/A and disables Go; valid algorithms pending |
@@ -31,13 +31,13 @@ actual output/files, screenshots, persistence, Cancel/Back and invalid cases.
 | P06 | Apparent-noon and Polaris latitude | Plan > Noon / Polaris | PENDING |
 | P07 | Time-tagged moving observer | Plan > Motion | PENDING |
 | P08 | Find Body manual/live boat/cursor/fix/waypoint, reset, estimated Hs, observed Ho, Cancel | Observe > Find Body | PARTIAL: manual Sun DR reduction agrees within 0.1 arcmin (iteration 18); other sources/Cancel pending |
-| T01 | Local/UTC display, GNSS freshness/difference, device/system status, marked-time copy | Tools > Time; header | PENDING |
+| T01 | Local/UTC display, GNSS freshness/difference, device/system status, marked-time copy | Tools > Time; header | PARTIAL: 966c5a7 London local/UTC/fresh RMC with latency, chrony unavailable, held clocks/copy exact .638Z and explicit observation application; stale/offline variants pending |
 | T02 | Manual clock correction, Apply versus Cancel, recalculation | Tools > Clock correction | PENDING |
 | T03 | DUT1 offline update/status/provenance and analytical/DE440 provider status | Tools > Ephemeris / DUT1 | PENDING |
 | H01 | Sunrise/sunset observation UTC, source, uncertainties, height/weather/horizon quality | Observe > Horizon event | PENDING |
 | H02 | Optional true/magnetic bearing, deviation/variation, position branches, edit, chart | Horizon event > Bearing / results | PENDING |
 | L01 | Lunar distance/altitudes/limbs/uncertainties, separate measurement times, watch basis, motion | Observe > Lunar | PENDING |
-| L02 | Known position or joint UTC/position single solution, candidates, logs, stored solution | Lunar > Results | PENDING |
+| L02 | Known position or joint UTC/position single solution, candidates, logs, stored solution | Lunar > Results | PARTIAL: 966c5a7 Fiji Saturn joint solve, southern branch 0.7 NM from worksheet (1 NM tolerance), saved correction 7.0458984375 s matches existing regression; clipped result table/initial wrapping failed and redesigned next. Other variants pending |
 | L03 | Session select visible/clear, time+position/time-known-position, earliest DR, robust/bias/motion | Tools > Lunar sessions | PENDING |
 | L04 | Worker cancellation, candidate selection, stored session solution, reopen/details/copy | Lunar sessions > Results / saved | PENDING |
 | L05 | Lunar pair planning, measured guidance, bodies and timing | Plan > Lunar pairs | PENDING |
