@@ -534,7 +534,15 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
                          this);
   m_cursorTimer.SetOwner(this);
   Bind(wxEVT_TIMER, &PlannerDialog::OnCursorTimer, this, m_cursorTimer.GetId());
+#ifdef __OCPN__ANDROID__
+  auto* cursorTimer = new QTimer(GetHandle());
+  QObject::connect(cursorTimer, &QTimer::timeout, GetHandle(), [this]() {
+    UpdateCursorPosition();
+  });
+  cursorTimer->start(500);
+#else
   m_cursorTimer.Start(500);
+#endif
   m_timeSource->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
     ApplyTimeSource();
     ScheduleRefresh();
@@ -618,6 +626,12 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   Bind(wxEVT_TIMER, &PlannerDialog::OnRefreshTimer, this,
        m_refreshTimer.GetId());
 #ifdef __OCPN__ANDROID__
+  m_androidRefresh = new QTimer(GetHandle());
+  m_androidRefresh->setSingleShot(true);
+  QObject::connect(m_androidRefresh, &QTimer::timeout, GetHandle(), [this]() {
+    wxTimerEvent event;
+    OnRefreshTimer(event);
+  });
   // Typed wxQt spin values need native notifications as well as arrow events.
   // The existing owned refresh timer coalesces edits after callbacks return.
   for (auto* control : {m_course, m_speed, m_eyeHeight,
@@ -723,6 +737,9 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
 }
 
 PlannerDialog::~PlannerDialog() {
+#ifdef __OCPN__ANDROID__
+  m_androidRefresh->stop();
+#endif
   dialog_geometry::Save(this, _T("Planner"));
   m_cursorTimer.Stop();
   m_refreshTimer.Stop();
@@ -938,7 +955,13 @@ void PlannerDialog::ContextTimeEdited(wxCommandEvent&) {
   ScheduleRefresh();
 }
 
-void PlannerDialog::ScheduleRefresh() { m_refreshTimer.StartOnce(350); }
+void PlannerDialog::ScheduleRefresh() {
+#ifdef __OCPN__ANDROID__
+  if (m_androidRefresh) m_androidRefresh->start(350);
+#else
+  m_refreshTimer.StartOnce(350);
+#endif
+}
 
 void PlannerDialog::OnRefreshTimer(wxTimerEvent&) {
   UpdateAutomaticZoneOffset();

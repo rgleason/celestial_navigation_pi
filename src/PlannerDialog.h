@@ -109,6 +109,7 @@ private:
   wxListCtrl* m_events;
 #ifdef __OCPN__ANDROID__
   wxStaticText* m_androidEvents = nullptr;
+  QTimer* m_androidRefresh = nullptr;
 #endif
   wxStaticText* m_moonSummary;
   wxListCtrl* m_bodies;

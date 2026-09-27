@@ -1503,3 +1503,37 @@ layout (`planner62-context-retry.png`) hides longitude, time and speed beyond
 the desktop grid and clips event table names/times. The planner family fails
 touch-layout acceptance. A separate scrollable Context page and full event
 results are being implemented; other planning workflows remain pending.
+
+### 19:51–19:56 BST — iteration 63 context and event retest
+
+`a99f033f4ec7c79f62a52630be0c9bbe82939981` imported successfully with PID
+945 continuous. Actual `manPlug/libcelestial_navigation_pi.so` hash
+`571a357659059dcd4faaadca8e1dab9dafe9a5ab52aca2f261e2a1290079846f`;
+tar hash `3192670a6a66e53c98bb8b933f3e60f2bb244727a0b581899450f9fa682f681b`.
+An initial verification command used nonexistent `files/manPlug`; its error
+bytes were rejected and the correct `manPlug` binary was then read and matched.
+The packaging identity check also rejected a stale tarball after an invalid
+`tarball` build target; regenerating with CMake target `package` produced the
+verified source-traceable candidate. Neither rejected artifact was accepted.
+
+Context now scrolls genuinely and exposes position, longitude, time, input and
+display bases, entry format, eye height and motion. Changing nautical to platform
+format shows only the calendar button and hour/minute/fractional-second inputs.
+The untouched instant remains 18:52:38.329. Double tapping the calendar year
+opens the physical Samsung numeric keyboard (`planner63-year-keyboard.png`);
+typing 2024 then opening month commits the year and dismisses the keyboard.
+June and 21 June 2024 are selectable. Actual fields contain Greenwich 51.4779 N,
+0 E and 00:00:00.987 UTC; date/time changes select Manual.
+
+Live recalculation FAILED: resolved UTC and the events still show the previous
+2026 boat context even after the new inputs and typed eye height 0. wx timer
+notifications are not reaching the refresh handler in this Android candidate.
+An owned native QTimer replaces Android refresh scheduling; desktop wx timers
+are retained. This is not yet a numerical reference pass. Events do display
+complete names, UTC/display times, bearings and positions without table-column
+clipping. Other planning pages are not yet accepted.
+
+Desktop PlannerTime six cases passed; the initial UI invocation skipped by
+default and is not counted. Explicit `CELESTIAL_RUN_UI_TESTS=1` invocation of
+LunarUiSmoke (including planner) passed in 6343 ms, with no runtime desktop
+changes. Android and desktop builds passed before packaging.
