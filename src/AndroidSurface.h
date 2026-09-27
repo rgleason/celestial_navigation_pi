@@ -126,7 +126,13 @@ inline void PrepareBook(wxNotebook* book) {
   for (size_t i = 0; i < pages.size(); ++i) {
     auto* page = pages[i];
     StackForms(page->GetSizer());
-    if (auto* scroll = wxDynamicCast(page, wxScrolledWindow)) {
+    if (page->GetHandle()->property("cnNoPageScroll").toBool()) {
+      // A native results list owns its scrolling and fills the page. Wrapping
+      // it in a wx viewport introduces a second competing drag target.
+      page->SetMinSize(wxSize(0, 0));
+      book->AddPage(page, names[i]);
+      page->GetHandle()->show();
+    } else if (auto* scroll = wxDynamicCast(page, wxScrolledWindow)) {
       ScrollContent(scroll);
       book->AddPage(page, names[i]);
     } else {

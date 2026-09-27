@@ -72,7 +72,7 @@ Full-width selectable cards show body, Hc, true azimuth, GHA, declination,
 magnitude, score and the complete recommendation reason. Card selection occurs
 on a stationary release; swipes scroll without changing selection. Hc limits,
 the recommended pairs/triads report, magnitude filter, below-horizon toggle and
-sky plot remain visible in the same scrolling page. Context refresh preserves a
+sky plot remain available on **Recommendations & sky**. Context refresh preserves a
 selected body by its catalogue name where that body remains visible.
 
 **Almanac** has an explicit Export CSV action above scrollable cards containing
@@ -81,6 +81,16 @@ continues to come from the shared AlmanacRow model. **Noon and Polaris** stacks
 workflow, precise corrected Ho, Solve latitude and the full wrapped result.
 Invalid context clears all outputs and gives guidance on every result page;
 creating a sight or exporting a table cannot use an invalid or stale context.
+
+Refinement before the next implementation at 22:20 BST: physical testing exposed
+competing nested scroll areas. **Bodies** and **Almanac** therefore use a single
+native list occupying the remaining page height, with their sort/selection or
+export actions fixed above it. They have no surrounding scrolling form.
+**Recommendations & sky** is a separate form with one scrolling content panel.
+All body fields, filtering, recommendations and chart actions remain available.
+Hidden desktop display tables are not populated on Android; shared result
+models remain unchanged. Refresh duration is measured again before deciding
+whether numerical work also needs a cancellable background worker.
 
 Android CSV exports retain nonzero milliseconds in the ISO UTC column while
 keeping the existing columns and numeric serialization. Whole-second rows

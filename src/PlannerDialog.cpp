@@ -90,7 +90,7 @@ class PlannerCardDelegate : public QStyledItemDelegate {
 
 QListWidget* PlannerCards(wxWindow* parent, wxSizer* root, bool selectable) {
   auto* panel = new wxPanel(parent);
-  panel->SetMinSize(wxSize(0, CN_TouchHeight() * 7));
+  panel->SetMinSize(wxSize(0, CN_TouchHeight() * 2));
   auto* layout = new QVBoxLayout(panel->GetHandle());
   layout->setContentsMargins(0, 0, 0, 0);
   auto* list = new QListWidget(panel->GetHandle());
@@ -98,9 +98,7 @@ QListWidget* PlannerCards(wxWindow* parent, wxSizer* root, bool selectable) {
   list->setTextElideMode(Qt::ElideNone);
   list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   list->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-  // Register the inner gesture so the ancestor wx scroll viewport cannot
-  // claim a drag that began on a native card. Tap activation remains deferred.
-  QScroller::grabGesture(list->viewport(), QScroller::TouchGesture);
+  // The drag filter feeds the list scroller; no competing gesture grab.
   list->setSelectionMode(selectable ? QAbstractItemView::SingleSelection
                                     : QAbstractItemView::NoSelection);
   list->setItemDelegate(new PlannerCardDelegate(list));
@@ -117,7 +115,7 @@ QListWidget* PlannerCards(wxWindow* parent, wxSizer* root, bool selectable) {
   }, list->viewport());
   new PlannerListScroll(list);
   layout->addWidget(list);
-  root->Add(panel, 0, wxEXPAND | wxALL, 8);
+  root->Add(panel, 1, wxEXPAND | wxALL, 8);
   return list;
 }
 #endif
@@ -642,18 +640,36 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_androidBodies = PlannerCards(bodiesPage, bodiesRoot, true);
   QObject::connect(m_androidBodies, &QListWidget::currentRowChanged,
                    GetHandle(), [this](int) { UpdateAndroidBodySelection(); });
-  bodiesRoot->Add(m_limitRecommendationAltitude, 0, wxEXPAND | wxALL, 8);
-  add(bodiesPage, bodiesRoot, _("Minimum recommended Hc (degrees)"));
-  bodiesRoot->Add(m_recommendationMinAltitude, 0, wxEXPAND | wxALL, 8);
-  add(bodiesPage, bodiesRoot, _("Maximum recommended Hc (degrees)"));
-  bodiesRoot->Add(m_recommendationMaxAltitude, 0, wxEXPAND | wxALL, 8);
-  bodiesRoot->Add(recommendationNote, 0, wxEXPAND | wxALL, 8);
-  m_androidCombinations = add(bodiesPage, bodiesRoot, wxEmptyString);
-  bodiesRoot->Add(plotControls, 0, wxEXPAND | wxALL, 8);
-  m_skyPlot->SetMinSize(wxSize(0, CN_TouchHeight() * 5));
-  bodiesRoot->Add(m_skyPlot, 0, wxEXPAND | wxALL, 8);
-  bodiesRoot->Add(plotLegend, 0, wxEXPAND | wxALL, 8);
+  bodiesPage->GetHandle()->setProperty("cnNoPageScroll", true);
   bodiesRoot->ShowItems(true);
+  auto* recommendationPage = new wxPanel(m_notebook);
+  auto* recommendationRoot = new wxBoxSizer(wxVERTICAL);
+  for (auto* child : {static_cast<wxWindow*>(m_limitRecommendationAltitude),
+                     static_cast<wxWindow*>(m_recommendationMinAltitude),
+                     static_cast<wxWindow*>(m_recommendationMaxAltitude),
+                     static_cast<wxWindow*>(recommendationNote),
+                     static_cast<wxWindow*>(m_plotMagnitude),
+                     static_cast<wxWindow*>(m_plotBelowHorizon),
+                     static_cast<wxWindow*>(m_skyPlot),
+                     static_cast<wxWindow*>(plotLegend)})
+    child->Reparent(recommendationPage);
+  // The magnitude caption belongs to the retained controls' nested sizer.
+  for (auto* item : magnitudeControls->GetChildren())
+    if (auto* child = item->GetWindow()) child->Reparent(recommendationPage);
+  recommendationRoot->Add(m_limitRecommendationAltitude, 0, wxEXPAND | wxALL, 8);
+  add(recommendationPage, recommendationRoot, _("Minimum recommended Hc (degrees)"));
+  recommendationRoot->Add(m_recommendationMinAltitude, 0, wxEXPAND | wxALL, 8);
+  add(recommendationPage, recommendationRoot, _("Maximum recommended Hc (degrees)"));
+  recommendationRoot->Add(m_recommendationMaxAltitude, 0, wxEXPAND | wxALL, 8);
+  recommendationRoot->Add(recommendationNote, 0, wxEXPAND | wxALL, 8);
+  m_androidCombinations = add(recommendationPage, recommendationRoot, wxEmptyString);
+  recommendationRoot->Add(plotControls, 0, wxEXPAND | wxALL, 8);
+  m_skyPlot->SetMinSize(wxSize(0, CN_TouchHeight() * 5));
+  recommendationRoot->Add(m_skyPlot, 0, wxEXPAND | wxALL, 8);
+  recommendationRoot->Add(plotLegend, 0, wxEXPAND | wxALL, 8);
+  recommendationRoot->ShowItems(true);
+  recommendationPage->SetSizer(recommendationRoot);
+  m_notebook->InsertPage(3, recommendationPage, _("Recommendations && sky"));
 
   m_almanac->Hide();
   almanacSizer->Detach(m_almanac);
@@ -662,6 +678,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_androidExport = exportButton;
   m_androidAlmanacStatus = add(almanacPage, almanacSizer, wxEmptyString);
   m_androidAlmanac = PlannerCards(almanacPage, almanacSizer, false);
+  almanacPage->GetHandle()->setProperty("cnNoPageScroll", true);
 #endif
 
   // On GTK, notebook pages which were hidden while their list controls were
@@ -1471,6 +1488,7 @@ void PlannerDialog::RefreshEvents() {
   const DailyEventsResult table = HorizonEventCalculator::Calculate(
       motion.referenceUtc, motion, m_eyeHeight->GetValue());
   for (const auto& event : table.events) {
+#ifndef __OCPN__ANDROID__
     const long row = m_events->InsertItem(
         m_events->GetItemCount(), HorizonEventCalculator::Name(event.kind));
     m_events->SetItem(row, 1,
@@ -1485,6 +1503,7 @@ void PlannerDialog::RefreshEvents() {
             ", " +
             FormatNavigationAngle(event.observerLongitude,
                                   NavigationAngleKind::Longitude, true));
+#endif
 #ifdef __OCPN__ANDROID__
     report += HorizonEventCalculator::Name(event.kind) + "\n";
     report += _("UTC: ") + UtcDateTime::FormatInstant(
@@ -1499,6 +1518,7 @@ void PlannerDialog::RefreshEvents() {
   }
   for (const auto& phase : NextPrincipalMoonPhases(
            motion.referenceUtc, motion.latitude, motion.longitude)) {
+#ifndef __OCPN__ANDROID__
     const long row =
         m_events->InsertItem(m_events->GetItemCount(), _("Next ") + phase.name);
     m_events->SetItem(row, 1,
@@ -1506,6 +1526,7 @@ void PlannerDialog::RefreshEvents() {
     m_events->SetItem(row, 2, DisplayTime(phase.utc));
     m_events->SetItem(row, 3, CN_UTF8_("—"));
     m_events->SetItem(row, 4, _("Geocentric phase"));
+#endif
 #ifdef __OCPN__ANDROID__
     report += _("Next ") + phase.name + "\n";
     report += _("UTC: ") + UtcDateTime::FormatInstant(
@@ -1555,8 +1576,10 @@ void PlannerDialog::RefreshBodies() {
       SightRanker::RecommendationCandidates(m_rankedBodies, limitAltitude,
                                             minimumAltitude, maximumAltitude);
   if (limitAltitude && minimumAltitude >= maximumAltitude) {
+#ifndef __OCPN__ANDROID__
     m_combinations->InsertItem(
         0, _("Set the minimum recommended Hc below the maximum."));
+#endif
 #ifdef __OCPN__ANDROID__
     m_androidCombinations->SetLabel(
         _("Set the minimum recommended Hc below the maximum."));
@@ -1574,11 +1597,13 @@ void PlannerDialog::RefreshBodies() {
       if (!names.empty()) names += " / ";
       names += body.state.body;
     }
+#ifndef __OCPN__ANDROID__
     const long row =
         m_combinations->InsertItem(m_combinations->GetItemCount(), names);
     m_combinations->SetItem(row, 1,
                             wxString::Format("%.0f", combination.score));
     m_combinations->SetItem(row, 2, combination.reason);
+#endif
 #ifdef __OCPN__ANDROID__
     combinations += names + wxString::Format(_("\nScore: %.0f\n"),
         combination.score) + combination.reason + "\n\n";
@@ -1655,6 +1680,7 @@ void PlannerDialog::RebuildBodyList() {
   const bool daylight = sun.valid && sun.geometricAltitude >= 0.0;
   for (const size_t index : order) {
     const RankedBody& body = m_rankedBodies[index];
+#ifndef __OCPN__ANDROID__
     const long row =
         m_bodies->InsertItem(m_bodies->GetItemCount(), body.state.body);
     m_bodies->SetItemData(row, static_cast<long>(index));
@@ -1669,6 +1695,7 @@ void PlannerDialog::RebuildBodyList() {
     m_bodies->SetItem(row, 5,
                       wxString::Format("%.1f", body.state.visualMagnitude));
     m_bodies->SetItem(row, 6, wxString::Format("%.0f", body.score));
+#endif
     wxString reason = body.reason;
     if (m_limitRecommendationAltitude->GetValue()) {
       if (body.state.geometricAltitude <
@@ -1679,9 +1706,11 @@ void PlannerDialog::RebuildBodyList() {
         reason += _("; above preferred Hc");
     }
     if (daylight && body.state.isStar) reason += _("; star in daylight");
+#ifndef __OCPN__ANDROID__
     m_bodies->SetItem(row, 7, reason);
     if (daylight && body.state.isStar)
       m_bodies->SetItemTextColour(row, wxColour(150, 150, 150));
+#endif
 #ifdef __OCPN__ANDROID__
     const wxString text = body.state.body + "\n" +
         _("Hc: ") + FormatNavigationAngle(body.state.geometricAltitude) + "\n" +
@@ -1753,6 +1782,7 @@ void PlannerDialog::RefreshAlmanac() {
       motion.referenceUtc, 24,
       {"Sun", "Moon", "Venus", "Mars", "Jupiter", "Saturn", "Polaris"}, motion);
   for (const auto& item : m_almanacRows) {
+#ifndef __OCPN__ANDROID__
     const long row = m_almanac->InsertItem(
         m_almanac->GetItemCount(),
         UtcDateTime::FormatInstant(item.utc, "%Y-%m-%d %H:%M"));
@@ -1766,6 +1796,7 @@ void PlannerDialog::RefreshAlmanac() {
         FormatNavigationAngle(item.declination, NavigationAngleKind::Latitude));
     m_almanac->SetItem(row, 7, FormatNavigationAngle(item.altitude));
     m_almanac->SetItem(row, 8, wxString::Format("%.1f", item.azimuth));
+#endif
 #ifdef __OCPN__ANDROID__
     const wxString text = item.body + "\n" + _("UTC: ") +
         UtcDateTime::FormatInstant(item.utc, "%Y-%m-%d %H:%M:%S.%l") + "\n" +
