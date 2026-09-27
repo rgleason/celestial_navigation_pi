@@ -1,6 +1,10 @@
 #include "PlatformMessageBox.h"
 #ifdef __OCPN__ANDROID__
 #include "AndroidJob.h"
+#include "AndroidSurface.h"
+#include <QDoubleSpinBox>
+#include <QTimer>
+#include <wx/weakref.h>
 #endif
 #include "LunarToolsDialog.h"
 #include "Dut1UpdatePanel.h"
@@ -499,6 +503,13 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
 }
 
 void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): the surface owns one scrolling form. Keep each
+  // labelled field full-width and render repeats from their numerical model.
+  const int formOrientation = wxVERTICAL;
+#else
+  const int formOrientation = wxHORIZONTAL;
+#endif
   auto* top = new wxBoxSizer(wxVERTICAL);
   auto* note = new wxStaticText(
       page, wxID_ANY,
@@ -506,11 +517,13 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
                "perpendicularity, side, collimation and index error first. "
                "Similar-altitude stars reveal scale/centering; Moon pairs "
                "require accurate UTC and position."));
+#ifndef __OCPN__ANDROID__
   note->Wrap(800);
+#endif
   top->Add(note, 0, wxEXPAND | wxALL, 8);
   auto* prediction =
       new wxStaticBoxSizer(wxVERTICAL, page, _("Offline pair prediction"));
-  auto* row1 = new wxBoxSizer(wxHORIZONTAL);
+  auto* row1 = new wxBoxSizer(formOrientation);
   m_calLatitude =
       new NavigationAngleCtrl(page, NavigationAngleKind::Latitude,
                               m_defaultLatitude, -90.0, 90.0, wxSize(155, -1));
@@ -522,12 +535,12 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
   row1->Add(LabelControl(page, _("Latitude"), m_calLatitude), 1, wxRIGHT, 5);
   row1->Add(LabelControl(page, _("Longitude"), m_calLongitude), 1, wxRIGHT, 5);
   prediction->Add(row1, 0, wxEXPAND | wxALL, 3);
-  auto* utcRow = new wxBoxSizer(wxHORIZONTAL);
+  auto* utcRow = new wxBoxSizer(formOrientation);
   utcRow->Add(LabelControl(page, _("UTC date"), m_calUtc.dateContainer), 1,
               wxRIGHT, 5);
   utcRow->Add(LabelControl(page, _("UTC time"), m_calUtc.timeContainer), 1);
   prediction->Add(utcRow, 0, wxEXPAND | wxALL, 3);
-  auto* row2 = new wxBoxSizer(wxHORIZONTAL);
+  auto* row2 = new wxBoxSizer(formOrientation);
   m_calFirstBody = new wxChoice(page, wxID_ANY);
   m_calSecondBody = new wxChoice(page, wxID_ANY);
   m_calContact = new wxChoice(page, wxID_ANY);
@@ -547,7 +560,7 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
   predict->Bind(wxEVT_BUTTON, &LunarToolsDialog::PredictCalibrationPair, this);
   row2->Add(predict, 0);
   prediction->Add(row2, 0, wxEXPAND | wxALL, 3);
-  auto* row3 = new wxBoxSizer(wxHORIZONTAL);
+  auto* row3 = new wxBoxSizer(formOrientation);
   const CelestialNavigationDefaults defaults =
       LoadCelestialNavigationDefaults();
   m_calPressure = Spin(page, 0.0, 1100.0, defaults.pressure, 1.0, 1);
@@ -570,7 +583,7 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
                   6);
   top->Add(prediction, 0, wxEXPAND | wxALL, 5);
 
-  auto* entry = new wxBoxSizer(wxHORIZONTAL);
+  auto* entry = new wxBoxSizer(formOrientation);
   m_calObservedAngle = new NavigationAngleCtrl(
       page, NavigationAngleKind::Generic, 0.0, 0.0, 180.0, wxSize(165, -1));
   m_calUncertainty = Spin(page, 0.05, 10.0, 0.2, 0.05, 2);
@@ -596,8 +609,15 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
     m_calReadings->InsertColumn(index, columns[index]);
     m_calReadings->SetColumnWidth(index, widths[index]);
   }
+#ifdef __OCPN__ANDROID__
+  m_calReadings->Hide();
+  m_androidCalReadings = new wxPanel(page);
+  m_androidCalReadings->SetSizer(new wxBoxSizer(wxVERTICAL));
+  top->Add(m_androidCalReadings, 0, wxEXPAND | wxALL, 6);
+#else
   top->Add(m_calReadings, 1, wxEXPAND | wxLEFT | wxRIGHT, 6);
-  auto* profile = new wxStaticBoxSizer(wxHORIZONTAL, page,
+#endif
+  auto* profile = new wxStaticBoxSizer(formOrientation, page,
                                        _("Persistent correction profile"));
   m_profileChoice = new wxChoice(page, wxID_ANY);
   m_profileChoice->Bind(wxEVT_CHOICE,
@@ -632,6 +652,13 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
       [this](wxSpinDoubleEvent&) { UpdateProfileCorrection(); });
   m_calIndexError->Bind(
       wxEVT_TEXT, [this](wxCommandEvent&) { UpdateProfileCorrection(); });
+#ifdef __OCPN__ANDROID__
+  if (auto* spin = qobject_cast<QDoubleSpinBox*>(m_calIndexError->GetHandle()))
+    QObject::connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     GetHandle(), [this](double) {
+      QTimer::singleShot(0, GetHandle(), [this]() { UpdateProfileCorrection(); });
+    });
+#endif
   page->SetSizer(top);
 }
 
@@ -1152,6 +1179,9 @@ sextant_calibration::BodySample LunarToolsDialog::SampleBody(
 }
 
 void LunarToolsDialog::PredictCalibrationPair(wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+  RefreshAndroidCalibration();
+#endif
   if (m_calFirstBody->GetSelection() == wxNOT_FOUND ||
       m_calSecondBody->GetSelection() == wxNOT_FOUND ||
       m_calFirstBody->GetStringSelection() ==
@@ -1206,6 +1236,9 @@ void LunarToolsDialog::PredictCalibrationPair(wxCommandEvent&) {
           ? CN_UTF8_(" — prefer a more equal-altitude star pair")
           : wxString()));
   m_calObservedAngle->SetAngle(m_lastPredictionDeg);
+#ifdef __OCPN__ANDROID__
+  RefreshAndroidCalibration();
+#endif
 }
 
 void LunarToolsDialog::AddCalibrationReading(wxCommandEvent&) {
@@ -1243,14 +1276,27 @@ void LunarToolsDialog::AddCalibrationReading(wxCommandEvent&) {
   m_calReadings->SetItem(
       row, 5, wxString::Format(CN_UTF8_("±%.2f′"), reading.uncertainty_arcmin));
   m_calReadings->SetItem(row, 6, wxString::FromUTF8(reading.note.c_str()));
+#ifdef __OCPN__ANDROID__
+  m_androidSelectedReading = row;
+  RefreshAndroidCalibration();
+#endif
 }
 
 void LunarToolsDialog::RemoveCalibrationReading(wxCommandEvent&) {
   const long selected =
+#ifdef __OCPN__ANDROID__
+      m_androidSelectedReading;
+#else
       m_calReadings->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+#endif
   if (selected < 0) return;
   m_calibrationReadings.erase(m_calibrationReadings.begin() + selected);
   m_calReadings->DeleteItem(selected);
+#ifdef __OCPN__ANDROID__
+  m_androidSelectedReading = m_calibrationReadings.empty() ? -1
+      : std::min<long>(selected, m_calibrationReadings.size() - 1);
+  RefreshAndroidCalibration();
+#endif
 }
 
 void LunarToolsDialog::SaveCalibrationProfile(wxCommandEvent&) {
@@ -1301,7 +1347,9 @@ void LunarToolsDialog::SaveCalibrationProfile(wxCommandEvent&) {
       wxString::FromUTF8(profile.name.c_str()),
       wxString::FromUTF8(profile.serial_number.c_str()),
       profile.repeatability_arcmin, points));
+#ifndef __OCPN__ANDROID__
   m_profileSummary->Wrap(1000);
+#endif
   UpdateProfileCorrection();
 }
 
@@ -1323,11 +1371,16 @@ void LunarToolsDialog::SelectCalibrationProfile(wxCommandEvent&) {
           ? CN_UTF8_("Apply after independently measured IE.")
           : _("Legacy total correction: apply directly to the raw reading; "
               "do not apply IE separately.")));
+#ifndef __OCPN__ANDROID__
   m_profileSummary->Wrap(1000);
+#endif
   UpdateProfileCorrection();
 }
 
 void LunarToolsDialog::UpdateProfileCorrection() {
+#ifdef __OCPN__ANDROID__
+  RefreshAndroidCalibration();
+#endif
   const int selected = m_profileChoice->GetSelection();
   if (selected < 0 || static_cast<std::size_t>(selected) >= m_profiles.size()) {
     m_profileCorrection->SetLabel(
@@ -1359,6 +1412,55 @@ void LunarToolsDialog::UpdateProfileCorrection() {
       outside ? CN_UTF8_(" — outside tested range; nearest endpoint only")
               : wxString()));
 }
+
+#ifdef __OCPN__ANDROID__
+void LunarToolsDialog::RefreshAndroidCalibration() {
+  if (!m_androidCalReadings || m_androidCalibrationPending) return;
+  m_androidCalibrationPending = true;
+  wxWeakRef<LunarToolsDialog> weak(this);
+  // A selected card must finish its native click before it is destroyed.
+  QTimer::singleShot(0, GetHandle(), [weak]() {
+    if (!weak) return;
+    auto* self = weak.get();
+    self->m_androidCalibrationPending = false;
+    auto* list = self->m_androidCalReadings->GetSizer();
+    list->Clear(true);
+    if (self->m_calibrationReadings.empty())
+      list->Add(new wxStaticText(self->m_androidCalReadings, wxID_ANY,
+                                _("No repeat readings added.")),
+                0, wxEXPAND | wxALL, 8);
+    for (size_t index = 0; index < self->m_calibrationReadings.size(); ++index) {
+      const auto& reading = self->m_calibrationReadings[index];
+      auto* panel = new wxPanel(self->m_androidCalReadings, wxID_ANY,
+          wxDefaultPosition, wxDefaultSize, wxBORDER_SIMPLE);
+      auto* fields = new wxBoxSizer(wxVERTICAL);
+      auto* select = new wxButton(panel, wxID_ANY,
+          wxString::Format(self->m_androidSelectedReading == static_cast<long>(index)
+              ? _("Selected repeat %lu") : _("Select repeat %lu"),
+              static_cast<unsigned long>(index + 1)));
+      select->Bind(wxEVT_BUTTON, [weak, index](wxCommandEvent&) {
+        if (!weak || index >= weak->m_calibrationReadings.size()) return;
+        weak->m_androidSelectedReading = index;
+        weak->RefreshAndroidCalibration();
+      });
+      fields->Add(select, 0, wxEXPAND | wxALL, 8);
+      wxString caption = _("Predicted apparent: ") + FormatNavigationAngle(reading.predicted_deg);
+      caption += "\n" + _("Raw observed: ") + FormatNavigationAngle(reading.observed_deg);
+      caption += wxString::Format(CN_UTF8_("\nIE (on arc +): %+.2f′"), reading.index_error_arcmin);
+      caption += "\n" + _("After IE: ") + FormatNavigationAngle(
+          sextant_calibration::IndexCorrectedObservedDegrees(reading));
+      caption += wxString::Format(CN_UTF8_("\nResidual to add: %+.2f′\nUncertainty: ±%.2f′"),
+          sextant_calibration::ResidualCorrectionArcmin(reading), reading.uncertainty_arcmin);
+      caption += "\n" + _("Note / shade: ") + wxString::FromUTF8(reading.note.c_str());
+      fields->Add(new wxStaticText(panel, wxID_ANY, caption), 0, wxEXPAND | wxALL, 8);
+      panel->SetSizer(fields);
+      list->Add(panel, 0, wxEXPAND | wxALL, 6);
+    }
+    CN_StyleAndroidControls(self->m_androidCalReadings);
+    celestial_android::LayoutScrolls(self);
+  });
+}
+#endif
 
 void LunarToolsDialog::LoadProfiles() {
   wxFileConfig* config = GetOCPNConfigObject();

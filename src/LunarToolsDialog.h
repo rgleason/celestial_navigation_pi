@@ -63,6 +63,12 @@ private:
   void UpdateProfileCorrection();
   void LoadProfiles();
   void PersistProfiles();
+#ifdef __OCPN__ANDROID__
+  void RefreshAndroidCalibration();
+  wxPanel* m_androidCalReadings = nullptr;
+  long m_androidSelectedReading = -1;
+  bool m_androidCalibrationPending = false;
+#endif
   void ShowCandidate(std::size_t index);
   void CreateUtcEntry(wxWindow* parent, UtcEntryControls* controls,
                       const wxDateTime& utc);
