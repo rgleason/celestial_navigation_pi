@@ -1585,3 +1585,14 @@ remains17:19. Last ANR reports none since boot. Memory snapshot467276KiB PSS /
 532216KiB RSS is not a sustained memory-stability pass. Explicit opt-in desktop
 LunarUiSmoke (including planner) passed6914ms after the timer change. Other
 planning pages, invalids and source modes remain open.
+### 2026-09-27 20:15–20:17 BST: chart preference restoration
+
+The profile comparison after the Planner rotation test found the host chart
+orientation had changed from north-up to course-up during a rejected automated
+tap sequence. The visible compass control was used to return to north-up; host
+Settings > OK then saved it. Independent app-owned profile inspection confirmed
+`Canvas/CanvasConfig1` has `canvasCourseUp=0` and `canvasHeadUp=0`. PID 5462
+remained continuous. Private screenshots `chart64-north-final.png` and
+`chart64-north-saved.png`, and `profile64-north-restored.conf`, remain in
+`/tmp/celnav-android-20260927/`. This is preference restoration, not an additional
+celestial calculation acceptance pass.
