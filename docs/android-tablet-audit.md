@@ -1978,3 +1978,30 @@ left the host action-bar region black while the complete plugin form remained
 visible/responsive; the bar restored on the next edit. This rendering symptom
 is retained, not claimed resolved. Full bearing Save/reopen/chart/independent
 geometry and other Horizon variants remain open.
+
+### 2026-09-28 00:13–00:21 BST: Sextant layout candidate rejected
+
+On runtime78 the Sextant check page exposed clipped weather/IE labels and
+numeric values, a one-line repeat table and multi-column profile inputs.
+Actual Predict distance for default Sirius/Vega at boat53.1795133666667,
+−2.85813505, 2026-09-27 23:13:07.829 UTC explicitly reported one or both
+bodies below the usable horizon; no reading/profile was saved. A final swipe
+showed the full baseline explanation (resume79-{sextant,prediction}.png).
+
+ca992bf stacked Android groups and supplied model-backed selectable repeat
+cards. Android/desktop compilation passed; actual-display isolated LunarUiSmoke
+passed6397ms, with the existing missing testdata panel-icon warning retained.
+Archive79 SHA2564e540c52add4938767a69a77894d0ebb0bd0020c204aa908167fb2a1e8a5bb22
+was actually imported; installed79.so SHA256
+285f89de4bbe5c4c2bd353054e16aca831d0f052717f5da12ed87fd79f8ca775 matches
+the payload, PID20871 continuous. Physical first/body screenshots showed
+that nested sizer groups retained narrow desktop width flags despite their
+vertical orientation: coordinate text was severely clipped. This candidate
+fails layout acceptance; cards/profile workflows were not claimed executed.
+Screens resume79-stacked-{first,body}.png retain this failure.
+
+2500641 expands nested labelled groups and removes vertical stretch weights;
+its Android compilation failed due mixed pointer types in an initializer list
+(build80-android.log), while desktop compiled. 5b8267c uses explicitly typed
+sizer pointers. Build81 and physical retest are the next gate; none of the
+Sextant layout, numerical or persistence acceptance is closed by these builds.
