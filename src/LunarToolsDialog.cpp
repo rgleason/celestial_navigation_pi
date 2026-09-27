@@ -653,6 +653,15 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
   m_calIndexError->Bind(
       wxEVT_TEXT, [this](wxCommandEvent&) { UpdateProfileCorrection(); });
 #ifdef __OCPN__ANDROID__
+  // Nested sizer items retain their desktop width flags even when their
+  // orientation changes. Expand the labelled groups as well as each control.
+  for (wxSizer* group : {static_cast<wxSizer*>(row1), utcRow, row2, row3,
+                         entry, static_cast<wxSizer*>(profile)})
+    for (auto* item : group->GetChildren()) {
+      item->SetProportion(0);
+      item->SetFlag(wxEXPAND | wxALL);
+      item->SetBorder(8);
+    }
   if (auto* spin = qobject_cast<QDoubleSpinBox*>(m_calIndexError->GetHandle()))
     QObject::connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
                      GetHandle(), [this](double) {
