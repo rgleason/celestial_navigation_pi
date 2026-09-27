@@ -1537,3 +1537,51 @@ Desktop PlannerTime six cases passed; the initial UI invocation skipped by
 default and is not counted. Explicit `CELESTIAL_RUN_UI_TESTS=1` invocation of
 LunarUiSmoke (including planner) passed in 6343 ms, with no runtime desktop
 changes. Android and desktop builds passed before packaging.
+
+### 19:58–20:09 BST — iteration 64 cold live refresh and Greenwich reference
+
+Source `1a2a7af8e1b3a2e2c540b99554b7b579aff6a81d` imported through the
+native chooser with PID 945 continuous. Tar SHA256
+`990897c6370467d4f6ab26ebde66fc07e91f6bb5240c243be102f3a9f81f15bd`;
+actual installed library
+`df7693acdfbb547d85b895434746cf9cea4ed221ae4b6d1aecdedd93dfc4706c`.
+A deliberate cold restart produced PID 5462. Manual latitude 51.4779, longitude
+0 and platform-entry format persisted. Date/time starts at Now when reopened,
+as in the baseline; do not describe it as persisted manual time.
+
+The first combined automated input/Back sequence closed the sheet and moved
+the chart. This is not an accepted reference workflow. The repeated test
+verified the keyboard before each Back and allowed each calculation to settle.
+Native hour 0, minute 0 and seconds 0.987 select Manual and update the resolved
+UTC immediately. The visible calendar transaction selects 21 June 2024 and the
+summary shows `2024-06-21 00:00:00.987 UTC`. Typed eye height 0 recalculates
+without pressing Calculate. This passes the stale-context regression. Detailed
+responsiveness timing and cancellation are still pending; six/eight-second
+automation settling waits must not be interpreted as measured calculation
+durations or a responsiveness pass.
+
+Actual Greenwich events show sunrise 03:42:22 UTC and sunset 20:21:27 UTC at
+51.4779 N, 0 E, sea level. Existing independent civil-time fixture
+`HorizonEvents.GreenwichSolsticeMatchesPublishedCivilTimes` expects about
+03:43 and 20:21 UTC with a five-minute allowance for horizon/refraction. The
+physical results satisfy that tolerance. Noon is 12:01:55 UTC; this value and
+Moon/twilight results were inspected but are not independent numerical passes.
+
+Full event names, UTC/display times, true bearings and observer coordinates
+are readable; genuine swipes reach the final principal phase and Moon summary.
+The first `settings user_rotation=1` did not rotate: the cold host had enabled
+automatic rotation. That screenshot is not landscape evidence. `wm user-rotation
+lock 1` produced actual 1920x1200 landscape; three swipes reached the final
+Moon summary and visible Close (`planner64-landscape-final.png`). Portrait
+was restored and the immediately observed pre-test `free` rotation mode and
+user_rotation0 restored. Font scale remains1.15. Larger-font planner checks
+are still pending. Back closes the sheet to a usable workspace.
+
+`Sights-final64.xml` is byte-identical to the previous reference snapshot,
+SHA256 `030d4193395b4cb8bddce684d00fb1477c00e56bc0661a70f2af81cd9bcc1020`.
+PID5462 remains continuous through these workflows. Full `logcat64-all.txt`
+contains no new fatal signal/exception in this window; the last fatal signal
+remains17:19. Last ANR reports none since boot. Memory snapshot467276KiB PSS /
+532216KiB RSS is not a sustained memory-stability pass. Explicit opt-in desktop
+LunarUiSmoke (including planner) passed6914ms after the timer change. Other
+planning pages, invalids and source modes remain open.

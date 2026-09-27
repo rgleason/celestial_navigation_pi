@@ -150,3 +150,20 @@ returns. Own the timer by the edited control/dialog, guard its wx lifetime,
 and suppress programmatic initialization/SetValue. Test the visible field,
 result epoch, result and reopened serialized record independently. Explicit
 Calculate actions must also interpret any still-active spin text before reading.
+
+## Planner context and refresh evidence
+
+A generic notebook adapter does not adapt controls outside the notebook. Move
+a multi-column planning context into its own scrollable page before decorating
+the dialog. Preserve hidden date-field visibility when replacing it with a
+touch calendar button, and switch the sizer's replacement item when changing
+entry format; showing the old retained native picker creates overlapping fields.
+
+Verify resolved context and resulting events, not just entered text. On this
+pinned host, planner wx timer refreshes left old context/results visible. Owned
+QTimers plus native spin notifications passed the actual cold retest. Timers
+are stopped/owned within the dialog lifecycle; desktop timers remain unchanged.
+Use the calculated event records directly for wrapped reports rather than
+reading hidden wxQt table columns. Inspect the actual keyboard before issuing
+Back during automation, and confirm screenshot dimensions before counting a
+rotation as landscape. A settling wait is not a measured performance result.
