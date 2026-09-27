@@ -47,6 +47,14 @@ chooses manual, boat, chart cursor, selected DR, last fix or waypoint/place wher
 the baseline supports it. Events, body recommendations, sky plot, GHA/Dec tables,
 CSV, noon/Polaris and Create sight remain explicit actions.
 
+The planner opens on a separate **Context** page with a single scrollable
+column for position, time, display basis and motion. Explicit calendar and
+fractional-second selectors are the Android default; nautical text entry
+remains available. **Events** presents full names, UTC and chosen display
+times, true bearings and observer positions in wrapped results, followed by
+Moon information. These fields must never depend on horizontally clipped
+desktop columns. Changing context recalculates the existing shared models.
+
 Tools offers **Lunar sessions**, **Saved lunar solutions**, **Coastal sextant**,
 **Sextant check**, **Time & clock correction**, **Ephemeris / DUT1**,
 **Display**, **Manual**, **PDF manual** and **About / storage**. Frequent time

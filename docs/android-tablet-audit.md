@@ -1458,3 +1458,48 @@ the earlier disabled-filter inference was incorrect. Pinned wxQt's wxCheckBox
 header has no native SetLabel override: the generic constructor caption remains
 visible after SetLabel. The Android constructor now supplies the final caption
 containing the selected body. Caption retest is pending in iteration 62.
+
+### 19:36–19:40 BST — iteration 62 caption and fractional epoch
+
+Source `0ccce32c388a60e6150ac96682e4e1ad81e9c16e` was imported through
+Plugin Manager. Tar SHA256
+`dcec63d07dec145b200e6d58301eee1d5df3549ebb33dad3550eb82f13384f78`;
+independently read installed library
+`21f4b5de75485bdb988fb676f4ff3c28652b3cc163e1a4915523c7d257a7bf90`.
+PID 945 continued through import and these operations. The actual caption is
+“Only highlighted body (Saturn)”; checking it gives the expected insufficient
+altitude-sights validation with no retained plot/cards. Actual Sun-filter
+activation on iteration 61 retained all three independently verified Sun rows.
+
+Typing 21:18:20.987 shows the complete resolved UTC epoch. Changing to Computer
+local displays 22:18:20.987 while the summary retains 21:18:20.987 UTC and the
+same result. The attempted return to UTC did not select that popup row, so no
+return-to-UTC pass is attributed to this operation. Back closes the Fix sheet
+and the workspace remains visible and usable (`fix62-closed.png`).
+`Sights-final62.xml` remains byte-identical to `Sights-fix57.xml`, SHA256
+`030d4193395b4cb8bddce684d00fb1477c00e56bc0661a70f2af81cd9bcc1020`.
+
+Full logcat retains historical crashes; the latest fatal signal is the already
+investigated 17:19 host gesture failure. No new fatal signal/exception appears
+during this test window. `lastanr62.txt` reports none since boot. At this point
+host memory is 501523 KiB PSS / 566064 KiB RSS; this is a snapshot, not a memory
+stability pass. Font scale 1.15 and portrait rotation 0 are restored.
+
+The independent three-Sun fixture calculation is now reproducible in
+`test/worksheet_navigation_reference.py`: existing worksheet GHA/Dec/Ho
+inputs, spherical astronomical triangle, GeographicLib WGS84 track, SciPy
+angular least squares and independently calculated robust sequence statistics.
+No plugin algorithm is imported. NumPy 2.5.2, SciPy 1.18.1, GeographicLib 2.1
+reproduce the retained reference JSON. Dependencies are optional tools, not
+added to the production or CI runtime. Tolerances and the deliberately poor
+imposed-motion residuals are stated in the script.
+
+### 19:44–19:49 BST — planning layout failure
+
+Iteration 62 opens the planner after its calculations complete. A repeated
+launch tap opened the position popup once the sheet appeared; this is an
+automation timing issue, not proof of a launch failure. The actual portrait
+layout (`planner62-context-retry.png`) hides longitude, time and speed beyond
+the desktop grid and clips event table names/times. The planner family fails
+touch-layout acceptance. A separate scrollable Context page and full event
+results are being implemented; other planning workflows remain pending.

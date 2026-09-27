@@ -387,10 +387,12 @@ inline void AdaptDates(wxWindow* window) {
     if (date->GetHandle()->property("cnDateAdapter").toBool()) continue;
     auto* sizer = date->GetContainingSizer();
     if (!sizer) continue;
+    const bool shown = date->IsShown();
     auto* button = new wxButton(date->GetParent(), wxID_ANY, "");
     if (!sizer->Replace(date, button)) { button->Destroy(); continue; }
     date->GetHandle()->setProperty("cnDateAdapter", true);
     date->Hide();
+    button->Show(shown);
     button->SetMinSize(wxSize(-1, CN_TouchHeight()));
     wxWeakRef<wxDatePickerCtrl> weakDate(date);
     wxWeakRef<wxButton> weakButton(button);

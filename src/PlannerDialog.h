@@ -107,6 +107,9 @@ private:
   wxStaticText* m_status;
   wxNotebook* m_notebook;
   wxListCtrl* m_events;
+#ifdef __OCPN__ANDROID__
+  wxStaticText* m_androidEvents = nullptr;
+#endif
   wxStaticText* m_moonSummary;
   wxListCtrl* m_bodies;
   wxListCtrl* m_combinations;

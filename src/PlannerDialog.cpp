@@ -495,6 +495,28 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   root->Add(buttons, 0, wxALL | wxEXPAND, 6);
   SetSizer(root);
 
+#ifdef __OCPN__ANDROID__
+  // Keep the context accessible at any orientation instead of reserving a
+  // six-column desktop grid above every result page. Retain all controllers.
+  auto* contextPage = new wxPanel(m_notebook);
+  root->Detach(context);
+  std::vector<wxWindow*> contextChildren;
+  for (auto* child : GetChildren())
+    if (child != m_notebook && child != contextPage &&
+        child->GetId() != wxID_CLOSE)
+      contextChildren.push_back(child);
+  for (auto* child : contextChildren) child->Reparent(contextPage);
+  auto* contextRoot = new wxBoxSizer(wxVERTICAL);
+  contextRoot->Add(context, 0, wxEXPAND | wxALL, 8);
+  contextPage->SetSizer(contextRoot);
+  m_notebook->InsertPage(0, contextPage, _("Context"), true);
+
+  m_events->Hide();
+  eventsSizer->Detach(m_events);
+  m_androidEvents = new wxStaticText(eventsPage, wxID_ANY, wxEmptyString);
+  eventsSizer->Insert(0, m_androidEvents, 0, wxEXPAND | wxALL, 8);
+#endif
+
   // On GTK, notebook pages which were hidden while their list controls were
   // populated can retain the page's original full-size child allocation.
   // Relayout the newly selected page explicitly so its controls cannot cover
@@ -595,6 +617,26 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_refreshTimer.SetOwner(this);
   Bind(wxEVT_TIMER, &PlannerDialog::OnRefreshTimer, this,
        m_refreshTimer.GetId());
+#ifdef __OCPN__ANDROID__
+  // Typed wxQt spin values need native notifications as well as arrow events.
+  // The existing owned refresh timer coalesces edits after callbacks return.
+  for (auto* control : {m_course, m_speed, m_eyeHeight,
+                       m_recommendationMinAltitude,
+                       m_recommendationMaxAltitude}) {
+    if (auto* spin = qobject_cast<QDoubleSpinBox*>(control->GetHandle()))
+      QObject::connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                       GetHandle(), [this](double) { ScheduleRefresh(); });
+  }
+  if (auto* spin = qobject_cast<QDoubleSpinBox*>(m_fixedOffset->GetHandle()))
+    QObject::connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+        GetHandle(), [this](double value) {
+          if (m_updatingZoneOffset) return;
+          m_lastValidZoneOffset = value;
+          m_zoneOffsetTextValid = true;
+          m_autoZoneOffset->SetValue(false);
+          ScheduleRefresh();
+        });
+#endif
   calculate->Bind(wxEVT_BUTTON, &PlannerDialog::RefreshAll, this);
   exportButton->Bind(wxEVT_BUTTON, &PlannerDialog::ExportAlmanac, this);
   createSight->Bind(wxEVT_BUTTON, &PlannerDialog::CreateSelectedSight, this);
@@ -613,6 +655,10 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   config->Read(_T("InputTimeBasis"), &inputTimeBasis, 0L);
   config->Read(_T("DisplayTime"), &displayTime, 0L);
   config->Read(_T("EntryFormat"), &entryFormat, 0L);
+#ifdef __OCPN__ANDROID__
+  // Prefer explicit selectors on a new profile, retaining an existing choice.
+  if (!config->HasEntry(_T("EntryFormat"))) entryFormat = 1;
+#endif
   config->Read(_T("Latitude"), &latitude, 0.0);
   config->Read(_T("Longitude"), &longitude, 0.0);
   config->Read(_T("Moving"), &moving, false);
@@ -825,7 +871,15 @@ void PlannerDialog::UpdateEntryFormatControls() {
   const bool nautical = m_entryFormat->GetSelection() == 0;
   m_nauticalDate->Show(nautical);
   m_nauticalTime->Show(nautical);
+#ifdef __OCPN__ANDROID__
+  // AdaptDates replaces the first sizer item with the touch date button.
+  // Show that item, not the retained hidden native date picker.
+  m_dateContainer->GetSizer()->Show(size_t(0), !nautical);
+  if (m_utcDate->GetHandle()->property("cnDateAdapter").toBool())
+    m_utcDate->Hide();
+#else
   m_utcDate->Show(!nautical);
+#endif
   m_utcTime->Show(!nautical);
   m_dateContainer->Layout();
   m_timeContainer->Layout();
@@ -866,7 +920,11 @@ void PlannerDialog::UpdateResolvedUtc(const wxDateTime& utc) {
     return;
   }
   m_resolvedUtc->SetLabel(_("Resolved UTC: ") +
+#ifdef __OCPN__ANDROID__
+                          UtcDateTime::FormatInstant(utc, "%Y-%m-%d %H:%M:%S.%l UTC"));
+#else
                           UtcDateTime::FormatInstant(utc, "%Y-%m-%d %H:%M:%S UTC"));
+#endif
 }
 
 void PlannerDialog::ContextPositionEdited(wxCommandEvent&) {
@@ -1205,11 +1263,18 @@ void PlannerDialog::ClearCalculatedResults(const wxString& status) {
   m_almanacRows.clear();
   m_almanac->DeleteAllItems();
   m_specialSummary->SetLabel(wxEmptyString);
+#ifdef __OCPN__ANDROID__
+  m_androidEvents->SetLabel(wxEmptyString);
+  celestial_android::LayoutScrolls(this);
+#endif
   m_status->SetLabel(status);
 }
 
 void PlannerDialog::RefreshEvents() {
   m_events->DeleteAllItems();
+#ifdef __OCPN__ANDROID__
+  wxString report;
+#endif
   const ObserverMotion motion = ReadMotion(false);
   const DailyEventsResult table = HorizonEventCalculator::Calculate(
       motion.referenceUtc, motion, m_eyeHeight->GetValue());
@@ -1228,6 +1293,17 @@ void PlannerDialog::RefreshEvents() {
             ", " +
             FormatNavigationAngle(event.observerLongitude,
                                   NavigationAngleKind::Longitude, true));
+#ifdef __OCPN__ANDROID__
+    report += HorizonEventCalculator::Name(event.kind) + "\n";
+    report += _("UTC: ") + UtcDateTime::FormatInstant(
+        event.utc, "%Y-%m-%d %H:%M:%S") + "\n";
+    report += _("Display: ") + DisplayTime(event.utc) + "\n";
+    report += wxString::Format(_("Bearing true: %.1f degrees\n"), event.bearingTrue);
+    report += _("Observer: ") + FormatNavigationAngle(event.observerLatitude,
+        NavigationAngleKind::Latitude, true) + ", " +
+        FormatNavigationAngle(event.observerLongitude,
+        NavigationAngleKind::Longitude, true) + "\n\n";
+#endif
   }
   for (const auto& phase : NextPrincipalMoonPhases(
            motion.referenceUtc, motion.latitude, motion.longitude)) {
@@ -1238,6 +1314,13 @@ void PlannerDialog::RefreshEvents() {
     m_events->SetItem(row, 2, DisplayTime(phase.utc));
     m_events->SetItem(row, 3, CN_UTF8_("—"));
     m_events->SetItem(row, 4, _("Geocentric phase"));
+#ifdef __OCPN__ANDROID__
+    report += _("Next ") + phase.name + "\n";
+    report += _("UTC: ") + UtcDateTime::FormatInstant(
+        phase.utc, "%Y-%m-%d %H:%M:%S") + "\n";
+    report += _("Display: ") + DisplayTime(phase.utc) + "\n";
+    report += _("Geocentric phase") + "\n\n";
+#endif
   }
   const MoonInformation moon = CalculateMoonInformation(
       motion.referenceUtc, motion.latitude, motion.longitude);
@@ -1257,6 +1340,10 @@ void PlannerDialog::RefreshEvents() {
       FormatNavigationAngle(moonState.geometricAltitude).c_str(),
       moonState.azimuthTrue, 0x00b0,
       FormatNavigationAngle(moon.elongationDegrees).c_str(), polar.c_str()));
+#ifdef __OCPN__ANDROID__
+  m_androidEvents->SetLabel(report.empty() ? _("No events for this context.") : report);
+  celestial_android::LayoutScrolls(this);
+#endif
 }
 
 void PlannerDialog::RefreshBodies() {
