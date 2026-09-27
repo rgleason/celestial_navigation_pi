@@ -35,6 +35,8 @@
 #include <QMenu>
 #include <dlfcn.h>
 #include <set>
+#include <wx/weakref.h>
+#include <vector>
 #endif
 
 #ifndef WX_PRECOMP
@@ -191,6 +193,24 @@ int celestial_navigation_pi::Init(void) {
 }
 
 bool celestial_navigation_pi::DeInit(void) {
+#ifdef __OCPN__ANDROID__
+  // wxWindow::Destroy delegates scheduling to the host wxApp, whose idle
+  // queue may not run during Plugin Manager's modal import. Collect only
+  // this private static wx library's windows, and remove these exact objects
+  // from either queue before synchronously releasing them before dlclose.
+  void* host = dlopen("libgorp.so", RTLD_NOW | RTLD_NOLOAD);
+  auto* hostPending = host ? reinterpret_cast<wxList*>(dlsym(host, "wxPendingDelete")) : nullptr;
+  if (host) dlclose(host);
+  std::vector<wxWeakRef<wxWindow>> ownedWindows;
+  for (auto node = wxTopLevelWindows.GetFirst(); node; node = node->GetNext())
+    ownedWindows.emplace_back(node->GetData());
+  auto removePending = [hostPending](wxWindow* window) {
+    wxPendingDelete.DeleteObject(window);
+    if (hostPending && hostPending != &wxPendingDelete)
+      hostPending->DeleteObject(window);
+  };
+  for (auto& window : ownedWindows) if (window) removePending(window.get());
+#endif
   if (m_route_almanac_menu_id >= 0) {
     RemoveCanvasMenuItem(m_route_almanac_menu_id, "Route");
     m_route_almanac_menu_id = -1;
@@ -220,6 +240,12 @@ bool celestial_navigation_pi::DeInit(void) {
     delete dialog;
   }
 #ifdef __OCPN__ANDROID__
+  for (auto& window : ownedWindows) {
+    if (!window) continue;
+    removePending(window.get());
+    delete window.get();
+  }
+  qInfo() << "Celestial Android owned sheets released before unload:" << ownedWindows.size();
   // Verify native plugin objects have been released before unloading.
   Dl_info module{};
   dladdr(reinterpret_cast<void*>(&create_pi), &module);

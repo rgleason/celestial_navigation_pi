@@ -37,7 +37,7 @@ actual output/files, screenshots, persistence, Cancel/Back and invalid cases.
 | H01 | Sunrise/sunset observation UTC, source, uncertainties, height/weather/horizon quality | Observe > Horizon event | PENDING |
 | H02 | Optional true/magnetic bearing, deviation/variation, position branches, edit, chart | Horizon event > Bearing / results | PENDING |
 | L01 | Lunar distance/altitudes/limbs/uncertainties, separate measurement times, watch basis, motion | Observe > Lunar | PENDING |
-| L02 | Known position or joint UTC/position single solution, candidates, logs, stored solution | Lunar > Results | PARTIAL: 966c5a7 Fiji Saturn joint solve, southern branch 0.7 NM from worksheet (1 NM tolerance), saved correction 7.0458984375 s matches existing regression; clipped result table/initial wrapping failed and redesigned next. Other variants pending |
+| L02 | Known position or joint UTC/position single solution, candidates, logs, stored solution | Lunar > Results | PARTIAL: 966c5a7 Fiji Saturn joint solve, southern branch 0.7 NM from worksheet (1 NM tolerance), saved correction 7.0458984375 s matches existing regression; 93f423a complete candidate cards, actual northern/southern branch selection and correctly named stored XML, empty-name rejection/Cancel without mutation, and initial wrapping verified. Other variants pending |
 | L03 | Session select visible/clear, time+position/time-known-position, earliest DR, robust/bias/motion | Tools > Lunar sessions | PENDING |
 | L04 | Worker cancellation, candidate selection, stored session solution, reopen/details/copy | Lunar sessions > Results / saved | PENDING |
 | L05 | Lunar pair planning, measured guidance, bodies and timing | Plan > Lunar pairs | PENDING |

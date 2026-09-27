@@ -1054,3 +1054,33 @@ selection because programmatic wxQt list selection did not notify the
 controller. Next revision invokes the existing branch controller directly
 and stores its successfully committed selected index. Save and alternate
 candidate evidence are still pending.
+
+### 27 September 16:57–17:02 BST — real lunar selection/save; pending sheet
+
+Actual revision 48/PID 14208 selection changed candidate 1 to northern
+18°27.1624′ N / 154°49.9102′ E, 2733.7 NM from saved DR; restored candidate
+2 southern 20°00.7274′ S / 179°45.0645′ E, 0.7 NM. Selection colour and
+label matched, and positions/geometry changed. Independently saved
+Fiji-North-48 correction -3.2373046875 s and Fiji-South-48 +7.0458984375 s,
+with retained input snapshots/reports. Global correction and all saved
+sight attributes were unchanged by saving either solution. Empty name
+was rejected visibly; Cancel retained byte-identical XML. Evidence
+lunar-results48-actual-candidate1.png, lunar-results48-south.png, name48.png,
+name-empty48.png, Sights-north-saved48.xml, Sights-south-saved48.xml.
+These are the analytical Saturn fixture, not acceptance of all lunar modes.
+
+The initial batched cold navigation started before the app was ready and
+never opened the workspace; lunar-results48-default/candidate1 images
+are invalid attempts. Only the separately inspected ready workspace and
+actual-* evidence above count.
+
+Hot import released the route action: it no longer appeared in the survivor
+scan. After actual observation Save, however, 125 native objects in a
+closed QDialog still survived (one complete sight editor). wx Destroy
+scheduling dispatches through the host wxApp, so the host queue can hold
+plugin windows while modal import prevents idle deletion. Next revision
+collects only plugin-local wxTopLevelWindows, removes those exact pointers
+from both local and host pending queues, and releases surviving owned
+windows synchronously after main-dialog deletion. The retained host
+exports wxPendingDelete, verified llvm-nm. No other plugin/host windows
+are selected for cleanup. This full hot-import sequence remains pending.
