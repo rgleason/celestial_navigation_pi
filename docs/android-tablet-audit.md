@@ -1178,3 +1178,88 @@ The broad QObject/vtable diagnostic walk used to investigate revisions 48–51
 has been removed from the next production candidate. The exact owned-window
 cleanup and already-posted DeferredDelete drain remain; the diagnostic walk
 was neither required for cleanup nor proof about parentless shortcut objects.
+
+## 17:39–18:03 BST — exact-source CI and unofficial host candidate
+
+Pipeline 7: cf41ff6a-371d-426a-b518-6542ce8ff871, workflow
+106a3f08-677c-4287-8a81-04f30882ba9c, plugin source
+9db39657138374d1fea9f87af083a4a6e7c0b0a4. All 19 existing build jobs
+passed. approve-publication remains on hold and publish-reviewed blocked.
+Every target's retained provenance SHA, file sizes and SHA256 hashes were
+independently checked after download; both Android archives contain root
+metadata with matching source/version and expected ELF machine. Desktop
+packaging retains its existing sidecar metadata format. Artifacts and full
+Android logs retained in ci-platforms-9db3965; verification.json per target.
+
+The local 9db3965 ARM64 binary was imported through the native chooser on
+host52, acknowledged and reopened with PID 18155 continuous. Its installed
+SHA256 is a0055d93689dd5a4fb929cb831515a41904c123bce969044d6d64df6adb555bb;
+tar SHA256 0eee7e054d7af3c1cdb3d97ff3284d28baf25ce5f2da14d3d774699f22292b39.
+The separate CI binary has different build flags and is being installed for
+physical acceptance; local-binary acceptance is not silently transferred.
+
+The requested 5.14.1-pob220-import-fix APK was built, version-labelled and
+installed. See android-host-tester-install.md for final fresh-dependency hash,
+exact host source, preserved file checks and remaining tester-flow requirements.
+The broad plugin feature matrix remains incomplete. No new crash/ANR was
+observed in the tested host52/129 import paths; previous crash evidence remains
+in the retained buffers and is not deleted.
+
+### 18:03–18:07 BST — CI ARM64 binary on final fresh host
+
+The actual CI 7 tarball SHA256
+82debc3f0ac151feae1d92ae8ddfdaa7a480baf52b293baf5555e1a10302ac68
+was selected in the native chooser and imported on final host a4b40b4b4.
+Installed library independently matched
+0962daee98d4c15ea88673a17f3e11947d30b477544fac75d8fc906ce948bbf9.
+Acknowledgement, full workspace input and Sights.xml were verified; the full
+XML remained byte-identical. Touch Disable persisted bEnabled=0 and removed
+the toolbar action; Re-enable persisted bEnabled=1 and reopened the full
+workspace. PID 20434 remained continuous throughout, with no new crash-buffer
+entry. Existing xGRIB/xWeatherRouting remained enabled. Host artwork continues
+to show a checked image for disabled rows; model and actual action prove state.
+The host's ShowActiveRouteHighway flag returned to 1 despite narrow restoration;
+ToolbarX=4 persisted. Record this startup/display behavior rather than claiming
+complete profile identity. The user's routes/charts/observations were untouched.
+Evidence: ci7-device-*, ci7-host129-*, installed.so and Sights.xml.
+
+### 18:15–18:25 BST — normal installer and CI7 Sun workflow
+
+Final fresh host APK 05abd439… was opened from My Files > Downloads using
+Package installer > Just once. Update prompted normally; Play Protect's
+unfamiliar-developer notice offered More details > Install anyway. This
+per-file choice completed installation without disabling Play Protect. Open
+launched code129, version5.14.1-pob220-import-fix, PID23025. The host reached
+the chart, retained xGRIB/xWeatherRouting toolbar icons, and accepted a real
+Celestial workspace tap. Sights.xml matched the pre129 backup byte for byte.
+Browser download and stock-package migration are still unexecuted.
+
+The installed **CI7** plugin was used to create a new Sun lower-limb sight
+entirely through the UI: 2025-07-20 12:47:00.000 UTC, Hs30°, uncertainty0.1′,
+eye3.5m, T10°C, P1010hPa, IE+1.5′, no artificial/short horizon. Find Body
+Manual set DR43.2366916666667,-77.533415, then Use position and Sight Save.
+Existing independent worksheet fixture: test/altitude_tests.cpp, first
+INTERCEPT_SIGHTS row (Open CPN testing Intercept Calculation worksheet).
+Expected Ho30.1571°, Hc30.1818316468372°, Zn89.39818°, intercept1.483898810232NM
+away. Verified DE440s/offline DUT1 reduction displayed Ho30°09.4265′,
+Hc30°10.9206′, Zn89°23.9000′ and1.494102NM away. All differences are within
+0.1arcmin /0.1NM; this fixture supports navigation tolerance, not a claim of
+sub-arcsecond independent DE440 validation. Actual saved XML retained the
+entered date/time, DR signs and precision, limb, corrections and uncertainty.
+
+Reopened sight, changed Hs to31°, and explicit Cancel returned to the cards.
+XML remained byte-identical to the saved30° observation. Show selected sight
+on chart hid the workspace and drew its north-south LOP just west of DR,
+consistent with the approximately1.49NM away intercept and eastward Sun.
+Real zoom and pan moved/rescaled the line, PID23025 continuous. Duplicate
+created a third card retaining the original sight. Screenshots ci7-sun-*;
+saved/cancel XML independently retained in the private audit directory.
+
+Reopening showed0.10000000000000001 for0.1 uncertainty. Android-only display
+formatting now seeks compact significant-digit text which parses back to the
+identical double. XML/report serialization and desktop formatting are untouched.
+Boundary tests verify named decimal examples, adjacent-double precision,
+signed zero, extreme normal values and3000 deterministic wide-range doubles
+through both the Qt angle and wx numeric parsers. UTC boundary tests pass in
+four zones including DST gap/overlap refusal. Physical revised-build
+round-trip verification follows below when executed.

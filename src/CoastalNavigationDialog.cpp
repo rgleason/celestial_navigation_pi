@@ -442,7 +442,7 @@ bool CoastalNavigationDialog::ReadAngle(wxTextCtrl* control,
   if (ParseNavigationAngle(control->GetValue(), NavigationAngleKind::Generic,
                            minimum, maximum, value)) {
 #ifdef __OCPN__ANDROID__
-    control->ChangeValue(wxString::Format("%.17g", *value));
+    control->ChangeValue(celestial_android::NumberText(*value));
 #else
     control->ChangeValue(FormatNavigationAngle(*value));
 #endif
@@ -482,8 +482,8 @@ cn::GeoPoint CoastalNavigationDialog::ReadPoint(wxTextCtrl* latitude,
   }
   if (*ok) {
 #ifdef __OCPN__ANDROID__
-    latitude->ChangeValue(wxString::Format("%.17g", point.latitude_deg));
-    longitude->ChangeValue(wxString::Format("%.17g", point.longitude_deg));
+    latitude->ChangeValue(celestial_android::NumberText(point.latitude_deg));
+    longitude->ChangeValue(celestial_android::NumberText(point.longitude_deg));
 #else
     latitude->ChangeValue(FormatNavigationAngle(
         point.latitude_deg, NavigationAngleKind::Latitude, true));

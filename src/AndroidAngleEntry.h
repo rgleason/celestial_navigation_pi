@@ -81,7 +81,7 @@ class AngleButton final : public QObject {
       if (!ParseAngleText(field_->GetValue(), &current)) current = 0;
       double result = current;
       if (EditAngle(field_.get(), kind, minimum, maximum, current, &result) && field_)
-        field_->SetValue(wxString::Format("%.17g", result));
+        field_->SetValue(celestial_android::NumberText(result));
     });
     Fit(line);
   }

@@ -7,6 +7,21 @@
 #include <limits>
 
 namespace celestial_android {
+// Display the shortest significant-digit form which preserves the stored
+// double. This removes binary tails such as 0.10000000000000001 without
+// rounding a navigator's angles, corrections or uncertainty. File/report
+// serialization remains unchanged. QString uses the C decimal separator.
+inline wxString NumberText(double value) {
+  if (value == 0) return std::signbit(value) ? "-0" : "0";
+  for (int precision = 1; precision <= 17; ++precision) {
+    const QString text = QString::number(value, 'g', precision);
+    bool ok = false;
+    const double parsed = text.toDouble(&ok);
+    if (ok && parsed == value)
+      return wxString::FromUTF8(text.toUtf8().constData());
+  }
+  return wxString::FromUTF8(QString::number(value, 'g', 17).toUtf8().constData());
+}
 // Parse UI text without the host's 64-character stack parser or ambiguity
 // between scientific exponent E and the east hemisphere. No partial parses.
 inline bool ParseAngleText(const wxString& value, double* result) {

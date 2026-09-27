@@ -87,8 +87,8 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight,
                          &FindBodyDialog::ChangePositionSource, this);
   if (!sight.m_DRBoatPosition) {
 #ifdef __OCPN__ANDROID__
-    m_tLatitude->ChangeValue(wxString::Format("%.17g", m_Sight.m_DRLat));
-    m_tLongitude->ChangeValue(wxString::Format("%.17g", m_Sight.m_DRLon));
+    m_tLatitude->ChangeValue(celestial_android::NumberText(m_Sight.m_DRLat));
+    m_tLongitude->ChangeValue(celestial_android::NumberText(m_Sight.m_DRLon));
 #else
     m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_Sight.m_DRLat, true));
     m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_Sight.m_DRLon, true));
@@ -222,8 +222,8 @@ void FindBodyDialog::SetCoordinates(double latitude, double longitude) {
   m_Sight.m_DRLat = latitude;
   m_Sight.m_DRLon = longitude;
   #ifdef __OCPN__ANDROID__
-  m_tLatitude->ChangeValue(wxString::Format("%.17g", latitude));
-  m_tLongitude->ChangeValue(wxString::Format("%.17g", longitude));
+  m_tLatitude->ChangeValue(celestial_android::NumberText(latitude));
+  m_tLongitude->ChangeValue(celestial_android::NumberText(longitude));
 #else
   m_tLatitude->ChangeValue(toSDMM_PlugIn(1, latitude, true));
   m_tLongitude->ChangeValue(toSDMM_PlugIn(2, longitude, true));
@@ -325,8 +325,8 @@ void FindBodyDialog::ResetPosition() {
   m_cbBoatPosition->SetValue(m_initialBoatPosition);
   m_Sight.m_DRBoatPosition = m_initialBoatPosition;
   #ifdef __OCPN__ANDROID__
-  m_tLatitude->ChangeValue(wxString::Format("%.17g", m_initialLatitude));
-  m_tLongitude->ChangeValue(wxString::Format("%.17g", m_initialLongitude));
+  m_tLatitude->ChangeValue(celestial_android::NumberText(m_initialLatitude));
+  m_tLongitude->ChangeValue(celestial_android::NumberText(m_initialLongitude));
 #else
   m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_initialLatitude, true));
   m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_initialLongitude, true));

@@ -32,7 +32,7 @@ actual output/files, screenshots, persistence, Cancel/Back and invalid cases.
 | P07 | Time-tagged moving observer | Plan > Motion | PENDING |
 | P08 | Find Body manual/live boat/cursor/fix/waypoint, reset, estimated Hs, observed Ho, Cancel | Observe > Find Body | PARTIAL: manual Sun DR reduction agrees within 0.1 arcmin (iteration 18); other sources/Cancel pending |
 | T01 | Local/UTC display, GNSS freshness/difference, device/system status, marked-time copy | Tools > Time; header | PARTIAL: 966c5a7 London local/UTC/fresh RMC with latency, chrony unavailable, held clocks/copy exact .638Z and explicit observation application; stale/offline variants pending |
-| T02 | Manual clock correction, Apply versus Cancel, recalculation | Tools > Clock correction | PENDING |
+| T02 | Manual clock correction, Apply versus Cancel, recalculation | Tools > Clock correction | PARTIAL: 966c5a7 +120 typed, Cancel/Discard retained complete XML; Apply persisted +120 and reopened; zero restoration returned parsed XML identically. Corrected geometry/nonzero cold persistence pending |
 | T03 | DUT1 offline update/status/provenance and analytical/DE440 provider status | Tools > Ephemeris / DUT1 | PENDING |
 | H01 | Sunrise/sunset observation UTC, source, uncertainties, height/weather/horizon quality | Observe > Horizon event | PENDING |
 | H02 | Optional true/magnetic bearing, deviation/variation, position branches, edit, chart | Horizon event > Bearing / results | PENDING |

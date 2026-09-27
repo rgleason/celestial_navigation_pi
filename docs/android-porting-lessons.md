@@ -116,3 +116,12 @@ result Close, acknowledge its success modal, then tap the reopened workspace.
 Also exercise live disable/re-enable and a cold restart. Each operation has
 revealed a different lifecycle failure here; success at one is not evidence
 for the others. Record PID continuity and exact loaded binaries.
+
+## Compact numeric text without losing precision
+
+Raw %.17g reopening exposes binary tails such as0.10000000000000001 and
+46.414999999999999. For Android editors, choose the first significant-digit
+representation which parses back to the identical stored double. Validate
+both parsers actually used by the form, preserve signed zero, and keep file
+and calculation-log serialization unchanged. A short fixed decimal format
+alone would silently discard entered precision. Desktop formatting is unchanged.

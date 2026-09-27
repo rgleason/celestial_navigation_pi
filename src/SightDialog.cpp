@@ -167,14 +167,14 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
                                      m_Sight.m_Colour.Blue()));
 
 #ifdef __OCPN__ANDROID__
-  m_tLunarMoonAltitude->ChangeValue(wxString::Format("%.17g", m_Sight.m_LunarMoonAltitude));
+  m_tLunarMoonAltitude->ChangeValue(celestial_android::NumberText(m_Sight.m_LunarMoonAltitude));
 #else
   m_tLunarMoonAltitude->SetValue(
       toSDMM_PlugIn(0, m_Sight.m_LunarMoonAltitude, true));
 #endif
   m_cLunarMoonLimb->SetSelection((int)m_Sight.m_LunarMoonLimb);
 #ifdef __OCPN__ANDROID__
-  m_tLunarBodyAltitude->ChangeValue(wxString::Format("%.17g", m_Sight.m_LunarBodyAltitude));
+  m_tLunarBodyAltitude->ChangeValue(celestial_android::NumberText(m_Sight.m_LunarBodyAltitude));
 #else
   m_tLunarBodyAltitude->SetValue(
       toSDMM_PlugIn(0, m_Sight.m_LunarBodyAltitude, true));
@@ -445,7 +445,7 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
     {m_tShiftBearing, m_Sight.m_ShiftBearing}, {m_lunarCourseTrue, m_Sight.m_LunarCourseTrue},
     {m_lunarSpeedKnots, m_Sight.m_LunarSpeedKnots}
   };
-  for (const auto& field : precise) field.first->ChangeValue(wxString::Format("%.17g", field.second));
+  for (const auto& field : precise) field.first->ChangeValue(celestial_android::NumberText(field.second));
   // Keep the full recorded UTC precision; the generated desktop integer spin
   // remains hidden for compatibility with existing shared event handlers.
   m_sSeconds->Hide();
@@ -814,14 +814,14 @@ void SightDialog::RecomputeDMM() {
 
   m_Sight.m_Measurement = ReadSightAngle(m_tMeasurement->GetValue());
 #ifdef __OCPN__ANDROID__
-  m_tMeasurement->ChangeValue(wxString::Format("%.17g", m_Sight.m_Measurement));
+  m_tMeasurement->ChangeValue(celestial_android::NumberText(m_Sight.m_Measurement));
 #else
   m_tMeasurement->SetValue(toSDMM_PlugIn(0, m_Sight.m_Measurement, true));
 #endif
   m_Sight.m_LunarMoonAltitude =
       ReadSightAngle(m_tLunarMoonAltitude->GetValue());
 #ifdef __OCPN__ANDROID__
-  m_tLunarMoonAltitude->ChangeValue(wxString::Format("%.17g", m_Sight.m_LunarMoonAltitude));
+  m_tLunarMoonAltitude->ChangeValue(celestial_android::NumberText(m_Sight.m_LunarMoonAltitude));
 #else
   m_tLunarMoonAltitude->SetValue(
       toSDMM_PlugIn(0, m_Sight.m_LunarMoonAltitude, true));
@@ -829,7 +829,7 @@ void SightDialog::RecomputeDMM() {
   m_Sight.m_LunarBodyAltitude =
       ReadSightAngle(m_tLunarBodyAltitude->GetValue());
 #ifdef __OCPN__ANDROID__
-  m_tLunarBodyAltitude->ChangeValue(wxString::Format("%.17g", m_Sight.m_LunarBodyAltitude));
+  m_tLunarBodyAltitude->ChangeValue(celestial_android::NumberText(m_Sight.m_LunarBodyAltitude));
 #else
   m_tLunarBodyAltitude->SetValue(
       toSDMM_PlugIn(0, m_Sight.m_LunarBodyAltitude, true));
@@ -895,7 +895,7 @@ void SightDialog::Recompute() {
 #endif
     if (selectedType == Sight::ALTITUDE) {
 #ifdef __OCPN__ANDROID__
-      m_tMeasurement->ChangeValue(wxString::Format("%.17g", m_Sight.m_LunarBodyAltitude));
+      m_tMeasurement->ChangeValue(celestial_android::NumberText(m_Sight.m_LunarBodyAltitude));
 #else
       m_tMeasurement->ChangeValue(
           toSDMM_PlugIn(0, m_Sight.m_LunarBodyAltitude, true));

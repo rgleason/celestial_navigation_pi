@@ -89,7 +89,7 @@ public:
 
   void SetAngle(double degrees) {
 #ifdef __OCPN__ANDROID__
-    ChangeValue(wxString::Format("%.17g", degrees));
+    ChangeValue(celestial_android::NumberText(degrees));
 #else
     ChangeValue(FormatNavigationAngle(degrees, m_kind));
 #endif
