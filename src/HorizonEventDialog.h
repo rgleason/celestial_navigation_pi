@@ -72,6 +72,9 @@ private:
   wxSpinCtrlDouble* m_altitudeUncertainty;
   wxStaticText* m_trueBearing;
   wxStaticText* m_preview;
+#ifdef __OCPN__ANDROID__
+  bool m_androidCapturingTime = false;
+#endif
 };
 
 #endif

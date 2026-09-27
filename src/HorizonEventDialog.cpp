@@ -27,6 +27,9 @@
 #include "Utf8Translation.h"
 #ifdef __OCPN__ANDROID__
 #include "AndroidTouch.h"
+#include <QDoubleSpinBox>
+#include <QSpinBox>
+#include <QTimer>
 #endif
 
 namespace {
@@ -313,6 +316,34 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   UpdateBearingControls();
   UpdatePreview();
   m_transaction.StartTracking();
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): typed wxQt spin values need native notifications.
+  // Coalesce preview updates after callbacks return and own them by the dialog.
+  auto* previewTimer = new QTimer(GetHandle());
+  previewTimer->setSingleShot(true);
+  QObject::connect(previewTimer, &QTimer::timeout, GetHandle(),
+                   [this]() { UpdatePreview(); });
+  const auto changed = [this, previewTimer](bool timeInput) {
+    if (m_androidCapturingTime) return;
+    if (timeInput && m_timeSource->GetSelection() == 0)
+      m_timeSource->SetSelection(2);
+    MarkDirty();
+    previewTimer->start(0);
+  };
+  for (auto* control : {m_hours, m_minutes})
+    if (auto* spin = qobject_cast<QSpinBox*>(control->GetHandle()))
+      QObject::connect(spin, QOverload<int>::of(&QSpinBox::valueChanged),
+                       previewTimer, [changed](int) { changed(true); });
+  for (auto* control : {m_seconds, m_timeUncertainty, m_bearing, m_variation,
+                       m_deviation, m_bearingUncertainty, m_eyeHeight,
+                       m_temperature, m_pressure, m_altitudeUncertainty})
+    if (auto* spin = qobject_cast<QDoubleSpinBox*>(control->GetHandle())) {
+      const bool timeInput = control == m_seconds;
+      QObject::connect(spin,
+          QOverload<double>::of(&QDoubleSpinBox::valueChanged), previewTimer,
+          [changed, timeInput](double) { changed(timeInput); });
+    }
+#endif
 }
 
 HorizonEventDialog::~HorizonEventDialog() {
@@ -399,7 +430,9 @@ void HorizonEventDialog::UpdatePreview() {
   if (!candidate.m_HorizonBearingProvided) {
     m_trueBearing->SetLabel(_("Not supplied"));
     m_preview->SetLabel(candidate.HorizonPositionSummary());
+#ifndef __OCPN__ANDROID__
     m_preview->Wrap(560);
+#endif
     RelayoutContent();
     return;
   }
@@ -429,13 +462,18 @@ void HorizonEventDialog::UpdatePreview() {
     warning += _(" Sub-arcminute horizon uncertainty is very optimistic: "
                  "near-horizon refraction varies with atmospheric conditions.");
   m_preview->SetLabel(candidate.HorizonPositionSummary() + warning);
+#ifndef __OCPN__ANDROID__
   m_preview->Wrap(560);
+#endif
   RelayoutContent();
 }
 
 void HorizonEventDialog::OnCaptureNow(wxCommandEvent& event) {
   MarkDirty();
   const wxDateTime now = UtcDateTime::Now();
+#ifdef __OCPN__ANDROID__
+  m_androidCapturingTime = true;
+#endif
   m_calendar->SetDate(UtcDateTime::CalendarDate(now));
   m_hours->SetValue(UtcDateTime::Fields(now).hour);
   m_minutes->SetValue(UtcDateTime::Fields(now).min);
@@ -445,15 +483,28 @@ void HorizonEventDialog::OnCaptureNow(wxCommandEvent& event) {
   m_seconds->SetValue(UtcDateTime::Fields(now).sec);
 #endif
   m_timeSource->SetSelection(0);
+#ifdef __OCPN__ANDROID__
+  m_androidCapturingTime = false;
+#endif
   UpdatePreview();
 }
 
 void HorizonEventDialog::OnInputChanged(wxCommandEvent& event) {
+#ifdef __OCPN__ANDROID__
+  if (m_androidCapturingTime) return;
+  if ((event.GetEventObject() == m_hours || event.GetEventObject() == m_minutes ||
+       event.GetEventObject() == m_seconds) && m_timeSource->GetSelection() == 0)
+    m_timeSource->SetSelection(2);
+#endif
   MarkDirty();
   UpdatePreview();
 }
 
 void HorizonEventDialog::OnCalendarChanged(wxCalendarEvent& event) {
+#ifdef __OCPN__ANDROID__
+  if (m_androidCapturingTime) return;
+  if (m_timeSource->GetSelection() == 0) m_timeSource->SetSelection(2);
+#endif
   MarkDirty();
   UpdatePreview();
 }
