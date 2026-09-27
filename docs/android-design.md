@@ -158,3 +158,12 @@ remain consistent across pages, repeated searches, and chart output. Native
 cards have readable multiline text and a scrollable list; all pages require
 physical portrait/landscape, font-size, final-control and Back checks. Desktop
 layout and business handlers remain unchanged behind Android guards.
+
+Chart handoff refinement, before implementation at 14:59 BST: **Plot selected
+on chart** computes the selected path/contours, then centres the host chart on
+that event's greatest position at a regional scale and hides the workspace.
+Cancellation or failure retains the previous plot and open inputs. Reopening
+the eclipse sheet retains its event/coordinates/results; Clear plot removes
+only eclipse geometry. This follows the existing Android sight/fix chart
+journey and avoids requiring a navigator to pan from an unrelated chart area.
+Desktop Plot selected retains its existing behavior.

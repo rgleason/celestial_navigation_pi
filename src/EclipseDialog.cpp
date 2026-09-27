@@ -516,10 +516,10 @@ void EclipseDialog::BuildAndroidInterface() {
                                   _("Partial magnitude contours"));
   m_plot_contours->SetValue(true);
   searches->Add(m_plot_contours, 0, wxEXPAND | wxALL, 8);
-  m_plot_button = button(search, searches, _("Plot selected"));
+  m_plot_button = button(search, searches, _("Plot selected on chart"));
   auto* clear = button(search, searches, _("Clear plot"));
-  label(search, searches, _("Close this sheet to inspect the chart overlay. "
-                            "Clear plot removes the eclipse geometry."));
+  label(search, searches, _("Plot centres the chart on the selected eclipse. "
+                            "Reopen this sheet to inspect results or clear the plot."));
 
   m_androidSelectedLocal = label(local, locals, _("No eclipse selected. "
       "Choose an event on Search & chart first."));
@@ -1206,6 +1206,12 @@ void EclipseDialog::OnPlot(wxCommandEvent&) {
   }
   m_path = std::move(path); m_contours = std::move(contours);
   m_plotted_delta_t = event.delta_t_seconds;
+  // Explicit Android chart handoff. Keep the sheet alive, retaining its
+  // precise inputs and selection; the desktop chart workflow is unchanged.
+  JumpToPosition(event.greatest_position.latitude_deg,
+                 event.greatest_position.longitude_deg, 5e-4);
+  Hide();
+  m_plugin->OnDialogClose();
 #else
   wxBusyCursor busy;
   m_path.clear();

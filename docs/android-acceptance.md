@@ -51,10 +51,10 @@ actual output/files, screenshots, persistence, Cancel/Back and invalid cases.
 | A02 | All content toggles, planning cadence, safety/calculator/paper self-contained modes | Almanac > Content | PENDING |
 | A03 | Direct/universal tables, forms counts, paper sizes, booklet/signature, page estimate | Almanac > Paper / Forms | PENDING |
 | A04 | Preview, in-process PDF generation, output/overwrite/cancel, viewer, actual bytes | Almanac > Preview / Generate | PARTIAL: real 28-page PDF, independently inspected bytes/pages/sources (iteration 22); page entry and last-page rendering repaired and exercised; cancellation/overwrite and other outputs pending |
-| E01 | Year-span eclipse search/list/selection | Plan > Eclipses > Search | PARTIAL: 2027 two-event search, full UT1/date/coordinate cards and synchronized August selection exercised in 35; long/invalid/cancel cases pending |
+| E01 | Year-span eclipse search/list/selection | Plan > Eclipses > Search | PARTIAL: committed dcbb4ee 2027 cards/selection, reverse-year rejection and 1850–2100 worker Back cancellation retaining previous result; completed long-list/font cases pending |
 | E02 | Path/partial magnitude contours, plot selected/clear, pan/zoom/rotation | Eclipses > Chart | PENDING |
-| E03 | Local position/boat, contact circumstances, LOLA refine | Eclipses > Local | PARTIAL: precise reference coordinates, standard total duration 382.44 s versus NASA 382.6 s (1 s tolerance), real LOLA calculation, portrait/landscape final results; independent terrain accuracy/invalid cases pending |
-| E04 | DE440s download/import, optional orientation/LOLA, hash/format/coverage verification and cancel | Tools > Data / Eclipses > Data | PARTIAL: all three local imports through native scoped-storage picker, independent official hashes, cold re-verification and effective 506 MiB copy Cancel with temporary cleanup/previous-file preservation; download/invalid/coverage cases pending |
+| E03 | Local position/boat, contact circumstances, LOLA refine | Eclipses > Local | PARTIAL: standard duration 382.44 s versus NASA 382.6 s (1 s tolerance), real LOLA calculation, portrait/landscape final results; dcbb4ee precise decimal retention through repeat/reopen and latitude-range rejection; independent terrain accuracy/boat/remaining cases pending |
+| E04 | DE440s download/import, optional orientation/LOLA, hash/format/coverage verification and cancel | Tools > Data / Eclipses > Data | PARTIAL: all three scoped-storage imports, independent official hashes, cold re-verification and effective 506 MiB copy Cancel; invalid-size rejection/native chooser Back retained previous file and cleaned staging; checksum/download/coverage cases pending |
 | D01 | Offline HTML manual/definitions, long scrolling and links | Tools > Manual | PENDING |
 | D02 | Bundled PDF manual, current version, actual viewer | Tools > PDF manual | PARTIAL: 2.8.13, 42 pages, last page rendered and Next disabled; keyboard-only Back retained viewer. More cross-cutting cases pending |
 | D03 | Host colour scheme, sight display controls, workspace/chart visibility | Tools > Display; Chart | PENDING |
@@ -87,7 +87,7 @@ legacy storage and Bluetooth runtime permissions not granted. App-owned files
 are readable/writable through run-as; a disposable restore probe matched SHA256
 `577a9daa3bfdaeb6c426706898847b70b79fd7e58518db64843b03bfa8f5ad9a`.
 Screenshot and touch operation confirmed, initial PID 24355. API 1.21 host capability and actual plugin loading were subsequently verified.
-Development builds are installed. Patched-host cold-state Plugin Manager imports passed; replacement after workspace use exposed an Android clock teardown crash, under repair in iteration27. Final-source import/cold acceptance remains pending.
+Committed dcbb4ee ARM64 installed through patched-host Plugin Manager with actual library hash verified and PID continuity. The earlier clock teardown and verification-thread crashes were repaired and rerun. Final-source cold acceptance and full feature coverage remain pending.
 
 Evidence and backups: `/tmp/celnav-android-20260927/` (contains personal profile;
 do not commit/upload). private-backup.tar, 97 MiB, SHA256

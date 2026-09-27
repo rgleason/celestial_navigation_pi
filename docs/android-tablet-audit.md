@@ -626,3 +626,58 @@ build and a new exact-source remote workflow are still required; these local
 checks do not change the failed remote jobs into passes. Logs are retained
 under /tmp/celnav-android-20260927/circleci-e7-* and
 armhf-cmake31-configure36.log.
+
+## Committed-source packages and UI checks, 14:50–15:01 BST
+
+The repairs were committed and pushed as
+dcbb4eee78737565e1a846e8c74c0cf46c334529. Both ABIs built and packaged using
+CMake 3.31.6 and a fresh verified support extraction (verified existing 5.14
+core libraries were reused). Full configure/compiler logs and binaries are
+retained in committed-dcbb4ee/ and fresh-*-dcbb4ee.log under the audit root.
+
+| Target | Import archive SHA256 | Installed-library bytes SHA256 |
+|---|---|---|
+| ARM64 | fb324b75d38d78810fb54a33f52e6a03652f587c046757354e10b33eda5cd78d | e6fd7bc5f0e4b45eafe97dadacaa9a85ccfdb99e4dab8c8ab796f32995a9bc62 |
+| ARMHF | 171aa9fbaa1acfea255cebb91a94d5396000ca024e756af85325287970340406 | 0b15172ad4516aec347c455ac6ec3604a419f14352e4572a6d9e52a991095c1b |
+
+ARM64 installed through Plugin Manager at 14:54 and the actual run-as library
+hash matched. PID 31948 remained unchanged. ARMHF was built only, not installed
+or device-tested. Planned metadata URLs remain unpublished. Matching ARM64
+unstripped SHA256 is 63227fa13bf2f9554195b2211e197ebe91ff7dd4abd2f142295282aaba1483ed.
+Shared tests passed 207/213, with six opt-in UI cases skipped in that combined
+run. All six were then executed separately under Xvfb and passed: coastal,
+lunar, running fix, Find Body, horizon and almanac. Their separate logs/XML are
+desktop-*-dcbb4ee; no skipped test is counted as a pass.
+
+The 66-byte disposable invalid DE440s file was rejected with expected/found
+sizes; independently read installed DE440s retained its official hash and
+staging was empty. Native chooser Back returned to the file browser without
+installation. On the committed build, empty Plot selection, reverse year span
+2028–2027 and latitude 91 degrees produced clear errors. Real year edits need
+ADB input keycombination 113 29; sequential keyevent 113 29 is not Ctrl+A and
+left the original spin value. That first automation attempt is not an invalid
+span pass. Likewise, section popups align their selected row with the field;
+the first long-search navigation attempt never started a search and is not a
+cancellation pass. Inspected popup rows corrected the automation.
+
+Actual 2027 selection/local calculation retained decimal entries
+25.5050001234 and 33.18333333333333 through repeated calculation and sheet
+close/reopen. Standard duration remained 382.44 seconds. A real 1850–2100
+search displayed its running progress; Android Back cancelled it and returned
+to the sheet with the previous August selection/results intact. See
+dcbb4ee-local-precision.png, dcbb4ee-precision-reopened.png and
+dcbb4ee-long-search-{inputs,running-real,cancel-real}.png. PID remained 31948.
+Post-install full logcat contained historical failures but no new fatal/ANR
+after worker repair; measured PSS 461718 KiB, RSS 523632 KiB.
+
+The user started the next full CI workflow, 7e8e57ea-7603-4ee3-8d7c-1234df0da591,
+on exact dcbb4ee. All 19 jobs were running at 15:01; results are pending.
+The existing CircleCI run-ci PR-label trigger can be driven through GitHub:
+draft development PR pob220/celestial_navigation_pi#1 and label were created.
+Its actual automatic trigger still requires verification on the next revision.
+
+The Android chart-handoff design was refined before implementation: Plot selected
+on chart centres on the event and hides the workspace after successful geometry
+calculation. Android and desktop compilation passed for this small conditional
+change (iteration 37); physical chart acceptance is pending. Desktop plotting
+and shared geometry algorithms are unchanged.
