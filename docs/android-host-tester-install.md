@@ -32,3 +32,19 @@ automatic data loss is an acceptable default tester flow.
 Assess a separately installed, clearly identified patched test host with
 explicit profile/chart migration if a production-key update is unavailable.
 Do not claim this candidate route is implemented or tested yet.
+
+## Agreed delivery on 27 September 2026
+
+Paul agreed to a patched Android OpenCPN APK on pob220 GitHub for testers,
+with an unofficial 5.14.1-style version label and only the narrowly scoped
+host patch as a functional change. Provisional display version:
+5.14.1-pob220-import-fix (check existing versions before final naming).
+
+This replaces the proposed folder-patching interaction. Produce and verify
+the APK, explain compatible ABI/package/certificate, test actual installation
+and Plugin Manager import, and retain original APK plus profile/chart backup
+and restore evidence. Returning to stock is possible but different signing
+identities can require an uninstall; do not promise automatic data retention.
+Keep official OpenCPN releases and this test build clearly distinguishable.
+The new request does not approve publication of the unfinished Celestial
+Navigation release or approval of its CircleCI publication gate.

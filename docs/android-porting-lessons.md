@@ -90,3 +90,29 @@ exact symbols exposed this error. Root metadata alone cannot establish binary
 provenance. Require the intended unstripped build library and compare all
 allocated ELF sections/ABI identity with the packaged stripped library; reject
 before replacing output. Preserve rejected archives and their actual symbols.
+
+## wxQt unload and Qt gesture delivery
+
+A static private wxQt copy can put Destroy objects into the host pending list.
+Collect only plugin-owned top-level windows, remove exact pointers from both
+queues, and release wrappers/native roots while their vtables remain mapped.
+The pinned wxWindow destructor posts DeferredDelete for parentless
+wxQtShortcutHandler objects; a widget-tree walk reporting zero survivors
+cannot establish unload safety. Drain already-posted Qt DeferredDelete before
+dlclose without pumping arbitrary input, timers or worker callbacks. Retain
+QPointer guards for roots a parent may destroy, and clear obsolete wx handler
+properties before native destruction. Unregister and release owned route-menu
+wrappers and native QMenu/QAction too.
+
+Separately, Plugin Manager's direct touch checkbox handler calls DeInit while
+Qt 5.12.2 is iterating gesture recognizers. Destroying QScroller there mutates
+that iteration and can crash QGestureManager::getState. The narrow host fix
+defers toggling one event turn, uses a native QObject context and wxWeakRef,
+and disables the toggle until the operation returns. Verify both configuration
+and toolbar/workspace behavior: host checkbox artwork alone can be misleading.
+
+Exercise hot native tarball import after actual editor Save, clock Cancel and
+result Close, acknowledge its success modal, then tap the reopened workspace.
+Also exercise live disable/re-enable and a cold restart. Each operation has
+revealed a different lifecycle failure here; success at one is not evidence
+for the others. Record PID continuity and exact loaded binaries.

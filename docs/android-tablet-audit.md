@@ -1109,3 +1109,72 @@ wxQtShortcutHandler as well as widgets. Such helpers escape the tree scan.
 Next revision completes only Qt's already-posted DeferredDelete events while
 plugin code is mapped, without pumping input/timers/workers. Desktop 50 and
 its existing LunarUiSmoke regression passed. No hot-import pass yet.
+
+### 27 September 17:17–17:20 BST — hot import passed; disable touch failure
+
+Revision 51 406ceedd0dbed6683835c9457f5ff851d9de26ed library
+83cf3e9deb282c04e72b98cabb44da6aaf51900bf9ca5463075f90073a1a1085;
+archive 0feec3fb15bfab4755294eedfe9cc609a632b72de39c8ad9499d4789dafeb29e.
+Real lunar worker/results, Sight Save and Clock Cancel preceded native import.
+At 17:17:39 DeInit reported zero surviving native widget-tree objects.
+Acknowledgement, Settings OK and actual workspace reopening succeeded with
+PID 16013 unchanged. Independently read library matched and Sights-import51.xml
+retained one sight and three named lunar solutions. Screens pm-import51.png,
+pm-chart51.png, pm-reopened51.png and logcat-import51.log retained.
+This is hot-import acceptance of this exact sequence on the patched host.
+
+Attempting Disable then failed at 17:19:57: PID 16013 to 16556,
+QGestureManager::getState +628, recognizer argument 0x16. Earlier taps only
+selected/collapsed the host row; actual Enabled label tap triggered teardown.
+Qt 5.12.2 source iterates its recognizer map while delivering touch callbacks;
+synchronous native teardown removes QScroller recognizers during that loop.
+Next host patch defers the Android checkbox apply to QTimer(0), with a
+weak panel lifetime and disabled checkbox to avoid duplicate pending toggles.
+Desktop callback is unchanged. Host 254045db1 compiled; physical retest pending.
+
+## 17:26–17:37 BST — host touch toggle and import lifecycle regression
+
+Host source `254045db1f84bcaca350288bd9e4cb2c45350369` defers the
+Android Plugin Manager toggle to the next Qt event turn, after its touch gesture
+recognizer iteration returns. The previous direct toggle crashed in
+QGestureManager::getState when DeInit removed a live QScroller recognizer.
+This is additional to the chooser and host-owned bitmap fixes. Desktop code
+keeps the original synchronous path. POBsoft (1985-2026) comments identify the
+three patched source files without replacing original licences/copyrights.
+
+Final host52 APK SHA256
+`b9dea2dc6559eae86dce7cdf38e6bec4c3ade54a4482857c0179a14169c90239`,
+libgorp SHA256
+`af5202aee93d5a110d6067b78cbcface4e616f79f26af565b23251171f65e916`.
+Independent archive comparison retained every non-signature APK entry except
+the intentional libgorp replacement; DEX, resources and other libraries match
+the original. A preliminary package incorrectly stripped all META-INF files;
+it was replaced before acceptance tests with the corrected package retaining
+non-signature service/licence entries. No uninstall or data clear occurred.
+
+Physical disable: PID 17432 remained, bEnabled=0 persisted and the Celestial
+toolbar action disappeared. Re-enable: bEnabled=1, toolbar returned, workspace
+accepted Edit, Save and Clock correction Cancel. Enabled xGRIB/xWeatherRouting
+were retained. Native host checkbox artwork still appears checked for disabled
+rows; model/config and toolbar state provide the toggle evidence. This visual
+host discrepancy is recorded, not counted as a plugin checkbox pass.
+
+Native Plugin Manager selected the current 406ceed tarball from Downloads,
+completed installation, acknowledged the success modal and reopened the
+workspace with PID 17432 unchanged. Installed library independently read back
+SHA256 `83cf3e9deb282c04e72b98cabb44da6aaf51900bf9ca5463075f90073a1a1085`.
+Cold restart intentionally changed PID to 18155; the full workspace appeared
+and Sights.xml retained the single Fiji observation and all three solutions
+identically. No new crash or ANR observed during these checks.
+
+Evidence: host52-disabled*.png/conf, host52-reenabled.png,
+host52-enabled-chart-ready.png, host52-workspace.png, host52-editor.png,
+host52-clock.png, host52-chooser.png, host52-import-result.png,
+host52-import-reopened.png, host52-cold-chart/workspace.png,
+host52-enabled/cold-Sights.xml, host52-import.log, host52-crash.log and
+host-toggle52-provenance.json in the private audit directory.
+
+The broad QObject/vtable diagnostic walk used to investigate revisions 48–51
+has been removed from the next production candidate. The exact owned-window
+cleanup and already-posted DeferredDelete drain remain; the diagnostic walk
+was neither required for cleanup nor proof about parentless shortcut objects.

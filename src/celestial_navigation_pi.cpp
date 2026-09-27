@@ -30,11 +30,11 @@
 #ifdef __OCPN__ANDROID__
 #include "AndroidDocumentImport.h"
 #include <QDebug>
-#include <QApplication>
+#include <QCoreApplication>
+#include <QEvent>
 #include <QPointer>
 #include <QMenu>
 #include <dlfcn.h>
-#include <set>
 #include <wx/weakref.h>
 #include <vector>
 #endif
@@ -271,26 +271,7 @@ bool celestial_navigation_pi::DeInit(void) {
   // mapped; do not pump input, timers, paint or worker completion callbacks.
   QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
   qInfo() << "Celestial Android owned sheets released before unload:" << ownedWindows.size();
-  // Verify native plugin objects have been released before unloading.
-  Dl_info module{};
-  dladdr(reinterpret_cast<void*>(&create_pi), &module);
-  std::set<QObject*> visited;
-  size_t survivors = 0;
-  std::function<void(QObject*)> inspect = [&](QObject* object) {
-    if (!object || !visited.insert(object).second) return;
-    Dl_info owner{};
-    if (dladdr(*reinterpret_cast<void**>(object), &owner) &&
-        owner.dli_fbase == module.dli_fbase) {
-      ++survivors;
-      qInfo() << "Celestial Android surviving native object:" << object
-              << object->metaObject()->className() << "parent" << object->parent()
-              << "vtable offset" << reinterpret_cast<quintptr>(*reinterpret_cast<void**>(object)) - reinterpret_cast<quintptr>(module.dli_fbase);
-    }
-    for (auto* child : object->children()) inspect(child);
-  };
-  inspect(qApp);
-  for (auto* widget : QApplication::allWidgets()) inspect(widget);
-  qInfo() << "Celestial Android native objects remaining before unload:" << survivors;
+
 #endif
   return true;
 }
