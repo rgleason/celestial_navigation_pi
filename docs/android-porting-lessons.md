@@ -129,12 +129,17 @@ alone would silently discard entered precision. Desktop formatting is unchanged.
 ## Hidden desktop tables are not an Android data source
 
 On the pinned wxQt, GetItemText(row, column) returned the first column for every
-requested residual column. A selected hidden table also lost its native
-selection when another workspace page became active, while the observation
-card still showed the shared model's selected flag. Render Android results
+requested residual column. Keep Android selection independent of native
+selection in a hidden compatibility table across task pages and modals.
+Render Android results
 from the calculation records and query card selection from the sight model.
 Test selection across pages, filtering to a body with no eligible observations,
 sorting, deletion and chart actions; a correct card caption alone is insufficient.
+
+Pinned wxQt's wxCheckBox does not override native SetLabel. Its visible text
+can stay generic while its wx label/model and actual action are correct. Supply
+the final caption at creation (or explicitly update the native text). Exercise
+the action before inferring disabled state from a stale caption or styling.
 
 ## Typed spin input needs actual calculation evidence
 

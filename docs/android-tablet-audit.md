@@ -1397,11 +1397,12 @@ the old plot. Saved observations remained byte-identical:
 `030d4193395b4cb8bddce684d00fb1477c00e56bc0661a70f2af81cd9bcc1020`.
 Original font scale 1.15 and portrait rotation 0 were restored.
 
-Selected-body filter FAILED: tapping the Saturn card shows “selected,” but
-opening Fix then Analyze gives a disabled generic filter. The hidden wxQt table
-loses native selection when Observe is hidden. Android selection queries now
-use the shared sight selection flags; desktop queries remain table-based.
-Physical retest is pending in iteration 59.
+Selected-body filter presentation FAILED: tapping the Saturn card shows
+“selected,” but opening Fix then Analyze still shows a generic filter caption.
+It was initially inferred to be disabled; activation was not tested at this
+stage, so that inference and the proposed selection-loss cause were unproven.
+Android selection queries were changed to use the shared sight selection flags;
+desktop queries remain table-based. Physical action testing follows below.
 
 The earlier running-fix epoch test also exposed a stale summary: typed seconds
 20.000 appeared in the field while the summary still showed 42 until a motion
@@ -1420,12 +1421,12 @@ Hot import retained PID 23025. All seven desktop/shared checks passed in
 53.29 seconds; explicit desktop FixUi and Android UTC/angle boundary checks
 passed. These checks do not establish physical acceptance of all feature families.
 
-Selected-body filtering still FAILED, including after an intentional cold restart
+The generic selected-body caption persisted after an intentional cold restart
 (new PID 31713). Returning to Observe still displayed the selected Saturn card.
-The hidden table's selection/deselection callbacks remain connected and can
-overwrite the model during native focus/modal transitions. Android now ignores
-those compatibility-view callbacks; cards own selection. The repair is committed
-as `3f2d60e`, built and packaged but not installed. Do not count it as a pass.
+The action was still not exercised; this does not establish a broken filter.
+Android now ignores hidden-table selection/deselection callbacks so cards own
+selection. This ownership change is committed as `3f2d60e`, built and packaged
+but not installed. Do not count an unexecuted action as a pass or a failure.
 Hot process maps retained five deleted prior plugin mappings as well as the new
 one; a cold process has only the current mapping. Record this residual lifetime
 finding and use cold-start evidence to establish candidate behavior.
@@ -1438,3 +1439,22 @@ summary omitted milliseconds; Android summary formatting is being repaired
 to expose the full result epoch. Saved observations remained byte-identical
 after closing (`Sights-fix59.xml` matches the preceding snapshots). Crash buffer
 retained as `crash59.txt`; PID 31713 continued through these operations.
+
+### 19:29–19:35 BST — actual filter activation and caption cause
+
+Iteration 61 (`f4e53cc`) imported through the native chooser. Tar SHA256
+`6380de3ccfd985e6d485d150c8b39bbd8ef26c53123afe7b071e0bddbbd59dd5`;
+independently read installed library
+`4a9a78383b67e9d51f0758accaf89bb8dba7cba78629e9999c4cd6f48980e191`.
+The first automated attempt had remained on Display because the tab tap was
+too early; library verification rejected that attempt (still iteration 59).
+The subsequent confirmed Plugin Manager import succeeded with PID 31713
+continuous. An intentional cold restart produced PID 945.
+
+Actual filter activation on the selected Saturn lunar sight gives the expected
+“At least two visible, calculated altitude sights are required,” clears the
+plot and leaves no old cards. Unchecking restores all three Sun results. Thus
+the earlier disabled-filter inference was incorrect. Pinned wxQt's wxCheckBox
+header has no native SetLabel override: the generic constructor caption remains
+visible after SetLabel. The Android constructor now supplies the final caption
+containing the selected body. Caption retest is pending in iteration 62.

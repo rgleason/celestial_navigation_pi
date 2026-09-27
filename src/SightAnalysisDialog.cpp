@@ -128,9 +128,18 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   root->Add(introduction, 0, wxALL | wxEXPAND, 8);
 
   wxBoxSizer* options = new wxBoxSizer(wxHORIZONTAL);
+  const Sight* selectedSight = m_parent->GetSelectedSight();
+  wxString bodyFilterLabel = _("Only the selected sight's body");
+#ifdef __OCPN__ANDROID__
+  // Pinned wxQt wxCheckBox has no native SetLabel override. Supply its final
+  // caption at creation so the visible text names the actual filter body.
+  if (selectedSight)
+    bodyFilterLabel = wxString::Format(
+        _("Only highlighted body (%s)"), selectedSight->m_Body.c_str());
+#endif
   m_onlySelectedBody =
-      new wxCheckBox(this, wxID_ANY, _("Only the selected sight's body"));
-  if (const Sight* selected = m_parent->GetSelectedSight()) {
+      new wxCheckBox(this, wxID_ANY, bodyFilterLabel);
+  if (const Sight* selected = selectedSight) {
     m_onlySelectedBody->SetLabel(wxString::Format(
         _("Only highlighted body (%s)"), selected->m_Body.c_str()));
   } else {

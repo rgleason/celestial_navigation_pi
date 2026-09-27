@@ -1401,8 +1401,8 @@ void CelestialNavigationDialog::OnAnalyze(wxCommandEvent&) {
 long CelestialNavigationDialog::SelectedSightIndex() const {
 #ifdef __OCPN__ANDROID__
   // Android cards carry selection in the shared sight model. The hidden
-  // wxQt table loses its native selection when Observe is hidden by another
-  // task page; chart actions and analysis must retain the selected identity.
+  // wxQt table must not own selection across task-page/modal transitions;
+  // chart actions and analysis use the identity displayed by the cards.
   for (size_t i = 0; i < m_Sights.size(); ++i)
     if (m_Sights[i].IsSelected()) return static_cast<long>(i);
   return -1;
