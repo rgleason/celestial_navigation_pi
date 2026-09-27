@@ -679,6 +679,22 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_androidAlmanacStatus = add(almanacPage, almanacSizer, wxEmptyString);
   m_androidAlmanac = PlannerCards(almanacPage, almanacSizer, false);
   almanacPage->GetHandle()->setProperty("cnNoPageScroll", true);
+  auto* progress = new wxBoxSizer(wxHORIZONTAL);
+  m_androidProgress = new wxStaticText(this, wxID_ANY, _("Preparing planner…"));
+  m_androidCancel = new wxButton(this, wxID_ANY, _("Cancel calculation"));
+  progress->Add(m_androidProgress, 1, wxEXPAND | wxALL, 8);
+  progress->Add(m_androidCancel, 0, wxALL, 8);
+  root->Insert(0, progress, 0, wxEXPAND);
+  m_androidCancel->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    CancelAndroidCalculation();
+  });
+  m_androidSolve = solve;
+  m_androidWorker.reset(new celestial_android::PlannerWorker());
+  m_androidPoll = new QTimer(GetHandle());
+  QObject::connect(m_androidPoll, &QTimer::timeout, GetHandle(), [this] {
+    PollAndroidCalculation();
+  });
+  m_androidPoll->start(80);
 #endif
 
   // On GTK, notebook pages which were hidden while their list controls were
@@ -728,7 +744,11 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_nauticalTime->Bind(wxEVT_TEXT, &PlannerDialog::ContextTimeEdited, this);
   m_displayTime->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
     UpdateZoneOffsetControls();
+#ifdef __OCPN__ANDROID__
+    if (m_androidReady) RefreshEvents();
+#else
     RefreshEvents();
+#endif
   });
   m_fixedOffset->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) {
     if (m_updatingZoneOffset) return;
@@ -903,6 +923,8 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
 PlannerDialog::~PlannerDialog() {
 #ifdef __OCPN__ANDROID__
   m_androidRefresh->stop();
+  m_androidPoll->stop();
+  m_androidWorker.reset(); // Cancel and join before widgets/plugin are released.
 #endif
   dialog_geometry::Save(this, _T("Planner"));
   m_cursorTimer.Stop();
@@ -1121,6 +1143,14 @@ void PlannerDialog::ContextTimeEdited(wxCommandEvent&) {
 
 void PlannerDialog::ScheduleRefresh() {
 #ifdef __OCPN__ANDROID__
+  if (m_androidWorker) m_androidWorker->Cancel();
+  if (m_androidReady) ClearCalculatedResults(_("Context changed; refreshing results…"));
+  if (m_androidCancel) m_androidCancel->Enable(false);
+  if (m_androidProgress) m_androidProgress->SetLabel(_("Waiting for context edits…"));
+  m_androidReady = false;
+  if (m_androidCreateSight) m_androidCreateSight->Enable(false);
+  if (m_androidExport) m_androidExport->Enable(false);
+  if (m_androidSolve) m_androidSolve->Enable(false);
   if (m_androidRefresh) m_androidRefresh->start(350);
 #else
   m_refreshTimer.StartOnce(350);
@@ -1141,14 +1171,18 @@ void PlannerDialog::OnRefreshTimer(wxTimerEvent&) {
     return;
   }
   UpdateResolvedUtc(motion.referenceUtc);
+#ifdef __OCPN__ANDROID__
+  StartAndroidCalculation(motion);
+#else
   RefreshEvents();
   RefreshBodies();
   RefreshAlmanac();
   RefreshSpecial();
+#endif
   m_status->SetLabel(
       _("Planning context updated; calculations remain fully offline."));
 #ifdef __OCPN__ANDROID__
-  qDebug() << "Celnav planner context refresh milliseconds:" << elapsed.elapsed();
+  qDebug() << "Celnav planner context refresh dispatch milliseconds:" << elapsed.elapsed();
 #endif
 }
 
@@ -1445,12 +1479,16 @@ void PlannerDialog::RefreshAll(wxCommandEvent&) {
   UpdateResolvedUtc(motion.referenceUtc);
   m_latitude->Normalize();
   m_longitude->Normalize();
+#ifdef __OCPN__ANDROID__
+  StartAndroidCalculation(motion);
+#else
   RefreshEvents();
   RefreshBodies();
   RefreshAlmanac();
   RefreshSpecial();
+#endif
 #ifdef __OCPN__ANDROID__
-  qDebug() << "Celnav planner full refresh milliseconds:" << elapsed.elapsed();
+  qDebug() << "Celnav planner full refresh dispatch milliseconds:" << elapsed.elapsed();
 #endif
 }
 
@@ -1465,6 +1503,10 @@ void PlannerDialog::ClearCalculatedResults(const wxString& status) {
   m_almanac->DeleteAllItems();
   m_specialSummary->SetLabel(wxEmptyString);
 #ifdef __OCPN__ANDROID__
+  if (m_androidWorker) m_androidWorker->Cancel();
+  m_androidCancel->Enable(false);
+  m_androidReady = false;
+  m_androidSolve->Enable(false);
   m_androidEvents->SetLabel(status);
   m_androidBodies->clear();
   m_androidSelectedBody->SetLabel(status);
@@ -1485,8 +1527,13 @@ void PlannerDialog::RefreshEvents() {
   wxString report;
 #endif
   const ObserverMotion motion = ReadMotion(false);
+#ifdef __OCPN__ANDROID__
+  if (!m_androidReady) return;
+  const DailyEventsResult& table = m_androidResults.events;
+#else
   const DailyEventsResult table = HorizonEventCalculator::Calculate(
       motion.referenceUtc, motion, m_eyeHeight->GetValue());
+#endif
   for (const auto& event : table.events) {
 #ifndef __OCPN__ANDROID__
     const long row = m_events->InsertItem(
@@ -1516,8 +1563,13 @@ void PlannerDialog::RefreshEvents() {
         NavigationAngleKind::Longitude, true) + "\n\n";
 #endif
   }
-  for (const auto& phase : NextPrincipalMoonPhases(
-           motion.referenceUtc, motion.latitude, motion.longitude)) {
+#ifdef __OCPN__ANDROID__
+  const auto& phases = m_androidResults.phases;
+#else
+  const auto phases = NextPrincipalMoonPhases(
+      motion.referenceUtc, motion.latitude, motion.longitude);
+#endif
+  for (const auto& phase : phases) {
 #ifndef __OCPN__ANDROID__
     const long row =
         m_events->InsertItem(m_events->GetItemCount(), _("Next ") + phase.name);
@@ -1535,10 +1587,15 @@ void PlannerDialog::RefreshEvents() {
     report += _("Geocentric phase") + "\n\n";
 #endif
   }
+#ifdef __OCPN__ANDROID__
+  const auto& moon = m_androidResults.moon;
+  const auto& moonState = m_androidResults.moonState;
+#else
   const MoonInformation moon = CalculateMoonInformation(
       motion.referenceUtc, motion.latitude, motion.longitude);
   const BodyState moonState = CelestialEphemeris::Evaluate(
       "Moon", motion.referenceUtc, motion.latitude, motion.longitude);
+#endif
   wxString polar;
   if (table.sunAlwaysAbove) polar += _(" Sun above the horizon all day.");
   if (table.sunAlwaysBelow) polar += _(" Sun below the horizon all day.");
@@ -1565,9 +1622,16 @@ void PlannerDialog::RefreshBodies() {
   wxString combinations;
 #endif
   const ObserverMotion motion = ReadMotion(false);
+#ifdef __OCPN__ANDROID__
+  if (!m_androidReady) return;
+  m_rankedBodies.clear();
+  for (const auto& body : m_androidResults.allBodies)
+    if (body.state.geometricAltitude >= 0) m_rankedBodies.push_back(body);
+#else
   m_rankedBodies = SightRanker::VisibleBodies(
       motion.referenceUtc, motion.latitude, motion.longitude, 0.0, 90.0,
       std::numeric_limits<double>::infinity());
+#endif
   RebuildBodyList();
   const bool limitAltitude = m_limitRecommendationAltitude->GetValue();
   const double minimumAltitude = m_recommendationMinAltitude->GetValue();
@@ -1675,8 +1739,12 @@ void PlannerDialog::RebuildBodyList() {
               return ascending ? comparison < 0 : comparison > 0;
             });
   const ObserverMotion motion = ReadMotion(false);
+#ifdef __OCPN__ANDROID__
+  const auto& sun = m_androidResults.sun;
+#else
   const BodyState sun = CelestialEphemeris::Evaluate(
       "Sun", motion.referenceUtc, motion.latitude, motion.longitude);
+#endif
   const bool daylight = sun.valid && sun.geometricAltitude >= 0.0;
   for (const size_t index : order) {
     const RankedBody& body = m_rankedBodies[index];
@@ -1737,6 +1805,47 @@ void PlannerDialog::RebuildBodyList() {
 }
 
 #ifdef __OCPN__ANDROID__
+void PlannerDialog::StartAndroidCalculation(const ObserverMotion& motion) {
+  ClearCalculatedResults(_("Calculating the current context…"));
+  m_androidGeneration = m_androidWorker->Submit(motion, m_eyeHeight->GetValue());
+  m_androidCancel->Enable(true);
+  m_androidProgress->SetLabel(_("Calculating horizon events…"));
+}
+
+void PlannerDialog::CancelAndroidCalculation() {
+  m_androidRefresh->stop();
+  m_androidWorker->Cancel();
+  ClearCalculatedResults(_("Calculation cancelled. Use Refresh in Context to calculate again."));
+  m_androidProgress->SetLabel(_("Calculation cancelled"));
+  m_androidCancel->Enable(false);
+}
+
+void PlannerDialog::PollAndroidCalculation() {
+  if (!m_androidCancel->IsEnabled()) return;
+  celestial_android::PlannerResults result;
+  if (!m_androidWorker->Take(m_androidGeneration, &result)) {
+    const wxString stages[] = {_("Preparing calculations…"),
+      _("Calculating horizon events…"), _("Finding Moon phases…"),
+      _("Ranking celestial bodies…"), _("Generating hourly almanac…")};
+    m_androidProgress->SetLabel(stages[std::max(0, std::min(4, m_androidWorker->Stage()))]);
+    return;
+  }
+  m_androidCancel->Enable(false);
+  if (!result.error.empty()) {
+    ClearCalculatedResults(_("Planning failed: ") + result.error);
+    m_androidProgress->SetLabel(_("Planning failed"));
+    return;
+  }
+  m_androidResults = std::move(result);
+  m_androidReady = true;
+  m_androidSolve->Enable(true);
+  RefreshEvents(); RefreshBodies(); RefreshAlmanac(); RefreshSpecial();
+  m_androidProgress->SetLabel(_("Results ready"));
+  m_status->SetLabel(_("Planning context updated; calculations remain fully offline."));
+  qDebug() << "Celnav planner worker milliseconds:" << m_androidResults.elapsedMs;
+  celestial_android::LayoutScrolls(this);
+}
+
 void PlannerDialog::UpdateAndroidBodySelection() {
   auto* item = m_androidBodies->currentItem();
   m_androidCreateSight->Enable(item != nullptr);
@@ -1754,11 +1863,21 @@ void PlannerDialog::RefreshSkyPlot() {
   const double magnitude =
       static_cast<double>(m_plotMagnitude->GetSelection() + 1);
   const double minimumAltitude = m_plotBelowHorizon->GetValue() ? -90.0 : 0.0;
+#ifdef __OCPN__ANDROID__
+  if (!m_androidReady) return;
+  std::vector<RankedBody> plotBodies;
+  for (const auto& body : m_androidResults.allBodies)
+    if (body.state.geometricAltitude >= minimumAltitude &&
+        (!body.state.isStar && !body.state.isPlanet ||
+         body.state.visualMagnitude <= magnitude)) plotBodies.push_back(body);
+  const auto& sun = m_androidResults.sun;
+#else
   const std::vector<RankedBody> plotBodies = SightRanker::VisibleBodies(
       motion.referenceUtc, motion.latitude, motion.longitude, minimumAltitude,
       90.0, magnitude);
   const BodyState sun = CelestialEphemeris::Evaluate(
       "Sun", motion.referenceUtc, motion.latitude, motion.longitude);
+#endif
   m_skyPlot->SetBodies(plotBodies, sun.valid && sun.geometricAltitude >= 0.0);
 }
 
@@ -1778,9 +1897,14 @@ void PlannerDialog::RefreshAlmanac() {
   m_androidAlmanac->clear();
 #endif
   const ObserverMotion motion = ReadMotion(false);
+#ifdef __OCPN__ANDROID__
+  if (!m_androidReady) return;
+  m_almanacRows = m_androidResults.almanac;
+#else
   m_almanacRows = BuildAlmanac(
       motion.referenceUtc, 24,
       {"Sun", "Moon", "Venus", "Mars", "Jupiter", "Saturn", "Polaris"}, motion);
+#endif
   for (const auto& item : m_almanacRows) {
 #ifndef __OCPN__ANDROID__
     const long row = m_almanac->InsertItem(
@@ -1821,10 +1945,17 @@ void PlannerDialog::RefreshAlmanac() {
 }
 
 void PlannerDialog::RefreshSpecial() {
+#ifdef __OCPN__ANDROID__
+  if (!m_androidReady) return;
+#endif
   const ObserverMotion motion = ReadMotion(false);
   if (m_specialBody->GetSelection() == 1) {
+#ifdef __OCPN__ANDROID__
+    const auto& polaris = m_androidResults.polaris;
+#else
     const BodyState polaris = CelestialEphemeris::Evaluate(
         "Polaris", motion.referenceUtc, motion.latitude, motion.longitude);
+#endif
     if (!polaris.valid || polaris.geometricAltitude < 0.0) {
       m_specialSummary->SetLabel(
           _("Polaris is below the horizon and is not observable from the "
@@ -1844,8 +1975,12 @@ void PlannerDialog::RefreshSpecial() {
 #endif
     return;
   }
+#ifdef __OCPN__ANDROID__
+  const auto& events = m_androidResults.noonEvents;
+#else
   const DailyEventsResult events =
       HorizonEventCalculator::Calculate(motion.referenceUtc, motion);
+#endif
   for (const auto& event : events.events) {
     if (event.kind == HorizonEventKind::UpperTransit) {
       m_specialSummary->SetLabel(wxString::Format(
@@ -1871,7 +2006,7 @@ void PlannerDialog::RefreshSpecial() {
 
 void PlannerDialog::ExportAlmanac(wxCommandEvent&) {
 #ifdef __OCPN__ANDROID__
-  if (!ReadMotion(false).referenceUtc.IsValid() || m_almanacRows.empty()) {
+  if (!m_androidReady || !ReadMotion(false).referenceUtc.IsValid() || m_almanacRows.empty()) {
     ClearCalculatedResults(_("Enter a valid Context before exporting."));
     return;
   }
@@ -1894,7 +2029,7 @@ void PlannerDialog::ExportAlmanac(wxCommandEvent&) {
 
 void PlannerDialog::CreateSelectedSight(wxCommandEvent&) {
 #ifdef __OCPN__ANDROID__
-  if (!ReadMotion(false).referenceUtc.IsValid()) {
+  if (!m_androidReady || !ReadMotion(false).referenceUtc.IsValid()) {
     ClearCalculatedResults(_("Enter a valid Context before creating a sight."));
     return;
   }
@@ -1919,7 +2054,7 @@ void PlannerDialog::CreateSelectedSight(wxCommandEvent&) {
 void PlannerDialog::SolveSpecialLatitude(wxCommandEvent&) {
   ObserverMotion motion = ReadMotion(false);
 #ifdef __OCPN__ANDROID__
-  if (!motion.referenceUtc.IsValid()) {
+  if (!m_androidReady || !motion.referenceUtc.IsValid()) {
     ClearCalculatedResults(_("Enter a valid Context before solving latitude."));
     return;
   }
@@ -1927,7 +2062,11 @@ void PlannerDialog::SolveSpecialLatitude(wxCommandEvent&) {
   wxString body = m_specialBody->GetSelection() == 0 ? "Sun" : "Polaris";
   wxDateTime time = motion.referenceUtc;
   if (body == "Sun") {
+#ifdef __OCPN__ANDROID__
+    const auto& events = m_androidResults.noonEvents.events;
+#else
     const auto events = HorizonEventCalculator::Calculate(time, motion).events;
+#endif
     for (const auto& event : events)
       if (event.kind == HorizonEventKind::UpperTransit) time = event.utc;
   } else {

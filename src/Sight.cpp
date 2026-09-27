@@ -99,7 +99,11 @@ Sight::Sight()
 
 Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
              double timecertainty, double measurement,
-             double measurementcertainty)
+             double measurementcertainty
+#ifdef __OCPN__ANDROID__
+             , bool calculationOnly
+#endif
+             )
     : m_bVisible(true),
       m_Type(type),
       m_Body(body),
@@ -144,6 +148,16 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
       m_DRLon(0),
       m_DRBoatPosition(true),
       m_DRMagneticAzimuth(false) {
+#ifdef __OCPN__ANDROID__
+  // Temporary ephemeris objects must not access GUI preferences or advance the
+  // observation colour cycle from a worker. BodyLocation/Azimuth use neither.
+  if (calculationOnly) {
+    m_EyeHeight = 0; m_Temperature = 10; m_Pressure = 1013;
+    m_IndexError = m_DipShort = m_DipShortDistance = m_ArtificialHorizon = 0;
+    m_bCalculated = m_bSelected = false;
+    return;
+  }
+#endif
   wxFileConfig* pConf = GetOCPNConfigObject();
   pConf->SetPath(_T("/PlugIns/CelestialNavigation"));
 

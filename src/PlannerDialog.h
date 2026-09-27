@@ -22,6 +22,8 @@ class wxStaticText;
 class wxTextCtrl;
 #ifdef __OCPN__ANDROID__
 #include "NauticalTimeCtrl.h"
+#include "AndroidPlannerWorker.h"
+#include <memory>
 class QListWidget;
 class wxButton;
 using CelestialTimePicker = NauticalTimeCtrl;
@@ -120,6 +122,17 @@ private:
   wxButton* m_androidCreateSight = nullptr;
   wxButton* m_androidExport = nullptr;
   void UpdateAndroidBodySelection();
+  void StartAndroidCalculation(const ObserverMotion& motion);
+  void PollAndroidCalculation();
+  void CancelAndroidCalculation();
+  std::unique_ptr<celestial_android::PlannerWorker> m_androidWorker;
+  celestial_android::PlannerResults m_androidResults;
+  unsigned m_androidGeneration = 0;
+  bool m_androidReady = false;
+  QTimer* m_androidPoll = nullptr;
+  wxStaticText* m_androidProgress = nullptr;
+  wxButton* m_androidCancel = nullptr;
+  wxButton* m_androidSolve = nullptr;
 #endif
   wxStaticText* m_moonSummary;
   wxListCtrl* m_bodies;

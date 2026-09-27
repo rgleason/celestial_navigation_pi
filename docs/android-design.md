@@ -92,6 +92,17 @@ Hidden desktop display tables are not populated on Android; shared result
 models remain unchanged. Refresh duration is measured again before deciding
 whether numerical work also needs a cancellable background worker.
 
+Refresh refinement before implementation at 22:30 BST: one owned planner worker
+snapshots the validated context, computes the existing full horizon/phase/body/
+almanac models, and publishes only the newest completed context. No widget or
+form is accessed by that worker. A fixed progress row identifies the current
+stage and offers Cancel; context edits invalidate old outputs immediately and
+cancel obsolete work before a coalesced replacement starts. Cancellation is
+checked at ephemeris evaluation boundaries. Closing joins the cancelled worker
+before plugin unload. The worker stays alive while the planner is open so its
+verified thread-local optional-data cache is retained. Numerical algorithms,
+sampling, precision, optional-data verification and desktop behavior stay intact.
+
 Android CSV exports retain nonzero milliseconds in the ISO UTC column while
 keeping the existing columns and numeric serialization. Whole-second rows
 retain their legacy representation. This is an Android presentation/output

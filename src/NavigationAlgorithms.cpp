@@ -1,5 +1,8 @@
 #include "NavigationAlgorithms.h"
 
+#ifdef __OCPN__ANDROID__
+#include "AndroidPlannerCancellation.h"
+#endif
 #include "BodyCatalog.h"
 #include "Sight.h"
 #include "NavigationEphemerisProvider.h"
@@ -335,6 +338,9 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
                                        double observerLat, double observerLon,
                                        double pressureMb, double temperatureC,
                                        double dut1OverrideSeconds) {
+#ifdef __OCPN__ANDROID__
+  celestial_android::CheckPlannerCancellation();
+#endif
   BodyState result;
   result.body = body;
   result.utc = utc;
@@ -344,7 +350,11 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
     return result;
   }
 
-  Sight sight(Sight::ALTITUDE, info->name, Sight::CENTER, utc, 0.0, 0.0, 1.0);
+  Sight sight(Sight::ALTITUDE, info->name, Sight::CENTER, utc, 0.0, 0.0, 1.0
+#ifdef __OCPN__ANDROID__
+              , true
+#endif
+              );
   double ghaast = 0.0, radius = 0.0, distance = 0.0;
   bool usedDe440 = false;
   sight.BodyLocation(utc, &result.latitude, &result.longitude, &ghaast, &radius,
