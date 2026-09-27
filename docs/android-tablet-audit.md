@@ -1371,3 +1371,41 @@ Complete reference calculations retained as worksheet-*-independent.json.
 Physical table truncates dates/Ho/Hc: FAIL presentation. Android vertical
 result cards and explicit numeric commit/label relayout prepared for build58.
 No sequence inputs changed the saved observations.
+
+### 19:02–19:16 BST — sequence cards and two event/selection defects
+
+Iteration 58, source `40bae1a`, was imported through the native Plugin Manager.
+The tarball SHA256 is
+`b65135a35956acc106d6d33ecf8d4ac1fd1cfa43f02643838413cdbebb61edf1`;
+the independently read installed library SHA256 is
+`6cc51c115788dd48b9c9c066ae0fc83eb58aeab4585935994339fb8b7da20ad9`.
+PID 23025 remained continuous through import acknowledgement, reopened input,
+stationary and moving analysis, font changes, rotation and nested Back.
+
+The three result cards now show complete UTC dates/milliseconds, Ho, Hc,
+signed intercept and assessment. Stationary and imposed-motion statistics and
+the final outlier agree with the independent references above. Genuine content
+swipes reach the final card and Close in portrait and landscape. At temporary
+font scale 1.3, closing/reopening the sheet visibly increases its fonts; wrapped
+text and the final control remain readable. Changing font scale does not
+restyle an already open sheet. Rotation with the latitude keyboard open retains
+the entered precise value. First Back dismisses the keyboard and retains the
+sheet; second Back closes the sheet and leaves the workspace usable.
+Latitude 91 produces a clear validation message, clears old cards and clears
+the old plot. Saved observations remained byte-identical:
+`Sights-fix57.xml` and `Sights-analysis58.xml` both have SHA256
+`030d4193395b4cb8bddce684d00fb1477c00e56bc0661a70f2af81cd9bcc1020`.
+Original font scale 1.15 and portrait rotation 0 were restored.
+
+Selected-body filter FAILED: tapping the Saturn card shows “selected,” but
+opening Fix then Analyze gives a disabled generic filter. The hidden wxQt table
+loses native selection when Observe is hidden. Android selection queries now
+use the shared sight selection flags; desktop queries remain table-based.
+Physical retest is pending in iteration 59.
+
+The earlier running-fix epoch test also exposed a stale summary: typed seconds
+20.000 appeared in the field while the summary still showed 42 until a motion
+edit triggered recalculation. NauticalTimeCtrl now coalesces native spin and wx
+notifications through a control-owned timer. Programmatic SetValue suppresses
+notifications and cancels pending input notifications. Android and desktop
+builds passed; actual typed-time/calculation/persistence checks are pending.

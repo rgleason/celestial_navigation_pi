@@ -1163,8 +1163,7 @@ void CelestialNavigationDialog::UpdateSights() {
 
 void CelestialNavigationDialog::UpdateButtons() {
   // enable/disable buttons
-  long selectedIndex =
-      m_lSights->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+  long selectedIndex = SelectedSightIndex();
   bool enable = !(selectedIndex < 0);
 
   m_bEditSight->Enable(enable);
@@ -1399,9 +1398,21 @@ void CelestialNavigationDialog::OnAnalyze(wxCommandEvent&) {
   dialog.ShowModal();
 }
 
+long CelestialNavigationDialog::SelectedSightIndex() const {
+#ifdef __OCPN__ANDROID__
+  // Android cards carry selection in the shared sight model. The hidden
+  // wxQt table loses its native selection when Observe is hidden by another
+  // task page; chart actions and analysis must retain the selected identity.
+  for (size_t i = 0; i < m_Sights.size(); ++i)
+    if (m_Sights[i].IsSelected()) return static_cast<long>(i);
+  return -1;
+#else
+  return m_lSights->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+#endif
+}
+
 const Sight* CelestialNavigationDialog::GetSelectedSight() const {
-  const long selected = m_lSights->GetNextItem(
-      -1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+  const long selected = SelectedSightIndex();
   if (selected < 0 || static_cast<size_t>(selected) >= m_Sights.size())
     return nullptr;
   return &m_Sights[selected];
@@ -1471,8 +1482,7 @@ bool CelestialNavigationDialog::RenderCoastal(piDC* dc,
 }
 
 void CelestialNavigationDialog::OnDuplicate(wxCommandEvent& event) {
-  long selectedIndex =
-      m_lSights->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+  long selectedIndex = SelectedSightIndex();
   if (selectedIndex < 0) return;
 
   Sight& s = m_Sights[selectedIndex];
@@ -1489,8 +1499,7 @@ void CelestialNavigationDialog::OnDuplicate(wxCommandEvent& event) {
 
 void CelestialNavigationDialog::OnEdit() {
   // Manipulate selectedIndex sight/track
-  long selectedIndex =
-      m_lSights->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+  long selectedIndex = SelectedSightIndex();
   if (selectedIndex < 0) return;
 
   Sight& s = m_Sights[selectedIndex];
@@ -1537,8 +1546,7 @@ void CelestialNavigationDialog::OnEdit() {
 
 void CelestialNavigationDialog::OnDelete(wxCommandEvent& event) {
   // Delete selectedIndex sight/track
-  long selectedIndex =
-      m_lSights->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+  long selectedIndex = SelectedSightIndex();
   if (selectedIndex < 0) return;
 
   m_lSights->DeleteItem(selectedIndex);

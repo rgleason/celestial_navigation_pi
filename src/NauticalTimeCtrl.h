@@ -7,6 +7,12 @@
 #include <wx/dateevt.h>
 #include <wx/timectrl.h>
 #include "UtcDateTime.h"
+#ifdef __OCPN__ANDROID__
+#include <wx/weakref.h>
+#include <QDoubleSpinBox>
+#include <QSpinBox>
+#include <QTimer>
+#endif
 
 // Locale-independent 24-hour HH:MM:SS entry. Native time pickers use AM/PM
 // on some hosts even when the surrounding sight form says UTC.
@@ -33,17 +39,19 @@ public:
     for (int i = 0; i < 3; ++i) {
       controls_[i]->Bind(wxEVT_SPINCTRL, [this](wxSpinEvent&) {
 #ifdef __OCPN__ANDROID__
-        if (setting_) return;
-#endif
+        RequestChange();
+#else
         wxDateEvent event(this, GetValue(), wxEVT_TIME_CHANGED);
         ProcessWindowEvent(event);
+#endif
       });
       controls_[i]->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
 #ifdef __OCPN__ANDROID__
-        if (setting_) return;
-#endif
+        RequestChange();
+#else
         wxDateEvent event(this, GetValue(), wxEVT_TIME_CHANGED);
         ProcessWindowEvent(event);
+#endif
       });
     }
 #ifdef __OCPN__ANDROID__
@@ -55,12 +63,31 @@ public:
     seconds_->SetIncrement(.001);
     seconds_->SetValue(fields.sec + fields.msec / 1000.0);
     seconds_->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) {
-      if (setting_) return;
-      wxDateEvent event(this, GetValue(), wxEVT_TIME_CHANGED);
-      ProcessWindowEvent(event);
+      RequestChange();
     });
     row->Add(seconds_, 1, wxEXPAND);
     for (int i = 0; i < 2; ++i) controls_[i]->SetMinSize(wxSize(120, -1));
+    // wxQt's typed spin values do not reliably emit the wx spin event.
+    // Coalesce native and wx notifications, after input callbacks return.
+    // The timer belongs to this control; Close/unload cancels its callback.
+    changeTimer_ = new QTimer(GetHandle());
+    changeTimer_->setSingleShot(true);
+    wxWeakRef<NauticalTimeCtrl> weakTime(this);
+    QObject::connect(changeTimer_, &QTimer::timeout, GetHandle(), [weakTime]() {
+      if (!weakTime || weakTime->setting_) return;
+      wxDateEvent event(weakTime.get(), weakTime->GetValue(), wxEVT_TIME_CHANGED);
+      weakTime->ProcessWindowEvent(event);
+    });
+    for (int i = 0; i < 2; ++i) {
+      if (auto* native = qobject_cast<QSpinBox*>(controls_[i]->GetHandle()))
+        QObject::connect(native,
+            static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+            GetHandle(), [this](int) { RequestChange(); });
+    }
+    if (auto* native = qobject_cast<QDoubleSpinBox*>(seconds_->GetHandle()))
+      QObject::connect(native,
+          static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
+          GetHandle(), [this](double) { RequestChange(); });
 #endif
     SetSizer(row);
   }
@@ -84,6 +111,7 @@ public:
   void SetValue(const wxDateTime& value) {
     if (!value.IsValid()) return;
     setting_ = true;
+    if (changeTimer_) changeTimer_->stop();
     date_ = value;
     const auto f = UtcDateTime::Fields(value);
     controls_[0]->SetValue(f.hour); controls_[1]->SetValue(f.min);
@@ -94,6 +122,10 @@ public:
 #endif
 private:
 #ifdef __OCPN__ANDROID__
+  void RequestChange() {
+    if (!setting_ && changeTimer_) changeTimer_->start(0);
+  }
+  QTimer* changeTimer_ = nullptr;
   wxSpinCtrlDouble* seconds_ = nullptr;
   bool setting_ = false;
 #endif

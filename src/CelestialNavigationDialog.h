@@ -85,6 +85,7 @@ public:
   bool GetMarkedUtc(wxDateTime* utcFields) const;
 
 private:
+  long SelectedSightIndex() const;
 #ifdef __OCPN__ANDROID__
   void BuildAndroidWorkspace();
   void RefreshAndroidCards();

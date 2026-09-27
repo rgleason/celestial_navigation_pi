@@ -125,3 +125,23 @@ representation which parses back to the identical stored double. Validate
 both parsers actually used by the form, preserve signed zero, and keep file
 and calculation-log serialization unchanged. A short fixed decimal format
 alone would silently discard entered precision. Desktop formatting is unchanged.
+
+## Hidden desktop tables are not an Android data source
+
+On the pinned wxQt, GetItemText(row, column) returned the first column for every
+requested residual column. A selected hidden table also lost its native
+selection when another workspace page became active, while the observation
+card still showed the shared model's selected flag. Render Android results
+from the calculation records and query card selection from the sight model.
+Test selection across pages, filtering to a body with no eligible observations,
+sorting, deletion and chart actions; a correct card caption alone is insufficient.
+
+## Typed spin input needs actual calculation evidence
+
+Typed COG/SOG and fractional seconds can commit native values without emitting
+wxSPINCTRLDOUBLE. Subscribe to the actual QSpinBox/QDoubleSpinBox valueChanged
+signals, coalesce notifications and run calculations after the input callback
+returns. Own the timer by the edited control/dialog, guard its wx lifetime,
+and suppress programmatic initialization/SetValue. Test the visible field,
+result epoch, result and reopened serialized record independently. Explicit
+Calculate actions must also interpret any still-active spin text before reading.
