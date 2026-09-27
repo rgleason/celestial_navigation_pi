@@ -18,10 +18,10 @@ actual output/files, screenshots, persistence, Cancel/Back and invalid cases.
 | O09 | Duplicate/delete/delete final/delete all, selection, sorting | Observe cards / Sort / actions | PARTIAL: dcbb4ee Duplicate created identical fourth Venus record, independently read XML and 7f68c9f replacement retained it; d804ecd explicit one-at-a-time deletion through the final record, XML counts, stable empty selection and disabled edits; 966c5a7 Delete All Back retained all complete records; explicit Yes/No and sorting pending |
 | O10 | Visibility/inclusion and chart polygons | Card Include/Exclude; Chart | PARTIAL: d804ecd Exclude saved Visible=0 and card Excluded; Include restored exact XML. Empty Chart gives selection guidance. Geometry variants pending |
 | O11 | Automatic atomic Sights.xml load/save incl. all fields | Save / reopen / cold restart | PARTIAL: three-record cold reopen and unchanged Save identical (iteration 19); remaining variants pending |
-| F01 | Fix algorithms, initial position, error/residuals | Fix > Calculate fix | PARTIAL: d804ecd empty input shows N/A and disables Go; valid algorithms pending |
+| F01 | Fix algorithms, initial position, error/residuals | Fix > Calculate fix | PARTIAL: empty input gives N/A; iteration54 three independently entered worksheet Sun sights, Plane/Sphere/Cone within0.3NM of independent angular least-squares worksheet position. Legacy Cone2 failed even with nearby DR; Android derivative repair pending physical retest. Precise seed and readable residuals pending |
 | F02 | Running fix COG/SOG, per-sight DR shift, UTC/local epoch | Fix > Motion | PENDING |
 | F03 | Saved lunar solution selection in fix | Fix > Clock source | PENDING |
-| F04 | Fix chart geometry, waypoint output | Fix > Results > Chart / waypoint | PENDING |
+| F04 | Fix chart centring (baseline OnGo; no waypoint creation command) | Fix > Show fix on chart | PENDING |
 | F05 | Repeated sequence scatter/bias/trend/outliers, selected-body filter, moving observer and plot | Fix > Analyze sequence | PENDING |
 | P01 | Manual/boat/cursor/DR/last fix/waypoint context with freshness | Plan > Context | PENDING |
 | P02 | Now/selected/manual time; UTC/local/ship zone; display UTC/local/LMT/fixed offset, auto zone | Plan > Time | PENDING |

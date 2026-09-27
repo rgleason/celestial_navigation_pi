@@ -1263,3 +1263,42 @@ signed zero, extreme normal values and3000 deterministic wide-range doubles
 through both the Qt angle and wx numeric parsers. UTC boundary tests pass in
 four zones including DST gap/overlap refusal. Physical revised-build
 round-trip verification follows below when executed.
+
+### 18:27–18:41 BST — iteration54 exact entry and independent Sun fixes
+
+Committed92a9e8f was imported through Plugin Manager on final host129.
+Installed library SHA256986f430c0dbab527c9be0f6949c27ac97eb393aca950a0d63b76854833f29216;
+tar SHA2566d343b14f60a7c32a510cba2699f1bcc2f20d41603a0c615a2cca41ddd128f6c.
+PID23025 remained continuous. Reopened lunar46.415°/0.2′ and Sun uncertainty0.1′
+now display compactly. Unchanged Save, and unmodified67°1′ DMM Apply followed
+by Save, each retained the entire pre-operation XML byte for byte. Precise DR
+43.2366916666667,-77.533415 reopened without binary display tails. Evidence:
+fix54*, post54-roundtrip.xml, post54-dmm.xml; personal files stay private.
+
+Sun2 and Sun3 were entered by editing duplicates through the real UI:
+2025-07-20 17:16:33 UTC/Hs67°1′, and21:18:20 UTC/Hs35°5′, with the same
+DR/eye3.5/T10/P1010/IE+1.5/uncertainty0.1 as Sun1. Independent worksheet
+INTERCEPT_SIGHTS rows2 and6 expect respectively Ho67.1934/Hc67.2761482927961/
+Zn179.99607/4.964897567766NM away, and Ho35.2452/Hc35.194154591663/
+Zn265.67311/3.06272450022NM toward. Displayed actual reductions: Sun2
+Ho67°11.6024′,Hc67°16.5692′,Zn179°59.7990′,4.966866NM away; Sun3
+Ho35°14.7129′,Hc35°11.6390′,Zn265°40.3976′,3.073866NM toward. Both within
+0.1arcmin/0.1NM of independent fixture. Long-list content actually moved and
+the final Delete action was reachable. This is not acceptance of every body.
+
+Using worksheet GHA/Dec/Ho alone, a separate SciPy angular-altitude least-squares
+calculation gives43.31832278,-77.5903735 (worksheet-three-sun-independent.json).
+Tablet stationary solutions: Sphere43°19.0572′N77°35.4026′W;
+Plane43°19.3002′N77°35.3679′W; Cone43°18.8682′N77°35.3489′W.
+Each is within0.3NM of the independent worksheet solution, allowing for different
+legacy objectives/provider. Cone2 gave46°10.3360′N77°01.3802′W from boat
+seed53,-2 and45°47.4588′N77°06.4454′W even with nearby seed43,-78: FAIL.
+Source baseline derivative omits cross terms of dot(body,X)/length(X).
+Android-only correction uses the full mathematical gradient, tested independently
+against finite differences at1000 general positions. Desktop solver remains
+unchanged by user instruction; physical repaired-build evidence follows only
+when executed. Also found editable fixed-algorithm selector opens the keyboard,
+integer-only initial DR and clipped running summary/7-column residual table.
+Android replacements are prepared; none is marked passed before tablet retest.
+The baseline OnGo only centres the chart; corrected the inventory/design's
+incorrect reference to fix-waypoint creation. No working command was removed.

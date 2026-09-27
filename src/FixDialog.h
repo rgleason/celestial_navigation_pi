@@ -36,6 +36,7 @@
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
+class NavigationAngleCtrl;
 #endif
 
 class Sight;
@@ -75,6 +76,9 @@ private:
   void OnUpdateSpin(wxSpinEvent& event) { Update(m_clock_offset); }
 #ifdef __OCPN__ANDROID__
   void OnEvtPanGesture(wxQT_PanGestureEvent& event);
+  NavigationAngleCtrl* m_androidInitialLatitude;
+  NavigationAngleCtrl* m_androidInitialLongitude;
+  wxStaticText* m_androidResiduals;
 #endif
 
   CelestialNavigationDialog* m_Parent;

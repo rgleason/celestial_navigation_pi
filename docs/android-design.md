@@ -14,7 +14,7 @@ the measured angle in **Observe**. Review body, limb, UTC/watch basis, units,
 corrections and uncertainty before Save. A saved sight shows its measurement,
 corrected altitude and calculation status. Include the observations to use,
 open **Fix**, choose a stationary or moving solution and inspect the residuals,
-position and epoch before returning to the chart or creating a waypoint.
+position and epoch before showing the fix on the chart.
 All entry and results remain usable offline with analytical ephemerides;
 optional high-accuracy data status is explicit.
 
@@ -38,7 +38,7 @@ do next. The model, rather than hidden list-column text, supplies card values.
 Fix offers **Calculate fix**, **Analyze sequence**, and selected sight results.
 The focused fix editor retains all existing algorithms, manual/automatic initial
 position, saved lunar clock solution, COG/SOG or per-sight DR shifts, epoch,
-UTC/local basis, residual/error display and waypoint output. Result provenance
+UTC/local basis, residual/error display and chart centring. Result provenance
 identifies the input observations and motion mode. Chart output survives Close.
 
 Plan offers **Sun & Moon / best sights**, **Find Body** through the observation
@@ -102,7 +102,7 @@ to style Android controls.
 Shift and running-fix modes work and must remain. 2.8 has automatic Sights.xml
 persistence, not the 2.9 managed backup/import UI, sight names or GUIDs.
 Duplicate-name tests apply to host waypoints, routes and calibration profiles.
-No new optional pack is bundled automatically. DE440s, lunar orientation and
+FixDialog::OnGo centres the chart; the 2.8 baseline has no fix-waypoint creation command. Waypoint selection in planning/coastal tools remains supported. No new optional pack is bundled automatically. DE440s, lunar orientation and
 LOLA retain verification, coverage checks and honest fallback/error messages.
 
 ## Delivery order and evidence gates
