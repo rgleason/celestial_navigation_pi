@@ -401,6 +401,7 @@ void LunarResultsDialog::UpdatePositions(long candidate_index) {
       return;
     }
     m_sight = candidate;
+    m_androidSelectedCandidate = candidate_index;
 #else
     m_sight.RecomputeLunar(static_cast<int>(candidate_index));
 #endif
@@ -518,8 +519,12 @@ void LunarResultsDialog::UpdatePositions(long candidate_index) {
 }
 
 void LunarResultsDialog::ApplySelectedWatchOffset(wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+  const long selected = m_androidSelectedCandidate;
+#else
   long selected = m_candidates->GetNextItem(
       -1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+#endif
   if (selected < 0 ||
       static_cast<std::size_t>(selected) >= m_sight.m_LunarCandidates.size()) {
     CelestialMessageBox(_("Select a UTC candidate first."), _("Lunar distance"),
@@ -564,7 +569,7 @@ void LunarResultsDialog::RefreshAndroidCards() {
     candidates->Clear(true);
     positions->Clear(true);
     const bool checking = self->m_mode->GetSelection() == 1;
-    const long selected = self->m_candidates->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+    const long selected = self->m_androidSelectedCandidate;
     for (long row = 0; row < self->m_candidates->GetItemCount(); ++row) {
       wxString caption = checking ? _("Entered UTC check")
           : wxString::Format(row == selected ? _("Selected UTC candidate %ld")
@@ -578,15 +583,17 @@ void LunarResultsDialog::RefreshAndroidCards() {
       caption += "\nLocal rate: " + AndroidResultCell(self->m_candidates, row, 3);
       caption += "\nUTC uncertainty: " + AndroidResultCell(self->m_candidates, row, 4);
       auto* card = new wxButton(self->m_androidCandidates, wxID_ANY, caption);
+      card->GetHandle()->setProperty("cnSelectedCandidate", row == selected && !checking);
       if (!checking) card->Bind(wxEVT_BUTTON, [weak, row](wxCommandEvent&) {
         if (!weak) return;
         // The native clicked callback must return before selection can enter
         // a modal worker loop and rebuild/destroy its originating card.
         QTimer::singleShot(0, weak->GetHandle(), [weak, row]() {
           if (!weak || row >= weak->m_candidates->GetItemCount()) return;
-          if (weak->m_candidates->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED) == row) return;
-          for (long i = 0; i < weak->m_candidates->GetItemCount(); ++i)
-            weak->m_candidates->SetItemState(i, i == row ? wxLIST_STATE_SELECTED : 0, wxLIST_STATE_SELECTED);
+          if (weak->m_androidSelectedCandidate == row) return;
+          // wxQt programmatic selection does not reliably emit the wx list
+          // notification. Invoke the existing branch controller explicitly.
+          weak->UpdatePositions(row);
         });
       });
       candidates->Add(card, 0, wxEXPAND | wxALL, 6);
@@ -614,7 +621,7 @@ void LunarResultsDialog::RefreshAndroidCards() {
       if (!card) continue;
       const int height = QFontMetrics(card->GetHandle()->font()).lineSpacing() * 6 + 32;
       card->SetMinSize(wxSize(0, qMax(CN_TouchHeight(), height)));
-      if (card->GetLabel().StartsWith(_("Selected UTC candidate")))
+      if (card->GetHandle()->property("cnSelectedCandidate").toBool())
         card->GetHandle()->setStyleSheet(card->GetHandle()->styleSheet() +
             "QPushButton { background: #d1e8f1; color: #102e3b; }");
     }

@@ -30,6 +30,11 @@
 #ifdef __OCPN__ANDROID__
 #include "AndroidDocumentImport.h"
 #include <QDebug>
+#include <QApplication>
+#include <QPointer>
+#include <QMenu>
+#include <dlfcn.h>
+#include <set>
 #endif
 
 #ifndef WX_PRECOMP
@@ -141,11 +146,21 @@ int celestial_navigation_pi::Init(void) {
 
   m_pCelestialNavigationDialog = NULL;
 
+#ifdef __OCPN__ANDROID__
+  // AddCanvasMenuItem retains the wx item but does not own it. wxQt also
+  // does not delete its QMenu in wxMenu's destructor. Keep both lifetimes
+  // explicit so no QAction with a plugin vtable survives dlclose.
+  m_androidRouteMenu = new wxMenu;
+  m_androidRouteMenuItem = new wxMenuItem(m_androidRouteMenu, wxID_ANY,
+                                         _("Generate fallback almanac..."));
+  m_route_almanac_menu_id = AddCanvasMenuItem(m_androidRouteMenuItem, this, "Route");
+#else
   wxMenu routeMenu;
   m_route_almanac_menu_id = AddCanvasMenuItem(
       new wxMenuItem(&routeMenu, wxID_ANY,
                      _("Generate fallback almanac...")),
       this, "Route");
+#endif
 
 #ifdef CELESTIAL_ECLIPSE_INTEGRATION_TEST
   wxTheApp->CallAfter([this]() {
@@ -180,6 +195,17 @@ bool celestial_navigation_pi::DeInit(void) {
     RemoveCanvasMenuItem(m_route_almanac_menu_id, "Route");
     m_route_almanac_menu_id = -1;
   }
+#ifdef __OCPN__ANDROID__
+  QPointer<QMenu> nativeRouteMenu = m_androidRouteMenu
+      ? m_androidRouteMenu->GetHandle() : nullptr;
+  if (m_androidRouteMenuItem && m_androidRouteMenuItem->GetHandle())
+    m_androidRouteMenuItem->GetHandle()->blockSignals(true);
+  delete m_androidRouteMenuItem;
+  m_androidRouteMenuItem = nullptr;
+  delete m_androidRouteMenu;
+  m_androidRouteMenu = nullptr;
+  delete nativeRouteMenu.data();
+#endif
   RemovePlugInTool(m_leftclick_tool_id);
 
   if (m_pCelestialNavigationDialog) {
@@ -194,16 +220,26 @@ bool celestial_navigation_pi::DeInit(void) {
     delete dialog;
   }
 #ifdef __OCPN__ANDROID__
-  // Static wxQt gives this plugin its own deferred-delete queue. The host's
-  // idle loop drains a different queue. Closed modal sheets otherwise leave
-  // Qt widgets/event filters alive with vtables in a library about to unload.
-  const size_t pending = wxPendingDelete.GetCount();
-  while (auto node = wxPendingDelete.GetFirst()) {
-    auto* object = node->GetData();
-    wxPendingDelete.DeleteNode(node);
-    delete object;
-  }
-  qInfo() << "Celestial Android unload drained closed objects:" << pending;
+  // Verify native plugin objects have been released before unloading.
+  Dl_info module{};
+  dladdr(reinterpret_cast<void*>(&create_pi), &module);
+  std::set<QObject*> visited;
+  size_t survivors = 0;
+  std::function<void(QObject*)> inspect = [&](QObject* object) {
+    if (!object || !visited.insert(object).second) return;
+    Dl_info owner{};
+    if (dladdr(*reinterpret_cast<void**>(object), &owner) &&
+        owner.dli_fbase == module.dli_fbase) {
+      ++survivors;
+      qInfo() << "Celestial Android surviving native object:" << object
+              << object->metaObject()->className() << "parent" << object->parent()
+              << "vtable offset" << reinterpret_cast<quintptr>(*reinterpret_cast<void**>(object)) - reinterpret_cast<quintptr>(module.dli_fbase);
+    }
+    for (auto* child : object->children()) inspect(child);
+  };
+  inspect(qApp);
+  for (auto* widget : QApplication::allWidgets()) inspect(widget);
+  qInfo() << "Celestial Android native objects remaining before unload:" << survivors;
 #endif
   return true;
 }

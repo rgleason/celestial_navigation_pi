@@ -37,6 +37,7 @@ private:
   wxPanel* m_androidCandidates = nullptr;
   wxPanel* m_androidPositions = nullptr;
   bool m_androidRefreshPending = false;
+  long m_androidSelectedCandidate = -1;
 #endif
 };
 

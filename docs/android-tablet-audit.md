@@ -1028,3 +1028,29 @@ rows were repopulated. Next revision reads native model cells, styles
 the containing panels, and schedules a final refresh after branch commit.
 Desktop lunar UI regression passed with display access (desktop-lunar45.log);
 the initial sandbox run could not open the display and was not a plugin test.
+
+### 27 September 16:49–16:55 BST — native route-action lifetime isolated
+
+Revision 46 hot-import failed again at 16:49:59 (PID 13417); its deletion
+queue was empty. This falsifies the proposed queue explanation. Removed
+that unrelated queue drain. Diagnostic revision 47 enumerated Qt objects
+whose vtables belong to this plugin after normal DeInit: exactly one
+QAction parented to QMenu survived, vtable offset 0x8d6d50, symbol
+vtable for wxQtAction. Full survivor log and diagnostic binary retained.
+
+Core AddCanvasContextMenuItemPIM retains the provided wxMenuItem;
+RemoveCanvasContextMenuItem deletes only its container. Pinned wxQt wxMenu
+has no destructor releasing QMenu and wxMenuItem does not release QAction.
+The route-menu wx object was a local temporary, leaving the Qt action alive
+through plugin unload. Next revision retains the wx menu/item for the
+registration lifetime and deletes both wrappers and its native QMenu after
+removing registration. Desktop code stays on its original path. Physical
+hot-import/disable checks still pending.
+
+Revision 46 cold lunar cards now show the correct individual values,
+complete coordinates, 4.37 NM horizontal RMS and 0.7 NM worksheet offset,
+with correct initial wrapping. Explicit candidate taps did not change the
+selection because programmatic wxQt list selection did not notify the
+controller. Next revision invokes the existing branch controller directly
+and stores its successfully committed selected index. Save and alternate
+candidate evidence are still pending.
