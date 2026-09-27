@@ -680,7 +680,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_androidAlmanac = PlannerCards(almanacPage, almanacSizer, false);
   almanacPage->GetHandle()->setProperty("cnNoPageScroll", true);
   auto* progress = new wxBoxSizer(wxHORIZONTAL);
-  m_androidProgress = new wxStaticText(this, wxID_ANY, _("Preparing planner…"));
+  m_androidProgress = new wxStaticText(this, wxID_ANY, _("Preparing planner..."));
   m_androidCancel = new wxButton(this, wxID_ANY, _("Cancel calculation"));
   progress->Add(m_androidProgress, 1, wxEXPAND | wxALL, 8);
   progress->Add(m_androidCancel, 0, wxALL, 8);
@@ -689,7 +689,13 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
     CancelAndroidCalculation();
   });
   m_androidSolve = solve;
-  m_androidWorker.reset(new celestial_android::PlannerWorker());
+  try {
+    m_androidWorker.reset(new celestial_android::PlannerWorker());
+  } catch (const std::exception& error) {
+    m_androidProgress->SetLabel(_("Cannot start planner worker: ") +
+                               wxString::FromUTF8(error.what()));
+    m_androidCancel->Enable(false);
+  }
   m_androidPoll = new QTimer(GetHandle());
   QObject::connect(m_androidPoll, &QTimer::timeout, GetHandle(), [this] {
     PollAndroidCalculation();
@@ -1144,9 +1150,9 @@ void PlannerDialog::ContextTimeEdited(wxCommandEvent&) {
 void PlannerDialog::ScheduleRefresh() {
 #ifdef __OCPN__ANDROID__
   if (m_androidWorker) m_androidWorker->Cancel();
-  if (m_androidReady) ClearCalculatedResults(_("Context changed; refreshing results…"));
+  if (m_androidReady) ClearCalculatedResults(_("Context changed; refreshing results..."));
   if (m_androidCancel) m_androidCancel->Enable(false);
-  if (m_androidProgress) m_androidProgress->SetLabel(_("Waiting for context edits…"));
+  if (m_androidProgress) m_androidProgress->SetLabel(_("Waiting for context edits..."));
   m_androidReady = false;
   if (m_androidCreateSight) m_androidCreateSight->Enable(false);
   if (m_androidExport) m_androidExport->Enable(false);
@@ -1806,27 +1812,31 @@ void PlannerDialog::RebuildBodyList() {
 
 #ifdef __OCPN__ANDROID__
 void PlannerDialog::StartAndroidCalculation(const ObserverMotion& motion) {
-  ClearCalculatedResults(_("Calculating the current context…"));
+  if (!m_androidWorker) {
+    ClearCalculatedResults(_("Cannot start planning worker. Close and reopen Planner to retry."));
+    return;
+  }
+  ClearCalculatedResults(_("Calculating the current context..."));
   m_androidGeneration = m_androidWorker->Submit(motion, m_eyeHeight->GetValue());
   m_androidCancel->Enable(true);
-  m_androidProgress->SetLabel(_("Calculating horizon events…"));
+  m_androidProgress->SetLabel(_("Calculating horizon events..."));
 }
 
 void PlannerDialog::CancelAndroidCalculation() {
   m_androidRefresh->stop();
-  m_androidWorker->Cancel();
-  ClearCalculatedResults(_("Calculation cancelled. Use Refresh in Context to calculate again."));
+  if (m_androidWorker) m_androidWorker->Cancel();
+  ClearCalculatedResults(_("Calculation cancelled. Use Calculate / refresh in Context to try again."));
   m_androidProgress->SetLabel(_("Calculation cancelled"));
   m_androidCancel->Enable(false);
 }
 
 void PlannerDialog::PollAndroidCalculation() {
-  if (!m_androidCancel->IsEnabled()) return;
+  if (!m_androidWorker || !m_androidCancel->IsEnabled()) return;
   celestial_android::PlannerResults result;
   if (!m_androidWorker->Take(m_androidGeneration, &result)) {
-    const wxString stages[] = {_("Preparing calculations…"),
-      _("Calculating horizon events…"), _("Finding Moon phases…"),
-      _("Ranking celestial bodies…"), _("Generating hourly almanac…")};
+    const wxString stages[] = {_("Preparing calculations..."),
+      _("Calculating horizon events..."), _("Finding Moon phases..."),
+      _("Ranking celestial bodies..."), _("Generating hourly almanac...")};
     m_androidProgress->SetLabel(stages[std::max(0, std::min(4, m_androidWorker->Stage()))]);
     return;
   }
