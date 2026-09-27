@@ -25,6 +25,9 @@
 #include "DialogGeometry.h"
 #include "UtcDateTime.h"
 #include "Utf8Translation.h"
+#ifdef __OCPN__ANDROID__
+#include "AndroidTouch.h"
+#endif
 
 namespace {
 
@@ -67,17 +70,6 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   wxBoxSizer* dialogRoot = new wxBoxSizer(wxVERTICAL);
   wxWindow* formParent = this;
   wxBoxSizer* formRoot = dialogRoot;
-#ifdef __OCPN__ANDROID__
-  // The calendar is taller than a phone viewport. Give the entire form one
-  // scrollable area instead of squeezing its lower controls into a thin strip.
-  m_scroller = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition,
-                                    wxDefaultSize,
-                                    wxVSCROLL | wxTAB_TRAVERSAL | wxBORDER_NONE);
-  m_scroller->SetScrollRate(0, 12);
-  m_scroller->SetBackgroundColour(GetBackgroundColour());
-  formParent = m_scroller;
-  formRoot = new wxBoxSizer(wxVERTICAL);
-#endif
 
   wxStaticText* explanation = new wxStaticText(
       formParent, wxID_ANY,
@@ -88,7 +80,12 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   formRoot->Add(explanation, 0, wxEXPAND | wxALL, 8);
 
   wxStaticBoxSizer* observation = new wxStaticBoxSizer(
-      wxVERTICAL, formParent, CN_UTF8_("Observation — always visible"));
+      wxVERTICAL, formParent,
+#ifdef __OCPN__ANDROID__
+      _("Observation"));
+#else
+      CN_UTF8_("Observation — always visible"));
+#endif
   wxFlexGridSizer* obsGrid = new wxFlexGridSizer(0, 2, 5, 10);
   obsGrid->AddGrowableCol(1);
 
@@ -161,8 +158,12 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
 
   wxStaticText* lowerHint = new wxStaticText(
       formParent, wxID_ANY,
+#ifdef __OCPN__ANDROID__
+      _("Bearing, horizon conditions and the result follow below."));
+#else
       _("Bearing, horizon conditions and the result are below; scroll this "
         "lower section when necessary."));
+#endif
   formRoot->Add(lowerHint, 0, wxLEFT | wxRIGHT | wxBOTTOM, 8);
 
 #ifndef __OCPN__ANDROID__
@@ -172,6 +173,10 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   m_scroller->SetScrollRate(0, 12);
   m_scroller->SetBackgroundColour(GetBackgroundColour());
 #endif
+  // AndroidSurface supplies a single viewport for the complete form. A
+  // nested lower scroller otherwise collapses below the large calendar.
+  wxWindow* lowerParent = this;
+  if (m_scroller) lowerParent = m_scroller;
   wxBoxSizer* root =
 #ifdef __OCPN__ANDROID__
       formRoot;
@@ -180,78 +185,80 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
 #endif
 
   wxStaticBoxSizer* bearingBox =
-      new wxStaticBoxSizer(wxVERTICAL, m_scroller, _("Bearing (optional)"));
+      new wxStaticBoxSizer(wxVERTICAL, lowerParent, _("Bearing (optional)"));
   m_hasBearing = new wxCheckBox(
-      m_scroller, wxID_ANY,
+      lowerParent, wxID_ANY,
       _("Include a bearing to show possible positions along the event LOP"));
   m_hasBearing->SetValue(sight.m_HorizonBearingProvided);
   bearingBox->Add(m_hasBearing, 0, wxALL, 6);
   wxFlexGridSizer* bearingGrid = new wxFlexGridSizer(0, 2, 5, 10);
   bearingGrid->AddGrowableCol(1);
   bearingGrid->Add(
-      new wxStaticText(m_scroller, wxID_ANY, _("Bearing reference")), 0,
+      new wxStaticText(lowerParent, wxID_ANY, _("Bearing reference")), 0,
       wxALIGN_CENTER_VERTICAL);
-  m_bearingReference = new wxChoice(m_scroller, wxID_ANY);
+  m_bearingReference = new wxChoice(lowerParent, wxID_ANY);
   m_bearingReference->Append(_("Magnetic compass"));
   m_bearingReference->Append(_("True bearing"));
   m_bearingReference->SetSelection(sight.m_HorizonBearingMagnetic ? 0 : 1);
   bearingGrid->Add(m_bearingReference, 1, wxEXPAND);
   m_bearing =
-      AddNumber(m_scroller, bearingGrid, _("Observed bearing"),
+      AddNumber(lowerParent, bearingGrid, _("Observed bearing"),
                 sight.m_HorizonBearing, 0, 359.99, 0.1, 2, _("degrees"));
   m_variation =
-      AddNumber(m_scroller, bearingGrid, _("Magnetic variation (E + / W -)"),
+      AddNumber(lowerParent, bearingGrid, _("Magnetic variation (E + / W -)"),
                 sight.m_HorizonVariation, -90, 90, 0.1, 2, _("degrees"));
   m_deviation =
-      AddNumber(m_scroller, bearingGrid, _("Compass deviation (E + / W -)"),
+      AddNumber(lowerParent, bearingGrid, _("Compass deviation (E + / W -)"),
                 sight.m_HorizonDeviation, -45, 45, 0.1, 2, _("degrees"));
   m_bearingUncertainty =
-      AddNumber(m_scroller, bearingGrid, _("Bearing uncertainty (+/-)"),
+      AddNumber(lowerParent, bearingGrid, _("Bearing uncertainty (+/-)"),
                 sight.m_HorizonBearingUncertainty, 0, 30, 0.1, 1, _("degrees"));
   bearingGrid->Add(
-      new wxStaticText(m_scroller, wxID_ANY, _("Effective bearing")), 0,
+      new wxStaticText(lowerParent, wxID_ANY, _("Effective bearing")), 0,
       wxALIGN_CENTER_VERTICAL);
-  m_trueBearing = new wxStaticText(m_scroller, wxID_ANY, wxEmptyString);
+  m_trueBearing = new wxStaticText(lowerParent, wxID_ANY, wxEmptyString);
   bearingGrid->Add(m_trueBearing, 1, wxEXPAND);
   bearingBox->Add(bearingGrid, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 6);
   root->Add(bearingBox, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
 
   wxStaticBoxSizer* conditions =
-      new wxStaticBoxSizer(wxVERTICAL, m_scroller, _("Horizon conditions"));
+      new wxStaticBoxSizer(wxVERTICAL, lowerParent, _("Horizon conditions"));
   wxFlexGridSizer* conditionsGrid = new wxFlexGridSizer(0, 2, 5, 10);
   conditionsGrid->AddGrowableCol(1);
-  m_eyeHeight = AddNumber(m_scroller, conditionsGrid, _("Height of eye"),
+  m_eyeHeight = AddNumber(lowerParent, conditionsGrid, _("Height of eye"),
                           sight.m_EyeHeight, 0, 100, 0.1, 2, _("metres"));
-  m_temperature = AddNumber(m_scroller, conditionsGrid, _("Air temperature"),
+  m_temperature = AddNumber(lowerParent, conditionsGrid, _("Air temperature"),
                             sight.m_Temperature, -60, 60, 0.5, 1, _("C"));
-  m_pressure = AddNumber(m_scroller, conditionsGrid, _("Pressure"),
+  m_pressure = AddNumber(lowerParent, conditionsGrid, _("Pressure"),
                          sight.m_Pressure, 850, 1100, 1, 1, _("hPa"));
   conditionsGrid->Add(
-      new wxStaticText(m_scroller, wxID_ANY, _("Horizon quality")), 0,
+      new wxStaticText(lowerParent, wxID_ANY, _("Horizon quality")), 0,
       wxALIGN_CENTER_VERTICAL);
-  m_horizonQuality = new wxChoice(m_scroller, wxID_ANY);
+  m_horizonQuality = new wxChoice(lowerParent, wxID_ANY);
   m_horizonQuality->Append(_("Clear sea horizon"));
   m_horizonQuality->Append(_("Hazy or indistinct horizon"));
   m_horizonQuality->Append(_("Obstructed or land horizon"));
   m_horizonQuality->SetSelection(sight.m_HorizonQuality);
   conditionsGrid->Add(m_horizonQuality, 1, wxEXPAND);
   m_altitudeUncertainty = AddNumber(
-      m_scroller, conditionsGrid, _("Horizon/refraction uncertainty (+/-)"),
+      lowerParent, conditionsGrid, _("Horizon/refraction uncertainty (+/-)"),
       sight.m_HorizonAltitudeUncertainty, 0, 180, 1, 1, _("arcminutes"));
   conditions->Add(conditionsGrid, 0, wxEXPAND | wxALL, 6);
   root->Add(conditions, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
 
   wxStaticBoxSizer* result =
-      new wxStaticBoxSizer(wxVERTICAL, m_scroller, _("Estimated result"));
-  m_preview = new wxStaticText(m_scroller, wxID_ANY, wxEmptyString);
+      new wxStaticBoxSizer(wxVERTICAL, lowerParent, _("Estimated result"));
+  m_preview = new wxStaticText(lowerParent, wxID_ANY, wxEmptyString);
   m_preview->Wrap(590);
   result->Add(m_preview, 0, wxEXPAND | wxALL, 6);
   root->Add(result, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
 
+#ifndef __OCPN__ANDROID__
   m_scroller->SetSizer(root);
   root->Layout();
   m_scroller->FitInside();
   dialogRoot->Add(m_scroller, 1, wxEXPAND);
+#endif
 
   wxStdDialogButtonSizer* buttons = new wxStdDialogButtonSizer;
   wxButton* ok = new wxButton(this, wxID_OK);
@@ -317,6 +324,18 @@ void HorizonEventDialog::MarkDirty() {
 }
 
 void HorizonEventDialog::RelayoutContent() {
+#ifdef __OCPN__ANDROID__
+  CN_WrapAndroidText(m_preview, m_preview->GetLabel(),
+                     std::max(160, GetClientSize().x - 64));
+  CN_WrapAndroidText(m_trueBearing, m_trueBearing->GetLabel(),
+                     std::max(160, GetClientSize().x - 64));
+  for (wxWindow* parent = m_preview->GetParent(); parent && parent != this;
+       parent = parent->GetParent()) {
+    parent->Layout();
+    if (auto* scroll = wxDynamicCast(parent, wxScrolledWindow))
+      scroll->FitInside();
+  }
+#endif
   if (m_scroller && m_scroller->GetSizer()) {
     m_scroller->GetSizer()->Layout();
     m_scroller->FitInside();
