@@ -824,7 +824,11 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
   m_stFixError->SetValue(wxString::Format(_("%.2f' RMS"), fix.rmsMinutes));
   m_runningSummary->SetLabel(wxString::Format(
       _("Common epoch %s UTC | %u iterations | RMS %.2f' | uncertainty ellipse %.2f x %.2f NM at %.0f%c"),
+#ifdef __OCPN__ANDROID__
+      UtcDateTime::FormatInstant(fix.epochUtc, "%Y-%m-%d %H:%M:%S.%l").c_str(),
+#else
       UtcDateTime::FormatInstant(fix.epochUtc, "%Y-%m-%d %H:%M:%S").c_str(),
+#endif
       fix.iterations, fix.rmsMinutes, fix.semiMajorNm, fix.semiMinorNm,
       fix.ellipseBearing, 0x00b0));
   m_runningSummary->Wrap(660);

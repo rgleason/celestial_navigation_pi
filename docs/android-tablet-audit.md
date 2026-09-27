@@ -1409,3 +1409,32 @@ edit triggered recalculation. NauticalTimeCtrl now coalesces native spin and wx
 notifications through a control-owned timer. Programmatic SetValue suppresses
 notifications and cancels pending input notifications. Android and desktop
 builds passed; actual typed-time/calculation/persistence checks are pending.
+
+### 19:17–19:27 BST — iteration 59 live time retest
+
+Source `2207d08c7feda526f45aa2e918904a298d47425f` imported successfully.
+Tar SHA256 `5d2f6b18fc18ec8f3c71c050ed0aa1af011f7545d90aa1609b2ea5a1cc10340d`;
+actual installed library
+`20387bc2220beabb7cbbcd514a2e1dc87e366e27a03be4231c1a93839d9afdf0`.
+Hot import retained PID 23025. All seven desktop/shared checks passed in
+53.29 seconds; explicit desktop FixUi and Android UTC/angle boundary checks
+passed. These checks do not establish physical acceptance of all feature families.
+
+Selected-body filtering still FAILED, including after an intentional cold restart
+(new PID 31713). Returning to Observe still displayed the selected Saturn card.
+The hidden table's selection/deselection callbacks remain connected and can
+overwrite the model during native focus/modal transitions. Android now ignores
+those compatibility-view callbacks; cards own selection. The repair is committed
+as `3f2d60e`, built and packaged but not installed. Do not count it as a pass.
+Hot process maps retained five deleted prior plugin mappings as well as the new
+one; a cold process has only the current mapping. Record this residual lifetime
+finding and use cold-start evidence to establish candidate behavior.
+
+On the cold iteration 59, the visible calendar selected 20 July 2025. Typed
+hours 21, minutes 18 and seconds 20.987 immediately changed the common-epoch
+summary from 18:23:32 to 21:18:20. COG 90/SOG 5 immediately changed RMS from
+0.78 to 18.08 arcminutes. This passes the stale-time event regression. The
+summary omitted milliseconds; Android summary formatting is being repaired
+to expose the full result epoch. Saved observations remained byte-identical
+after closing (`Sights-fix59.xml` matches the preceding snapshots). Crash buffer
+retained as `crash59.txt`; PID 31713 continued through these operations.
