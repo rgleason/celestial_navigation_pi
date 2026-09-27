@@ -343,6 +343,14 @@ inline void CN_EnableAndroidChoiceScrolling(QComboBox* combo) {
   view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
   QPointer<QComboBox> safeCombo(combo);
   QPointer<QAbstractItemView> safeView(view);
+  QObject::connect(QApplication::primaryScreen(), &QScreen::geometryChanged,
+                   combo, [safeCombo](const QRect&) {
+    // Qt 5.12 retains the old popup geometry across Android rotation.
+    // Dismiss without activation; reopening uses the new screen bounds.
+    QTimer::singleShot(0, safeCombo, [safeCombo]() {
+      if (safeCombo) safeCombo->hidePopup();
+    });
+  });
   new CN_AndroidButtonDragFilter(view->viewport(),
       [safeCombo, safeView](QPoint point) {
         if (!safeCombo || !safeView) return;

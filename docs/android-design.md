@@ -198,3 +198,9 @@ popup, stop active scrolling, consume both Back halves, and keep the editor
 visible with uncommitted values unchanged. Other native popups close through
 their normal close lifecycle. Retest popup Back, editor Cancel, Save/reopen,
 and rotation with the popup open.
+
+Rotation with a native choice popup open leaves Qt 5.12's cached portrait
+popup height beyond the landscape screen. On screen geometry change, close
+that popup through its owner and retain the editor's selection/unsaved fields.
+The navigator can reopen a correctly placed popup in the new orientation.
+Do not commit a highlighted row during rotation.

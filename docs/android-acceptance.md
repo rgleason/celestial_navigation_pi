@@ -7,7 +7,7 @@ actual output/files, screenshots, persistence, Cancel/Back and invalid cases.
 
 | ID | Working baseline function / source | Visible Android destination | Physical status |
 |---|---|---|---|
-| O01 | New/edit altitude, Sun/Moon/5 planets/catalogue stars; SightDialog | Observe > New / Edit > Measurement | PARTIAL: Sun reference; Venus entry. Other bodies/variants pending |
+| O01 | New/edit altitude, Sun/Moon/5 planets/catalogue stars; SightDialog | Observe > New / Edit > Measurement | PARTIAL: Sun reference; Venus entry; f04d483 catalogue swipe and exact Polaris selection/Save/reopen retained all other XML fields. fc9a98e popup Back fixed in both orientations; rotation-popup bounds refinement pending. Other bodies/variants pending |
 | O02 | Celestial azimuth, true/magnetic; SightDialog | Measurement > Azimuth | PENDING |
 | O03 | Lower/centre/upper limbs, lunar near/far/body contacts | Measurement > Limb/contact | PENDING |
 | O04 | Angle and time uncertainties, lunar search span | Measurement / Time | PENDING |

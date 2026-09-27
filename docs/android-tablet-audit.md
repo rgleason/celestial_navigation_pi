@@ -829,3 +829,23 @@ a tap and restored the display; this is a failed Back presentation check.
 A design refinement precedes an Android-only owner-aware hidePopup change,
 which also stops active popup scrolling and retains the editor. Android build
 41 passed. Physical lifecycle regression remains pending.
+
+## 15:49–15:51: popup Back lifecycle repaired
+
+Installed exact fc9a98eee2b3039a7345ec7eb8ee62c6e92cc823 through Plugin
+Manager. Archive SHA256 305c32b2b54ac755d7060a7969fbf5b1707d5443d169ad153a7bfd10ec54048b;
+actual installed library equals packaged bytes, SHA256
+7221f53628798705c21df1a41920c52814e9380b391ca486b401fd469c9c6538.
+Assets/settings/observations backed up before replacement; backup-before41.json.
+Both portrait popup Back and landscape popup Back left the editor visible
+with Polaris unchanged and PID 5177 continuous. No black surface remained.
+Entering 42.1234567890 then keyboard Back retained text/editor; the next Back
+cancelled the editor. Sights-after-cancel41.xml equals Sights-before41.xml
+byte-for-byte. Evidence popup-back41, popup-rotation-back41, keyboard-back41,
+editor-cancel-back41 and import-result41.
+
+Rotation while the popup itself remained open exposed cached portrait popup
+geometry extending below the landscape viewport (popup-rotation41). The next
+Android-only refinement closes the owner popup on screen-geometry change
+without activating a row, so it can reopen at correct new bounds. Build 42
+passed; physical rotation/reopen verification pending.
