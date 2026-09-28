@@ -3346,3 +3346,23 @@ native fatal. lastANR none since boot. After popup checks idle PSS506457KiB,
 RSS569052KiB, swapPSS350KiB; active-worker headroom remains separate/pending.
 Protected documentation worktree HEAD4435de5088666933fb46ee9663a36fbb42baea87
 unchanged. Full release acceptance/19-target final-source CI still pending.
+
+126 single lunar cancellation09:00–09:05BST: initial intended31536000-second
+entry exceeded the actual0–172800 spin-control range; later inspection showed
+31536, not a year. Do not call that a valid year-span test. Initial active Search
+capture/memory was real, but later Cancel arrived after search completed. Retry
+used Inspect lunar solution, whose completion also preceded a delayed tap; those
+screens are not active Search cancellation passes. Exact timing files retained.
+Actual positive case explicitly typed/inspected supported172800 seconds, then
+fresh Results with immediate pre-Cancel screenshot (Search lunar UTC) and tap
+about0.45s after start. Returned directly to editor, no Results opened. Retried
+same cancelled search in landscape/font1.3: immediate active Search screenshot,
+AndroidBack about0.49s after start returns directly to editor. ParentBack
+discards span; entire saved XML byte-identical to Sun-centre baseline. PID11583
+continuous. Accepted evidence fresh-worker-before/after-cancel and before/after-
+back plus lunar126-fresh-cancel/back-timing.json; earlier inspection-job timing
+is separately retained without a cancellation pass.
+Real initial active Search memory: PSS552984KiB/RSS620972KiB/swapPSS190KiB,
+MemAvailable631672KiB of total3485900KiB, above64MiB work+256MiB reserve.
+Foreground QtActivity in org.opencpn.opencpn.dev independently captured.
+This is actual worker headroom at that capture, not all-family maximum memory.
