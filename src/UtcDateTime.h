@@ -110,7 +110,7 @@ inline wxDateTime LocalWallToInstant(const wxDateTime& fields) {
   const QDate date(f.year, f.mon + 1, f.mday);
   const QTime time(f.hour, f.min, f.sec, f.msec);
   const QDateTime local(date, time, Qt::LocalTime);
-  // POBsoft (1985–2026): Android Qt can retain entered gap fields in the
+  // POBsoft (1985-2026): Android Qt can retain entered gap fields in the
   // constructed object. Validate its real epoch against a fresh local clock.
   const qint64 epoch = local.toMSecsSinceEpoch();
   const auto resolved = QDateTime::fromMSecsSinceEpoch(epoch, Qt::LocalTime);
