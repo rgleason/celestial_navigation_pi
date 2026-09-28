@@ -483,14 +483,24 @@ void FindBodyDialog::Update() {
           : _("N/A"));
   m_tAzimuth->SetValue(std::isfinite(zn) ? toSDMM_PlugIn(0, zn, true)
                                          : _("N/A"));
-  m_tIntercept->SetValue(
-      wxString::Format(_T("%f"), fabs(hc - m_Sight.m_ObservedAltitude) * 60));
-  if (hc >= m_Sight.m_ObservedAltitude) {
-    m_cbAway->SetValue(true);
-    m_cbTowards->SetValue(false);
-  } else {
-    m_cbTowards->SetValue(true);
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): an azimuth has no observed-altitude intercept.
+  if (m_Sight.m_Type != Sight::ALTITUDE) {
+    m_tIntercept->SetValue(_("N/A"));
     m_cbAway->SetValue(false);
+    m_cbTowards->SetValue(false);
+  } else
+#endif
+  {
+    m_tIntercept->SetValue(
+        wxString::Format(_T("%f"), fabs(hc - m_Sight.m_ObservedAltitude) * 60));
+    if (hc >= m_Sight.m_ObservedAltitude) {
+      m_cbAway->SetValue(true);
+      m_cbTowards->SetValue(false);
+    } else {
+      m_cbTowards->SetValue(true);
+      m_cbAway->SetValue(false);
+    }
   }
 
   double estimatedHs, estimatedError;

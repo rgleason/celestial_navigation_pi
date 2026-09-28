@@ -947,3 +947,12 @@ floor whole seconds and a nonnegative millisecond remainder for Android libc
 formatting. Keep desktop unchanged. Test1900,negative near-zero,negative whole
 second and positive epochs across existing zones; replay the exposing tablet
 1900case once after the next batched build. Retain failed output/screenshots.
+
+### Azimuth Find presentation152, before implementation, 28September14:54BST
+
+Actual azimuth Find shows Ho N/A but an altitude intercept1571NM/Towards.
+These are legacy altitude-only fields and have no meaning for an azimuth
+observation. Android presentation will show intercept N/A and neither direction
+for non-altitude sightings, leaving predicted Hc/Zn, position sources and shared
+math/desktop unchanged. Physical azimuth replay plus existing altitude Find
+GUI regression verify scope; batch this with pending historic formatter install.

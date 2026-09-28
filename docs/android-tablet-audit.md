@@ -4126,3 +4126,43 @@ validRMC/ZDA received, system-minus-GNSS dash, advancing local/UTC and Clock0.
 Original Location true restored immediately. Earlier mistaken1008toolbar tap
 opened WMM; dismissed without changing it and actual842CelNav icon opened.
 T01cold no-input accepted; full protected original raw backup retained.
+
+### Matching-watch correction151, installed147, 14:43-14:49 BST
+
+Actual Spica/Vega/Deneb sea-level pressure0 mathematical fixture uses independent
+USNO geometric Hc at Greenwich21June2024 22UTC. Sphere manualClock0 longitude
+0deg00.0005minW changes to0deg00.1116minE after selecting actual saved
+RESUME86-USNO-Known correction-0.44659105661448395s. Per-sight motion choice
+with allzero shifts sets actual common epoch and all three residual timestamps
+21:59:59.553UTC. Planner positiveLastfix fills full51.47790548362774/
+0.0018608273778681905; independent PROJ WGS84 error0.069806NM within predeclared
+0.3NM reference. Correction used once; ClockError remains0 and all five complete
+original report blocks compare exactly. Fixture's decimal strings normalize to
+existing17digit serializer spellings; every complete attribute has identical
+floating-point value. Raw-byte comparison initially refused this spelling change,
+then complete numeric-field/root and nestedreport comparisons pass; normalized
+readback retained as subsequent byte baseline. Original12/5raw backup untouched.
+No byte-identical claim for noncanonical initial fixture.
+
+Independent Python geodesic module unavailable; used existing /usr/bin/geod
+PROJ reference, not a plugin calculation. Planner always opensContext; helper
+refused unobserved Recommendationscaption safely before actual source selection.
+Azimuth fixture initially pressure0 causes expected positive-pressure guidance
+when opening Find/switchingpages; permitted correctionspage remains accessible
+after dismissing validation. This is an intentionally atmosphere-free solver
+fixture, not a production-input regression. Actual azimuth pressure being set1013
+for editor acceptance; three solver stars remain pressure0.
+
+Committed41a40c3 Android/desktop builds PASS and full9CTest PASS53.91s,
+including UTF8literal guard. Focused historic formatter test already passed.
+Archive af7095d3... contains exact stripped880f35be...SO, sourceguard PASS.
+Tablet repair installation not yet claimed.
+
+### Azimuth Find display152, installed147, 14:52BST
+
+Real FindSpica from azimuth has Ho N/A but intercept1571.118956NM/Towards.
+FAIL presentation: no altitude intercept is applicable to azimuth. This is a
+legacy shared field exposed in Android's full results; Android-only guard will
+make intercept N/A/directionsfalse for non-altitude while preserving body Hc/Zn.
+No shared numerical/desktop change. Actual screenshot finish151-find retained;
+physical repair replay pending together with historic formatter.
