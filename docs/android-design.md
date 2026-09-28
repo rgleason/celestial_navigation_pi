@@ -828,3 +828,15 @@ IE, uncertainty, note/profile edits do not change pair prediction identity.
 Callbacks scoped to live dialog, no deferred/detached thread. Desktop stays
 unchanged. Physical replay must refuse UTC-change repeat, preserve existing
 repeats, accept fresh prediction, and verify false endpoint warning absent.
+
+### Horizon defaults after Android cold restart (physical135, before implementation)
+
+The actual true60/magnetic57+5−2 saves retain both nominal branches and every
+protected observation/report. However, after cold restart a new Horizon Event
+shows variation0/deviation0 instead of the saved5/−2 (resume135-new-defaults-fields).
+OnOK writes the five horizon defaults to the host wxFileConfig in memory but
+does not flush. Android termination need not run the desktop shutdown flush.
+Flush after those existing writes on Android only, before returning Save.
+No default values, horizon inversion, saved observation format or desktop
+runtime change. Verify independent config readback immediately after Save,
+cold reload and actual new-event default fields; Cancel must not write defaults.

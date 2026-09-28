@@ -530,6 +530,11 @@ void HorizonEventDialog::OnOK(wxCommandEvent& event) {
   config->Write(_T("HorizonAltitudeUncertainty"),
                 m_sight.m_HorizonAltitudeUncertainty);
   config->Write(_T("HorizonQuality"), m_sight.m_HorizonQuality);
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): Android termination need not flush host settings.
+  // Persist the saved defaults before returning to the observation workspace.
+  config->Flush();
+#endif
 
   EndModal(wxID_OK);
 }

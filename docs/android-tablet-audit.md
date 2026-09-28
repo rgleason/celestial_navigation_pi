@@ -3703,3 +3703,47 @@ Current larger-font/rotation settings remain for acceptance, not final restorati
 Private configs/screenshots retained separately; public reports contain only
 disposable fixture inputs and numerical/preservation results. Remaining input
 families/contact combinations are not inferred from these selected passes.
+
+### Independent horizon135, runtime131/b236af5, 11:07–11:34 BST
+
+Public USNO Sun inputs2024-06-14 17:00UTC; independent multistart SciPy
+forward ENU solve, sea-level nominal34′ refraction. Predeclared1NM tolerance
+for both branches; pressure1010/temperature10/eye0, true60 versus magnetic57,
+variation+5/deviation−2. Public inputs/reference/transcribed tablet outputs are
+in validation/android-horizon-20260928; no private profile uploaded.
+Actual true and magnetic editor results identical:36°03.5401′N175°39.2924′E,
+39°21.9068′S145°25.6581′W. Independent PROJ WGS84 errors0.002904/0.001731NM.
+Both branches retained; no unique fix or terrain/refraction accuracy claim.
+
+Actual Save/readback/reopen, complete portrait/landscape explanation at font1.3
+and numeric-keyboard landscape rotation pass. Native reference popup rows72px
+=48dp. After corrected staging, all12protected sights/5complete solutions,
+reports/root/Clock0 unchanged by each Save. Offline cold31934→32551 retains
+the entire saved file and both displayed branches. Include changes only owned
+Visible. Show on chart centres the public northern DR and displays its nominal
+marker and event uncertainty band; actual pan/zoom moves them with scale10→50NM.
+Southern marker/nonzero heading not accepted here. Magnetic270+5−2 produces273
+true and explicit Sunrise/East mismatch with no draft position branches.
+Android Back discards immediately, no confirmation claimed; file byte-identical.
+Native Delete removes only owned horizon; complete protected reports retained.
+
+Automation failures retained separately. Initial full ElementTree reserialization
+removed report CDATA, and following native Save collapsed report whitespace:
+complete-report guard FAILED although protected attributes were unchanged. Strict
+repair verified whitespace-only differences and restored exact original report
+bytes plus only owned saved horizon element. First repair had an XML declaration
+inside the root; parse guard prevented any write. A dependent UI helper nevertheless
+ran while force-stopped (not a crash). Corrected staging inserts only the new
+element into original raw bytes; never serialize protected CDATA reports.
+After a chart-return layout shift, a mistaken Duplicate tap created a second
+owned horizon; native Delete removed only that duplicate; complete protected
+counters passed before mismatch execution.
+
+Distinct product FAIL: saved horizon XML retains variation5/deviation−2, but
+config defaults stay0/0 after Save and offline cold restart. Actual New Event
+shows0/0 (resume135-new-defaults-fields), Cancel creates nothing. Android-only
+Flush on Save implemented after recorded design; builds and physical replay
+pending. Cleanup verifies complete protected counters before restoring original
+record ordering/exact original Sights bytes fba0ee0f...; only observed task-changed
+ShowActiveRouteHighway0→1 restored, every other current config byte unchanged.
+WiFi enabled again. Current font/rotation remain for ongoing acceptance.

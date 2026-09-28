@@ -344,3 +344,13 @@ as refusal. Compare serialized calibration endpoints with a margin limited
 to their known rounding precision; do not change the correction algorithm.
 An unpaced automation Back closed a dialog during replay133; paced replay134
 and independent Save/cold readbacks established the actual recovered behavior.
+
+Preserve existing XML CDATA when staging fixtures: serialize only the added
+element into original raw bytes. Rewriting the entire tree stripped CDATA and
+caused subsequent TinyXML load/save to collapse protected report whitespace.
+Compare complete reports as well as observation attributes. A failed repair
+guard must stop dependent UI automation; inspect layout after chart return
+before Edit/Delete because those controls move. Saved observation persistence
+does not prove saved defaults: verify immediate host config and a new event
+after Android cold restart. Flush saved defaults explicitly on Android; Cancel
+must leave them alone.

@@ -1,0 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
+<OpenCPNCelestialNavigation>
+  <Sight Visible="0" Type="3" Body="Sun" BodyLimb="2" Date="2024-06-14" Time="17:00:00" Milliseconds="0" TimeCertainty="2" Measurement="60" MeasurementCertainty="0.5" EyeHeight="0" Temperature="10" Pressure="1010" IndexError="0" ColourName="red" Colour="rgba(255, 0, 0, 0.588)" Transparency="150" DRLat="36.0589665428049" DRLon="175.6549144729074" DRBoatPosition="0" HorizonEvent="0" HorizonBearingProvided="1" HorizonBearingMagnetic="1" HorizonBearing="57" HorizonVariation="5" HorizonDeviation="-2" HorizonBearingUncertainty="2" HorizonAltitudeUncertainty="10" HorizonQuality="0" HorizonTimeSource="Other / manual entry" />
+</OpenCPNCelestialNavigation>
