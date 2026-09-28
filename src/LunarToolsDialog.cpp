@@ -863,7 +863,15 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
   for (unsigned list : selectedLists) {
     std::shared_ptr<Sight> snapshot(
         new Sight(m_parentDialog->m_Sights[m_lunarIndices[list]]));
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): bind the model to this retained snapshot, including
+    // cold-loaded inputs which have never run an individual lunar search.
+    snapshot->m_CorrectedDateTime = UtcDateTime::AddSeconds(
+        snapshot->m_DateTime, m_parentDialog->GetClockCorrection());
+    snapshot->RecomputeLunar(-1, true);
+#else
     snapshot->Recompute(m_parentDialog->GetClockCorrection());
+#endif
     if (!reference.IsValid() ||
         UtcDateTime::IsEarlier(snapshot->m_CorrectedDateTime, reference))
       reference = snapshot->m_CorrectedDateTime;

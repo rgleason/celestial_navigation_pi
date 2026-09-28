@@ -103,7 +103,11 @@ public:
                    double rad, double SD, double HP);
   void RecomputeAltitude();
   void RecomputeAzimuth();
-  void RecomputeLunar(int preferred_candidate = -1);
+  void RecomputeLunar(int preferred_candidate = -1
+#ifdef __OCPN__ANDROID__
+                      , bool prepare_only = false
+#endif
+                      );
   int SelectLunarCandidate(int preferred_candidate = -1) const;
   void RecomputeHorizon();
 

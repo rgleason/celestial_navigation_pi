@@ -2141,3 +2141,24 @@ resume84-sextant-{public-input,deneb,usno,usno-full}.png. The swipe starting
 on a numeric control opened its keyboard; Back dismissed it safely. This
 validates one apparent star centre pair, not Moon limbs or all contact modes.
 No repeat/profile or sight was saved in these84 checks.
+
+### 2026-09-28 01:12–01:17 BST: cold session failure reproduced
+
+Both original backup hashes were reverified. Four public USNO-derived
+Moon–Spica/Vega records at22:00/22:05UTC were appended to the exact original
+Sights.xml while the host was stopped. First read raced command completion and
+failed byte equality; no launch occurred. A subsequent complete read proved
+exact original bytes plus four test records, eight total, SHA256
+e12b4e45ff37ecd8a8bd6a90c9536aa675b0ebb9ef0e84b24584faf717693ab7.
+The app then cold launched asPID28114. Public fixture records are independently
+staged, not claimed entered/saved through the observation editor.
+
+Font scale1.3 after cold startup visibly enlarges text (19pt versus prior18pt).
+All five lunar cards, selection controls and full form remain touch reachable.
+Select visible followed by Deselect original Fiji leaves four coherent public
+readings, earliest selected DR51.4779,0. Actual known-position mode and search
+±0.25h/robust on/bias off/motion off were selected. Solve returnedstd::exception,
+no candidate, Save disabled; PID28114 survived. Screens resume84-session-
+{fixture-first,public-selected,mode-menu,known-form,known-solve}.png.
+This fails lunar session acceptance. Source diagnosis: deferred Android
+Recompute leaves cold-loaded snapshots without an ephemeris callback.

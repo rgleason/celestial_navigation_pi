@@ -346,3 +346,19 @@ all eleven fields, never wxQt table column getters. Hide desktop tables only
 on Android. Preserve all shared numerical calculations and worker ownership.
 Physically verify final swipes, selection/clear, earliest DR, invalid inputs,
 worker Cancel/Back, candidate results and both orientations before acceptance.
+
+### Cold-loaded lunar session preparation (28 September)
+
+Physical runtime84's four public Greenwich observations reach Solve but return
+`std::exception` with no candidate. Android Recompute intentionally defers
+single-sight searches, so a cold-loaded snapshot has no LunarEphemeris callback.
+A copied callback may also retain the original Sight rather than its snapshot.
+
+Prepare an Android snapshot's callback explicitly without running the individual
+search: set its corrected epoch and reuse RecomputeLunar's existing ephemeris
+construction with an Android-only prepare flag, returning immediately after
+assigning the callback. The owned session worker then invokes callbacks bound
+to retained snapshots. Keep saved single-sight candidates as optional seeds;
+do not require previous individual calculation. Desktop call signatures and
+behavior remain unchanged. Validate cold saved inputs, known-position and joint
+modes, cancellation, residuals and independent saved solution bytes on tablet.

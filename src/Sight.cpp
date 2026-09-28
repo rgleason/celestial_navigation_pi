@@ -1287,7 +1287,11 @@ int Sight::SelectLunarCandidate(int preferred_candidate) const {
       m_LunarCandidates, available ? &approximate : nullptr, preferred_candidate);
 }
 
-void Sight::RecomputeLunar(int preferred_candidate) {
+void Sight::RecomputeLunar(int preferred_candidate
+#ifdef __OCPN__ANDROID__
+                           , bool prepare_only
+#endif
+                           ) {
   // A lunar recovers Greenwich time by clearing the observed limb distance
   // of refraction, semidiameter and parallax (dip applies to altitudes),
   // matching the resulting geocentric centre distance against the ephemeris.
@@ -1501,6 +1505,12 @@ void Sight::RecomputeLunar(int preferred_candidate) {
     return std::isfinite(sample->predicted_distance_deg);
   };
   m_LunarEphemeris = ephemeris;
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): cold-loaded session snapshots need their own forward
+  // model even when the individual watch search has deliberately been deferred.
+  // The session worker owns the search; preparing this callback does no scan.
+  if (prepare_only) return;
+#endif
 
   lunar_distance::SolveOptions options;
   const double search_span = m_TimeCertainty > 0.0 ? m_TimeCertainty : 86400.0;
