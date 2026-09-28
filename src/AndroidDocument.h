@@ -118,10 +118,12 @@ inline void ShowDocument(wxWindow* parent, const wxString& title,
   // The owned filter feeds handleInput itself; a native gesture recognizer
   // would process the same touch sequence and can swallow the first link tap.
   QScroller::scroller(text->viewport());
+  text->viewport()->setProperty("cnHelpDiagnostic", true);
   QPointer<DocumentBrowser> safeText(text);
   new CN_AndroidButtonDragFilter(text->viewport(), [safeText](QPoint point) {
     if (!safeText) return;
     const QString anchor = safeText->anchorAt(point);
+    qDebug() << "CNHELP HIT" << point << anchor << safeText->source();
     if (anchor.isEmpty()) return;
     const QUrl url = safeText->source().resolved(QUrl(anchor));
     if (url.scheme() == "http" || url.scheme() == "https" || url.scheme() == "mailto")

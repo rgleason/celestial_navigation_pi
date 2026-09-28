@@ -2992,3 +2992,10 @@ and contents; first stationary Circle tap still ignored, second reaches exact
 Chapter2/relative image with readable night text. Caption floats around image
 in Qt HTML5 figure layout: FAIL.112 removes competing native gesture grab and
 maps figure/caption to supported blocks on load; designed before code.
+
+Physical112f912d1c,06:45BST: import ACK/installed SO
+9fc096f148c22ed2f90e9d4f89fc196805e42b9254b050391619afe5200742f3
+matches tar2222ff62bb657d4c004715d070e64fd4e453a8b978ae2ea4ffc36ef23c182c19.
+Both builds/PID27411 PASS. Single stationary Circle tap after settled swipe
+still ignored: FAIL, resume112-night-circle-single. Need scoped113event/hit
+logs rather than acceptance. Figure layout adaptation physically pending.

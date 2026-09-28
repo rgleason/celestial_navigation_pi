@@ -625,3 +625,8 @@ native scroll event handling. Also map bundled HTML5 figure/figcaption tags to
 Qt-supported div/paragraph blocks during resource loading:111 caption wraps
 around the inline image. Keep original files and all URLs/images unchanged.
 Verify one tap after scrolling plus a caption below its image.
+
+Physical112 still ignores first stationary link tap. Add temporary scoped
+help-viewport event/hit diagnostics (public manual URLs only) to distinguish
+filter release from anchor hit testing; retain exact diagnostic binary/logs,
+then remove diagnostics after the cause is established. No acceptance claim.
