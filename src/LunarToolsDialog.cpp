@@ -51,6 +51,17 @@ constexpr int kToolFormOrientation = wxVERTICAL;
 constexpr int kToolFormOrientation = wxHORIZONTAL;
 #endif
 
+std::string ProfileText(const wxString& value) {
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): preserve user text as UTF8 across the pinned wxQt
+  // locale conversion and std::string profile model; display/storage use UTF8.
+  const auto utf8 = value.ToUTF8();
+  return utf8.data() ? std::string(utf8.data(), utf8.length()) : std::string();
+#else
+  return value.ToStdString();
+#endif
+}
+
 wxSpinCtrlDouble* Spin(wxWindow* parent, double minimum, double maximum,
                        double value, double increment, int digits = 2) {
   auto* control = new wxSpinCtrlDouble(parent, wxID_ANY);
@@ -1427,7 +1438,7 @@ void LunarToolsDialog::AddCalibrationReading(wxCommandEvent&) {
   }
   m_calObservedAngle->Normalize();
   reading.uncertainty_arcmin = m_calUncertainty->GetValue();
-  reading.note = m_calNote->GetValue().ToStdString();
+  reading.note = ProfileText(m_calNote->GetValue());
   reading.index_error_arcmin = m_calIndexError->GetValue();
   m_calibrationReadings.push_back(reading);
   const long row =
@@ -1476,9 +1487,9 @@ void LunarToolsDialog::SaveCalibrationProfile(wxCommandEvent&) {
                  _("Sextant profile"), wxOK | wxICON_INFORMATION, this);
     return;
   }
-  const std::string name = m_profileName->GetValue().ToStdString();
+  const std::string name = ProfileText(m_profileName->GetValue());
   auto profile = sextant_calibration::BuildProfile(
-      name, m_profileSerial->GetValue().ToStdString(),
+      name, ProfileText(m_profileSerial->GetValue()),
       UtcDateTime::FormatIsoUtc(UtcDateTime::Now()).ToStdString(),
       m_calibrationReadings);
   auto existing =
@@ -1709,9 +1720,9 @@ void LunarToolsDialog::LoadProfiles() {
     const wxString prefix = wxString::Format("P%ld_", index);
     wxString value;
     config->Read(prefix + _("Name"), &value);
-    profile.name = value.ToStdString();
+    profile.name = ProfileText(value);
     config->Read(prefix + _("Serial"), &value);
-    profile.serial_number = value.ToStdString();
+    profile.serial_number = ProfileText(value);
     config->Read(prefix + _("Created"), &value);
     profile.created_utc = value.ToStdString();
     config->Read(prefix + _("Repeatability"), &profile.repeatability_arcmin,

@@ -777,3 +777,16 @@ runtime/numerics and the requested f201326 correction remain untouched.
 Retest the exact focused-field typed/Back/swipe sequence, real final-control
 movement, stationary numeric entry, keyboard rotation, popup selection/Back,
 Save/reopen/Cancel persistence and all protected records before acceptance.
+
+### Sextant profile Unicode identity after128 (before implementation)
+
+Physical131 seeds one owned profile named “RESUME131 – Sextant α” with serial
+“ÉTOILE-131”, preserving the existing profile subgroup and complete config.
+Cold runtime128/e0f5cd5 loads two profiles but displays blank active name/serial
+and blank saved-choice caption: FAIL, resume131-profile-name.png. The config
+still contains the exact UTF8 text. Profile load/save and repeat notes use
+ToStdString, while display/storage expects UTF8. Use an explicit UTF8 conversion
+for those user text fields on Android only; keep desktop conversion unchanged.
+Retest the actual cold name/serial/choice, stationary keyboard and control-origin
+drag, actual two-repeat Build/save and same-name replacement, full config readback
+and protected profile preservation. A seeded load is not itself Save acceptance.
