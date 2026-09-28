@@ -671,10 +671,22 @@ std::string Sight::AndroidLunarInputs(double clockOffset) const {
 void Sight::Recompute(double clock_offset) {
 #ifdef __OCPN__ANDROID__
   if (m_Type == LUNAR && !m_androidLunarSearch) {
-    if (!m_androidLunarInputs.empty() && m_androidLunarInputs == AndroidLunarInputs(clock_offset)) return;
+    const auto inputs = AndroidLunarInputs(clock_offset);
+    if (!m_androidLunarInputs.empty() && m_androidLunarInputs == inputs) return;
+    // POBsoft (1985-2026): a new reading cannot retain the old search's
+    // derived correction. First-load legacy corrections remain untouched.
+    if (!m_androidLunarRetainedInputs.empty() && m_androidLunarRetainedInputs != inputs)
+      m_TimeCorrection = 0;
+    m_androidLunarRetainedInputs = inputs;
     m_CorrectedDateTime = UtcDateTime::AddSeconds(m_DateTime, clock_offset);
     m_LunarSolutionValid = false;
     m_LunarCandidates.clear();
+    m_LunarSelectedCandidate = m_LunarSelectedPosition = -1;
+    m_LunarPositionResult = lunar_distance::PositionResult();
+    m_LunarEphemeris = {};
+    m_androidLunarEphemerisOwner = nullptr;
+    m_LunarSolutionError = _("Calculate lunar UTC for these inputs.");
+    m_LDC = NAN;
     m_CalcStr = _("Inputs retained. Choose Calculate lunar UTC to run the watch-time search.\nResults will appear here when the calculation completes.");
     m_androidLunarInputs.clear(); m_bCalculated = false;
     return;
@@ -704,6 +716,7 @@ void Sight::Recompute(double clock_offset) {
       RecomputeLunar();
 #ifdef __OCPN__ANDROID__
       m_androidLunarInputs = AndroidLunarInputs(clock_offset);
+      m_androidLunarRetainedInputs = m_androidLunarInputs;
 #endif
       break;
     case HORIZON:

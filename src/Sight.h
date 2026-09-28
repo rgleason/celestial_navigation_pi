@@ -159,6 +159,7 @@ public:
   bool m_androidLunarSearch = false;
   std::function<void()> m_androidCheckpoint;
   std::string m_androidLunarInputs;
+  std::string m_androidLunarRetainedInputs;
   std::string AndroidLunarInputs(double clockOffset) const;
 #endif
 
