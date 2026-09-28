@@ -300,6 +300,7 @@ protected:
       if (m_scroll) {
         QGuiApplication::inputMethod()->commit();
         if (auto* focus = QApplication::focusWidget()) focus->clearFocus();
+        QGuiApplication::inputMethod()->reset();
         QGuiApplication::inputMethod()->hide();
       }
     }
@@ -323,6 +324,9 @@ protected:
           QPointer<QComboBox> combo(m_combo);
           QGuiApplication::inputMethod()->commit();
           if (auto* focus = QApplication::focusWidget()) focus->clearFocus();
+          // POBsoft (1985-2026): commit does not clear Android's cursor-handle
+          // mode. Reset the input context before focus moves into the popup.
+          QGuiApplication::inputMethod()->reset();
           QGuiApplication::inputMethod()->hide();
           if (combo) {
             combo->setFocus(Qt::OtherFocusReason);
