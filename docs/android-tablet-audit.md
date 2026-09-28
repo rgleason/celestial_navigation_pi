@@ -3774,3 +3774,15 @@ buffer still latest historical04:51:54/runtime98, ANR none since boot. Active
 workspace PSS465631/RSS530224KiB, swapPSS328KiB. xGRIB/xWeatherRouting enabled
 in actual manager. This repairs the specific defaults failure; remaining horizon
 variants and other acceptance rows are not inferred from it.
+
+### Observation defaults137, runtime132/343ba6c, 11:46–11:50 BST
+
+Actual new unsaved Sight, Corrections: eye3.25m/temperature12/pressure1008/
+IE−1.75′/short distance2.5NM. Artificial horizon checked clears short dip by
+baseline mutual exclusion; both flags are not simultaneously claimed. Explicit
+Set As Defaults then Cancel; actual hot New Sight retains all fields/flags.
+Independent immediate config has no Default keys: FAIL. Offline deliberate
+cold4463→5368, actual new Corrections returns2/10/1013/0/0 and both unchecked
+(resume137-cold-defaults). Cancel leaves complete original Sights byte-identical.
+Android-only flush after seven existing explicit-default writes designed and
+implemented; builds and physical replay pending. No seeded config acceptance.

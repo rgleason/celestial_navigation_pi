@@ -840,3 +840,16 @@ Flush after those existing writes on Android only, before returning Save.
 No default values, horizon inversion, saved observation format or desktop
 runtime change. Verify independent config readback immediately after Save,
 cold reload and actual new-event default fields; Cancel must not write defaults.
+
+### Explicit observation defaults (physical137, before implementation)
+
+Actual Set As Defaults with eye3.25m/12°C/1008hPa/IE−1.75′/dip distance2.5NM/
+artificial horizon checked updates a hot New Sight, but cold New Sight returns
+to2/10/1013/0/0/unchecked (resume137-hot-defaults versus cold-defaults). No
+Default keys reach disk. Apply the Android-only flush after the existing seven
+OnSetDefaults writes. This explicit action persists defaults even if the
+observation is later cancelled, as the baseline does in memory; ordinary Save
+or Cancel must not implicitly replace defaults. Artificial horizon clears short
+dip by existing mutual exclusion; test both flag modes separately. Desktop and
+correction mathematics stay unchanged. Verify exact config keys, hot/cold New
+Sight fields, invalid-input refusal, landscape final action and targeted cleanup.

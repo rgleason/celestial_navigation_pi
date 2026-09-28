@@ -801,6 +801,10 @@ void SightDialog::OnSetDefaults(wxCommandEvent& event) {
   pConf->Write(_T("DefaultDIPShortDistance"), value);
   pConf->Write(_T("DefaultArtificialHorizon"),
                m_cbArtificialHorizon->GetValue());
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): persist this explicit action before Android can stop.
+  pConf->Flush();
+#endif
 }
 
 void SightDialog::RecomputeDMM() {
