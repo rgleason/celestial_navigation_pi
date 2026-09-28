@@ -2528,3 +2528,47 @@ regression requires all61rows and a second4-row table across paper/booklet
 variants. Desktop runtime unchanged; focused18checks and Android/desktop
 builds pass. Runtime93 full9CTest passes53.46s; this does not waive the real
 missing-row failure. Actual94 output remains pending.
+
+### Runtime94 exhaustive PDF repair acceptance (28 September, PID5081)
+
+Imported exact source9f7fefe1ceaa629e10b06420274d1ce263510e84. Installed
+library SHA f52ffac72c9afda5a483c7a8ab4fd7e68221578fc1a25c7911fc28aa3b7374ec,
+archive83f142c2e2415d3ea6a7d3b3f74c64db57772a346d8eb453efea14f6c990e045.
+Android and desktop builds pass; focused18 almanac checks4103ms;
+full9CTest53.48s pass (default GUI skips are not physical acceptance).
+Same public Greenwich/date/calculator-free/17form request as93; A5booklet8.
+Actual resume94-greenwich-booklet.pdf:230physical pages,14401141bytes,
+SHA10216d60192e987818ed417702419a2afdc9895e130b9b8afcd2ef01eff99a3d.
+All458logical footers occur exactly once; zero Poppler errors.
+
+Exhaustive reference pages3..441 comparison initially asserted exact equality
+and FAILED on61pages. Inspection of every token diff proves insertions only:
+60previously clipped final v/d rows and one +40C weather row. No deletion or
+replacement in any of439reference pages; all306previously failing direct
+pages now retain their final row. **This corrects the earlier A4 baseline91
+assessment: its representative renders missed these61omissions.** Retained
+voyage94-full-page-comparison.txt records every diff. Restored correction
+values agree with independent minute/60 multiplication, and atmosphere row
+with P/1010*283/(273+40) to printed precision. Eight representative booklet
+renders inspected, including complete dense tables and bounded headings.
+
+Actual typed230/keyboardBack/Go reaches final watch form, Next disabled.
+Rotation/font1.3 preserves page; two genuine landscape swipes reach footer
+Page458of458. 200% zoom renders readable content. AndroidBack returns only
+to the retained request, preserving PID5081. Sights readback byte-identical
+SHA53349e1c001d4f58776a4096d7de709cf38190b353a07c47972569e1ba3451ac;
+crash94.log contains no new28September fatal; meminfo94.txt retained.
+
+Normal A5 portrait/compact/duplex, booklet off, fresh output:
+resume94-greenwich-a5.pdf458pages/14442734bytes/419.53x595.28pt,
+SHA0bdcf167006ef8fbab59d5bd435246c4f864463471d36e6ca85e0a008da88895.
+Normal Letter landscape/noncompact/duplex, fresh output:
+resume94-greenwich-letter.pdf458pages/14442077bytes/792x612pt,
+SHA168f60d40efc5f4b12d5eebee4cdbd42eef430cb2e04d3887b1603319fc66788.
+All458logical pages in both match actual94booklet text exactly after whitespace
+normalization; zero parser errors. Five Letter representative renders viewed
+(manifest, increments, refraction/weather, direct-table final row, last form),
+plus normal A5weather page. Actual page458 keyboard/Go and disabledNext work;
+normal A5swipe reaches footer, Letter full footer visible at fit-width.
+AndroidBack returns request. Original voyage-almanac.pdf never overwritten.
+Other paper/booklet combinations, coverage/content/cancellation remain pending.

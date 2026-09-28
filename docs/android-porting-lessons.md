@@ -236,3 +236,17 @@ while preserving host completion/cleanup. Physically exercise Cancel, Close
 and both Back halves during active network work, then inspect detached routing,
 temporary files, unchanged installed data and PID continuity. A completed
 network transfer with stuck plugin events is not an active cancellation test.
+
+
+### Verify every exported table row on actual ARM hardware
+
+A representative page render can miss systematic clipping. Runtime93 fixed
+invalid PDF exponent notation exposed only by ARM centring roundoff, but an
+exhaustive raw-text comparison still found306direct-table pages losing their
+last row. Runtime94 reserves the inter-table gaps and a rounding margin before
+fitting row heights. Full comparison also exposed61rows missing in the earlier
+A4 baseline: retain insertion-only corrections, not an incorrect assertion
+that the baseline is complete. Compare every logical page across imposed and
+normal physical output, check all footers once, and independently verify new
+numeric rows. Synthetic host variants and real tablet parsing complement each
+other; neither is a substitute for the other.
