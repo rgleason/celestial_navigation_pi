@@ -1,0 +1,25 @@
+{
+  "source": "8bc86ec",
+  "host_pid": 27701,
+  "range_nm": 0.928,
+  "bearing_T": 93,
+  "position_deg": [
+    49.99715666666667,
+    -5.1445316666666665
+  ],
+  "position_error_nm": 2.520654248378083e-05,
+  "magnetic_case": "PASS",
+  "waypoint_binding": "Lizard Point exact49.99635/-5.12052",
+  "WMM": {
+    "date": "2026-09-28",
+    "boat_approximate": [
+      53.1795,
+      -2.8582
+    ],
+    "independent_NOAA": 0.122457590712,
+    "displayed": 0.12,
+    "limit_deg": 0.01,
+    "scope": "Rounded current-boat binding; matching coefficients, not independent WMM model accuracy"
+  },
+  "result": "PASS"
+}

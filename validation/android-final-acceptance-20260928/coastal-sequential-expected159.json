@@ -1,0 +1,40 @@
+{
+  "reference": "Standalone PROJ geod spherical direct/inverse, no CelNav code",
+  "radius_m": 6371008.8,
+  "targets": [
+    [
+      43.9166666666667,
+      -69.2616666666667
+    ],
+    [
+      43.965,
+      -69.0733333333333
+    ],
+    [
+      43.7833333333333,
+      -68.855
+    ]
+  ],
+  "first_epoch_position": [
+    43.85,
+    -69.08
+  ],
+  "second_epoch_position": [
+    43.849997674482,
+    -69.056904561585
+  ],
+  "interval_s": 600,
+  "course_T": 90,
+  "speed_kn": 6,
+  "raw_angles_deg": [
+    65.34336447907401,
+    120.38901290168701
+  ],
+  "index_arcmin": 0,
+  "uncertainty_arcmin": 0.2,
+  "initial": [
+    43.84,
+    -69.075
+  ],
+  "limit_position_nm": 0.001
+}

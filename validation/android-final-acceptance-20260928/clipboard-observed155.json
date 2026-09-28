@@ -1,0 +1,8 @@
+{
+  "result": "PASS",
+  "actual_utf8_bytes": 2896,
+  "sha256": "f539187e2e73360b76d73924925f47dd6a6d9182083998e48c6933973d70bdef",
+  "complete_XML_details_exact": true,
+  "embedded_null_bytes": 0,
+  "source": "installed8bc86ec / cold155 PID27701 / physicalCopyreport / foregroundAndroidclipboard reader"
+}

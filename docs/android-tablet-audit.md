@@ -4257,3 +4257,75 @@ Initial reference assumed correct last record; later all-candidate diagnostic
 refused safely because payload encoding wrong. Public failed JSON/private full
 bytes retained. Temporary helper has no network/storage permissions, only own
 privatefile. Earlier endpoint-paste passes do not establish clean full payload.
+
+### Batched repair155, installed8bc86ec, 15:31-15:34BST
+
+Both Android/desktop155 builds PASS, UTF8literalcheck PASS0.13s; exactsource
+package/importsourceguard PASS. ArchiveSHA dc72179a79db7c268862c917aed13829a749e056f9ce8ff346f0131f744c3419,
+independently read installedSO f8fd4e0cd49c358e790c584b0bea6cd5047fb34c4bc4f48ebe811e3b2963e879.
+Actual managerACK/otherpluginsenabled; stagedfullLibrary remains exact. Cold
+26223->27701. Allthree magneticresiduals now90.86013569980003T, independent
+NOAAreference90.860135699803T (error3e-12deg, limit1e-4). Physical fix error
+0.000711NM vs independentWGS84destination (limit0.3). Magnetic monthFAIL153
+CLOSED. True-shift/DSTgap+02:30recovery153 results carried forward unchanged.
+Fullactual Copyreport readback now2896cleanUTF8bytes, zeroembeddedNULs, entire
+independentXMLDetails exact. ClipboardFAIL154 CLOSED for report; markedUTC
+secondcallsite replay pending. Public observed155JSONs retain scope/hashes;
+private reportbytes excluded fromgit. Temporaryhelper remains untilUTCcheck.
+
+LunarPair larger-font155 (on unchanged installed152 before import): actual
+Calculatepairs and final Miaplacidus/all11fields reached with physical swipes,
+font1.3portrait. Landscape retained result/Acamarfields but finalMiaplacidus
+not yet reached in capture; do not claim final landscape. Earlier quantitative
+pairUSNOreferences retained, no new accuracyclaim for liveboat2026context.
+
+### Clipboard/pair layout156 and final almanac presets157, installed155
+
+Actual marked UTC copied2026-09-28T14:38:34.282Z. Foreground helper private
+readback matches all24UTF8bytes, zeroNUL; second clipboard callsite PASS.
+Temporary no-network/no-storage clipboard helper uninstalled successfully.
+Full report2896byte155PASS carried forward. PID27701 continuous.
+Actual LunarplannerCalculate at live boat/date, font1.3, rotation retains
+results; physical landscape swipes reach finalMiaplacidus/all11fields including
+Magnitude1.7. This closes final-landscape layout only, prior USNO quantitative
+pair acceptance carried forward; reopen fresh-context behavior remains pending.
+
+Actual PassageBrief native selection shows PlanningReference/dependenciesoff,
+stars on, skyplots/corrections/lunar/emergency off, instructions on; allfive
+form counts2/1/1/0/0. Actual CelestialNavigator shows Calculator/dependencieson,
+usefulplanetfilteroff, skyplots/corrections/instructions/lunar/emergency on,
+allfivecounts8/4/3/3/2. Dates/coverage retained across selection; Cancel returns
+workspace without generation. No446/458page generation repeated. Full current
+library byte-exact against153magneticfixture. Public observed157JSON retained.
+Almanac finite remaining preset-controls case CLOSED, prior91..94PDF evidence
+carried forward.
+
+### Remaining coastal branches158/159, installed155,15:45-16:01BST
+
+Actual LizardPoint picker transfers exact49.99635/-5.12052 coordinates. Public
+1degree waterline H30m/eye2m/IE0 fixture independently solved with SciPy ray
+elevations before Calculate:0.928038824NM; spherical destination reference
+49.997156472431/-5.144532246156. Actual90M/variation+5/deviation-2 produces
+93T, range0.928NM,49deg59.8294N/5deg8.6719W: error0.0000252NM<0.001limit.
+Actual WMM currentboat/time returns0.12deg for28September2026; independent
+standalone NOAA/actual hostcoefficients gives0.122457590712deg at nearby boat
+53.1795/-2.8582, within0.01deg rounded binding limit. No independent model
+accuracy claim. Zero targetheight gives explicitNoRange/clearedrange/disabled
+chart action. There is no vertical uncertainty field; nonpositive uncertainty
+is checked on the actual horizontal page rather than inventing a vertical case.
+
+Separate standalone PROJ spherical direct/inverse predeclares first observer
+43.85/-69.08, second600s/6kn/90T oneNM east. Three Bob coastal objects generate
+65.34336447907401/120.38901290168701deg before any DUTsolve. Actual allinputs
+entered by native touch, motion enabled600/90/6, result43deg51.0000N/69deg
+4.8000W exactly agrees at displayed precision, residuals0/0; referenceepoch
+explanation visible. Uncertainty0 then actualSolve gives explicitfinitepositive
+NoFix while individualloci remain chartable;0.2restored and recovery Calculate
+followedbyClose. ContinuousPID27701/fullLibrarybyteexact. Public expected/
+observed158/159JSONs retained. Early OCR refusedmissingSOG/combinedlabel taps
+outsidebutton and zero-speed intermediate result are not accepted sequential
+cases; actual separately inspected6kn result is acceptance. A nativeBack with
+stale IME-view flag exited retained form once; helper now consultsInputShown
+only and reopened coordinates/fields retained. No product failure attributed
+to those harness attempts. Shared coastal math unchanged. Finite coastal
+calculation cases CLOSED; nonzero-heading overlay remains in combined check.
