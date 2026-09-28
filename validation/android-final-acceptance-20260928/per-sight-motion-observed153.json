@@ -1,0 +1,13 @@
+{
+  "source": "actual tablet153 installed c283ae0, native displayed rounding",
+  "position": [
+    51.47790833333333,
+    0.02665
+  ],
+  "reference_error_nm": 0.0007371384163066954,
+  "running_mode_auto_selected": true,
+  "COG_SOG_disabled": true,
+  "epoch_utc": "2024-06-21T22:00:00.000Z",
+  "residuals": "Saved1NM /90T /Used90T; all3 inspected separately",
+  "library": "whole disposable fixture unchanged; all five original reports protected"
+}

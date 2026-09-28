@@ -4166,3 +4166,81 @@ legacy shared field exposed in Android's full results; Android-only guard will
 make intercept N/A/directionsfalse for non-altitude while preserving body Hc/Zn.
 No shared numerical/desktop change. Actual screenshot finish151-find retained;
 physical repair replay pending together with historic formatter.
+
+### Precise motion entry152, installed147, 14:54-14:58BST
+
+Actual positive FindLastfix shows full matching Planner coordinates and fix
+epoch21:59:59UTC; Useposition/parentSave persists exact coordinates only on
+disposable azimuth. Native uncertainty1.234567891234567 arcminutes saved/reopened
+exactly; unchanged azimuth220.6395351234568double retained. Only pressure1013,
+true-bearing provenance, coordinates and uncertainty intended fields changed;
+synthetic inapplicable azimuth limb1 also canonicalizes to one-item Centre
+selectorindex0 (shared legacy storage), guard caught it before scoped acceptance.
+Three complete solver observations/all5complete reports unchanged.
+
+Actual Motion types1.234567891234123NM/90.1234567890123degreesTrue; Save/reopen
+retains exact native text. Then actual MagneticBearing checked andSave changes
+only ShiftNm/ShiftBearing/MagneticShiftBearing against pre-motion baseline.
+All3complete solver records/5complete reports untouched. Cold precision and
+nonzero solver motion remain pending. Initial simultaneous open/page tap was
+too early; helper refused unobservedMotion safely, then settled editor popup
+was selected correctly. Existing FindGUI regression initially cannot connect
+sandbox DISPLAY=:1 (wxEntryStart false, no workflow); corrected authorized
+display-access run retained separately. c283ae0 both builds/package/sourceguard
+PASS, source41a's full9CTest remains carried forward.
+
+### Batched physical repair152, installedc283ae0, 15:03-15:08BST
+
+Actual PluginManager imports152 successfully. Independently read installedSO
+SHA6c3427014c5ff78fc22e81d0ed49daf50840eb86cec4eebec6a35bcd63ddd53e;
+archiveSHA b0d58f5d71e47056da26a3a4f0e1dda29ae785c9ec52fe60c03d9d11de928e30.
+Whole staged library after import remains exact magnetic-saved152baseline.
+Intentional cold22056->23934: azimuth220.6395351234568, angular uncertainty
+1.234567891234567, ShiftNm1.234567891234123, ShiftBearing90.1234567890123
+and checked magnetic flag all visibly exact. Find azimuth Ho/intercept both
+N/A, Towards/Awayfalse, bodyHc/Zn retained: presentation failure CLOSED.
+Actual nautical1900-01-01/00:00:00.987 resolves exactly00:00:00.987UTC,
+Resultsready: historic fractional formatter failure CLOSED. DesktopFindBodyUi
+actual DISPLAY regression152 PASS; earlier sandbox connection failure did not
+execute a workflow. No repeated full9CTest after Android-only presentation.
+
+Actual chart tap then PlannerChartcursor provides valid full coordinates;
+FindChartcursor immediately captures the identical full coordinates from the
+same host cursor. Private screenshot retained; this checks source binding,
+not independent chart-projection accuracy. Planner positivecursor CLOSED.
+Helper refused duplicate Measurement caption before any tap, then known
+page selector used. Unobserved Planner shorthand similarly refused safely;
+actual Sun/Moon/bestsights control selected. No product failure from refusals.
+
+### Nonzero visible per-sight fix153, installed152, 15:09-15:16BST
+
+Only three public USNO star records' ShiftNm1/Bearing90T staged with raw-byte
+current-library guard and full original nested reports retained. Independent
+PROJ WGS84 predeclared destination51.477896970377/0.026657416434,0.3NM limit.
+Cold PID24699 auto selects EachsightDRshift/propagate, COG/SOG disabled.
+Actual fix51deg28.6745minN/0deg1.5990minE, error0.000737NM vs reference.
+All3full residual cards display1NM/90T/Used90T/22:00:00.000UTC, RMS0.00.
+This is the nonzero solver integration, separate from excluded azimuth bindings.
+Native calendar entered2026March29, local01:30actual London springgap produces
+N/A/BadEpoch/disabledShowfixonchart, as designed. Guarded savedfile remains
+unchanged; valid recovery to be recorded next. First calendar year-entry helper
+used Enter after Back and submitted a parent action; no model acceptance claimed
+from that attempt. Correct observed date-control/year focus/month taps retained.
+Standalone NOAA geomagnetism reference built outside CelNav against enabled
+hostWMM coefficients (variation0.860135699803); magnetic case predeclared.
+Temporary clipboard acceptance helper built without network/storage permissions;
+initial developer helper javac lambda/context errors retained, not DUT failures.
+
+### Magnetic date failure153, installed152, 15:19BST
+
+Valid02:30March29local restores exact true-shift fix and enabledchart action;
+full savedlibrary byte-exact after invalid+recovered epoch. Magnetic cold26223
+uses90.84571013110002T for90M. Position error0.001001NM satisfies loose0.3NM
+limit, but predeclared independent bearing90.860135699803 fails0.0001deg
+limit. FAIL date provenance, not accepted on position alone. Standalone NOAA
+May21 calculation0.845710131106 exactly explains actual June21result. Android
+GetWMM passes UtcDateTime::Fields.mon (zero-based wx month) unchanged to host
+one-based WMMrequest/fallback. Shared desktop historically does the same;
+repair ONLY Android conversion+1, preserving all desktop runtime/math. Design
+before edit: June21mustquerymonth6, Janmonth1/Dec12; rerun affected magnetic
+case and remaining WMMcoastal branch after one batched build. No19CI yet.

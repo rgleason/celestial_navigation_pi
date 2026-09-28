@@ -1,0 +1,15 @@
+{
+  "source": "independent PROJ geod WGS84 forward",
+  "original_position": [
+    51.4779,
+    0
+  ],
+  "distance_nm": 1,
+  "bearing_true_deg": 90,
+  "expected_destination": [
+    51.477896970377,
+    0.026657416434
+  ],
+  "position_tolerance_nm": 0.3,
+  "clock_source": "matching saved RESUME86-USNO-Known, already accepted151; no second correction added"
+}

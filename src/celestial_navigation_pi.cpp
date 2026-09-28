@@ -582,7 +582,8 @@ double celestial_navigation_pi_GetWMM(double lat, double lon, double altitude,
                                       wxDateTime date) {
 #ifdef __OCPN__ANDROID__
   const auto utc = UtcDateTime::Fields(date);
-  const int year = utc.year, month = utc.mon, day = utc.mday;
+  // POBsoft (1985-2026): WMM requests and geomag use calendar months 1-12.
+  const int year = utc.year, month = static_cast<int>(utc.mon) + 1, day = utc.mday;
 #else
   const int year = date.GetYear(), month = date.GetMonth(), day = date.GetDay();
 #endif

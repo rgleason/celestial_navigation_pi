@@ -1,0 +1,13 @@
+{
+  "position": [
+    51.47766333333333,
+    0.026648333333333333
+  ],
+  "reference_error_nm": 0.0010010963557775378,
+  "basis": "physical displayed fix rounded4decimal minutes; residual exact bearing to be recorded after inspection",
+  "source": "installed c283ae0; public three-star fixture; cold PID26223",
+  "used_true_bearing_deg": 90.84571013110002,
+  "bearing_reference_error_deg": 0.01442556870297551,
+  "bearing_check": "FAIL; month one early, matched independent May21 reference; repair pending",
+  "all_three_residual_cards_checked": true
+}

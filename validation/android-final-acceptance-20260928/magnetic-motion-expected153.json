@@ -1,0 +1,20 @@
+{
+  "reference": "standalone US Government NOAA geomagnetism implementation, separate from CelNav; same coefficient model as enabled host WMM",
+  "model_sha256": "dfa8597825af4e0b87ff4198a5b4fb661b3c49f4cd090cd0164e0259b075582f",
+  "model_header": "2025.0            WMM-2025     11/13/2024",
+  "date": "2024-06-21",
+  "position": [
+    51.4779,
+    0
+  ],
+  "variation_east_deg": 0.860135699803,
+  "saved_bearing_magnetic_deg": 90,
+  "used_true_bearing_deg": 90.860135699803,
+  "distance_nm": 1,
+  "destination_WGS84": [
+    51.47764708615,
+    0.026654267004
+  ],
+  "position_tolerance_nm": 0.3,
+  "bearing_tolerance_deg": 0.0001
+}

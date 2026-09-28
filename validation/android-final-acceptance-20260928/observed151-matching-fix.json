@@ -26,5 +26,42 @@
     51.47790548362774,
     0.0018608273778681905
   ],
-  "result": "PASS"
+  "result": "PASS",
+  "find_last_fix_position_exact": [
+    51.47790548362774,
+    0.0018608273778681905
+  ],
+  "azimuth_save": {
+    "changes": {
+      "BodyLimb": [
+        "1",
+        "0"
+      ],
+      "MeasurementCertainty": [
+        "1.2345678912341229",
+        "1.234567891234567"
+      ],
+      "AndroidMagneticAzimuth": [
+        null,
+        "0"
+      ],
+      "Pressure": [
+        "0",
+        "1013"
+      ],
+      "DRLat": [
+        "51.477899999999998",
+        "51.477905483627737"
+      ],
+      "DRLon": [
+        "0",
+        "0.0018608273778681905"
+      ]
+    },
+    "unchanged_three_complete_solver_records_and_five_reports": true,
+    "measurement_exact": true,
+    "uncertainty_exact": true,
+    "note": "Synthetic azimuth centre limb1 normalizes to legacy one-item Centre selector index0; limb is inapplicable to azimuth, not an altitude limb change. Initial guard refused unexpected spelling/limb before scoped canonical comparison.",
+    "cold_precision_replay": "PENDING"
+  }
 }

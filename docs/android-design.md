@@ -956,3 +956,13 @@ observation. Android presentation will show intercept N/A and neither direction
 for non-altitude sightings, leaving predicted Hc/Zn, position sources and shared
 math/desktop unchanged. Physical azimuth replay plus existing altitude Find
 GUI regression verify scope; batch this with pending historic formatter install.
+
+## WMM calendar month repair (28 September 2026, physical153)
+
+Android UtcDateTime::Fields keeps wx's zero-based Month enum. WMM plugin messages
+and the standalone geomag fallback require calendar months1-12. Convert only
+inside the Android GetWMM branch. Physical June21 magnetic shift queried May21:
+90.84571013110002T versus standalone NOAA90.860135699803T, exceeding predeclared
+0.0001degree bearing tolerance. Desktop branch remains unchanged. Verify the
+same staged three-star magnetic displacement and remaining Coastal WMM path
+against actual host coefficient bytes; carry forward true-shift/DST passes.
