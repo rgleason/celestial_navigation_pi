@@ -790,3 +790,17 @@ for those user text fields on Android only; keep desktop conversion unchanged.
 Retest the actual cold name/serial/choice, stationary keyboard and control-origin
 drag, actual two-repeat Build/save and same-name replacement, full config readback
 and protected profile preservation. A seeded load is not itself Save acceptance.
+
+
+### Sextant active-profile advisory after prediction (runtime129 physical131)
+
+Actual prediction sets observed angle157.69485075744367deg; IE+1.50′,
+repeat cards correctly show afterIE157.66985075744367deg. Before explicit
+save, however, the active-profile caption remains at0deg01.5000′ from
+the previous index-error edit (resume131-save-ready.png). Explicit Save
+refreshes to the correct157deg40.1910′. This stale advisory is a physical
+failure, independent of the successful Unicode identity/repeat-note repair.
+Android must refresh the active correction explicitly after programmatic
+prediction changes the observed angle, through UpdateProfileCorrection
+(which already queues the card refresh). Retain desktop event behavior.
+Replay prediction before Save, then verify profile save/cold/Back unchanged.

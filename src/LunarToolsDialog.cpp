@@ -1419,7 +1419,10 @@ void LunarToolsDialog::PredictCalibrationPair(wxCommandEvent&) {
           : wxString()));
   m_calObservedAngle->SetAngle(m_lastPredictionDeg);
 #ifdef __OCPN__ANDROID__
-  RefreshAndroidCalibration();
+  // POBsoft (1985-2026): programmatic Qt edits do not reliably deliver the
+  // wx text event. Refresh the advisory for this new observed angle as well
+  // as the repeat cards, before the user saves or interprets the profile.
+  UpdateProfileCorrection();
 #endif
 }
 
