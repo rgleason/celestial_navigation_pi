@@ -2377,3 +2377,53 @@ existing activity hideBusyCircle method immediately after STARTED; panel owns
 progress, timeout and Cancel. Normal host finish still clears its busy state.
 A missing JNI method cancels safely with an explicit failure. Desktop path
 unchanged; Android and desktop builds pass. Physical repaired91 pending.
+
+
+### 2026-09-28 02:35–02:48 BST: runtime91 cancellable DUT1 and cold offline records
+
+Committed689e2f6 archive SHA256
+2a71e13ebbbd19e009d306b8e881f91818178712bcfea7fa6329d5120e230b9e;
+actual imported installed91.so matches payload SHA256
+404b00186b4fafafeaf70cb8a4349de06a93dd57059b2c918227bc8aa7e428f5.
+PID30939 continuous through import and all warm tests. First navigation after
+import used the collapsed toolbar coordinates while the toolbar was expanded;
+resume91-advanced.png and first cancel-* images show only Chart, not a test.
+Corrected explicit visible toolbar tap opens the real page.
+
+Actual active-network Cancel passes: screenshot shows Downloading and active
+Cancel, then readable Download cancelled/unchanged data and enabled actions.
+Host log records HTTP200 then cancelDownload77 before DOWNLOAD_DONE. Separate
+Close and Android Back also invoke cancelDownload77 during active work, return
+to Tools and preserve PID. The Java service may still finish writing its open
+unlinked descriptor; routing is detached and there is no surviving temporary
+file or installation. Retained download91-close-back.log and screenshots.
+Private files listing has no celestial-dut1 temporary files. Installed update
+SHA remains cc80680ec05c91b65e7d02c6068fe0d44dd0998dc880551975092d2d14aa8e18;
+sight/solution XML remains53349e1c001d4f58776a4096d7de709cf38190b353a07c47972569e1ba3451ac.
+
+Native chooser imports a51-byte invalid file: explicit complete-file/size
+rejection. A3755488-byte official table truncated at2027-09-11 is parsed but
+refused as older coverage. A first numeric-corruption attempt changed an A
+field overridden by the valid B field: it correctly reports already up to
+date and does not establish malformed-data rejection. A fresh3768836-byte
+fixture with inconsistent first-row year/MJD is actually rejected with IERS
+date/MJD mismatch. All refusal explanations are completely readable at1.3
+font in portrait and after genuine landscape final swipes. Native chooser
+Back and nested file-dialog Back return safely.
+
+Recorded enabled Wi-Fi, disabled it for offline download: clean failure,
+actions restored, data preserved. Deliberate force-stop confirms empty PID;
+offline cold start changes30939 to5081. Advanced reports installed coverage
+through2027-10-02; saved RESUME88-USNO-Joint reloads -3.328s,36.848s uncertainty
+and all four version2.8.13.0 trails. First quick portrait swipes failed to move
+the report; reopen plus two slower1200ms content swipes reaches the actual
+last residual/shared-reading warning (resume91-report-scroll-retry.png).
+Copy report followed by Ctrl+V into a disposable unsaved filename field shows
+the expected final 'independent repeated measurements' text. KEYCODE_PASTE
+and Ctrl+Home did not perform the expected action; no full bytewise clipboard
+readback is claimed. Back discarded the draft.
+
+Cold file readbacks match the unchanged update/XML hashes above. Crash history,
+meminfo and host log retained as crash91-cold.log/meminfo91-cold.txt/host91-cold.log.
+Wi-Fi restored enabled. Android and desktop compile; UTF8 CTest passes0.13s.
+Further provider/lunar variants and the remaining function map are pending.

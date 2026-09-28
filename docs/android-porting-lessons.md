@@ -225,3 +225,14 @@ then falsely timed out in the plugin. Use a narrowly owned event bridge with a
 Qt GUI poll, cancellation, queued-event disposal and owner-bound timer lifetime;
 do not pump global pending events or infer network failure from a missing callback.
 Physical retesting is required before accepting the repair.
+
+
+The Android host's background download API can open a non-cancellable native
+ProgressDialog. Its transparent window intercepts Cancel/Close/Back even when
+the plugin page appears responsive. Confirm Android window/touch routing in
+the retained logs before changing wx button handlers. An owned download page
+can dismiss its own transfer's spinner through the existing activity method
+while preserving host completion/cleanup. Physically exercise Cancel, Close
+and both Back halves during active network work, then inspect detached routing,
+temporary files, unchanged installed data and PID continuity. A completed
+network transfer with stuck plugin events is not an active cancellation test.
