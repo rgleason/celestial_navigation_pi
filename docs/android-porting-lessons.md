@@ -267,3 +267,18 @@ Parentless generic wx progress dialogs can crash during cold XML reconstruction
 on pinned wxQt because no modal parent exists. Do not start nested modal UI
 inside a saved-geometry constructor. Preserve exact bearing basis independently
 of DR magnetic flags and explicitly test true/magnetic cold reconstruction.
+
+
+Android waypoint selectors need full-height wrapping cards with labelled
+coordinates; wider desktop columns do not solve clipping under font scaling.
+Keep GUID/model identity in each card and retain it through filtering. Verify
+actual movement after layout settles, both keyboard Back and dialog Back,
+rotation and the independently saved coordinate values. Read the actual host
+navobj.db schema; an adb command returning exit0 with a missing-file message
+is not a successful XML read. Compare sight records by identity/content rather
+than list order after sorting.
+
+Invalid coordinate text must be rejected before Find applies a position, not
+only presented as N/A. Keep the previous valid model while the user corrects
+the field and disable calculations/copies until parsing succeeds. Add a final
+Android save guard for invalid imported/stale DR state.

@@ -2805,3 +2805,59 @@ explicitly changed the parent editor and reduced intercept to0.000021NM
 parent edit. Parent Back discarded it: independently read
 sights101-copy-discard.xml is byte-identical to sights101-upper-correct-save.xml.
 No Save occurred; all original observations retained.
+
+
+Physical102 ddbf4cf, 28 September05:36–05:46BST, PID20698 continuous:
+actual Plugin Manager acknowledgement and independent installed-library cmp
+PASS. Package SHA5bf23838f754fa46ef6ae16591c82a9bf55c0e2ee56c124776ec329080021e08;
+library3192831633470c81344bac81d485a09656caa6d56c5a5c988a5c0bc38aea2b97.
+Android/desktop builds PASS; all9CTest checks PASS53.40s; FindBodyUi alone
+with DISPLAY=:1/CELESTIAL_RUN_UI_TESTS=1 PASS51.591s (no skipped GUI pass claim).
+
+Waypoint cards fill portrait/landscape at font scale1.3, with complete names
+and labelled coordinates. Settled actual1000ms swipes move into route points
+(resume102-waypoint-scroll-confirm); the first earlier swipe screenshot did
+not establish movement. Name filtering works, no-match message is readable
+and Use Waypoint disabled, stationary Lizard Point selection enables it.
+Case-insensitive matching filter retains selection; hiding it with no-match
+and restoring lizard restores its GUID selection. Keyboard Back retains picker,
+rotation with keyboard retains text/selection, subsequent Back hides keyboard
+and keeps picker. Use Waypoint gives exact49.99635,-5.12052 and its name in Find.
+An earlier extra Back after tapping the card cancelled the picker: do not treat
+that screenshot as a selection-retention result.
+
+Independent saved XML comparison shows all previous9records remain unchanged
+and one additional task-owned Sun copy has exact host Lizard Point DRLat/DRLon,
+with all other inputs matching the first disposable copy. Automation used
+variable scroll positions around Duplicate/Edit; this validates applying and
+saving a task-owned copy, not replacement of an existing record. Both copies
+require final cleanup. Model comparisons must account for sorting. Private
+navobj.db routepoints(388), routes(6), routepoints_link(381) and link tables
+are unchanged from94; navobj.xml does not exist, and failed XML reads are not
+valid evidence. Assertions retained in waypoint102-validation.json.
+
+Physical102 invalid manual latitude text was displayed N/A but Use position
+accepted it into the parent. Parent Back cancelled without Save. Retained
+resume102-invalid-find-use shows the failure. Android10392c625d adds coordinate
+parsing before calculation/acceptance and a final model check before Sight
+Save. Android/desktop compilation PASS; physical validation pending.
+
+
+Physical10392c625d, 28 September05:47–05:51BST: Plugin Manager import ACK
+and independently read installed library cmp PASS. Tar
+fbd24ef22321c36c063fecbf554ddf37373a61555cf1f238152a05df77710f1a,
+library7d7b9a3c24ab08cccc950ba4856d6ee8c768ab55bce1839fc78dc51bc878df3e.
+Cold start changed PID20698→25292 as expected; actual workspace reload shows
+saved sights. Full crash buffer's latest historical fatal remains04:51:54
+(build98); no newer entry. No ANR since boot. Idle chart PSS438385KiB,
+RSS502848KiB, swapPSS335KiB; active-worker headroom remains a separate test.
+
+On an unsaved new sight, switched Boat→Manual. Malformed latitude abc,
+latitude91 and longitude181 each reject Use position with a readable owned
+Invalid position sheet. Back dismisses the explanation and retains Find for
+correction. +90/+180 and -90/-180 endpoints accept and reopen exactly; polar
+Zn appropriately displays N/A rather than a numeric bearing. Reset repairs
+an invalid -91 text back to initial -90/-180 and restores results. Find Back
+and parent Back discard the entire new sight: independent
+sights103-invalid-discard.xml cmp matches sights102-waypoint-save.xml bytes.
+PID25292 continuous. No original record or host waypoint was changed.

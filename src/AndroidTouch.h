@@ -357,7 +357,10 @@ inline void CN_EnableAndroidCalendarScrolling(QCalendarWidget* calendar) {
       const int column = index.column() - (safeView->model()->columnCount() - 7);
       if (!index.isValid() || index.row() < 1 || column < 0) return;
       const QDate first(safeCalendar->yearShown(), safeCalendar->monthShown(), 1);
-      const int offset = (first.dayOfWeek() - safeCalendar->firstDayOfWeek() + 7) % 7;
+      int offset = (first.dayOfWeek() - safeCalendar->firstDayOfWeek() + 7) % 7;
+      // POBsoft (1985-2026): Qt displays a full preceding week when the
+      // month starts on the first weekday (e.g. Sunday March1,2026).
+      if (!offset) offset = 7;
       const auto chosen = first.addDays((index.row() - 1) * 7 + column - offset);
       if (chosen >= safeCalendar->minimumDate() && chosen <= safeCalendar->maximumDate())
         safeCalendar->setSelectedDate(chosen);

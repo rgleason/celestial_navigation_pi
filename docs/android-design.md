@@ -530,3 +530,19 @@ acceptance. Add a final finite/range DR check at Android Sight Save as a guard
 against invalid imported or stale model state. Desktop behavior is unchanged.
 Exercise malformed text, ±90/±180 limits and out-of-range values, correction,
 Reset, Cancel and exact valid saved waypoint coordinates on the tablet.
+
+
+### Calendar months aligned with the first weekday (28 September)
+
+Physical103 March2026 shows a complete previous week (February22–28) above
+March1 because the month begins on the calendar's first weekday, Sunday. The
+custom calendar tap adapter currently assumes March1 occupies that first row;
+a tap on the displayed22 therefore selects29, one week later. The spring UTC
+entry persisted the intended29 only because automation targeted the preceding
+row. This is a calendar hit-mapping failure, not accepted selection behavior.
+When the month starts on the configured first weekday, account for the native
+calendar's full preceding week by using a7-day offset. Preserve all other
+month offsets and the firstDayOfWeek setting, ranges, native selectedDate and
+owned viewport callback. Desktop behavior is unchanged. Test actual displayed
+March22 and29 taps, a nonaligned month and rotation, then Save/reopen/cold read
+with exact UTC milliseconds through the spring DST date.
