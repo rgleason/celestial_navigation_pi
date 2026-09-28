@@ -324,3 +324,23 @@ coordinates after each page/keyboard/layout transition. A long scripted restore
 hit UTC seconds instead of span; full-file comparison caught it and the visible
 fields were restored before proceeding. Retain automation failures separately
 from product failures and never infer restoration from a successful Save tap.
+
+
+UTF8 profile131: use explicit ToUTF8 for stored user names, serials and
+repeat notes; locale-based ToStdString can silently blank accented strings
+on the pinned Android wx build. Seeded load alone is not Save acceptance: do
+real two-repeat Build/save with identicalUnicode name, verify count/serial/
+points/protectedprofile independently, then cold-reopen. Native Ctrl-C/V
+worked for this touch test; Android COPY/PASTE keycodes did not. Also check
+programmatic angle updates before Save: the wx text event did not refresh
+the active advisory, despite correct repeat cards and saved numerical data.
+
+Tie a reusable prediction to its semantic inputs. Native Qt text, spin and
+choice changes can bypass wx notifications: use callbacks owned by the live
+dialog and recheck synchronously before Add. Actual UTC and pressure edits
+must invalidate a prediction; index error and repeat notes must remain usable
+without a new ephemeris calculation. Test recovery after recalculation as well
+as refusal. Compare serialized calibration endpoints with a margin limited
+to their known rounding precision; do not change the correction algorithm.
+An unpaced automation Back closed a dialog during replay133; paced replay134
+and independent Save/cold readbacks established the actual recovered behavior.

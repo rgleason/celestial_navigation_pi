@@ -3587,3 +3587,119 @@ xGRIB and xWeatherRouting bEnabled1, original legacy weather_routing bEnabled0;
 WiFi1, portrait restored before cold chart restart. Font1.3 still active for
 ongoing acceptance, not final original-preference restoration. These checks
 accept the selected moving modes, not all COG/speed/time-basis/bias combinations.
+
+
+### Unicode sextant profile131, runtime129/5420c97,10:12–10:33BST
+
+Strictly staged one task-owned UTF8 profile P1 after the protected existingP0
+(RESUME81-Disposable-Sextant/TEST81): name RESUME131 – Sextant α,
+serial ÉTOILE-131. Seeded config is a loader test, not Save acceptance. Actual
+runtime128 FAIL: Name/Serial/Saved caption blank despite valid points and
+loaded-count2 (resume131-profile-name.png). Configuration still contained
+exact UTF8 text. Android-only ProfileText UTF8 helper replaces locale-based
+ToStdString on user name/serial/note paths; desktop conversion unchanged.
+Both platform builds129 PASS. Actual manager import ACK; independent installed
+SO b4801f0d8da87fbf88764be4cd2f489cdc4e13d32d4b8207b7af5794b49cea7e
+matches retained committed5420c97 archive9935cf6f6277651d15120f988ae77bc9ef5c2d6c96c2121fbaab0e2c99194b2c.
+Actual full saved fields/caption show exact Unicode identity at font1.3.
+
+Public Greenwich51.4779/0 entered by native keyboard. Default currentUTC
+2026-09-28 09:25:36.025, Sirius/Vega centre prediction157.69485075744367deg
+is only a text/profile fixture, not a new astronomical reference pass. IE+1.50′,
+observed=prediction, σ0.20′. Native Ctrl-C/Ctrl-V copies the Unicode name
+into note; Android COPY/PASTE keycodes did not populate it and no pass is
+claimed for those attempts. Two actual Add repeat cards retain complete
+Unicode notes, afterIE157.66985075744367deg and residual+1.50′.
+
+Actual Build/save profile replaces existing same Unicode name: independent
+config Count2, exactName/Serial, P1_Points157.6698508,1.5,0.1414213562,2
+(σ0.2/√2 independently checked). Every originalP0 field unchanged. Complete
+Sights.xml byte-identical SHA256fba0ee0fdcff99897bd4cb66e3a106c7c1a8de6b3381692c525884e8039ae532.
+Saved profile final explanation reached by actual portrait/landscape swipes.
+PID25640 continuous through save/rotation/Back, intentional cold→27819;
+actual cold final fields/identity/points retained and full profile subgroup
+identical to saved. No repeats persisted by design; profiles persist points.
+
+Full-config comparison retained four differences outside profile subgroup:
+ShowActiveRouteHighway, canvasVPScale, LunarToolsWidth/Height. Therefore no
+whole-profile byte-equality claim; task-owned chart preference changes require
+final targeted restoration. Full crash131 still latest historical fatal04:51:54,
+ANR none since boot. DisposableP1 cleanup pending after runtime130 replay.
+
+FAIL distinct advisory: after Predict before Save, active correction caption
+stays at0deg01.5′ from previous IE edit although repeat cards correct. Save
+updates it to157deg40.1910′. Retained resume131-save-ready versus saved
+captures. Runtime130/2550cf9 explicitly calls UpdateProfileCorrection after
+programmatic Android prediction; both builds pass, actual replay pending.
+
+
+### Active advisory132, runtime130/2550cf9,10:34–10:40BST
+
+Both builds130 PASS; manager import ACK and independently read installedSO
+1de320fe0371213ffd4acf64fc6d892a4d5ff3c14f7d5d0510fc2af78b4bf526
+match archive761784f04635c217f5777d5e7d49aa109bc8d5b4a5bb66ca6cac3694a619383a.
+PID27819 continuous. Actual exact Greenwich/Sirius-Vega/09:25:36.025UTC/
+IE1.50′ replay: predicted/raw157.69485075744367deg, active caption now
+157deg40.1910′ before Save. Advisory-angle repair physically passes.
+
+Two further actual FAILS retained. Serialized endpoint157.6698508 differs
+by4.26e-8deg and triggers outside-tested-range despite identical input.
+Changed UTC25→26min without Predict, then actual Add repeat accepts old
+157deg41.6910′ prediction (resume132-changed-utc/stale-repeat). Neither
+repeat nor changed inputs saved. Back returns chart; whole saved profiles
+subgroup unchanged and allSights byte-identical fba0ee0f... Original erroneous
+post-Back config read used a nonexistent path and failed, then correct
+independent readback verified complete saved subgroup, not assumed success.
+Runtime131/b236af5 captures semantic prediction identity, native owned
+callbacks invalidate stale value, synchronous Add recheck covers missed
+events; observed/IE/note edits remain independent. Android endpoint warning
+allows1e-7deg serialization margin only. Both builds pass; physical pending.
+
+### Prediction identity replay133/134, runtime131/b236af5, 10:42–11:02 BST
+
+Actual manager import acknowledged. Independently read installed library
+SHA256147ec965ca86e4facc6771106a1c4bf70befe7e8ac21384d2f1e16f798d73a22
+matches retained archive046bccf65829d03c7805844d45726286f5b6dfea58e9f9cb82e834b55ac55f6e.
+Both Android and desktop builds pass. Current nine CTest entries pass in
+53.72s (ctest131-full.log); headless skipped GUI cases are not physical passes.
+
+Replay133 uses the exact saved endpoint/09:25:36.025 UTC/Greenwich/
+Sirius–Vega/IE1.50′. Active correction correctly shows157°40.1910′ before
+Save and the erroneous outside-range warning is absent. One valid repeat
+accepted. Native minute25→26 immediately requests Predict again; Add explicitly
+refuses a stale prediction. Back dismisses that message and retains the valid
+repeat. Fresh Predict produces157.6949151461627deg. A subsequent unpaced
+direct-ADB edit sequence accidentally backs out to the chart; no recovered
+repeat or Save is claimed for resume133-repeat-edits/recovery-repeat captures.
+PID27819 remains continuous; this is an automation failure, not a crash.
+
+Replay134 uses paced native inputs and inspected screenshots. Greenwich,
+2026-09-28 09:50:22.394 UTC, Sirius–Vega centre, pressure1013 gives
+157.6875494407356deg. Changing pressure to1012 immediately clears prediction
+validity while preserving observed input. Fresh Predict gives157.68771814154385deg.
+Changing IE to1.50′ and note to RESUME134-recovery does not invalidate it.
+Two actual Add repeats show afterIE157°39.7631′, residual+1.50′, σ0.20′,
+complete notes and selected identity. These predictions are UI fixtures, not
+independent astronomical reference checks. Index correction and combined
+uncertainty are checked independently by arithmetic.
+
+Actual same-name Build/save retains exact UTF8 name/serial and Count2.
+Independent config134-saved readback gives points
+157.6627181,1.5,0.1414213562,2; all protectedP0 fields unchanged. Entire
+Sights.xml stays byte-identical fba0ee0fdcff99897bd4cb66e3a106c7c1a8de6b3381692c525884e8039ae532.
+Real landscape swipe reaches the final explanatory sentence at font1.3.
+Back safely returns to chart. Intentional cold27819→30768 retains the complete
+saved profile subgroup; actual cold fields and native selector show exact
+Unicode identity. Both popup rows are72px=48dp. Selecting protectedP0 restores
+its own name/serial and full final explanation without Save.
+
+Targeted cleanup force-stops, backs up the current config, verifies the entire
+saved subgroup and originalP0, removes only task-ownedP1 and changes Count2→1.
+Bounded independent readback confirms every other current configuration byte
+preserved and original complete profile subgroup restored. Sights.xml unchanged.
+Cold chart PID31213, xGRIB/xWeatherRouting enabled. Complete crash134 buffer
+has no later fatal than historical04:51:54/runtime98; ANR none since boot.
+Current larger-font/rotation settings remain for acceptance, not final restoration.
+Private configs/screenshots retained separately; public reports contain only
+disposable fixture inputs and numerical/preservation results. Remaining input
+families/contact combinations are not inferred from these selected passes.
