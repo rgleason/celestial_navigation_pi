@@ -3997,3 +3997,42 @@ display1/offset5.5/Auto0. Deliberatecold10884→17074 actualPlanner reopens
 old78/15/UTCdisplay, proving missing destructorFlush. Android-only repair
 now implemented afterexisting16keys, physical replay pending. Newmanualtime
 is intentionally unsaved: constructionNow is baseline, not persistence failure.
+
+### Planner persistence and caption147, source3929527, 13:43–13:57 BST
+
+Both Android/package and desktop builds PASS. PluginManager import succeeds;
+independently read installed SO84bf8b8b471f564520a5d85df3f176ff09e1ea9e91d7898019edb4e8790c82b5
+matches retained tarb85db104894334a77ae8a77fcff8cda819269f7f7de73468beabba93b3c5801a.
+No new full numerical suite was repeated for caption/configFlush changes;
+146all9pass is retained, and the changed behavior is checked on the tablet.
+
+Actual southern−35/0June21 Ho31.563161 still solves35deg00.0001minS at
+12:01:55UTC, error0.0001arcminute within the predeclared0.1limit. Shortened
+Corrected Ho (degrees) caption and full solution are readable in portrait and
+landscape at font1.3. All16planner keys independently match the entered
+manual−35/0/Ship2/Computerlocal1/Nautical0/offset5.5/Auto0 immediately after
+Close. Deliberate offline17074→18092cold restart retains all16values exactly;
+actual upper/lower context screenshots also show these choices. Now on opening
+is intended baseline behavior, not persistence of the prior manual epoch.
+Close and cold entire Sights.xml SHAfba0ee0f... agrees with the original12
+observations/5complete solutions/Clock0. Both other plugin sections remain
+bEnabled1. Public observed147.json records actual values and exact hashes.
+
+Real Events swipes reach final Moon summary and all four phase entries visibly
+state Approximate geocentric phase (resume147-phase-end). Shared phase accuracy
+limitation remains documented; this is caption acceptance, not a new numerical
+accuracy assertion. Both known146defects are now closed.
+
+### GNSS stopped-input status147, 13:58–14:01 BST
+
+With WiFi off, actual clock status shows live RMC age0.6s and system-minus-GNSS
+−330ms. Original device Location enabled state read before a reversible test.
+Turning Location off stops input: actual clock sheet shows lastRMC10s ago and
+Unavailable — GNSS time is stale while local/UTC clocks continue advancing and
+ClockCorrection remains0. Android emits its own No location access dialog;
+it is distinguished from plugin output. Location enabled restored immediately,
+then notification dismissed. Capture33s/68s shows continued stale status;
+no immediate receiver reacquisition PASS claimed. Later planner screenshot
+shows host speed/course returning, but that alone is not a GNSS clock assertion.
+PID18092 remains continuous. Only stopped-input status is accepted here;
+unchanged full library and restored-source clock confirmation remain to record.

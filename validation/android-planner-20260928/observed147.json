@@ -1,0 +1,48 @@
+{
+  "runtime": 147,
+  "source": "39295278ed575bf9f53249562c02a11d8e775ebd",
+  "installed_library_sha256": "84bf8b8b471f564520a5d85df3f176ff09e1ea9e91d7898019edb4e8790c82b5",
+  "archive_sha256": "b85db104894334a77ae8a77fcff8cda819269f7f7de73468beabba93b3c5801a",
+  "close_pid": 17074,
+  "offline_cold_pid": 18092,
+  "font_scale": 1.3,
+  "all_16_preferences_immediate_and_cold": {
+    "PositionSource": "0",
+    "InputTimeBasis": "2",
+    "DisplayTime": "1",
+    "EntryFormat": "0",
+    "Latitude": "-35",
+    "Longitude": "0",
+    "Moving": "0",
+    "CourseTrue": "90",
+    "SpeedKnots": "10",
+    "FixedOffset": "5.5",
+    "AutoZoneOffset": "0",
+    "LimitRecommendationAltitude": "1",
+    "RecommendationMinAltitude": "10",
+    "RecommendationMaxAltitude": "75",
+    "WaypointGuid": "",
+    "WaypointName": ""
+  },
+  "southern_noon": {
+    "latitude": -35,
+    "longitude": 0,
+    "date": "2024-06-21",
+    "Ho": 31.563161,
+    "actual_utc": "12:01:55",
+    "result": "35 degrees 00.0001 minutes S",
+    "error_arcminutes": 0.0001,
+    "tolerance_arcminutes": 0.1,
+    "caption": "Corrected Ho (degrees)",
+    "portrait_and_landscape_caption_fully_readable": true
+  },
+  "phase_qualification": "Approximate geocentric phase visible at the four phase entries; shared numerical limitation retained",
+  "protected_sights_sha256": "fba0ee0fdcff99897bd4cb66e3a106c7c1a8de6b3381692c525884e8039ae532",
+  "screenshots": [
+    "resume147-south-noon-landscape",
+    "resume147-cold-preferences-ready",
+    "resume147-offline-cold-context",
+    "resume147-offline-cold-lower",
+    "resume147-phase-end"
+  ]
+}

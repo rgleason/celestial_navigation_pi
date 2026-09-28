@@ -14,3 +14,11 @@ June22FullMoon01:08 differs by623seconds from00:57:37. This shared phase
 method minimizes three-dimensional elongation rather than solving the exact
 standard ecliptic phase definition. Planner Close/cold preferences FAIL146 and
 scaled Ho caption clipping remain recorded pending their Android-only repair.
+
+Observed147 records the physical replay on source3929527: all16preferences
+match immediately after Close and after the deliberately offline17074→18092
+restart; protected observations and complete lunar reports remain raw-byte
+identical. The shortened Ho caption is fully readable at font1.3 in both
+orientations with the same southern reference result. All four displayed phase
+entries now explicitly say Approximate geocentric phase. These close the two
+146defects; they do not erase the phase approximation or accept untested branches.
