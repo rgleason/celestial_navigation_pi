@@ -24,22 +24,31 @@ The Moon phase discrepancy is a shared approximation, reproduced on desktop.
 The Android result and guide explicitly qualify it. Do not repeatedly investigate
 it as an Android time regression or alter shared desktop numerical behavior.
 
-## Finite remaining cases
+## Completion status
 
-| Group | Inventory rows | Specific remaining evidence needed |
-|---|---|---|
-| Documentation assets | D01/D02 | Native changed guide168 and unchanged42page manual QA25 accepted. Final package asset alignment remains with artifact inspection. |
-| Final packages | All targets | One exact committed-source19-platform CI run with fresh dependencies and publication disabled; independently inspect retained artifacts, ABI/API/root metadata/assets/hashes and install/cold-reopen final Android candidate. Earlier19-platform success is retained but is not a final-source pass. |
-| Cleanup/handoff | Release | Guarded restoration of only task-owned records/preferences/chart/device changes, preserving original profile/charts/other plugins; retain exact binaries/symbols and short release handoff. Public tester hosting and publication remain pending explicit approval. |
+- [x] Android touch workflows and finite acceptance cases closed through170.
+- [x] Requested f201326 fix incorporated, physically and independently checked.
+- [x] 2.8.13 version, Android guide, manuals and documented numerical qualifications.
+- [x] Final19 existing platform builds green; package source/hashes/assets verified.
+- [x] Native Windows x64 SDK, extra build target and AMD64 package verified green.
+- [x] Final CI Android package imported, actual library verified and cold reopened.
+- [x] Baseline records, task preferences, original viewport and device settings restored.
+- [x] Original protected files, other libraries, data packs and navigation rows verified.
+- [ ] Final commit/push and Rick's2.8.13review PR (Android/Windows x64 Alpha).
+- [ ] Explicit publication approval, public hosting/checksums and final Documents URLs.
 
-Functional groups O/F/P/T/H/L/S/C/A/E and combined controls closed by the
-retained records through170. The full inventory disposition is in
-android-acceptance.md.
+The complete validation suite now has20targets. Android arm64/armhf and Windows
+x64 are Alpha; existing desktop targets are stable candidates for master.
+Windows x64 native GUI runtime is not qualified by its build. Shared Moon phase
+and terrain-contact approximations remain documented qualifications, not new
+Android-specific defects. The patched tester host dependency is recorded in
+android-host-tester-install.md; stock5.14Android is not qualified.
 
-Each group is removed from this list only when its specific evidence is recorded.
-Do not convert generic “other variants/crosscuts pending” into an open-ended
-request to repeat every successful workflow. New work requires an identified
-untested branch, an actual failure, or a changed implementation.
+Functional groups O/F/P/T/H/L/S/C/A/E/D closed by the retained records through172.
+The full inventory and historical failures remain in android-acceptance.md.
+Final package and cleanup summaries are in
+validation/android-final-acceptance-20260928/final-platforms.json and
+final-cleanup172.json. Publication stays on hold.
 
 ## Build and test rule
 

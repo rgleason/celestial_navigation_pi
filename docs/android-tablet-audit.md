@@ -4545,3 +4545,47 @@ Full crash buffer latest fatal remains historical04:51:54; full events buffer
 contains no am_anr. PSS499041/RSS558600/swapPSS317KiB. Public final-crosscuts170
 records exact facts. Final functional checklist cases are closed; final-source
 19-platform artifacts/install and targeted original-state cleanup remain.
+
+
+## Final CI package and guarded handoff171/172 — 28 September 2026
+
+All19 platform jobs passed in workflow24be20b7 at8bdec0c, publication disabled.
+All retained package hashes and exact source provenance were independently
+verified. Five required analytical/help/manual assets match source on all19;
+Windows text differs only by checkout CRLF, while binary PDF is exact. The
+unchanged42page manual QA is carried forward; editable DOCX is retained separately.
+Native Windows x64 job148 then passed alone at1818c1e using its pinned AMD64
+host SDK. Root metadata and the single PE32+ AMD64 DLL were independently
+verified. See windows-x64.md and final-platforms.json. No repeated19-platform
+build was needed for the x64-only CMake branches, CI recipe and documentation.
+
+Real native import171 selected the exact final CI Android archive and displayed
+Installation complete. Actual private library matches the extracted package:
+SHA2561b322245a83e8551a10a7c0868f8df18e49380d90b298594ac6fe107eea6ac74.
+HostPID14550 remained continuous through chooser, ACK and manager close. The
+five task fixtures were byte-exact after import. Final cleanup restored the
+baseline12records/five nested reports byte-for-byte and removed only new CelNav
+preferences plus the five owned viewport keys. All other latest stopped-profile
+keys and xGRIB/xWeatherRouting enable flags were retained.
+
+Preflight checks independently matched2429original plugin/data files, four
+non-CelNav private libraries and six original optional-data files/markers. All
+rows of all eight navigation database tables equal the original backup; changed
+SQLite physical bytes are not treated as lost or altered navigation records.
+The first cleanup had a host restart during its long file guards, which reapplied
+the task viewport. This was an actual failed restoration, not a passing cold
+check. Final172 stopped immediately before the short guarded write, with device
+settings already restored. ColdPID19445 shows the original chart centre, scale
+and heading; host canvas dimensions adapt to the portrait screen. Original
+sights remain exact, the final CI library remains exact and native Observe opens
+the restored library. Font1.15/normal auto-rotation restored. Host left on chart.
+Full crash/events/memory records retained; latest fatal remains historical
+04:51:54BST and no am_anr exists in the retained events buffer.
+
+Early read-only asset-guard invocations incorrectly relied on adb exec-out stdin,
+then overquoted sh -c. Neither wrote profile data. Corrected direct command
+batches produced the2429/2429exact hash pass. A diagnostic writer from temporary
+trace work was identified and closed. Obsolete task download archives are removed
+only when their hashes match retained local copies; final tarball and tester APKs
+remain. No broad profile or Downloads cleanup was performed. Private evidence,
+backups, binaries and unstripped Android symbols remain retained locally.

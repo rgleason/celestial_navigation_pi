@@ -22,5 +22,21 @@ load this DLL. Desktop numerical implementation is unchanged by the x64 target.
 Publication remains on hold.
 
 During initial qualification `validate_windows_x64_only` selects just the new
-job to carry forward the existing 19 platform results. Its normal default will
-be false after qualification, so the complete validation suite has 20 jobs.
+job to carry forward the existing 19 platform results. Its normal default is
+false, so the complete validation suite has 20 jobs.
+
+## Qualified build, 28 September 2026
+
+[CircleCI workflow b0653c72](https://app.circleci.com/workflow/b0653c72-41e5-4524-8d17-7a5369ce94d0)
+passed the native Windows x64 job148 at source1818c1e7f55f194bc50fba3ea0e89847b6aa88ea.
+The downloaded package was independently checked for recorded hashes, root
+metadata and its single AMD64 PE32+ plugin DLL. Package SHA256:
+`12ca4e01647ce196862d6e7020940330b02c7d83949590dd4e12555b14f19937`.
+DLL SHA256:
+`eb16b7d02d465d04e0791077f6ca9d27bd1b3b61f254d76fb041021fdbdcb332`.
+
+The other19 jobs passed once at8bdec0cb99f5600f742920f35624be5cabcc372e.
+The intervening additions affect only native Windows x64 configuration/build
+and documentation; all `src`, analytical data and existing-platform recipes
+are unchanged. Their results are carried forward. No publication approval or
+Windows GUI runtime acceptance is inferred from these build results.

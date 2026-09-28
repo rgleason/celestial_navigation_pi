@@ -171,3 +171,12 @@ numerical accuracy passes. Stock-host import is not accepted: patched OpenCPN
 | D01 | ACCEPTED: 25 manual full42page QA carried;168 actual changedguide portrait/landscape/background |
 | D02 | FUNCTIONAL ACCEPTED / PACKAGE PENDING: earlier actual PDFviewer and unchangedmanual bytes; final package asset alignment pending |
 | D03 | ACCEPTED: 167..170: night/font1.3, Back/rotation/background, chart overlays and actual plugin disable/re-enable |
+
+
+Final packaging/cleanup172 closes D02's package-assets disposition. All19
+existing final-source platform packages and the new Windows x64 package passed
+independent provenance/hash/asset inspection. Actual final Android import and
+cold-reopen passed with baseline records restored; see final-platforms.json,
+final-cleanup172.json and the audit171/172. All51 finite inventory dispositions
+are accepted or explicitly qualified. Publication is still held. Android and
+Windows x64 are Alpha; Windows native GUI runtime qualification is separate.
