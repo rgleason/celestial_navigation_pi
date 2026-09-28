@@ -2094,3 +2094,50 @@ selection and residual cards plus pair-planner full-field cards are pending
 physical validation, and remain unaccepted. Selection changes clear Android
 candidates and disable saved-result actions so stale results cannot be saved.
 Desktop layout/numerical branches retain the original behavior.
+
+### 2026-09-28 00:54–01:09 BST: physical lunar cards and public references
+
+Runtime84/source7b34fd4 was actually imported through Plugin Manager. Archive
+SHA25652631432c084c8a3d6a36cc785df5ce7bf94ecc891deb7189d55b3dc0a8dbfcb;
+independently read installed84.so SHA256
+3b0fd4faea43a345912ba39c371f38a07563cd7c9d8cefb1247d837ca8715d93
+matches payload. PID24643 remained continuous, xGRIB/xWeatherRouting enabled.
+Android and desktop compilation passed; isolated actual-display LunarUiSmoke
+passed6336ms, retaining the missing testdata icon warning.
+
+Session observation cards expose the complete Fiji Moon–Saturn sight. Clear
+changed the card to Select and reported no observations selected; Select
+visible restored one selection. Actual final swipes expose all search, robust,
+bias and motion controls, Solve, empty candidates and disabled Save. Solve
+with one observation gives explicit at-least-two validation and safe Back.
+Screens resume84-{sequence-first,clear,visible,one-invalid}.png. No session
+worker started here; multi-observation/candidate/persistence acceptance is open.
+
+Public Greenwich51.4779,0,2024-06-21 22:00:00 UTC was visibly entered in
+resume84-greenwich-input.png. Actual Calculate pairs exposes all11 fields as
+complete cards. Real swipes reached final Betelgeuse including Magnitude0.5
+in portrait(resume84-pair-final.png) and landscape(resume84-landscape-final.png).
+The screenshot resume84-deneb-reference.png contains Vega, not Deneb;
+resume84-deneb-complete.png contains Deneb. Explicit transcription, independent
+USNO22:00/22:05UT1 responses, hashes and comparison script are committed under
+validation/android-usno-greenwich-20240621. Spica/Vega/Deneb distance errors
+0.07947′/0.00929′/0.03590′ and geometric Hc errors below0.001′ satisfy0.1′.
+Rate and0.1′ timing sensitivity agree within one-decimal display tolerance0.051.
+Other fields/rows/providers are not independently accepted by this subset.
+
+Latitude91 rejects and clears every old card; Back returns safely to the form
+(resume84-pair-invalid{,-cleared}.png). Date2024-02-30 and hour25 reject with
+explicit UTC-format validation(resume84-pair-invalid-{date,time}.png). Changing
+system font scale1.15→1.3 while this dialog was open did not visibly resize it;
+resume84-landscape-large.png is not proof of larger rendered text. Reopen/cold
+font acceptance remains open. Long scrolling reached the inputs again.
+
+Separate Sextant public reference: actually entered the same Greenwich/UTC
+fixture, selected Deneb/Vega centre contact, pressure1013hPa/temp10°C/IE0.
+Prediction23°50.1355′, exact populated observed23.835591672966757deg;
+apparent altitudes44°58.0764′/60°15.6763′. Published USNO Hc minus refraction
+and Zn yield23.8357759454019deg, error0.01105635′ within0.1′. Screens
+resume84-sextant-{public-input,deneb,usno,usno-full}.png. The swipe starting
+on a numeric control opened its keyboard; Back dismissed it safely. This
+validates one apparent star centre pair, not Moon limbs or all contact modes.
+No repeat/profile or sight was saved in these84 checks.
