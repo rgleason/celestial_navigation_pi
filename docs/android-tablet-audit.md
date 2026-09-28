@@ -2900,3 +2900,30 @@ toolbar action still needs final removal. Shared Android105palette uses
 DILG0 background/DILG2 fields/DILG3 ink/UIBCK selection, preserves sight
 colour preview and replaces its own rules on repeated updates. Designed
 before implementation; physical acceptance pending.
+
+
+Physical1054f8ee9e,06:14–06:17BST: import ACK/installed library SHA
+379c2d3823673508b98a5ae8d4978fac59bcca4bf41a5cbb41cc8e15ef30da4c
+PASS; tar1ca0160d275a3460e0942c8a0ea63364be2c84737a3c7526ca3ab701265e39bb.
+Android/desktop compile PASS; all9CTest PASS53.52s. PID27411 continuous.
+Actual dusk grey130 text/black controls but wx panels remain pale: FAIL,
+resume105-actual-dusk. Initial resume105-workspace accidentally opened Dashboard
+because import reordered toolbar; immediately toggled it off and opened actual
+CelNav at(49,1008). No accepted plugin screenshot from that mistaken tap.
+Source host ToggleColorScheme is day→dusk→night→dusk→day, four steps. Earlier
+claimed restoredDay was actually returning dusk; resume105-night-correct-workspace
+is actually day (black ink/white fields), despite filename. Retain the mislabeled
+capture, correct its interpretation. Next corrected theme106 addresses wx
+background painting and dusk contrast; physical pending.
+
+
+Physical105 selected public Vega2024-06-21 22:00 UTC through Oldest first;
+editor shows exact distance68.25796727645012deg, Moon altitude5.242081deg
+lower, body60.261057deg centre, centre body-distance contact and all0.5′
+uncertainties. Real Measurement swipes reach final body uncertainty. Time
+swipes reach span1800s, nominal UTC, disabled separate-time rows22:00:00.000
+and final COG/SOG controls. Dusk labels remain poor contrast until106fix;
+this is reachability/readonly evidence, not accepted L01 full workflow.
+Screenshots resume105-lunar-editor/last/time. Cancel without Save; file
+comparison follows. Angle-entry buttons created after initial decoration also
+need active palette at creation, included in106.

@@ -578,7 +578,7 @@ inline void CN_StyleAndroidControls(wxWindow* parent, bool applyTheme = true) {
     }
     CN_StyleAndroidControls(child, false);
   }
-  if (applyTheme) CN_ApplyAndroidTheme(parent->GetHandle());
+  if (applyTheme) CN_ApplyAndroidTheme(parent);
 }
 
 

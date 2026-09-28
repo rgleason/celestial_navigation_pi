@@ -396,7 +396,7 @@ void celestial_navigation_pi::SetColorScheme(PI_ColorScheme cs) {
   DimeWindow(m_pCelestialNavigationDialog);
 #ifdef __OCPN__ANDROID__
   // POBsoft (1985-2026): native Qt styles also need the active host palette.
-  CN_ApplyAndroidTheme(m_pCelestialNavigationDialog->GetHandle());
+  CN_ApplyAndroidTheme(m_pCelestialNavigationDialog);
 #endif
 }
 

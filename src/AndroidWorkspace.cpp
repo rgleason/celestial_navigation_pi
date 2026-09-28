@@ -160,7 +160,7 @@ void CelestialNavigationDialog::BuildAndroidWorkspace() {
   CN_StyleAndroidControls(this);
   title->GetHandle()->setStyleSheet("QLabel { color: white; font-size: 20pt; }");
   new Surface(this, [this]() { m_Plugin->OnDialogClose(); });
-  CN_ApplyAndroidTheme(GetHandle());
+  CN_ApplyAndroidTheme(this);
   LayoutScrolls(this);
   RefreshAndroidCards();
 }

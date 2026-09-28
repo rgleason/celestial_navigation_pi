@@ -346,7 +346,7 @@ inline Surface* Decorate(wxDialog* dialog, const wxString& title,
   label->SetName("cn-android-title");
   label->GetHandle()->setStyleSheet("QLabel { color: white; font-size: 20pt; }");
   auto* surface = new Surface(dialog, close);
-  CN_ApplyAndroidTheme(dialog->GetHandle());
+  CN_ApplyAndroidTheme(dialog);
   surface->Fit();
   return surface;
 }

@@ -563,3 +563,9 @@ styles without accumulating overrides. Preserve actual sight colour previews
 and rendered PDF/sky images. No desktop palette/runtime or data change. Verify
 actual day/dusk/night workspace/editor/report readability, rotation, popup and
 Back, file identity and restoration of the host toolbar and original day mode.
+
+Physical105 dims native controls but wxQt panels still erase with their stored
+wx background, so Qt palette alone is insufficient. Update both wx colours
+and native Qt presentation. For dusk/night use the host DILG2 black background
+for panels as well as inputs: DILG3 grey ink has insufficient contrast against
+DILG0 dusk grey. Day keeps host DILG0 panel background. Retest106.

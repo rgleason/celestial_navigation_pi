@@ -12,9 +12,17 @@ inline QColor CN_HostColour(const char* name, QColor fallback) {
   return QColor(colour.Red(), colour.Green(), colour.Blue());
 }
 
+inline QColor CN_ThemeBackground() {
+  const QColor background = CN_HostColour("DILG0", QColor(228, 228, 228));
+  // Dusk's text/background greys have little contrast. Use the host's dark
+  // input background for the entire low-light surface, with its text colour.
+  return background.lightness() < 128
+      ? CN_HostColour("DILG2", Qt::black) : background;
+}
+
 inline void CN_ApplyAndroidTheme(QWidget* root) {
   if (!root || root->property("cnPreserveColour").toBool()) return;
-  const QColor background = CN_HostColour("DILG0", QColor(228, 228, 228));
+  const QColor background = CN_ThemeBackground();
   const QColor field = CN_HostColour("DILG2", Qt::white);
   const QColor ink = CN_HostColour("DILG3", QColor(23, 56, 73));
   const QColor selected = CN_HostColour("UIBCK", QColor(90, 133, 155));
@@ -51,5 +59,22 @@ inline void CN_ApplyAndroidTheme(QWidget* root) {
   root->setStyleSheet(style);
   const auto children = root->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
   for (auto* child : children) CN_ApplyAndroidTheme(child);
+}
+
+inline void CN_ThemeWxColours(wxWindow* root) {
+  if (!root || root->GetHandle()->property("cnPreserveColour").toBool()) return;
+  // wxQt's erase/paint path uses wx colours, independent of the Qt palette.
+  const QColor background = CN_ThemeBackground();
+  const QColor ink = CN_HostColour("DILG3", QColor(23, 56, 73));
+  root->SetBackgroundColour(wxColour(background.red(), background.green(), background.blue()));
+  root->SetForegroundColour(wxColour(ink.red(), ink.green(), ink.blue()));
+  for (auto* child : root->GetChildren()) CN_ThemeWxColours(child);
+  root->Refresh();
+}
+
+inline void CN_ApplyAndroidTheme(wxWindow* root) {
+  if (!root) return;
+  CN_ThemeWxColours(root);
+  CN_ApplyAndroidTheme(root->GetHandle());
 }
 #endif

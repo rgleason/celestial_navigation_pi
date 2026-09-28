@@ -72,6 +72,7 @@ class AngleButton final : public QObject {
     button_->setStyleSheet(QString("QPushButton { font-size: %1pt; min-height: %2px; "
         "background: #e6f0f4; color: #173849; border: 1px solid #9fb9c6; }")
         .arg(CN_FontPointSize()).arg(CN_TouchHeight() - 2));
+    CN_ApplyAndroidTheme(button_.data());
     new CN_AndroidButtonDragFilter(button_);
     line->setTextMargins(0, 0, 152, 0);
     line->installEventFilter(this);
