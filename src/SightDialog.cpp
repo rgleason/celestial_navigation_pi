@@ -124,6 +124,10 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   m_sMinutes->SetValue(UtcDateTime::FormatRecordedFields(m_Sight.m_DateTime, "%M"));
   m_sSeconds->SetValue(UtcDateTime::FormatRecordedFields(m_Sight.m_DateTime, "%S"));
 
+  // Set the range before loading a saved value. The generated control used
+  // to start with a 10800-second maximum, silently clamping wider lunar
+  // search spans before the range was expanded later in this constructor.
+  m_sCertaintySeconds->SetRange(0, 172800);
   m_sCertaintySeconds->SetValue(m_Sight.m_TimeCertainty);
 
   m_sTransparency->SetValue(m_Sight.m_Colour.Alpha());
@@ -355,7 +359,6 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
                           });
   UpdateLunarTimeControls();
   m_panel2->FitInside();
-  m_sCertaintySeconds->SetRange(0, 172800);
   if (m_Sight.m_Type == Sight::LUNAR && m_Sight.m_TimeCertainty <= 0.0) {
     m_Sight.m_TimeCertainty = 86400.0;
     m_sCertaintySeconds->SetValue(86400);

@@ -32,6 +32,7 @@ set(SRC
     android_planner_worker_tests.cpp
     dialog_geometry_tests.cpp
     dialog_transaction_state_tests.cpp
+    sight_search_span_ui_tests.cpp
     eclipse_data_files_tests.cpp
     eclipse_verification_worker_tests.cpp
     altitude_tests.cpp
