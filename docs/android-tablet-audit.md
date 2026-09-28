@@ -4457,3 +4457,91 @@ Temporary first harness incorrectly usedzeroangularuncertainty (invalidUIinput),
 causing a shared desktoploop crash; corrected positive1arcmin reference passes.
 That harness is not a physical product-crash claim. Public runner/reference
 and full point JSON retained, no pixel/projection accuracy claim.
+
+### Spinner repair166 accepted, 17:13-17:16BST
+
+98d612c both builds PASS; archive1938799a9b71e544c31bea47dfba913acabc564f2f1fc293288b83346cb9d0de,
+actual installed manPlug4e402d95249206288b1554284124581a33d7ff85c9e511eda63cd607f0eff219
+matches package. Native importACK, cold stagingPID9674 intentional. Actual
+orientation download succeeds/verified/installed and its officialhash agrees.
+Native LOLA download starts; fresh observedCancel at601/954 now immediately
+shows explicit cancelled. SamePID9674. No WiFi interruption in accepted replay.
+Native spinner is absent, cancelling does not require waiting for host END.
+Both previously identified download failures CLOSED on166; full9/9local suite
+and dedicated hosteventboundary165 carried forward because166changesonly
+Android spinner dismissal. New native successful completion/cancellation is
+acceptance. Earlier165networkfailure/blockedtouch attempts retained as failures,
+not silently promoted. Native idle/staging/original6restoration guard recorded
+with the following chart fixture checkpoint. Public download-observed166JSON.
+
+### Restored packs, azimuth chart and future coverage167, 17:23-17:29BST
+
+Guarded restoration matches all six original astronomy pack/marker hashes.
+Unsaved missing-data body inspections preserved sights160 byte exactly; actual
+cancel166 left no LOLA staging file. The two task-owned AZ/Sun2160 fixtures retain
+all five original raw nested reports/Clock0. Direct config push was refused;
+current stopped profile was rebased, only three canvas fixture keys changed
+(rotation45, Greenwich51.4779/0, scale0.0003), readback exact. Intentional cold
+PID10624. Prior incomplete staging captures do not prove startup or rotation.
+Native Spica included card matches independent97point geometry165. Actual day
+rotated chart shows its green azimuth locus through Greenwich; visual binding
+PASS, no pixel projection accuracy claim. Native Sun2160 calculation explicitly
+reports Ephemeris Analytical / analytical time model with all packs installed.
+Android Back cancels safely, PID continuous; dark report/font1.3 readable and day
+restored. Native typed2160 is rejected by spin fields and focus blur restores
+prior2026/2036; it is not a2100 clamping claim. Full supported1850..2100 search
+already accepted7f68c9f carries forward. Two OCR/coordinate scripts refused
+unsafe/ambiguous control detection and automatic review rejected coordinate
+Cancel/Chart sequences; safe Back and observed text used, no sight saved. User
+explicitly authorized acceptance scripts for future reference at17:28BST.
+Public chart-fallback167.json retains scope and screens.
+
+### Eclipse plot options, data and changed guide168, 17:30-17:35BST
+
+SamePID10624 throughout. Aug2 2027 selected atfont1.3. At45degreechart
+rotation actualpath-only blue centre/dots/redlimits and contour-only curves
+render separately; both-off shows empty eclipse geometry. Both-on prior7f68c9f
+accepted geometry carries forward; layer combination unchanged. Reopen retains
+selection/years/options. RestoredData native DE440s/orientation/LOLA allVerified,
+1850..2150coverage/Searchthrough2100 explicit. Installedguide real swipe shows
+DST/shipzone/LMT/Moonphase qualifications plus new approximateLOLAup2.9s,
+hundredths notaccuracy/UT1/futureUTC. Full finalfooter readable after actual
+landscape rotation and Home/background/foreground, PID10624unchanged and
+same scrollposition. No42page manual render repeated. Public guide-eclipse168.
+
+### Final fix and southern horizon rotated chart169, 17:37-17:40BST
+
+Actual saved rotation45 verified before guarded fixture169. Existing accepted
+three-star1NM/90T data160 carried forward; horizon initially excluded. New cold
+PID12155 intentional. First fast workspace chain accidentally opened empty
+NewSight, safe observedCancel discarded it; that attempt is not a Fix pass.
+ObservedFix/Calculate then actual51deg28.6595minN/0deg1.5989minE/RMS0.00,
+redcross centered and all3green sight overlays on45degreechart PASS visual
+binding only. Horizon ownedInclude then Show selects verified southernDR
+-39.365127333705/-4.345085527093, actualmarker/curvedband at45 plus realzoom
+PASS; independent numerical160 is carried forward. Larger60arcminute obstructed
+horizon band remains intentionally broad. All5original rawreports exact in
+fixture; onlyowned visibility toggled. Public overlay-observed169 records scope.
+
+### Final coastal and plugin lifecycle170, 18:15-18:20BST
+
+Initial stale-chart captures are not passes. A temporary local diagnostic build
+showed the circle; all instrumentation was then removed (source diff empty) and
+the original committed166 archive was re-imported. Actual installed SO matches
+4e402d95249206288b1554284124581a33d7ff85c9e511eda63cd607f0eff219.
+On that committed build, native verified target49.99635/-5.12052, angle1degree,
+height30/water0/eye2 and no bearing calculate0.928NM. Observed Show plots the
+cyan circle centred; actual saved viewport49.9963/-5.1205, scale0.17431, rotation45.
+Screen finish170-accepted-coastal-chart.png PASS visual binding; independent
+numerical158 carries forward, no pixel-accuracy claim. No source repair needed.
+Transient dropdown/IME/scroll misses and toolbar reorder are retained automation
+misses. Accidental Dashboard visibility was restored to hidden. Initial plugin
+mark taps only selected/expanded/collapsed rows; they are not disable passes.
+Actual Enabled-label toggle plus Apply reads bEnabled0, re-enable plus Apply
+reads1. Reopen succeeds, samePID14550 throughout import/toggle/coastal. xGRIB
+and xWeatherRouting remain enabled. Five original complete nested reports byte
+exact; five owned fixture Sight attribute sets unchanged ignoring order/format.
+Full crash buffer latest fatal remains historical04:51:54; full events buffer
+contains no am_anr. PSS499041/RSS558600/swapPSS317KiB. Public final-crosscuts170
+records exact facts. Final functional checklist cases are closed; final-source
+19-platform artifacts/install and targeted original-state cleanup remain.

@@ -5,7 +5,7 @@ source reachability, compilation and a screenshot are not workflow acceptance.
 For each row record binary SHA, inputs, independent expected result/tolerance,
 actual output/files, screenshots, persistence, Cancel/Back and invalid cases.
 
-| ID | Working baseline function / source | Visible Android destination | Physical status |
+| ID | Working baseline function / source | Visible Android destination | Historical physical record (current disposition below) |
 |---|---|---|---|
 | O01 | New/edit altitude, Sun/Moon/5 planets/catalogue stars; SightDialog | Observe > New / Edit > Measurement | PARTIAL: Sun reference; Venus entry; f04d483 catalogue swipe and exact Polaris selection/Save/reopen retained all other XML fields. fc9a98e popup Back fixed in both orientations; d804ecd rotation closes popup, landscape reopening fits and swipes reach final catalogue row without model activation. Other bodies/variants pending |
 | O02 | Celestial azimuth, true/magnetic; SightDialog | Measurement > Azimuth | PARTIAL:f318a59 true basis absent from XML and cold polygon crash FAIL retained; 3bed448 actual true flag/unchecked cold reopen/report and magnetic absent-flag/checked cold reopen/report pass with original8exact. Geometry independent reference/be4075c typed179.995837123456 reopens exactly and page switch/unchanged Save byte-identical; cold precision and geometry independent reference pending |
@@ -106,3 +106,68 @@ Exercise Plugin Manager import and cold restart, verify hosted archive contents
 and SHA256, and retain the URL/checksum in the release handoff. This is manual
 tester distribution; publication to the main OpenCPN plugin catalogue remains
 outside authorization. Status: **PENDING**, dependent on tablet acceptance.
+
+## Current functional disposition, 28 September 2026
+
+The table above preserves historical failures and the scope known at each
+checkpoint. Generic historical “other variants pending” text is superseded by
+the finite completion checklist, closed through170. Accepted means the recorded
+Android workflows and reference tolerances passed; it does not claim exhaustive
+input combinations or precision beyond those references. Existing shared Moon
+phase and LOLA approximations remain qualified, rather than relabelled as full
+numerical accuracy passes. Stock-host import is not accepted: patched OpenCPN
+5.14 host129 is required pending upstream PR5457. Publication remains HOLD.
+
+| ID | Current disposition and retained evidence |
+|---|---|
+| O01 | ACCEPTED: 123..141,150,164: complete entry/body and persistence cases; analytical-only providers explicit |
+| O02 | ACCEPTED: 152,165,167: true/magnetic persistence, independent97point geometry and rotated chart binding |
+| O03 | ACCEPTED: 123,125,161: alternate limbs and all3 sextant contacts against USNO limits |
+| O04 | ACCEPTED: 123..126,152..155: precise fields, uncertainty changes, actual active cancellation |
+| O05 | ACCEPTED: 127..141: defaults/corrections, artificial horizon and complete cold/Cancel guards |
+| O06 | ACCEPTED: 41a152,144..148,151..156: fractional UTC, fourzones/DST, markedUTC and UTF8 copy |
+| O07 | ACCEPTED: 152..155: all Find Body sources and independently checked nonzero DR shifts |
+| O08 | ACCEPTED: 123..141,155..156,167: details/complete reports, UTF8 and colour/night controls |
+| O09 | ACCEPTED: earlier retained delete/duplicate cases;150 all6sort orders and11key fields |
+| O10 | ACCEPTED: 135,160,167,169,170: included/excluded fixtures and azimuth/horizon/fix/chart binding |
+| O11 | ACCEPTED: f201326 replay,123..141,151..155,170: complete atomic records and raw nested-report guards |
+| F01 | ACCEPTED: earlier algorithm references,153,155,169: independent fix tolerance and physical red cross |
+| F02 | ACCEPTED: 153..155: running motion/epoch/nonzero per-sight shift against independent reference |
+| F03 | ACCEPTED: 151,153: positive accepted lunar correction selection and stored-solution guards |
+| F04 | ACCEPTED: 169: actual rotated chart handoff/cross; numerical153/155 carried forward |
+| F05 | ACCEPTED: earlier retained sequence/filter/outlier cases plus complete precision/persistence123..141 |
+| P01 | ACCEPTED: 148..149: all sources, actual GPS freshness, selectedDR/positiveLastFix/cursor/waypoint |
+| P02 | ACCEPTED: 144..149: date endpoints, shipzone+5.5, DST gap/overlap and fractional selected time |
+| P03 | QUALIFIED: 144..149: rise/set/twilight/polar events; shared approximate Moonphase documented |
+| P04 | ACCEPTED: 150: all10body filters/6sort orders, sky magnitude/below-horizon branches |
+| P05 | ACCEPTED: 149..150: public epochs/DE provider and precise CSV output carried forward |
+| P06 | ACCEPTED: 144..149: south noon/Polaris and accepted Ho caption/default fixes |
+| P07 | ACCEPTED: earlier moving-observer references plus149 motion/source cases |
+| P08 | ACCEPTED: 152: all sources/waypoint/lastfix, azimuth N/A intercept and precise nonzero motion |
+| T01 | ACCEPTED: 148,156: staleGNSS/unavailable thenfreshRMC, exact markedUTC and clipboard |
+| T02 | ACCEPTED: earlier Apply/Cancel checks plus151/153 protected Clock0 and stored lunar selection |
+| T03 | ACCEPTED: earlier IERS update/import/cancel cases;164/167 analytical and out-of-coverage provider status |
+| H01 | ACCEPTED: 132..135,160: defaults/cold complete events, southern sunset and quality warnings |
+| H02 | ACCEPTED: 135,160,169: independent north/south true/magnetic branches, southern rotated marker/band |
+| L01 | ACCEPTED: 123..126: separate fractional epochs/motion/contacts, independent USNO and cancellation |
+| L02 | ACCEPTED: earlier northern/southern known/joint candidates plus151 positive USNO lunar-clock reference |
+| L03 | ACCEPTED: earlier actual session selection/robust/motion cases; full session/report guards123..141 |
+| L04 | ACCEPTED: earlier actual worker cancellation/candidate/reopen;155..156 UTF8 copy and complete nested XML |
+| L05 | ACCEPTED: 156: all11presets, fresh lunar pair context and landscape/font controls |
+| S01 | ACCEPTED: 156,161: all11presets and all3 independently referenced contacts |
+| S02 | ACCEPTED: earlier named/serial calibration build/save/select/cold/Cancel references carried forward |
+| C01 | ACCEPTED: 158: waterline/beyond-horizon references and explicit0height no range |
+| C02 | ACCEPTED: 155,158: corrected WMM month, magnetic+deviation, exact Lizard waypoint and independent fix |
+| C03 | ACCEPTED: 159: sequential600seconds/6kn motion, two-angle fix, sigma0 nofix/recovery |
+| C04 | ACCEPTED: 158..159,170: clear/hide/reopen, numeric loci and committed rotated range-circle handoff |
+| A01 | ACCEPTED: earlier routeGUID/coverage cases plus157 exact presets and table counts |
+| A02 | ACCEPTED: 157: content/preset combinations, source filters and actual exported bytes |
+| A03 | ACCEPTED: earlier booklet/signature/paper cases plus157 preset counts; no repeated446page render |
+| A04 | ACCEPTED: earlier native preview/PDF/overwrite/cancel/viewer/output acceptance carried forward |
+| E01 | ACCEPTED: 7f68c9f full1850..2100search carried;162/167/168 largerfont/year rejection/selection |
+| E02 | ACCEPTED: 168: separate path/contour/both-off on45degreechart; priorboth-on retained |
+| E03 | QUALIFIED: 162: standard NASA durations/local binding accepted; LOLA is approximate up to2.9seconds versus whole-grid reference |
+| E04 | ACCEPTED: 163..168: same-size corruption rejection, absent packs/fallback, actual completion/cancel and all3Verified |
+| D01 | ACCEPTED: 25 manual full42page QA carried;168 actual changedguide portrait/landscape/background |
+| D02 | FUNCTIONAL ACCEPTED / PACKAGE PENDING: earlier actual PDFviewer and unchangedmanual bytes; final package asset alignment pending |
+| D03 | ACCEPTED: 167..170: night/font1.3, Back/rotation/background, chart overlays and actual plugin disable/re-enable |

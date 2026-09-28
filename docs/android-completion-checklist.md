@@ -2,8 +2,7 @@
 
 28 September 2026. This checklist controls remaining work; the complete function
 inventory and historical evidence remain in android-acceptance.md and
-android-tablet-audit.md. Publication stays on hold. The port is not yet accepted
-as finished.
+android-tablet-audit.md. Publication stays on hold. Functional acceptance is closed; final packages and cleanup remain.
 
 ## Carry forward completed work
 
@@ -29,12 +28,13 @@ it as an Android time regression or alter shared desktop numerical behavior.
 
 | Group | Inventory rows | Specific remaining evidence needed |
 |---|---|---|
-| Observation variants | O01/O02/O04/O07/O10/O11 | Remaining body-entry branches, independent azimuth chart geometry; true/magnetic nonzero fix and cold precision passed152..155; independent geometry. Complete-record/cold/atomic persistence cases already recorded123,127..141,151..155 carry forward. Carry forward limb/correction/sort/delete/report/calendar cases already recorded. |
-| Eclipse/data | E01/E03/E04/T03 | Larger-font search, boat context, independent terrain comparison; checksum-invalid/download/out-of-coverage and analytical-only provider cases. Carry forward official hashes/import/cold/copy cancellation and NASA standard-duration reference. |
-| Documentation | D01/D02 | Final package asset alignment only. Current manual bytes match cf161ce and the full42page bundled-LibreOffice QA retained from25; do not repeat render/inspection. Carry forward actual offline manual/links/anchors/guide/PDF-viewer tests where the underlying resource/control has not changed. |
-| Combined final tablet regression | Cross-cutting; O10/F04/H02/C04/E02/D03 | One final-source sequence through relevant editors with recorded rotate/keyboard/Back/background, night/font, nonzero-heading overlays, plugin disable/re-enable and enabled xGRIB/xWeatherRouting. Retain exact PID, full crash/ANR logs and actual files. Reuse each shared control's previous evidence; repeat only affected or unresolved behavior. |
+| Documentation assets | D01/D02 | Native changed guide168 and unchanged42page manual QA25 accepted. Final package asset alignment remains with artifact inspection. |
 | Final packages | All targets | One exact committed-source19-platform CI run with fresh dependencies and publication disabled; independently inspect retained artifacts, ABI/API/root metadata/assets/hashes and install/cold-reopen final Android candidate. Earlier19-platform success is retained but is not a final-source pass. |
 | Cleanup/handoff | Release | Guarded restoration of only task-owned records/preferences/chart/device changes, preserving original profile/charts/other plugins; retain exact binaries/symbols and short release handoff. Public tester hosting and publication remain pending explicit approval. |
+
+Functional groups O/F/P/T/H/L/S/C/A/E and combined controls closed by the
+retained records through170. The full inventory disposition is in
+android-acceptance.md.
 
 Each group is removed from this list only when its specific evidence is recorded.
 Do not convert generic “other variants/crosscuts pending” into an open-ended
