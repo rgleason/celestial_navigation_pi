@@ -752,3 +752,12 @@ Android handle updater. After reset, notify the public input method of the
 cursor rectangle change in both existing cleanup paths; keep focus/IME behavior
 and desktop code unchanged. Retest the exact124 sequence and later entry,
 drag, rotation and popup Back before accepting this correction.
+
+125 passes the original unchanged-distance sequence and popup rotation/Back,
+but the later changed Sun-altitude27.333246→Back→body-contact popup still has
+a handle. The synchronous notification is insufficient for every popup-open
+transition. Repeat reset/geometry notification once on the next GUI turn after
+showPopup, owned by a QPointer combo and conditional on its popup still being
+visible. Never reset after the popup closes, which could interrupt a subsequent
+editor tap. Retest both sequences and rapid popup selection followed by typing;
+retain125's successful subset and changed-altitude failure separately.

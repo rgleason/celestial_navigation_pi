@@ -3298,3 +3298,15 @@ claimed. Matching public QInputMethod wrapper source retained separately;
 it emits cursorRectangleChanged from update(ImCursorRectangle), unlike the
 platform context update implementation.125notification follow-up designed
 before implementation; previous narrower inference about update is corrected.
+
+Physical125e94d23108:45–08:48BST: both builds PASS; actual import ACK,
+installedSO39ca36ff371d9460eb58a9d3ff37a4cf910bef2b673228ee50b6e2ac83d26d7d
+matches tar26aaa05f379a0380891673e36a0ad0f8946c52ab592d06f3be3954f7cd0598d5.
+PID11583continuous. Exact124 unchanged-distance tap/type/keyboardBack/popup
+now has no handle; rotation dismisses popup without activation, landscape
+reopening and popupBack work. Actual swipes reach final body uncertainty and
+units in landscape/font1.3. Subsequent Sun altitude-limb Centre choice→stationary
+altitude tap opens keyboard→typed27.333246→keyboardBack→body-contact popup
+still shows stray handle: FAIL125, resume125-centre-body-contact.png.
+Unsaved Centre fields not yet saved or numerically evaluated.126late notification
+designed before code. Do not extrapolate the first successful replay to all input.
