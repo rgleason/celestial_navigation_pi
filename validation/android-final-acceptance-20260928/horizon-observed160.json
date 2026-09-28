@@ -1,0 +1,29 @@
+{
+  "source": "8bc86ec",
+  "host_pid": 443,
+  "actual_positions": [
+    [
+      36.05900166666667,
+      34.572365
+    ],
+    [
+      -39.36511333333333,
+      -4.345126666666666
+    ]
+  ],
+  "WGS84_errors_nm": [
+    0.002632829373650108,
+    0.002090172786177106
+  ],
+  "limit_nm": 1,
+  "quality_hazy_uncertainty_arcmin": 20,
+  "quality_obstructed_uncertainty_arcmin": 60,
+  "both_warnings_visible": true,
+  "all_other_records_and_full_report_bytes_retained": true,
+  "result": "PASS",
+  "southern_chart": "PASS: actual Show selected centres the southern marker; wider chart shows it in the South Atlantic south of Africa, with northern solution in eastern Mediterranean. This is visual geographic binding, not a new projection accuracy claim.",
+  "screenshots": [
+    "finish160-south-chart.png",
+    "finish160-south-geography.png"
+  ]
+}

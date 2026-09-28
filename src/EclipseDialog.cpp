@@ -2,6 +2,7 @@
 #include "AndroidFileDialog.h"
 #ifdef __OCPN__ANDROID__
 #include "AndroidJob.h"
+#include "AndroidDownloadEvents.h"
 #include <QListWidget>
 #include <QVBoxLayout>
 #endif
@@ -229,6 +230,7 @@ EclipseDialog::EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin)
 #ifdef __OCPN__ANDROID__
   m_androidVerificationPoll = new QTimer(GetHandle());
   QObject::connect(m_androidVerificationPoll, &QTimer::timeout, GetHandle(), [this]() {
+    m_androidDownloadEvents->Drain();
     if (m_verifying) { wxTimerEvent event(m_verification_timer); OnVerificationTimer(event); }
   });
   m_androidVerificationPoll->start(100);
@@ -248,7 +250,11 @@ EclipseDialog::~EclipseDialog() {
   m_verification_timer.Stop();
   Unbind(wxEVT_TIMER, &EclipseDialog::OnVerificationTimer, this,
          m_verification_timer.GetId());
+#ifdef __OCPN__ANDROID__
+  m_androidDownloadEvents->Disconnect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
+#else
   Disconnect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
+#endif
              wxEventHandler(EclipseDialog::OnDownloadEvent), NULL, this);
   if (m_download_handle) {
     OCPN_cancelDownloadFileBackground(m_download_handle);
@@ -434,6 +440,7 @@ void EclipseDialog::BuildInterface() {
 
 #ifdef __OCPN__ANDROID__
 void EclipseDialog::BuildAndroidInterface() {
+  m_androidDownloadEvents.reset(new AndroidDownloadEvents);
   auto* root = new wxBoxSizer(wxVERTICAL);
   auto* book = new wxNotebook(this, wxID_ANY);
   auto* search = new wxPanel(book);
@@ -570,7 +577,7 @@ void EclipseDialog::BuildAndroidInterface() {
   m_download_de->Bind(wxEVT_BUTTON, &EclipseDialog::OnDownloadDe440, this);
   m_optional_data->Bind(wxEVT_BUTTON, &EclipseDialog::OnOptionalData, this);
   m_cancel_install->Bind(wxEVT_BUTTON, &EclipseDialog::OnCancelInstall, this);
-  Connect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
+  m_androidDownloadEvents->Connect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
           wxEventHandler(EclipseDialog::OnDownloadEvent), NULL, this);
   Bind(wxEVT_TIMER, &EclipseDialog::OnVerificationTimer, this,
        m_verification_timer.GetId());
@@ -880,7 +887,13 @@ void EclipseDialog::TryCurrentSource() {
                        static_cast<unsigned long>(m_download_sources.size())));
   const OCPN_DLStatus status = OCPN_downloadFileBackground(
       wxString::FromUTF8(m_download_sources[m_source_index].c_str()),
-      m_download_temp, this, &m_download_handle);
+      m_download_temp,
+#ifdef __OCPN__ANDROID__
+      m_androidDownloadEvents.get(),
+#else
+      this,
+#endif
+      &m_download_handle);
   if (status != OCPN_DL_STARTED && status != OCPN_DL_NO_ERROR) {
     m_download_handle = 0;
     ++m_source_index;
@@ -1039,11 +1052,21 @@ void EclipseDialog::OnCancelInstall(wxCommandEvent&) {
       CN_UTF8_("Cancelling safely; a verification already in progress may "
                "finish first…"));
   if (m_download_handle) OCPN_cancelDownloadFileBackground(m_download_handle);
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): Android cancellation stops the host event timer;
+  // it does not send an END event. Finish here unless verification owns it.
+  m_download_handle = 0;
+  if (!m_verifying) {
+    if (wxFileExists(m_download_temp)) wxRemoveFile(m_download_temp);
+    FinishInstallation(false, _("Astronomy-data installation was cancelled."));
+  }
+#endif
 }
 
 void EclipseDialog::FinishInstallation(bool success, const wxString& message) {
 #ifdef __OCPN__ANDROID__
   m_androidImport.reset();
+  m_androidDownloadEvents->Discard();
 #endif
   m_download_handle = 0;
   m_download_kind = -1;

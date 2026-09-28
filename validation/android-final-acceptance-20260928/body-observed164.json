@@ -1,0 +1,58 @@
+[
+  {
+    "body": "Moon",
+    "native_entry": "evidence/finish164-body-Moon-entry.png",
+    "native_calculation": "evidence/finish164-body-Moon-calc.png",
+    "provider": "Analytical",
+    "status": "PASS",
+    "accuracy_claim": false
+  },
+  {
+    "body": "Mercury",
+    "native_entry": "evidence/finish164-body-Mercury-entry.png",
+    "native_calculation": "evidence/finish164-body-Mercury-calc.png",
+    "provider": "Analytical",
+    "status": "PASS",
+    "accuracy_claim": false
+  },
+  {
+    "body": "Venus",
+    "native_entry": "evidence/finish164-body-Venus-entry.png",
+    "native_calculation": "evidence/finish164-body-Venus-calc.png",
+    "provider": "Analytical",
+    "status": "PASS",
+    "accuracy_claim": false
+  },
+  {
+    "body": "Mars",
+    "native_entry": "evidence/finish164-body-Mars-entry.png",
+    "native_calculation": "evidence/finish164-body-Mars-calc.png",
+    "provider": "Analytical",
+    "status": "PASS",
+    "accuracy_claim": false
+  },
+  {
+    "body": "Jupiter",
+    "native_entry": "evidence/finish164-body-Jupiter-entry.png",
+    "native_calculation": "evidence/finish164-body-Jupiter-calc.png",
+    "provider": "Analytical",
+    "status": "PASS",
+    "accuracy_claim": false
+  },
+  {
+    "body": "Saturn",
+    "native_entry": "evidence/finish164-body-Saturn-entry.png",
+    "native_calculation": "evidence/finish164-body-Saturn-calc.png",
+    "provider": "Analytical",
+    "status": "PASS",
+    "accuracy_claim": false
+  },
+  {
+    "body": "Polaris",
+    "native_entry": "evidence/finish164-body-Polaris-entry.png",
+    "native_calculation": "evidence/finish164-body-Polaris-calc.png",
+    "provider": "Analytical",
+    "status": "PASS",
+    "accuracy_claim": false
+  }
+]

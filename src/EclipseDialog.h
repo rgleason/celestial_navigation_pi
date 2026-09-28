@@ -29,6 +29,7 @@ class celestial_navigation_pi;
 #ifdef __OCPN__ANDROID__
 class QTimer;
 class QListWidget;
+class AndroidDownloadEvents;
 #endif
 
 class EclipseDialog : public wxDialog {
@@ -124,6 +125,7 @@ private:
   wxTimer m_verification_timer;
 #ifdef __OCPN__ANDROID__
   QTimer* m_androidVerificationPoll = nullptr;
+  std::unique_ptr<AndroidDownloadEvents> m_androidDownloadEvents;
   std::shared_ptr<celestial_android::ImportedDocument> m_androidImport;
 #endif
   celestial_navigation::EclipseVerificationWorker m_verification_worker;

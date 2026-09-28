@@ -4329,3 +4329,88 @@ stale IME-view flag exited retained form once; helper now consultsInputShown
 only and reopened coordinates/fields retained. No product failure attributed
 to those harness attempts. Shared coastal math unchanged. Finite coastal
 calculation cases CLOSED; nonzero-heading overlay remains in combined check.
+
+### Sunset and horizon quality160, installed155,16:03-16:12BST
+
+Independent retained USNO Sun Dec23.307827/GHA74.886344/SD0.262446 at
+14June2024 17UTC, nominal centre altitude-0.826712240745deg, independently
+solved spherical forward azimuth300T before staging. Expected north
+36.058966542805/34.572397527093 and south-39.365127333705/-4.345085527093.
+Actual native north36deg3.5401N/34deg34.3419E and south39deg21.9068S/
+4deg20.7076W agree within0.002633/0.002091NM, below predeclared1NM limit.
+Clear10arcmin -> Hazy20 -> Obstructed60 actual selection shows both expected
+warnings without changing nominal solutions. Save changes only task-owned
+Sunset record; all four earlier complete attributes and five raw full reports
+retain exact bytes. Intentional cold start PID443, installed8bc86ec unchanged.
+Actual Show selected centres southern marker; wider chart confirms South
+Atlantic south of Africa and northern marker in eastern Mediterranean. This
+is visual geographic binding, not independent projection accuracy. Evidence
+finish160-south-chart/south-geography and public expected/observed160JSONs.
+Finite horizon cases CLOSED; heading overlay remains in combined final check.
+
+### Remaining sextant contacts and pair reopen161, installed155,16:13-16:21BST
+
+Public retained USNO Greenwich14June2024 17UTC fixture123 entered through
+native date calendar and typed51.4779/0,17/0/0 time; Moon/Sun,1013hPa/10C,IE0.
+Actual Predict on Centre, Near and Far returns95.71648711196839,
+95.20538395316031,96.22759027077647deg. Independent archived expected
+95.72044352965911,95.2093055296591,96.23158152965911deg; errors
+0.237385/0.235295/0.239476arcmin below retained fixture0.5arcmin limit.
+Actual selected contact and entire caption/precise angle visible, no save
+profile or repeat mutation. Public sextant-observed161JSON retained.
+Earlier calendar harness Back after Enter dismissed the already closed IME
+and cancelled date/dialog; not an accepted entry or product failure. Final
+actual calendar edits leave field by month button and verified2024-06-14.
+Native popup Home reveals first body safely; one popup swipe sequence
+returned without selection and was not used as accepted Sun selection.
+
+Close and native reopen Lunarplanner obtains fresh2026-09-28 15:20:30.680UTC
+and live boat53.179506666667/-2.858114983333 instead of edited sextant historical
+context. Actual Calculate then first cards rendered, prior full portrait/
+landscape final11fields carried84/156. ContinuousPID443; completeSights bytes
+equal160saved baseline. L02 candidate north/south and empty-name cases93f423a,
+L04 known/joint/bias/outlier/motion84..130 and full report clipboard155/UTC156,
+lunar contact numerical123..125 carried forward. No identified remaining
+stored-candidate branch beyond these accepted controls. Finite lunar/sextant
+group CLOSED; final crosscuts remain in combined final sequence.
+
+### Eclipse terrain, search and boat162, installed155, 16:23-16:32BST
+
+Actual font1.3 Search completes both2027 cards; August selection drives Local.
+Use boat overwrites manual0/0 with53deg10.7702N/2deg51.4869W, matching live
+boat at displayed precision. Actual LOLA calculation at25.505/33.18333333333333,
+height0,2027-08-02,DeltaT76.06 gives C1/C2/C3/C4 UT1
+08:41:31.97/10:03:18.28/10:09:43.86/11:27:35.83 and385.58s totality.
+
+Independent CSPICE_N0067 (SpiceyPy8.2.0), official NAIF MOON_PA_DE440 frame,
+pyERFA2.0.1.5, WGS84 observer and SciPy roots are retained in public
+terrain_reference162.py. The initial whole-grid LOLA support scan FAILS the
+predeclared0.1s C1/C2 limit. Diagnostic comparison isolates the shared existing
+plus/minus2degree terrain window: local and whole-grid contacts differ by
+2.889338/1.221378s. Shared lunar_limb.cpp is identical to f201326. Standalone
+desktop contacts agree with independent local-window reference within0.000032s;
+physical rounded output within0.005s. Android binding PASS; whole-grid accuracy
+is explicitly NOT accepted. Initial expected and failed comparison are retained.
+Both guide forms now qualify approximate LOLA timing, displayed hundredths,
+and future UTC. No shared numerical algorithm was altered. Public expected/
+diagnostic/observed JSONs retain the distinction, official input files remain
+protected. Continuous tabletPID443.
+
+### Corrupt same-size kernel163 and missing-data body entries164
+
+One flipped byte at offset1000 in a task-owned32726016byte DE440s file was
+selected through the real native chooser. Explicit SHA-256 mismatch rejection;
+installed official kernel hash before/after remains
+c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2.
+Import staging is empty. PID443 continuous. No corrupt file replaced good data.
+
+All three packs and verification markers retained in place under guarded
+.retained164 names, intentional coldPID6238. Actual Data explicitly shows all
+three not installed and explains analytical navigation/required eclipse data;
+Local Calculate disabled and LOLA unavailable. Unsaved Sight entry selects Sun,
+Moon, Mercury, Venus, Mars, Jupiter, Saturn and Polaris. Every actual calculation
+reports the matching body and Ephemeris=Analytical. These are provider/entry
+checks, not independent planetary accuracy claims. Cancel keeps saved library
+unchanged; byte guard and download/restoration closure recorded below when done.
+Early fast-tab harness captured Clock rather than Data; that image is not an
+accepted missing-data result. Final finish164-missing-data-actual is inspected.

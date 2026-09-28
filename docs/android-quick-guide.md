@@ -58,6 +58,11 @@ an existing file. **Noon & Polaris** takes corrected observed altitude, not the
 raw sextant reading. Check whether the body is above the horizon and whether
 the latitude branch is appropriate for your hemisphere.
 
+LOLA-refined eclipse contact times are approximate. The retained 2027 comparison
+found differences of up to 2.9 seconds from a full terrain scan. Displayed
+hundredths of a second do not establish timing accuracy. Eclipse times use UT1;
+future UTC also depends on Earth rotation.
+
 ## Specialized tools and documents
 
 For a lunar observation, **Results** calculates the UTC candidates and opens
