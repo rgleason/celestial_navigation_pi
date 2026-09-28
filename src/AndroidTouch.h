@@ -307,7 +307,18 @@ protected:
       if (click) {
         if (m_tap) m_tap(m_widget->mapFromGlobal(global));
         else if (m_button) m_button->click();
-        else m_combo->showPopup();
+        else {
+          // POBsoft (1985-2026): leave the previous editor before opening
+          // a choice, committing its input without a stale IME handle.
+          QPointer<QComboBox> combo(m_combo);
+          QGuiApplication::inputMethod()->commit();
+          if (auto* focus = QApplication::focusWidget()) focus->clearFocus();
+          QGuiApplication::inputMethod()->hide();
+          if (combo) {
+            combo->setFocus(Qt::OtherFocusReason);
+            combo->showPopup();
+          }
+        }
       }
     }
     event->accept();

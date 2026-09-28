@@ -490,3 +490,27 @@ minutes and mutates the model even though Recompute itself is guarded. Guard
 this entry point until construction is ready on Android. Leave desktop behavior
 unchanged. Retest a newly typed high-precision bearing, page changes, unchanged
 Save, Cancel and cold reload against independent XML bytes.
+
+
+### Waypoint selection and choice focus (28 September, before implementation)
+
+Physical101 Find Body's waypoint picker retains desktop columns in a shallow
+list: names and both coordinate columns are clipped at system font scale1.3.
+On Android give this dialog a full-height native card list with wrapping names
+and complete labelled coordinates, scaled text and at least48dp rows. The list
+owns its scrolling viewport; do not wrap the whole dialog in another sheet.
+Retain the existing normalized waypoint model and stable model-index/GUID
+selection, filtering names and coordinates, explicit Use Waypoint and Cancel.
+Show a clear nonselectable empty-result message. Filtering must retain a
+selected GUID when it remains visible; duplicate names must not merge marks.
+Rotation must recompute wrapped card heights. Read host waypoints only.
+Keep the desktop list construction and behavior unchanged. Test real filtering,
+no results, selection, keyboard/rotation, Back and applying exact coordinates.
+
+Physical101 also shows a native selection handle over the section-choice header
+after a numeric edit. The custom stationary-release combo action opens its
+popup without moving focus away from the previous editor. Before opening a
+noneditable choice, commit the input method, clear the old editor focus and hide
+the keyboard. Hold the combo with QPointer across focus callbacks. Do not
+change editable combo input or desktop behavior. Recheck numeric precision,
+page changes and popup Back/rotation on the tablet.

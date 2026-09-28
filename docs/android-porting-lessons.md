@@ -250,3 +250,20 @@ that the baseline is complete. Compare every logical page across imposed and
 normal physical output, check all footers once, and independently verify new
 numeric rows. Synthetic host variants and real tablet parsing complement each
 other; neither is a substitute for the other.
+
+
+QTextBrowser only retrieves local help. Enable supported external-link handling
+for remote references and physically verify the real Android browser, correct
+URL/page and Back to the same document position. Local help/anchors stay owned
+by the sheet; a blank remote page is a failure even if tap dispatch succeeds.
+
+Guard formatting entry points as well as model recomputation during Android
+editor construction. Notebook decoration can emit a page event before exact
+number fields replace rounded desktop captions; RecomputeDMM then corrupts
+the stored angle despite Recompute's guard. Assert actual unchanged Save bytes
+after reopening/page changes, beyond displayed precision or numeric tolerance.
+
+Parentless generic wx progress dialogs can crash during cold XML reconstruction
+on pinned wxQt because no modal parent exists. Do not start nested modal UI
+inside a saved-geometry constructor. Preserve exact bearing basis independently
+of DR magnetic flags and explicitly test true/magnetic cold reconstruction.

@@ -2711,3 +2711,75 @@ CelestialNavigationDialog::OpenXML864 -> constructor257 -> toolbar callback.
 Thus O02/O11 fail on this variant. No ANR/crash-clean claim after this failure.
 Android99 persists optional true-bearing flag and omits parentless progress
 creation during polygon rebuilding. Physical repair acceptance pending.
+
+
+### Runtime99 true/magnetic cold repair and101 precision/link candidate (05:00–05:13 BST)
+
+3bed448 actual import independently matches stripped library SHA
+474633298452cf1c3e9718a48a4e704c2a2fd1334bd8c3c462ad2408a3da0b17.
+First hot toolbar tap opened Dashboard after toolbar reordering; this was
+not CelNav acceptance. Corrected tap opens9observations without a crash.
+The pre99 true sight reopens magnetic, confirming missing old provenance.
+Unchecked magnetic/Save writes AndroidMagneticAzimuth=0; parsed original8
+observations remain exact. The first readback used an incorrect package path
+and contains an error; corrected sights99-true-before-cold-correct.xml is
+valid XML. Cold restart PID19971 reopens unchecked and report explicitly says
+179.9958deg true/no magnetic correction. Report taps/type999 and long press
+leave text unchanged with no keyboard/selection within report. Landscape
+two600ms drags reach full final guidance. The longer altitude report and
+Definitions-return/page-switch regression remain pending.
+
+Changing only disposable sight to magnetic/Save removes the optional flag,
+retains all original8exact, and cold restart PID20698 opens9records. Reopened
+checkbox is checked; report says179.9958deg magnetic and explains offline WMM
+at every trial position. No new fatal after historical98crash04:51:54 in
+complete captured buffer; lastanr says none since boot. PSS455878KiB,
+RSS518444KiB,swapPSS351KiB at captured workspace. Geometry/reference pending.
+
+Definitions final HTTPS reference on99 opened a blank local page; waited5s
+and Back returns same calculation report. Android100/04034df enables
+QTextBrowser external references. Builds/UTF8 pass; NOT installed.
+Also found unchanged reopen/save rounds179.995837 to179.99583666666666
+(0.000020arcmin). RecomputeDMM could run during Android notebook decoration
+before exact fields;101/be4075c guards it until initialization completes.
+Both platform builds pass. Real import101 acknowledged with PID20698 and
+exact installed library SHA
+c11595c5cf4dadcfe9dc19102ce4ce0f303a50996402175ba6e6f0297b23bb67.
+Tar SHA9db8167e0296035ae0c5dc27f45fb724e87a8b9e2cdbeffd2aa5a6f67f7b639d.
+Repair retests pending. New screenshots/logs in retained evidence/evidence/;
+package/build logs in retained evidence root. Historical failures retained.
+
+
+Runtime101 actual precise179.995837123456deg entry/Save independently equals
+the typed double. Reopened field displays exactly; page switch to Calculations
+and unchanged Save produce byte-identical XML SHA
+858c32cde7c3acd0a03e6331af83d6e40f03cc087d0f0b709523516cffffd70f.
+Definitions12real swipes reach final HTTPS/footer. Tap opens Firefox
+(org.mozilla.firefox foreground), correct SailAway page at#a2 actually rendered.
+BrowserBack returns same Definitions footer; secondBack returns same editor.
+Report tap/type999/swipe and page popup after return show no selection handle.
+
+Unsaved conversion of only disposablecopy toAltitude/Hs67.01666666666667deg
+with existing artificial horizon. Lower limb finalHo33deg46.1004min reached
+with600ms drags in portrait and landscape; tap/type999/1200ms stationary
+longpress leave report unchanged/no keyboard/selection. DefinitionsBack and
+page return retain fields. Centre limb shows zeroSDcorrection and final
+Ho33deg30.3603min. Automation intended Upper but used wrong shifted popup
+coordinate: XML independently shows BodyLimb1 (Centre), so Upper NOT yet tested.
+Retained screenshot filenames 'centre-log' initially show Lower and
+'upper-selected'/'upper-save.xml' show Centre; captions in this audit supersede
+misleading filenames. Original8records remain exact at centreSave. Reinspect
+popup positions before next change; never count automation intentions as
+executed selections.
+
+
+Corrected actualUpper selection on confirmed disposablecopy (uncertainty2′):
+popup after Centre has Upper at991portrait. Report shows Upper Limb
+−15.7405′, finalHo33deg14.6202′. Lower/centre/upper SD terms +15.7405/0/
+−15.7405 agree with independent retained USNO15.74136′ within0.01′.
+sights101-upper-correct-save.xml has Type0/BodyLimb2 and exact67.016666666666666;
+all original8attribute multisets remain exact. Reopening an identical original
+Sun accidentally during automation was recognized by uncertainty0.1/lower
+and Cancelled without changes. A green native selection handle appeared above
+limb popup; it is outside the report, remains a separate combo input-owner
+issue and must not be represented as a globally fixed UI artifact.
