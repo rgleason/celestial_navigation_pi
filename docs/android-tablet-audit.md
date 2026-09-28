@@ -2245,3 +2245,85 @@ trails. Source522bb0c's Android convergence repair passes all nine CTest checks
 53.70s, including12 Android-compiled session cases and the independent USNO
 production integration. It has been packaged/staged but NOT imported or
 physically accepted. The next combined candidate retains that repair.
+
+### 2026-09-28 01:55–01:59 BST: saved clock source watch guard
+
+Runtime86/PID30939 Fix exposes all four saved solutions and existing manual
+clock in the native choice popup. Actual selection of the public2024 session
+against the original2025 Sun sights rejects with N/A, Watch mismatch, disabled
+Show fix on chart, and complete explanation that visible sights exceed12h
+from the lunar reference. This is the intended guard, not a numerical failure;
+no correction was applied. Screens resume86-fix-{first,clock-menu,
+stored-clock-result,mismatch-details}.png. A matching-watch positive fixture
+and independent applied-fix geometry remain pending.
+
+
+### 2026-09-28 02:03–02:13 BST: runtime88 joint session and active cancellation
+
+Restored Fix to the existing manual correction after the deliberate watch
+mismatch; the original Sphere result returned, including longitude
+077°35.4026′W/error0.000554. App-owned Sights readback has the exact prior
+c9c68c74c432e07ce111b1597ff5c25dd7843fb2986383856fc3c65894aedc36 hash.
+A first ordinary adb cat lacked app access and captured Permission denied;
+this was corrected with run-as, not treated as a data mutation.
+
+Runtime88/sourceb416119 imported through Plugin Manager, PID30939 continuous.
+Archive SHA256 c580b38197561f5f3a2f1d22c6d20ee477e68a45036d99445b229fef75c66ef1;
+independently read installed88.so SHA256
+34f2041c8f13b630d10fed7274156b138767cee0ebcec21f09307b26ee21d2c0
+matches payload. xGRIB/xWeatherRouting remained enabled.
+
+Four public USNO Moon–Spica/Vega readings, earliest DR51.4779,0, search±0.25h,
+joint mode/robust on/bias off/motion off now succeed. Exact saved correction
+−3.3278967674503392s, position51.478681216,0.012026328, about0.45NM from the
+independent Greenwich position, RMS0.23′/weighted0.467005, time sigma36.8477s,
+position sigma5.740NM. Clock within60s/position within3NM/RMS within0.5′ fixture
+tolerances. All four complete residual cards and shared-reading annotations
+reached by real portrait swipes at font1.3. This fixes the recorded runtime85
+failure; the Android repair is not a desktop numerical redesign.
+
+RESUME88-USNO-Joint saves strict XML with four intact UTF8 input trails, each
+solverVersion2.8.13.0. All eight observation attributes/global clock and four
+prior solutions compare semantically unchanged. Readback SHA256
+53349e1c001d4f58776a4096d7de709cf38190b353a07c47972569e1ba3451ac.
+Saved viewer has the correct single Close action. Landscape rotation at1.3
+retains selected solution, wrapping, actual final residual warning after four
+swipes, and Close returns safely. Earlier two-swipes image labelled final
+was still mid-report; use resume88-report-landscape-final-verified.png.
+
+Actual robust checkbox off clears candidate/disables Save with Inputs changed;
+solving again gives the same displayed correction/position/RMS, expected for
+these residuals below the Huber threshold. It does not test robust outliers.
+The first attempted wide-span edit missed its field and Back safely closed
+the tool; reopened controls explicitly show the default±12h span.
+
+Two fresh wide-span calculations were captured immediately with active
+progress 'Testing bounded solution0of9'; Cancel and Android Back were then
+applied while the worker was active. Both return safely with empty candidates,
+disabled Save and explicit Lunar session cancelled. Observations unchanged.
+Saved XML remains byte-identical to the post-save file, PID30939 continuous.
+Active-worker meminfo retained: PSS517729KiB/RSS583440KiB/swapPSS310KiB.
+Screens resume88-{cancel,back}-{active,return}.png and cancel-summary.png.
+Bias/moving fixture, clipboard readback and cold88 acceptance still pending.
+
+
+### 2026-09-28 02:14–02:18 BST: DUT1 completion dispatch failure and repair
+
+Runtime88 Advanced page shows the entire offline/bundled coverage and stacked
+48dp actions at font1.3. No earth-rotation directory/update existed before
+testing. Actual Check/download stayed responsive, disabled repeated download
+and import, exposed Cancel, but timed out30s instead of installing.
+Focused download88-system.log proves IERS HTTP200, 3768836bytes fully downloaded
+in about3s, host getDownloadStatus state8/complete and busy-icon dismissal.
+This is a plugin event-dispatch failure, not a network failure. Independent
+curl of the same public endpoint succeeded and is retained as iers88-official.all
+with response headers; it does not substitute for real plugin acceptance.
+
+The pinned wx/Qt loop does not deliver the standalone handler's pending events.
+Android repair overrides its virtual QueueEvent with an owned mutex-protected
+event queue, drained by the panel's50ms Qt GUI timer. Stop cancels host routing,
+stops both timers and discards only owned download events before next transfer;
+Close destroys the queue. It pumps no unrelated wx application events. Desktop
+path unchanged. Android and desktop compile; physical repaired build pending.
+A second88 transfer and visible Cancel are retained, but the screenshot was
+captured after its timeout and must not establish timely Cancel acceptance.

@@ -216,3 +216,12 @@ Verify actual swipes to bearing, conditions and the complete last result in
 both orientations. The first Horizon repair compiled but failed this physical
 check; the single-viewport repair passed. A larger system font setting alone
 does not prove that Qt actually rendered larger text.
+
+
+The pinned Android wx/Qt event loop can run a host wxTimer and complete a host
+background transfer while leaving a standalone wxEvtHandler pending queue
+undelivered. A real DUT1 download proved HTTP200/full bytes/host completion,
+then falsely timed out in the plugin. Use a narrowly owned event bridge with a
+Qt GUI poll, cancellation, queued-event disposal and owner-bound timer lifetime;
+do not pump global pending events or infer network failure from a missing callback.
+Physical retesting is required before accepting the repair.

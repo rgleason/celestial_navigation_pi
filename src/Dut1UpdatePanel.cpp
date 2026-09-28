@@ -17,10 +17,39 @@
 #include <vector>
 #ifdef __OCPN__ANDROID__
 #include <QTimer>
+#include <memory>
+#include <mutex>
 #endif
 
 namespace celestial_navigation {
 namespace {
+#ifdef __OCPN__ANDROID__
+// POBsoft (1985-2026): the pinned Android wx/Qt loop does not dispatch a
+// standalone handler's pending queue. Own the host events and drain them on
+// the panel's Qt GUI timer, without pumping unrelated application events.
+class AndroidDownloadEvents : public wxEvtHandler {
+ public:
+  void QueueEvent(wxEvent* event) override {
+    std::lock_guard<std::mutex> lock(mutex_);
+    events_.emplace_back(event);
+  }
+  void Drain() {
+    std::vector<std::unique_ptr<wxEvent>> events;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      events.swap(events_);
+    }
+    for (auto& event : events) SafelyProcessEvent(*event);
+  }
+  void Discard() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    events_.clear();
+  }
+ private:
+  std::mutex mutex_;
+  std::vector<std::unique_ptr<wxEvent>> events_;
+};
+#endif
 const wxString kUrl = "https://datacenter.iers.org/data/9/finals2000A.all";
 wxString UpdatePath() {
   return GetpPrivateApplicationDataLocation()
@@ -96,6 +125,10 @@ class UpdatePanel : public wxScrolledWindow {
     });
     download_events_.Connect(wxID_ANY,wxEVT_DOWNLOAD_EVENT,
             wxEventHandler(UpdatePanel::OnDownloadEvent),nullptr,this);
+    download_poll_=new QTimer(GetHandle());
+    QObject::connect(download_poll_,&QTimer::timeout,GetHandle(),[this]() {
+      download_events_.Drain();
+    });
     timeout_=new QTimer(GetHandle());
     timeout_->setSingleShot(true);
     QObject::connect(timeout_,&QTimer::timeout,GetHandle(),[this]() {
@@ -128,6 +161,7 @@ class UpdatePanel : public wxScrolledWindow {
     download_events_.Disconnect(wxID_ANY,wxEVT_DOWNLOAD_EVENT,
                wxEventHandler(UpdatePanel::OnDownloadEvent),nullptr,this);
     StopDownload();
+    delete download_poll_;
     delete timeout_;
   }
 #endif
@@ -174,6 +208,7 @@ class UpdatePanel : public wxScrolledWindow {
     download_->Disable(); import_->Disable(); cancel_->Show();
     SetText(message_,CN_UTF8_("Downloading IERS Earth-rotation data…"));
     timeout_->start(30000);
+    download_poll_->start(50);
     const auto status=OCPN_downloadFileBackground(kUrl,download_temp_,&download_events_,&download_handle_);
     if (status==OCPN_DL_NO_ERROR) FinishDownload(true,wxEmptyString);
     else if (status!=OCPN_DL_STARTED)
@@ -198,12 +233,13 @@ class UpdatePanel : public wxScrolledWindow {
 #ifdef __OCPN__ANDROID__
   void StopDownload() {
     timeout_->stop();
+    download_poll_->stop();
     downloading_=false;
     if (download_handle_) OCPN_cancelDownloadFileBackground(download_handle_);
     download_handle_=0;
     // Discard queued events from this completed/cancelled generation before
     // admitting another transfer. This handler owns download events only.
-    download_events_.DeletePendingEvents();
+    download_events_.Discard();
     if (!download_temp_.empty() && wxFileExists(download_temp_))
       wxRemoveFile(download_temp_);
     download_temp_.clear();
@@ -230,10 +266,11 @@ class UpdatePanel : public wxScrolledWindow {
   }
   wxButton* cancel_;
   QTimer* timeout_;
+  QTimer* download_poll_;
   bool downloading_=false;
   long download_handle_=0;
   wxString download_temp_;
-  wxEvtHandler download_events_;
+  AndroidDownloadEvents download_events_;
 #endif
   wxStaticText *status_,*message_;
   wxButton *download_,*import_;
