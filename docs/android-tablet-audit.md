@@ -3073,3 +3073,20 @@ Physical118 dusk Time page FAIL: current-month Sundays/Saturdays black on
 black; selected29 nearly indistinguishable. Other time fields/fraction12.987
 readable. Retain failed resume118-dusk-time;119explicitly themes weekday/header
 formats and dim-grey selection. No D03 full acceptance claim before retest.
+
+Physical1191f63b83,07:18–07:22BST: actual import ACK and installed SO
+ab469d9c3565f99a1914f70cf8f7709460631c210022983ddb1363c2c778ad9d
+matches tar0b2c0de5d6c6db727d1421799a6d3b63904cab7ca227d56d71c428ac8b179c0e.
+Android/desktop builds PASS/PID32118 continuous. At font1.3 actual dusk
+calendar shows all seven weekday headers/all dates; Sunday15,Saturday21 and
+April15 selected correctly. Night March29 and landscape Saturday28 selected
+correctly; actual swipes reach complete final uncertainty12.987time unchanged.
+CalendarCancel/AndroidBack byte-identical complete XML to118-before.
+Night calculation report actual final Ho−0°17.8365′/all terms readable and
+read-only, no keyboard/selection while report scrolling. Evidence119-night-
+display is actually Corrections (popup position changed);119-night-report
+shows actual Calculations. Retain119-night-page-popup FAIL bright cyan
+selection and119-night-final-time stray cursor handle after form drag.120
+themes live popup after show and clears text entry on genuine control drag.
+No full D03PASS until these and appearance regression have passed.
+Protected documentation HEAD remains4435de5088666933fb46ee9663a36fbb42baea87.

@@ -66,13 +66,14 @@ inline void CN_ApplyAndroidTheme(QWidget* root) {
   style += marker + QString(
       " QWidget { background-color: %1; color: %3; }"
       " QPushButton, QToolButton, QLineEdit, QSpinBox, QDoubleSpinBox,"
-      " QDateTimeEdit, QComboBox, QTextEdit, QTextBrowser, QListWidget, QTableView"
+      " QDateTimeEdit, QComboBox, QTextEdit, QTextBrowser, QListWidget, QListView, QTableView"
       " { background-color: %2; color: %3; selection-background-color: %4;"
       " selection-color: %3; }"
       " QLabel, QCheckBox, QRadioButton, QGroupBox { color: %3; }"
       " QPushButton:disabled, QToolButton:disabled, QLineEdit:disabled,"
       " QComboBox:disabled, QLabel:disabled { color: %5; background-color: %2; }"
-      " QListWidget::item:selected, QMenu::item:selected { background-color: %4; color: %3; }")
+      " QListWidget::item:selected, QListView::item:selected, QMenu::item:selected"
+      " { background-color: %4; color: %3; }")
       .arg(background.name(), field.name(), ink.name(), selected.name(), muted.name());
   root->setStyleSheet(style);
   const auto children = root->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);

@@ -292,8 +292,17 @@ protected:
       if (m_scroll) QScroller::scroller(m_scroll)->handleInput(QScroller::InputPress,
           m_scroll->mapFromGlobal(global), 0);
     } else if (!m_active) return false;
-    if ((global - m_origin).manhattanLength() > qMax(12, QApplication::startDragDistance()))
+    if (!m_moved && (global - m_origin).manhattanLength() >
+        qMax(12, QApplication::startDragDistance())) {
       m_moved = true;
+      // POBsoft (1985-2026): a content drag leaves text entry before moving
+      // its cursor rectangle; otherwise Android can retain a stray IME handle.
+      if (m_scroll) {
+        QGuiApplication::inputMethod()->commit();
+        if (auto* focus = QApplication::focusWidget()) focus->clearFocus();
+        QGuiApplication::inputMethod()->hide();
+      }
+    }
     if (m_moved && m_button) m_button->setDown(false);
     if (m_scroll && !begin)
       QScroller::scroller(m_scroll)->handleInput(end ? QScroller::InputRelease : QScroller::InputMove,
@@ -318,6 +327,9 @@ protected:
           if (combo) {
             combo->setFocus(Qt::OtherFocusReason);
             combo->showPopup();
+            // Qt initializes the popup palette when showing it, after the
+            // sheet was themed. Apply the current scheme to this live window.
+            CN_ApplyAndroidTheme(combo->view()->window());
           }
         }
       }
