@@ -2199,3 +2199,49 @@ PID28114 continuous (resume85-joint-final.png). This remains a failed joint
 fixture, requiring diagnosis; do not report joint session acceptance.
 The screenshot resume85-session-known-solve.png missed Solve; only subsequent
 observed button activation and result screenshots establish the solve.
+
+### 2026-09-28 01:35–01:54 BST: valid session persistence on runtime86
+
+Stopped the host and removed only the named invalid RESUME85-USNO-Known
+solution. Strict XML readback verified all eight observations, global clock
+and all three original saved solutions unchanged (the original archive has
+three solutions, not one). Cleanup readback SHA256
+eef6ca9af46748ba7905a5671c9c9628c5ef2dca1499f878de44f7b200efb18c.
+
+Runtime86/sourced523bb2 was actually imported; installed86.so SHA256
+5d3f148cd8337828d73cefda86ee8ada08467d61592a2304e5ea2dd3b9e10182
+matches payload. Archive SHA256
+18ce78b1c4d90c27f151a30307f029bdafd2dcd24279f2c8483aeb6db85ed2cb.
+Eight CTest checks passed53.49s and isolated LunarUiSmoke passed6387ms.
+Cold PID29998 survived import/known solve/edit/save. Actual four public
+readings, known-position51.4779,0, ±0.25h/robust on/bias off/motion off again
+give−0.4s, RMS0.23′, time sigma1.8s. Unicode dashes display correctly and the
+summary says Position held fixed (resume86-known-solve.png).
+Editing native SOG0→1 and dismissing its keyboard clears the candidate,
+removes residual cards and disables Save with explicit Inputs changed guidance
+(resume86-stale-cleared.png). Restoring0 and solving again enables Save.
+
+Explicitly named RESUME86-USNO-Known saves valid strict XML with four input
+snapshots and four U+2013 labels. Exact correction−0.44659105661448395s is
+within the independent fixture1s tolerance. All eight observation attributes,
+clock, and original three solution attributes/text/input snapshots are
+unchanged. First comparison of serialized original elements failed due only to
+XML indentation tails after appending; verify-session86.log records the correct
+semantic comparison. Sights-session86-saved.xml SHA256
+c9c68c74c432e07ce111b1597ff5c25dd7843fb2986383856fc3c65894aedc36.
+
+Deliberate cold restartPID30939 reloads the named saved solution, exact four
+input trails and report. Actual final content swipe exposes all four residuals
+and final shared-reading warning at font1.3 (resume86-cold-saved-{list,final}.png).
+Copy report produces Android's clipboard toast; contents not independently
+pasted/read back yet. Back returns to lunar tools with continuous PID, and
+Sights-session86-cold-view.xml is byte-identical to the saved file. Crash buffer
+still ends at historical27Sep17:19:57; lastanr86 reports none since boot.
+
+The read-only viewer incorrectly captions its Close action Save, and its
+historical known-position report still prints infinite position sigma. These
+are presentation failures fixed in the next runtime, without rewriting old
+trails. Source522bb0c's Android convergence repair passes all nine CTest checks
+53.70s, including12 Android-compiled session cases and the independent USNO
+production integration. It has been packaged/staged but NOT imported or
+physically accepted. The next combined candidate retains that repair.

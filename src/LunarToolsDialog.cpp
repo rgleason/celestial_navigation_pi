@@ -1088,6 +1088,12 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
         int(options.estimate_common_index_bias),
         candidate.common_index_bias_arcmin, candidate.weighted_rms,
         candidate.condition_number);
+#ifdef __OCPN__ANDROID__
+    if (!options.solve_position)
+      record.report.Replace(wxString::Format("position sigma %.3f NM",
+                                             candidate.position_uncertainty_nm),
+                            _("position held fixed"));
+#endif
     for (const auto& residual : candidate.residuals)
       record.report +=
           wxString::FromUTF8(residual.label.c_str()) +

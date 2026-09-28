@@ -387,3 +387,26 @@ Never accept a small damped/rejected step or mere iteration exhaustion.
 Retain desktop derivatives/convergence exactly. Test the Android engine branch
 with production public USNO inputs plus convergence/exhaustion/outlier/motion
 regressions, then physically repeat the same fixture and inspect saved bytes.
+
+### DUT1 download ownership (28 September, before implementation)
+
+Source review finds the optional DUT1 button still calls the synchronous host
+download API on the GUI thread, contrary to the Android surface design.
+Use the existing host background-download events on Android, with one owned
+transfer, visible Cancel, a30s timeout, and cleanup on panel destruction.
+Stack the three download/import/cancel actions at full width so translated
+captions and larger fonts remain reachable in both orientations.
+Keep the current validated atomic install and shared desktop download intact.
+Cancellation/failure must retain the current offline data and remove only the
+owned temporary file. Validate real online download/coverage, explicit Cancel,
+Back/Close, offline failure, local invalid/older imports and cold provenance.
+
+Cold-reloaded saved session reports preserve all inputs and real Unicode, but
+wxQt replaces the explicit read-only Close caption with native OK, causing the
+surface to present Save. Set cnActionText=Close on this viewer's original button.
+For future Android known-position records replace the unestimated infinite
+position sigma with 'position held fixed' in the saved report as well as the
+live summary. Keep existing saved trails unchanged.
+The input trail still hardcodes solverVersion2.8.5.1; record the configured
+four-component release version for new snapshots on all platforms. This is
+version provenance only and must not alter desktop numerical behavior.

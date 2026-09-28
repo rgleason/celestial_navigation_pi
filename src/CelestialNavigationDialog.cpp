@@ -1727,7 +1727,13 @@ void CelestialNavigationDialog::ShowLunarSolutions(wxWindow* parent) {
     }
   });
   buttons->Add(copy, 0, wxALL, 8);
-  buttons->Add(new wxButton(&dialog, wxID_OK, _("Close")), 0, wxALL, 8);
+  auto* close = new wxButton(&dialog, wxID_OK, _("Close"));
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): wxQt gives standard IDs native captions; this report
+  // viewer has no save action. Preserve its explicit read-only Close intent.
+  close->GetHandle()->setProperty("cnActionText", "Close");
+#endif
+  buttons->Add(close, 0, wxALL, 8);
   layout->Add(buttons, 0, wxALIGN_RIGHT);
   dialog.SetSizer(layout);
 #ifdef __OCPN__ANDROID__
