@@ -66,6 +66,7 @@ private:
 #ifdef __OCPN__ANDROID__
   void RefreshAndroidCalibration();
   void RefreshAndroidSequence();
+  void InvalidateAndroidSequence();
   wxPanel* m_androidSequenceCards = nullptr;
   wxPanel* m_androidSequenceResiduals = nullptr;
   wxPanel* m_androidPairCards = nullptr;

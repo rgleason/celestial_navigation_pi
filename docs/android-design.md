@@ -362,3 +362,13 @@ to retained snapshots. Keep saved single-sight candidates as optional seeds;
 do not require previous individual calculation. Desktop call signatures and
 behavior remain unchanged. Validate cold saved inputs, known-position and joint
 modes, cancellation, residuals and independent saved solution bytes on tablet.
+
+### Session result identity and presentation (28 September)
+
+Independent readback found U+0013 in saved labels: Android wxString::ToStdString
+narrowed the U+2013 dash before the report was reconstructed as UTF8. Use explicit
+UTF8 bytes for Android session labels, preserving real Unicode and valid XML.
+In a known-position solve no position covariance is fitted: show 'Position held
+fixed' instead of infinite NM. Tie Android mode/position/search/robust/bias/motion
+changes to result invalidation so only the current solved snapshot can be saved.
+Keep callbacks weak and defer native spin notifications outside Qt dispatch.

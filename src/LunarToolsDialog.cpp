@@ -487,11 +487,38 @@ void LunarToolsDialog::BuildSequencePage(wxWindow* page) {
   m_sequenceLatitude->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
     m_sequencePositionAutomatic = false;
     m_sequencePositionSource->SetLabel(_("Manual position"));
+#ifdef __OCPN__ANDROID__
+    InvalidateAndroidSequence();
+#endif
   });
   m_sequenceLongitude->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
     m_sequencePositionAutomatic = false;
     m_sequencePositionSource->SetLabel(_("Manual position"));
+#ifdef __OCPN__ANDROID__
+    InvalidateAndroidSequence();
+#endif
   });
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): changing solver inputs invalidates its saved snapshot.
+  m_sequenceMode->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
+    InvalidateAndroidSequence();
+  });
+  for (auto* control : {m_sequenceRobust, m_sequenceBias, m_sequenceMotion})
+    control->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent&) {
+      InvalidateAndroidSequence();
+    });
+  for (auto* control : {m_sequenceSearchHours, m_sequenceCog, m_sequenceSog})
+    if (auto* spin = qobject_cast<QDoubleSpinBox*>(control->GetHandle())) {
+      wxWeakRef<LunarToolsDialog> weak(this);
+      QObject::connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                       GetHandle(), [weak](double) {
+        if (!weak) return;
+        QTimer::singleShot(0, weak->GetHandle(), [weak]() {
+          if (weak) weak->InvalidateAndroidSequence();
+        });
+      });
+    }
+#endif
   UpdateSequenceSelection();
 }
 
@@ -894,11 +921,19 @@ void LunarToolsDialog::SolveSequence(wxCommandEvent&) {
   for (const std::shared_ptr<Sight>& snapshot : snapshots) {
     Sight& sight = *snapshot;
     lunar_session::SessionObservation entry;
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): ToStdString in the pinned wxQt narrows Unicode
+    // code points. Preserve UTF8 before these labels enter the saved XML trail.
+    const wxString label = UtcDateTime::FormatUtc(
+        sight.m_CorrectedDateTime, "%H:%M:%S") + CN_UTF8_(" Moon–") + sight.m_Body;
+    entry.label = label.ToUTF8().data();
+#else
     entry.label = wxString::Format(CN_UTF8_("%s Moon–%s"),
                                    UtcDateTime::FormatUtc(
                                        sight.m_CorrectedDateTime, "%H:%M:%S"),
                                    sight.m_Body)
                       .ToStdString();
+#endif
     entry.settings = sight.LunarObservation();
     entry.epoch_offset_seconds =
         UtcDateTime::SecondsBetween(sight.m_CorrectedDateTime, reference);
@@ -1086,6 +1121,17 @@ void LunarToolsDialog::ShowCandidate(std::size_t index) {
       candidate.reference_position.longitude_deg, candidate.angular_rms_arcmin,
       candidate.weighted_rms, candidate.time_uncertainty_seconds,
       candidate.position_uncertainty_nm);
+#ifdef __OCPN__ANDROID__
+  // No covariance is fitted for a position explicitly held fixed.
+  if (!std::isfinite(candidate.position_uncertainty_nm)) {
+    const wxString value = wxString::Format(CN_UTF8_("σposition %.1f NM"),
+                                            candidate.position_uncertainty_nm);
+    const bool fixed = index < m_sequenceRecords.size() &&
+        m_sequenceRecords[index].method == "WGS84 sequence: time at known position";
+    summary.Replace(value, fixed ? _("Position held fixed")
+                                 : _("Position uncertainty unavailable"));
+  }
+#endif
   if (candidate.common_index_bias_arcmin != 0.0)
     summary += wxString::Format(CN_UTF8_("; common index bias %+0.2f′"),
                                 candidate.common_index_bias_arcmin);
@@ -1533,6 +1579,17 @@ void LunarToolsDialog::UpdateProfileCorrection() {
 }
 
 #ifdef __OCPN__ANDROID__
+void LunarToolsDialog::InvalidateAndroidSequence() {
+  if (!m_sequenceResult.valid) return;
+  m_sequenceResult.valid = false;
+  m_sequenceResult.candidates.clear();
+  m_sequenceRecords.clear();
+  m_sequenceCandidate->Clear();
+  m_applySequence->Disable();
+  m_sequenceSummary->SetLabel(_("Inputs changed. Solve the session again."));
+  RefreshAndroidSequence();
+}
+
 void LunarToolsDialog::RefreshAndroidSequence() {
   if (!m_androidSequenceCards || m_androidSequencePending) return;
   m_androidSequencePending = true;

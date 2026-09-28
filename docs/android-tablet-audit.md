@@ -2162,3 +2162,40 @@ no candidate, Save disabled; PID28114 survived. Screens resume84-session-
 {fixture-first,public-selected,mode-menu,known-form,known-solve}.png.
 This fails lunar session acceptance. Source diagnosis: deferred Android
 Recompute leaves cold-loaded snapshots without an ephemeris callback.
+
+### 2026-09-28 01:20–01:30 BST: session preparation repair and saved-report failure
+
+Runtime85/source03495ff was imported through Plugin Manager in PID28114.
+Archive SHA2567d097b30b0ed5b7b82ba53991246149e03063e7b51716ba2c57d10f54e57e123;
+independently read installed85.so SHA256
+944d475feb7dffcbee70ca8dee4556cd4a9505009c13fafda51649469eae10f4
+matches its payload. Android/desktop builds and isolated actual-display
+LunarUiSmoke passed (6444ms). Other plugins remain enabled.
+
+The four cold-loaded public records now solve at known position51.4779,0,
+search±0.25h, robust on, bias/motion off: additional correction−0.4s,
+angular RMS0.23′, weighted RMS0.47 and time sigma1.8s. Full four residual
+cards expose both epochs and shared Moon readings; largest absolute distance
+residual0.49′. Screens resume85-session-{worker,known-final}.png.
+The fixture is derived from independent published apparent altitudes/azimuths,
+with finite refraction/contact convention differences; it is not an exact
+plugin-generated synthetic observation. Cancel on the solution-name sheet
+preserved the four original observations and original saved solution;
+Sights-session85-cancel.xml retains the independent readback.
+
+Saving RESUME85-USNO-Known added a disposable solution, but strict XML parsing
+of Sights-session85-saved.xml failed: four labels contain forbidden &#x13;
+references where the Unicode Moon–star dash should be. The pinned Android
+wxString::ToStdString narrows that dash to U+0013. This is a persistence
+failure, not accepted save/reload. Retain the bad file, remove only that test
+solution while stopped, and retest explicit UTF8 labels on the next build.
+Known-position display currently says infinite position uncertainty although
+position was held fixed. Android presentation and input-change invalidation
+are included in the next repair; physical acceptance remains pending.
+
+Actual joint mode with the same four readings and search±0.25h returned
+'No converged joint solution in the selected time interval', Save disabled,
+PID28114 continuous (resume85-joint-final.png). This remains a failed joint
+fixture, requiring diagnosis; do not report joint session acceptance.
+The screenshot resume85-session-known-solve.png missed Solve; only subsequent
+observed button activation and result screenshots establish the solve.
