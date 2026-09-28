@@ -966,3 +966,14 @@ inside the Android GetWMM branch. Physical June21 magnetic shift queried May21:
 0.0001degree bearing tolerance. Desktop branch remains unchanged. Verify the
 same staged three-star magnetic displacement and remaining Coastal WMM path
 against actual host coefficient bytes; carry forward true-shift/DST passes.
+
+## Android clipboard text repair (28 September 2026, physical154)
+
+Full foreground Android clipboard readback reveals raw UTF32LE+terminator,
+not UTF8 text:11556actual bytes versus2896expected bytes,8664embedded nulls.
+Decoded entire source matches the saved report, so storage/viewer are intact.
+Use Qt QClipboard::setText with an explicit UTF8 conversion for both plugin
+copy commands (saved report and marked UTC), on their existing UI callbacks.
+Desktop continues to use wx clipboard unchanged. Read back complete UTF8 report
+and ISO timestamp on the tablet using an offline permission-free temporary
+acceptance helper; uninstall helper afterwards. Design before implementation.

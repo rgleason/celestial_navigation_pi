@@ -4244,3 +4244,16 @@ one-based WMMrequest/fallback. Shared desktop historically does the same;
 repair ONLY Android conversion+1, preserving all desktop runtime/math. Design
 before edit: June21mustquerymonth6, Janmonth1/Dec12; rerun affected magnetic
 case and remaining WMMcoastal branch after one batched build. No19CI yet.
+
+### Complete clipboard failure154, installed152, 15:21-15:24BST
+
+Actual saved movingJoint reportCopy then foreground temporary helper captures
+11556bytes with8664NULs. Independent fullXMLDetails expects2896UTF8bytes.
+FAIL, not an accepted endpoint paste. Actual is entireUTF32LEsource plus trailing
+terminator; after decoding it exactly matches all saved fields/input snapshots/
+full report. No storage corruption. Native wxQt clipboard conversion defect
+will be bypassed only on Android with explicit Qt UTF8text for both copy actions.
+Initial reference assumed correct last record; later all-candidate diagnostic
+refused safely because payload encoding wrong. Public failed JSON/private full
+bytes retained. Temporary helper has no network/storage permissions, only own
+privatefile. Earlier endpoint-paste passes do not establish clean full payload.

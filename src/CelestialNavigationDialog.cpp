@@ -55,6 +55,7 @@
 #include "HtmlHelp.h"
 #include "CelestialNavigationDialog.h"
 #include "UtcDateTime.h"
+#include "AndroidClipboard.h"
 #include "Utf8Translation.h"
 #include <algorithm>
 #include <cmath>
@@ -590,12 +591,19 @@ void CelestialNavigationDialog::OnMarkTime(wxCommandEvent&) {
 }
 
 void CelestialNavigationDialog::OnCopyMarkedUtc(wxCommandEvent&) {
-  if (!m_markedTime.IsValid() || !wxTheClipboard->Open()) return;
+  if (!m_markedTime.IsValid()) return;
+#ifndef __OCPN__ANDROID__
+  if (!wxTheClipboard->Open()) return;
+#endif
   const wxString text =
       UtcDateTime::FormatInstant(m_markedTime, "%Y-%m-%dT%H:%M:%S") +
       wxString::Format(".%03dZ", m_markedTime.GetMillisecond());
+#ifdef __OCPN__ANDROID__
+  if (!celestial_android::CopyText(text)) return;
+#else
   wxTheClipboard->SetData(new wxTextDataObject(text));
   wxTheClipboard->Close();
+#endif
   m_markedTimeStatus->SetLabel(_("Marked UTC copied: ") + text);
   m_timeIntegrityPanel->FitInside();
   Layout();
@@ -1730,10 +1738,14 @@ void CelestialNavigationDialog::ShowLunarSolutions(wxWindow* parent) {
   auto* buttons = new wxBoxSizer(wxHORIZONTAL);
   auto* copy = new wxButton(&dialog, wxID_ANY, _("Copy report"));
   copy->Bind(wxEVT_BUTTON, [details](wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+    celestial_android::CopyText(details->GetValue());
+#else
     if (wxTheClipboard->Open()) {
       wxTheClipboard->SetData(new wxTextDataObject(details->GetValue()));
       wxTheClipboard->Close();
     }
+#endif
   });
   buttons->Add(copy, 0, wxALL, 8);
   auto* close = new wxButton(&dialog, wxID_OK, _("Close"));
