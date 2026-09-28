@@ -2947,3 +2947,12 @@ HTML text and bright warning boxes (resume106-night-manual): FAIL. Reader107
 adaptation designed before implementation; Android-only fonts/palette during
 HTML resource loading, retaining native URLs/relative navigation. Shipped
 quick guide regenerated from current Markdown. Physical help retest pending.
+
+Physical107 f08c63f,06:29BST: actual import ACK/installed SO
+0b12680d94869adf9b83df1ecf9dbc04cb52f71e949cd8ccf89bb5c4f7225cab
+matches tar61a8c9e303633871c21b25177be49027720c93a613b3c10075a3c1cadb7e9ffa.
+Android/desktop build PASS; PID27411 continuous. Night manual still has small
+paragraphs, explicit dark class colours and bright boxes: FAIL, screenshot
+resume107-night-manual inspected. Qt5 appended style approach is insufficient.
+Revised108 design formats loaded document fragments/blocks/frames/cells while
+retaining native source and anchor metadata. Physical retest pending.

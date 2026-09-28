@@ -586,3 +586,11 @@ Regenerate shipped Android quick-guide HTML from its current Markdown so its
 chart action and added planning instructions match. Verify actual night/day/
 dusk reading, scroll, anchors, images, browser return and rotation/offline;
 failed106 screenshot remains evidence, not a help acceptance pass.
+
+Physical107 appended CSS does not override Qt5's parsed original styles: small
+paragraphs and bright boxes remain. Replace this approach with formatting of
+the loaded QTextDocument on sourceChanged. Gather fragment ranges first, then
+merge only minimum point size and low-light ink/background; retain bold/italic,
+heading sizes, anchor attributes and all native source/history behavior. Dim
+block/frame/table-cell backgrounds too. This is a revised Android-only design
+before108 implementation; keep failed107 evidence.
