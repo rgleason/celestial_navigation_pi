@@ -477,3 +477,16 @@ document links and anchors inside the owned help sheet. Back from the browser
 must return to the same help position/editor without a save or data mutation.
 Desktop help remains unchanged. Repeat external/internal links, offline help,
 rotation and long-document final-content scrolling on the tablet.
+
+
+### Preserve angles during editor construction (28 September)
+
+Physical99's saved disposable azimuth changed from179.995837 to
+179.99583666666666 degrees when reopened and saved. The small difference is
+0.000020arcmin but violates exact unchanged-input persistence. Source review
+finds notebook-page events can call RecomputeDMM during Android decoration,
+before precise decimal fields are installed; it parses the desktop formatted
+minutes and mutates the model even though Recompute itself is guarded. Guard
+this entry point until construction is ready on Android. Leave desktop behavior
+unchanged. Retest a newly typed high-precision bearing, page changes, unchanged
+Save, Cancel and cold reload against independent XML bytes.

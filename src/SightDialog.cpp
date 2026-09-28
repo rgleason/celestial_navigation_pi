@@ -819,6 +819,9 @@ void SightDialog::OnSetDefaults(wxCommandEvent& event) {
 
 void SightDialog::RecomputeDMM() {
 #ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): native page events during decoration precede the
+  // exact decimal fields. Never parse the temporary desktop-rounded text.
+  if (!m_breadytorecompute) return;
   celestial_android::CommitNumbers(this);
   wxString inputError;
   if (!AndroidInputsValid(&inputError)) {
