@@ -110,16 +110,20 @@ inline wxDateTime LocalWallToInstant(const wxDateTime& fields) {
   const QDate date(f.year, f.mon + 1, f.mday);
   const QTime time(f.hour, f.min, f.sec, f.msec);
   const QDateTime local(date, time, Qt::LocalTime);
-  // Refuse a nonexistent wall time rather than silently normalizing it.
-  if (!local.isValid() || local.date() != date || local.time() != time)
+  // POBsoft (1985–2026): Android Qt can retain entered gap fields in the
+  // constructed object. Validate its real epoch against a fresh local clock.
+  const qint64 epoch = local.toMSecsSinceEpoch();
+  const auto resolved = QDateTime::fromMSecsSinceEpoch(epoch, Qt::LocalTime);
+  if (!local.isValid() || resolved.date() != date || resolved.time() != time)
     return wxDateTime();
   // Ambiguous local clock times need an explicit UTC entry. Check all real
   // transition offsets used by current zones, including half-hour changes.
   for (int offset : {-7200, -3600, -1800, 1800, 3600, 7200}) {
-    const auto alternative = local.addSecs(offset).toLocalTime();
+    const auto alternative = QDateTime::fromMSecsSinceEpoch(
+        epoch + static_cast<qint64>(offset) * 1000, Qt::LocalTime);
     if (alternative.date() == date && alternative.time() == time) return wxDateTime();
   }
-  return wxDateTime(wxLongLong(local.toMSecsSinceEpoch()));
+  return wxDateTime(wxLongLong(epoch));
 }
 inline wxDateTime InstantToLocalWall(const wxDateTime& instant) {
   if (!instant.IsValid()) return wxDateTime();

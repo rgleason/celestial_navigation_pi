@@ -880,3 +880,17 @@ predeclared0.1arcminute limits. No chart-polygon sampling inferred. Verify
 complete original fixture attributes remain unchanged except ClockError; actual
 offline cold/reopened correction/report, keyboard rotation and rejected/Cancel
 edits with full byte preservation. Restore protected original raw library only.
+
+### Physical142 local daylight-saving gap (before implementation)
+
+POBsoft (1985–2026). On installed135/a3c42bf, Europe/London local
+2026-03-29 01:30:12.987 is nonexistent, but actual manual entry and explicit
+Calculate both retain Results ready with resolved01:30:12.987UTC. Valid selected
+UTC01:30:12.987 converts correctly to02:30:12.987local. The current adapter checks
+the constructed Qt local object's own fields; Android Qt5.12 can retain these
+fields even when its epoch resolves to a different wall time. Reconstruct the
+local wall clock from the epoch before accepting it, and reconstruct alternative
+epochs for overlap detection. Keep this exclusively in the Android adapter.
+Re-run existing epoch tests, add independent valid local epochs and half-hour
+transition cases, build both platforms and replay the actual failing tablet
+workflow. Retain failure evidence; desktop calendar/numerical behavior unchanged.

@@ -35,6 +35,17 @@ int main() {
   setenv("TZ", "Europe/London", 1); tzset();
   assert(!UtcDateTime::LocalWallToInstant(UtcDateTime::Create(2026,3,29,1,30)).IsValid());
   assert(!UtcDateTime::LocalWallToInstant(UtcDateTime::Create(2026,10,25,1,30)).IsValid());
+  // POBsoft (1985–2026): independent zoneinfo epochs on the valid side of
+  // both transitions, with milliseconds; also exercise a half-hour change.
+  assert(UtcDateTime::LocalWallToInstant(UtcDateTime::Create(2026,3,29,2,30,12,987))
+             .GetValue().GetValue() == 1774747812987LL);
+  assert(UtcDateTime::LocalWallToInstant(UtcDateTime::Create(2026,10,25,2,30,12,987))
+             .GetValue().GetValue() == 1792895412987LL);
+  setenv("TZ", "Australia/Lord_Howe", 1); tzset();
+  assert(!UtcDateTime::LocalWallToInstant(UtcDateTime::Create(2026,10,4,2,15)).IsValid());
+  assert(!UtcDateTime::LocalWallToInstant(UtcDateTime::Create(2026,4,5,1,45)).IsValid());
+  assert(UtcDateTime::LocalWallToInstant(UtcDateTime::Create(2026,10,4,2,45,12,987))
+             .GetValue().GetValue() == 1791042312987LL);
   assert(UtcDateTime::FormatUtc(UtcDateTime::Create(2026,9,27,9,3,12,345),"%Y-%m-%d %H:%M:%S.%l") == "2026-09-27 09:03:12.345");
   assert(!UtcDateTime::Create(2026,2,30).IsValid());
   std::cout << "DST gap and ambiguous overlap refused; UTC report label and invalid date passed\n";
