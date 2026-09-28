@@ -2861,3 +2861,42 @@ an invalid -91 text back to initial -90/-180 and restores results. Find Back
 and parent Back discard the entire new sight: independent
 sights103-invalid-discard.xml cmp matches sights102-waypoint-save.xml bytes.
 PID25292 continuous. No original record or host waypoint was changed.
+
+
+Physical103 spring test exposed a calendar failure: March2026 starts Sunday
+and the native widget shows February22–28 as its first row. Actual tap on
+displayed March15 selected22 (resume103-calendar-week-failure). An earlier
+spring automation tap targeted displayed22 and accidentally selected29; that
+is UTC persistence evidence only, not calendar acceptance. The first XML
+assertion also incorrectly expected fractions inside Time; this format stores
+Time01:30:12 and Milliseconds987 separately. Corrected assertions use both.
+
+Physical104 a4b820e, 28 September06:00–06:04BST: Android/desktop compile and
+package PASS. Actual import ACK and independently read installed library
+SHA1ab2ed14b382b3efe50f51dc69bd9e38351e6096b94f575897047ed19ae8ebfb
+matches package, tar0761f8b63f4a0f2461483678f4a05244dcf21306c152b4602b98b615831f6b97.
+At font1.3 actual displayed March15/22/29 taps select15/22/29; April15 selects15.
+Rotation retains29; actual landscape22/29 taps agree, real swipe reaches all
+time fields and final uncertainty. Restored spring March29 01:30:12.987 UTC
+and Save leaves all11sights/5solutions byte-identical, SHA
+a69ab85dc2f28fba0cd4f5fe661901c81a0091d4621b55299c5315d05ba82ea5.
+Cold restart PID25292→27411 as expected; actual editor reopens March29,
+hours1/minutes30/seconds12.987. Cold XML remains byte-identical. Independent
+IANA Europe/London yields02:30:12.987 BST at this UTC instant.
+Assertions spring104-validation.json; screenshots resume104-calendar*,
+resume104-time-landscape-last and resume104-cold-bottom. Crash buffer retains
+historical04:51:54 fatal with no newer entry; no ANR since boot. A mistyped
+read path returned missing-file text; corrected saved XML read is the evidence.
+
+
+Physical104 D03,06:05–06:08BST: Tools has no Display page; corrected inventory
+to actual Observe>Display/Include and host Change Color Scheme. Long press
+host Options toolbar button opens Choose Toolbar Icons; Change Color Scheme
+was originally unchecked. Temporarily enabled it, adding moon/star action at
+(49,343), moving CelNav icon to(49,842). Both actual dusk and night chart dim
+but plugin workspace remains bright white: FAIL, resume104-dusk-workspace
+and resume104-night-workspace. Day was restored for further tests; added
+toolbar action still needs final removal. Shared Android105palette uses
+DILG0 background/DILG2 fields/DILG3 ink/UIBCK selection, preserves sight
+colour preview and replaces its own rules on repeated updates. Designed
+before implementation; physical acceptance pending.

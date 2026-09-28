@@ -282,3 +282,10 @@ Invalid coordinate text must be rejected before Find applies a position, not
 only presented as N/A. Keep the previous valid model while the user corrects
 the field and disable calculations/copies until parsing succeeds. Add a final
 Android save guard for invalid imported/stale DR state.
+
+
+Match the native calendar's displayed leading week, including months beginning
+on firstDayOfWeek. Qt shows a full previous week in that case. Test taps on
+actual labelled dates, adjacent rows and a nonaligned month in both orientations;
+a correct persisted date reached through a wrongly mapped tap is not a pass.
+Read fractional UTC milliseconds from the saved format's separate attribute.

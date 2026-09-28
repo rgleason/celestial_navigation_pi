@@ -45,6 +45,7 @@
 #include <QTabWidget>
 #include <QTabBar>
 #include "ocpn_plugin.h"
+#include "AndroidTheme.h"
 #include <functional>
 #include <vector>
 
@@ -470,7 +471,7 @@ inline void CN_EnableAndroidSlider(wxSlider* control,
                    [changed](int) { changed(); });
 }
 
-inline void CN_StyleAndroidControls(wxWindow* parent) {
+inline void CN_StyleAndroidControls(wxWindow* parent, bool applyTheme = true) {
   if (auto* scroll = wxDynamicCast(parent, wxScrolledWindow))
     CN_EnableAndroidScrolling(scroll);
   for (auto* child : parent->GetChildren()) {
@@ -575,8 +576,9 @@ inline void CN_StyleAndroidControls(wxWindow* parent) {
         if (view) view->setItemDelegate(new CN_AndroidChoiceDelegate(view));
       }
     }
-    CN_StyleAndroidControls(child);
+    CN_StyleAndroidControls(child, false);
   }
+  if (applyTheme) CN_ApplyAndroidTheme(parent->GetHandle());
 }
 
 

@@ -28,6 +28,7 @@ inline bool EditColour(wxWindow* parent, const wxColour& original,
     root->Add(channels[i], 0, wxEXPAND | wxALL, 12);
   }
   auto* swatch = new wxStaticText(&sheet, wxID_ANY, _("Colour preview"));
+  swatch->GetHandle()->setProperty("cnPreserveColour", true);
   swatch->SetMinSize(wxSize(0, CN_TouchHeight()));
   root->Add(swatch, 0, wxEXPAND | wxALL, 12);
   const auto preview = [=]() {

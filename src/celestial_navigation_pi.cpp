@@ -29,6 +29,7 @@
 #include "Dut1UpdatePanel.h"
 #ifdef __OCPN__ANDROID__
 #include "AndroidDocumentImport.h"
+#include "AndroidTheme.h"
 #include <QDebug>
 #include <QCoreApplication>
 #include <QEvent>
@@ -393,6 +394,10 @@ void celestial_navigation_pi::SetColorScheme(PI_ColorScheme cs) {
   if (NULL == m_pCelestialNavigationDialog) return;
 
   DimeWindow(m_pCelestialNavigationDialog);
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): native Qt styles also need the active host palette.
+  CN_ApplyAndroidTheme(m_pCelestialNavigationDialog->GetHandle());
+#endif
 }
 
 bool celestial_navigation_pi::RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp) {

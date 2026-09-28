@@ -57,7 +57,10 @@ desktop columns. Changing context recalculates the existing shared models.
 
 Tools offers **Lunar sessions**, **Saved lunar solutions**, **Coastal sextant**,
 **Sextant check**, **Time & clock correction**, **Ephemeris / DUT1**,
-**Display**, **Manual**, **PDF manual** and **About / storage**. Frequent time
+**Android quick guide**, **Offline manual**, **PDF manual** and clock status.
+Ephemeris/DUT1 are reached through planning/data sheets; observation Display
+contains appearance controls. Day/dusk/night uses the host toolbar action.
+Frequent time
 capture remains in the header. GNSS freshness and system time uncertainty must
 not imply synchronisation that was not measured. Chrony is a desktop-only
 service; Android reports that limitation rather than pretending it ran.
@@ -546,3 +549,17 @@ month offsets and the firstDayOfWeek setting, ranges, native selectedDate and
 owned viewport callback. Desktop behavior is unchanged. Test actual displayed
 March22 and29 taps, a nonaligned month and rotation, then Save/reopen/cold read
 with exact UTC milliseconds through the spring DST date.
+
+
+### Host day/dusk/night palette (28 September, before implementation105)
+
+Physical104 host toolbar Change Color Scheme correctly dims the chart in dusk
+and night, but the Android workspace stays bright white. Hardcoded native
+button/report styles bypass DimeWindow. Use the host DILG0/2/3 and UIBCK colors
+in a shared Android-only Qt palette/style adapter. Apply after construction and
+on SetColorScheme, including owned child sheets, popup lists/calendars, inputs
+and reports; retain touch sizes/fonts, disabled/selected contrast and original
+styles without accumulating overrides. Preserve actual sight colour previews
+and rendered PDF/sky images. No desktop palette/runtime or data change. Verify
+actual day/dusk/night workspace/editor/report readability, rotation, popup and
+Back, file identity and restoration of the host toolbar and original day mode.
