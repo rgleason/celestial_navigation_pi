@@ -11,7 +11,6 @@
 #include <QVector>
 #include <QDesktopServices>
 #include <QAbstractTextDocumentLayout>
-#include <QScrollBar>
 
 namespace celestial_android {
 // Format the rendered document without replacing source HTML: native URLs,
@@ -25,11 +24,8 @@ class DocumentBrowser : public QTextBrowser {
     document()->setDefaultFont(font);
     QObject::connect(this, &QTextBrowser::sourceChanged, this,
                      [this](const QUrl& source) {
-      qDebug() << "CNHELP SOURCE" << source;
       QScroller::scroller(viewport())->stop();
-      qDebug() << "CNHELP STOPPED";
       AdaptDocument();
-      qDebug() << "CNHELP ADAPTED";
       PositionAndRepaint(source);
     });
   }
@@ -54,13 +50,9 @@ class DocumentBrowser : public QTextBrowser {
 
  private:
   void PositionAndRepaint(const QUrl& source) {
-    qDebug() << "CNHELP LAYOUT START";
     document()->documentLayout()->documentSize();
-    qDebug() << "CNHELP LAYOUT DONE";
     if (!source.fragment().isEmpty()) scrollToAnchor(source.fragment());
-    qDebug() << "CNHELP SCROLLED" << verticalScrollBar()->value();
     viewport()->repaint();
-    qDebug() << "CNHELP ANCHOR" << source.fragment() << verticalScrollBar()->value();
   }
 
   void AdaptDocument() {
@@ -142,12 +134,10 @@ inline void ShowDocument(wxWindow* parent, const wxString& title,
   // The owned filter feeds handleInput itself; a native gesture recognizer
   // would process the same touch sequence and can swallow the first link tap.
   QScroller::scroller(text->viewport());
-  text->viewport()->setProperty("cnHelpDiagnostic", true);
   QPointer<DocumentBrowser> safeText(text);
   new CN_AndroidButtonDragFilter(text->viewport(), [safeText](QPoint point) {
     if (!safeText) return;
     const QString anchor = safeText->anchorAt(point);
-    qDebug() << "CNHELP HIT" << point << anchor << safeText->source();
     if (anchor.isEmpty()) return;
     QScroller::scroller(safeText->viewport())->stop();
     const QUrl url = safeText->source().resolved(QUrl(anchor));

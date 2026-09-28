@@ -10,7 +10,6 @@
 #include <wx/listbox.h>
 #include <wx/listctrl.h>
 #include <QWidget>
-#include <QDebug>
 #include <QLineEdit>
 #include <QInputMethod>
 #include <QScroller>
@@ -274,8 +273,6 @@ protected:
       begin = event->type() == QEvent::MouseButtonPress;
       end = event->type() == QEvent::MouseButtonRelease;
     }
-    if (m_widget->property("cnHelpDiagnostic").toBool() && (begin || end))
-      qDebug() << "CNHELP INPUT" << begin << end << touch << global << m_active;
     if (begin) {
       if (!m_widget->isEnabled()) return false;
       m_active = true;
@@ -308,8 +305,6 @@ protected:
       m_active = m_touchActive = false;
       if (m_button) m_button->setDown(false);
       if (touch) { m_suppressMouse = true; m_clock.restart(); }
-      if (m_widget->property("cnHelpDiagnostic").toBool())
-        qDebug() << "CNHELP RELEASE" << click << m_moved << m_widget->mapFromGlobal(global);
       if (click) {
         if (m_tap) m_tap(m_widget->mapFromGlobal(global));
         else if (m_button) m_button->click();

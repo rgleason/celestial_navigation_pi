@@ -3043,3 +3043,13 @@ any intervening input shows correct readable AppendixD/footer. Root failure:
 callback/blocking interpretations were incomplete. No second tap was required.
 117batches all document format mutations into one edit transaction; timing
 acceptance pending. Keep all failed short captures and diagnostic logs.
+
+Physical1174479ad1,07:02BST: import ACK/installed SO
+9802963d568b5b349472fd49cadf45c7a2b585e2e9068c6613e72da5eea7c779
+matches tarc008fa87b0ede7b9ca37dea83cc9be20859c968ff5e1e6cb77bb5916937baafa.
+Android/desktop builds PASS/PID32118 continuous. Single actual AppendixD tap:
+HIT07:02:39.692, SOURCE/STOPPED39.844, ADAPTED39.920 (76ms), final
+anchor/repaint39.940 (248ms after hit). First short capture already shows
+correct readable References/full footer; no extra input. reader117-first-link
+and resume117-first-references. Batched edit fixes visible O(n) layout churn.
+Remove scoped diagnostics for118, then continue orientation/day/dusk/full D01.
