@@ -3310,3 +3310,15 @@ altitude tap opens keyboard→typed27.333246→keyboardBack→body-contact popup
 still shows stray handle: FAIL125, resume125-centre-body-contact.png.
 Unsaved Centre fields not yet saved or numerically evaluated.126late notification
 designed before code. Do not extrapolate the first successful replay to all input.
+
+125 Sun centre-contact numerical subset08:49–08:51BST: actual altitude-limb
+Centre and distance-contact Centre, typed SunHs27.333246 and Moon-far/Sun-centre
+LD95.96913552965911. Saved XML differs ONLY4 intended raw attributes from far
+baseline; all11protected sights/5solutions/root unchanged. SHA
+fba0ee0fdcff99897bd4cb66e3a106c7c1a8de6b3381692c525884e8039ae532,
+lunar125-sun-centre-validation.json. Reopened Results/checkenteredUTC gives
+residual+0.103687′, nearest51°28.5882′N000°00.1618′W; independent PROJ WGS84
+distance0.132716NM from public Greenwich, within existing0.5′/3NM limits.
+Selected clock root−13.637695s/formal65.7s retained without precise-clock
+claim. Public contact reference extended with actual transcription. ResultsBack
+then parentBack preserve saved file byte-identically; no saved solution added.

@@ -298,3 +298,11 @@ inputs. std::function copies retain captured this; callbacks copied from worker
 temporaries need rebinding before GUI inspection. Invalidate every derived
 result after raw-input changes, including serialized summary corrections.
 Compare complete file records to detect stale fields, not only intended inputs.
+
+Qt5.12 Android input reset sets internal handle mode without updating visible
+handles. Read the public QInputMethod wrapper as well as the platform context:
+update(ImCursorRectangle) emits a signal connected to the visible handle updater.
+One unchanged-input replay can pass while changed-input/later popup focus still
+fails; retain each result and test later text entry rather than generalize from
+the first screenshot. Any deferred cleanup must be owned and conditional on
+the same popup remaining open so it cannot interfere with a later editor.
