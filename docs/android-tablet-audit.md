@@ -3911,3 +3911,89 @@ results in validation/android-clock-20260928. Guardedrestore requires full
 appliedfixturebyteequality, restores original12/5/Clock0rawbytesfba0ee0f...
 and retains every currentconfigbyte. WiFienabled,portrait, coldcleanup10884;
 actual restoredworkspaceopen fulloriginalfile equality verified.
+
+### Planner input cache repair and references142–146, 12:44–13:41 BST
+
+135/a3c42bf actual nautical edit to nonexistent London2026-03-29
+01:30:12.987 still returns Results ready/resolvedoldUTC. A subsequent visible
+2024-06-21/00:00:00.987 edit also retains the original epoch. Initial142
+hypothesis was Qt local normalization; Android adapter ac91336 adds epoch-to-wall
+round-trip validation and independent valid London/LordHowe transition tests.
+Do not claim this hypothesis as proven cause.142fullCTest8/9 FAIL because
+nonASCIIcomment matched encoding guard;6312f4d corrects comment encoding.
+143package retention REFUSED stale CPack library before any install; rebuilt
+package target, then144source6312f4d imported and actual SO hash verified.
+Diagnostic144and145/f775c04 prove ReadUtc's nautical GetValue returns original
+strings despite visible edits. Pinned wxWidgets3.1.2 textentrycmn.cpp generic
+SetHint maintains a text cache via wxEVT_TEXT. ContextTimeEdited consumed that
+event before the hint handler.4b16fb4 Android event.Skip fixes cache propagation
+ahead of the owned350ms refresh; temporary raw/epoch logging removed. Desktop
+numerical/runtime behavior remains unchanged. Both146builds PASS, all9CTest
+entries PASS53.56s (GUI headless skips remain skips). Guard and isolated
+half-hour epoch tests also pass. Historical failures retained.
+
+Actual PluginManager import146 source4b16fb4628c10aab825add19b7b86862d76a0e3e
+keepsPID10884 continuous. Independently read installed146.so SHA256
+c14a61780a68c37356b6796eabca2d86eb8045aa249829881bff099c3f8d6306 matches
+retained stripped library. Tar177432262b414c0fcda8698f669de84f3d5205d68bd99ce6fbda64df1df6d9cf.
+Actual final typed2024-06-21/00:00:00.987 now resolves exactly to that UTC and
+changes the event results. Valid2026March29UTC01:30:12.987→London02:30:12.987
+retains instant. Real edits to spring gapMarch29/fall overlapOctober25 local
+01:30:12.987 each clear calculated results and resolve invalid. Explicit
+Calculate warns to choose UTC; Back dismisses. Impossible2026-02-30 and1899
+both refuse with generic Invalid time; parser rejects unsupported year before
+separate range dialog. One unpaced recovery automation returns to chart; no
+numerical recovery inferred from it. Fresh actual reopen/re-entry produces
+correct results, and a later separately paced Polaris warningBack retains
+parent/context/Ho exactly. Mistap at old Calculate coordinate toggled Moving;
+actual unchecked state re-established before subsequent reference cases.
+
+Independent polar/south expectations and primary USNO raw JSON/URLs/hashes
+were retained before execution in validation/android-planner-20260928.
+Summer78N15E/2024June21/eye2m: noSunrise/set or twilight rows; full final
+summary says Sunabovehorizonall day/Moonbelowhorizonall day. Actual solar
+transit11:01:54 versus USNO11:02 error−6s within predeclared300s. Winter same
+positionDecember21: Sunbelowhorizonall day/noSunrise,set,civil rows, actual
+astronomical dawn06:37:25/nautical09:45:14/noon10:58:16/nauticaldusk12:11:18/
+astronomicaldusk15:19:06. Moontransit03:49:28,set12:34:32,rise20:28:08;
+USNO03:49/12:32/20:31. Rise/set discrepancies+152/−172s, eye2m versus
+reference ground-level; no new numerical Moon tolerance retrospectively claimed.
+Genuine portrait font1.3 swipes reach all final summaries.
+
+UTC00:00:00.987June21→auto shipzone15E01:00:00.987 preserves UTC. Actual
+manual offset5.5 disablesAuto and reinterprets unchanged01:00:00.987 as prior
+June20 19:30:00.987UTC. Switch backUTC shows exactlyJune20/19:30:00.987.
+Fresh UTCJune21 restored. Fixeddisplay+5.5 shows11:01:54→16:31:54,
+Moon22:57:00→nextday04:27:00 and phase dates cross midnight correctly.
+Longitude15.125E LMT adds3630s: solarUTC11:01:24→12:01:54LMT,
+Moon22:56:29→23:56:59. ComputerlocalLondon adds3600s:11:01:24→12:01:24;
+Moon/phase date crossings likewise retained in actual screenshots.
+
+Southern−35/0June21, motionoff, predeclaredUSNOHo31.563161:
+actual noon12:01:55UTC solves35deg00.0001minS,0.0001arcminute error within
+0.1arcminute. Actual Polaris selection shows below-horizon explanation and
+Solve explicitly refuses; separateBack dismisses only warning. Full paragraph
+visible portraitfont1.3. Long Ho caption wraps/clips above reachable field;
+next Android-only caption repair designed, not yet physically accepted.
+
+Summer actual FullMoonJune22 00:57:37 versus USNO01:08 discrepancy−623s.
+Do not mark phase independent accuracy PASS. Separate console probe linked
+current desktop objects with verifiedDE440 reproduces all eight displayed
+summer/winter phases exactly; clean initialized console output and source in
+public reference directory. First probe rejected unsupported desktop fractional
+parser, second emitted wxApp initialization assertions; final initialized console
+run has no assertions and yields same values. Shared elongation approximation,
+not an Android timestamp regression. Android footer and guide qualify approximate
+phase times; shared desktop numerics unchanged. Remaining sources/filters,
+font/rotation caption repair/cold preferences and broader final acceptance pending.
+
+146afterClose actual Sightsraw SHA remainsfba0ee0f...exact12/5/Clock0; both
+exact active plugin configsections bEnabled1. ChartPSS473342/RSS535992KiB/
+swapPSS323; full crashbuffer lateststillhistorical04:51:54/runtime98 and
+noANRsinceboot. Actual146portrait→landscapePolaris complete final warning
+readable, captionstillclipped. Immediate independentPlannerconfigafterClose
+retains previous78/15/display0/offset1/Auto1 ratherthanjustentered−35/0/
+display1/offset5.5/Auto0. Deliberatecold10884→17074 actualPlanner reopens
+old78/15/UTCdisplay, proving missing destructorFlush. Android-only repair
+now implemented afterexisting16keys, physical replay pending. Newmanualtime
+is intentionally unsaved: constructionNow is baseline, not persistence failure.

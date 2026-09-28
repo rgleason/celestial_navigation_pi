@@ -908,3 +908,28 @@ The original DST failure was caused by this stale input, not proven Qt gap
 normalization; keep the epoch round-trip check as validation hardening and
 replay gap/overlap after text edits actually reach ReadUtc. Remove temporary
 raw-field/provenance diagnostic logging from final runtime.
+
+### Planner146 scaled Ho caption and phase qualification (before implementation)
+
+At font1.3 actual southern noon solves35deg00.0001minS from independentUSNO
+Ho31.563161 (predeclared0.1arcminute). Its long corrected-altitude caption
+wraps into clipped lines above the reachable entry. Shorten the Android caption
+to Corrected Ho (degrees); keep desktop wording and all mathematical behavior.
+Actual summer FullMoon00:57:37 differs from USNO01:08 by623seconds. A separate
+console probe linked to current desktop objects with verifiedDE440 reproduces
+all eight summer/winter phase outputs exactly to displayed seconds. This is
+shared angular-separation phase approximation, not an Android epoch defect.
+Qualify the Android phase footer as approximate and document the comparison;
+do not claim independent phase accuracy or alter shared desktop numerics.
+
+### Planner146 preference cold loss (before implementation)
+
+After actual Close with manual−35/0, localdisplay1, offset5.5/Auto0, immediate
+independent config still says78/15, display0, offset1/Auto1. Deliberate cold
+10884→17074 actual Planner reopens78/15/UTCdisplay, proving lost preferences.
+The destructor writes all16keys but does not flush; Android termination need
+not run desktop shutdown. Flush after those existing writes on Android only.
+Keep baseline Now on construction (manual time is intentionally not a saved
+key), existing16key choices and all mathematics unchanged. Verify immediate
+readback, actual offlinecold preference fields, protected Sights and other
+config bytes, then restore only task-owned Planner keys to142snapshot.

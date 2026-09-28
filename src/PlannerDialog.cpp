@@ -561,7 +561,12 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_specialBody->SetSelection(0);
   specialGrid->Add(m_specialBody);
   specialGrid->Add(new wxStaticText(specialPage, wxID_ANY,
+#ifdef __OCPN__ANDROID__
+                                    // POBsoft (1985-2026): keep the scaled caption on one line.
+                                    _("Corrected Ho (degrees)")),
+#else
                                     _("Corrected observed altitude Ho")),
+#endif
                    0, wxALIGN_CENTER_VERTICAL);
   m_specialAltitude = new NavigationAngleCtrl(
       specialPage, NavigationAngleKind::Generic, 45.0, -10.0, 90.0);
@@ -972,6 +977,10 @@ PlannerDialog::~PlannerDialog() {
                 m_recommendationMaxAltitude->GetValue());
   config->Write(_T("WaypointGuid"), m_waypointGuid);
   config->Write(_T("WaypointName"), m_waypointName);
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): Android termination may bypass the host shutdown flush.
+  config->Flush();
+#endif
 }
 
 wxDateTime PlannerDialog::ReadUtc(bool showErrors) {
@@ -1604,7 +1613,8 @@ void PlannerDialog::RefreshEvents() {
     report += _("UTC: ") + UtcDateTime::FormatInstant(
         phase.utc, "%Y-%m-%d %H:%M:%S") + "\n";
     report += _("Display: ") + DisplayTime(phase.utc) + "\n";
-    report += _("Geocentric phase") + "\n\n";
+    // POBsoft (1985-2026): phase times use the shared elongation approximation.
+    report += _("Approximate geocentric phase") + "\n\n";
 #endif
   }
 #ifdef __OCPN__ANDROID__

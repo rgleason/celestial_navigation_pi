@@ -373,3 +373,28 @@ caption bounds each time. Highlight after swipe is not activation: read actual
 saved order after Back. Isolate destructive tests in a separately backed-up
 library and restore raw original bytes, including nested reports. Count XML
 solutions at their actual nesting level; a guard failure must stop before writes.
+
+A visible native edit need not reach wx GetValue. Pinned wxQt SetHint uses a
+wxEVT_TEXT-updated cache; consuming a bound edit event can leave that cache
+stale while the actual field paints the new text. Trace field strings and parsed
+epoch before blaming DST conversion. Allow owned edit events to propagate and
+read after the deferred debounce. Verify independent date changes, invalid gap/
+overlap refusal, and recovery on the real tablet; unit parsing tests alone miss
+this defect. Remove temporary raw time diagnostics after establishing cause.
+Keep validation hardening distinct from the proven repair. Rebuild CPack target
+before package retention; a source/ELF guard must refuse stale archives.
+
+Compare a suspect Android numerical result with actual desktop output before
+altering shared mathematics. Moon-phase elongation approximation reproduces
+all eight summer/winter Android times exactly on desktop but differs from USNO
+FullMoon by623s in June2024. Record that limit rather than claiming phase
+accuracy from provider parity. Keep the independent tolerance declared before
+physical execution, and label approximations clearly. Font1.3 can reveal clipped
+labels even when numeric entries and final outputs remain reachable.
+
+Planner preferences have the same Android flush requirement as explicit sight
+and horizon defaults. Actual Close writes the host config only in memory;
+independent immediate file readback and real cold reopen must agree with the
+last chosen coordinates, format, bases and motion. Flush after the whole existing
+key group on Android. Distinguish intentionally unsaved Now/manual instant from
+lost persisted preferences; restore only the known preference keys after tests.

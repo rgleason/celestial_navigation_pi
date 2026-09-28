@@ -44,6 +44,11 @@ coverage limits are reported by the relevant tool; consult the full manual.
 In **Plan > Sun & Moon / best sights**, set position, UTC instant, display time
 basis, eye height and motion on **Context**. Check the resolved UTC before using
 the results. **Events** lists rise, set, twilight, transit and Moon details.
+Enter UTC explicitly for a local clock time skipped or repeated at a daylight-saving
+change. Ship-zone offsets use hours east of UTC and can include half hours;
+local mean time uses the planning longitude. The listed Moon-phase times are
+approximate: the shared method found the June 2024 Full Moon about ten minutes
+earlier than USNO. Use an authoritative almanac when an exact phase time matters.
 **Bodies & Best Sights** has Sort and Direction above a scrollable list; select
 a card to enable **Create sight**. The separate **Recommendations & sky** page
 has visibility limits, suggested combinations and the sky plot. **Almanac**
