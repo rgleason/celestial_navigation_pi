@@ -289,3 +289,12 @@ on firstDayOfWeek. Qt shows a full previous week in that case. Test taps on
 actual labelled dates, adjacent rows and a nonaligned month in both orientations;
 a correct persisted date reached through a wrongly mapped tap is not a pass.
 Read fractional UTC milliseconds from the saved format's separate attribute.
+
+Deferred expensive work must also cover every baseline entry action. An
+Android calculation button elsewhere did not make the Measurement Results
+action complete: it opened an unprepared ephemeris. Centralize the cancellable
+operation, preserve cancellation in the parent editor, and reuse validated
+inputs. std::function copies retain captured this; callbacks copied from worker
+temporaries need rebinding before GUI inspection. Invalidate every derived
+result after raw-input changes, including serialized summary corrections.
+Compare complete file records to detect stale fields, not only intended inputs.

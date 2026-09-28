@@ -3131,3 +3131,107 @@ reopened Measurement Time action opens empty Recovery, Check at entered UTC
 then says Cannot evaluate entered UTC with no explanation. FAIL retained
 resume120-lunar-centre-reopened/check-unprepared. Android deferred search
 was never run by this action.121design commits before scoped repair.
+
+Iteration1214f47e18 Android/desktop builds PASS, package retained; not installed.
+Review found copied ephemeris captures worker-temporary this;122safe getter
+rebind follows design29197fb. Physical122f14fd90,07:44–07:53BST: import ACK,
+installed SO07d89d87960d9c058af0313675577ef6b39298965cc37fe9265b3fda7069cd2a
+matches tara4677606bd1dcf505aeebc225ae20928e1d5d3b797a45bb22152197b45052cb0.
+Both builds/PID32118 continuous. Actual Results single action on saved lunar
+copy now calculates then opens two candidates; no visit to Calculations needed.
+Entered-UTC check evaluates after worker-return/candidate-copy: centre/near
+residual+0.496663′, nearest position51°28.4038′N000°00.0374′W independently
+0.271385NM from public Greenwich. Actual full final warning by portrait swipe
+and landscape rotation/swipe PASS; native popup no stale insertion handle.
+Real farLD68.7820392764501 and upperMoonHs5.766153 Save/readback exact;
+all11protected complete records/root unchanged, but previous calculated
+TimeCorrection431 persisted after edited inputs: FAIL. See lunar122-upper-far-
+validation.json;123invalidation repair designed before implementation.
+Far/upper enteredUTC residual−0.112044′, nearest51°27.9532′N000°00.1621′W,
+independently0.728329NM from Greenwich. Public physical transcription and
+limits retained validation/android-usno-greenwich-20240621/tablet-lunar-contacts122.json.
+The two candidate clock corrections430.532227s/−97.221680s have formal
+sigma434.4/433.8s at weak−4.15′/h timing sensitivity; do NOT apply session
+60s/3NM tolerance to this singleVega fixture or call its clock precise.
+These approximate disc/refraction conventions agree at enteredUTC within
+fixture0.5′/3NM, not identical limb-conversion models.
+
+122first resume122-lunar-results capture is workspace, not Results. Reused
+card positions accidentally toggled public Spica22:00 Include; independent
+inspection isolated only Visible1→0, then actual Include restored byte-identical
+sights120-lunar-centre.xml before continuing (sights122-restored-include.xml).
+Subsequent resume122-lunar-results-actual is the genuine numerical workflow.
+
+Physical123e7e6691,07:54–07:56BST: Android/desktop builds PASS, actual
+import ACK, installedSOf397c6adaad4cc7f84473a630cad5b9a9949176ac44d9899903c421f386b2357
+matches tar3cfe8789324029d1296eff0a4aa782ece4f444d1c8dc1eb90fe0961bf0f0ca20.
+PID32118 continuous. Reopened far/upper copy Results produces same two roots.
+Then uncertainty1.234567891234123 actual native keyboard→Back→Save resets
+stale TimeCorrection431→0, full exact raw values retained. Independent
+lunar123-invalidation-validation.json confirms ONLY these two attributes
+change and all11protected records/root unchanged; byteSHAbbc5ffcffa72ece5539db01821d2a10748a4dfb7d3eaac0c2182f14cc6c2ec65.
+CTest9/9 PASS54.05s (ctest123-full.log); these headless runs skip GUI as declared.
+Actual DISPLAY=:1/CELESTIAL_RUN_UI_TESTS=1 standalone LunarUiSmoke passes
+6352ms (ui123-lunar-standalone-corrected.log), unchanged recorded-input/result
+modes. Initial incorrect executable path exited127; retained log, no test ran.
+Harness still warns missing testdata panel image, not a production package claim.
+
+Physical123 continuation,07:57–08:03BST: separate Moon reading22:05 at
+upperHs6.070201 versus LD/body22:00, recorded-watch basis Save/reopen exact.
+Only5 intended raw attributes change; all11protected complete observations,
+5solutions and root unchanged. SHA9dfb0f55d438fddfccb111d00776620dbe36555bb7515b2e1f847319846cb9a2.
+Results computes individual reading times. EnteredUTC residual−0.112602′,
+nearest51°27.9918′N000°00.1515′W independently0.689160NM from Greenwich;
+within fixture0.5′/3NM. Root−97.485352s has formal1068.4s uncertainty,
+not precise singleVega clock acceptance. Public physical transcription
+tablet-lunar-contacts123.json retains these limits. PID32118continuous.
+Earlier resume123-lunar-sequential-save is CHART after Back with no visible
+keyboard cancelled unsaved edits; its XML byte-identical to invalidation baseline.
+Actual positive timing-saved/sequential-altitude-saved and sequential-saved.xml
+are the Save/readback evidence, not that cancelled attempt.
+
+Motion reference prepared before evaluation: public Greenwich51.4779,0,
+COG90/SOG10/300seconds, independent PROJ geod WGS84 gives
+51.477897896095,0.022214513995 (1543.3333333333333metres). Fresh official USNO
+22:05 response at that public destination reconstructs upper MoonHs6.07574,
+SHAe2cbe69a0e75cce942abb2fd8b24676ff586a93ee75e2a451553cca9f2174c98.
+Actual touch motion-on/COG90/SOG10/MoonHs6.07574 Save independently exact;
+only4intended attributes differ, all11protected records/solutions/root unchanged,
+SHA973bc29e2ec1296db48f1cc1ed322a03ed09c1ebeba87f70c8cd4af7d17b1e4d.
+Initial validation assumed disposable last XML child and failed; corrected
+comparison identifies the only changed Sight at index10 and checks every
+other complete child. Numerical moving result acceptance follows separately.
+
+Physical123 motion result08:11–08:13BST: Results actually recomputes two UTC
+roots with separate-times/motion; enteredUTC check residual−0.112615′,
+nearest reference-epoch position51°27.9927′N000°00.1512′W independently
+0.688243NM from public Greenwich (0.5′/3NM limits). Second branch and
+read-only disabled Save shown. Root−97.485352s/formal1068.4s retained as
+weak-clock evidence, not a precision claim. Actual screenshot motion-check
+and independent public JSON retain transcriptions/provenance.
+
+123 cross-cutting continuation08:13–08:16BST: actual landscape final paragraph
+reached after two independent swipes (motion-landscape-final); earlier footer
+capture still clipped its last paragraph, not final-control acceptance.
+Moon recorded22:05:00.987 Save/reopen and cold restart10099 retain exact
+Android offset300.98699999999371s (within1e-9s), legacy rounded301s.
+Cold XML byte-identical to fraction-moon baseline. Watch/separate/motion/90/10
+visible cold. Body fraction first Save attempt did not change XML: numeric
+IME moved header fromy190 toy110; blind fixed header tap missed Save.
+Actual repeat inspected0.638 numeric entry before dismissing keyboard/Save.
+Pre-cold crash buffer retains historical98 failure28Sep04:51:54, no later native
+fatal; lastANR reports none since boot. PriorPID32118 continuity ended only
+by explicit cold force-stop. Idle pre-cold PSS542040KiB/RSS374060KiB,
+swapPSS229869KiB; this is after repeated imports/readers, not active-worker
+headroom acceptance. Logs retained, no fabricated memory pass.
+
+123 actual bodyfractionSave08:17–08:18BST: inspected numeric keyboard
+0.638, keyboardBack then headerSave. Reopened Moon0.987/body0.638 displayed.
+Independent XML differs ONLY4offset attrs from motion baseline; precise
+300.98699999999371/0.63800000000628643s, legacy301/1s, both within1e-9s.
+All11protected records/5solutions/root unchanged. Actual byteSHA
+a68ab67a1581b26b66f5750c3a8d297ed8de82f7dd30f516a889d8776db383f0;
+lunar123-fraction-validation.json retained. First fraction-both validation
+failed because missed Save preserved Moon-only baseline; corrected actual
+file above passes. A mistyped read-only path returned No such file; correct
+run-as path supplied actual bytes, no false readback claim.

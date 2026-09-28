@@ -55,6 +55,16 @@ the latitude branch is appropriate for your hemisphere.
 
 ## Specialized tools and documents
 
+For a lunar observation, **Results** calculates the UTC candidates and opens
+the result pages. **Check at entered UTC** checks the recorded instant; it does
+not apply a recovered clock correction. On **Time**, choose whether the readings
+are UTC or watch readings. If the distance and altitudes were measured at
+different times, enable separate times and enter all three readings on the same
+basis. Enable vessel advance only when the entered true COG and speed describe
+the motion between readings. Review candidate branches, residuals and formal
+uncertainty before storing a solution. Weak timing sensitivity can produce a
+large clock uncertainty even when the position check is close to the DR.
+
 **Tools** opens lunar sessions, pairs and sextant checks, coastal sextant work,
 clock correction, this guide and the full offline HTML/PDF manuals. Use the
 section selector inside each tool for its different tasks.
