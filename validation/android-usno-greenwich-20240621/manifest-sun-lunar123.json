@@ -1,0 +1,39 @@
+{
+  "source": "https://aa.usno.navy.mil/api/celnav?date=2024-06-14&time=17:00:00&coords=51.4779,0",
+  "sha256": "e5f62b9432b01d8fb7a1e85de0eb11454297806516cc6ac412f10e67c7efed67",
+  "retrieved": "2026-09-28",
+  "bodies": {
+    "sun": {
+      "almanac_data": {
+        "dec": 23.307827,
+        "gha": 74.886344,
+        "hc": 27.303114,
+        "zn": 273.812709
+      },
+      "altitude_corrections": {
+        "isCorrected": true,
+        "pa": 0.002133,
+        "refr": -0.032265,
+        "sd": 0.262446,
+        "sum": 0.232315
+      },
+      "object": "Sun"
+    },
+    "moon": {
+      "almanac_data": {
+        "dec": 1.321136,
+        "gha": 338.55294,
+        "hc": 36.696367,
+        "zn": 152.877352
+      },
+      "altitude_corrections": {
+        "isCorrected": true,
+        "pa": 0.728962,
+        "refr": -0.022988,
+        "sd": 0.248692,
+        "sum": 0.954666
+      },
+      "object": "Moon"
+    }
+  }
+}

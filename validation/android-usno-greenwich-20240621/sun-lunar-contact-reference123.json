@@ -1,0 +1,74 @@
+{
+  "date": "2024-06-14",
+  "time": "17:00:00",
+  "DR": [
+    51.4779,
+    0
+  ],
+  "center_altitudes": {
+    "sun": 27.333246,
+    "moon": 35.990393
+  },
+  "semidiameter": {
+    "sun": 0.262446,
+    "moon": 0.248692
+  },
+  "apparent_center_distance": 95.72044352965911,
+  "both_near_LD": 95.2093055296591,
+  "both_far_LD": 96.23158152965911,
+  "Moon_lower_Hs": 35.741701,
+  "Moon_upper_Hs": 36.239084999999996,
+  "Sun_lower_Hs": 27.0708,
+  "Sun_upper_Hs": 27.595692,
+  "eye_height": 0,
+  "index_error": 0,
+  "pressure": 1013,
+  "temperature": 10,
+  "tolerances": {
+    "entered_UTC_residual_arcmin": 0.5,
+    "nearest_position_nm": 3
+  },
+  "generation": "Independent USNO Hc minus parallax and refraction, apparent horizontal-vector separation from published Zn; limb angular additions. Model under test not used.",
+  "physical_near_case": {
+    "source_sha": "e7e6691",
+    "input_method": "Independent fixture staged; actual cold-load Results/Check actions",
+    "distance_contacts": [
+      "Moon near",
+      "Sun near"
+    ],
+    "altitude_limbs": [
+      "Moon lower",
+      "Sun upper"
+    ],
+    "entered_UTC_residual_arcmin": 0.134069,
+    "nearest_position": [
+      51.47674333333333,
+      -0.003395
+    ],
+    "independent_distance_nm": 0.14470797534846425,
+    "recovered_correction_seconds": -17.62207,
+    "formal_clock_sigma_seconds": 65.7,
+    "evidence": "resume123-sun-lunar-near-check.png"
+  },
+  "physical_far_case": {
+    "source_sha": "e7e6691",
+    "input_method": "Actual touch contact/limb choices and typed distance/Moon/Sun altitude, Save/readback/reopened Results",
+    "distance_contacts": [
+      "Moon far",
+      "Sun far"
+    ],
+    "altitude_limbs": [
+      "Moon upper",
+      "Sun lower"
+    ],
+    "entered_UTC_residual_arcmin": 0.08599,
+    "nearest_position": [
+      51.476713333333336,
+      -0.0019333333333333333
+    ],
+    "independent_distance_nm": 0.10150391286749016,
+    "recovered_correction_seconds": -11.293945,
+    "formal_clock_sigma_seconds": 65.7,
+    "evidence": "resume123-sun-lunar-far-check.png"
+  }
+}

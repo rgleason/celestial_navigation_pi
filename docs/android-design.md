@@ -728,3 +728,16 @@ legacy stored correction on first load and unchanged editor Save. Do not alter
 raw readings, clock correction, saved solutions or desktop calculation behavior.
 Retest calculate→edit→Save exact changed-fields, cold legacy preservation,
 repeated/cancelled search and entered-UTC check.
+
+### Complete Android input-context cleanup before choices (before124)
+
+Physical123 Sun contact popup repeats the stray insertion handle after earlier
+text entry, despite120 commit/clearFocus/hide. Existing120 drag and popup code
+commits composition but does not reset the platform input context. Matching
+Qt5.12.2 QAndroidInputContext::commit only finishes composing text; reset clears
+its composing state and handle mode. Use the public QInputMethod reset after
+committing and clearing focus, for both control drag and native choice opening.
+Recheck actual Sun contact/limb popups after text entry and with keyboard hidden,
+dim popup/rotation/Back, stationary text/numeric keyboard and final-field drags.
+Keep this in AndroidTouch's existing Android guard. No numerical/data/desktop
+runtime changes; retain123 failures and complete saved-record validation.

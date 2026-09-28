@@ -3235,3 +3235,53 @@ lunar123-fraction-validation.json retained. First fraction-both validation
 failed because missed Save preserved Moon-only baseline; corrected actual
 file above passes. A mistyped read-only path returned No such file; correct
 run-as path supplied actual bytes, no false readback claim.
+
+Physical123 negative-speed validation08:19BST: typed−1 in motion speed,
+Save displays explicit Check speed (knots) allowed-range error. AndroidBack
+closes error; nextBack cancels parent. Actual full XML byte-identical to
+body-fraction-actual SHAa68ab67a1581b26b66f5750c3a8d297ed8de82f7dd30f516a889d8776db383f0;
+PID10099continuous. invalid-speed-refused/invalid-back evidence retained.
+
+123 wide-span172800s unsaved lunar search08:21–08:22 completed before worker
+capture; wide-worker screenshot is Results, NOT active cancellation evidence.
+ResultsBack/editorBack discarded unsaved span/calculated correction. No claim
+of active single-worker Cancel from this fast calculation. Prior session/Planner
+worker Cancel evidence remains separate. A second independent public USNO
+Sun/Moon reference prepared before evaluation: Greenwich14Jun2024 17UTC,
+both above horizon; response SHAe5f62b9432b01d8fb7a1e85de0eb11454297806516cc6ac412f10e67c7efed67.
+Only disposable watchVega copy replaced with staged public Sun lunar fixture,
+all11protected records/root preserved; raw backup pre-sun-stage.xml retained.
+This is fixture staging, not a claim that every new raw field was manually typed.
+Fixture transfer initially failed: unquoted remote sh command did not create
+staging file; original Sights.xml independently remained SHAa68ab67a1581b26b66f5750c3a8d297ed8de82f7dd30f516a889d8776db383f0.
+Correct quoted exec-in transfer finished after initial immediate readback,
+which failed its equality assertion. Later complete readback matched all136275
+bytes/SHA71874312821e90bcb928d787470db554b6085d44b7eab9112e34de8597b4d461;
+only then atomic rename allowed. Original file never replaced with partial data.
+
+123 actual desktop standalone regressions28Sep08:26–08:29BST: fresh process
+per GUI family with DISPLAY=:1/CELESTIAL_RUN_UI_TESTS=1. FindBodyUi PASS53389ms,
+FixUi PASS333ms, CoastalUiSmoke PASS1839ms, HorizonEventUi PASS185ms,
+AlmanacUi PASS3061ms; LunarUiSmoke earlier PASS6352ms. These are real enabled
+GUI runs, not headless skips. Full logs/ui123-remaining-standalone.json retained.
+Original71 combined failure/SIGSEGV retained; current standalone actual suites
+pass without shared desktop runtime/numerical changes.
+
+Physical123 Sun lunar near08:25–08:26BST: staged independent Greenwich14Jun
+17UTC/Moonlower35.741701/Sunupper27.595692/bothnear95.2093055296591.
+Actual Results/CheckenteredUTC residual+0.134069′, nearest51°28.6046′N
+000°00.2037′W independently0.144708NM within0.5′/3NM. Recovered−17.622070s,
+formal65.7s, approximate fixture models, no exaggerated precision claim.
+Actual far/Moonupper36.239085/Sunlower27.0708/bothfar96.23158152965911
+contact edits/touch/typed Save/reopen08:27–08:32: Check residual+0.085990′,
+nearest51°28.6028′N000°00.1160′W independently0.101504NM, same limits.
+Independent complete record multiset check preserves all11protected sights,
+solutions/root. Initial positional comparison failed because normal Save
+reorders disposable Sun after June21 references; compare full identified records,
+not list indices. lunar123-sun-far-validation.json retains exact SHA and7rawchanges.
+An early combined contact entry missed fields after focus scrolling; its screenshot
+upper-far-typed shows only MoonlimbUpper changed, not positive Sun/far/input
+entry. Actual separately inspected popup rows and typed screenshots/readback
+are the accepted inputs. native Sun limb/contact popup after text retains green
+insertion handle: FAIL123 (sun-body-limb-popup-actual/sun-distance-popup).
+Matching primary Qt5.12.2 input-context source retained;124 reset repair designed.
