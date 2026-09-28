@@ -894,3 +894,17 @@ epochs for overlap detection. Keep this exclusively in the Android adapter.
 Re-run existing epoch tests, add independent valid local epochs and half-hour
 transition cases, build both platforms and replay the actual failing tablet
 workflow. Retain failure evidence; desktop calendar/numerical behavior unchanged.
+
+### Physical145 confirmed cause, before repair
+
+POBsoft (1985–2026). Diagnostic144/145 proves format0/basis0 still reads
+original nautical strings while typed2024-06-21/00:00:00.987 are visible.
+Pinned wxWidgets3.1.2 src/common/textentrycmn.cpp shows generic SetHint caches
+text in wxTextEntryHintData; its wxEVT_TEXT handler updates this cache, and
+GetValue returns it. Planner ContextTimeEdited consumes the event before that
+handler. Allow Android text events to propagate with Skip after scheduling;
+the owned350ms refresh then reads the updated cache. Keep desktop unchanged.
+The original DST failure was caused by this stale input, not proven Qt gap
+normalization; keep the epoch round-trip check as validation hardening and
+replay gap/overlap after text edits actually reach ReadUtc. Remove temporary
+raw-field/provenance diagnostic logging from final runtime.

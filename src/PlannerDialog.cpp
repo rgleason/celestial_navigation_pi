@@ -977,12 +977,6 @@ PlannerDialog::~PlannerDialog() {
 wxDateTime PlannerDialog::ReadUtc(bool showErrors) {
   const wxDateTime entered =
       ReadEntryFields(m_entryFormat->GetSelection(), showErrors);
-#ifdef __OCPN__ANDROID__
-  // POBsoft (1985-2026): retain resolved input provenance for Android diagnostics.
-  qDebug() << "Celnav planner input format/basis/epoch:"
-           << m_entryFormat->GetSelection() << m_inputTimeBasis->GetSelection()
-           << (entered.IsValid() ? entered.GetValue().GetValue() : -1);
-#endif
   if (!entered.IsValid()) return wxDateTime();
   const wxDateTime utc = PlannerFieldsToUtc(
       entered, static_cast<PlannerTimeBasis>(m_inputTimeBasis->GetSelection()),
@@ -1008,11 +1002,6 @@ wxDateTime PlannerDialog::ReadUtc(bool showErrors) {
 wxDateTime PlannerDialog::ReadEntryFields(int format, bool showErrors) {
   wxDateTime entered;
   if (format == 0) {
-#ifdef __OCPN__ANDROID__
-    qDebug() << "Celnav planner nautical fields:"
-             << QString::fromUtf8(m_nauticalDate->GetValue().utf8_str())
-             << QString::fromUtf8(m_nauticalTime->GetValue().utf8_str());
-#endif
     if (!ParseNauticalPlannerDateTime(m_nauticalDate->GetValue(),
                                       m_nauticalTime->GetValue(), &entered)) {
       if (showErrors)
@@ -1161,9 +1150,14 @@ void PlannerDialog::ContextPositionEdited(wxCommandEvent&) {
   ScheduleRefresh();
 }
 
-void PlannerDialog::ContextTimeEdited(wxCommandEvent&) {
+void PlannerDialog::ContextTimeEdited(wxCommandEvent& event) {
   m_timeSource->SetSelection(2);
   ScheduleRefresh();
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): wxQt's generic hint handler must update its text
+  // cache before the deferred refresh reads GetValue().
+  event.Skip();
+#endif
 }
 
 void PlannerDialog::ScheduleRefresh() {
