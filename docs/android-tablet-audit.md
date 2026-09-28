@@ -3285,3 +3285,16 @@ entry. Actual separately inspected popup rows and typed screenshots/readback
 are the accepted inputs. native Sun limb/contact popup after text retains green
 insertion handle: FAIL123 (sun-body-limb-popup-actual/sun-distance-popup).
 Matching primary Qt5.12.2 input-context source retained;124 reset repair designed.
+
+Physical12436ba44e28Sep08:41–08:43BST: Android/desktop compilation PASS,
+native import ACK and independent installed SO
+1c4d3f9b472d1dd50e9814a32146b4612e5d10356245393f9d67aedfe3d20084
+match retained tar b87d813ff2877ee7611784b923f0430ee6c9b191883323dd099e2d2e5cdae195.
+PID11583continuous. Actual stationary distance tap opens keyboard; select/type
+the unchanged96.23158152965911, keyboardBack then distance popup leaves a green
+handle at section header: FAIL124, resume124-after-text-popup.png. Reset alone
+does not complete visible handle cleanup. No Save or numerical acceptance
+claimed. Matching public QInputMethod wrapper source retained separately;
+it emits cursorRectangleChanged from update(ImCursorRectangle), unlike the
+platform context update implementation.125notification follow-up designed
+before implementation; previous narrower inference about update is corrected.

@@ -741,3 +741,14 @@ Recheck actual Sun contact/limb popups after text entry and with keyboard hidden
 dim popup/rotation/Back, stationary text/numeric keyboard and final-field drags.
 Keep this in AndroidTouch's existing Android guard. No numerical/data/desktop
 runtime changes; retain123 failures and complete saved-record validation.
+
+Physical124 repeats the stray handle after an actual stationary text tap,
+unchanged typed distance, keyboard Back and Moon-distance popup opening. Reset
+alone sets QAndroidInputContext's handle mode to Hidden without dispatching its
+updateSelectionHandles. Earlier review of platform update() missed the public
+QInputMethod::update wrapper: matching Qt5.12.2 qinputmethod.cpp lines315–337
+emits cursorRectangleChanged for ImCursorRectangle, which is connected to the
+Android handle updater. After reset, notify the public input method of the
+cursor rectangle change in both existing cleanup paths; keep focus/IME behavior
+and desktop code unchanged. Retest the exact124 sequence and later entry,
+drag, rotation and popup Back before accepting this correction.
