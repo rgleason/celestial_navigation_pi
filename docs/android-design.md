@@ -674,3 +674,13 @@ grey background distinguishable from black. Keep the existing minimum touch
 rows, preceding-week date mapping, calendar value and desktop implementation.
 Retest March Sunday/Saturday taps, selected day, month changes and rotation;
 Cancel must preserve the complete observation file.
+
+Physical119 calendar repair passes actual Sunday/Saturday/month/rotation taps
+and Cancel byte-identical XML. Native section popup still uses bright cyan
+selection in NIGHT, and a stray cursor handle appears after scrolling the
+Time fields. Before repair: reapply the host theme to the live combo popup
+after showPopup (Qt initializes it there), including QListView selection rules.
+On a genuine control drag crossing the movement threshold, commit and clear
+focused text input and hide its IME before scrolling; stationary releases
+still focus editable fields normally. Retest night popup selection/rotation,
+field drag versus tap/type, keyboard Back, reports and Cancel persistence.
