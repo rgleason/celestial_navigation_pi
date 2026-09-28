@@ -338,6 +338,15 @@ protected:
             // Qt initializes the popup palette when showing it, after the
             // sheet was themed. Apply the current scheme to this live window.
             CN_ApplyAndroidTheme(combo->view()->window());
+            // POBsoft (1985-2026): popup focus/input work can follow this
+            // release. Finish handle cleanup on the next GUI turn, only while
+            // the same choice remains open; never interrupt a later editor.
+            QTimer::singleShot(0, combo, [combo]() {
+              if (!combo || !combo->view()->window()->isVisible()) return;
+              QGuiApplication::inputMethod()->reset();
+              QGuiApplication::inputMethod()->update(Qt::ImCursorRectangle);
+              QGuiApplication::inputMethod()->hide();
+            });
           }
         }
       }
