@@ -18,6 +18,7 @@
 #ifdef __OCPN__ANDROID__
 #include "AndroidTouch.h"
 #include <QTimer>
+#include <QtAndroidExtras/QAndroidJniEnvironment>
 #include <memory>
 #include <mutex>
 #endif
@@ -227,6 +228,19 @@ class UpdatePanel : public wxScrolledWindow {
     if (status==OCPN_DL_NO_ERROR) FinishDownload(true,wxEmptyString);
     else if (status!=OCPN_DL_STARTED)
       FinishDownload(false,_("Download failed. Existing offline data is unchanged."));
+    else {
+      // POBsoft (1985-2026): even the host's background API opens a native
+      // non-cancellable ProgressDialog. Its transparent window intercepts
+      // touches outside the spinner, including our Cancel/Close/Back actions.
+      // This transfer already has owned progress and cancellation controls.
+      // Dismiss its spinner; normal host completion still clears busy state.
+      QtAndroid::androidActivity().callObjectMethod("hideBusyCircle", "()Ljava/lang/String;");
+      QAndroidJniEnvironment env;
+      if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        FinishDownload(false,_("This host cannot show a cancellable download. Existing data is unchanged."));
+      }
+    }
 #else
     download_->Disable(); import_->Disable();
     // The host owns the cancellable progress dialog. Only this explicit action

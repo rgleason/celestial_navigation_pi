@@ -2354,3 +2354,26 @@ panel, while its dynamic Rewrap only laid out the original scroller. Next
 Android repair measures native font heights, invalidates and lays out the
 actual content owner before fitting the viewport. Desktop Wrap unchanged.
 Actual repaired Cancel/Close/offline/cold/import-invalid tests remain pending.
+
+
+### 2026-09-28 02:26–02:35 BST: runtime90 wrapping accepted; native host input blocker identified
+
+Runtime90/bab7e7e installed library SHA256
+3e2f5dfbe18f532601e4dfeacca1a826457c3490644a1952a47b7943db300130,
+archive72beba0d92d455170b666c8aba774d3ca835a31f4ceef531f4fa7a25690283ab.
+At font1.3 the complete offline/coverage text, action buttons and final
+already-up-to-date status now fit and remain readable after an actual swipe.
+A freshly captured active transfer still ignores the displayed Cancel tap.
+Do not count resume90-cancel-* filenames as cancellation acceptance. PID30939
+continuous. Retained logcat90-full.txt proves touch enters an extra native
+Android Dialog window while the network transfer is active.
+
+Host startAndroidFileDownload unconditionally calls androidShowBusyIcon,
+including its background API. Java showBusyCircle creates a non-cancellable
+ProgressDialog whose transparent window blocks the plugin controls. This is
+the cause of the missed Cancel, rather than the repaired content geometry.
+Android-only next repair dismisses this transfer's native spinner using the
+existing activity hideBusyCircle method immediately after STARTED; panel owns
+progress, timeout and Cancel. Normal host finish still clears its busy state.
+A missing JNI method cancels safely with an explicit failure. Desktop path
+unchanged; Android and desktop builds pass. Physical repaired91 pending.
