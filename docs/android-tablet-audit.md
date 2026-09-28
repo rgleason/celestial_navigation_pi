@@ -3831,3 +3831,52 @@ Both134 builds pass, but UTF8 literal guard FAIL: new en-dash Body captions use
 locale-based narrow translation. Changed these two labels to ASCII A-Z/Z-A
 before any packaging/import; subsequent guard passes. No runtime134 physical
 acceptance or installation claimed. Retain failed guard separately.
+
+### Complete observation sorting and Delete All140, runtime135/a3c42bf, 12:08–12:24 BST
+
+Both135 Android and desktop builds PASS; UTF8 guard PASS; all9CTest PASS53.61s
+(headless GUI skips are not passes). Actual manager import ACK and independently
+read installed SO c07a53322d3efa6ed02810532c16b5450b2352430e9a08962c29e72ecfda3666
+matches archive9fea66fe47e53e0ef30d065a325ded0cc0ee1277dd5bf7b7c5095edcecf7b7ad.
+No134 archive or physical installation claimed. Entire original12sights and
+5complete nested solution reports backed up after exact checksum verification.
+Only3public disposable observations cold-loaded for sorting/deletion.
+
+All12native choices actually tapped: newest/oldest/body both directions/type
+both directions/measurement both directions/included/excluded first/colour
+both directions. Independent complete serialized-record counters/root match
+normalized fixture after every sort; order agrees with predeclared public
+expected-orders140.json. Actual screenshots/OCR retain selected Mars through
+every permutation. Native popup row centres move with selected choice, so
+each target was located from current caption rather than fixed coordinates.
+Public exact outcomes/hashes in validation/android-observation-library-20260928.
+Colour compares baseline CSS text, not colour-name alphabetic order.
+
+Font1.3 portrait and landscape actual popup12rows each72px/48dp. Landscape
+deliberate swipe changes highlighted row but does not activate; Back restores
+Colour descending and entire saved file byte-identical. Rotation with popup
+open dismisses it safely and preserves full file/order/selected Mars.
+Delete All explicitNo and confirmationBack retain entire fixture file exactly;
+explicitYes removes only3fixtures, retains Clock0/no solutions. Empty actions
+Edit/Duplicate/Include/Delete disabled and actual taps inert; Show chart gives
+Select an observation first, Back returns safely. NewSight opens; headerCancel
+creates nothing and full empty file identical. Offline deliberate7826→9058
+cold restart retains entire empty file exactly; actual empty workspace/guidance
+displayed. Sort caption resets Newest first on cold startup, not persisted.
+
+Cleanup initially stops before any mutation because helper incorrectly counts
+LunarSolution at root instead of nested under ClockError. Corrected descendant
+guard verifies all5reports. Only library restored from verified raw backup,
+exact original12/5/Clock0 bytes fba0ee0f... before and after actual cold9252
+workspace open. Every current config byte retained by cleanup; WiFi enabled,
+portrait restored, font1.3 retained for ongoing work. No original records were
+loaded while UI destructive tests ran. Historical139parity/134UTF8 failures
+remain recorded. Initial screenshot helper path errors produced no UI actions
+except authorized landscape rotation; corrected paths retained valid captures.
+
+Workflow7826 continuous through all12choices/swipe/rotation/No/Back/Yes/empty
+NewCancel, intentional cold9058/cleanup9252 distinguished. Full crash buffer
+still latest historical04:51:54/runtime98; no ANR since boot. Actual empty
+workspace PSS455612/RSS519084KiB/swapPSS329KiB, foreground dev QtActivity.
+These tests accept the specific sorting/deletion cases; other families and
+final-source crosscuts remain incomplete. Publication remains on hold.

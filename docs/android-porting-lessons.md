@@ -364,3 +364,12 @@ pressure refusal preserves the entire config, not just the seven default keys.
 Targeted cleanup removes only keys known absent in the pre-test snapshot and
 retains every other current byte. Native keyboard rotation can pan the focused
 field; dismiss keyboard and inspect final action movement before tapping it.
+
+Check every baseline sortable column in both directions; a five-choice menu
+can look complete while silently dropping seven working desktop actions. Use
+predeclared varied fixtures, complete saved-record counters, and actual selected
+card identity. Native popup positions change with selected row; locate current
+caption bounds each time. Highlight after swipe is not activation: read actual
+saved order after Back. Isolate destructive tests in a separately backed-up
+library and restore raw original bytes, including nested reports. Count XML
+solutions at their actual nesting level; a guard failure must stop before writes.
