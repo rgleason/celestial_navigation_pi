@@ -28,16 +28,14 @@ class DocumentBrowser : public QTextBrowser {
       qDebug() << "CNHELP SOURCE" << source;
       QScroller::scroller(viewport())->stop();
       AdaptDocument();
-      // Font reflow must finish before resolving the requested anchor.
-      const QString fragment = source.fragment();
-      if (!fragment.isEmpty()) QTimer::singleShot(0, this,
-          [this, fragment]() {
-            document()->documentLayout()->documentSize();
-            scrollToAnchor(fragment);
-            viewport()->repaint();
-            qDebug() << "CNHELP ANCHOR" << fragment << verticalScrollBar()->value();
-          });
+      PositionAndRepaint(source);
     });
+  }
+
+  void setSource(const QUrl& source) override {
+    QTextBrowser::setSource(source);
+    // Complete the jump after the base loader's own layout/history handling.
+    PositionAndRepaint(source);
   }
 
   QVariant loadResource(int type, const QUrl& name) override {
@@ -53,6 +51,13 @@ class DocumentBrowser : public QTextBrowser {
   }
 
  private:
+  void PositionAndRepaint(const QUrl& source) {
+    document()->documentLayout()->documentSize();
+    if (!source.fragment().isEmpty()) scrollToAnchor(source.fragment());
+    viewport()->repaint();
+    qDebug() << "CNHELP ANCHOR" << source.fragment() << verticalScrollBar()->value();
+  }
+
   void AdaptDocument() {
     const QColor background = CN_ThemeBackground();
     const bool lowLight = background.lightness() < 128;

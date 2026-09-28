@@ -642,3 +642,11 @@ Also stop the reader's QScroller before changing its document/anchor: queued
 scroll motion from the release must not restore the old viewport after a
 programmatic jump. This is scoped to reader source changes and external-link
 activation; it does not alter form/report gesture behavior.
+
+Physical114 logs show SOURCE immediately but no deferred ANCHOR callback until
+another input. Zero-delay Qt callbacks do not complete this navigation while
+the Android wx modal loop is idle. Override native virtual setSource: call the
+base loader, then synchronously force layout/position/repaint after it returns.
+Use sourceChanged to apply document styles and handle native history changes
+synchronously too. Remove the deferred callback; retain native URLs/history.
+Verify first screenshot without a second input, including distant anchors.

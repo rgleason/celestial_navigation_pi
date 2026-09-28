@@ -3009,3 +3009,12 @@ Second-link log shows same tap now hits empty anchor and source already#circle;
 second screenshot correctly shows Chapter2 with image and caption below it.
 First screenshot remained contents: rendering/navigation timing failure remains.
 114 forces layout/viewport repaint and logs deferred anchor callback timing.
+
+Physical1140357e49,06:51BST: import ACK/SO
+6279b251fda91b1217b8cef7c3c22fc9e5024044341b78b391d75d542d5d5bbe
+matches tar04d4cba7fd659f0f2e322862fdbe1d04256368c5e05621bb0b12854f65881b2f.
+Builds PASS/PID27411 continuous. First tap logs HIT#circle then SOURCE#circle
+immediately, but no ANCHOR callback before capture: FAIL (reader114-first-link).
+The zero-delay callback is pending until another input in this modal loop.
+115design switches positioning/layout/repaint to synchronous completion after
+base virtual setSource returns. Keep diagnostics until immediate capture passes.
