@@ -447,6 +447,25 @@ inline void CN_EnableAndroidLabelScrolling(wxWindow* label) {
   new CN_AndroidButtonDragFilter(widget);
 }
 
+inline void CN_EnableAndroidInputScrolling(QLineEdit* line,
+                                           QWidget* target = nullptr) {
+  if (!line) return;
+  if (!target) target = line;
+  if (target->property("cnInputDrag").toBool()) return;
+  target->setProperty("cnInputDrag", true);
+  if (line->isReadOnly()) {
+    line->setFocusPolicy(Qt::NoFocus);
+    new CN_AndroidButtonDragFilter(target);
+  } else {
+    QPointer<QLineEdit> safeLine(line);
+    new CN_AndroidButtonDragFilter(target, [safeLine](QPoint) {
+      if (!safeLine) return;
+      safeLine->setFocus(Qt::MouseFocusReason);
+      QGuiApplication::inputMethod()->show();
+    });
+  }
+}
+
 // Sliders inside a scrolling sheet must consume their own touch sequence.
 class CN_AndroidSliderTouchFilter : public QObject {
 public:
@@ -539,27 +558,21 @@ inline void CN_StyleAndroidControls(wxWindow* parent, bool applyTheme = true) {
         }
       }
     }
-    if (auto* line = qobject_cast<QLineEdit*>(child->GetHandle())) {
-      if (!line->property("cnInputDrag").toBool()) {
-        line->setProperty("cnInputDrag", true);
-        if (line->isReadOnly()) {
-          line->setFocusPolicy(Qt::NoFocus);
-          new CN_AndroidButtonDragFilter(line);
-        } else {
-          QPointer<QLineEdit> safeLine(line);
-          new CN_AndroidButtonDragFilter(line, [safeLine](QPoint) {
-            if (!safeLine) return;
-            safeLine->setFocus(Qt::MouseFocusReason);
-            QGuiApplication::inputMethod()->show();
-          });
-        }
-      }
-    }
+    if (auto* line = qobject_cast<QLineEdit*>(child->GetHandle()))
+      CN_EnableAndroidInputScrolling(line);
     const bool list = wxDynamicCast(child, wxListBox) ||
                       wxDynamicCast(child, wxListCtrl);
     if (wxDynamicCast(child, wxSpinCtrl) || wxDynamicCast(child, wxSpinCtrlDouble)) {
-      if (auto* spin = qobject_cast<QAbstractSpinBox*>(child->GetHandle()))
+      if (auto* spin = qobject_cast<QAbstractSpinBox*>(child->GetHandle())) {
         spin->setButtonSymbols(QAbstractSpinBox::NoButtons);
+        // POBsoft (1985-2026): wx child traversal misses a native spin's
+        // internal editor. Both its text and border must distinguish a
+        // stationary keyboard tap from a sheet drag, preserving validation.
+        if (auto* line = spin->findChild<QLineEdit*>()) {
+          CN_EnableAndroidInputScrolling(line);
+          CN_EnableAndroidInputScrolling(line, spin);
+        }
+      }
       child->SetMaxSize(wxSize(-1, -1));
       child->SetMinSize(wxSize(180, CN_TouchHeight()));
     }
