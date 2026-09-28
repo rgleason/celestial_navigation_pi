@@ -301,6 +301,9 @@ protected:
         QGuiApplication::inputMethod()->commit();
         if (auto* focus = QApplication::focusWidget()) focus->clearFocus();
         QGuiApplication::inputMethod()->reset();
+        // POBsoft (1985-2026): reset marks Android handles hidden; the public
+        // geometry notification dispatches that state to the visible handle.
+        QGuiApplication::inputMethod()->update(Qt::ImCursorRectangle);
         QGuiApplication::inputMethod()->hide();
       }
     }
@@ -327,6 +330,7 @@ protected:
           // POBsoft (1985-2026): commit does not clear Android's cursor-handle
           // mode. Reset the input context before focus moves into the popup.
           QGuiApplication::inputMethod()->reset();
+          QGuiApplication::inputMethod()->update(Qt::ImCursorRectangle);
           QGuiApplication::inputMethod()->hide();
           if (combo) {
             combo->setFocus(Qt::OtherFocusReason);
