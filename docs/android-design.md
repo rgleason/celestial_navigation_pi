@@ -434,3 +434,12 @@ slider to48dp, show its alpha value and respect its inverse direction when
 handling native touch input. All appearance changes remain within the sight
 transaction until its Save. Test nested colour Cancel/Back, unchanged Apply,
 typed RGB, slider endpoints, XML/reopen, larger font and rotation.
+
+Physical97 successfully saves/reopens RGB13/79/201 and alpha114, preserves all
+original sights, and reaches both alpha endpoints with the correct inverse
+direction. Its swatch panel is not painted and the log retains a later local
+16pt override. Make the swatch a styled label with a readable hex value, and
+show that value on the colour button. Set the known report explicitly read-only
+before decoration, remove its late font override and give Calculations one
+full-height viewport (the existing native QTextEdit), with definitions and
+lunar calculation actions outside its scrolling content. Retest on tablet.

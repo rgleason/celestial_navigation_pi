@@ -27,14 +27,19 @@ inline bool EditColour(wxWindow* parent, const wxColour& original,
     channels[i]->SetRange(0,255); channels[i]->SetValue(values[i]);
     root->Add(channels[i], 0, wxEXPAND | wxALL, 12);
   }
-  auto* swatch = new wxPanel(&sheet, wxID_ANY);
+  auto* swatch = new wxStaticText(&sheet, wxID_ANY, _("Colour preview"));
   swatch->SetMinSize(wxSize(0, CN_TouchHeight()));
   root->Add(swatch, 0, wxEXPAND | wxALL, 12);
   const auto preview = [=]() {
     const wxColour colour(channels[0]->GetValue(), channels[1]->GetValue(),
                           channels[2]->GetValue());
-    swatch->GetHandle()->setStyleSheet(QString("background: %1; border: 1px solid #74818a;")
-        .arg(QString::fromUtf8(colour.GetAsString(wxC2S_HTML_SYNTAX).utf8_str())));
+    const wxString hex = colour.GetAsString(wxC2S_HTML_SYNTAX);
+    swatch->SetLabel(_("Colour preview: ") + hex);
+    const char* ink = (299*colour.Red()+587*colour.Green()+114*colour.Blue() > 128000)
+                         ? "black" : "white";
+    swatch->GetHandle()->setStyleSheet(QString("QLabel { background: %1; color: %2; "
+        "font-size: %3pt; padding: 12px; border: 1px solid #74818a; }")
+        .arg(QString::fromUtf8(hex.utf8_str())).arg(ink).arg(CN_FontPointSize()));
   };
   palette->Bind(wxEVT_CHOICE, [=](wxCommandEvent&) {
     const wxColour colour = colours[palette->GetSelection()];
@@ -60,12 +65,18 @@ inline bool EditColour(wxWindow* parent, const wxColour& original,
 }
 inline void AddColourEntry(wxColourPickerCtrl* picker, std::function<void()> changed) {
   auto* row = picker->GetContainingSizer();
-  auto* button = new wxButton(picker->GetParent(), wxID_ANY, _("Choose sight colour"));
+  auto* button = new wxButton(picker->GetParent(), wxID_ANY,
+      _("Choose sight colour: ") + picker->GetColour().GetAsString(wxC2S_HTML_SYNTAX));
   row->Replace(picker, button); picker->Hide();
   button->Bind(wxEVT_BUTTON, [=](wxCommandEvent&) {
     wxColour colour = picker->GetColour();
     if (EditColour(button, colour, &colour)) {
-      picker->SetColour(colour); changed();
+      picker->SetColour(colour);
+      const wxString caption = _("Choose sight colour: ") + colour.GetAsString(wxC2S_HTML_SYNTAX);
+      button->SetLabel(caption);
+      if (auto* native = qobject_cast<QAbstractButton*>(button->GetHandle()))
+        native->setText(QString::fromUtf8(caption.utf8_str()));
+      changed();
     }
   });
 }

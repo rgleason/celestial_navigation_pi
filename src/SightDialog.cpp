@@ -425,6 +425,14 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   for (size_t i = 0; i < m_notebook1->GetPageCount() &&
                      i < sizeof(sections) / sizeof(sections[0]); ++i)
     m_notebook1->SetPageText(i, sections[i]);
+  // POBsoft (1985-2026): one full-height read-only report owns its scrolling.
+  m_tCalculations->SetEditable(false);
+  m_panel81->GetHandle()->setProperty("cnNoPageScroll", true);
+  m_panel81->GetSizer()->Clear(false);
+  auto* reportSizer = new wxBoxSizer(wxVERTICAL);
+  reportSizer->Add(m_tCalculations, 1, wxEXPAND | wxALL, 8);
+  reportSizer->Add(m_bShowDefinitions, 0, wxEXPAND | wxALL, 8);
+  m_panel81->SetSizer(reportSizer);
   celestial_android::AddColourEntry(m_ColourPicker, [this]() { MarkDirty(); Recompute(); });
   const auto alphaCaption = [this]() {
     m_staticText14->SetLabel(wxString::Format(_("Opacity: %d / 255 (0 transparent, 255 opaque)"),
@@ -541,9 +549,7 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   });
   CN_StyleAndroidControls(m_panel2);
   CN_StyleAndroidControls(m_panel81);
-  m_tCalculations->SetMinSize(wxSize(0, 450));
-  m_tCalculations->GetHandle()->setStyleSheet(
-      "QTextEdit, QPlainTextEdit { font-size: 16pt; }");
+  m_tCalculations->SetMinSize(wxSize(0, 0));
   celestial_android::LayoutScrolls(this);
 #endif
   Bind(wxEVT_CLOSE_WINDOW, &SightDialog::OnWindowClose, this);
