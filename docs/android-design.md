@@ -761,3 +761,19 @@ showPopup, owned by a QPointer combo and conditional on its popup still being
 visible. Never reset after the popup closes, which could interrupt a subsequent
 editor tap. Retest both sequences and rapid popup selection followed by typing;
 retain125's successful subset and changed-altitude failure separately.
+
+### Numeric spin-field scrolling after127 (before implementation)
+
+Physical bias case128, still running127/445cd67, types session search0.25h,
+keyboardBack, then swipes upward beginning on the focused search spin field.
+Content moves but the keyboard reopens and obscures the sheet header: FAIL,
+resume128-bias-fit-controls.png. Further Back returns safely. Existing editable
+QLineEdit drag adaptation only handles a wx control whose root handle is a
+QLineEdit. wxSpinCtrl/Double root handles are QAbstractSpinBox, whose internal
+QLineEdit is missed by wx child traversal. Apply the same owned tap-versus-drag
+filter to that internal editor, preserving native validation and stationary-tap
+keyboard behavior. Keep the change inside AndroidTouch's Android guard; shared
+runtime/numerics and the requested f201326 correction remain untouched.
+Retest the exact focused-field typed/Back/swipe sequence, real final-control
+movement, stationary numeric entry, keyboard rotation, popup selection/Back,
+Save/reopen/Cancel persistence and all protected records before acceptance.

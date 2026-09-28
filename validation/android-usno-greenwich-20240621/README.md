@@ -69,3 +69,19 @@ The recovered corrections have large reported formal uncertainty; the joint
 session's clock tolerance does not apply to these single-reading cases. These
 checks accept the entered-UTC branch/residual and exact saved raw inputs;
 they do not establish a precise recovered clock or general navigation accuracy.
+
+## Physical common-index-bias case
+
+`session-bias128.xml` adds exactly+0.85/60degrees to each of the three raw angles
+in each independent public session triple, leaving the configured index error
+zero. Positive on-arc index error subtracts from all three raw readings. The
+additional copies are disposable; existing tablet observations stay intact.
+`session-bias128-reference.json` records this arithmetic, fixture hash and the
+limits fixed before the physical calculation: bias+0.85±0.5arcminute,
+clock0±10seconds and angular RMS below0.5arcminute at the known Greenwich position.
+These allow the same approximate frame/refraction conventions described above.
+
+`tablet-session-bias128.json` records the actual saved physical solution on
+runtime127/445cd67: bias+0.724781arcminute, clock−0.049565seconds, displayed
+angular RMS0.20arcminute and all four residuals. This accepts this known-position
+case, not all bias/joint/motion/outlier modes or touch/lifecycle crosscuts.
