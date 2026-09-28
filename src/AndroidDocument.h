@@ -68,6 +68,10 @@ class DocumentBrowser : public QTextBrowser {
     const bool lowLight = background.lightness() < 128;
     const QColor ink = CN_HostColour("DILG3", Qt::lightGray);
     const int size = CN_FontPointSize();
+    // All cursors/frames share this document edit transaction. Without it,
+    // each merge relayouts the visible long manual during anchor navigation.
+    QTextCursor transaction(document());
+    transaction.beginEditBlock();
     struct Range { int position; int length; QTextCharFormat format; };
     QVector<Range> ranges;
     // Collect before merging formats, which can split/coalesce fragments.
@@ -97,6 +101,7 @@ class DocumentBrowser : public QTextBrowser {
       cursor.mergeCharFormat(range.format);
     }
     if (lowLight) DimFrame(document()->rootFrame(), background);
+    transaction.endEditBlock();
     document()->setModified(false);
   }
 

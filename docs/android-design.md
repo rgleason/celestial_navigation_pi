@@ -656,3 +656,11 @@ capture. Earlier attribution to deferred callbacks alone was incomplete.
 Instrument boundaries around scroller stop, document adaptation/layout, anchor
 scroll and repaint to identify the blocking operation. Keep this diagnostic
 scoped to the reader; no new acceptance or causal claim until measured.
+
+Physical116 quiet capture proves completion without another input: SOURCE/
+STOPPED06:59:24.569, ADAPTED06:59:30.122 (5.553s), then immediate layout/anchor/
+repaint. Prior apparent ignored taps/deferred stalls were premature captures
+of slow visible-document formatting, not missing input. Group all fragment,
+block, frame and cell changes in one QTextCursor beginEditBlock/endEditBlock
+so visible layout recalculates once. Measure time to ADAPTED and first capture;
+retain corrected timing interpretation and remove diagnostics after validation.

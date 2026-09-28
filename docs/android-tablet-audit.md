@@ -3032,3 +3032,14 @@ Cold115host restart PID27411→32118 at06:56BST; actual stock icon moved to
 Circle tap again logs HIT#circle/SOURCE but no ANCHOR completion and capture
 stays contents (reader115-cold-first-link): FAIL. Retained hot objects do not
 explain this failure.116boundary diagnostics built; next import/cold check.
+
+Physical116b49ba1d,06:59–07:00BST: actual import ACK/hash PASS, SO
+1bf375ba8e33ebae1beac4b658b86c9fc83df1ff7904d40bc420f77dd943d398,
+tar870553cf7b46fabf23ddfa81024f9cffc155efcaaf38cdf6d338fd3a675d5340.
+Android build/PID32118 PASS. SOURCE/STOPPED06:59:24.569 then
+ADAPTED06:59:30.122, all layout/anchor/repaint by30.145. Quiet capture without
+any intervening input shows correct readable AppendixD/footer. Root failure:
+5.553s visible restyling, premature3.3s capture; previous ignored-tap/idle-
+callback/blocking interpretations were incomplete. No second tap was required.
+117batches all document format mutations into one edit transaction; timing
+acceptance pending. Keep all failed short captures and diagnostic logs.
