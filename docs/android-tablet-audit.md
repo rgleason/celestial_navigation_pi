@@ -3747,3 +3747,30 @@ pending. Cleanup verifies complete protected counters before restoring original
 record ordering/exact original Sights bytes fba0ee0f...; only observed task-changed
 ShowActiveRouteHighway0→1 restored, every other current config byte unchanged.
 WiFi enabled again. Current font/rotation remain for ongoing acceptance.
+
+### Horizon defaults136, runtime132/343ba6c, 11:36–11:46 BST
+
+Both builds PASS; isolated actual-display HorizonEventUi PASS, all9CTest PASS
+54.46s. Manager import ACK, installedSO SHA256
+f4c5881502aa03a3cb8f579b8113aae9a84daa03a251522c6679241afd1f98ea
+matches archive05e02bdf1918595165b0f6dfaad2a67298034857dbe7291a0b41db1492917dbc.
+Corrected raw-byte staging preserves CDATA. Actual unchanged Save of the public
+magnetic57/variation5/deviation−2 fixture immediately writes all five defaults:
+5/−2/2/10/clear0. Full protected12sights/5solutions/reports/root/Clock unchanged.
+Offline intentional cold3248→3730 retains entire saved XML byte-identically and
+all five defaults. Actual New Event displays5/−2 (resume136-new-defaults-cold).
+Change draft variation to9, rotate, actual landscape swipe reaches9, Cancel:
+entire saved XML and all saved defaults unchanged. No new observation created.
+
+Actual native Delete removes only owned fixture. Strict complete counters pass,
+then original record-order/Sights bytes restored fba0ee0f... . Cleanup initially
+stops at a highway-preference guard: import settings had already persisted0
+before136, not expected1. No config write happened on that failed guard. Corrected
+cleanup restores only five tested horizon defaults to their before136 values;
+every other current config byte, including highway0, retained. WiFi enabled,
+portrait restored; larger font remains for acceptance. Cold cleanup PID4463.
+Workflow PID3730 continuous before deliberate cleanup restart. Complete crash
+buffer still latest historical04:51:54/runtime98, ANR none since boot. Active
+workspace PSS465631/RSS530224KiB, swapPSS328KiB. xGRIB/xWeatherRouting enabled
+in actual manager. This repairs the specific defaults failure; remaining horizon
+variants and other acceptance rows are not inferred from it.
