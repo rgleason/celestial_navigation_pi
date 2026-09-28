@@ -354,3 +354,13 @@ before Edit/Delete because those controls move. Saved observation persistence
 does not prove saved defaults: verify immediate host config and a new event
 after Android cold restart. Flush saved defaults explicitly on Android; Cancel
 must leave them alone.
+
+Audit explicit default actions independently from observation Save. The baseline
+Set As Defaults changes preferences even when the enclosing observation is
+cancelled; on Android flush at that action, not by implicitly persisting ordinary
+draft edits. Check hot and cold New Sight, both mutually exclusive correction
+flags, immediate exact config keys, and invalid-input refusal. Actual138 negative
+pressure refusal preserves the entire config, not just the seven default keys.
+Targeted cleanup removes only keys known absent in the pre-test snapshot and
+retains every other current byte. Native keyboard rotation can pan the focused
+field; dismiss keyboard and inspect final action movement before tapping it.

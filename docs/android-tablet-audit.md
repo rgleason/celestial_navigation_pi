@@ -3786,3 +3786,35 @@ cold4463→5368, actual new Corrections returns2/10/1013/0/0 and both unchecked
 (resume137-cold-defaults). Cancel leaves complete original Sights byte-identical.
 Android-only flush after seven existing explicit-default writes designed and
 implemented; builds and physical replay pending. No seeded config acceptance.
+
+### Explicit defaults138, runtime133/8418700, 11:53–12:00 BST
+
+Both builds PASS. Isolated actual-display f201326 SightSearchSpanUi PASS9435ms;
+all9CTest PASS53.30s. Manager import ACK and independent installedSO
+8f69fb52d58a5e9624cbe9e9ca81ad4d65e5068603580f6cad7537402654b53a
+matches archive15e2d4f19a2513149a31d2244dcbf21a8fbf2781aa27f2c10e756f00d497071b.
+Actual typed3.25m/12°C/1008hPa/IE−1.75′/distance2.5NM, artificial horizon
+checked/short dip unchecked. Explicit Set As Defaults immediately persists all
+seven exact keys independently read. Cancel creates no sight. Offline cold
+5368→6515, actual new Corrections retains every value/flag and complete saved
+defaults equal immediately saved subgroup. Public exact results in
+validation/android-defaults-20260928; private configs retained separately.
+
+Actual separate short mode: uncheck artificial horizon, check short dip; explicit
+Set As Defaults stores1/0 flags and retains the five quantities. Enter pressure−1
+with native text keyboard, rotate to landscape, Back dismisses only keyboard
+and retains draft. Actual swipes reach final Set As Defaults at font1.3. Attempt
+gives explicit positive-pressure refusal. Entire on-disk config byte-identical
+to valid short defaults. Android Back dismisses message and retains editor;
+header Cancel discards draft. Another offline cold6515→6926, actual New Sight
+retains short mode1/0, distance2.5 and all correction values. All seven saved
+defaults exactly equal short-saved subgroup; full original Sights byte-identical
+throughout fba0ee0f... . These are persistence/UI checks, no new astronomical claim.
+
+Guarded cleanup removes only seven task-created keys (all absent before138),
+verifies every other current configuration byte retained and no sight changes.
+WiFi enabled, portrait restored, font1.3 retained for ongoing acceptance.
+Intentional cleanup cold→7163. Workflow6515 continuous through keyboard,
+rotation/refusal/Back/Cancel. Complete crash buffer still latest historical
+04:51:54/runtime98, ANR none since boot. Workspace PSS482914/RSS546588KiB,
+swapPSS314KiB; xGRIB/xWeatherRouting enabled in actual manager.
