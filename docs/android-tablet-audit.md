@@ -3538,3 +3538,52 @@ outlier1, all clean absresiduals<1′ and outlier0. Complete canonical12sights/
 the actual report; private sights129-outlier-solution/session129-validation.
 Back twice returns chart with PID23221 continuous. Cold report, clipboard and
 other outlier configurations not inferred from this known-position check.
+
+### Moving session130, runtime128/e0f5cd5,09:59–10:09BST
+
+Targeted129 cleanup verifies complete12sight/5solution protection and removes
+only owned Deneb/RESUME129-Outlier before staging two moving public copies.
+make_motion130.py uses retained USNO22:05 response at independent PROJ WGS84
+destination51.477897896095/0.022214513995, true90deg/10kn/300s from Greenwich.
+No plugin ephemeris generates these observations. Limits declared before solve
+in session-motion130-reference: known clock0±10s/RMS<0.5′, joint clock0±60s/
+position<3NM/RMS<0.5′. Two added excluded destination triples; selected exactly
+cards4/5/6/7, excluding static22:05 readings and unrelated Saturn/Sun. All12
+existing sights/5solutions intact, independent staged SHA256
+05c7269f73485dcd26ba25145deb5adc6fc2700f942a7a1a03508c933cbd5101.
+Cold PID24016, then continuous. Actual inspected known-position settings:
+DR51.4779/0, search±0.25h, robust on, bias off, motion on/COG90/SOG10.
+
+Actual known result clock−0.4s/RMS0.23′/timeσ1.8s; all4complete residual cards
+consistent. Named RESUME130-Motion saved, strict full XML gives correction
+−0.4484138915906255s/σ1.8176864466542699s/angularRMS0.2347810943′ computed
+independently from actual residual report. All12protected sights/5solutions/
+Clock0 unchanged. Public tablet-session-motion130.json retains report.
+
+Switch to joint mode: candidates clear and stale Save disabled; inspected
+motion/search/robust/bias settings remain exact. Actual joint result saved as
+RESUME130-JointMotion: correction−3.3281399236558853s/reference
+51.478678737/0.012022715/angularRMS0.2334337603′. Independent PROJ inverse
+WGS84 distance0.4534244060NM from Greenwich passes predeclared3NM limit.
+Formal timeσ36.848s/positionσ5.740NM retained honestly: these fixture checks
+do not imply general precision. All protected records/global Clock0 unchanged.
+Public tablet-session-joint-motion130.json and private strict validation retained.
+Portrait actual final residual Spica assessment readable for both modes.
+
+Actual WiFi disabled, deliberately cold-start24016→24907. Both named reports
+available through actual seven-row native selector (72px=48dp rows); selected
+known and joint reports, genuine swipes reach complete final warnings/residuals.
+Complete saved file byte-identical through offline cold reload, SHA256
+e6e4d98857a9e8b3003f2ad23300c2270ecf0f72dd8c5dee521b52bd077ea724.
+wifi130-offline independently0. WiFi restoredON before subsequent known-report
+landscape rotation/final-field swipe (so that landscape capture is not an offline
+landscape pass). No new fatal in complete crash130 buffer; latest historical98
+04:51:54. anr130 none since boot; PSS508548KiB/RSS572800KiB/swap314KiB.
+
+Targeted cleanup strictly verifies current snapshot and complete protected
+records, removes only2moving sights/2named solutions, then independently reads
+exact original12sight/5solution bytes: fba0ee0fdcff99897bd4cb66e3a106c7c1a8de6b3381692c525884e8039ae532.
+xGRIB and xWeatherRouting bEnabled1, original legacy weather_routing bEnabled0;
+WiFi1, portrait restored before cold chart restart. Font1.3 still active for
+ongoing acceptance, not final original-preference restoration. These checks
+accept the selected moving modes, not all COG/speed/time-basis/bias combinations.

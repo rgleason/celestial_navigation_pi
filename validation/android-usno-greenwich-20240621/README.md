@@ -97,3 +97,18 @@ residuals below1′. Global RMS includes the retained bad observation.
 Actual runtime128/e0f5cd5 report in `tablet-session-outlier129.json` passes:
 clock−0.304463s/Deneb residual+11.667072′/flag1; all clean residuals below1′.
 This accepts that known-position robust case, with bias/motion disabled.
+
+## Physical moving session
+
+`make_motion130.py` creates two additional22:05 Spica/Vega triples from the
+USNO response at the independently advanced PROJ WGS84 destination retained in
+`manifest-motion123.json`. Select these with the original22:00 triples; omit
+the static22:05 copies. The session starts at51.4779/0 and advances with true
+COG90°/SOG10kn. Limits in `session-motion130-reference.json` are fixed before
+physical solves. Actual known-position report `tablet-session-motion130.json`
+gives clock−0.448414s/angularRMS0.234781′. Actual joint report
+`tablet-session-joint-motion130.json` gives clock−3.328140s/angularRMS0.233434′;
+PROJ WGS84 inverse distance0.453424NM meets the3NM position limit. Joint formal
+uncertainty36.848s/5.740NM remains in the report. These are approximate fixture
+checks, not a general accuracy claim. Tablet raw records/global clock unchanged;
+named reports survived actual offline cold reload and were then cleaned up.

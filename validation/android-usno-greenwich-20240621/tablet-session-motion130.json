@@ -1,0 +1,10 @@
+{
+  "runtime": "e0f5cd5",
+  "tablet": "SM-X210 Android15 arm64",
+  "additional_correction_seconds": -0.4484138915906255,
+  "time_sigma_seconds": 1.81768644665427,
+  "angular_RMS_arcmin_from_report": 0.23478109430084013,
+  "report": "Candidate 1; reference position 51.477900000, 0.000000000; position held fixed\nMotion 1; COG 90.000; SOG 10.000; robust fit 1; fit index bias 0\nIndex bias 0.000000 arcmin; weighted RMS 0.469562; condition 1\nResidual nan means a shared/excluded reading, not a zero error.\n22:05:00 Moon–Vega residuals arcmin: LD -0.479303 Moon -0.099054 body +0.090341; outlier 0\n22:05:00 Moon–Spica residuals arcmin: LD -0.112647 Moon +nan body +0.053256; outlier 0\n22:00:00 Moon–Vega residuals arcmin: LD -0.492735 Moon -0.139284 body +0.091877; outlier 0\n22:00:00 Moon–Spica residuals arcmin: LD -0.120889 Moon +nan body +0.052423; outlier 0\nShared readings were counted once, not as independent repeated measurements\n",
+  "limits": "session-motion130-reference.json",
+  "outcome": "PASS predefined moving-session clock/RMS; all12protected observations/5solutions/global clock unchanged"
+}
