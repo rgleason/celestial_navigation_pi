@@ -19,7 +19,7 @@ inline bool EditColour(wxWindow* parent, const wxColour& original,
   palette->SetSelection(0);
   root->Add(palette, 0, wxEXPAND | wxALL, 12);
   wxSpinCtrl* channels[3];
-  const wxString labels[] = {_("Red (0–255)"), _("Green (0–255)"), _("Blue (0–255)")};
+  const wxString labels[] = {_("Red (0 to 255)"), _("Green (0 to 255)"), _("Blue (0 to 255)")};
   const int values[] = {original.Red(), original.Green(), original.Blue()};
   for (int i = 0; i < 3; ++i) {
     root->Add(new wxStaticText(&sheet, wxID_ANY, labels[i]), 0, wxALL, 12);
