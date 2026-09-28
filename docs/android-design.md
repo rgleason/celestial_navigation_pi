@@ -569,3 +569,20 @@ wx background, so Qt palette alone is insufficient. Update both wx colours
 and native Qt presentation. For dusk/night use the host DILG2 black background
 for panels as well as inputs: DILG3 grey ink has insufficient contrast against
 DILG0 dusk grey. Day keeps host DILG0 panel background. Retest106.
+
+### Android HTML reading size and low-light colours (28 September, before107)
+
+Physical106's native browser is dark in night mode but the bundled HTML still
+sets 10.7pt paragraphs, blue/black headings and bright warning backgrounds.
+This fails readable help at the tablet's 1.3 font scale. Adapt HTML resources
+inside an Android-only QTextBrowser subclass: retain native setSource/history,
+fragment anchors, relative document/image resolution and external browser links.
+Append reader CSS after the bundled head styles, use the configured Android
+font size for body/table/caption text, retain larger heading hierarchy, and use
+host ink/dark background for all low-light text and callout/table backgrounds.
+Day retains the manual's colours. Do not modify desktop HTML rendering or
+printed manual styles. Plain reports use the same configured base font.
+Regenerate shipped Android quick-guide HTML from its current Markdown so its
+chart action and added planning instructions match. Verify actual night/day/
+dusk reading, scroll, anchors, images, browser return and rotation/offline;
+failed106 screenshot remains evidence, not a help acceptance pass.

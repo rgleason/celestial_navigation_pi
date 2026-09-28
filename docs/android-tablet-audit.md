@@ -2927,3 +2927,23 @@ this is reachability/readonly evidence, not accepted L01 full workflow.
 Screenshots resume105-lunar-editor/last/time. Cancel without Save; file
 comparison follows. Angle-entry buttons created after initial decoration also
 need active palette at creation, included in106.
+
+
+105readonly Cancel comparison: initial byte-cmp FAIL because Oldest sort
+changed serialization order (and ET element tails changed first/last spacing).
+Independent recursive counters of tag/attributes/text/children, excluding
+formatting tails, PASS: all11Sight records and the entire ClockError subtree
+unchanged. lunar105-readonly-validation.json retains both SHAs and failed
+byte-comparison interpretation. No accepted field mutation occurred.
+
+Physical106 f642e95,06:21–06:23BST: import ACK and independent installed SO
+SHA74ccad151ed2c567b7d5098c84f171231e99bec678647b01f79f2cc11ec76551
+match tar965881c66244bf561a3e33f7387dce9349dfcef493d99df7d7ce225ca1909f4e.
+Android/desktop compile PASS. Actual dusk and night workspace now has black
+wx/native backgrounds and readable host grey ink; screenshots resume106-dusk-
+workspace and resume106-night-workspace inspected. PID27411 continuous.
+Full D03 remains incomplete: night HTML manual still has dark small explicit
+HTML text and bright warning boxes (resume106-night-manual): FAIL. Reader107
+adaptation designed before implementation; Android-only fonts/palette during
+HTML resource loading, retaining native URLs/relative navigation. Shipped
+quick guide regenerated from current Markdown. Physical help retest pending.
