@@ -69,6 +69,9 @@ private:
   void CopyEstimatedHs();
   void CloseKeepingPosition();
   void CancelPosition();
+#ifdef __OCPN__ANDROID__
+  bool ReadAndroidPosition(double* latitude, double* longitude) const;
+#endif
   CopyHsHandler m_copyHs;
   wxButton* m_copyHsButton;
   wxTextCtrl* m_observedAltitude;

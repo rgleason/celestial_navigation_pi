@@ -361,6 +361,18 @@ void FindBodyDialog::CopyEstimatedHs() {
 }
 
 void FindBodyDialog::CloseKeepingPosition() {
+#ifdef __OCPN__ANDROID__
+  celestial_android::CommitNumbers(this);
+  double latitude, longitude;
+  if (!ReadAndroidPosition(&latitude, &longitude)) {
+    CelestialMessageBox(
+        _("Enter a valid latitude between -90 and 90 degrees and longitude "
+          "between -180 and 180 degrees. Degrees and decimal minutes with "
+          "a hemisphere are also accepted."),
+        _("Invalid position"), wxOK | wxICON_WARNING, this);
+    return;
+  }
+#endif
   Update();
   if (IsModal())
     EndModal(wxID_OK);
@@ -403,15 +415,55 @@ void FindBodyDialog::UpdateBoatPosition() {
   Update();
 }
 
+#ifdef __OCPN__ANDROID__
+bool FindBodyDialog::ReadAndroidPosition(double* latitude,
+                                         double* longitude) const {
+  // POBsoft (1985-2026): a partially edited coordinate must not replace the
+  // previous valid model position or be accepted by the owned Find sheet.
+  if (m_Sight.m_DRBoatPosition) {
+    *latitude = m_Sight.m_DRLat;
+    *longitude = m_Sight.m_DRLon;
+    return std::isfinite(*latitude) && std::isfinite(*longitude) &&
+        *latitude >= -90 && *latitude <= 90 &&
+        *longitude >= -180 && *longitude <= 180;
+  }
+  return ParseNavigationAngle(m_tLatitude->GetValue(),
+      NavigationAngleKind::Latitude, -90, 90, latitude) &&
+      ParseNavigationAngle(m_tLongitude->GetValue(),
+          NavigationAngleKind::Longitude, -180, 180, longitude);
+}
+#endif
+
 void FindBodyDialog::Update() {
   /* NOTE: we do not peform any altitude corrections here */
   double hc, zn;
 
+#ifdef __OCPN__ANDROID__
+  double latitude, longitude;
+  if (!ReadAndroidPosition(&latitude, &longitude)) {
+    m_tAltitude->SetValue(_("N/A"));
+    m_tAzimuth->SetValue(_("N/A"));
+    m_tIntercept->SetValue(_("N/A"));
+    m_tEstimatedHs->SetValue(_("N/A"));
+    m_copyHsButton->Enable(false);
+    m_cbAway->SetValue(false);
+    m_cbTowards->SetValue(false);
+    m_positionInfo->SetLabel(_("Check latitude (-90 to 90) and longitude "
+                              "(-180 to 180 degrees)."));
+    return;
+  }
+  m_Sight.m_DRLat = latitude;
+  m_Sight.m_DRLon = longitude;
+  if (m_positionSource->GetSelection() == 0)
+    m_positionInfo->SetLabel(_("Enter the DR position at the sight's UTC."));
+#endif
   m_Sight.m_DRMagneticAzimuth = m_cbMagneticAzimuth->GetValue();
+#ifndef __OCPN__ANDROID__
   if (!m_Sight.m_DRBoatPosition) {
     m_Sight.m_DRLat = ReadSightAngle(m_tLatitude->GetValue());
     m_Sight.m_DRLon = ReadSightAngle(m_tLongitude->GetValue());
   }
+#endif
 
   m_Sight.CalculateAtDR(&hc, &zn);
 

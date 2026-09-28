@@ -32,7 +32,7 @@ the observation to inspect its stored values.
 
 In **Fix**, calculate a celestial fix or analyze a sight sequence. Review which
 observations are included, the assumed position, residuals and uncertainty.
-Use the available chart or waypoint action only after checking the result.
+Use **Show fix on chart** only after checking the result.
 Motion and timing matter for running observations; a formal uncertainty does
 not include every source of navigation error.
 

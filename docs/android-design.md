@@ -514,3 +514,19 @@ noneditable choice, commit the input method, clear the old editor focus and hide
 the keyboard. Hold the combo with QPointer across focus callbacks. Do not
 change editable combo input or desktop behavior. Recheck numeric precision,
 page changes and popup Back/rotation on the tablet.
+
+
+### Reject invalid Find Body positions (28 September, before implementation)
+
+Physical102 manual latitude containing malformed text displayed N/A but
+Use position still closed Find and applied a nonfinite DR position to the
+parent editor. The disposable edit was cancelled without Save. On Android
+parse latitude and longitude with their existing coordinate kinds and finite
+range checks before calculating or accepting. Retain the previous valid model
+coordinates while invalid text remains in the fields, display unavailable
+results, disable estimated-Hs copy, and explain the allowed ranges on attempted
+Use position. Valid input restores results. Commit pending numeric text before
+acceptance. Add a final finite/range DR check at Android Sight Save as a guard
+against invalid imported or stale model state. Desktop behavior is unchanged.
+Exercise malformed text, ±90/±180 limits and out-of-range values, correction,
+Reset, Cancel and exact valid saved waypoint coordinates on the tablet.

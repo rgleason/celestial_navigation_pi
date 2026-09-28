@@ -2783,3 +2783,25 @@ Sun accidentally during automation was recognized by uncertainty0.1/lower
 and Cancelled without changes. A green native selection handle appeared above
 limb popup; it is outside the report, remains a separate combo input-owner
 issue and must not be represented as a globally fixed UI artifact.
+
+
+Physical101 Find Sun continuation, 28 September05:28–05:35BST, PID20698
+continuous, font scale1.3/portrait: manual initial DR restored exactly after
+Boat and Chart cursor captures using Reset. Hc67°16.5692′ and Zn179°59.7990′
+compare with public USNO worksheet33 within0.1′; report SD15.7405′ compares
+within0.01′. Independently asserted differences and reference SHA retained in
+evidence/find101-usno-reference.json. Current-boat and cursor sources captured
+real host coordinates and disabled manual fields. No private position was sent
+to an external reference service. Unavailable Last calculated fix explained
+that no result existed and retained cursor coordinates/source. This does not
+validate a positive last-fix source.
+
+Waypoint picker failed readability: clipped desktop columns and a shallow
+list, retained screenshot resume101-find-waypoints. Back restored the same
+Find cursor coordinates without applying a position. Android102 cards are a
+proposed fix pending physical testing. Reset then Copy estimated Hs135°03.0179′
+explicitly changed the parent editor and reduced intercept to0.000021NM
+(internal roundtrip consistency only). Find Back retained that intentional
+parent edit. Parent Back discarded it: independently read
+sights101-copy-discard.xml is byte-identical to sights101-upper-correct-save.xml.
+No Save occurred; all original observations retained.

@@ -857,6 +857,15 @@ void SightDialog::RecomputeDMM() {
 
 #ifdef __OCPN__ANDROID__
 bool SightDialog::AndroidInputsValid(wxString* error) const {
+  // POBsoft (1985-2026): reject invalid stored/Find positions before Save.
+  if (!std::isfinite(m_Sight.m_DRLat) || !std::isfinite(m_Sight.m_DRLon) ||
+      m_Sight.m_DRLat < -90 || m_Sight.m_DRLat > 90 ||
+      m_Sight.m_DRLon < -180 || m_Sight.m_DRLon > 180) {
+    if (error) *error = _("Check the DR position using Find. Latitude must be "
+                          "between -90 and 90 degrees and longitude between "
+                          "-180 and 180 degrees.");
+    return false;
+  }
   const double unlimited = std::numeric_limits<double>::max();
   auto number = [&](wxTextCtrl* field, const wxString& name, double minimum,
                     double maximum = std::numeric_limits<double>::max()) {
