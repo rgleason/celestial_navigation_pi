@@ -2999,3 +2999,13 @@ matches tar2222ff62bb657d4c004715d070e64fd4e453a8b978ae2ea4ffc36ef23c182c19.
 Both builds/PID27411 PASS. Single stationary Circle tap after settled swipe
 still ignored: FAIL, resume112-night-circle-single. Need scoped113event/hit
 logs rather than acceptance. Figure layout adaptation physically pending.
+
+Physical113857f80f,06:47–06:48BST: import ACK/SO
+ f4c6664e869f2e35b250592845041003f3a92ca59f0539a393759ca7175425e3
+match tar7892b1f7ce235050351205bb2ebbf80264bcb33e1a2ce0458e8894505f3d9604.
+Android build PASS/PID27411 continuous. Scoped reader113-first-link.log shows
+stationary release true, local QPoint320,235, anchor#circle and original URL.
+Second-link log shows same tap now hits empty anchor and source already#circle;
+second screenshot correctly shows Chapter2 with image and caption below it.
+First screenshot remained contents: rendering/navigation timing failure remains.
+114 forces layout/viewport repaint and logs deferred anchor callback timing.

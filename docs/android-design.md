@@ -630,3 +630,15 @@ Physical112 still ignores first stationary link tap. Add temporary scoped
 help-viewport event/hit diagnostics (public manual URLs only) to distinguish
 filter release from anchor hit testing; retain exact diagnostic binary/logs,
 then remove diagnostics after the cause is established. No acceptance claim.
+
+Physical113 logs prove first tap hits #circle and changes source; second tap
+has empty anchor at the same point in the newly laid-out Chapter2 while the
+first screenshot still showed contents. Navigation is processed but painting
+is stale until another input. Force document layout before deferred anchor
+scroll, then repaint the owned viewport. Retain temporary callback/scroll logs
+to verify timing and remove them after the actual single-tap capture passes.
+
+Also stop the reader's QScroller before changing its document/anchor: queued
+scroll motion from the release must not restore the old viewport after a
+programmatic jump. This is scoped to reader source changes and external-link
+activation; it does not alter form/report gesture behavior.

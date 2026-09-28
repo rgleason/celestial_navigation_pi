@@ -10,6 +10,8 @@
 #include <QTextTable>
 #include <QVector>
 #include <QDesktopServices>
+#include <QAbstractTextDocumentLayout>
+#include <QScrollBar>
 
 namespace celestial_android {
 // Format the rendered document without replacing source HTML: native URLs,
@@ -23,11 +25,18 @@ class DocumentBrowser : public QTextBrowser {
     document()->setDefaultFont(font);
     QObject::connect(this, &QTextBrowser::sourceChanged, this,
                      [this](const QUrl& source) {
+      qDebug() << "CNHELP SOURCE" << source;
+      QScroller::scroller(viewport())->stop();
       AdaptDocument();
       // Font reflow must finish before resolving the requested anchor.
       const QString fragment = source.fragment();
       if (!fragment.isEmpty()) QTimer::singleShot(0, this,
-          [this, fragment]() { scrollToAnchor(fragment); });
+          [this, fragment]() {
+            document()->documentLayout()->documentSize();
+            scrollToAnchor(fragment);
+            viewport()->repaint();
+            qDebug() << "CNHELP ANCHOR" << fragment << verticalScrollBar()->value();
+          });
     });
   }
 
@@ -125,6 +134,7 @@ inline void ShowDocument(wxWindow* parent, const wxString& title,
     const QString anchor = safeText->anchorAt(point);
     qDebug() << "CNHELP HIT" << point << anchor << safeText->source();
     if (anchor.isEmpty()) return;
+    QScroller::scroller(safeText->viewport())->stop();
     const QUrl url = safeText->source().resolved(QUrl(anchor));
     if (url.scheme() == "http" || url.scheme() == "https" || url.scheme() == "mailto")
       QDesktopServices::openUrl(url);
