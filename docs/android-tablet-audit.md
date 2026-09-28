@@ -2975,3 +2975,11 @@ Both builds PASS; PID27411 continuous. Actual AppendixD anchor now reaches
 references, but native fragment navigation reloads original small/dark HTML
 styles when base URL is unchanged: FAIL, resume109-night-references.110removes
 that cache and formats every load before owned deferred anchor reposition.
+
+Physical110e24b243,06:38BST: import ACK/independent installed SO
+ a4786d9116823b4ae9fe794dea3ef63490fbc65c85039e837d540f9fbd7044e0
+matches tar1f3f524c06970c3392cc1093dda1d62e5bc148db5c901c7ece5a595ebc7a25ae.
+Builds PASS/PID27411 continuous. Second stationary AppendixD tap reaches
+correct References heading, all enlarged/dimmed text and complete final footer.
+First tap was swallowed: no full tap acceptance.111 owned viewport drag/tap
+adapter designed before implementation. Offline retained during this test.

@@ -9,6 +9,7 @@
 #include <QTextCursor>
 #include <QTextTable>
 #include <QVector>
+#include <QDesktopServices>
 
 namespace celestial_android {
 // Format the rendered document without replacing source HTML: native URLs,
@@ -103,6 +104,16 @@ inline void ShowDocument(wxWindow* parent, const wxString& title,
       "color: #173849; background: white; border: none; }").arg(CN_FontPointSize()));
   text->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
   QScroller::grabGesture(text->viewport(), QScroller::TouchGesture);
+  QPointer<DocumentBrowser> safeText(text);
+  new CN_AndroidButtonDragFilter(text->viewport(), [safeText](QPoint point) {
+    if (!safeText) return;
+    const QString anchor = safeText->anchorAt(point);
+    if (anchor.isEmpty()) return;
+    const QUrl url = safeText->source().resolved(QUrl(anchor));
+    if (url.scheme() == "http" || url.scheme() == "https" || url.scheme() == "mailto")
+      QDesktopServices::openUrl(url);
+    else safeText->setSource(url);
+  }, text->viewport());
   if (file) text->setSource(QUrl::fromLocalFile(QString::fromUtf8(content.utf8_str())));
   else text->setPlainText(QString::fromUtf8(content.utf8_str()));
   layout->addWidget(text);

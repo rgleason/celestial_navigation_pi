@@ -607,3 +607,12 @@ restoring small/dark styles despite an unchanged base URL. Remove the source
 cache; adapt on every sourceChanged, retaining the owned deferred
 scrollToAnchor after formatting. Verify both target heading and large dimmed
 body text after navigation and rotation. Do not accept URL caching evidence.
+
+Physical110 target anchors and dimmed typography now agree, but the first
+stationary contents tap can be swallowed by native touch scrolling. Give the
+browser viewport the existing owned drag filter used by reports. A stationary
+release resolves anchorAt against source(): local/fragment links use native
+setSource; HTTP/HTTPS/mail links use QDesktopServices. Drags never activate
+links and synthesized mouse release is consumed once. Guard browser capture
+with QPointer and preserve native URL history. Check single tap after a swipe,
+repeat tap, external browser return, plain-text taps and long scrolling.
