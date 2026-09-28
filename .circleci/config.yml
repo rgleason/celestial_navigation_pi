@@ -2,6 +2,9 @@
 version: 2.1
 
 parameters:
+    validate_windows_x64_only:
+        type: boolean
+        default: true
     run_workflow_deploy:
         type: boolean
         default: false
@@ -17,6 +20,8 @@ std-filters: &std-filters
 
 workflows:
     build_all:
+        when:
+            not: <<pipeline.parameters.validate_windows_x64_only>>
         jobs:
 ## ----------------------
 ## OpenCPN 5.8 Plugins  (Also work in 5.10)
@@ -34,6 +39,8 @@ workflows:
           - build-flatpak-x86-2408:
               <<: *std-filters
           - build-msvc-wx32-2022:
+              <<: *std-filters
+          - build-msvc-wx32-x64-2022:
               <<: *std-filters
           - build-debian-armhf-13-trixie:
               <<: *std-filters
@@ -74,6 +81,7 @@ workflows:
                   - build-android-armhf
                   - build-macos-universal
                   - build-msvc-wx32-2022
+                  - build-msvc-wx32-x64-2022
                   - build-flatpak-aarch64-2208
                   - build-flatpak-x86-2208
                   - build-flatpak-aarch64-2408
@@ -93,6 +101,12 @@ workflows:
               <<: *std-filters
               requires:
                   - approve-publication
+
+    validate_windows_x64:
+        when: <<pipeline.parameters.validate_windows_x64_only>>
+        jobs:
+          - build-msvc-wx32-x64-2022:
+              <<: *std-filters
 
 orbs:
     win: circleci/windows@5.1.0
@@ -193,6 +207,22 @@ jobs:
             privileged: False
             shell: cmd.exe
             command: ci\circleci-build-msvc.bat
+            no_output_timeout: 30m
+        - retain-code
+    build-msvc-wx32-x64-2022:
+        executor:
+            name: win/server-2022
+            shell: bash.exe
+        environment:
+        - OCPN_TARGET: MSVC-x64
+        - WX_VER: 32
+        - DEPLOY_USE_ORB: false
+        steps:
+        - checkout
+        - run:
+            privileged: false
+            shell: cmd.exe
+            command: ci\circleci-build-windows64.bat
             no_output_timeout: 30m
         - retain-code
     build-flatpak-aarch64-2208:

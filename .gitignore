@@ -19,3 +19,5 @@ retained-artifacts/
 eclipse/data/de440s.bsp
 eclipse/data/moon_pa_de440_200625.bpc
 eclipse/data/lola64-pa.bin
+
+.windows64/
