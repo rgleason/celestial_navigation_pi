@@ -3018,3 +3018,17 @@ immediately, but no ANCHOR callback before capture: FAIL (reader114-first-link).
 The zero-delay callback is pending until another input in this modal loop.
 115design switches positioning/layout/repaint to synchronous completion after
 base virtual setSource returns. Keep diagnostics until immediate capture passes.
+
+Physical115ab8d0e7,06:54BST: import ACK/installed SO
+ d2764f35c1318c0c93616d1bbdcad2cee500d7246b5eecbb5fd11766ee43a1e7
+matches tar3091b5dfd1846f09983422297cc64e1e8b1203be479a6e6724a1a9c7e43bde1b.
+Builds PASS/PID27411 continuous. reader115-first-link logs HIT#circle/SOURCE,
+but no ANCHOR completion despite synchronous positioning; first capture remains
+contents: FAIL. Deferred-callback-only diagnosis was incomplete.116 adds
+boundary diagnostics to identify actual blocking operation before further repair.
+
+Cold115host restart PID27411→32118 at06:56BST; actual stock icon moved to
+(49,842). Offline night manual opens and initial ANCHOR logs complete. First
+Circle tap again logs HIT#circle/SOURCE but no ANCHOR completion and capture
+stays contents (reader115-cold-first-link): FAIL. Retained hot objects do not
+explain this failure.116boundary diagnostics built; next import/cold check.

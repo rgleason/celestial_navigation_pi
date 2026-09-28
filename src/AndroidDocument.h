@@ -27,7 +27,9 @@ class DocumentBrowser : public QTextBrowser {
                      [this](const QUrl& source) {
       qDebug() << "CNHELP SOURCE" << source;
       QScroller::scroller(viewport())->stop();
+      qDebug() << "CNHELP STOPPED";
       AdaptDocument();
+      qDebug() << "CNHELP ADAPTED";
       PositionAndRepaint(source);
     });
   }
@@ -52,8 +54,11 @@ class DocumentBrowser : public QTextBrowser {
 
  private:
   void PositionAndRepaint(const QUrl& source) {
+    qDebug() << "CNHELP LAYOUT START";
     document()->documentLayout()->documentSize();
+    qDebug() << "CNHELP LAYOUT DONE";
     if (!source.fragment().isEmpty()) scrollToAnchor(source.fragment());
+    qDebug() << "CNHELP SCROLLED" << verticalScrollBar()->value();
     viewport()->repaint();
     qDebug() << "CNHELP ANCHOR" << source.fragment() << verticalScrollBar()->value();
   }

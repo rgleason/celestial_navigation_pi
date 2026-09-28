@@ -650,3 +650,9 @@ base loader, then synchronously force layout/position/repaint after it returns.
 Use sourceChanged to apply document styles and handle native history changes
 synchronously too. Remove the deferred callback; retain native URLs/history.
 Verify first screenshot without a second input, including distant anchors.
+
+Physical115 synchronous path also logs SOURCE without finishing ANCHOR before
+capture. Earlier attribution to deferred callbacks alone was incomplete.
+Instrument boundaries around scroller stop, document adaptation/layout, anchor
+scroll and repaint to identify the blocking operation. Keep this diagnostic
+scoped to the reader; no new acceptance or causal claim until measured.
