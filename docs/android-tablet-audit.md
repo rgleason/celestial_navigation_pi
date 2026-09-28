@@ -3322,3 +3322,27 @@ distance0.132716NM from public Greenwich, within existing0.5′/3NM limits.
 Selected clock root−13.637695s/formal65.7s retained without precise-clock
 claim. Public contact reference extended with actual transcription. ResultsBack
 then parentBack preserve saved file byte-identically; no saved solution added.
+
+Physical1266ac881a08:52–08:57BST: Android/desktop builds PASS; import ACK,
+independent installedSO850db58e4a62cb2ba94888532bccd819951e1521656b3b268112617ddcd9a486
+matches tar667c85ec50a1f50f69b42fba676c9436880360b3445edc0600ae727d00a80dc4.
+PID11583continuous. Both recorded failures pass: stationary distance entry,
+unchanged typed value/keyboardBack→distance popup has no handle; landscape
+changed Sun altitude27.0708/keyboardBack→body-contact popup also has no handle.
+Selecting Far then stationary altitude tap opens keyboard, retained through
+capture; subsequent drag starting on the focused field actually moves content
+and hides keyboard/handle. This avoids counting cleanup that prevents entry.
+Actual final measurement controls/units reached at font1.3 in landscape.
+Parent Cancel discards temporary altitude/contact and full XML byte-identical
+to saved Sun-centre baseline. Night two host colour taps produce black plugin
+background/dim ink: native popup selection dim grey, no stray handle; rotation
+dismisses popup without activation and landscape reopen/Back works. NextBack
+cancels editor, full XML byte-identical again. Returned host to DAY/portrait.
+Retained screenshots resume126-*.png and sights126-cancel/night-cancel.xml.
+An intermediate misspelled read path returned No such file; corrected run-as
+readback supplies actual equality evidence, not shell exit status alone.
+Complete crash buffer still ends at historical98fatal28Sep04:51:54, no new
+native fatal. lastANR none since boot. After popup checks idle PSS506457KiB,
+RSS569052KiB, swapPSS350KiB; active-worker headroom remains separate/pending.
+Protected documentation worktree HEAD4435de5088666933fb46ee9663a36fbb42baea87
+unchanged. Full release acceptance/19-target final-source CI still pending.
