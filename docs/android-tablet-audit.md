@@ -2967,3 +2967,11 @@ However tapped AppendixD lands in Chapter14: FAIL, resume108-night-anchor-
 after-wait. Reformatting on fragment navigation invalidates native scroll
 position.109 source cache/owned deferred anchor scroll designed before code.
 Wi-Fi remains temporarily disabled; restore after offline workflows.
+
+Physical1098a6a086,06:36BST: import ACK/hash PASS, SO
+c93c4af08c7838fe0a8ca861f3a2b3c042d4f7298eae5cec17b5c875d9d57223,
+tar4a9158d24f9b085b09387a3966b0ea83bee02d5473d204eea0949609cd632009.
+Both builds PASS; PID27411 continuous. Actual AppendixD anchor now reaches
+references, but native fragment navigation reloads original small/dark HTML
+styles when base URL is unchanged: FAIL, resume109-night-references.110removes
+that cache and formats every load before owned deferred anchor reposition.

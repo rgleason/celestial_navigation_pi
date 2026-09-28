@@ -601,3 +601,9 @@ anchor scrolling. Cache the adapted source URL without its fragment; format
 only a newly loaded document, then schedule scrollToAnchor for fragment
 navigation after layout. Keep callback owned by the browser. Verify exact
 named chapter and distant reference headings, not merely scroll movement.
+
+Physical109 fragment navigation reloads original HTML in this Qt5 build,
+restoring small/dark styles despite an unchanged base URL. Remove the source
+cache; adapt on every sourceChanged, retaining the owned deferred
+scrollToAnchor after formatting. Verify both target heading and large dimmed
+body text after navigation and rotation. Do not accept URL caching evidence.

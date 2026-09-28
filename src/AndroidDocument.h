@@ -22,11 +22,7 @@ class DocumentBrowser : public QTextBrowser {
     document()->setDefaultFont(font);
     QObject::connect(this, &QTextBrowser::sourceChanged, this,
                      [this](const QUrl& source) {
-      const QUrl documentSource = source.adjusted(QUrl::RemoveFragment);
-      if (documentSource != adaptedSource_) {
-        AdaptDocument();
-        adaptedSource_ = documentSource;
-      }
+      AdaptDocument();
       // Font reflow must finish before resolving the requested anchor.
       const QString fragment = source.fragment();
       if (!fragment.isEmpty()) QTimer::singleShot(0, this,
@@ -35,8 +31,6 @@ class DocumentBrowser : public QTextBrowser {
   }
 
  private:
-  QUrl adaptedSource_;
-
   void AdaptDocument() {
     const QColor background = CN_ThemeBackground();
     const bool lowLight = background.lightness() < 128;
