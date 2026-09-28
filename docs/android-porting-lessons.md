@@ -314,3 +314,13 @@ Cancel and defaults. User-requested baseline f201326 is retained in the Android
 branch with cherry-pick provenance; its isolated GUI test runs in a fresh process
 with a temporary profile. Physical127 also checks wide saved spans and cold
 restart without replacing protected observations or solutions.
+
+wx numeric spins contain a native QLineEdit which wx child traversal does not
+visit. Adapt both that internal editor and the QAbstractSpinBox border to the
+same owned stationary-tap/drag behavior; preserve the spin's validator and
+precision. Actual128 replay confirms focused numeric drags scroll without
+reopening IME, while stationary input and keyboard rotation still work. Reinspect
+coordinates after each page/keyboard/layout transition. A long scripted restore
+hit UTC seconds instead of span; full-file comparison caught it and the visible
+fields were restored before proceeding. Retain automation failures separately
+from product failures and never infer restoration from a successful Save tap.

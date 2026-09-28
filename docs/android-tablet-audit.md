@@ -3462,3 +3462,45 @@ reopens, header obscured (resume128-bias-fit-controls.png). Further Back hides
 keyboard. Existing root-QLineEdit filter misses QAbstractSpinBox's internal
 editor; design recorded before correction in android-design.md. Do not claim
 numeric-field scrolling passed from earlier plain-text field tests.
+
+### Native numeric editor repair128, 28 September09:35–09:48BST
+
+Runtime e0f5cd5 adapts the QAbstractSpinBox internal QLineEdit and outer border
+to the existing owned tap/drag filter. Android and desktop builds PASS; all code
+is Android guarded. Retained committed-e0f5cd5/arm64 tar SHA256
+ec345f1a132b76d627b63b0fa834a64a20e596c045d001f1cfbc877f1bed6282,
+stripped library c72804753d5c1477fceba77f898a3b10f03c7568eabd6120d6a0372005e065bc;
+actual Plugin Manager import ACK and independent installed128.so hash match.
+PID19970 continuous through import and keyboard/drag/rotation checks.
+
+Exact failed127 replay: stationary search-span tap, type0.25, keyboardBack,
+swipe beginning on that focused field. Actual content moves to COG/SOG/Solve,
+keyboard stays hidden and header remains visible; value0.25 is retained.
+Stationary subsequent tap opens numeric keyboard, typed0.25 survives landscape
+rotation, keyboardBack then field-origin landscape drag moves content without
+reopening IME. Font1.3 throughout. Screens resume128-spin-controls/typed/
+focused-drag/keyboard/rotation/landscape-drag. Saved report reopens with complete
+final residuals readable in landscape. Full Sights.xml byte-identical to saved
+bias snapshot, SHA25632380c1117bbc0b63a71cfacda460ab5b0db58a922b9b565d7352de20da8aa3d.
+Deliberate cold start19970→21526; actual named RESUME128-Bias report opens and
+portrait final residuals/warning are reached by genuine document swipes. Complete
+file remains byte-identical; this report retains bias+0.724781′/clock−0.049565s.
+
+Requested f201326 regression on128: actual172800 Save and reopened control
+retain exact172800, with complete canonical comparison proving only the Sun
+fixture TimeCertainty changed; all15other sights/6solutions/root intact.
+Typed999/headerCancel leaves complete file byte-identical. Restoring1800 initially
+used stale control coordinates after the layout moved: independent readback
+caught Time17:00:18 and still172800. This automation mis-tap is retained in
+sights128-restore-check.xml, not accepted as a restore or attributed to the range
+fix. The visible UTC seconds control was inspected and restored0, span1800
+inspected, then actualSave restores full snapshot byte equality. Popup after
+stationary span entry/keyboardBack has no stray handle; popupBack returns safely.
+Screens resume128-max-span*, span-cancel, spin-popup, time-restore-top,
+restored-inputs/save; readbacks sights128-span172800/cancel/restored.xml.
+
+Complete crash128 buffer still ends at historical98fatal04:51:54; no newer fatal.
+anr128 reports no ANR since boot. Report-view PSS509458KiB/RSS574092KiB/swap306KiB.
+Four public biased copies and RESUME128-Bias remain until targeted cleanup;
+all12protected records/5protected solutions stay intact. Broader numeric controls,
+session outliers/motion and final acceptance/19-target CI remain pending.
