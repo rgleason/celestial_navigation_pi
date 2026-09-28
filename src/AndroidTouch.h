@@ -90,6 +90,7 @@ inline void CN_StyleAndroidCalendar(wxWindow* window) {
   }
   window->SetMinSize(wxSize(7 * target, 8 * target));
 }
+inline void CN_EnableAndroidDocumentScrolling(QTextEdit* text);
 inline void CN_StyleAndroidDocument(wxWindow* window) {
   auto* text = qobject_cast<QTextEdit*>(window->GetHandle());
   if (!text) return;
@@ -104,6 +105,7 @@ inline void CN_StyleAndroidDocument(wxWindow* window) {
     text->setLineWrapMode(QTextEdit::WidgetWidth);
     text->setWordWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
     QScroller::grabGesture(text->viewport(), QScroller::TouchGesture);
+    CN_EnableAndroidDocumentScrolling(text);
     QFont font = text->font(); font.setPointSize(CN_FontPointSize());
     text->document()->setDefaultFont(font);
   }
@@ -323,6 +325,14 @@ private:
   bool m_active = false, m_touchActive = false, m_moved = false;
   bool m_suppressMouse = false;
 };
+
+inline void CN_EnableAndroidDocumentScrolling(QTextEdit* text) {
+  if (text->property("cnDocumentDrag").toBool()) return;
+  text->setProperty("cnDocumentDrag", true);
+  // POBsoft (1985-2026): consume synthesized mouse selection as well as
+  // touch drags; the report owns its viewport rather than a scrolling page.
+  new CN_AndroidButtonDragFilter(text->viewport(), {}, text->viewport());
+}
 
 inline void CN_EnableAndroidCalendarScrolling(QCalendarWidget* calendar) {
   if (calendar->property("cnCalendarDrag").toBool()) return;

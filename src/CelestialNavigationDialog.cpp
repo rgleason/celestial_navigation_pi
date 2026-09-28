@@ -815,6 +815,11 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_Measurement = AttributeDouble(e, "Measurement", 0);
         s.m_MeasurementCertainty =
             AttributeDouble(e, "MeasurementCertainty", .25);
+#ifdef __OCPN__ANDROID__
+        // POBsoft (1985-2026): measurement bearing basis is independent of
+        // the Find Body DR bearing option. Preserve old-file defaults.
+        s.m_bMagneticNorth = AttributeBool(e, "AndroidMagneticAzimuth", true);
+#endif
 
         s.m_EyeHeight = AttributeDouble(e, "EyeHeight", 2);
         s.m_Temperature = AttributeDouble(e, "Temperature", 10);
@@ -967,6 +972,10 @@ bool CelestialNavigationDialog::SaveXML() {
 
     SetFloatAttribute(c, "Measurement", s, s.m_Measurement);
     SetFloatAttribute(c, "MeasurementCertainty", s, s.m_MeasurementCertainty);
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): do not change untouched historical sight records.
+    if (!s.m_bMagneticNorth) c->SetAttribute("AndroidMagneticAzimuth", 0);
+#endif
 
     SetFloatAttribute(c, "EyeHeight", s, s.m_EyeHeight);
     SetFloatAttribute(c, "Temperature", s, s.m_Temperature);

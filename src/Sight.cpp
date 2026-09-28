@@ -2910,15 +2910,22 @@ void Sight::BuildBearingLineOfPosition(double altitudestep, double azimuthmin,
     blon = resolve_heading(blon);
 
     /* sometimes it takes a long time to build magnetic azimuth sights */
+#ifndef __OCPN__ANDROID__
     wxProgressDialog progressdialog(
         _("Celestial Navigation"), _("Building bearing Sight Positions"), 201,
         NULL, wxPD_SMOOTH | wxPD_ELAPSED_TIME | wxPD_REMAINING_TIME);
+#endif
+    // POBsoft (1985-2026): Android reconstructs saved bearing plots while
+    // its main dialog is still being created. A parentless wx progress dialog
+    // dereferences the missing modal parent and also starts a nested loop.
 
     wxRealPointList *p, *l = new wxRealPointList;
     l->Append(new wxRealPoint(blat, blon));
     for (double altitude = 200; altitude >= 0; altitude -= 1) {
+#ifndef __OCPN__ANDROID__
       if (m_bMagneticNorth && (int)altitude % 10 == 0)
         progressdialog.Update(200 - altitude);
+#endif
 
       p = new wxRealPointList;
       int index = 0;

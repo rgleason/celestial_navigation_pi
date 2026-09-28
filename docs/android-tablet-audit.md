@@ -2624,3 +2624,90 @@ IndependentSightsreadback unchanged SHA53349e1c001d4f58776a4096d7de709cf38190b35
 Five normalA4route renders viewed, complete hourlyMoonfinalrow/manifest/planning
 andfinalnoonform. Normal17pagePDFhas17pages despiteDuplex checked: existing
 baseline setting reports9physicalprinted sheets, not additionalPDFblankpage.
+
+
+### Observation corrections and appearance94 (28 September, 04:14–04:26 BST)
+
+On installed9f7fefe/PID5081/font1.3, duplicate selected Sun2, reselect one
+identical copy after list rebuild and open Edit. The second coordinate tap in
+resume94-sun-duplicate selected a Spica card after rebuild rather than Edit;
+reinspect/reselect before continuing. This is not a successful editor open.
+The original eight saved observations are preserved exactly as a parsed
+attribute multiset; nine records after saving the disposable copy.
+
+Actual Corrections page shows every control including Set As Defaults without
+clipping. Type eye4.25m/temp18.5C/pressure1005hPa/index−2.25′; keyboard Back
+retains editor. The log shows standard dip3.6242′, Ha66°59.6258′,
+refraction0.3903′, lower Sun SD15.7405′/Ho67°15.0318′. Retained public USNO
+2025-07-20 17:16:33 reference SD15.74136′ differs by0.00086′ (0.01′ tolerance).
+The initial 1.758√height comparison mirrors the implementation and is only
+an arithmetic check. Independent NGA Bowditch2019Vol2 PDFpage20/printedp4
+Table14 uses beta0.8321 and radius3440.1NM. Horizon geometry gives standard
+dip3.622138745′ (actual3.6242′, difference0.002061′, tolerance0.01′); its
+short-distance formula at4.25m/0.5NM gives15.985803126′ (actual15.9861′,
+difference0.000297′, tolerance0.001′). The official PDF SHA256 is
+b6ea3ff21381377cb5f293ad69ebebe26c6a1d4bf8ac67cbe4512cb84918af7e;
+PDF/render/input/reference JSON are retained. Signed Hs−IE−dip gives
+Ha66.99376316925° (arithmetic/display rounding tolerance0.0001′). Artificial horizon clears/disables short dip, uses zero dip and
+halves after index correction:67.05416666667°/2=33.52708333333°.
+Save/reopen succeeds. Independently read sights94-corrections.xml has exact
+4.25/18.5/1005/−2.25/0.5/ArtificialHorizon1, inherited precise DR/time/other
+fields, ClockError0 and all original observations. SHA256
+6b1744821724cbbc96c0fcb2dd17a94ff6fc6d00332d0af0ca6af216fc81c30d.
+
+Definitions opens the bundled HTML with readable wrapped larger-font content;
+seven real swipes move to Time/Position/Sign conventions (not yet the final
+footer). Android Back returns to the same unsaved editor values. Calculation
+log FAIL: small font and native selection handle during drag; some reverse
+drags move text but this is not a proven read-only touch viewport. Display
+FAIL: no visible colour picker; transparency slider has a tiny handle, although
+a horizontal drag moves it. Cancel returns to Observe and independently read
+sights94-display-cancel.xml is byte-identical to the saved9-record file.
+
+976eeed addresses Android log read-only/font/wrap handling; Android/desktop
+builds pass and nine CTests pass53.89s. Its package is retained but NOT imported
+or physically accepted. 0c5f634 adds visible Android colour entry and enlarged
+opacity slider; physical acceptance pending. No desktop numerical changes.
+
+
+### Observation appearance97/98 and azimuth cold failure (28 September 04:30–04:55 BST)
+
+976eeed was not installed. 0c5f634 compiled but UTF8check failed on new RGB
+range captions; its chooser was cancelled before selection. 5691282 uses
+portable translated ASCII range labels; UTF8check passes and actual import
+readback matches library SHA3a7b5d07d34aa263fd44057f58029b042dcd2a1cdcba982c73b20dd6cee202b6.
+Actual97 palette popup has nine72px/48dp rows, Back dismisses only the popup.
+Nested Cancel discards typed Red13; reopen has47/47/79. Apply13/79/201,
+reopen and keyboardBack retain the precise values. SheetBack returnsDisplay.
+Left/right slider endpoints give alpha255/0 respectively; middle gives114.
+SightSave writes rgb13/79/201 and alpha114; original8records remain exact.
+97 swatch painting and the late16pt report override FAIL, retained.
+
+Actual98/f318a59 import matches library SHA
+8907d4e2c1b1e7fdd06eb57df1b19727a3aba1ca32fcbb2bf267dc6301268412.
+PID5081 continuous through these workflows. Atfont1.3 the colour button shows
+#0D4FC9 and the swatch paints blue with readable white hex caption. Landscape
+shows all RGB fields/swatch; typing focus in finalBlue field opens keyboard
+and repositions it visibly. FirstBack hides keyboard; secondBack returns to
+Display with saved colour/alpha intact. Calculations fills its page, font is
+scaled/readable; slow1200ms drags move text through every correction to fully
+visible finalHo33°46.1004′. First600ms drag did not move the report, retained.
+Rotationportrait retains scroll/finalHo and wraps long formulas. Tap/type999
+leaves report unchanged without keyboard. Definitions opens,12swipes reach
+finalSignConventions/reference link; another swipe shows unchanged bottom.
+Back returns retained editor. However page switching after Definitions reveals
+a native selection handle: this remains an open touch defect, not a complete
+read-only-interaction pass. 99adds the owned viewport drag filter, pending.
+
+Convert only the disposableSun2 toAzimuth, uncheckedMagnetic, measurement
+179.995837°, angularuncertainty2′; Save succeeds. Independently read
+sights98-azimuth-before-cold.xml preserves alloriginal8records and exact extra
+measurement/appearance, but contains no measurement-bearing-basis attribute.
+Coldrestart PID19107 opens chart; tapping CelNav causes SIGSEGV04:51:54.
+Complete crash buffer retained (first28Sepfatal). Exact98unstripped symbols
+resolve frames0..7 to wxDialogBase::GetParentForModalDialog -> generic progress
+creation -> Sight::BuildBearingLineOfPosition2913 -> RebuildPolygons ->
+CelestialNavigationDialog::OpenXML864 -> constructor257 -> toolbar callback.
+Thus O02/O11 fail on this variant. No ANR/crash-clean claim after this failure.
+Android99 persists optional true-bearing flag and omits parentless progress
+creation during polygon rebuilding. Physical repair acceptance pending.

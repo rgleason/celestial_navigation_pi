@@ -443,3 +443,25 @@ show that value on the colour button. Set the known report explicitly read-only
 before decoration, remove its late font override and give Calculations one
 full-height viewport (the existing native QTextEdit), with definitions and
 lunar calculation actions outside its scrolling content. Retest on tablet.
+
+
+Physical98 cold-start azimuth failure (28 September 04:51 BST): exact retained
+symbols trace the crash to wxGenericProgressDialog parent discovery, called
+from BuildBearingLineOfPosition while OpenXML constructs the main dialog.
+The same saved sight was explicitly true in the editor but the XML has no
+m_bMagneticNorth field; reconstruction therefore silently selects magnetic.
+Persist the Android measurement bearing basis in optional
+AndroidMagneticAzimuth (absent retains the historical magnetic default; only
+false requires an attribute). Keep DRMagneticAzimuth separate. Do not alter
+desktop serialization or numerical behavior. On Android omit the unowned,
+parentless generic progress dialog from bearing polygon reconstruction; its
+nested event loop is inappropriate during initial dialog construction. Test
+saved true and magnetic variants, exact XML, cold reopen, responsiveness and
+chart geometry before acceptance.
+
+Physical98 report now fills its page and final Ho is reachable in both
+orientations with scaled readable text. A native selection handle reappears
+after Definitions Back/page switching. Install the existing owned drag filter
+on each read-only QTextEdit viewport, forwarding directly to its own QScroller
+and consuming synthesized mouse selection events. Editable text remains
+unchanged. Repeat drag/tap/type/page-change/Definitions/rotation tests.
