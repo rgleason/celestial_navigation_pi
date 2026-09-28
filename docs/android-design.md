@@ -594,3 +594,10 @@ merge only minimum point size and low-light ink/background; retain bold/italic,
 heading sizes, anchor attributes and all native source/history behavior. Dim
 block/frame/table-cell backgrounds too. This is a revised Android-only design
 before108 implementation; keep failed107 evidence.
+
+Physical108 readable night manual/fonts pass, but chapter anchors land at the
+wrong position when sourceChanged reformats the same document after native
+anchor scrolling. Cache the adapted source URL without its fragment; format
+only a newly loaded document, then schedule scrollToAnchor for fragment
+navigation after layout. Keep callback owned by the browser. Verify exact
+named chapter and distant reference headings, not merely scroll movement.

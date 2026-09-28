@@ -2956,3 +2956,14 @@ paragraphs, explicit dark class colours and bright boxes: FAIL, screenshot
 resume107-night-manual inspected. Qt5 appended style approach is insufficient.
 Revised108 design formats loaded document fragments/blocks/frames/cells while
 retaining native source and anchor metadata. Physical retest pending.
+
+Physical10837654ea,06:32–06:34BST: actual import ACK and installed SO
+612a87a2d463b6f2f068f87209b822c1a5f90a07159d4adecedbe27c3139ca53
+match tar2cdb1615d9d58231894af824923124f1d05dcf49157400808e83e1d045efcb50.
+Both builds PASS; PID27411 continuous. Wi-Fi disabled for offline test.
+Night manual now has readable configured font, hierarchy, grey ink and dark
+callouts; contents links retain underline and relative coastal figure loads.
+However tapped AppendixD lands in Chapter14: FAIL, resume108-night-anchor-
+after-wait. Reformatting on fragment navigation invalidates native scroll
+position.109 source cache/owned deferred anchor scroll designed before code.
+Wi-Fi remains temporarily disabled; restore after offline workflows.
