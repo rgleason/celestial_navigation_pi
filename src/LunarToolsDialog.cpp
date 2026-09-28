@@ -3,6 +3,8 @@
 #include "AndroidJob.h"
 #include "AndroidSurface.h"
 #include <QDoubleSpinBox>
+#include <QComboBox>
+#include <QLineEdit>
 #include <QTimer>
 #include <wx/weakref.h>
 #endif
@@ -767,6 +769,33 @@ void LunarToolsDialog::BuildCalibrationPage(wxWindow* page) {
                      GetHandle(), [this](double) {
       QTimer::singleShot(0, GetHandle(), [this]() { UpdateProfileCorrection(); });
     });
+  // POBsoft (1985-2026): native wxQt edits can omit wx command events.
+  // Compare semantic prediction inputs on the next owned GUI turn, after
+  // the native control has finished updating its model.
+  wxWeakRef<LunarToolsDialog> weak(this);
+  const auto changed = [weak]() {
+    if (!weak) return;
+    QTimer::singleShot(0, weak->GetHandle(), [weak]() {
+      if (weak) weak->CheckAndroidCalibrationPrediction();
+    });
+  };
+  const std::vector<wxWindow*> predictionInputs{
+      m_calLatitude, m_calLongitude, m_calUtc.dateContainer,
+      m_calUtc.timeContainer, m_calFirstBody, m_calSecondBody,
+      m_calContact, m_calPressure, m_calTemperature};
+  for (auto* input : predictionInputs) {
+    auto* widget = input->GetHandle();
+    auto edits = widget->findChildren<QLineEdit*>();
+    if (auto* edit = qobject_cast<QLineEdit*>(widget)) edits.append(edit);
+    for (auto* edit : edits)
+      QObject::connect(edit, &QLineEdit::textChanged, GetHandle(), changed);
+    if (auto* choice = qobject_cast<QComboBox*>(widget))
+      QObject::connect(choice, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                       GetHandle(), changed);
+    if (auto* spin = qobject_cast<QDoubleSpinBox*>(widget))
+      QObject::connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                       GetHandle(), changed);
+  }
 #endif
   page->SetSizer(top);
 }
@@ -1419,6 +1448,7 @@ void LunarToolsDialog::PredictCalibrationPair(wxCommandEvent&) {
           : wxString()));
   m_calObservedAngle->SetAngle(m_lastPredictionDeg);
 #ifdef __OCPN__ANDROID__
+  m_androidCalibrationPredictionKey = AndroidCalibrationPredictionKey();
   // POBsoft (1985-2026): programmatic Qt edits do not reliably deliver the
   // wx text event. Refresh the advisory for this new observed angle as well
   // as the repeat cards, before the user saves or interprets the profile.
@@ -1427,6 +1457,9 @@ void LunarToolsDialog::PredictCalibrationPair(wxCommandEvent&) {
 }
 
 void LunarToolsDialog::AddCalibrationReading(wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+  CheckAndroidCalibrationPrediction();
+#endif
   if (!std::isfinite(m_lastPredictionDeg)) {
     CelestialMessageBox(_("Calculate a valid pair prediction first."),
                  _("Sextant check"), wxOK | wxICON_INFORMATION, this);
@@ -1586,8 +1619,17 @@ void LunarToolsDialog::UpdateProfileCorrection() {
           : angle;
   const double correction = sextant_calibration::CorrectionAt(
       profile, lookupAngle, &uncertainty);
-  const bool outside = lookupAngle < profile.points.front().angle_deg ||
-                       lookupAngle > profile.points.back().angle_deg;
+  // POBsoft (1985-2026): persisted points use ten significant digits.
+  // Do not label the identical predicted endpoint as extrapolation solely
+  // because its serialization rounded by a fraction of 1e-7 degrees.
+#ifdef __OCPN__ANDROID__
+  constexpr double endpointRoundingDegrees = 1e-7;
+#else
+  constexpr double endpointRoundingDegrees = 0.0;
+#endif
+  const bool outside =
+      lookupAngle < profile.points.front().angle_deg - endpointRoundingDegrees ||
+      lookupAngle > profile.points.back().angle_deg + endpointRoundingDegrees;
   m_profileCorrection->SetLabel(wxString::Format(
       profile.excludes_index_error
           ? CN_UTF8_("Active residual at %s after IE: %+0.2f′ ±%.2f′%s")
@@ -1599,6 +1641,27 @@ void LunarToolsDialog::UpdateProfileCorrection() {
 }
 
 #ifdef __OCPN__ANDROID__
+wxString LunarToolsDialog::AndroidCalibrationPredictionKey() const {
+  double latitude = 0.0, longitude = 0.0;
+  const auto utc = ReadUtcEntry(m_calUtc, m_activeEntryFormat, false, wxString());
+  if (!utc.IsValid() || !m_calLatitude->GetAngle(&latitude) ||
+      !m_calLongitude->GetAngle(&longitude)) return wxString();
+  return wxString::Format("%d|%d|%d|%.17g|%.17g|%.17g|%.17g|%s",
+      m_calFirstBody->GetSelection(), m_calSecondBody->GetSelection(),
+      m_calContact->GetSelection(), latitude, longitude,
+      m_calPressure->GetValue(), m_calTemperature->GetValue(),
+      UtcDateTime::FormatIsoUtc(utc).c_str());
+}
+
+void LunarToolsDialog::CheckAndroidCalibrationPrediction() {
+  if (m_androidCalibrationPredictionKey.empty() ||
+      m_androidCalibrationPredictionKey == AndroidCalibrationPredictionKey())
+    return;
+  m_androidCalibrationPredictionKey.clear();
+  m_lastPredictionDeg = NAN;
+  m_calPrediction->SetLabel(_("Inputs changed. Predict distance again."));
+}
+
 void LunarToolsDialog::InvalidateAndroidSequence() {
   if (!m_sequenceResult.valid) return;
   m_sequenceResult.valid = false;

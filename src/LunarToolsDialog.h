@@ -64,6 +64,9 @@ private:
   void LoadProfiles();
   void PersistProfiles();
 #ifdef __OCPN__ANDROID__
+  wxString AndroidCalibrationPredictionKey() const;
+  void CheckAndroidCalibrationPrediction();
+  wxString m_androidCalibrationPredictionKey;
   void RefreshAndroidCalibration();
   void RefreshAndroidSequence();
   void InvalidateAndroidSequence();

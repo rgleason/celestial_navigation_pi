@@ -804,3 +804,27 @@ Android must refresh the active correction explicitly after programmatic
 prediction changes the observed angle, through UpdateProfileCorrection
 (which already queues the card refresh). Retain desktop event behavior.
 Replay prediction before Save, then verify profile save/cold/Back unchanged.
+
+
+### Sextant input identity and serialized endpoint (runtime130 physical132)
+
+Runtime130 fixes the stale active-angle caption before Save: exact replay
+09:25:36.025UTC/Greenwich/Sirius-Vega/IE1.50′ gives157deg40.1910′
+(resume132-advisory-before-save). But saved10-significant-digit endpoint
+157.6698508 lies4.26e-8deg above the identical calculated angle; strict
+comparison falsely says outside tested range. Android warning comparison
+will allow1e-7deg (below0.000006′, covering persisted rounding across
+0..180deg); numerical correction/profile serialization stay unchanged.
+
+Actual UTC changed25→26min without Predict. Add repeat incorrectly accepts
+the old157deg41.6910′ prediction (resume132-changed-utc/stale-repeat),
+so inputs and prediction lack identity. Android will capture the semantic
+prediction inputs (UTC instant, position, two body selections, contact,
+pressure/temperature) after successful Predict. Native text/spin/choice
+changes queue an owned GUI-turn comparison, clearing stale prediction and
+requesting Predict again. Add performs the same comparison synchronously
+before accepting, covering any missed native callback. Observed angle,
+IE, uncertainty, note/profile edits do not change pair prediction identity.
+Callbacks scoped to live dialog, no deferred/detached thread. Desktop stays
+unchanged. Physical replay must refuse UTC-change repeat, preserve existing
+repeats, accept fresh prediction, and verify false endpoint warning absent.
