@@ -977,6 +977,12 @@ PlannerDialog::~PlannerDialog() {
 wxDateTime PlannerDialog::ReadUtc(bool showErrors) {
   const wxDateTime entered =
       ReadEntryFields(m_entryFormat->GetSelection(), showErrors);
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985–2026): retain resolved input provenance for Android diagnostics.
+  qDebug() << "Celnav planner input format/basis/epoch:"
+           << m_entryFormat->GetSelection() << m_inputTimeBasis->GetSelection()
+           << (entered.IsValid() ? entered.GetValue().GetValue() : -1);
+#endif
   if (!entered.IsValid()) return wxDateTime();
   const wxDateTime utc = PlannerFieldsToUtc(
       entered, static_cast<PlannerTimeBasis>(m_inputTimeBasis->GetSelection()),
