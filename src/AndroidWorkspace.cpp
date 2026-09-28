@@ -69,7 +69,7 @@ void CelestialNavigationDialog::BuildAndroidWorkspace() {
   move(m_horizonEventButton, 0, _("Record sunrise / sunset"));
   auto* sort = new wxChoice(contents[0], wxID_ANY);
   for (const wxString& name : {_("Newest first"), _("Oldest first"),
-                               _("Body A–Z"), _("Body Z–A"),
+                               _("Body A-Z"), _("Body Z-A"),
                                _("Type ascending"), _("Type descending"),
                                _("Measurement increasing"), _("Measurement decreasing"),
                                _("Excluded first"), _("Included first"),

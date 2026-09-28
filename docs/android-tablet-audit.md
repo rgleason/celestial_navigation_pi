@@ -3826,3 +3826,8 @@ mutation. Baseline source comparator exposes6columns×2directions. Inclusion/
 colour and descending body/type/measurement are inaccessible: feature-parity
 FAIL retained (resume139-sort-popup). Android-only single choice expanded to
 all12 orders after recorded design; builds/physical ordering replay pending.
+
+Both134 builds pass, but UTF8 literal guard FAIL: new en-dash Body captions use
+locale-based narrow translation. Changed these two labels to ASCII A-Z/Z-A
+before any packaging/import; subsequent guard passes. No runtime134 physical
+acceptance or installation claimed. Retain failed guard separately.
