@@ -3053,3 +3053,23 @@ anchor/repaint39.940 (248ms after hit). First short capture already shows
 correct readable References/full footer; no extra input. reader117-first-link
 and resume117-first-references. Batched edit fixes visible O(n) layout churn.
 Remove scoped diagnostics for118, then continue orientation/day/dusk/full D01.
+
+Physical118 d67a619,28Sep07:07–07:15BST: Android/desktop builds PASS;
+Plugin Manager actual import ACK/installed SO matches retained package:
+SO1366d8c445925bcb5aa4715d4c771d67a14e0954892271aaa3c505eb28138a50,
+tar0f272b2e401046bf822e2b6469d2aa7800f1a2fb0377dea68241d17c634e9b60.
+PID32118 continuous. Temporary reader diagnostics removed. Offline Wi-Fi off,
+font1.3: manual title, forward/reverse content swipes, one stationary AppendixD
+tap to References/full final footer PASS; quick guide initial/final paragraph
+portrait/landscape and AndroidBack to same Tools workspace PASS. Diagrams
+retain original pixels and captions remain below them. All complete XML root
+attributes/records unchanged versus105; byte SHAa69ab85dc2f28fba0cd4f5fe661901c81a0091d4621b55299c5315d05ba82ea5
+(11sights/5storedsolutions), sights118-validation.json. Evidence nested evidence/
+resume118-*. Night ink180 and dusk ink130 use black background/readable text.
+Correction: resume118-dusk-manual is RGB bright; resume118-dusk-actual is DAY,
+not dusk. Cold restart resets host ToggleColorScheme static lastIsNight: starting
+NIGHT then RGB then DAY then DUSK. resume118-confirmed-dusk is actual dusk.
+Physical118 dusk Time page FAIL: current-month Sundays/Saturdays black on
+black; selected29 nearly indistinguishable. Other time fields/fraction12.987
+readable. Retain failed resume118-dusk-time;119explicitly themes weekday/header
+formats and dim-grey selection. No D03 full acceptance claim before retest.

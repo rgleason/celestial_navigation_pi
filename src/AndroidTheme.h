@@ -4,6 +4,8 @@
 #include "ocpn_plugin.h"
 #include <QWidget>
 #include <QPalette>
+#include <QCalendarWidget>
+#include <QTextCharFormat>
 
 inline QColor CN_HostColour(const char* name, QColor fallback) {
   wxColour colour;
@@ -25,7 +27,10 @@ inline void CN_ApplyAndroidTheme(QWidget* root) {
   const QColor background = CN_ThemeBackground();
   const QColor field = CN_HostColour("DILG2", Qt::white);
   const QColor ink = CN_HostColour("DILG3", QColor(23, 56, 73));
-  const QColor selected = CN_HostColour("UIBCK", QColor(90, 133, 155));
+  QColor selected = CN_HostColour("UIBCK", QColor(90, 133, 155));
+  if (background.lightness() < 128)
+    selected = QColor(qMax(32, ink.red()/3), qMax(32, ink.green()/3),
+                      qMax(32, ink.blue()/3));
   const QColor muted((ink.red()+background.red())/2,
                      (ink.green()+background.green())/2,
                      (ink.blue()+background.blue())/2);
@@ -40,6 +45,19 @@ inline void CN_ApplyAndroidTheme(QWidget* root) {
   palette.setColor(QPalette::Highlight, selected);
   palette.setColor(QPalette::HighlightedText, ink);
   root->setPalette(palette);
+  // POBsoft (1985-2026): Qt calendar weekend/header formats override its
+  // palette. Explicitly theme them so dark Sunday/Saturday dates stay visible.
+  if (auto* calendar = qobject_cast<QCalendarWidget*>(root)) {
+    for (int day = Qt::Monday; day <= Qt::Sunday; ++day) {
+      auto format = calendar->weekdayTextFormat(static_cast<Qt::DayOfWeek>(day));
+      format.setForeground(ink);
+      calendar->setWeekdayTextFormat(static_cast<Qt::DayOfWeek>(day), format);
+    }
+    auto header = calendar->headerTextFormat();
+    header.setForeground(ink);
+    header.setBackground(field);
+    calendar->setHeaderTextFormat(header);
+  }
   // Replace only our appended colour rules; sizing/gesture styles stay intact.
   QString style = root->styleSheet();
   const QString marker = "/* cn-host-colours */";
