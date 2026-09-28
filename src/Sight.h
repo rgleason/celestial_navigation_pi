@@ -128,6 +128,18 @@ public:
   // and joint solutions cannot drift into different astronomical models.
   lunar_distance::Observation LunarObservation() const;
   const lunar_distance::EphemerisFunction& LunarEphemeris() const {
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): worker/candidate copies retain a callback whose
+    // captured owner must be rebound before the temporary object is reused.
+    if (m_LunarEphemeris && m_androidLunarEphemerisOwner != this) {
+      auto* self = const_cast<Sight*>(this);
+      const bool usesDe440 = m_LunarUsesDe440;
+      const bool dut1Fallback = m_LunarDut1Fallback;
+      self->RecomputeLunar(-1, true);
+      self->m_LunarUsesDe440 = usesDe440;
+      self->m_LunarDut1Fallback = dut1Fallback;
+    }
+#endif
     return m_LunarEphemeris;
   }
 
@@ -235,6 +247,9 @@ public:
   bool m_LunarUsesDe440;
   bool m_LunarDut1Fallback = false;
   lunar_distance::EphemerisFunction m_LunarEphemeris;
+#ifdef __OCPN__ANDROID__
+  const Sight* m_androidLunarEphemerisOwner = nullptr;
+#endif
 
   /* DR info */
   double m_DRLat;

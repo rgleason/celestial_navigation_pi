@@ -1506,6 +1506,7 @@ void Sight::RecomputeLunar(int preferred_candidate
   };
   m_LunarEphemeris = ephemeris;
 #ifdef __OCPN__ANDROID__
+  m_androidLunarEphemerisOwner = this;
   // POBsoft (1985-2026): cold-loaded session snapshots need their own forward
   // model even when the individual watch search has deliberately been deferred.
   // The session worker owns the search; preparing this callback does no scan.
