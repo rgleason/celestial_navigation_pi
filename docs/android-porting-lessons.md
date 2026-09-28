@@ -306,3 +306,11 @@ One unchanged-input replay can pass while changed-input/later popup focus still
 fails; retain each result and test later text entry rather than generalize from
 the first screenshot. Any deferred cleanup must be owned and conditional on
 the same popup remaining open so it cannot interfere with a later editor.
+
+Set numeric control ranges before restoring model values. Expanding a range
+after SetValue cannot recover a silently clamped saved span. Keep generated form
+definitions in sync, and exercise actual Save/reopen, independent XML reload,
+Cancel and defaults. User-requested baseline f201326 is retained in the Android
+branch with cherry-pick provenance; its isolated GUI test runs in a fresh process
+with a temporary profile. Physical127 also checks wide saved spans and cold
+restart without replacing protected observations or solutions.

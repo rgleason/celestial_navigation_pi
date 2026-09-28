@@ -93,7 +93,7 @@ Meaningful packaging refusal checks rejected a wrong source SHA, wrong base
 APK checksum and manifest changes outside the two version fields before
 creating an APK.
 
-Still required before tester handoff: browser download interaction,
+Still required before tester handoff: public-hosted download verification,
 original-host return/restore guide and
 final audit. Production stock signing compatibility and stock-to-development
 profile migration have not been tested; the safe default is to retain stock
@@ -121,3 +121,23 @@ Screenshots: tester-package-prompt.png, tester-package-protect-details.png,
 tester-package-success.png, manual129-ready.png, manual129-workspace.png
 in the private audit directory. Testers may see an unfamiliar-developer
 notice with this development-signed APK; do not advise disabling Play Protect.
+
+## Actual browser download and update, 28 September09:07–09:16BST
+
+Firefox downloaded the final54.77MB APK through a temporary loopback HTTP test
+server. Its downloaded OpenCPN-5.14.1-pob220-import-fix-arm64(1).apk independently
+matches SHA25605abd439cd6ae65eb24044b10458f71341f8df7d32bb35bd16401b6f18ff14e2.
+The server and tablet reverse mapping were removed after download. This tests
+the tablet's browser/file workflow; it is not a published download URL.
+
+After downloading, open Samsung My Files > Downloads and select the APK bearing
+the Firefox provenance and current download time. Select Package installer >
+Just once, then Update for a verified matching development package/certificate.
+The unfamiliar-developer Play Protect notice again offered More details > Install
+anyway for this reviewed file. App installed > Open reached the chart. Play
+Protect stayed enabled; no Firefox install permission was needed. Sights.xml
+remained byte-identical, package129 unchanged, and xGRIB/xWeatherRouting stayed
+enabled. The expected host process replacement changed PID11583 to18001.
+Retained screenshots and independent readback are detailed in the tablet audit.
+Stock signing compatibility, stock migration/recovery and public-hosted delivery
+remain separate requirements, not established by this same-package update.

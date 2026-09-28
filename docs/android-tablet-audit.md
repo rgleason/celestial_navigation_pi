@@ -3366,3 +3366,60 @@ Real initial active Search memory: PSS552984KiB/RSS620972KiB/swapPSS190KiB,
 MemAvailable631672KiB of total3485900KiB, above64MiB work+256MiB reserve.
 Foreground QtActivity in org.opencpn.opencpn.dev independently captured.
 This is actual worker headroom at that capture, not all-family maximum memory.
+
+### User-requested baseline fix f201326, iteration127, 28 September09:11–09:21BST
+
+Paul explicitly requested incorporation of f20132655ac1563f7cc3f6be5147f47563f23d05,
+now cherry-picked with provenance as445cd67f8a95bad8c47cbaea70c59055e36b9612.
+It sets the shared search-span control range before restoring saved values and
+updates the generated form/control. This requested baseline correction applies
+to both platforms; existing Android fractional-precision controls remain intact.
+Protected documentation worktree has independently advanced to f201326; it was
+not modified by this porting work.
+
+Android and desktop builds PASS (build127-android/desktop.log). All9 CTest entries
+PASS54.72s (ctest127-full.log); GUI tests skipped in that headless run are not
+GUI passes. The new SightSearchSpanUi test was separately run alone on DISPLAY=:1
+with CELESTIAL_RUN_UI_TESTS=1: PASS10000ms, ui127-search-span.log. It exercises
+altitude/lunar defaults, six original spans, typed edits, XML reload and Cancel
+against an isolated temporary profile. No user desktop profile was accessed.
+
+Retained committed-445cd67/arm64 tar SHA256
+766109610da2c977a36fb7ad2b2f20dceaf83fd90e62dc2d0f44abf9d614055c;
+stripped SO962e35608d6a7582730d8b24a188079ca0a22e54005eab2a1a7bef508129cb3e.
+Actual Plugin Manager import127 ACK and independent installed127.so hash match.
+PID18001 continuous through import/Save/reopen/Cancel. Actual disposable Sun
+lunar span typed172800, Save, XML readback and reopened Time page retain172800.
+Typing999 then headerCancel leaves full saved XML byte-identical. Deliberate
+cold restart changes PID to18800; actual reopened span remains172800 and XML
+byte-identical. Landscape/font1.3 actual swipes reach final Time control;
+AndroidBack returns to parent without changing the saved span. Actual86400 and
+58400 Save/reopen both retain exact values. Each Save changes ONLY TimeCertainty;
+all11other sights/5solutions/root protected by complete canonical multiset checks,
+search-span127-all-save-validation.json. Restored1800 using the real Save action:
+sights127-restored.xml is byte-identical to saved Sun-centre baseline.
+Screens resume127-span* and resume127-cold-span-reopened.png; readbacks
+sights127-span172800/86400/58400/cancel/cold.xml retained privately.
+Complete crash buffer still ends at historical98fatal28Sep04:51:54; no new fatal.
+lastANR none since boot. After checks PSS485701KiB/RSS551140KiB/swapPSS326KiB.
+Returned chart, DAY/portrait. Full acceptance and exact final19-platform CI remain
+pending; no publication approval was requested or exercised.
+
+Browser tester-host flow09:07–09:16BST: Firefox actually downloads the final APK
+through temporary loopbackHTTP/ADBreverse8766, not a public release. Initial
+connection reset before server start is retained; retry succeeds, actual download
+confirmation54.77MB and completed Downloads entry. On-device downloaded(1).apk
+SHA25605abd439cd6ae65eb24044b10458f71341f8df7d32bb35bd16401b6f18ff14e2
+matches final host129 candidate. Notification permission denied, no Firefox
+install permission enabled. My Files shows Firefox provenance/time09:07; open
+that downloaded file using Package installer > Just once > Update. Per-file
+unfamiliar-developer notice > More details > Install anyway completes. Global
+Play Protect remains enabled. App installed/Open reaches host chart PID18001;
+PID11583 stopped by expected APK replacement, not an unnoticed native crash.
+The screenshot helper's missing-PID exception at App installed is expected while
+host is stopped; retained screenshot proves actual installer success. Package129
+and complete Sights.xml byte equality independently checked, xGRIB/xWeatherRouting
+remain enabled in manager. Server stopped and reverse mapping removed afterward.
+Screens resume127-firefox*, myfiles-downloaded-apk, browser-apk* and browser-host-open;
+package127-after-browser-host.txt and sights127-after-browser-host.xml retained.
+Public-hosted download and stock signing/profile migration remain unexecuted.
