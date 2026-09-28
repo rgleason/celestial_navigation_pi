@@ -500,11 +500,23 @@ std::string RenderPage(const AlmanacPage& page, double width, double height,
   for (const AlmanacTable& table : page.tables)
     tableLines += table.rows.size() + 1;
   const double chartReserve = page.chart.empty() ? 0.0 : 155.0;
+#if defined(__OCPN__ANDROID__) || defined(CELESTIAL_ANDROID_PDF_LAYOUT_TEST)
+  // POBsoft (1985-2026): include inter-table spacing and a rounding margin.
+  // An exactly fitted final row could fall just below the clipping boundary
+  // after floating-point accumulation, silently dropping a reference row.
+  const double tableSpacing = 8.0 * page.tables.size() + 1.0;
+  const double fittedRowHeight = tableLines
+      ? std::max(compact ? 7.0 : 7.5,
+                 std::min(compact ? 11.5 : 13.0,
+                          (y - 55.0 - chartReserve - tableSpacing) / tableLines))
+      : 13.0;
+#else
   const double fittedRowHeight = tableLines
       ? std::max(compact ? 7.0 : 7.5,
                  std::min(compact ? 11.5 : 13.0,
                           (y - 55.0 - chartReserve) / tableLines))
       : 13.0;
+#endif
   for (const AlmanacTable& table : page.tables) {
     if (y < 100) break;
     const size_t columns = table.headings.size();

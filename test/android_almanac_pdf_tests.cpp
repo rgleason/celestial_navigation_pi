@@ -19,10 +19,15 @@ TEST(AndroidAlmanacPdf, SmallPaperAndBookletRetainFinalDenseTableRow) {
   page.section = "Acceptance reference";
   AlmanacTable table;
   table.headings = {"Row", "Reference"};
-  for (unsigned i = 0; i < 60; ++i)
+  for (unsigned i = 0; i < 61; ++i)
     table.rows.push_back({wxString::Format("%u", i),
                          wxString::Format("REF-%03u", i)});
   page.tables.push_back(table);
+  AlmanacTable second;
+  second.headings = {"Reference"};
+  for (unsigned i = 0; i < 4; ++i)
+    second.rows.push_back({wxString::Format("SECOND-%03u", i)});
+  page.tables.push_back(second);
   document.pages.push_back(page);
   for (const auto paper : {AlmanacPaper::A4, AlmanacPaper::Letter,
                            AlmanacPaper::A5}) {
@@ -42,7 +47,10 @@ TEST(AndroidAlmanacPdf, SmallPaperAndBookletRetainFinalDenseTableRow) {
       ASSERT_TRUE(file.ReadAll(&bytes, wxConvISO8859_1));
       // This is the lost-data regression, rather than an assertion about the
       // implementation's scale or chosen line breaks.
-      EXPECT_NE(wxNOT_FOUND, bytes.Find("REF-059"));
+      for (unsigned i = 0; i < 61; ++i)
+        EXPECT_NE(wxNOT_FOUND, bytes.Find(wxString::Format("REF-%03u", i)));
+      for (unsigned i = 0; i < 4; ++i)
+        EXPECT_NE(wxNOT_FOUND, bytes.Find(wxString::Format("SECOND-%03u", i)));
       EXPECT_NE(wxNOT_FOUND, bytes.Find("%%EOF"));
       // Scientific notation is invalid in a PDF transformation matrix.
       EXPECT_FALSE(std::regex_search(bytes.ToStdString(),

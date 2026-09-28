@@ -2498,3 +2498,33 @@ Next Android-only repair formats matrix numbers as fixed six decimal places;
 regression rejects exponent-number syntax across all six paper/booklet cases.
 Android/desktop builds pass;18focused tests pass4165ms. Synthetic PDF parses
 without Poppler errors. Physical corrected output remains pending.
+
+### Runtime93 real PDF syntax pass; exhaustive table comparison fails
+
+Imported1be55fe archivec4a3c4951f2409831222fb5c33adcb000ec909eb0ca986d523b7c052a43021ab;
+installed93.so matches6c30c0a412fa1d82c5bb15fc668822e1a2dc91f79abca60e43a9a0f3dbdb2b3d.
+Same calculator-free Greenwich/date/A5booklet8 request entered with a fresh
+resume93-greenwich-booklet.pdf output. Sun was explicitly unticked while
+dependency enforcement remained on: validation restores Sun in actual PDF.
+One first swipe after calendar did not move; slower second swipe reaches
+complete final coverage controls. Native keyboards/Back preserve request.
+Estimate458logical/230PDF/115sheets matches actual230pages/14208557bytes,
+SHA92fed19ef63a3f634872e241a736dd006719eb4d19f9fa7d073df6ceb17902e5.
+Zero Poppler syntax errors; viewer now renders headings/charts/table output.
+All458logical footers present once, Moon23h row restored, heading does not
+cross fold. Eight representative renders viewed and retained. Typed230 with
+keyboardBack/Go renders final watch form with Next disabled; rotation1.3
+preserves page230. One landscape swipe moves content but has not reached
+footer, so that final-scroll case is not yet accepted.
+
+**FAIL exhaustive content:** normalized raw-text comparison of439logical
+reference pages3..441 against actual A4 baseline identifies306direct-table
+pages each missing its last row (288five-declination rows,18three-declination
+rows). Other133reference pages match exactly. Retained
+voyage93-full-page-comparison.txt lists every difference. Row height used an
+exact clipping-boundary fit, with no rounding margin or inter-table gaps.
+Next Android-only repair reserves8points per table plus1point margin. Expanded
+regression requires all61rows and a second4-row table across paper/booklet
+variants. Desktop runtime unchanged; focused18checks and Android/desktop
+builds pass. Runtime93 full9CTest passes53.46s; this does not waive the real
+missing-row failure. Actual94 output remains pending.
