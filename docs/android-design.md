@@ -715,3 +715,16 @@ first use after a copy, without repeating the search or changing provider-status
 flags. Never dereference the previous owner. Preserve desktop implementation.
 Actual entered-UTC branch/residual checks after worker completion and repeated
 results must validate the repair; retain uninstalled121 binaries as provenance.
+
+### Iteration123: invalidate derived lunar state on edited inputs (before code)
+
+Physical122 Results/check work, but Save after changing centre/near to upper/far
+retained TimeCorrection431s from the prior calculated inputs while its candidate
+list was invalidated. FAIL independently observed in sights122-lunar-upper-far.
+Track the retained input signature separately from the completed search cache.
+When a subsequent signature changes, clear its derived integer time correction;
+clear cached callback/position/error state on every deferred invalidation. Preserve
+legacy stored correction on first load and unchanged editor Save. Do not alter
+raw readings, clock correction, saved solutions or desktop calculation behavior.
+Retest calculate→edit→Save exact changed-fields, cold legacy preservation,
+repeated/cancelled search and entered-UTC check.
