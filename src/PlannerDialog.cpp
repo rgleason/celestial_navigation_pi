@@ -1008,6 +1008,11 @@ wxDateTime PlannerDialog::ReadUtc(bool showErrors) {
 wxDateTime PlannerDialog::ReadEntryFields(int format, bool showErrors) {
   wxDateTime entered;
   if (format == 0) {
+#ifdef __OCPN__ANDROID__
+    qDebug() << "Celnav planner nautical fields:"
+             << QString::fromUtf8(m_nauticalDate->GetValue().utf8_str())
+             << QString::fromUtf8(m_nauticalTime->GetValue().utf8_str());
+#endif
     if (!ParseNauticalPlannerDateTime(m_nauticalDate->GetValue(),
                                       m_nauticalTime->GetValue(), &entered)) {
       if (showErrors)
