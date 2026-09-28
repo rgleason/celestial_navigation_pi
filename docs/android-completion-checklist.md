@@ -29,7 +29,7 @@ it as an Android time regression or alter shared desktop numerical behavior.
 
 | Group | Inventory rows | Specific remaining evidence needed |
 |---|---|---|
-| Context sources | P01/P02/P08/T01 | Planner boat/cursor/selected DR/last fix/waypoint choices, unavailable retention and invalid clearing; selected time, range endpoints and format transition after the hint repair; positive last fix in Find Body. Stopped GNSS warning has now passed; record reacquisition and cold no-input status without repeating mark/copy tests. |
+| Context sources | P01/P02/P08/T01 | Planner cursor/last fix/waypoint choices, unavailable retention and invalid clearing; range endpoints; positive last fix in Find Body and cold no-input GNSS. Boat/selectedDR/selectedtime/nautical→platform fractional UTC and stopped-input/reacquisition passed148; do not repeat them. |
 | Body planning | P04 | Remaining sort keys/directions, recommendation limits including reversed range, magnitude/below-horizon sky controls. Carry forward selected-body Create/Save/cold/Delete and worker cancellation. |
 | Observation variants | O01/O02/O04/O07/O10/O11 | Remaining body-entry branches, cold exact azimuth precision, angular uncertainty and per-sight true/magnetic shift; independent geometry and complete-record/atomic persistence cases. Carry forward limb/correction/sort/delete/report/calendar cases already recorded. |
 | Fix integration | F02/F03/F04 | Matching-watch saved lunar correction actually applied to a fix, per-sight motion and invalid/DST epoch handling. Nonzero chart heading is covered once in the combined chart group below. Carry forward all four algorithms, running-fix and sequence references. |

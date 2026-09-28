@@ -4036,3 +4036,29 @@ no immediate receiver reacquisition PASS claimed. Later planner screenshot
 shows host speed/course returning, but that alone is not a GNSS clock assertion.
 PID18092 remains continuous. Only stopped-input status is accepted here;
 unchanged full library and restored-source clock confirmation remain to record.
+
+### Previously untested context branches148, installed147, 14:05–14:08 BST
+
+No code rebuild or installation for these new cases. Actual Current boat
+position fills finite precise coordinates. Independent private Android dumpsys
+location148.txt contains the corresponding GPS fix; displayed difference from
+its six-decimal rounded location is below0.000001degree, with snapshots taken
+at different instants. This is a source-binding comparison, not a new celestial
+numerical tolerance or freshness-policy claim. Exact device location is private.
+
+Actual Selected sight DR fills both coordinates from the selected first Sun's
+complete original XML record. Selected sight time fills March29
+07:00:12.987 in the retained shipzone+5.5 basis and resolves exactly to
+2026-03-29 01:30:12.987UTC, independently matching Date/Time/Milliseconds
+of the original record. Nautical→OpenCPN/platform format shows7/0/12.987
+with the same resolved UTC (resume148-selected-time/platform-format).
+No observation was edited/saved. Full independent sights148-sources.xml SHA
+fba0ee0f... matches all12observations/5complete reports/Clock0 exactly.
+
+Restored-GNSS confirmation now actually captured: clock13:08:15.7UTC/RMC
+age0.7s and system-minus-GNSS−354ms, local14:08:15.3BST, Clock0. Source
+reacquired without a host restart, distinct from the earlier stale captures.
+WiFi remains off and original Location enabled restored. PID18092continuous.
+Only these new branches accepted; cursor/waypoint/positive lastfix/range endpoint
+and cold no-input remain on the finite checklist. Existing completed editor
+and numerical cases were not repeated.
