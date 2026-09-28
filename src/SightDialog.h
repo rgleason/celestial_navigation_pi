@@ -122,6 +122,7 @@ private:
   wxSpinCtrlDouble* m_androidTimeCertainty = nullptr;
   bool m_androidAccepted = false;
   bool AndroidInputsValid(wxString* error) const;
+  bool CalculateAndroidLunar();
   wxButton* m_androidCalculateLunar = nullptr;
 #endif
   void ApplyFindPosition(const Sight& candidate);

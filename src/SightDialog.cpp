@@ -510,29 +510,7 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   m_androidCalculateLunar = calculateLunar;
   calculateLunar->Show(m_Sight.m_Type == Sight::LUNAR);
   calculateLunar->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-    celestial_android::CommitNumbers(this);
-    wxString inputError;
-    if (!AndroidInputsValid(&inputError)) {
-      CelestialMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
-      return;
-    }
-    Recompute();
-    if (m_Sight.m_Type != Sight::LUNAR) {
-      CelestialMessageBox(_("Select Lunar distance as the sight type first."), _("Lunar calculation"), wxOK | wxICON_INFORMATION, this);
-      return;
-    }
-    Sight candidate = m_Sight;
-    wxString error;
-    const bool completed = celestial_android::RunJob(this, _("Search lunar UTC"),
-        [&](celestial_android::JobState& state) {
-          state.Progress("Searching the total UTC span around the entered time...");
-          candidate.m_androidLunarSearch = true;
-          candidate.m_androidCheckpoint = [&state]() { state.Checkpoint(); };
-          candidate.Recompute(m_clock_offset);
-        }, &error);
-    candidate.m_androidCheckpoint = {}; candidate.m_androidLunarSearch = false;
-    if (completed) { m_Sight = candidate; m_tCalculations->SetValue(m_Sight.m_CalcStr); }
-    else if (!error.empty()) CelestialMessageBox(error, _("Lunar calculation"), wxOK | wxICON_ERROR, this);
+    CalculateAndroidLunar();
   });
   m_sdbSizer1OK->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
     celestial_android::CommitNumbers(this);
@@ -647,6 +625,11 @@ void SightDialog::OnFindBody(wxCommandEvent& event) {
 #endif
 
   if (m_Sight.m_Type == Sight::LUNAR) {
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): Results must prepare the deferred Android search.
+    // Cancellation returns to this editor without an empty results surface.
+    if (!CalculateAndroidLunar()) return;
+#endif
     LunarResultsDialog lunarresults_dialog(this, m_Sight);
     lunarresults_dialog.ShowModal();
   } else {
@@ -856,6 +839,44 @@ void SightDialog::RecomputeDMM() {
 }
 
 #ifdef __OCPN__ANDROID__
+bool SightDialog::CalculateAndroidLunar() {
+  // POBsoft (1985-2026): one owned cancellable calculation for both actions.
+  QGuiApplication::inputMethod()->commit();
+  celestial_android::CommitNumbers(this);
+  if (auto* focus = QApplication::focusWidget()) focus->clearFocus();
+  QGuiApplication::inputMethod()->reset();
+  QGuiApplication::inputMethod()->hide();
+  wxString inputError;
+  if (!AndroidInputsValid(&inputError)) {
+    CelestialMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
+    return false;
+  }
+  Recompute();
+  if (m_Sight.m_Type != Sight::LUNAR) {
+    CelestialMessageBox(_("Select Lunar distance as the sight type first."), _("Lunar calculation"), wxOK | wxICON_INFORMATION, this);
+    return false;
+  }
+  if (!m_Sight.m_androidLunarInputs.empty()) return true;
+  Sight candidate = m_Sight;
+  wxString error;
+  const bool completed = celestial_android::RunJob(this, _("Search lunar UTC"),
+      [&](celestial_android::JobState& state) {
+        state.Progress("Searching the total UTC span around the entered time...");
+        candidate.m_androidLunarSearch = true;
+        candidate.m_androidCheckpoint = [&state]() { state.Checkpoint(); };
+        candidate.Recompute(m_clock_offset);
+      }, &error);
+  candidate.m_androidCheckpoint = {};
+  candidate.m_androidLunarSearch = false;
+  if (completed) {
+    m_Sight = candidate;
+    m_tCalculations->SetValue(m_Sight.m_CalcStr);
+  } else if (!error.empty()) {
+    CelestialMessageBox(error, _("Lunar calculation"), wxOK | wxICON_ERROR, this);
+  }
+  return completed;
+}
+
 bool SightDialog::AndroidInputsValid(wxString* error) const {
   // POBsoft (1985-2026): reject invalid stored/Find positions before Save.
   if (!std::isfinite(m_Sight.m_DRLat) || !std::isfinite(m_Sight.m_DRLon) ||
@@ -956,7 +977,11 @@ void SightDialog::Recompute() {
   if (m_androidCalculateLunar) m_androidCalculateLunar->Show(selectedType == Sight::LUNAR);
 #endif
   if (selectedType == Sight::LUNAR) {
+#ifdef __OCPN__ANDROID__
+    m_bFindBody->SetLabel(_("Results"));
+#else
     m_bFindBody->SetLabel(_T("Time"));
+#endif
     m_sbSizerSight->GetStaticBox()->SetLabel(_T("Lunar distance (LDOpc)"));
     m_cLimb->Clear();
     m_cLimb->Append(_T("Near"));

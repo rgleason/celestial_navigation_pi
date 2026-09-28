@@ -3090,3 +3090,44 @@ selection and119-night-final-time stray cursor handle after form drag.120
 themes live popup after show and clears text entry on genuine control drag.
 No full D03PASS until these and appearance regression have passed.
 Protected documentation HEAD remains4435de5088666933fb46ee9663a36fbb42baea87.
+
+Physical1204174b58,28Sep07:25–07:39BST: Android/desktop builds PASS;
+actual Plugin Manager import ACK, independently installed SO
+4260f9a07d69cef09ba9a5b00fa75cecb64a646de3c80b53a5d4fd2a27f028ff
+matches tarcdd75abc880741d6957e1053ba81ef0904732371c587d7f11581a3716f1c1ce3.
+PID32118 continuous/font1.3. Night page popup now dim-grey selected rows;
+same Time-field control drag reaches complete final uncertainty without the
+stale cursor handle. Stationary Seconds entry13.987 opens native keyboard;
+landscape→portrait rotation/keyboardBack retains editor. Cancel+parentBack
+restore byte-identical11-sight/5-solution XML to118 (sights120-d03-cancel.xml).
+Night colour picker preserves actual143/188/143 swatch; nestedBack returns
+editor then workspace without mutation. Actual day landscape picker
+resume120-day-picker-landscape-actual shows allRGB values/swatch/controls.
+Earlier resume120-day-workspace and day-picker-landscape were chart-only
+captures after a premature colour-action/CelNav tap, NOT picker acceptance.
+resume120-night-colour-landscape is workspace after bothBack, not the picker.
+
+Physical119 final external-link continuation,07:24BST: Wi-Fi restoredON;
+real Definitions final-footer link opens Firefox siranah.de/html/sail040e.htm#a2.
+BrowserBack retains same final Definitions page; subsequentBack retains report
+then cancels editor, PID32118 continuous. reader119-external-activity.txt and
+resume119 external/browser-return screenshots retained. Original diagram
+pixels unchanged; they do not acquire night-mode bitmap recolouring.
+
+Lunar120,07:30–07:39BST: Duplicate public Greenwich Vega22:00 created one
+identical disposable record (12total), all11 existing complete records/root
+unchanged; lunar120-duplicate-validation.json. Independent contact reference
+lunar120-contact-reference.json derives MoonSD0.262036deg from retained USNO
+220000, centreHs5.504117, upperHs5.766153, farLD68.7820392764501.
+Moon Centre actually selected, typed centreHs and sigma0.765432198765 Save
+and reopen match exact doubles; only three intended XML attributes differ,
+protected11records/root unchanged (lunar120-centre-validation.json).
+An early entry attempt used Back when no keyboard was visible and cancelled
+editor; independent file remained byte-identical to duplicate. This is not
+positive uncertainty-entry evidence. Later separately inspected native keyboard
+entry and Save are the actual positive case. Vega body distance contact remains
+disabled at centre as expected for a star. No numerical contact acceptance yet:
+reopened Measurement Time action opens empty Recovery, Check at entered UTC
+then says Cannot evaluate entered UTC with no explanation. FAIL retained
+resume120-lunar-centre-reopened/check-unprepared. Android deferred search
+was never run by this action.121design commits before scoped repair.
