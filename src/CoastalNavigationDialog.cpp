@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 #include "CoastalNavigationDialog.h"
 #include "WaypointPickerDialog.h"
 #include "Utf8Translation.h"
@@ -155,6 +156,12 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   vertical->SetSizer(verticalRoot);
   calculateVertical->Bind(wxEVT_BUTTON,
                           &CoastalNavigationDialog::CalculateVertical, this);
+#ifdef __OCPN__ANDROID__
+  m_androidVerticalChart = new wxButton(vertical, wxID_ANY, _("Show plotted range on chart"));
+  m_androidVerticalChart->Enable(false);
+  verticalRoot->Add(m_androidVerticalChart, 0, wxALL | wxEXPAND, 10);
+  m_androidVerticalChart->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { ShowAndroidChart(true); });
+#endif
   notebook->AddPage(vertical, _("Vertical angle / distance"), true);
 
   wxScrolledWindow* horizontal = new wxScrolledWindow(notebook, wxID_ANY);
@@ -247,6 +254,12 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   boat->Bind(wxEVT_BUTTON, &CoastalNavigationDialog::UseBoatPosition, this);
   calculateHorizontal->Bind(
       wxEVT_BUTTON, &CoastalNavigationDialog::CalculateHorizontal, this);
+#ifdef __OCPN__ANDROID__
+  m_androidHorizontalChart = new wxButton(horizontal, wxID_ANY, _("Show plotted fix on chart"));
+  m_androidHorizontalChart->Enable(false);
+  horizontalRoot->Add(m_androidHorizontalChart, 0, wxALL | wxEXPAND, 10);
+  m_androidHorizontalChart->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { ShowAndroidChart(false); });
+#endif
   notebook->AddPage(horizontal, _("Horizontal angles / fix"), false);
   root->Add(notebook, 1, wxLEFT | wxRIGHT | wxEXPAND, 10);
 
@@ -283,6 +296,16 @@ CoastalNavigationDialog::CoastalNavigationDialog(
   SetSizer(root);
   SetMinSize(wxSize(720, 500));
   dialog_geometry::Restore(this, _T("CoastalNavigation"), wxSize(900, 760));
+#ifdef __OCPN__ANDROID__
+  for (auto* field : {m_verticalTargetLat, m_leftLat, m_centreLat, m_rightLat, m_initialLat})
+    celestial_android::AddAngleEntry(field, 1, -90, 90);
+  for (auto* field : {m_verticalTargetLon, m_leftLon, m_centreLon, m_rightLon, m_initialLon})
+    celestial_android::AddAngleEntry(field, 2, -180, 180);
+  celestial_android::AddAngleEntry(m_verticalAngle, 0, -90, 90);
+  for (auto* field : {m_firstAngle, m_secondAngle, m_observedBearing, m_horizontalCourse})
+    celestial_android::AddAngleEntry(field, 0, 0, 360);
+  for (auto* field : {m_variation, m_deviation}) celestial_android::AddAngleEntry(field, 0, -180, 180);
+#endif
   Bind(wxEVT_SIZE,[this](wxSizeEvent& event) { Rewrap(); event.Skip(); });
   for(auto* page:{vertical,horizontal})
     page->Bind(wxEVT_SIZE,[this](wxSizeEvent& event) { Rewrap(); event.Skip(); });
@@ -305,8 +328,12 @@ void CoastalNavigationDialog::Rewrap() {
   for (auto& item:m_wrappedLabels) {
     auto* control=item.first;
     control->SetLabel(item.second);
+#ifdef __OCPN__ANDROID__
+    CN_WrapAndroidText(control, item.second, control->GetParent()->GetClientSize().x - 32);
+#else
     control->Wrap(std::max(160,control->GetParent()->GetClientSize().x-32));
     control->SetMinSize(wxSize(1,-1));
+#endif
   }
   Layout();
   for(auto* child:GetChildren()) if(auto* notebook=dynamic_cast<wxNotebook*>(child))
@@ -349,9 +376,13 @@ void CoastalNavigationDialog::AddWaypointPicker(wxSizer* layout,wxWindow* page,
   button->SetToolTip(_("Copy coordinates from an OpenCPN mark or route point. The coordinates stay editable; target height must be checked separately."));
   button->Bind(wxEVT_BUTTON,[this,latitude,longitude](wxCommandEvent&) {
     const auto points=LoadOpenCpnWaypoints();
-    if(points.empty()) { wxMessageBox(_("No OpenCPN waypoints or marks are available."),_("Select waypoint"),wxOK|wxICON_INFORMATION,this); return; }
+    if(points.empty()) { CelestialMessageBox(_("No OpenCPN waypoints or marks are available."),_("Select waypoint"),wxOK|wxICON_INFORMATION,this); return; }
     WaypointPickerDialog picker(this,points,wxEmptyString);
+#ifdef __OCPN__ANDROID__
+    if(celestial_android::ModalResult(picker)!=wxID_OK) return;
+#else
     if(picker.ShowModal()!=wxID_OK) return;
+#endif
     const auto* point=picker.GetSelectedWaypoint();
     if(!point) return;
     latitude->SetValue(FormatNavigationAngle(point->latitude,NavigationAngleKind::Latitude,true));
@@ -377,21 +408,30 @@ wxTextCtrl* CoastalNavigationDialog::AddField(wxSizer* sizer, wxWindow* parent,
                                               const wxString& label,
                                               const wxString& value,
                                               const wxString& units) {
-  sizer->Add(new wxStaticText(parent, wxID_ANY, label), 0,
+#ifdef __OCPN__ANDROID__
+  const wxString caption = units.empty() || units == _("angle") ? label : label + " (" + units + ")";
+#else
+  const wxString caption = label;
+#endif
+  sizer->Add(new wxStaticText(parent, wxID_ANY, caption), 0,
              wxALIGN_CENTER_VERTICAL);
   wxTextCtrl* control = new wxTextCtrl(parent, wxID_ANY, value,
                                        wxDefaultPosition, wxSize(220, -1));
   control->SetName(label);
   sizer->Add(control, 0, wxEXPAND);
+#ifdef __OCPN__ANDROID__
+  sizer->AddSpacer(0);
+#else
   sizer->Add(new wxStaticText(parent, wxID_ANY, units), 0,
              wxALIGN_CENTER_VERTICAL);
+#endif
   return control;
 }
 
 bool CoastalNavigationDialog::ReadDouble(wxTextCtrl* control,
                                          const wxString& label, double* value) {
   if (control->GetValue().ToDouble(value) && std::isfinite(*value)) return true;
-  wxMessageBox(label + _(" is not a valid number."), _("Coastal navigation"),
+  CelestialMessageBox(label + _(" is not a valid number."), _("Coastal navigation"),
                wxOK | wxICON_ERROR, this);
   return false;
 }
@@ -401,10 +441,14 @@ bool CoastalNavigationDialog::ReadAngle(wxTextCtrl* control,
                                         double maximum, double* value) {
   if (ParseNavigationAngle(control->GetValue(), NavigationAngleKind::Generic,
                            minimum, maximum, value)) {
+#ifdef __OCPN__ANDROID__
+    control->ChangeValue(celestial_android::NumberText(*value));
+#else
     control->ChangeValue(FormatNavigationAngle(*value));
+#endif
     return true;
   }
-  wxMessageBox(
+  CelestialMessageBox(
       label + _(" is not a valid angle. Decimal degrees, degrees and minutes, "
                 "and degrees/minutes/seconds are accepted."),
       _("Coastal navigation"), wxOK | wxICON_ERROR, this);
@@ -423,7 +467,7 @@ cn::GeoPoint CoastalNavigationDialog::ReadPoint(wxTextCtrl* latitude,
                            NavigationAngleKind::Longitude, -180.0, 180.0,
                            &point.longitude_deg);
   if (!*ok) {
-    wxMessageBox(
+    CelestialMessageBox(
         label + _(" must contain a valid latitude and longitude. Decimal "
                   "degrees, degrees and minutes, and degrees/minutes/seconds "
                   "are accepted."),
@@ -432,15 +476,20 @@ cn::GeoPoint CoastalNavigationDialog::ReadPoint(wxTextCtrl* latitude,
   }
   if (*ok && (point.latitude_deg <= -90.0 || point.latitude_deg >= 90.0 ||
               point.longitude_deg < -180.0 || point.longitude_deg > 180.0)) {
-    wxMessageBox(label + _(" is outside the valid latitude/longitude range."),
+    CelestialMessageBox(label + _(" is outside the valid latitude/longitude range."),
                  _("Coastal navigation"), wxOK | wxICON_ERROR, this);
     *ok = false;
   }
   if (*ok) {
+#ifdef __OCPN__ANDROID__
+    latitude->ChangeValue(celestial_android::NumberText(point.latitude_deg));
+    longitude->ChangeValue(celestial_android::NumberText(point.longitude_deg));
+#else
     latitude->ChangeValue(FormatNavigationAngle(
         point.latitude_deg, NavigationAngleKind::Latitude, true));
     longitude->ChangeValue(FormatNavigationAngle(
         point.longitude_deg, NavigationAngleKind::Longitude, true));
+#endif
   }
   return point;
 }
@@ -482,6 +531,10 @@ void CoastalNavigationDialog::CalculateVertical(wxCommandEvent&) {
   for (const std::string& warning : result.warnings)
     text += _("\nWarning: ") + wxString::FromUTF8(warning.c_str());
   m_rangeCircle.clear();
+#ifdef __OCPN__ANDROID__
+  m_androidVerticalTarget = target;
+  m_androidRangeNm = result.range_nm;
+#endif
   for (int bearing = 0; bearing <= 360; bearing += 2)
     m_rangeCircle.push_back(cn::Destination(target, bearing, result.range_nm));
   m_hasVerticalPosition = false;
@@ -546,6 +599,9 @@ void CoastalNavigationDialog::CalculateHorizontal(wxCommandEvent&) {
     return;
   const cn::HorizontalFixResult result =
       cn::SolveHorizontalThreePointFix(observation, initial);
+#ifdef __OCPN__ANDROID__
+  m_androidHorizontalCentre = initial;
+#endif
   m_hsaLoci =
       cn::BuildHorizontalAngleLocus(observation.left, observation.centre,
                                     observation.left_centre_angle_deg -
@@ -643,11 +699,17 @@ void CoastalNavigationDialog::UpdateBearingControls() {
 }
 
 void CoastalNavigationDialog::NewObservation(wxCommandEvent&) {
-  if (wxMessageBox(
+#ifdef __OCPN__ANDROID__
+  if (!celestial_android::Confirm(this, _("New coastal observation"),
+          _("Clear the retained coastal-observation entries and chart plots?"),
+          _("Clear observations"))) return;
+#else
+  if (CelestialMessageBox(
           _("Clear the retained coastal-observation entries and chart plots?"),
           _("New coastal observation"),
           wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION, this) != wxYES)
     return;
+#endif
   const CelestialNavigationDefaults defaults =
       LoadCelestialNavigationDefaults();
   double boatLatitude = 0.0, boatLongitude = 0.0;
@@ -709,8 +771,29 @@ void CoastalNavigationDialog::ClearPlots(wxCommandEvent&) {
 }
 
 void CoastalNavigationDialog::RefreshChart() {
+#ifdef __OCPN__ANDROID__
+  if (m_androidVerticalChart) m_androidVerticalChart->Enable(!m_rangeCircle.empty());
+  if (m_androidHorizontalChart) m_androidHorizontalChart->Enable(!m_hsaLoci.empty());
+#endif
   RequestRefresh(m_parent->GetParent());
 }
+
+#ifdef __OCPN__ANDROID__
+void CoastalNavigationDialog::ShowAndroidChart(bool vertical) {
+  if (vertical ? m_rangeCircle.empty() : m_hsaLoci.empty()) return;
+  const auto centre = vertical ? m_androidVerticalTarget
+      : (m_hasHorizontalFix ? m_horizontalFix : m_androidHorizontalCentre);
+  double scale = 0.01;
+  if (vertical) {
+    const wxSize size = GetCanvasByIndex(0)->GetClientSize();
+    scale = std::min(size.x, size.y) / (4 * 1852 * std::max(0.1, m_androidRangeNm));
+  }
+  JumpToPosition(centre.latitude_deg, centre.longitude_deg, scale);
+  Hide();
+  m_parent->GetPlugin()->OnDialogClose();
+  RefreshChart();
+}
+#endif
 
 bool CoastalNavigationDialog::Render(piDC* dc, PlugIn_ViewPort* viewport) {
   if (!dc || !viewport) return false;

@@ -4,6 +4,9 @@
 #include "Sight.h"
 #include "UtcDateTime.h"
 #include "tinyxml.h"
+#ifndef PLUGIN_VERSION_MAJOR
+#include "version.h"
+#endif
 #include <cmath>
 #include <iomanip>
 #include <locale>
@@ -83,7 +86,9 @@ inline wxString LunarInputSnapshot(const Sight& sight) {
     << (sight.m_LunarTimeIsWatch ? "watch" : "nominalUTC")
     << " earthModel=" << (o.use_ellipsoid ? "WGS84" : "sphere") << " ephemeris="
     << (sight.m_LunarUsesDe440 ? "DE440s-apparent" : "analytical-fallback")
-    << " solverVersion=2.8.5.1";
+    // POBsoft (1985-2026): identify the actual release which made this trail.
+    << " solverVersion=" << PLUGIN_VERSION_MAJOR << '.' << PLUGIN_VERSION_MINOR
+    << '.' << PLUGIN_VERSION_PATCH << '.' << PLUGIN_VERSION_TWEAK;
   return wxString::FromUTF8(s.str().c_str());
 }
 
@@ -121,7 +126,11 @@ inline bool PrepareLunarFixSights(const std::vector<Sight>& recorded,
                                   wxString* error) {
   working->clear();
   wxDateTime reference;
+#ifdef __OCPN__ANDROID__
+  if (solution && !UtcDateTime::ParseUtc(solution->reference_time, &reference)) {
+#else
   if (solution && !reference.ParseISOCombined(solution->reference_time, ' ')) {
+#endif
     *error = "The saved solution has no usable reference epoch.";
     return false;
   }

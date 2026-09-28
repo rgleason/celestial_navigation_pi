@@ -1,0 +1,20 @@
+{
+  "source_sha": "445cd67f8a95bad8c47cbaea70c59055e36b9612",
+  "physical_screenshot": "resume128-bias-solve.png",
+  "imposed_bias_arcmin": 0.85,
+  "actual_bias_arcmin": 0.724781,
+  "actual_clock_seconds": -0.049565123313406304,
+  "solution_attributes": {
+    "format": "1",
+    "name": "RESUME128-Bias",
+    "createdUTC": "2026-09-28 08:31:59 UTC",
+    "referenceTime": "2024-06-21 22:00:00",
+    "method": "WGS84 sequence: time at known position",
+    "baseCorrectionSeconds": "0",
+    "additionalCorrectionSeconds": "-0.049565123313406304",
+    "timeSigmaSeconds": "1.8912536498325252"
+  },
+  "report": "Candidate 1; reference position 51.477900000, 0.000000000; position held fixed\nMotion 0; COG 0.000; SOG 0.000; robust fit 1; fit index bias 1\nIndex bias 0.724781 arcmin; weighted RMS 0.403361; condition 106353\nResidual nan means a shared/excluded reading, not a zero error.\n22:05:00 Moon\u2013Vega residuals arcmin: LD -0.354598 Moon +0.002153 body +0.155136; outlier 0\n22:05:00 Moon\u2013Spica residuals arcmin: LD +0.009396 Moon +nan body +0.219522; outlier 0\n22:00:00 Moon\u2013Vega residuals arcmin: LD -0.367883 Moon -0.038646 body +0.155881; outlier 0\n22:00:00 Moon\u2013Spica residuals arcmin: LD +0.001217 Moon +nan body +0.218009; outlier 0\nShared readings were counted once, not as independent repeated measurements\n",
+  "reference": "session-bias128-reference.json",
+  "scope": "Actual saved disposable solution from physical runtime127. Known-position result only; other modes/crosscuts remain pending."
+}

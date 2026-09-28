@@ -29,6 +29,9 @@ private:
   wxStaticText* m_summary;
   ResidualPlotPanel* m_plot;
   wxListCtrl* m_results;
+#ifdef __OCPN__ANDROID__
+  wxStaticText* m_androidResults;
+#endif
 };
 
 #endif

@@ -1,0 +1,602 @@
+{
+  "source": "8bc86ec shared Sight geometry",
+  "reference": "archived USNO Greenwich2024-06-21T22:00:00Z Spica GHA/Dec with independent spherical initial bearing atan2",
+  "reference_spica": {
+    "dec": -11.289809,
+    "gha": 38.964494,
+    "hc": 18.767329,
+    "zn": 220.639535
+  },
+  "bearing_true_deg": 220.6395351234568,
+  "uncertainty_arcmin": 1,
+  "motion_nm": 0,
+  "time_uncertainty_seconds": 0,
+  "limit_deg": 0.01,
+  "maximum_error_deg": 0.0013639553889674971,
+  "points": [
+    {
+      "latitude": -10.531679029700353,
+      "longitude": -38.300381654727175,
+      "independent_bearing": 220.63822170989522,
+      "error_deg": 0.0013134135615757714
+    },
+    {
+      "latitude": -9.774832091477474,
+      "longitude": -37.63638589965474,
+      "independent_bearing": 220.63817116806783,
+      "error_deg": 0.0013639553889674971
+    },
+    {
+      "latitude": -9.01908323200702,
+      "longitude": -36.97261187596719,
+      "independent_bearing": 220.63837543238506,
+      "error_deg": 0.0011596910717344144
+    },
+    {
+      "latitude": -8.264228360917244,
+      "longitude": -36.30918329517215,
+      "independent_bearing": 220.63846272389776,
+      "error_deg": 0.0010723995590353752
+    },
+    {
+      "latitude": -7.510070062757189,
+      "longitude": -35.64621409649783,
+      "independent_bearing": 220.6384961817676,
+      "error_deg": 0.0010389416891882775
+    },
+    {
+      "latitude": -6.756401620979107,
+      "longitude": -34.983827514515355,
+      "independent_bearing": 220.63837857669319,
+      "error_deg": 0.0011565467636103222
+    },
+    {
+      "latitude": -6.00305128675527,
+      "longitude": -34.322105373888434,
+      "independent_bearing": 220.63850948849264,
+      "error_deg": 0.0010256349641508677
+    },
+    {
+      "latitude": -5.249787942879795,
+      "longitude": -33.661197432719234,
+      "independent_bearing": 220.63845905434238,
+      "error_deg": 0.0010760691144184875
+    },
+    {
+      "latitude": -4.496585584286223,
+      "longitude": -33.00101730978477,
+      "independent_bearing": 220.6399479554048,
+      "error_deg": 0.00041283194801167156
+    },
+    {
+      "latitude": -3.7429991894412806,
+      "longitude": -32.341960683590074,
+      "independent_bearing": 220.64042372543068,
+      "error_deg": 0.0008886019738838513
+    },
+    {
+      "latitude": -2.988856544910095,
+      "longitude": -31.684110458090615,
+      "independent_bearing": 220.64039068454676,
+      "error_deg": 0.0008555610899634303
+    },
+    {
+      "latitude": -2.2340162409832525,
+      "longitude": -31.027515248867275,
+      "independent_bearing": 220.64040585955348,
+      "error_deg": 0.0008707360966866418
+    },
+    {
+      "latitude": -1.4782671755269265,
+      "longitude": -30.372305441740252,
+      "independent_bearing": 220.64039687552648,
+      "error_deg": 0.0008617520696816428
+    },
+    {
+      "latitude": -0.7214186087570387,
+      "longitude": -29.718590038798766,
+      "independent_bearing": 220.64043640402645,
+      "error_deg": 0.0009012805696499981
+    },
+    {
+      "latitude": 0.03674912670837834,
+      "longitude": -29.06651413792453,
+      "independent_bearing": 220.6404112965841,
+      "error_deg": 0.0008761731272954876
+    },
+    {
+      "latitude": 0.796419475298385,
+      "longitude": -28.41618389366245,
+      "independent_bearing": 220.64042896845464,
+      "error_deg": 0.0008938449978472818
+    },
+    {
+      "latitude": 1.5577984064638748,
+      "longitude": -27.76773522206601,
+      "independent_bearing": 220.6404549545607,
+      "error_deg": 0.0009198311039142482
+    },
+    {
+      "latitude": 2.321088619710285,
+      "longitude": -27.12130442430781,
+      "independent_bearing": 220.6404742371343,
+      "error_deg": 0.0009391136775036557
+    },
+    {
+      "latitude": 3.086500151898748,
+      "longitude": -26.47704131489398,
+      "independent_bearing": 220.64043662577242,
+      "error_deg": 0.0009015023156280222
+    },
+    {
+      "latitude": 3.8542096047308547,
+      "longitude": -25.835061203268452,
+      "independent_bearing": 220.640441780572,
+      "error_deg": 0.0009066571151947755
+    },
+    {
+      "latitude": 4.624419667142718,
+      "longitude": -25.195516277752574,
+      "independent_bearing": 220.64045609343123,
+      "error_deg": 0.0009209699744303634
+    },
+    {
+      "latitude": 5.397327440455413,
+      "longitude": -24.558558659456082,
+      "independent_bearing": 220.64046669516742,
+      "error_deg": 0.0009315717106233024
+    },
+    {
+      "latitude": 6.173124817622419,
+      "longitude": -23.92434137709779,
+      "independent_bearing": 220.6404744637935,
+      "error_deg": 0.0009393403367141673
+    },
+    {
+      "latitude": 6.95200100069609,
+      "longitude": -23.293022044888616,
+      "independent_bearing": 220.64048070023765,
+      "error_deg": 0.0009455767808503879
+    },
+    {
+      "latitude": 7.734142498035473,
+      "longitude": -22.664763557973373,
+      "independent_bearing": 220.64048566381305,
+      "error_deg": 0.0009505403562570791
+    },
+    {
+      "latitude": 8.519732520440558,
+      "longitude": -22.039734068531587,
+      "independent_bearing": 220.6404893858996,
+      "error_deg": 0.0009542624428036106
+    },
+    {
+      "latitude": 9.308950467391863,
+      "longitude": -21.418107084971865,
+      "independent_bearing": 220.64049190945278,
+      "error_deg": 0.0009567859959815905
+    },
+    {
+      "latitude": 10.101971445776218,
+      "longitude": -20.80006162561247,
+      "independent_bearing": 220.64049327082725,
+      "error_deg": 0.0009581473704542987
+    },
+    {
+      "latitude": 10.898965756299305,
+      "longitude": -20.185782342668304,
+      "independent_bearing": 220.64049348522,
+      "error_deg": 0.0009583617631960806
+    },
+    {
+      "latitude": 11.700098343500024,
+      "longitude": -19.575459605840933,
+      "independent_bearing": 220.64049255008695,
+      "error_deg": 0.0009574266301513035
+    },
+    {
+      "latitude": 12.505528215143755,
+      "longitude": -18.969289546543664,
+      "independent_bearing": 220.64049044992385,
+      "error_deg": 0.0009553264670500994
+    },
+    {
+      "latitude": 13.315407834096664,
+      "longitude": -18.367474059413325,
+      "independent_bearing": 220.64048715936514,
+      "error_deg": 0.0009520359083410312
+    },
+    {
+      "latitude": 14.129882485415868,
+      "longitude": -17.770220756103,
+      "independent_bearing": 220.64048264554984,
+      "error_deg": 0.0009475220930426076
+    },
+    {
+      "latitude": 14.94908962236429,
+      "longitude": -17.177742866413396,
+      "independent_bearing": 220.64047687023077,
+      "error_deg": 0.0009417467739751828
+    },
+    {
+      "latitude": 15.773148358384756,
+      "longitude": -16.590244255082936,
+      "independent_bearing": 220.64049846391558,
+      "error_deg": 0.0009633404587816585
+    },
+    {
+      "latitude": 16.602196968981495,
+      "longitude": -16.00797673862664,
+      "independent_bearing": 220.6404926262999,
+      "error_deg": 0.0009575028431072496
+    },
+    {
+      "latitude": 17.436338401589218,
+      "longitude": -15.431158830269453,
+      "independent_bearing": 220.64048041599267,
+      "error_deg": 0.0009452925358743869
+    },
+    {
+      "latitude": 18.275660581723265,
+      "longitude": -14.860005642962989,
+      "independent_bearing": 220.64049445334024,
+      "error_deg": 0.0009593298834431607
+    },
+    {
+      "latitude": 19.120269585614125,
+      "longitude": -14.294783894788807,
+      "independent_bearing": 220.6404830235494,
+      "error_deg": 0.0009479000925978198
+    },
+    {
+      "latitude": 19.970225983025873,
+      "longitude": -13.735708788466283,
+      "independent_bearing": 220.64049115973344,
+      "error_deg": 0.0009560362766478647
+    },
+    {
+      "latitude": 20.8255999048989,
+      "longitude": -13.183035192930163,
+      "independent_bearing": 220.64050047621276,
+      "error_deg": 0.0009653527559692066
+    },
+    {
+      "latitude": 21.686443839917928,
+      "longitude": -12.637012987794321,
+      "independent_bearing": 220.6405060784214,
+      "error_deg": 0.0009709549646004234
+    },
+    {
+      "latitude": 22.55279486562956,
+      "longitude": -12.097890565331795,
+      "independent_bearing": 220.64050840364607,
+      "error_deg": 0.0009732801892710086
+    },
+    {
+      "latitude": 23.424676102600273,
+      "longitude": -11.565917289209452,
+      "independent_bearing": 220.64050774013725,
+      "error_deg": 0.0009726166804568948
+    },
+    {
+      "latitude": 24.302096406616798,
+      "longitude": -11.041342748529615,
+      "independent_bearing": 220.64050406006317,
+      "error_deg": 0.0009689366063696525
+    },
+    {
+      "latitude": 25.18504998487323,
+      "longitude": -10.524415628283009,
+      "independent_bearing": 220.64049732440895,
+      "error_deg": 0.0009622009521592645
+    },
+    {
+      "latitude": 26.073508169401315,
+      "longitude": -10.015365451719617,
+      "independent_bearing": 220.64051105301743,
+      "error_deg": 0.0009759295606386331
+    },
+    {
+      "latitude": 26.967450640284746,
+      "longitude": -9.514468622082504,
+      "independent_bearing": 220.64050031634935,
+      "error_deg": 0.0009651928925507036
+    },
+    {
+      "latitude": 27.866813466830635,
+      "longitude": -9.021934738776253,
+      "independent_bearing": 220.6405057548917,
+      "error_deg": 0.000970631434910274
+    },
+    {
+      "latitude": 28.771537106890598,
+      "longitude": -8.538010565821267,
+      "independent_bearing": 220.64051084090886,
+      "error_deg": 0.000975717452064373
+    },
+    {
+      "latitude": 29.68154352474386,
+      "longitude": -8.062927816402805,
+      "independent_bearing": 220.64051137143082,
+      "error_deg": 0.0009762479740231811
+    },
+    {
+      "latitude": 30.59673923767015,
+      "longitude": -7.5969073621354966,
+      "independent_bearing": 220.64050777412302,
+      "error_deg": 0.0009726506662275369
+    },
+    {
+      "latitude": 31.517017429047208,
+      "longitude": -7.140161778340783,
+      "independent_bearing": 220.6405003399168,
+      "error_deg": 0.0009652164600026936
+    },
+    {
+      "latitude": 32.44225202449725,
+      "longitude": -6.692875345678445,
+      "independent_bearing": 220.64051157916762,
+      "error_deg": 0.00097645571082694
+    },
+    {
+      "latitude": 33.37232429079678,
+      "longitude": -6.255277144391968,
+      "independent_bearing": 220.64049870636984,
+      "error_deg": 0.0009635829130445472
+    },
+    {
+      "latitude": 34.30708078953947,
+      "longitude": -5.827515320879769,
+      "independent_bearing": 220.64050083318244,
+      "error_deg": 0.0009657097256479119
+    },
+    {
+      "latitude": 35.24637380798384,
+      "longitude": -5.409772954460848,
+      "independent_bearing": 220.6405020948669,
+      "error_deg": 0.0009669714100937199
+    },
+    {
+      "latitude": 36.1900432707846,
+      "longitude": -5.002210285669193,
+      "independent_bearing": 220.64049859046042,
+      "error_deg": 0.0009634670036291482
+    },
+    {
+      "latitude": 37.13791460577899,
+      "longitude": -4.604949597785179,
+      "independent_bearing": 220.64051331670763,
+      "error_deg": 0.0009781932508303726
+    },
+    {
+      "latitude": 38.089822934130936,
+      "longitude": -4.218159152369992,
+      "independent_bearing": 220.64050387625102,
+      "error_deg": 0.0009687527942219276
+    },
+    {
+      "latitude": 39.0455782998317,
+      "longitude": -3.841917632118296,
+      "independent_bearing": 220.64050968044185,
+      "error_deg": 0.0009745569850565516
+    },
+    {
+      "latitude": 40.004999868634926,
+      "longitude": -3.4763403270953575,
+      "independent_bearing": 220.64051488057896,
+      "error_deg": 0.0009797571221668022
+    },
+    {
+      "latitude": 40.96790351170133,
+      "longitude": -3.1215282485229636,
+      "independent_bearing": 220.64050397469032,
+      "error_deg": 0.0009688512335230826
+    },
+    {
+      "latitude": 41.93409348869271,
+      "longitude": -2.7775203972391864,
+      "independent_bearing": 220.6405107237735,
+      "error_deg": 0.0009756003167069593
+    },
+    {
+      "latitude": 42.90338650860066,
+      "longitude": -2.4444028196682837,
+      "independent_bearing": 220.6405052571987,
+      "error_deg": 0.0009701337419016909
+    },
+    {
+      "latitude": 43.87559082783107,
+      "longitude": -2.1222007183275906,
+      "independent_bearing": 220.6405057777734,
+      "error_deg": 0.0009706543166032588
+    },
+    {
+      "latitude": 44.85052143308427,
+      "longitude": -1.810951284253136,
+      "independent_bearing": 220.64050423807313,
+      "error_deg": 0.000969114616339084
+    },
+    {
+      "latitude": 45.827993146685074,
+      "longitude": -1.5106600882004813,
+      "independent_bearing": 220.64051107496581,
+      "error_deg": 0.0009759515090195237
+    },
+    {
+      "latitude": 46.80782961755928,
+      "longitude": -1.2213532216135121,
+      "independent_bearing": 220.64050377196313,
+      "error_deg": 0.0009686485063298278
+    },
+    {
+      "latitude": 47.789850986574294,
+      "longitude": -0.9429879085714674,
+      "independent_bearing": 220.64051608878276,
+      "error_deg": 0.000980965325965144
+    },
+    {
+      "latitude": 48.77389337626194,
+      "longitude": -0.675589539699402,
+      "independent_bearing": 220.6405036600812,
+      "error_deg": 0.0009685366244127636
+    },
+    {
+      "latitude": 49.7597876613474,
+      "longitude": -0.41908354708616,
+      "independent_bearing": 220.64050978093576,
+      "error_deg": 0.0009746574789630813
+    },
+    {
+      "latitude": 50.747380171075235,
+      "longitude": -0.17346116572076653,
+      "independent_bearing": 220.64050412029326,
+      "error_deg": 0.0009689968364625656
+    },
+    {
+      "latitude": 51.736519840097486,
+      "longitude": 0.06133307870726412,
+      "independent_bearing": 220.64049329530755,
+      "error_deg": 0.0009581718507547521
+    },
+    {
+      "latitude": 52.727061042582505,
+      "longitude": 0.285386827455568,
+      "independent_bearing": 220.64050709747136,
+      "error_deg": 0.0009719740145612832
+    },
+    {
+      "latitude": 53.71887291433737,
+      "longitude": 0.4987109079456786,
+      "independent_bearing": 220.64049472792524,
+      "error_deg": 0.0009596044684485605
+    },
+    {
+      "latitude": 54.711824003657156,
+      "longitude": 0.7014245732783735,
+      "independent_bearing": 220.64050349856618,
+      "error_deg": 0.0009683751093803039
+    },
+    {
+      "latitude": 55.70579604362295,
+      "longitude": 0.8935840741489756,
+      "independent_bearing": 220.6405152179174,
+      "error_deg": 0.0009800944606013218
+    },
+    {
+      "latitude": 56.70067925669615,
+      "longitude": 1.0752319615131967,
+      "independent_bearing": 220.64049449207192,
+      "error_deg": 0.000959368615127687
+    },
+    {
+      "latitude": 57.69636614630374,
+      "longitude": 1.246510734341669,
+      "independent_bearing": 220.64049760424473,
+      "error_deg": 0.000962480787933373
+    },
+    {
+      "latitude": 58.69276155529083,
+      "longitude": 1.4074858303444273,
+      "independent_bearing": 220.64050465206014,
+      "error_deg": 0.0009695286033490902
+    },
+    {
+      "latitude": 59.68977696127595,
+      "longitude": 1.5582393962493626,
+      "independent_bearing": 220.64050959505136,
+      "error_deg": 0.0009744715945601001
+    },
+    {
+      "latitude": 60.68733087943667,
+      "longitude": 1.698861989407817,
+      "independent_bearing": 220.64051298194954,
+      "error_deg": 0.0009778584927460088
+    },
+    {
+      "latitude": 61.685348983739914,
+      "longitude": 1.8294449515711761,
+      "independent_bearing": 220.64051532377363,
+      "error_deg": 0.0009802003168317697
+    },
+    {
+      "latitude": 62.68376385725786,
+      "longitude": 1.9500793664923464,
+      "independent_bearing": 220.64051668825053,
+      "error_deg": 0.000981564793733014
+    },
+    {
+      "latitude": 63.68251469097445,
+      "longitude": 2.0608558880613828,
+      "independent_bearing": 220.64051707833875,
+      "error_deg": 0.0009819548819507418
+    },
+    {
+      "latitude": 64.68154697716021,
+      "longitude": 2.1618642941682396,
+      "independent_bearing": 220.64051650859247,
+      "error_deg": 0.0009813851356739178
+    },
+    {
+      "latitude": 65.68081219047943,
+      "longitude": 2.2531929846465175,
+      "independent_bearing": 220.6405149872783,
+      "error_deg": 0.0009798638214988387
+    },
+    {
+      "latitude": 66.68026745746222,
+      "longitude": 2.33492852869459,
+      "independent_bearing": 220.64051250513722,
+      "error_deg": 0.0009773816804283797
+    },
+    {
+      "latitude": 67.67987521811212,
+      "longitude": 2.4071552601669453,
+      "independent_bearing": 220.64050903048894,
+      "error_deg": 0.0009739070321472809
+    },
+    {
+      "latitude": 68.6796028829348,
+      "longitude": 2.469954911245665,
+      "independent_bearing": 220.64050450312766,
+      "error_deg": 0.0009693796708631908
+    },
+    {
+      "latitude": 69.67942248801222,
+      "longitude": 2.5234062807866593,
+      "independent_bearing": 220.64049882511478,
+      "error_deg": 0.0009637016579802093
+    },
+    {
+      "latitude": 70.67931035028184,
+      "longitude": 2.5675849344502097,
+      "independent_bearing": 220.64049184744994,
+      "error_deg": 0.0009567239931413951
+    },
+    {
+      "latitude": 71.67924672478068,
+      "longitude": 2.6025629326009465,
+      "independent_bearing": 220.64048335056933,
+      "error_deg": 0.0009482271125307307
+    },
+    {
+      "latitude": 72.67921546524298,
+      "longitude": 2.628408580400688,
+      "independent_bearing": 220.64047301510334,
+      "error_deg": 0.000937891646543676
+    },
+    {
+      "latitude": 73.67920364567368,
+      "longitude": 2.6452172149713817,
+      "independent_bearing": 220.64049027035114,
+      "error_deg": 0.0009551468943413965
+    },
+    {
+      "latitude": 74.679201380938,
+      "longitude": 2.653026889265604,
+      "independent_bearing": 220.64051333372763,
+      "error_deg": 0.0009782102708300044
+    }
+  ],
+  "status": "PASS",
+  "scope": "Numerical shared LOP centre geometry; tablet chart binding is separate. No pixel/projection accuracy claim."
+}

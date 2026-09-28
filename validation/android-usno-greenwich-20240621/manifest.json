@@ -1,0 +1,10 @@
+{
+  "date": "2024-06-21",
+  "coords": "51.4779,0",
+  "retrieved": "2026-09-28",
+  "source": "https://aa.usno.navy.mil/data/api",
+  "files": {
+    "usno-220000.json": "41fa555d1d8f1754bc90a56e46084ec4d72319550a7e17523b6370e04126de36",
+    "usno-220500.json": "e7e55a0cfc6a63da1c598088067beaf73eaaabb46b4672bf071d573b9bc659ff"
+  }
+}

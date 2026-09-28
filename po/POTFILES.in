@@ -12,6 +12,7 @@ src/astrolabe/util.cpp
 src/astrolabe/vsop87d.cpp
 src/geomag/geomag.c
 src/CelestialNavigationDialog.cpp
+src/AndroidWorkspace.cpp
 src/DialogGeometry.cpp
 src/AtomicXmlFile.cpp
 src/Dut1UpdatePanel.cpp

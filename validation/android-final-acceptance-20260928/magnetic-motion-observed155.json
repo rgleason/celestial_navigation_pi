@@ -1,0 +1,13 @@
+{
+  "result": "PASS",
+  "source": "installed8bc86ec / cold155 PID27701",
+  "actual_position": [
+    51.47765833333333,
+    0.026648333333333333
+  ],
+  "position_reference_error_nm": 0.0007113864000539956,
+  "all_three_saved_bearings_magnetic_deg": 90,
+  "all_three_used_bearings_true_deg": 90.86013569980003,
+  "bearing_reference_error_deg": 2.9700686354772188e-12,
+  "original_reports": "All five complete nested reports and all other fields exact guarded fixture"
+}

@@ -1,5 +1,8 @@
 #include "NavigationAlgorithms.h"
 
+#ifdef __OCPN__ANDROID__
+#include "AndroidPlannerCancellation.h"
+#endif
 #include "BodyCatalog.h"
 #include "Sight.h"
 #include "NavigationEphemerisProvider.h"
@@ -335,6 +338,9 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
                                        double observerLat, double observerLon,
                                        double pressureMb, double temperatureC,
                                        double dut1OverrideSeconds) {
+#ifdef __OCPN__ANDROID__
+  celestial_android::CheckPlannerCancellation();
+#endif
   BodyState result;
   result.body = body;
   result.utc = utc;
@@ -344,7 +350,11 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
     return result;
   }
 
-  Sight sight(Sight::ALTITUDE, info->name, Sight::CENTER, utc, 0.0, 0.0, 1.0);
+  Sight sight(Sight::ALTITUDE, info->name, Sight::CENTER, utc, 0.0, 0.0, 1.0
+#ifdef __OCPN__ANDROID__
+              , true
+#endif
+              );
   double ghaast = 0.0, radius = 0.0, distance = 0.0;
   bool usedDe440 = false;
   sight.BodyLocation(utc, &result.latitude, &result.longitude, &ghaast, &radius,
@@ -698,7 +708,11 @@ std::vector<size_t> SightRanker::SkyLabelPriority(
 wxDateTime PlannerFieldsToUtc(const wxDateTime& fields, PlannerTimeBasis basis,
                               double zoneOffsetHours) {
   if (!fields.IsValid()) return wxDateTime();
+#ifdef __OCPN__ANDROID__
+  if (basis == PlannerTimeBasis::ComputerLocal) return UtcDateTime::LocalWallToInstant(fields);
+#else
   if (basis == PlannerTimeBasis::ComputerLocal) return fields;
+#endif
   wxDateTime utc = UtcDateTime::ToInstant(fields);
   if (basis == PlannerTimeBasis::ZoneTime)
     utc -= wxTimeSpan::Seconds(
@@ -709,21 +723,34 @@ wxDateTime PlannerFieldsToUtc(const wxDateTime& fields, PlannerTimeBasis basis,
 wxDateTime UtcToPlannerFields(const wxDateTime& utc, PlannerTimeBasis basis,
                               double zoneOffsetHours) {
   if (!utc.IsValid()) return wxDateTime();
+#ifdef __OCPN__ANDROID__
+  if (basis == PlannerTimeBasis::ComputerLocal) return UtcDateTime::InstantToLocalWall(utc);
+#else
   if (basis == PlannerTimeBasis::ComputerLocal) return utc;
+#endif
   wxDateTime adjusted = utc;
   if (basis == PlannerTimeBasis::ZoneTime)
     adjusted += wxTimeSpan::Seconds(
         static_cast<long>(std::lround(zoneOffsetHours * 3600.0)));
+#ifdef __OCPN__ANDROID__
+  return UtcDateTime::FromInstant(adjusted);
+#else
   return UtcDateTime::CopyFields(adjusted.ToUTC());
+#endif
 }
 
 wxDateTime UtcDayStart(const wxDateTime& utc) {
   if (!utc.IsValid()) return wxDateTime();
   wxDateTime fields = UtcDateTime::FromInstant(utc);
+#ifdef __OCPN__ANDROID__
+  const auto f = UtcDateTime::Fields(fields);
+  fields = UtcDateTime::Create(f.year, f.mon + 1, f.mday);
+#else
   fields.SetHour(0);
   fields.SetMinute(0);
   fields.SetSecond(0);
   fields.SetMillisecond(0);
+#endif
   return UtcDateTime::ToInstant(fields);
 }
 
@@ -733,16 +760,40 @@ double SuggestedZoneOffsetHours(double longitude) {
 }
 
 wxString FormatNauticalPlannerDate(const wxDateTime& fields) {
+#ifdef __OCPN__ANDROID__
+  return UtcDateTime::FormatUtc(fields, "%Y-%m-%d");
+#else
   return fields.IsValid() ? fields.Format("%Y-%m-%d") : wxString();
+#endif
 }
 
 wxString FormatNauticalPlannerTime(const wxDateTime& fields) {
+#ifdef __OCPN__ANDROID__
+  return UtcDateTime::FormatUtc(fields, fields.GetMillisecond() ? "%H:%M:%S.%l" : "%H:%M:%S");
+#else
   return fields.IsValid() ? fields.Format("%H:%M:%S") : wxString();
+#endif
 }
 
 bool ParseNauticalPlannerDateTime(const wxString& dateText,
                                   const wxString& timeText,
                                   wxDateTime* fields) {
+#ifdef __OCPN__ANDROID__
+  if (!fields || dateText.length() != 10 || timeText.length() < 8 ||
+      timeText.length() > 12 || (timeText.length() > 8 && timeText[8] != '.')) return false;
+  for (size_t i = 0; i < dateText.length(); ++i) {
+    if (i == 4 || i == 7) { if (dateText[i] != '-') return false; }
+    else if (dateText[i] < '0' || dateText[i] > '9') return false;
+  }
+  for (size_t i = 0; i < timeText.length(); ++i) {
+    if (i == 2 || i == 5) { if (timeText[i] != ':') return false; }
+    else if (i == 8) { if (timeText[i] != '.') return false; }
+    else if (timeText[i] < '0' || timeText[i] > '9') return false;
+  }
+  if (!UtcDateTime::ParseUtc(dateText + " " + timeText, fields)) return false;
+  const int year = UtcDateTime::Fields(*fields).year;
+  return year >= 1900 && year <= 2100;
+#else
   if (!fields) return false;
   long year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0;
   if (dateText.length() != 10 || dateText[4] != '-' || dateText[7] != '-' ||
@@ -757,17 +808,26 @@ bool ParseNauticalPlannerDateTime(const wxString& dateText,
   const wxDateTime::Month dateMonth = static_cast<wxDateTime::Month>(month - 1);
   if (day > wxDateTime::GetNumberOfDays(dateMonth, static_cast<int>(year)))
     return false;
+#ifdef __OCPN__ANDROID__
+  wxDateTime value = UtcDateTime::Create(year, month, day, hour, minute, second);
+#else
   wxDateTime value(static_cast<wxDateTime::wxDateTime_t>(day), dateMonth,
                    static_cast<int>(year),
                    static_cast<wxDateTime::wxDateTime_t>(hour),
                    static_cast<wxDateTime::wxDateTime_t>(minute),
                    static_cast<wxDateTime::wxDateTime_t>(second));
+#endif
+#ifdef __OCPN__ANDROID__
+  if (!value.IsValid())
+#else
   if (!value.IsValid() || value.GetDay() != day ||
       static_cast<long>(value.GetMonth()) + 1 != month ||
       value.GetYear() != year)
+#endif
     return false;
   *fields = value;
   return true;
+#endif
 }
 
 RunningFixResult RunningFixSolver::Solve(
@@ -1002,7 +1062,7 @@ wxString AlmanacToCsv(const std::vector<AlmanacRow>& rows) {
   for (const auto& row : rows)
     result += wxString::Format(
         "%s,%s,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
-        row.utc.Format("%Y-%m-%dT%H:%M:%SZ", wxDateTime::UTC).c_str(),
+        UtcDateTime::FormatInstant(row.utc, "%Y-%m-%dT%H:%M:%SZ").c_str(),
         row.body.c_str(), row.gha, row.sha, row.ghaAries, row.lhaAries,
         row.declination, row.altitude, row.azimuth);
   return result;

@@ -1,3 +1,5 @@
+#include "PlatformMessageBox.h"
+#include "UtcDateTime.h"
 /******************************************************************************
  *
  * Project:  OpenCPN
@@ -44,7 +46,18 @@
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
+#include "AndroidAngleEntry.h"
 #endif
+
+namespace {
+inline double ReadSightAngle(const wxString& text) {
+#ifdef __OCPN__ANDROID__
+  return celestial_android::AngleTextValue(text);
+#else
+  return fromDMM_Plugin(text);
+#endif
+}
+}
 
 FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight,
                                CopyHsHandler copyHs)
@@ -73,8 +86,13 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight,
   m_positionSource->Bind(wxEVT_CHOICE,
                          &FindBodyDialog::ChangePositionSource, this);
   if (!sight.m_DRBoatPosition) {
+#ifdef __OCPN__ANDROID__
+    m_tLatitude->ChangeValue(celestial_android::NumberText(m_Sight.m_DRLat));
+    m_tLongitude->ChangeValue(celestial_android::NumberText(m_Sight.m_DRLon));
+#else
     m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_Sight.m_DRLat, true));
     m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_Sight.m_DRLon, true));
+#endif
   }
   m_cbBoatPosition->SetValue(sight.m_DRBoatPosition);
   m_cbMagneticAzimuth->SetValue(sight.m_DRMagneticAzimuth);
@@ -146,20 +164,27 @@ FindBodyDialog::FindBodyDialog(wxWindow* parent, Sight& sight,
   m_tLongitude->SetMinSize(wxSize(coordinateWidth, -1));
 
 #ifdef __OCPN__ANDROID__
-  GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
-  GetHandle()->grabGesture(Qt::PanGesture);
-  Connect(
-      wxEVT_QT_PANGESTURE,
-      (wxObjectEventFunction)(wxEventFunction)&FindBodyDialog::OnEvtPanGesture,
-      NULL, this);
+  m_sFindDialogButtonOK->SetId(wxID_ANY);
+  close->SetId(wxID_OK);
+  close->SetLabel(_("Use position"));
+  SetAffirmativeId(wxID_OK);
+  celestial_android::AddAngleEntry(m_tLatitude, 1, -90, 90);
+  celestial_android::AddAngleEntry(m_tLongitude, 2, -180, 180);
 #endif
 
   UpdateBoatPosition();
   m_initialLatitude = m_Sight.m_DRLat;
   m_initialLongitude = m_Sight.m_DRLon;
   m_initialBoatPosition = m_Sight.m_DRBoatPosition;
+#ifdef __OCPN__ANDROID__
+  celestial_android::LayoutScrolls(this);
+#else
   GetSizer()->Fit(this);
+#endif
   Centre();
+#ifdef __OCPN__ANDROID__
+  celestial_android::Decorate(this, GetTitle(), [this]() { CancelPosition(); });
+#endif
 }
 
 #ifdef __OCPN__ANDROID__
@@ -196,8 +221,13 @@ CelestialNavigationDialog* FindBodyDialog::NavigationDialog() const {
 void FindBodyDialog::SetCoordinates(double latitude, double longitude) {
   m_Sight.m_DRLat = latitude;
   m_Sight.m_DRLon = longitude;
+  #ifdef __OCPN__ANDROID__
+  m_tLatitude->ChangeValue(celestial_android::NumberText(latitude));
+  m_tLongitude->ChangeValue(celestial_android::NumberText(longitude));
+#else
   m_tLatitude->ChangeValue(toSDMM_PlugIn(1, latitude, true));
   m_tLongitude->ChangeValue(toSDMM_PlugIn(2, longitude, true));
+#endif
 }
 
 void FindBodyDialog::ChangePositionSource(wxCommandEvent&) {
@@ -228,11 +258,11 @@ void FindBodyDialog::ApplyPositionSource() {
       if (epochUtc.IsValid())
         info = wxString::Format(
             _("Fix epoch: %s UTC"),
-            epochUtc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC).c_str());
+            UtcDateTime::FormatInstant(epochUtc, "%Y-%m-%d %H:%M:%S").c_str());
       else
         info = wxString::Format(
             _("Calculated: %s UTC; no single fix epoch"),
-            calculatedUtc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC)
+            UtcDateTime::FormatInstant(calculatedUtc, "%Y-%m-%d %H:%M:%S")
                 .c_str());
     }
   } else if (source == 4) {
@@ -241,7 +271,11 @@ void FindBodyDialog::ApplyPositionSource() {
       available = false;
     } else {
       WaypointPickerDialog picker(this, waypoints, wxEmptyString);
+#ifdef __OCPN__ANDROID__
+      if (celestial_android::ModalResult(picker) != wxID_OK) {
+#else
       if (picker.ShowModal() != wxID_OK) {
+#endif
         m_positionSource->SetSelection(m_appliedPositionSource);
         return;
       }
@@ -258,7 +292,7 @@ void FindBodyDialog::ApplyPositionSource() {
     info = _("Enter the DR position at the sight's UTC.");
   }
   if (!available) {
-    wxMessageBox(_("This position source is unavailable; the previous "
+    CelestialMessageBox(_("This position source is unavailable; the previous "
                    "coordinates were retained."),
                  _("Position unavailable"), wxOK | wxICON_INFORMATION, this);
     m_positionSource->SetSelection(m_appliedPositionSource);
@@ -270,11 +304,17 @@ void FindBodyDialog::ApplyPositionSource() {
   m_tLatitude->Enable(source == 0);
   m_tLongitude->Enable(source == 0);
   m_positionInfo->SetLabel(info);
+#ifndef __OCPN__ANDROID__
   m_positionInfo->Wrap(250);
+#endif
   m_appliedPositionSource = source;
   Update();
   GetSizer()->Layout();
+#ifdef __OCPN__ANDROID__
+  celestial_android::LayoutScrolls(this);
+#else
   GetSizer()->Fit(this);
+#endif
 }
 
 void FindBodyDialog::ResetPosition() {
@@ -284,15 +324,26 @@ void FindBodyDialog::ResetPosition() {
   m_appliedPositionSource = m_positionSource->GetSelection();
   m_cbBoatPosition->SetValue(m_initialBoatPosition);
   m_Sight.m_DRBoatPosition = m_initialBoatPosition;
+  #ifdef __OCPN__ANDROID__
+  m_tLatitude->ChangeValue(celestial_android::NumberText(m_initialLatitude));
+  m_tLongitude->ChangeValue(celestial_android::NumberText(m_initialLongitude));
+#else
   m_tLatitude->ChangeValue(toSDMM_PlugIn(1, m_initialLatitude, true));
   m_tLongitude->ChangeValue(toSDMM_PlugIn(2, m_initialLongitude, true));
+#endif
   m_tLatitude->Enable(!m_initialBoatPosition);
   m_tLongitude->Enable(!m_initialBoatPosition);
   m_positionInfo->SetLabel(m_initialBoatPosition
                                ? _("Current boat fix; check the sight's UTC.")
                                : _("Enter the DR position at the sight's UTC."));
+#ifndef __OCPN__ANDROID__
   m_positionInfo->Wrap(250);
+#endif
+#ifdef __OCPN__ANDROID__
+  celestial_android::LayoutScrolls(this);
+#else
   GetSizer()->Fit(this);
+#endif
   Update();
 }
 
@@ -303,13 +354,25 @@ void FindBodyDialog::CopyEstimatedHs() {
   m_copyHs(value);
   // Refresh the popup's intercept against the deliberately copied altitude.
   // Retain the already corrected epoch, limb and reduction settings.
-  m_Sight.m_Measurement = fromDMM_Plugin(value);
+  m_Sight.m_Measurement = ReadSightAngle(value);
   m_Sight.m_CalcStr.clear();
   m_Sight.RecomputeAltitude();
   Update();
 }
 
 void FindBodyDialog::CloseKeepingPosition() {
+#ifdef __OCPN__ANDROID__
+  celestial_android::CommitNumbers(this);
+  double latitude, longitude;
+  if (!ReadAndroidPosition(&latitude, &longitude)) {
+    CelestialMessageBox(
+        _("Enter a valid latitude between -90 and 90 degrees and longitude "
+          "between -180 and 180 degrees. Degrees and decimal minutes with "
+          "a hemisphere are also accepted."),
+        _("Invalid position"), wxOK | wxICON_WARNING, this);
+    return;
+  }
+#endif
   Update();
   if (IsModal())
     EndModal(wxID_OK);
@@ -352,15 +415,55 @@ void FindBodyDialog::UpdateBoatPosition() {
   Update();
 }
 
+#ifdef __OCPN__ANDROID__
+bool FindBodyDialog::ReadAndroidPosition(double* latitude,
+                                         double* longitude) const {
+  // POBsoft (1985-2026): a partially edited coordinate must not replace the
+  // previous valid model position or be accepted by the owned Find sheet.
+  if (m_Sight.m_DRBoatPosition) {
+    *latitude = m_Sight.m_DRLat;
+    *longitude = m_Sight.m_DRLon;
+    return std::isfinite(*latitude) && std::isfinite(*longitude) &&
+        *latitude >= -90 && *latitude <= 90 &&
+        *longitude >= -180 && *longitude <= 180;
+  }
+  return ParseNavigationAngle(m_tLatitude->GetValue(),
+      NavigationAngleKind::Latitude, -90, 90, latitude) &&
+      ParseNavigationAngle(m_tLongitude->GetValue(),
+          NavigationAngleKind::Longitude, -180, 180, longitude);
+}
+#endif
+
 void FindBodyDialog::Update() {
   /* NOTE: we do not peform any altitude corrections here */
   double hc, zn;
 
-  m_Sight.m_DRMagneticAzimuth = m_cbMagneticAzimuth->GetValue();
-  if (!m_Sight.m_DRBoatPosition) {
-    m_Sight.m_DRLat = fromDMM_Plugin(m_tLatitude->GetValue());
-    m_Sight.m_DRLon = fromDMM_Plugin(m_tLongitude->GetValue());
+#ifdef __OCPN__ANDROID__
+  double latitude, longitude;
+  if (!ReadAndroidPosition(&latitude, &longitude)) {
+    m_tAltitude->SetValue(_("N/A"));
+    m_tAzimuth->SetValue(_("N/A"));
+    m_tIntercept->SetValue(_("N/A"));
+    m_tEstimatedHs->SetValue(_("N/A"));
+    m_copyHsButton->Enable(false);
+    m_cbAway->SetValue(false);
+    m_cbTowards->SetValue(false);
+    m_positionInfo->SetLabel(_("Check latitude (-90 to 90) and longitude "
+                              "(-180 to 180 degrees)."));
+    return;
   }
+  m_Sight.m_DRLat = latitude;
+  m_Sight.m_DRLon = longitude;
+  if (m_positionSource->GetSelection() == 0)
+    m_positionInfo->SetLabel(_("Enter the DR position at the sight's UTC."));
+#endif
+  m_Sight.m_DRMagneticAzimuth = m_cbMagneticAzimuth->GetValue();
+#ifndef __OCPN__ANDROID__
+  if (!m_Sight.m_DRBoatPosition) {
+    m_Sight.m_DRLat = ReadSightAngle(m_tLatitude->GetValue());
+    m_Sight.m_DRLon = ReadSightAngle(m_tLongitude->GetValue());
+  }
+#endif
 
   m_Sight.CalculateAtDR(&hc, &zn);
 
@@ -380,14 +483,24 @@ void FindBodyDialog::Update() {
           : _("N/A"));
   m_tAzimuth->SetValue(std::isfinite(zn) ? toSDMM_PlugIn(0, zn, true)
                                          : _("N/A"));
-  m_tIntercept->SetValue(
-      wxString::Format(_T("%f"), fabs(hc - m_Sight.m_ObservedAltitude) * 60));
-  if (hc >= m_Sight.m_ObservedAltitude) {
-    m_cbAway->SetValue(true);
-    m_cbTowards->SetValue(false);
-  } else {
-    m_cbTowards->SetValue(true);
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): an azimuth has no observed-altitude intercept.
+  if (m_Sight.m_Type != Sight::ALTITUDE) {
+    m_tIntercept->SetValue(_("N/A"));
     m_cbAway->SetValue(false);
+    m_cbTowards->SetValue(false);
+  } else
+#endif
+  {
+    m_tIntercept->SetValue(
+        wxString::Format(_T("%f"), fabs(hc - m_Sight.m_ObservedAltitude) * 60));
+    if (hc >= m_Sight.m_ObservedAltitude) {
+      m_cbAway->SetValue(true);
+      m_cbTowards->SetValue(false);
+    } else {
+      m_cbTowards->SetValue(true);
+      m_cbAway->SetValue(false);
+    }
   }
 
   double estimatedHs, estimatedError;

@@ -155,6 +155,12 @@ Profile BuildProfile(const std::string& name, const std::string& serial,
             ? std::sqrt(scatter / (bin.second.size() - 1)) /
                   std::sqrt(static_cast<double>(bin.second.size()))
             : bin.second.front()->uncertainty_arcmin;
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): entered independent measurement uncertainties
+    // bound the weighted mean even when repeated readings have no scatter.
+    point.uncertainty_arcmin = std::max(
+        point.uncertainty_arcmin, std::sqrt(1.0 / weight_sum));
+#endif
     profile.points.push_back(point);
   }
   if (all_corrections.size() > 1) {

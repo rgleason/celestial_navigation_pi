@@ -1,3 +1,8 @@
+#include "PlatformMessageBox.h"
+#ifdef __OCPN__ANDROID__
+#include "AndroidJob.h"
+#include "AndroidColourEntry.h"
+#endif
 /******************************************************************************
  *
  * Project:  OpenCPN
@@ -46,12 +51,27 @@
 #include "BodyCatalog.h"
 #include "DialogGeometry.h"
 #include "HtmlHelp.h"
+#include "NavigationUIUtils.h"
 
 #include <algorithm>
+#ifdef __OCPN__ANDROID__
+#include <limits>
+#endif
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
+#include "AndroidSurface.h"
 #endif
+
+namespace {
+inline double ReadSightAngle(const wxString& text) {
+#ifdef __OCPN__ANDROID__
+  return celestial_android::AngleTextValue(text);
+#else
+  return fromDMM_Plugin(text);
+#endif
+}
+}
 
 SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
                          const wxDateTime& markedUtc, Mode mode)
@@ -98,12 +118,16 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   if (index != wxNOT_FOUND) m_cBody->SetSelection(index);
 
   m_cLimb->SetSelection((int)m_Sight.m_BodyLimb);
-  m_Calendar->SetDate(m_Sight.m_DateTime);
+  m_Calendar->SetDate(UtcDateTime::CalendarDate(m_Sight.m_DateTime));
 
-  m_sHours->SetValue(m_Sight.m_DateTime.Format(_T("%H")));
-  m_sMinutes->SetValue(m_Sight.m_DateTime.Format(_T("%M")));
-  m_sSeconds->SetValue(m_Sight.m_DateTime.Format(_T("%S")));
+  m_sHours->SetValue(UtcDateTime::FormatRecordedFields(m_Sight.m_DateTime, "%H"));
+  m_sMinutes->SetValue(UtcDateTime::FormatRecordedFields(m_Sight.m_DateTime, "%M"));
+  m_sSeconds->SetValue(UtcDateTime::FormatRecordedFields(m_Sight.m_DateTime, "%S"));
 
+  // Set the range before loading a saved value. The generated control used
+  // to start with a 10800-second maximum, silently clamping wider lunar
+  // search spans before the range was expanded later in this constructor.
+  m_sCertaintySeconds->SetRange(0, 172800);
   m_sCertaintySeconds->SetValue(m_Sight.m_TimeCertainty);
 
   m_sTransparency->SetValue(m_Sight.m_Colour.Alpha());
@@ -147,11 +171,19 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
                                      m_Sight.m_Colour.Green(),
                                      m_Sight.m_Colour.Blue()));
 
+#ifdef __OCPN__ANDROID__
+  m_tLunarMoonAltitude->ChangeValue(celestial_android::NumberText(m_Sight.m_LunarMoonAltitude));
+#else
   m_tLunarMoonAltitude->SetValue(
       toSDMM_PlugIn(0, m_Sight.m_LunarMoonAltitude, true));
+#endif
   m_cLunarMoonLimb->SetSelection((int)m_Sight.m_LunarMoonLimb);
+#ifdef __OCPN__ANDROID__
+  m_tLunarBodyAltitude->ChangeValue(celestial_android::NumberText(m_Sight.m_LunarBodyAltitude));
+#else
   m_tLunarBodyAltitude->SetValue(
       toSDMM_PlugIn(0, m_Sight.m_LunarBodyAltitude, true));
+#endif
   m_cLunarMoonLimb->SetSelection((int)m_Sight.m_LunarMoonLimb);
   m_cLunarBodyLimb->SetSelection((int)m_Sight.m_LunarBodyLimb);
 
@@ -254,7 +286,7 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   m_lunarMoonTime = new NauticalTimeCtrl(
       m_lunarTimingBox->GetStaticBox(), wxID_ANY,
       m_Sight.m_DateTime +
-          wxTimeSpan::Seconds(m_Sight.m_LunarMoonTimeOffsetSeconds));
+          wxTimeSpan::Milliseconds(static_cast<long long>(std::llround(1000.0 * m_Sight.m_LunarMoonTimeOffsetSeconds))));
   timingGrid->Add(m_lunarMoonTime, 1, wxEXPAND);
   timingGrid->Add(new wxStaticText(m_lunarTimingBox->GetStaticBox(), wxID_ANY,
                                    _("Body altitude recorded time (24 h)")),
@@ -262,7 +294,7 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   m_lunarBodyTime = new NauticalTimeCtrl(
       m_lunarTimingBox->GetStaticBox(), wxID_ANY,
       m_Sight.m_DateTime +
-          wxTimeSpan::Seconds(m_Sight.m_LunarBodyTimeOffsetSeconds));
+          wxTimeSpan::Milliseconds(static_cast<long long>(std::llround(1000.0 * m_Sight.m_LunarBodyTimeOffsetSeconds))));
   timingGrid->Add(m_lunarBodyTime, 1, wxEXPAND);
   m_lunarTimingBox->Add(timingGrid, 0, wxALL | wxEXPAND, 5);
 
@@ -327,7 +359,6 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
                           });
   UpdateLunarTimeControls();
   m_panel2->FitInside();
-  m_sCertaintySeconds->SetRange(0, 172800);
   if (m_Sight.m_Type == Sight::LUNAR && m_Sight.m_TimeCertainty <= 0.0) {
     m_Sight.m_TimeCertainty = 86400.0;
     m_sCertaintySeconds->SetValue(86400);
@@ -337,14 +368,21 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
     wxButton* applyMarked = new wxButton(
         m_panel2, wxID_ANY,
         _("Use marked UTC: ") +
-            UtcDateTime::FormatUtc(markedUtc, "%Y-%m-%d %H:%M:%S"));
+            UtcDateTime::FormatUtc(markedUtc, "%Y-%m-%d %H:%M:%S")
+#ifdef __OCPN__ANDROID__
+            + wxString::Format(".%03d UTC", markedUtc.GetMillisecond())
+#endif
+            );
     m_panel2->GetSizer()->Add(applyMarked, 0, wxLEFT | wxRIGHT | wxBOTTOM, 8);
     applyMarked->Bind(wxEVT_BUTTON, [this, markedUtc](wxCommandEvent&) {
       MarkDirty();
-      m_Calendar->SetDate(markedUtc);
-      m_sHours->SetValue(markedUtc.GetHour());
-      m_sMinutes->SetValue(markedUtc.GetMinute());
-      m_sSeconds->SetValue(markedUtc.GetSecond());
+      m_Calendar->SetDate(UtcDateTime::CalendarDate(markedUtc));
+      m_sHours->SetValue(UtcDateTime::Fields(markedUtc).hour);
+      m_sMinutes->SetValue(UtcDateTime::Fields(markedUtc).min);
+      m_sSeconds->SetValue(UtcDateTime::Fields(markedUtc).sec);
+#ifdef __OCPN__ANDROID__
+      if (m_androidSeconds) m_androidSeconds->SetValue(UtcDateTime::Fields(markedUtc).sec + markedUtc.GetMillisecond() / 1000.0);
+#endif
       Recompute();
     });
   }
@@ -381,14 +419,120 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
 #endif
 
 #ifdef __OCPN__ANDROID__
-  GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
-  GetHandle()->grabGesture(Qt::PanGesture);
-  Connect(wxEVT_QT_PANGESTURE,
-          (wxObjectEventFunction)(wxEventFunction)&SightDialog::OnEvtPanGesture,
-          NULL, this);
 #endif
 
+#ifdef __OCPN__ANDROID__
+  // Rename before Restore transforms the notebook into a native selector.
+  const wxString sections[] = {_("Measurement"), _("Time (UTC)"), _("Motion"),
+                               _("Display"), _("Corrections"), _("Calculations")};
+  for (size_t i = 0; i < m_notebook1->GetPageCount() &&
+                     i < sizeof(sections) / sizeof(sections[0]); ++i)
+    m_notebook1->SetPageText(i, sections[i]);
+  // POBsoft (1985-2026): one full-height read-only report owns its scrolling.
+  m_tCalculations->SetEditable(false);
+  m_panel81->GetHandle()->setProperty("cnNoPageScroll", true);
+  m_panel81->GetSizer()->Clear(false);
+  auto* reportSizer = new wxBoxSizer(wxVERTICAL);
+  reportSizer->Add(m_tCalculations, 1, wxEXPAND | wxALL, 8);
+  reportSizer->Add(m_bShowDefinitions, 0, wxEXPAND | wxALL, 8);
+  m_panel81->SetSizer(reportSizer);
+  celestial_android::AddColourEntry(m_ColourPicker, [this]() { MarkDirty(); Recompute(); });
+  const auto alphaCaption = [this]() {
+    m_staticText14->SetLabel(wxString::Format(_("Opacity: %d / 255 (0 transparent, 255 opaque)"),
+                                             m_sTransparency->GetValue()));
+  };
+  CN_EnableAndroidSlider(m_sTransparency, [this, alphaCaption]() {
+    alphaCaption(); MarkDirty(); Recompute();
+  });
+  alphaCaption();
+  if (auto* heading = wxDynamicCast(m_staticText13->GetParent(), wxStaticBox))
+    heading->SetLabel(_("Observation timing"));
+#endif
   dialog_geometry::Restore(this, _T("Sight"), GetSize());
+#ifdef __OCPN__ANDROID__
+  m_staticText8->SetLabel(_("Angular uncertainty (arcminutes)"));
+  celestial_android::AddAngleEntry(m_tMeasurement, 0, 0, 360);
+  celestial_android::AddAngleEntry(m_tLunarMoonAltitude, 0, 0, 90);
+  celestial_android::AddAngleEntry(m_tLunarBodyAltitude, 0, 0, 90);
+  // Reopen every editable physical quantity without display rounding.
+  const std::pair<wxTextCtrl*, double> precise[] = {
+    {m_tMeasurement, m_Sight.m_Measurement}, {m_tMeasurementCertainty, m_Sight.m_MeasurementCertainty},
+    {m_tLunarMoonAltitude, m_Sight.m_LunarMoonAltitude}, {m_tLunarBodyAltitude, m_Sight.m_LunarBodyAltitude},
+    {m_lunarMoonAltitudeUncertainty, m_Sight.m_LunarMoonAltitudeUncertainty},
+    {m_lunarBodyAltitudeUncertainty, m_Sight.m_LunarBodyAltitudeUncertainty},
+    {m_tEyeHeight, m_Sight.m_EyeHeight}, {m_tTemperature, m_Sight.m_Temperature},
+    {m_tPressure, m_Sight.m_Pressure}, {m_tIndexError, m_Sight.m_IndexError},
+    {m_tDipShortDistance, m_Sight.m_DipShortDistance}, {m_tShiftNm, m_Sight.m_ShiftNm},
+    {m_tShiftBearing, m_Sight.m_ShiftBearing}, {m_lunarCourseTrue, m_Sight.m_LunarCourseTrue},
+    {m_lunarSpeedKnots, m_Sight.m_LunarSpeedKnots}
+  };
+  for (const auto& field : precise) field.first->ChangeValue(celestial_android::NumberText(field.second));
+  // Keep the full recorded UTC precision; the generated desktop integer spin
+  // remains hidden for compatibility with existing shared event handlers.
+  m_sSeconds->Hide();
+  auto* secondsSizer = m_sSeconds->GetContainingSizer();
+  secondsSizer->Clear(false);
+  m_staticText9->Hide();
+  m_staticText10->Hide();
+  m_staticText11->Hide();
+  m_sCertaintySeconds->Hide();
+  m_androidTimeCertainty = new wxSpinCtrlDouble(m_sCertaintySeconds->GetParent(), wxID_ANY);
+  m_androidTimeCertainty->SetDigits(15);
+  m_androidTimeCertainty->SetRange(0, 172800);
+  m_androidTimeCertainty->SetIncrement(.001);
+  m_androidTimeCertainty->SetValue(m_Sight.m_TimeCertainty);
+  auto* uncertaintySizer = m_sCertaintySeconds->GetContainingSizer();
+  uncertaintySizer->Detach(m_staticText13);
+  uncertaintySizer->Insert(0, m_staticText13, 0, wxEXPAND | wxALL, 8);
+  uncertaintySizer->Insert(1, m_androidTimeCertainty, 0, wxEXPAND | wxALL, 8);
+  m_androidTimeCertainty->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) { MarkDirty(); Recompute(); });
+  m_staticText13->SetLabel(m_Sight.m_Type == Sight::LUNAR ? _("Total UTC search span (seconds)") : _("Time uncertainty (seconds)"));
+  m_androidSeconds = new wxSpinCtrlDouble(m_sSeconds->GetParent(), wxID_ANY);
+  m_androidSeconds->SetDigits(3);
+  m_androidSeconds->SetRange(0, 59.999);
+  m_androidSeconds->SetIncrement(.001);
+  m_androidSeconds->SetValue(UtcDateTime::Fields(m_Sight.m_DateTime).sec +
+                           m_Sight.m_DateTime.GetMillisecond() / 1000.0);
+  secondsSizer->Add(new wxStaticText(m_sSeconds->GetParent(), wxID_ANY,
+                                     _("Hours (UTC, 0-23)")),
+                    0, wxEXPAND | wxALL, 8);
+  secondsSizer->Add(m_sHours, 0, wxEXPAND | wxALL, 8);
+  secondsSizer->Add(new wxStaticText(m_sSeconds->GetParent(), wxID_ANY,
+                                     _("Minutes (0-59)")),
+                    0, wxEXPAND | wxALL, 8);
+  secondsSizer->Add(m_sMinutes, 0, wxEXPAND | wxALL, 8);
+  secondsSizer->Add(new wxStaticText(m_sSeconds->GetParent(), wxID_ANY,
+                                     _("Seconds (fractional, UTC)")),
+                    0, wxEXPAND | wxALL, 8);
+  secondsSizer->Add(m_androidSeconds, 0, wxEXPAND | wxALL, 8);
+  m_androidSeconds->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) {
+    MarkDirty(); Recompute();
+  });
+  auto* calculateLunar = new wxButton(m_panel81, wxID_ANY, _("Calculate lunar UTC"));
+  m_panel81->GetSizer()->Insert(0, calculateLunar, 0, wxEXPAND | wxALL, 8);
+  m_androidCalculateLunar = calculateLunar;
+  calculateLunar->Show(m_Sight.m_Type == Sight::LUNAR);
+  calculateLunar->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    CalculateAndroidLunar();
+  });
+  m_sdbSizer1OK->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    celestial_android::CommitNumbers(this);
+    wxString error;
+    if (!AndroidInputsValid(&error)) {
+      CelestialMessageBox(error,
+          _("Invalid observation"), wxOK | wxICON_WARNING, this);
+      m_tCalculations->SetValue(error);
+      return;
+    }
+    Recompute();
+    m_androidAccepted = true;
+    EndModal(wxID_OK);
+  });
+  CN_StyleAndroidControls(m_panel2);
+  CN_StyleAndroidControls(m_panel81);
+  m_tCalculations->SetMinSize(wxSize(0, 0));
+  celestial_android::LayoutScrolls(this);
+#endif
   Bind(wxEVT_CLOSE_WINDOW, &SightDialog::OnWindowClose, this);
 
   m_breadytorecompute = true;
@@ -428,7 +572,7 @@ void SightDialog::MarkDirty() {
 
 void SightDialog::OnWindowClose(wxCloseEvent& event) {
   if (m_transaction.HasUnsavedChanges() && event.CanVeto()) {
-    wxMessageDialog confirm(
+    CelestialMessageDialog confirm(
         this, _("Discard your changes?"), _("Unsaved Sight"),
         wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
     confirm.SetYesNoLabels(_("Discard Changes"), _("Keep Editing"));
@@ -473,7 +617,22 @@ void SightDialog::ApplyFindPosition(const Sight& candidate) {
 }
 
 void SightDialog::OnFindBody(wxCommandEvent& event) {
+#ifdef __OCPN__ANDROID__
+  celestial_android::CommitNumbers(this);
+  wxString inputError;
+  if (!AndroidInputsValid(&inputError)) {
+    CelestialMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
+    return;
+  }
+  Recompute();
+#endif
+
   if (m_Sight.m_Type == Sight::LUNAR) {
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): Results must prepare the deferred Android search.
+    // Cancellation returns to this editor without an empty results surface.
+    if (!CalculateAndroidLunar()) return;
+#endif
     LunarResultsDialog lunarresults_dialog(this, m_Sight);
     lunarresults_dialog.ShowModal();
   } else {
@@ -494,10 +653,20 @@ void SightDialog::OnFindBody(wxCommandEvent& event) {
 }
 
 void SightDialog::OnFindLunarMoon(wxCommandEvent& event) {
+#ifdef __OCPN__ANDROID__
+  celestial_android::CommitNumbers(this);
+  wxString inputError;
+  if (!AndroidInputsValid(&inputError)) {
+    CelestialMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
+    return;
+  }
+  Recompute();
+#endif
+
   Sight lunarSight = m_Sight;
   if (m_Sight.m_LunarSeparateTimes)
     lunarSight.m_DateTime +=
-        wxTimeSpan::Seconds(m_Sight.m_LunarMoonTimeOffsetSeconds);
+        wxTimeSpan::Milliseconds(static_cast<long long>(std::llround(1000.0 * m_Sight.m_LunarMoonTimeOffsetSeconds)));
   lunarSight.m_Body = _T("Moon");
   lunarSight.m_Type = Sight::ALTITUDE;
   lunarSight.m_BodyLimb = m_Sight.m_LunarMoonLimb;
@@ -514,10 +683,20 @@ void SightDialog::OnFindLunarMoon(wxCommandEvent& event) {
 }
 
 void SightDialog::OnFindLunarBody(wxCommandEvent& event) {
+#ifdef __OCPN__ANDROID__
+  celestial_android::CommitNumbers(this);
+  wxString inputError;
+  if (!AndroidInputsValid(&inputError)) {
+    CelestialMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
+    return;
+  }
+  Recompute();
+#endif
+
   Sight lunarSight = m_Sight;
   if (m_Sight.m_LunarSeparateTimes)
     lunarSight.m_DateTime +=
-        wxTimeSpan::Seconds(m_Sight.m_LunarBodyTimeOffsetSeconds);
+        wxTimeSpan::Milliseconds(static_cast<long long>(std::llround(1000.0 * m_Sight.m_LunarBodyTimeOffsetSeconds)));
   lunarSight.m_Type = Sight::ALTITUDE;
   lunarSight.m_BodyLimb = m_Sight.m_LunarBodyLimb;
   lunarSight.m_Measurement = m_Sight.m_LunarBodyAltitude;
@@ -539,7 +718,13 @@ wxDateTime SightDialog::DateTime() {
   hours = m_sHours->GetValue();
   minutes = m_sMinutes->GetValue();
   seconds = m_sSeconds->GetValue();
+#ifdef __OCPN__ANDROID__
+  if (m_androidSeconds) seconds = m_androidSeconds->GetValue();
+#endif
 
+#ifdef __OCPN__ANDROID__
+  return UtcDateTime::FromCalendar(datetime, hours, minutes, seconds);
+#else
   double i;
   datetime.SetHour(hours);
   datetime.SetMinute(minutes);
@@ -547,8 +732,21 @@ wxDateTime SightDialog::DateTime() {
   datetime.SetMillisecond(1000 * modf(seconds, &i));
 
   return datetime;
+#endif
 }
 
+#ifdef __OCPN__ANDROID__
+double SightDialog::RelativeWatchSeconds(NauticalTimeCtrl* control) const {
+  if (!control) return 0;
+  const auto f = UtcDateTime::Fields(control->GetValue());
+  const double reference = m_sHours->GetValue() * 3600 + m_sMinutes->GetValue() * 60 +
+    (m_androidSeconds ? m_androidSeconds->GetValue() : m_sSeconds->GetValue());
+  double difference = f.hour * 3600 + f.min * 60 + f.sec + f.msec / 1000.0 - reference;
+  if (difference > 43200) difference -= 86400;
+  if (difference < -43200) difference += 86400;
+  return difference;
+}
+#else
 int SightDialog::RelativeWatchSeconds(NauticalTimeCtrl* control) const {
   if (!control) return 0;
   const int reference = m_sHours->GetValue() * 3600 +
@@ -561,6 +759,7 @@ int SightDialog::RelativeWatchSeconds(NauticalTimeCtrl* control) const {
   if (difference < -43200) difference += 86400;
   return difference;
 }
+#endif
 
 void SightDialog::UpdateLunarTimeControls() {
   if (!m_lunarTimingBox || !m_lunarSeparateTimes) return;
@@ -578,6 +777,13 @@ void SightDialog::UpdateLunarTimeControls() {
 }
 
 void SightDialog::OnSetDefaults(wxCommandEvent& event) {
+#ifdef __OCPN__ANDROID__
+  wxString error;
+  if (!AndroidInputsValid(&error)) {
+    CelestialMessageBox(error, _("Invalid observation"), wxOK | wxICON_WARNING, this);
+    return;
+  }
+#endif
   wxFileConfig* pConf = GetOCPNConfigObject();
   pConf->SetPath(_T("/PlugIns/CelestialNavigation"));
 
@@ -595,20 +801,134 @@ void SightDialog::OnSetDefaults(wxCommandEvent& event) {
   pConf->Write(_T("DefaultDIPShortDistance"), value);
   pConf->Write(_T("DefaultArtificialHorizon"),
                m_cbArtificialHorizon->GetValue());
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): persist this explicit action before Android can stop.
+  pConf->Flush();
+#endif
 }
 
 void SightDialog::RecomputeDMM() {
-  m_Sight.m_Measurement = fromDMM_Plugin(m_tMeasurement->GetValue());
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): native page events during decoration precede the
+  // exact decimal fields. Never parse the temporary desktop-rounded text.
+  if (!m_breadytorecompute) return;
+  celestial_android::CommitNumbers(this);
+  wxString inputError;
+  if (!AndroidInputsValid(&inputError)) {
+    CelestialMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
+    return;
+  }
+  Recompute();
+#endif
+
+  m_Sight.m_Measurement = ReadSightAngle(m_tMeasurement->GetValue());
+#ifdef __OCPN__ANDROID__
+  m_tMeasurement->ChangeValue(celestial_android::NumberText(m_Sight.m_Measurement));
+#else
   m_tMeasurement->SetValue(toSDMM_PlugIn(0, m_Sight.m_Measurement, true));
+#endif
   m_Sight.m_LunarMoonAltitude =
-      fromDMM_Plugin(m_tLunarMoonAltitude->GetValue());
+      ReadSightAngle(m_tLunarMoonAltitude->GetValue());
+#ifdef __OCPN__ANDROID__
+  m_tLunarMoonAltitude->ChangeValue(celestial_android::NumberText(m_Sight.m_LunarMoonAltitude));
+#else
   m_tLunarMoonAltitude->SetValue(
       toSDMM_PlugIn(0, m_Sight.m_LunarMoonAltitude, true));
+#endif
   m_Sight.m_LunarBodyAltitude =
-      fromDMM_Plugin(m_tLunarBodyAltitude->GetValue());
+      ReadSightAngle(m_tLunarBodyAltitude->GetValue());
+#ifdef __OCPN__ANDROID__
+  m_tLunarBodyAltitude->ChangeValue(celestial_android::NumberText(m_Sight.m_LunarBodyAltitude));
+#else
   m_tLunarBodyAltitude->SetValue(
       toSDMM_PlugIn(0, m_Sight.m_LunarBodyAltitude, true));
+#endif
 }
+
+#ifdef __OCPN__ANDROID__
+bool SightDialog::CalculateAndroidLunar() {
+  // POBsoft (1985-2026): one owned cancellable calculation for both actions.
+  QGuiApplication::inputMethod()->commit();
+  celestial_android::CommitNumbers(this);
+  if (auto* focus = QApplication::focusWidget()) focus->clearFocus();
+  QGuiApplication::inputMethod()->reset();
+  QGuiApplication::inputMethod()->hide();
+  wxString inputError;
+  if (!AndroidInputsValid(&inputError)) {
+    CelestialMessageBox(inputError, _("Invalid observation"), wxOK | wxICON_WARNING, this);
+    return false;
+  }
+  Recompute();
+  if (m_Sight.m_Type != Sight::LUNAR) {
+    CelestialMessageBox(_("Select Lunar distance as the sight type first."), _("Lunar calculation"), wxOK | wxICON_INFORMATION, this);
+    return false;
+  }
+  if (!m_Sight.m_androidLunarInputs.empty()) return true;
+  Sight candidate = m_Sight;
+  wxString error;
+  const bool completed = celestial_android::RunJob(this, _("Search lunar UTC"),
+      [&](celestial_android::JobState& state) {
+        state.Progress("Searching the total UTC span around the entered time...");
+        candidate.m_androidLunarSearch = true;
+        candidate.m_androidCheckpoint = [&state]() { state.Checkpoint(); };
+        candidate.Recompute(m_clock_offset);
+      }, &error);
+  candidate.m_androidCheckpoint = {};
+  candidate.m_androidLunarSearch = false;
+  if (completed) {
+    m_Sight = candidate;
+    m_tCalculations->SetValue(m_Sight.m_CalcStr);
+  } else if (!error.empty()) {
+    CelestialMessageBox(error, _("Lunar calculation"), wxOK | wxICON_ERROR, this);
+  }
+  return completed;
+}
+
+bool SightDialog::AndroidInputsValid(wxString* error) const {
+  // POBsoft (1985-2026): reject invalid stored/Find positions before Save.
+  if (!std::isfinite(m_Sight.m_DRLat) || !std::isfinite(m_Sight.m_DRLon) ||
+      m_Sight.m_DRLat < -90 || m_Sight.m_DRLat > 90 ||
+      m_Sight.m_DRLon < -180 || m_Sight.m_DRLon > 180) {
+    if (error) *error = _("Check the DR position using Find. Latitude must be "
+                          "between -90 and 90 degrees and longitude between "
+                          "-180 and 180 degrees.");
+    return false;
+  }
+  const double unlimited = std::numeric_limits<double>::max();
+  auto number = [&](wxTextCtrl* field, const wxString& name, double minimum,
+                    double maximum = std::numeric_limits<double>::max()) {
+    double value = 0;
+    if (field->GetValue().ToDouble(&value) && std::isfinite(value) &&
+        value >= minimum && value <= maximum) return true;
+    if (error) *error = _("Check ") + name + _(". Enter a finite number in the stated units and allowed range.");
+    return false;
+  };
+  auto angle = [&](wxTextCtrl* field, const wxString& name, double maximum) {
+    double value = 0;
+    if (ParseNavigationAngle(field->GetValue(), NavigationAngleKind::Generic,
+                             0.0, maximum, &value)) return true;
+    if (error) *error = _("Check ") + name + _(". Enter degrees or degrees and decimal minutes within the allowed range.");
+    return false;
+  };
+  if (!angle(m_tMeasurement, _("measured angle"), m_cType->GetSelection() == AZIMUTH ? 360.0 : 180.0) ||
+      !number(m_tMeasurementCertainty, _("measurement uncertainty (arcminutes)"), 0) ||
+      !number(m_tEyeHeight, _("eye height (m)"), 0) ||
+      !number(m_tTemperature, _("temperature (C; above absolute zero)"), std::nextafter(-273.15, unlimited)) ||
+      !number(m_tPressure, _("pressure (hPa; positive)"), std::numeric_limits<double>::min()) ||
+      !number(m_tIndexError, _("index error (arcminutes)"), -unlimited) ||
+      !number(m_tDipShortDistance, _("short-horizon distance (NM)"), m_cbDipShort->GetValue() ? std::numeric_limits<double>::min() : 0) ||
+      !number(m_tShiftNm, _("DR shift distance (NM)"), 0) ||
+      !number(m_tShiftBearing, _("DR shift bearing (degrees)"), 0, 360)) return false;
+  if (m_cType->GetSelection() == LUNAR &&
+      (!angle(m_tLunarMoonAltitude, _("Moon altitude"), 180) ||
+       !angle(m_tLunarBodyAltitude, _("body altitude"), 180) ||
+       !number(m_lunarMoonAltitudeUncertainty, _("Moon altitude uncertainty (arcminutes)"), 0) ||
+       !number(m_lunarBodyAltitudeUncertainty, _("body altitude uncertainty (arcminutes)"), 0) ||
+       !number(m_lunarCourseTrue, _("course (degrees true)"), 0, 360) ||
+       !number(m_lunarSpeedKnots, _("speed (knots)"), 0))) return false;
+  return true;
+}
+#endif
 
 void SightDialog::Recompute() {
   const auto selectedType =
@@ -626,17 +946,27 @@ void SightDialog::Recompute() {
   // and altitude limb rather than the lunar-distance angle/contact.
   if (leavingLunar) {
     m_sCertaintySeconds->SetValue(0);
+#ifdef __OCPN__ANDROID__
+    if (m_androidTimeCertainty) m_androidTimeCertainty->SetValue(0);
+#endif
     if (selectedType == Sight::ALTITUDE) {
+#ifdef __OCPN__ANDROID__
+      m_tMeasurement->ChangeValue(celestial_android::NumberText(m_Sight.m_LunarBodyAltitude));
+#else
       m_tMeasurement->ChangeValue(
           toSDMM_PlugIn(0, m_Sight.m_LunarBodyAltitude, true));
+#endif
       displayedLimb = m_Sight.m_LunarBodyLimb;
       if (m_Sight.m_LunarSeparateTimes) {
         const wxDateTime bodyTime = UtcDateTime::AddSeconds(
             m_Sight.m_DateTime, m_Sight.m_LunarBodyTimeOffsetSeconds);
-        m_Calendar->SetDate(bodyTime);
-        m_sHours->SetValue(bodyTime.GetHour());
-        m_sMinutes->SetValue(bodyTime.GetMinute());
-        m_sSeconds->SetValue(bodyTime.GetSecond());
+        m_Calendar->SetDate(UtcDateTime::CalendarDate(bodyTime));
+        m_sHours->SetValue(UtcDateTime::Fields(bodyTime).hour);
+        m_sMinutes->SetValue(UtcDateTime::Fields(bodyTime).min);
+        m_sSeconds->SetValue(UtcDateTime::Fields(bodyTime).sec);
+#ifdef __OCPN__ANDROID__
+        if (m_androidSeconds) m_androidSeconds->SetValue(UtcDateTime::Fields(bodyTime).sec + bodyTime.GetMillisecond() / 1000.0);
+#endif
       }
     } else {
       displayedLimb = Sight::CENTER;
@@ -650,8 +980,15 @@ void SightDialog::Recompute() {
                               !m_cbArtificialHorizon->GetValue());
 
   m_fgSizerLunar->Show(selectedType == Sight::LUNAR);
+#ifdef __OCPN__ANDROID__
+  if (m_androidCalculateLunar) m_androidCalculateLunar->Show(selectedType == Sight::LUNAR);
+#endif
   if (selectedType == Sight::LUNAR) {
+#ifdef __OCPN__ANDROID__
+    m_bFindBody->SetLabel(_("Results"));
+#else
     m_bFindBody->SetLabel(_T("Time"));
+#endif
     m_sbSizerSight->GetStaticBox()->SetLabel(_T("Lunar distance (LDOpc)"));
     m_cLimb->Clear();
     m_cLimb->Append(_T("Near"));
@@ -689,13 +1026,20 @@ void SightDialog::Recompute() {
   m_fgPanelSizer->Layout();
 
   if (!m_breadytorecompute) return;
+#ifdef __OCPN__ANDROID__
+  wxString inputError;
+  if (!AndroidInputsValid(&inputError)) {
+    m_tCalculations->SetValue(inputError);
+    return;
+  }
+#endif
 
   m_Sight.m_Type = selectedType;
   m_Sight.m_Body = m_cBody->GetStringSelection();
   m_Sight.m_BodyLimb = (Sight::BodyLimb)m_cLimb->GetSelection();
 
   if (!m_Sight.m_Body.Cmp(_T("Moon")) && m_cType->GetSelection() == LUNAR) {
-    wxMessageDialog w(
+    CelestialMessageDialog w(
         m_parent,
         _("Lunar shot will be invalid taking distance from moon to itself"),
         _("Warning"), wxOK | wxICON_WARNING);
@@ -703,23 +1047,31 @@ void SightDialog::Recompute() {
   }
 
   m_Sight.m_DateTime = DateTime();
+#ifdef __OCPN__ANDROID__
+  m_Sight.m_TimeCertainty = m_androidTimeCertainty ? m_androidTimeCertainty->GetValue() : m_Sight.m_TimeCertainty;
+  m_staticText13->SetLabel(m_Sight.m_Type == Sight::LUNAR ? _("Total UTC search span (seconds)") : _("Time uncertainty (seconds)"));
+#else
   m_Sight.m_TimeCertainty = m_sCertaintySeconds->GetValue();
+#endif
   if (m_Sight.m_Type == Sight::LUNAR && m_Sight.m_TimeCertainty == 0) {
     m_Sight.m_TimeCertainty = 86400;
     m_sCertaintySeconds->SetValue(m_Sight.m_TimeCertainty);
+#ifdef __OCPN__ANDROID__
+    if (m_androidTimeCertainty) m_androidTimeCertainty->SetValue(m_Sight.m_TimeCertainty);
+#endif
   }
 
-  m_Sight.m_Measurement = fromDMM_Plugin(m_tMeasurement->GetValue());
+  m_Sight.m_Measurement = ReadSightAngle(m_tMeasurement->GetValue());
 
   double measurementcertainty;
   m_tMeasurementCertainty->GetValue().ToDouble(&measurementcertainty);
   m_Sight.m_MeasurementCertainty = measurementcertainty;
 
   m_Sight.m_LunarMoonAltitude =
-      fromDMM_Plugin(m_tLunarMoonAltitude->GetValue());
+      ReadSightAngle(m_tLunarMoonAltitude->GetValue());
   m_Sight.m_LunarMoonLimb = (Sight::BodyLimb)m_cLunarMoonLimb->GetSelection();
   m_Sight.m_LunarBodyAltitude =
-      fromDMM_Plugin(m_tLunarBodyAltitude->GetValue());
+      ReadSightAngle(m_tLunarBodyAltitude->GetValue());
   m_Sight.m_LunarBodyLimb = (Sight::BodyLimb)m_cLunarBodyLimb->GetSelection();
   m_Sight.m_LunarBodyDistanceLimb =
       (Sight::BodyLimb)m_lunarBodyDistanceContact->GetSelection();
@@ -763,7 +1115,11 @@ void SightDialog::Recompute() {
   m_Sight.m_bMagneticShiftBearing = m_cbMagneticShiftBearing->GetValue();
 
   m_Sight.Recompute(m_clock_offset);
-  m_tCalculations->SetValue(m_Sight.m_CalcStr);
+#ifdef __OCPN__ANDROID__
+  // Focus/spin events with unchanged inputs must not reset report scrolling.
+  if (m_tCalculations->GetValue() != m_Sight.m_CalcStr)
+#endif
+    m_tCalculations->SetValue(m_Sight.m_CalcStr);
 
   Refresh();
 }

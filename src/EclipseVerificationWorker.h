@@ -6,6 +6,7 @@
 
 #include <wx/string.h>
 #include <wx/thread.h>
+#include "PlatformWorkerThread.h"
 
 #include "EclipseDataFiles.h"
 
@@ -45,7 +46,7 @@ private:
   static Result VerifyFile(EclipseDataKind kind, const std::string& path);
 
   VerifyFunction m_verify;
-  mutable wxCriticalSection m_result_lock;
+  mutable CelestialWorkerMutex m_result_lock;
   Result m_result;
   bool m_result_ready;
   WorkerThread* m_thread;

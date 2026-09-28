@@ -1,0 +1,25 @@
+{
+  "reference_method": "Independent scipy root of top-minus-waterline elevations, spherical direct destination",
+  "target": [
+    49.99635,
+    -5.12052
+  ],
+  "height_m": 30,
+  "eye_m": 2,
+  "water_m": 0,
+  "angle_deg": 1,
+  "index_arcmin": 0,
+  "bearing_M": 90,
+  "variation_E": 5,
+  "deviation_E": -2,
+  "bearing_T": 93,
+  "range_nm": 0.9280388243489894,
+  "position": [
+    49.99715647243115,
+    -5.144532246156057
+  ],
+  "limits": {
+    "range_nm": 0.001,
+    "position_nm": 0.001
+  }
+}

@@ -74,9 +74,9 @@ set(LONG_DESCRIPTION
 )
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "8")
-set(VERSION_PATCH "11")
+set(VERSION_PATCH "13")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "23/09/2026" )# DD/MM/YYYY format
+set(VERSION_DATE  "27/09/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -186,6 +186,7 @@ SET(SRCS
         src/astrolabe/vsop87d.cpp
         src/geomag/geomag.c
         src/CelestialNavigationDialog.cpp
+        src/AndroidWorkspace.cpp
         src/DialogGeometry.cpp
         src/AtomicXmlFile.cpp
         src/Dut1UpdatePanel.cpp
@@ -304,6 +305,9 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/geomag)
 # ==============================================================
 
 target_sources(${PACKAGE_NAME} PUBLIC ${SRC} )
+if(QT_ANDROID)
+  target_link_options(${PACKAGE_NAME} PRIVATE "-Wl,--exclude-libs,ALL")
+endif()
 
 # The eclipse numerical core is also usable as a standalone library/CLI. The
 # plugin embeds only the network-free runtime library; development tools and
@@ -339,6 +343,20 @@ if (NOT OCPN_FLATPAK_CONFIG)
 
   add_subdirectory(opencpn-libs/api-${OCPN_API_VERSION_MINOR})
   target_link_libraries(${PACKAGE_NAME} ocpn::api)
+  # POBsoft (1985-2026): the bundled API import library is Windows x86.
+  # A native x64 host SDK is mandatory for an x64 MSVC plugin.
+  if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(CELESTIAL_WINDOWS_IMPORT_LIBRARY "" CACHE FILEPATH
+        "Import library from the matching native OpenCPN Windows x64 host")
+    if(NOT EXISTS "${CELESTIAL_WINDOWS_IMPORT_LIBRARY}")
+      message(FATAL_ERROR "Windows x64 requires CELESTIAL_WINDOWS_IMPORT_LIBRARY")
+    endif()
+    get_target_property(_celestial_api_target ocpn::api ALIASED_TARGET)
+    set_property(TARGET ${_celestial_api_target} PROPERTY INTERFACE_LINK_LIBRARIES
+        "${CELESTIAL_WINDOWS_IMPORT_LIBRARY}")
+    # Reject conversions which truncate native pointers; desktop maths is unchanged.
+    target_compile_options(${PACKAGE_NAME} PRIVATE /we4302 /we4311 /we4312)
+  endif()
 
   add_subdirectory(opencpn-libs/tinyxml)
   target_link_libraries(${PACKAGE_NAME} ocpn::tinyxml)

@@ -1,0 +1,67 @@
+{
+  "source": "Installed147/3929527 PID22056",
+  "selected_solution": "RESUME86-USNO-Known",
+  "correction_seconds": -0.44659105661448395,
+  "actual_corrected_epoch_and_all_three_residual_epochs": "2024-06-21T21:59:59.553Z",
+  "rounding": "millisecond presentation, independent subtraction from22:00:00",
+  "actual_corrected_fix": [
+    51.47790548362774,
+    0.0018608273778681905
+  ],
+  "reference": [
+    51.4779,
+    0
+  ],
+  "independent_geodesic": "PROJ geod WGS84",
+  "error_nm": 0.06980601100669546,
+  "tolerance_nm": 0.3,
+  "uncorrected_longitude_deg": -8.333333333333334e-06,
+  "corrected_longitude_deg": 0.0018608273778681905,
+  "fixture_byte_identical": false,
+  "fixture_sha256": "3f97bc2c03a375e0f59342f6e1ae4305f58afcdb4eca34edaa1f3c9ef3c273ba",
+  "file_comparison": "Cold-loaded fixture decimal attributes normalized to existing 17digit serializer spelling; every field equals the original floating-point value. All five full solution blocks unchanged. Canonical byte baseline retained for subsequent checks.",
+  "all_four_complete_fixture_records_and_five_original_full_lunar_reports_unchanged": true,
+  "global_clock_seconds": 0,
+  "planner_last_fix_position_exact": [
+    51.47790548362774,
+    0.0018608273778681905
+  ],
+  "result": "PASS",
+  "find_last_fix_position_exact": [
+    51.47790548362774,
+    0.0018608273778681905
+  ],
+  "azimuth_save": {
+    "changes": {
+      "BodyLimb": [
+        "1",
+        "0"
+      ],
+      "MeasurementCertainty": [
+        "1.2345678912341229",
+        "1.234567891234567"
+      ],
+      "AndroidMagneticAzimuth": [
+        null,
+        "0"
+      ],
+      "Pressure": [
+        "0",
+        "1013"
+      ],
+      "DRLat": [
+        "51.477899999999998",
+        "51.477905483627737"
+      ],
+      "DRLon": [
+        "0",
+        "0.0018608273778681905"
+      ]
+    },
+    "unchanged_three_complete_solver_records_and_five_reports": true,
+    "measurement_exact": true,
+    "uncertainty_exact": true,
+    "note": "Synthetic azimuth centre limb1 normalizes to legacy one-item Centre selector index0; limb is inapplicable to azimuth, not an altitude limb change. Initial guard refused unexpected spelling/limb before scoped canonical comparison.",
+    "cold_precision_replay": "PENDING"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "case": "marked UTC clipboard physical156",
+  "installed_source": "8bc86ec",
+  "expected": "2026-09-28T14:38:34.282Z",
+  "actual": "2026-09-28T14:38:34.282Z",
+  "utf8_bytes": 24,
+  "nul_bytes": 0,
+  "complete_byte_match": true,
+  "result": "PASS"
+}

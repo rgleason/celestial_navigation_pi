@@ -1,0 +1,37 @@
+{
+  "purpose": "Positive matching-watch saved lunar correction actually used by physical Fix. Independent USNO angular reference and saved real RESUME86 solution; original library is protected outside disposable fixture.",
+  "position": [
+    51.4779,
+    0
+  ],
+  "recorded_utc": "2024-06-21T22:00:00Z",
+  "selected_solution": "RESUME86-USNO-Known",
+  "selected_correction_seconds": -0.44659105661448395,
+  "corrected_utc": "2024-06-21T21:59:59.553408943Z",
+  "position_tolerance_nm": 0.3,
+  "entries": [
+    {
+      "body": "Spica",
+      "geometric_Hc": 18.767329,
+      "pressure_hpa": 0,
+      "eye_height_m": 0,
+      "limb": 1
+    },
+    {
+      "body": "Vega",
+      "geometric_Hc": 60.251586,
+      "pressure_hpa": 0,
+      "eye_height_m": 0,
+      "limb": 1
+    },
+    {
+      "body": "Deneb",
+      "geometric_Hc": 44.950976,
+      "pressure_hpa": 0,
+      "eye_height_m": 0,
+      "limb": 1
+    }
+  ],
+  "base_clock_seconds": 0,
+  "file_rule": "All three complete fixture records and five original complete lunar reports unchanged by selecting fix correction; no global ClockError mutation."
+}

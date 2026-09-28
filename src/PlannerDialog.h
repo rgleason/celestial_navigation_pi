@@ -20,7 +20,17 @@ class wxPanel;
 class wxSpinCtrlDouble;
 class wxStaticText;
 class wxTextCtrl;
+#ifdef __OCPN__ANDROID__
+#include "NauticalTimeCtrl.h"
+#include "AndroidPlannerWorker.h"
+#include <memory>
+class QListWidget;
+class wxButton;
+using CelestialTimePicker = NauticalTimeCtrl;
+#else
 class wxTimePickerCtrl;
+using CelestialTimePicker = wxTimePickerCtrl;
+#endif
 
 class PlannerDialog : public wxDialog {
 public:
@@ -84,7 +94,7 @@ private:
   wxStaticText* m_dateLabel;
   wxStaticText* m_timeLabel;
   wxDatePickerCtrl* m_utcDate;
-  wxTimePickerCtrl* m_utcTime;
+  CelestialTimePicker* m_utcTime;
   wxPanel* m_dateContainer;
   wxPanel* m_timeContainer;
   wxTextCtrl* m_nauticalDate;
@@ -101,6 +111,29 @@ private:
   wxStaticText* m_status;
   wxNotebook* m_notebook;
   wxListCtrl* m_events;
+#ifdef __OCPN__ANDROID__
+  wxStaticText* m_androidEvents = nullptr;
+  QTimer* m_androidRefresh = nullptr;
+  QListWidget* m_androidBodies = nullptr;
+  QListWidget* m_androidAlmanac = nullptr;
+  wxStaticText* m_androidSelectedBody = nullptr;
+  wxStaticText* m_androidCombinations = nullptr;
+  wxStaticText* m_androidAlmanacStatus = nullptr;
+  wxButton* m_androidCreateSight = nullptr;
+  wxButton* m_androidExport = nullptr;
+  void UpdateAndroidBodySelection();
+  void StartAndroidCalculation(const ObserverMotion& motion);
+  void PollAndroidCalculation();
+  void CancelAndroidCalculation();
+  std::unique_ptr<celestial_android::PlannerWorker> m_androidWorker;
+  celestial_android::PlannerResults m_androidResults;
+  unsigned m_androidGeneration = 0;
+  bool m_androidReady = false;
+  QTimer* m_androidPoll = nullptr;
+  wxStaticText* m_androidProgress = nullptr;
+  wxButton* m_androidCancel = nullptr;
+  wxButton* m_androidSolve = nullptr;
+#endif
   wxStaticText* m_moonSummary;
   wxListCtrl* m_bodies;
   wxListCtrl* m_combinations;

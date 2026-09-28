@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 /******************************************************************************
  *
  * Project:  OpenCPN
@@ -26,6 +27,18 @@
 
 #include "wx/wxprec.h"
 #include "Dut1UpdatePanel.h"
+#ifdef __OCPN__ANDROID__
+#include "AndroidDocumentImport.h"
+#include "AndroidTheme.h"
+#include <QDebug>
+#include <QCoreApplication>
+#include <QEvent>
+#include <QPointer>
+#include <QMenu>
+#include <dlfcn.h>
+#include <wx/weakref.h>
+#include <vector>
+#endif
 
 #ifndef WX_PRECOMP
 #include "wx/wx.h"
@@ -48,6 +61,12 @@ using namespace std;
 // the class factories, used to create and destroy instances of the PlugIn
 
 extern "C" DECL_EXP opencpn_plugin* create_pi(void* ppimgr) {
+#ifdef __OCPN__ANDROID__
+  // The Android support archive supplies private static wx libraries. Their
+  // stock lists are not initialized by the host's separate wxApp instance.
+  // Colour pickers dereference this database even for an explicit RGB colour.
+  if (!wxTheColourDatabase) wxInitializeStockLists();
+#endif
   return (opencpn_plugin*)new celestial_navigation_pi(ppimgr);
 }
 
@@ -103,6 +122,9 @@ celestial_navigation_pi::~celestial_navigation_pi(void) {}
 //---------------------------------------------------------------------------------------------------------
 
 int celestial_navigation_pi::Init(void) {
+#ifdef __OCPN__ANDROID__
+  celestial_android::CleanAbandonedImports();
+#endif
   celestial_navigation::LoadInstalledDut1Update();
   AddLocaleCatalog(_T("opencpn-celestial_navigation_pi"));
 
@@ -127,11 +149,21 @@ int celestial_navigation_pi::Init(void) {
 
   m_pCelestialNavigationDialog = NULL;
 
+#ifdef __OCPN__ANDROID__
+  // AddCanvasMenuItem retains the wx item but does not own it. wxQt also
+  // does not delete its QMenu in wxMenu's destructor. Keep both lifetimes
+  // explicit so no QAction with a plugin vtable survives dlclose.
+  m_androidRouteMenu = new wxMenu;
+  m_androidRouteMenuItem = new wxMenuItem(m_androidRouteMenu, wxID_ANY,
+                                         _("Generate fallback almanac..."));
+  m_route_almanac_menu_id = AddCanvasMenuItem(m_androidRouteMenuItem, this, "Route");
+#else
   wxMenu routeMenu;
   m_route_almanac_menu_id = AddCanvasMenuItem(
       new wxMenuItem(&routeMenu, wxID_ANY,
                      _("Generate fallback almanac...")),
       this, "Route");
+#endif
 
 #ifdef CELESTIAL_ECLIPSE_INTEGRATION_TEST
   wxTheApp->CallAfter([this]() {
@@ -162,10 +194,42 @@ int celestial_navigation_pi::Init(void) {
 }
 
 bool celestial_navigation_pi::DeInit(void) {
+#ifdef __OCPN__ANDROID__
+  // wxWindow::Destroy delegates scheduling to the host wxApp, whose idle
+  // queue may not run during Plugin Manager's modal import. Collect only
+  // this private static wx library's windows, and remove these exact objects
+  // from either queue before synchronously releasing them before dlclose.
+  void* host = dlopen("libgorp.so", RTLD_NOW | RTLD_NOLOAD);
+  auto* hostPending = host ? reinterpret_cast<wxList*>(dlsym(host, "wxPendingDelete")) : nullptr;
+  if (host) dlclose(host);
+  std::vector<wxWeakRef<wxWindow>> ownedWindows;
+  std::vector<QPointer<QWidget>> ownedNativeWindows;
+  for (auto node = wxTopLevelWindows.GetFirst(); node; node = node->GetNext()) {
+    ownedWindows.emplace_back(node->GetData());
+    ownedNativeWindows.emplace_back(node->GetData()->GetHandle());
+  }
+  auto removePending = [hostPending](wxWindow* window) {
+    wxPendingDelete.DeleteObject(window);
+    if (hostPending && hostPending != &wxPendingDelete)
+      hostPending->DeleteObject(window);
+  };
+  for (auto& window : ownedWindows) if (window) removePending(window.get());
+#endif
   if (m_route_almanac_menu_id >= 0) {
     RemoveCanvasMenuItem(m_route_almanac_menu_id, "Route");
     m_route_almanac_menu_id = -1;
   }
+#ifdef __OCPN__ANDROID__
+  QPointer<QMenu> nativeRouteMenu = m_androidRouteMenu
+      ? m_androidRouteMenu->GetHandle() : nullptr;
+  if (m_androidRouteMenuItem && m_androidRouteMenuItem->GetHandle())
+    m_androidRouteMenuItem->GetHandle()->blockSignals(true);
+  delete m_androidRouteMenuItem;
+  m_androidRouteMenuItem = nullptr;
+  delete m_androidRouteMenu;
+  m_androidRouteMenu = nullptr;
+  delete nativeRouteMenu.data();
+#endif
   RemovePlugInTool(m_leftclick_tool_id);
 
   if (m_pCelestialNavigationDialog) {
@@ -179,6 +243,37 @@ bool celestial_navigation_pi::DeInit(void) {
     dialog->Hide();
     delete dialog;
   }
+#ifdef __OCPN__ANDROID__
+  for (auto& window : ownedWindows) {
+    if (!window) continue;
+    removePending(window.get());
+    delete window.get();
+  }
+  // This pinned wxQt defers native widget destruction even after the wx
+  // wrapper is gone. A queued Qt event can then call a plugin vtable after
+  // dlclose. Retain guarded handles before destroying the wrappers, clear
+  // their wx handler properties, and release these exact owned native roots
+  // while plugin code is still mapped. A parent may delete another root:
+  // QPointer makes the later entry harmless in that case.
+  for (auto& native : ownedNativeWindows) {
+    if (!native) continue;
+    const auto widgets = native->findChildren<QWidget*>();
+    for (auto* widget : widgets) {
+      wxWindow::QtStoreWindowPointer(widget, nullptr);
+      widget->blockSignals(true);
+    }
+    wxWindow::QtStoreWindowPointer(native.data(), nullptr);
+    native->blockSignals(true);
+    delete native.data();
+  }
+  // wxWindow's Qt destructor also posts deleteLater for its parentless
+  // wxQtShortcutHandler. Those objects cannot be found in a widget tree.
+  // Complete only already-scheduled Qt deletions while our vtables remain
+  // mapped; do not pump input, timers, paint or worker completion callbacks.
+  QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+  qInfo() << "Celestial Android owned sheets released before unload:" << ownedWindows.size();
+
+#endif
   return true;
 }
 
@@ -264,7 +359,7 @@ void celestial_navigation_pi::OnToolbarToolCallback(int id) {
           message += "(" + _("too many models") + ")\n";
           break;
       }
-      wxMessageDialog mdlg(m_parent_window,
+      CelestialMessageDialog mdlg(m_parent_window,
                            message + _("Magnetic data will not be available "
                                        "for the celestial navigation plugin."),
                            wxString(_("OpenCPN Alert"), wxOK | wxICON_ERROR));
@@ -299,6 +394,10 @@ void celestial_navigation_pi::SetColorScheme(PI_ColorScheme cs) {
   if (NULL == m_pCelestialNavigationDialog) return;
 
   DimeWindow(m_pCelestialNavigationDialog);
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): native Qt styles also need the active host palette.
+  CN_ApplyAndroidTheme(m_pCelestialNavigationDialog);
+#endif
 }
 
 bool celestial_navigation_pi::RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp) {
@@ -319,6 +418,10 @@ bool celestial_navigation_pi::RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp) {
 
 bool celestial_navigation_pi::RenderGLOverlay(wxGLContext* pcontext,
                                               PlugIn_ViewPort* vp) {
+#ifdef __OCPN__ANDROID__
+  GLint previousProgram = 0;
+  glGetIntegerv(GL_CURRENT_PROGRAM, &previousProgram);
+#endif
 #ifdef CELESTIAL_ECLIPSE_INTEGRATION_TEST
   static bool logged_gl_overlay = false;
   if (!logged_gl_overlay && m_pCelestialNavigationDialog &&
@@ -332,12 +435,17 @@ bool celestial_navigation_pi::RenderGLOverlay(wxGLContext* pcontext,
   pidc->SetVP(vp);
   bool ret = RenderOverlayAll(pidc, vp);
   delete pidc;
+#ifdef __OCPN__ANDROID__
+  glUseProgram(previousProgram);
+#endif
   return ret;
 }
 
 bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
-  if (!m_pCelestialNavigationDialog || !m_pCelestialNavigationDialog->IsShown())
-    return false;
+  if (!m_pCelestialNavigationDialog) return false;
+#ifndef __OCPN__ANDROID__
+  if (!m_pCelestialNavigationDialog->IsShown()) return false;
+#endif
 
   /* draw sights */
   for (Sight& s : m_pCelestialNavigationDialog->m_Sights) {
@@ -347,9 +455,10 @@ bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
   m_pCelestialNavigationDialog->RenderEclipse(dc, vp);
   m_pCelestialNavigationDialog->RenderCoastal(dc, vp);
 
-  if (!m_pCelestialNavigationDialog->m_FixDialog ||
-      !m_pCelestialNavigationDialog->m_FixDialog->IsShown())
-    return true;
+  if (!m_pCelestialNavigationDialog->m_FixDialog) return true;
+#ifndef __OCPN__ANDROID__
+  if (!m_pCelestialNavigationDialog->m_FixDialog->IsShown()) return true;
+#endif
 
   /* now render fix */
   double lat = m_pCelestialNavigationDialog->m_FixDialog->m_fixlat;
@@ -457,6 +566,11 @@ void celestial_navigation_pi::SetPluginMessage(wxString& message_id,
 }
 
 void celestial_navigation_pi::OnDialogClose() {
+#ifdef __OCPN__ANDROID__
+  if (m_pCelestialNavigationDialog) m_pCelestialNavigationDialog->Hide();
+  RequestRefresh(m_parent_window);
+  return;
+#endif
   CelestialNavigationDialog* dialog = m_pCelestialNavigationDialog;
   m_pCelestialNavigationDialog = NULL;
   if (!dialog) return;
@@ -466,12 +580,19 @@ void celestial_navigation_pi::OnDialogClose() {
 
 double celestial_navigation_pi_GetWMM(double lat, double lon, double altitude,
                                       wxDateTime date) {
+#ifdef __OCPN__ANDROID__
+  const auto utc = UtcDateTime::Fields(date);
+  // POBsoft (1985-2026): WMM requests and geomag use calendar months 1-12.
+  const int year = utc.year, month = static_cast<int>(utc.mon) + 1, day = utc.mday;
+#else
+  const int year = date.GetYear(), month = date.GetMonth(), day = date.GetDay();
+#endif
   wxJSONValue v;
   v[_T("Lat")] = lat;
   v[_T("Lon")] = lon;
-  v[_T("Year")] = date.GetYear();
-  v[_T("Month")] = date.GetMonth();
-  v[_T("Day")] = date.GetDay();
+  v[_T("Year")] = year;
+  v[_T("Month")] = month;
+  v[_T("Day")] = day;
 
   wxJSONWriter w;
   wxString out;
@@ -481,8 +602,8 @@ double celestial_navigation_pi_GetWMM(double lat, double lon, double altitude,
   SendPluginMessage(wxString(_T("WMM_VARIATION_REQUEST")), out);
   if (gQueryVar == 360) {
     double results[14];
-    geomag_calc(lat, lon, altitude / 1000, date.GetDay(), date.GetMonth(),
-                date.GetYear(), results);
+    geomag_calc(lat, lon, altitude / 1000, day, month,
+                year, results);
     return results[0];
   }
 

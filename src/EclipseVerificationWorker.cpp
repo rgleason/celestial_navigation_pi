@@ -5,11 +5,11 @@
 
 namespace celestial_navigation {
 
-class EclipseVerificationWorker::WorkerThread : public wxThread {
+class EclipseVerificationWorker::WorkerThread : public CelestialWorkerThread {
 public:
   WorkerThread(EclipseVerificationWorker* owner, EclipseDataKind kind,
                const std::string& path, const VerifyFunction& verify)
-      : wxThread(wxTHREAD_JOINABLE),
+      : CelestialWorkerThread(wxTHREAD_JOINABLE),
         m_owner(owner),
         m_kind(kind),
         m_path(path),
@@ -53,7 +53,7 @@ bool EclipseVerificationWorker::Start(EclipseDataKind kind,
     return false;
   }
   {
-    wxCriticalSectionLocker lock(m_result_lock);
+    CelestialWorkerLock lock(m_result_lock);
     m_result = Result();
     m_result_ready = false;
   }
@@ -82,7 +82,7 @@ bool EclipseVerificationWorker::Start(EclipseDataKind kind,
 bool EclipseVerificationWorker::TryTakeResult(Result* result) {
   if (!result || !m_thread) return false;
   {
-    wxCriticalSectionLocker lock(m_result_lock);
+    CelestialWorkerLock lock(m_result_lock);
     if (!m_result_ready) return false;
     *result = m_result;
     m_result_ready = false;
@@ -100,7 +100,7 @@ void EclipseVerificationWorker::Wait() {
 }
 
 void EclipseVerificationWorker::Publish(const Result& result) {
-  wxCriticalSectionLocker lock(m_result_lock);
+  CelestialWorkerLock lock(m_result_lock);
   m_result = result;
   m_result_ready = true;
 }

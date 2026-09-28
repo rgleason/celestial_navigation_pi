@@ -1,0 +1,102 @@
+{
+  "source": "4b16fb4628c10aab825add19b7b86862d76a0e3e",
+  "runtime": 146,
+  "installed_library_sha256": "c14a61780a68c37356b6796eabca2d86eb8045aa249829881bff099c3f8d6306",
+  "archive_sha256": "177432262b414c0fcda8698f669de84f3d5205d68bd99ce6fbda64df1df6d9cf",
+  "samsung_font_scale": 1.3,
+  "host_pid": 10884,
+  "typed_nautical_utc": "2024-06-21T00:00:00.987Z",
+  "local_spring_valid": "2026-03-29T02:30:12.987+01:00",
+  "local_gap": "2026-03-29T01:30:12.987",
+  "local_overlap": "2026-10-25T01:30:12.987",
+  "gap_and_overlap_actual": "Results unavailable; resolved UTC invalid; explicit Calculate warns to use UTC",
+  "impossible_date": "2026-02-30 refused with Invalid time",
+  "out_of_range_date": "1899-12-31 refused with generic Invalid time (parser already rejects year)",
+  "ship_auto_15_east": {
+    "entered": "2024-06-21 01:00:00.987",
+    "resolved_utc": "2024-06-21 00:00:00.987"
+  },
+  "ship_manual_5_5": {
+    "entered": "2024-06-21 01:00:00.987",
+    "resolved_utc": "2024-06-20 19:30:00.987",
+    "auto_zone": false
+  },
+  "fixed_5_5_display": {
+    "utc": "2024-06-21 11:01:54",
+    "display": "2024-06-21 16:31:54 UTC+5.5",
+    "moon_utc": "2024-06-21 22:57:00",
+    "moon_display": "2024-06-22 04:27:00 UTC+5.5"
+  },
+  "local_mean_time": {
+    "longitude": 15.125,
+    "utc": "2024-06-21 11:01:24",
+    "display": "2024-06-21 12:01:54 LMT",
+    "offset_seconds": 3630
+  },
+  "computer_local_display": {
+    "zone": "Europe/London",
+    "utc": "2024-06-21 11:01:24",
+    "display": "2024-06-21 12:01:24"
+  },
+  "polar_summer": {
+    "position": [
+      78,
+      15
+    ],
+    "solar_transit_utc": "11:01:54",
+    "reference": "11:02",
+    "error_seconds": -6,
+    "sun": "above horizon all day",
+    "moon": "below horizon all day",
+    "no_rise_set_or_twilight_rows": true
+  },
+  "polar_winter": {
+    "position": [
+      78,
+      15
+    ],
+    "solar_transit_utc": "10:58:16",
+    "moon_transit_utc": "03:49:28",
+    "moon_set_utc": "12:34:32",
+    "moon_rise_utc": "20:28:08",
+    "sun": "below horizon all day",
+    "no_sun_rise_set_or_civil_rows": true,
+    "astronomical_dawn_utc": "06:37:25",
+    "nautical_dawn_utc": "09:45:14",
+    "nautical_dusk_utc": "12:11:18",
+    "astronomical_dusk_utc": "15:19:06",
+    "moon_rise_set_accuracy": "Errors +152/-172 seconds vs USNO; eye2m vs reference ground-level; no newly predeclared numerical Moon tolerance"
+  },
+  "southern_noon": {
+    "position": [
+      -35,
+      0
+    ],
+    "date": "2024-06-21",
+    "Ho": 31.563161,
+    "latitude_display": "35 degrees 00.0001 minutes S",
+    "error_arcminutes": 0.0001,
+    "tolerance_arcminutes": 0.1,
+    "actual_transit_utc": "12:01:55",
+    "Polaris": "below horizon; explicit Solve refusal"
+  },
+  "moon_phase_limitation": {
+    "android_full_moon": "2024-06-22 00:57:37",
+    "usno_full_moon": "2024-06-22 01:08",
+    "difference_seconds": -623,
+    "desktop_full_moon": "2024-06-22 00:57:37.973",
+    "independent_accuracy_pass": false,
+    "cause": "Shared angular-separation approximation; desktop eight phase outputs equal displayed Android seconds"
+  },
+  "protected_sights_sha256": "fba0ee0fdcff99897bd4cb66e3a106c7c1a8de6b3381692c525884e8039ae532",
+  "protected_file_verification_after_146": "full raw-byte SHA confirmed after real Close",
+  "caption_failure": "Corrected observed altitude Ho clipped at font1.3; repair not yet installed",
+  "cold_preferences": "FAIL: manual -35/0, display1, offset5.5/Auto0 reverted to78/15/display0/offset1/Auto1 after10884->17074",
+  "Polaris_warning_Back": "separately paced Back returns same parent/Ho/position; rotation landscape retains full explanation",
+  "crash_buffer": "latest historical04:51:54/runtime98; no ANR since boot",
+  "chart_memory_kib": {
+    "PSS": 473342,
+    "RSS": 535992,
+    "swap_PSS": 323
+  }
+}

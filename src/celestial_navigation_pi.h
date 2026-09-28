@@ -104,6 +104,10 @@ private:
   wxWindow* m_parent_window;
   int m_leftclick_tool_id;
   int m_route_almanac_menu_id;
+#ifdef __OCPN__ANDROID__
+  wxMenu* m_androidRouteMenu = nullptr;
+  wxMenuItem* m_androidRouteMenuItem = nullptr;
+#endif
 
   CelestialNavigationDialog* m_pCelestialNavigationDialog;
   GnssTimeMonitor m_gnssTime;

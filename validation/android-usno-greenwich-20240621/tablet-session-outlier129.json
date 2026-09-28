@@ -1,0 +1,9 @@
+{
+  "runtime": "e0f5cd5",
+  "tablet": "SM-X210 Android15 arm64",
+  "additional_correction_seconds": -0.3044625324169536,
+  "time_sigma_seconds": 4.048520180924867,
+  "report": "Candidate 1; reference position 51.477900000, 0.000000000; position held fixed\nMotion 0; COG 0.000; SOG 0.000; robust fit 1; fit index bias 0\nIndex bias 0.000000 arcmin; weighted RMS 2.415106; condition 1\nResidual nan means a shared/excluded reading, not a zero error.\n22:05:00 Moon–Vega residuals arcmin: LD -0.479622 Moon -0.107939 body +0.068826; outlier 0\n22:05:00 Moon–Spica residuals arcmin: LD -0.113865 Moon +nan body +0.067936; outlier 0\n22:05:00 Moon–Deneb residuals arcmin: LD +11.667072 Moon +nan body +0.083577; outlier 1\n22:00:00 Moon–Vega residuals arcmin: LD -0.492868 Moon -0.148177 body +0.069731; outlier 0\n22:00:00 Moon–Spica residuals arcmin: LD -0.122015 Moon +nan body +0.067026; outlier 0\nShared readings were counted once, not as independent repeated measurements\nOne or more readings exceed three stated standard uncertainties; inspect rather than deleting them automatically\n",
+  "limits": "session-outlier129-reference.json",
+  "outcome": "PASS predefined clock, Deneb flag/residual, clean residuals; all12protected observations/5solutions/global clock preserved"
+}

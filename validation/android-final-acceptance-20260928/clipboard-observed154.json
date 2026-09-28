@@ -1,0 +1,10 @@
+{
+  "source": "Actual Copy report/full foreground Android clipboard readback",
+  "actual_bytes": 11556,
+  "expected_utf8_bytes": 2896,
+  "embedded_null_bytes": 8664,
+  "result": "FAIL: raw UTF32LE with terminator exported as Android text",
+  "decoded_source_matches_entire_saved_report": true,
+  "sha256": "579650188c4c9f1fe623884ca6de44d084d7aac77095920306a92b6ce3de7852",
+  "private_report_not_committed": true
+}

@@ -32,7 +32,12 @@ wxDateTime AtHour(const wxDateTime& day, int hour) {
   // Document dates are UTC fields. Convert once at a safe daytime anchor,
   // then do all hourly arithmetic on real instants. Constructing local 01/02h
   // first would lose a UTC row during a computer-local DST spring transition.
+#ifdef __OCPN__ANDROID__
+  const auto fields = UtcDateTime::Fields(day);
+  const wxDateTime noon = UtcDateTime::Create(fields.year, fields.mon + 1, fields.mday, 12);
+#else
   const wxDateTime noon(day.GetDay(), day.GetMonth(), day.GetYear(), 12, 0, 0);
+#endif
   return UtcDateTime::ToInstant(noon) + wxTimeSpan::Hours(hour - 12);
 }
 
@@ -142,7 +147,7 @@ wxString ShortAngle(double degrees) {
 
 wxString Time(const wxDateTime& utc) {
   // Event calculator returns actual instants, not legacy UTC fields.
-  return utc.Format("%H:%M", wxDateTime::UTC);
+  return UtcDateTime::FormatInstant(utc, "%H:%M");
 }
 
 double GreatCircleNm(const AlmanacRoutePoint& a,
@@ -433,13 +438,47 @@ void PdfSeriesDash(std::ostringstream& stream, size_t seriesIndex) {
 std::string RenderPage(const AlmanacPage& page, double width, double height,
                        unsigned pageNumber, unsigned totalPages,
                        bool compact) {
+#if defined(__OCPN__ANDROID__) || defined(CELESTIAL_ANDROID_PDF_LAYOUT_TEST)
+  // POBsoft (1985-2026): fit the complete logical page on smaller paper or
+  // booklet leaves. Reflowing dense tables into a shorter leaf previously
+  // discarded trailing rows and let headings cross the centre fold.
+  constexpr double referenceWidth = 595.28, referenceHeight = 841.89;
+  if (width < referenceWidth - 0.01 || height < referenceHeight - 0.01) {
+    const double scale = std::min(width / referenceWidth,
+                                  height / referenceHeight);
+    std::ostringstream fitted;
+    // PDF numbers do not permit exponent notation, including tiny roundoff
+    // in a nominally zero centring offset on the ARM compiler.
+    fitted << std::fixed << std::setprecision(6)
+           << "q " << scale << " 0 0 " << scale << " "
+           << (width - referenceWidth * scale) / 2.0 << " "
+           << (height - referenceHeight * scale) / 2.0 << " cm\n"
+           << RenderPage(page, referenceWidth, referenceHeight, pageNumber,
+                         totalPages, compact) << "Q\n";
+    return fitted.str();
+  }
+#endif
   std::ostringstream stream;
   const double left = compact ? 36.0 : 42.0;
   const size_t wrapWidth = static_cast<size_t>(std::max(48.0,
       (width - 2.0 * left) / 5.5));
   double y = height - 44.0;
+#if defined(__OCPN__ANDROID__) || defined(CELESTIAL_ANDROID_PDF_LAYOUT_TEST)
+  const double titleSize = compact ? 15.0 : 16.0;
+  // One em bounds every printable ASCII glyph in Helvetica-Bold. The PDF
+  // writer transliterates to ASCII, so this also bounds unbroken user titles
+  // without querying GUI font metrics from the calculation worker.
+  const size_t titleWidth = static_cast<size_t>(
+      (width - 2.0 * left) / titleSize);
+  const std::string asciiTitle = Ascii(page.title);
+  for (const wxString& line : Wrap(wxString::FromUTF8(asciiTitle.c_str()), titleWidth)) {
+    PdfText(stream, left, y, titleSize, line, true);
+    y -= 19.0;
+  }
+#else
   PdfText(stream, left, y, compact ? 15 : 16, page.title, true);
   y -= 19.0;
+#endif
   if (!page.subtitle.empty()) {
     for (const wxString& line : Wrap(page.subtitle, wrapWidth)) {
       PdfText(stream, left, y, 9, line);
@@ -461,11 +500,23 @@ std::string RenderPage(const AlmanacPage& page, double width, double height,
   for (const AlmanacTable& table : page.tables)
     tableLines += table.rows.size() + 1;
   const double chartReserve = page.chart.empty() ? 0.0 : 155.0;
+#if defined(__OCPN__ANDROID__) || defined(CELESTIAL_ANDROID_PDF_LAYOUT_TEST)
+  // POBsoft (1985-2026): include inter-table spacing and a rounding margin.
+  // An exactly fitted final row could fall just below the clipping boundary
+  // after floating-point accumulation, silently dropping a reference row.
+  const double tableSpacing = 8.0 * page.tables.size() + 1.0;
+  const double fittedRowHeight = tableLines
+      ? std::max(compact ? 7.0 : 7.5,
+                 std::min(compact ? 11.5 : 13.0,
+                          (y - 55.0 - chartReserve - tableSpacing) / tableLines))
+      : 13.0;
+#else
   const double fittedRowHeight = tableLines
       ? std::max(compact ? 7.0 : 7.5,
                  std::min(compact ? 11.5 : 13.0,
                           (y - 55.0 - chartReserve) / tableLines))
       : 13.0;
+#endif
   for (const AlmanacTable& table : page.tables) {
     if (y < 100) break;
     const size_t columns = table.headings.size();
@@ -704,11 +755,11 @@ AlmanacDocument AlmanacGenerator::Estimate(const AlmanacRequest& request) {
       int previousMonth = -1;
       for (unsigned day = 0; day < days; ++day) {
         const wxDateTime date = DayAt(request, day);
-        if (date.GetYear() != previousYear ||
-            static_cast<int>(date.GetMonth()) != previousMonth) {
+        if (UtcDateTime::Fields(date).year != previousYear ||
+            static_cast<int>(UtcDateTime::Fields(date).mon) != previousMonth) {
           ++epochs;
-          previousYear = date.GetYear();
-          previousMonth = static_cast<int>(date.GetMonth());
+          previousYear = UtcDateTime::Fields(date).year;
+          previousMonth = static_cast<int>(UtcDateTime::Fields(date).mon);
         }
       }
     }
@@ -902,6 +953,9 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
 
   const unsigned days = InclusiveDays(request);
   for (unsigned dayIndex = 0; dayIndex < days; ++dayIndex) {
+#ifdef __OCPN__ANDROID__
+    if (request.androidProgress) request.androidProgress(dayIndex, days, "Calculating UTC days");
+#endif
     const wxDateTime day = DayAt(request, dayIndex);
     const AlmanacRoutePoint position = PositionForDay(request, dayIndex, days);
     if (request.preset != AlmanacPreset::PassageBrief) {
@@ -1152,11 +1206,11 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
       int previousMonth = -1;
       for (unsigned day = 0; day < days; ++day) {
         const wxDateTime date = DayAt(request, day);
-        if (date.GetYear() != previousYear ||
-            static_cast<int>(date.GetMonth()) != previousMonth) {
+        if (UtcDateTime::Fields(date).year != previousYear ||
+            static_cast<int>(UtcDateTime::Fields(date).mon) != previousMonth) {
           epochs.push_back(date);
-          previousYear = date.GetYear();
-          previousMonth = static_cast<int>(date.GetMonth());
+          previousYear = UtcDateTime::Fields(date).year;
+          previousMonth = static_cast<int>(UtcDateTime::Fields(date).mon);
         }
       }
     } else {
@@ -1373,6 +1427,9 @@ bool AlmanacPdfWriter::Write(const AlmanacDocument& document,
   const size_t physicalPages = request.booklet ? spreads.size()
                                                : document.pages.size();
   for (size_t i = 0; i < physicalPages; ++i) {
+#ifdef __OCPN__ANDROID__
+    if (request.androidProgress) request.androidProgress(i, physicalPages, "Rendering PDF pages");
+#endif
     std::string content;
     if (request.booklet) {
       std::ostringstream combined;
@@ -1425,7 +1482,13 @@ bool AlmanacPdfWriter::Write(const AlmanacDocument& document,
     if (error) *error = "Could not create the output directory.";
     return false;
   }
+#ifdef __OCPN__ANDROID__
+  if (request.androidProgress) request.androidProgress(0, 1, "Writing PDF");
+#endif
   const wxString temporary = filename + ".partial";
+#ifdef __OCPN__ANDROID__
+  struct PartialCleanup { wxString name; ~PartialCleanup() { if (wxFileExists(name)) wxRemoveFile(name); } } cleanup{temporary};
+#endif
   std::ofstream out(temporary.ToStdString().c_str(),
                     std::ios::binary | std::ios::trunc);
   if (!out) {
@@ -1435,6 +1498,9 @@ bool AlmanacPdfWriter::Write(const AlmanacDocument& document,
   out << "%PDF-1.4\n% OpenCPN Voyage Almanac\n";
   std::vector<std::streamoff> offsets(objects.size() + 1, 0);
   for (size_t i = 0; i < objects.size(); ++i) {
+#ifdef __OCPN__ANDROID__
+    if (request.androidProgress) request.androidProgress(i, objects.size(), "Writing PDF objects");
+#endif
     offsets[i + 1] = out.tellp();
     out << i + 1 << " 0 obj\n" << objects[i] << "\nendobj\n";
   }
@@ -1452,7 +1518,12 @@ bool AlmanacPdfWriter::Write(const AlmanacDocument& document,
     if (error) *error = "Writing the PDF failed; the requested file was not changed.";
     return false;
   }
+#ifdef __OCPN__ANDROID__
+  if (!(request.androidCommit ? request.androidCommit([&]() { return wxRenameFile(temporary, filename, true); })
+                              : wxRenameFile(temporary, filename, true))) {
+#else
   if (!wxRenameFile(temporary, filename, true)) {
+#endif
     wxRemoveFile(temporary);
     if (error) *error = "The completed temporary PDF could not be renamed.";
     return false;

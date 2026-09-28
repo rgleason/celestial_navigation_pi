@@ -7,6 +7,9 @@
 #include <wx/toplevel.h>
 
 #include "OcpnApiCompat.h"
+#ifdef __OCPN__ANDROID__
+#include "AndroidSurface.h"
+#endif
 
 namespace dialog_geometry {
 namespace {
@@ -52,6 +55,12 @@ wxRect ClampToWorkArea(const wxRect& requested, const wxSize& minimum,
 void Restore(wxTopLevelWindow* dialog, const wxString& key,
              const wxSize& defaultSize) {
   if (!dialog) return;
+#ifdef __OCPN__ANDROID__
+  if (auto* sheet = wxDynamicCast(dialog, wxDialog)) {
+    celestial_android::Decorate(sheet, sheet->GetTitle());
+    return;
+  }
+#endif
 
   wxFileConfig* config = GetOCPNConfigObject();
   bool hasPosition = false;

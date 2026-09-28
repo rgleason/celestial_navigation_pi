@@ -1,0 +1,44 @@
+{
+  "source_sha": "f14fd90",
+  "source_reference": "usno-220000.json",
+  "input_UTC": "2024-06-21T22:00:00Z",
+  "DR": [
+    51.4779,
+    0
+  ],
+  "provider": "analytical Vega/Moon",
+  "physical_transcription": true,
+  "cases": [
+    {
+      "Moon_limb": "centre",
+      "Moon_Hs": 5.504117,
+      "Moon_sigma_arcmin": 0.765432198765,
+      "distance_contact": "near",
+      "LD": 68.25796727645012,
+      "check_residual_arcmin": 0.496663,
+      "check_latitude": 51.473396666666666,
+      "check_longitude": -0.0006233333333333334,
+      "recovered_correction_seconds": 430.532227,
+      "formal_clock_sigma_seconds": 434.4,
+      "recovered_distance_from_DR_nm_display": 67.6,
+      "evidence": "resume122-lunar-check-ready.png",
+      "independent_check_distance_nm": 0.27138515735034396
+    },
+    {
+      "Moon_limb": "upper",
+      "Moon_Hs": 5.766153,
+      "Moon_sigma_arcmin": 0.765432198765,
+      "distance_contact": "far",
+      "LD": 68.7820392764501,
+      "check_residual_arcmin": -0.112044,
+      "check_latitude": 51.46588666666667,
+      "check_longitude": -0.0027016666666666665,
+      "recovered_correction_seconds": -97.22168,
+      "formal_clock_sigma_seconds": 433.8,
+      "recovered_distance_from_DR_nm_display": 15.1,
+      "evidence": "resume122-lunar-far-check.png",
+      "independent_check_distance_nm": 0.7283286758080163
+    }
+  ],
+  "limits": "The existing 60s/3NM joint-session tolerance is NOT a single-Vega clock tolerance. Weak -4.15 arcmin/hour timing sensitivity amplifies small coordinate/disc/refraction convention differences. Only the entered-UTC branch/residual and actual typed fields are accepted here; recovered clock is not precise acceptance."
+}

@@ -1,0 +1,18 @@
+{
+  "source": "98d612c",
+  "host_pid": 12155,
+  "chart_rotation_deg": 45,
+  "rotation_guard": "Actual saved config169-before-fixture.conf reads canvasVPRotation45 after prior physical chart sequence",
+  "fixture": "Existing accepted3star/horizon160; horizon initiallyexcluded for fix then ownedInclude; all5rawreports exact",
+  "fix": {
+    "result": "51 degrees28.6595minutesN/000degrees01.5989minutesE, RMS0.00",
+    "screen": "finish169-fix-chart.png",
+    "status": "PASS red cross centered and three sight polygons rendered; no new numerical accuracy claim"
+  },
+  "horizon": {
+    "branch": "southern -39.365127333705/-4.345085527093, true300T",
+    "screen": "finish169-horizon-zoom.png",
+    "status": "PASS marker and curved uncertainty band on45degreechart, real zoom; numericalreference160 carried forward"
+  },
+  "automation": "First cold multi-tap opened emptyNewSight because workspace had notsettled; observedCancel and observedFixbuttons recovered, not productfailure or acceptedFix attempt"
+}

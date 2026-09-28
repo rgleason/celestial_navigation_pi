@@ -28,8 +28,11 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml ${CMAKE_CURRENT_BINARY
 
 set(SRC
     atomic_xml_file_tests.cpp
+    android_almanac_csv_tests.cpp
+    android_planner_worker_tests.cpp
     dialog_geometry_tests.cpp
     dialog_transaction_state_tests.cpp
+    sight_search_span_ui_tests.cpp
     eclipse_data_files_tests.cpp
     eclipse_verification_worker_tests.cpp
     altitude_tests.cpp
@@ -42,6 +45,7 @@ set(SRC
     fix_ui_smoke_tests.cpp
     lunar_distance_engine_tests.cpp
     lunar_session_engine_tests.cpp
+    lunar_usno_session_tests.cpp
     lunar_session_worker_tests.cpp
     sextant_calibration_engine_tests.cpp
     lunar_de440_tests.cpp
@@ -174,6 +178,45 @@ endif()
 
 # Add the test
 add_test(NAME celestial_tests COMMAND celestial_tests)
+# Compile the actual Android engine under a distinct entry point, sharing the
+# production ephemeris with the desktop public-reference integration test.
+add_library(android_lunar_session_engine OBJECT
+    ${CMAKE_SOURCE_DIR}/src/LunarSessionEngine.cpp)
+target_compile_definitions(android_lunar_session_engine PRIVATE
+    __OCPN__ANDROID__ Solve=SolveAndroid)
+target_include_directories(android_lunar_session_engine PRIVATE
+    ${CMAKE_SOURCE_DIR}/src)
+target_sources(celestial_tests PRIVATE $<TARGET_OBJECTS:android_lunar_session_engine>)
+add_executable(android_lunar_session_tests lunar_session_engine_tests.cpp
+    ${CMAKE_SOURCE_DIR}/src/LunarSessionEngine.cpp
+    ${CMAKE_SOURCE_DIR}/src/LunarDistanceEngine.cpp)
+target_compile_definitions(android_lunar_session_tests PRIVATE __OCPN__ANDROID__)
+target_include_directories(android_lunar_session_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(android_lunar_session_tests PRIVATE
+    GTest::GTest GTest::Main celestial::eclipse_core)
+add_test(NAME android_lunar_session COMMAND android_lunar_session_tests)
+# Exercise the actual Android numerical branch on the build host without
+# requiring Android UI libraries. Physical ABI/UI acceptance is separate.
+add_executable(android_sextant_uncertainty_tests
+    android_sextant_uncertainty_tests.cpp
+    ${CMAKE_SOURCE_DIR}/src/SextantCalibrationEngine.cpp)
+target_compile_definitions(android_sextant_uncertainty_tests PRIVATE __OCPN__ANDROID__)
+target_include_directories(android_sextant_uncertainty_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(android_sextant_uncertainty_tests PRIVATE GTest::GTest GTest::Main)
+add_test(NAME android_sextant_uncertainty COMMAND android_sextant_uncertainty_tests)
+# Compile the Android PDF layout in isolation, without Qt/Android UI, and
+# keep the production desktop writer in the same process for comparison.
+add_library(android_almanac_pdf_layout OBJECT
+    ${CMAKE_SOURCE_DIR}/src/AlmanacGenerator.cpp)
+target_compile_definitions(android_almanac_pdf_layout PRIVATE
+    CELESTIAL_ANDROID_PDF_LAYOUT_TEST
+    AlmanacGenerator=AndroidAlmanacGenerator
+    AlmanacPdfWriter=AndroidAlmanacPdfWriter)
+target_include_directories(android_almanac_pdf_layout PRIVATE
+    ${CMAKE_SOURCE_DIR}/src ${wxWidgets_INCLUDE_DIRS})
+target_link_libraries(android_almanac_pdf_layout PRIVATE celestial::eclipse_core)
+target_sources(celestial_tests PRIVATE android_almanac_pdf_tests.cpp
+    $<TARGET_OBJECTS:android_almanac_pdf_layout>)
 if(UNIX)
     # Separate processes avoid wx/libc timezone caches masking UTC-boundary bugs.
     foreach(zone UTC Europe/London America/New_York Asia/Kolkata)

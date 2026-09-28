@@ -1,0 +1,95 @@
+{
+  "method": "Independent CSPICE CN vectors and official lunar PA transform, pyERFA WGS84/Earth orientation, scipy root finding, numpy full-grid support scan; no DUT routines",
+  "scope": "Agreement under the documented geometric contact model, not atmospheric/observational accuracy",
+  "reference_versions": {
+    "spiceypy": "8.2.0",
+    "cspice": "CSPICE_N0067",
+    "pyerfa": "2.0.1.5"
+  },
+  "date": "2027-08-02",
+  "position": [
+    25.505,
+    33.18333333333333
+  ],
+  "DeltaT_seconds": 76.06,
+  "height_metres": 0,
+  "contact_limit_seconds": 0.1,
+  "rows": [
+    {
+      "contact": "C1",
+      "standard_UT1_seconds": 31289.778631887988,
+      "terrain_support_radius_km": 1738.4264795482811,
+      "terrain_UT1_seconds": 31289.075749298012,
+      "shift_seconds": -0.7028825899760704,
+      "direction_body": [
+        0.009281100470137254,
+        -0.9457747787560763,
+        -0.32469051270857624
+      ],
+      "global_support_cell": [
+        7043,
+        17473
+      ],
+      "local_2degree_support_radius_km": 1736.532754151525,
+      "local_2degree_contact_UT1_seconds": 31291.965087286288,
+      "local_2degree_shift_seconds": 2.186455398299586
+    },
+    {
+      "contact": "C2",
+      "standard_UT1_seconds": 36199.932640899206,
+      "terrain_support_radius_km": 1738.5515279802994,
+      "terrain_UT1_seconds": 36197.061658048624,
+      "shift_seconds": -2.8709828505816404,
+      "direction_body": [
+        0.006867721337518768,
+        -0.9324175192364716,
+        -0.3613175946788838
+      ],
+      "global_support_cell": [
+        7193,
+        17441
+      ],
+      "local_2degree_support_radius_km": 1737.7406788994595,
+      "local_2degree_contact_UT1_seconds": 36198.283035985696,
+      "local_2degree_shift_seconds": -1.6496049135093926
+    },
+    {
+      "contact": "C3",
+      "standard_UT1_seconds": 36582.372716391,
+      "terrain_support_radius_km": 1737.637100751392,
+      "terrain_UT1_seconds": 36583.859972442006,
+      "shift_seconds": 1.487256051004806,
+      "direction_body": [
+        -0.006741488960719049,
+        0.9360699376269417,
+        0.35174937696844033
+      ],
+      "global_support_cell": [
+        4395,
+        5756
+      ],
+      "local_2degree_support_radius_km": 1737.637100751392,
+      "local_2degree_contact_UT1_seconds": 36583.859972442006,
+      "local_2degree_shift_seconds": 1.487256051004806
+    },
+    {
+      "contact": "C4",
+      "standard_UT1_seconds": 41255.95400142531,
+      "terrain_support_radius_km": 1737.8740507384523,
+      "terrain_UT1_seconds": 41255.826160016644,
+      "shift_seconds": -0.12784140866278904,
+      "direction_body": [
+        -0.005139216941763865,
+        0.9285699958492535,
+        0.3711217472174634
+      ],
+      "global_support_cell": [
+        4376,
+        5785
+      ],
+      "local_2degree_support_radius_km": 1737.8740507384523,
+      "local_2degree_contact_UT1_seconds": 41255.826160016644,
+      "local_2degree_shift_seconds": -0.12784140866278904
+    }
+  ]
+}

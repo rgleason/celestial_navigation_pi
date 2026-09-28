@@ -29,6 +29,10 @@
 #define _CELESTIAL_NAVIGATION_SIGHT_H_
 
 #include <list>
+#ifdef __OCPN__ANDROID__
+#include <functional>
+#include <string>
+#endif
 #include <limits>
 #include <vector>
 #include "pidc.h"
@@ -77,7 +81,11 @@ public:
 
   Sight();
   Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
-        double timecertainty, double measurement, double measurementcertainty);
+        double timecertainty, double measurement, double measurementcertainty
+#ifdef __OCPN__ANDROID__
+        , bool calculationOnly = false
+#endif
+        );
 
   ~Sight();
 
@@ -95,7 +103,11 @@ public:
                    double rad, double SD, double HP);
   void RecomputeAltitude();
   void RecomputeAzimuth();
-  void RecomputeLunar(int preferred_candidate = -1);
+  void RecomputeLunar(int preferred_candidate = -1
+#ifdef __OCPN__ANDROID__
+                      , bool prepare_only = false
+#endif
+                      );
   int SelectLunarCandidate(int preferred_candidate = -1) const;
   void RecomputeHorizon();
 
@@ -116,6 +128,18 @@ public:
   // and joint solutions cannot drift into different astronomical models.
   lunar_distance::Observation LunarObservation() const;
   const lunar_distance::EphemerisFunction& LunarEphemeris() const {
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): worker/candidate copies retain a callback whose
+    // captured owner must be rebound before the temporary object is reused.
+    if (m_LunarEphemeris && m_androidLunarEphemerisOwner != this) {
+      auto* self = const_cast<Sight*>(this);
+      const bool usesDe440 = m_LunarUsesDe440;
+      const bool dut1Fallback = m_LunarDut1Fallback;
+      self->RecomputeLunar(-1, true);
+      self->m_LunarUsesDe440 = usesDe440;
+      self->m_LunarDut1Fallback = dut1Fallback;
+    }
+#endif
     return m_LunarEphemeris;
   }
 
@@ -131,6 +155,13 @@ public:
 
   wxDateTime m_DateTime;  // Time for the sight
   double m_TimeCertainty;
+#ifdef __OCPN__ANDROID__
+  bool m_androidLunarSearch = false;
+  std::function<void()> m_androidCheckpoint;
+  std::string m_androidLunarInputs;
+  std::string m_androidLunarRetainedInputs;
+  std::string AndroidLunarInputs(double clockOffset) const;
+#endif
 
   double m_Measurement;  // Measurement angle in degrees (NaN is valid for all)
   double m_MeasurementCertainty;
@@ -141,8 +172,13 @@ public:
   double m_LunarBodyAltitudeUncertainty;
   bool m_LunarSeparateTimes;
   bool m_LunarTimeIsWatch = false;
+#ifdef __OCPN__ANDROID__
+  double m_LunarMoonTimeOffsetSeconds;
+  double m_LunarBodyTimeOffsetSeconds;
+#else
   int m_LunarMoonTimeOffsetSeconds;
   int m_LunarBodyTimeOffsetSeconds;
+#endif
   bool m_LunarMovingObserver;
   double m_LunarCourseTrue;
   double m_LunarSpeedKnots;
@@ -212,6 +248,9 @@ public:
   bool m_LunarUsesDe440;
   bool m_LunarDut1Fallback = false;
   lunar_distance::EphemerisFunction m_LunarEphemeris;
+#ifdef __OCPN__ANDROID__
+  const Sight* m_androidLunarEphemerisOwner = nullptr;
+#endif
 
   /* DR info */
   double m_DRLat;

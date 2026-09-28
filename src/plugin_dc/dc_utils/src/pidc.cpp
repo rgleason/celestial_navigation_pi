@@ -209,7 +209,11 @@ void piDC::Init() {
 #ifdef ocpnUSE_GL
   if (glcontext) {
     GLint parms[2];
+#ifdef __OCPN__ANDROID__
+    glGetIntegerv(GL_ALIASED_LINE_WIDTH_RANGE, &parms[0]);
+#else
     glGetIntegerv(GL_SMOOTH_LINE_WIDTH_RANGE, &parms[0]);
+#endif
     GLMinSymbolLineWidth = wxMax(parms[0], 1);
 
     pi_loadShaders();
@@ -623,6 +627,13 @@ void piDC::DrawGLThickLine(float x1, float y1, float x2, float y2, wxPen pen,
 
 void piDC::DrawLine(wxCoord x1, wxCoord y1, wxCoord x2, wxCoord y2,
                     bool b_hiqual) {
+#ifdef USE_ANDROID_GLES2
+  if (!dc) {
+    wxPoint vertices[] = {wxPoint(x1, y1), wxPoint(x2, y2)};
+    DrawPolygon(2, vertices);
+    return;
+  }
+#endif
   if (dc) {
     dc->DrawLine(x1, y1, x2, y2);
   }
@@ -1534,6 +1545,18 @@ void piDC::DrawRoundedRectangle(wxCoord x, wxCoord y, wxCoord w, wxCoord h,
 
 void piDC::DrawCircle(wxCoord x, wxCoord y, wxCoord radius) {
 #ifdef USE_ANDROID_GLES2
+  if (dc) { dc->DrawCircle(x, y, radius); return; }
+  if (radius <= 0) return;
+  const int count = std::max(32, std::min(512,
+      int(std::ceil(M_PI * std::sqrt(2.0 * radius)))));
+  std::vector<wxPoint> vertices(count);
+  for (int i = 0; i < count; ++i) {
+    const double angle = 2.0 * M_PI * i / count;
+    vertices[i] = wxPoint(x + std::lround(radius * std::cos(angle)),
+                          y + std::lround(radius * std::sin(angle)));
+  }
+  DrawPolygon(count, vertices.data());
+  return;
 
   //      Enable anti-aliased lines, at best quality
   glEnable(GL_BLEND);
@@ -1795,6 +1818,91 @@ void piDC::DrawEllipse(wxCoord x, wxCoord y, wxCoord width, wxCoord height) {
 
 void piDC::DrawPolygon(int n, wxPoint points[], wxCoord xoffset,
                        wxCoord yoffset, float scale, float angle) {
+#ifdef USE_ANDROID_GLES2
+  if (!dc && n < 2) return;
+  // Celestial's filled sight polygons are convex hulls. Upload every hull
+  // size to a VBO, including degenerate/large uncertainty cases, before draw.
+  if (!dc && n >= 2) {
+    const GLuint program = pi_color_tri_shader_program;
+    const GLint position = glGetAttribLocation(program, "position");
+    const GLint colour = glGetUniformLocation(program, "color");
+    const GLint transform = glGetUniformLocation(program, "TransformMatrix");
+    if (position < 0 || colour < 0 || transform < 0) return;
+    GLint previousProgram, previousBuffer, attributeBuffer, attributeSize,
+        attributeType, attributeNormalized, attributeStride, maxAttributes;
+    GLint blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha;
+    GLvoid* attributePointer = nullptr;
+    GLfloat previousTransform[16], previousColour[4], previousLineWidth;
+    const GLboolean blending = glIsEnabled(GL_BLEND);
+    glGetIntegerv(GL_CURRENT_PROGRAM, &previousProgram);
+    glGetFloatv(GL_LINE_WIDTH, &previousLineWidth);
+    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &previousBuffer);
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxAttributes);
+    glGetIntegerv(GL_BLEND_SRC_RGB, &blendSrcRgb);
+    glGetIntegerv(GL_BLEND_DST_RGB, &blendDstRgb);
+    glGetIntegerv(GL_BLEND_SRC_ALPHA, &blendSrcAlpha);
+    glGetIntegerv(GL_BLEND_DST_ALPHA, &blendDstAlpha);
+    glGetVertexAttribiv(position, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &attributeBuffer);
+    glGetVertexAttribiv(position, GL_VERTEX_ATTRIB_ARRAY_SIZE, &attributeSize);
+    glGetVertexAttribiv(position, GL_VERTEX_ATTRIB_ARRAY_TYPE, &attributeType);
+    glGetVertexAttribiv(position, GL_VERTEX_ATTRIB_ARRAY_NORMALIZED, &attributeNormalized);
+    glGetVertexAttribiv(position, GL_VERTEX_ATTRIB_ARRAY_STRIDE, &attributeStride);
+    glGetVertexAttribPointerv(position, GL_VERTEX_ATTRIB_ARRAY_POINTER, &attributePointer);
+    glGetUniformfv(program, transform, previousTransform);
+    glGetUniformfv(program, colour, previousColour);
+    std::vector<GLint> enabled(maxAttributes);
+    for (int i = 0; i < maxAttributes; ++i) {
+      glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &enabled[i]);
+      glDisableVertexAttribArray(i);
+    }
+    GLuint buffer;
+    glGenBuffers(1, &buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    glUseProgram(program);
+    mat4x4 matrix;
+    mat4x4_identity(matrix);
+    mat4x4_rotate_Z(matrix, matrix, angle);
+    matrix[3][0] = xoffset; matrix[3][1] = yoffset;
+    glUniformMatrix4fv(transform, 1, GL_FALSE, &matrix[0][0]);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnableVertexAttribArray(position);
+    std::vector<GLfloat> vertices(n * 2);
+    for (int i = 0; i < n; ++i) {
+      vertices[2 * i] = points[i].x * scale;
+      vertices[2 * i + 1] = points[i].y * scale;
+    }
+    glBufferData(GL_ARRAY_BUFFER, n * 2 * sizeof(GLfloat), vertices.data(), GL_STREAM_DRAW);
+    glVertexAttribPointer(position, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    const auto draw = [&](const wxColour& c, GLenum mode) {
+      const GLfloat rgba[] = {c.Red() / 255.f, c.Green() / 255.f,
+                              c.Blue() / 255.f, c.Alpha() / 255.f};
+      glUniform4fv(colour, 1, rgba);
+      glDrawArrays(mode, 0, n);
+    };
+    if (n >= 3 && m_brush.GetStyle() != wxBRUSHSTYLE_TRANSPARENT)
+      draw(m_brush.GetColour(), GL_TRIANGLE_FAN);
+    if (m_pen.GetStyle() != wxPENSTYLE_TRANSPARENT && m_pen.GetWidth() > 0) {
+      GLfloat range[2]; glGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, range);
+      glLineWidth(std::min(range[1], std::max(range[0], float(m_pen.GetWidth()))));
+      draw(m_pen.GetColour(), n == 2 ? GL_LINES : GL_LINE_LOOP);
+    }
+    glUniformMatrix4fv(transform, 1, GL_FALSE, previousTransform);
+    glUniform4fv(colour, 1, previousColour);
+    glBindBuffer(GL_ARRAY_BUFFER, attributeBuffer);
+    glVertexAttribPointer(position, attributeSize, attributeType,
+                          attributeNormalized, attributeStride, attributePointer);
+    for (int i = 0; i < maxAttributes; ++i)
+      if (enabled[i]) glEnableVertexAttribArray(i); else glDisableVertexAttribArray(i);
+    glBindBuffer(GL_ARRAY_BUFFER, previousBuffer);
+    glDeleteBuffers(1, &buffer);
+    glBlendFuncSeparate(blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha);
+    if (!blending) glDisable(GL_BLEND);
+    glUseProgram(previousProgram);
+    glLineWidth(previousLineWidth);
+    return;
+  }
+#endif
   if (dc) dc->DrawPolygon(n, points, xoffset, yoffset);
 #ifdef ocpnUSE_GL
   else {
