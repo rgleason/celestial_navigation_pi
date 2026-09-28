@@ -447,7 +447,10 @@ std::string RenderPage(const AlmanacPage& page, double width, double height,
     const double scale = std::min(width / referenceWidth,
                                   height / referenceHeight);
     std::ostringstream fitted;
-    fitted << "q " << scale << " 0 0 " << scale << " "
+    // PDF numbers do not permit exponent notation, including tiny roundoff
+    // in a nominally zero centring offset on the ARM compiler.
+    fitted << std::fixed << std::setprecision(6)
+           << "q " << scale << " 0 0 " << scale << " "
            << (width - referenceWidth * scale) / 2.0 << " "
            << (height - referenceHeight * scale) / 2.0 << " cm\n"
            << RenderPage(page, referenceWidth, referenceHeight, pageNumber,

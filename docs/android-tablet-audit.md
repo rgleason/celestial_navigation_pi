@@ -2476,3 +2476,25 @@ REF-059 across A4/Letter/A5, normal/booklet. 18focused almanac checks pass
 compile failed on old-wx FromUTF8(std::string); fixed explicit c_str and retry
 passes. Synthetic A5booklet render inspected: bounded heading and all60rows.
 **Actual corrected tablet output/rotation and other variants still pending.**
+
+### Runtime92 physical booklet failure and runtime93 syntax repair
+
+Actual manager import92/2f6b08c retained installed library SHA
+a11e703c7c9c2b34a64c56b6ed5a453509c4a3f43537628deca3fedd3be288bf,
+archive68cafb73a0703f8b435e87cbf35611ef8e57daef6764801a0b512ed20ff00e37.
+PID5081 continuous. Reentered public Greenwich21June2024 request using
+calculator-free voyage preset, all four optional table groups, A5booklet,
+signature8, title RESUME92-Greenwich-Booklet. Preset has17form copies;
+actual estimate458logical/230PDFpages/115sheets. Fresh disposable
+resume92-greenwich-booklet.pdf is14209473bytes,230pages,
+SHAeea8bc4fe929d5aad5a55ccc4281846d39ae037d0d002109075c51fcb0adf3d6.
+**FAIL:** tablet viewer shows blank leaves/fold line. Independent Poppler
+reports invalid exponent notation in transformation matrix: ARM arithmetic
+produced a tiny nominal-zero centring offset in scientific notation, which
+PDF numbers do not allow. Host synthetic output had not exposed this rounding
+case. No successful output/layout acceptance is claimed for92.
+
+Next Android-only repair formats matrix numbers as fixed six decimal places;
+regression rejects exponent-number syntax across all six paper/booklet cases.
+Android/desktop builds pass;18focused tests pass4165ms. Synthetic PDF parses
+without Poppler errors. Physical corrected output remains pending.

@@ -4,6 +4,7 @@
 #include <wx/file.h>
 #include <wx/filename.h>
 #include <wx/utils.h>
+#include <regex>
 
 class AndroidAlmanacPdfWriter {
  public:
@@ -43,6 +44,9 @@ TEST(AndroidAlmanacPdf, SmallPaperAndBookletRetainFinalDenseTableRow) {
       // implementation's scale or chosen line breaks.
       EXPECT_NE(wxNOT_FOUND, bytes.Find("REF-059"));
       EXPECT_NE(wxNOT_FOUND, bytes.Find("%%EOF"));
+      // Scientific notation is invalid in a PDF transformation matrix.
+      EXPECT_FALSE(std::regex_search(bytes.ToStdString(),
+          std::regex("[0-9]\\.[0-9]+[eE][+-][0-9]+")));
       file.Close();
       if (!keep) wxRemoveFile(output);
     }
