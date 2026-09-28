@@ -933,3 +933,17 @@ Keep baseline Now on construction (manual time is intentionally not a saved
 key), existing16key choices and all mathematics unchanged. Verify immediate
 readback, actual offlinecold preference fields, protected Sights and other
 config bytes, then restore only task-owned Planner keys to142snapshot.
+
+### Final acceptance149: negative epoch fractional formatting
+
+Physical supported boundary1900-01-01/00:00:00.987UTC displays resolved
+00:00:01.987 despite correct entered text.2100-12-31/23:00:00.987 is exact.
+UtcDateTime Android FormatInstant divides signed epoch milliseconds by1000:
+C++ truncates towardzero, choosing the following whole second before1970.
+The independently extended standalone Android adapter test fails on the same
+1900display while the actual epoch assertion passes. This is a proven formatter
+defect, not a numerical epoch construction failure. Before implementation: use
+floor whole seconds and a nonnegative millisecond remainder for Android libc
+formatting. Keep desktop unchanged. Test1900,negative near-zero,negative whole
+second and positive epochs across existing zones; replay the exposing tablet
+1900case once after the next batched build. Retain failed output/screenshots.

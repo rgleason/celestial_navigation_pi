@@ -27,6 +27,21 @@ int main() {
       assert(reopened.GetValue().GetValue() == c.epoch);
       assert(UtcDateTime::AddSeconds(utc,.655).GetValue().GetValue() == c.epoch + 655);
     }
+    // Independent POSIX epoch values include fractional instants before1970.
+    struct Historic { int year, month, day, hour, minute, second, ms;
+                      long long epoch; const char* text; };
+    for (const auto c : {
+        Historic{1900,1,1,0,0,0,987,-2208988799013LL,"1900-01-01 00:00:00.987"},
+        Historic{1969,12,31,23,59,59,987,-13LL,"1969-12-31 23:59:59.987"},
+        Historic{1969,12,31,23,59,59,0,-1000LL,"1969-12-31 23:59:59.000"},
+        Historic{1970,1,1,0,0,0,987,987LL,"1970-01-01 00:00:00.987"}}) {
+      const auto utc = UtcDateTime::Create(c.year,c.month,c.day,c.hour,c.minute,c.second,c.ms);
+      assert(utc.GetValue().GetValue() == c.epoch);
+      assert(UtcDateTime::FormatUtc(utc,"%Y-%m-%d %H:%M:%S.%l") == c.text);
+      wxDateTime reopened;
+      assert(UtcDateTime::ParseUtc(c.text,&reopened));
+      assert(reopened.GetValue().GetValue() == c.epoch);
+    }
     wxDateTime gnss; wxString source;
     assert(GnssTimeMonitor::ParseNmeaUtc("$GPZDA,201530.25,04,07,2002,00,00*67", &gnss, &source));
     assert(gnss.GetValue().GetValue() == 1025813730250LL);

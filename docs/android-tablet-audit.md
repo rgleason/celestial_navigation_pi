@@ -4062,3 +4062,67 @@ WiFi remains off and original Location enabled restored. PID18092continuous.
 Only these new branches accepted; cursor/waypoint/positive lastfix/range endpoint
 and cold no-input remain on the finite checklist. Existing completed editor
 and numerical cases were not repeated.
+
+### New context acceptance149, installed147, 14:15–14:23 BST
+
+Cold-session cursor absent: choosing Chartcursor safely reverts Manual and
+retains both original coordinates. Actual LizardPoint selection returns exact
+49.99635/−5.12052, matching previously independently read host waypoint.
+A following actual latitude91edit switches Manual, clears results: Bodies
+shows No validbodyresults/Resultsunavailable and CreateSight disabled.
+Restoring49.99635 recovers calculation. Automation first mistook the changed
+source popup geometry and selectedDR rather thanWaypoint; screenshot retained
+and corrected before actual picker acceptance. A text-driven screenshot helper
+refuses an abbreviated unobserved Bodies label without any tap, then actual
+full-page label safely returns Context. Neither harness refusal is a product fail.
+
+New supported-year check: actual1900-01-01/00:00:00.987 input and Resultsready,
+but resolved label00:00:01.987 FAIL (finish149-year1900).2100-12-31
+23:00:00.987 label exact PASS (finish149-year2100). New independent POSIX
+epoch test confirms1900epoch−2208988799013 correct before failing formatted
+text assertion. utc149-before-fix.log retained, exit134expected regression
+assertion on developer host, distinct from Android host crash/PID18092continuous.
+Android-only signed whole-second floor formatting repair designed before edit.
+Physical repair replay pending batched build; no numerical algorithm change.
+
+### New body-planning acceptance150, installed147, 14:31-14:39 BST
+
+All remaining native sort-key/direction choices exercised once. Independent
+Python ordering of desktop model fields (visible Hc>=0 only) agrees with the
+first three complete physical cards for Body, Zn, GHA, declination, magnitude,
+score and reason both directions and Hc ascending; prior Hc descending carried
+forward. Unfiltered probe originally included below-horizon rows; corrected
+reference visibility before comparison, not a plugin failure. Probe UTF8 reason
+conversion fixed independently of shipping code. No full-list order claim.
+
+Actual80..75 refuses reversed recommendation range while retaining independent
+sky plot. Actual30..40 pairs/triads contain only members within those limits;
+all ten observed combinations checked against unrounded model Hc. Disabling
+limit disables both fields and restores unrestricted recommendations. Restored
+10..75/limit enabled. Magnitude1/2/3 choices visibly change above-horizon plot;
+labelled additions agree with model brightness/altitude. Below-horizon option
+adds expected Sun/Moon/planets/stars as coloured hollow horizon points. Restored
+3/off. Public observed150.json records scoped comparisons. PID18092continuous.
+Body-planning remaining cases are closed; existing Create/Save/cold/worker
+results retained without rerunning.
+
+### Acceptance evidence deduplication151, 14:42 BST
+
+Current Word/PDF manual bytes compare exactly to cf161ce, the source used for
+the previously retained bundled-LibreOffice42page render and full-resolution
+inspection. All42page PNGs remain present. Shipping PDF mirrors are byte-identical;
+LO preview PDF is a separate renderer artifact. Carry forward full DOCX/PDF QA,
+actual offline/manual/night/link acceptance; no repeated render/42page review.
+Public manual-alignment151.json records current resources/hashes. Final package
+asset comparison remains part of final artifacts. Calculator-free, Voyage,
+FullGlobalAnnual guard, all5form kinds and A4/A5/Letter normal/booklet coverage
+already recorded91..94; only PassageBrief/CelestialNavigator preset controls
+remain, not another large edition generation.
+
+Raw-byte guarded original12/5/Clock0library replaced only temporarily by four
+public disposable records, retaining all five complete original report blocks.
+Cold PID22056 with Location off opens library safely. Actual Clock shows no
+validRMC/ZDA received, system-minus-GNSS dash, advancing local/UTC and Clock0.
+Original Location true restored immediately. Earlier mistaken1008toolbar tap
+opened WMM; dismissed without changing it and actual842CelNav icon opened.
+T01cold no-input accepted; full protected original raw backup retained.

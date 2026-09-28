@@ -176,12 +176,18 @@ inline wxString FormatInstant(const wxDateTime& instant, const wxString& format,
 #ifdef __OCPN__ANDROID__
   // wxQt's copied timezone cache can disagree with Android's timezone. Read
   // the instant directly; neither formatting nor UTC arithmetic uses that cache.
-  const time_t seconds = instant.GetValue().GetValue() / 1000;
+  // POBsoft (1985-2026): floor negative fractional epochs to their whole second.
+  const auto epochMilliseconds = instant.GetValue().GetValue();
+  const auto remainder = epochMilliseconds % 1000;
+  const time_t seconds = static_cast<time_t>(epochMilliseconds / 1000 -
+                                            (remainder < 0 ? 1 : 0));
+  const int milliseconds = static_cast<int>(remainder < 0 ? remainder + 1000
+                                                         : remainder);
   std::tm fields{};
   if (!(local ? localtime_r(&seconds, &fields) : gmtime_r(&seconds, &fields)))
     return wxString();
   wxString pattern = format;
-  pattern.Replace("%l", wxString::Format("%03d", instant.GetMillisecond()));
+  pattern.Replace("%l", wxString::Format("%03d", milliseconds));
   std::array<char, 1024> buffer{};
   if (!std::strftime(buffer.data(), buffer.size(), pattern.utf8_str(), &fields))
     return wxString();
