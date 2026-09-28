@@ -2427,3 +2427,52 @@ Cold file readbacks match the unchanged update/XML hashes above. Crash history,
 meminfo and host log retained as crash91-cold.log/meminfo91-cold.txt/host91-cold.log.
 Wi-Fi restored enabled. Android and desktop compile; UTF8 CTest passes0.13s.
 Further provider/lunar variants and the remaining function map are pending.
+
+
+## 28 September 2026, runtime91 voyage output and runtime92 repair
+
+Installed runtime91 source `689e2f6`, library SHA
+`404b00186b4fafafeaf70cb8a4349de06a93dd57059b2c918227bc8aa7e428f5`,
+PID5081, portrait/font1.3. Public Greenwich51.4779,0, both dates21June2024,
+custom title RESUME91-Greenwich-Voyage, calculator safety with all default
+content plus increments, Ageton, coverage-direct and altitude tables. One
+of each of the five forms; A4/compact/monochrome/duplex. Actual title/date,
+coordinate keyboards and final coverage/content/forms controls inspected.
+Earlier stale-coordinate/Enter input sequences cancelled an unsaved form;
+those are not acceptance evidence. Settled-state screenshots verify the final
+request. Full route, band/global, safety and content variants remain pending.
+
+Actual PDF read back: `resume91-greenwich-tables.pdf`,14300193bytes,446A4
+pages, SHA505ae0b111840b8a52be8a7990a157ff704a743b4b7677101c1828d3c0d343b0.
+Manifest includes60increment pages,46Ageton,307direct,7altitude and5forms.
+Refreshed estimate446matches actual (initial452 preceded reducing six form
+copies). Nine representative pages rendered; cover, ephemeris, visual aids,
+increments, Ageton, dip, direct instructions, sight and watch forms inspected.
+Retained USNO22:00fixture gives printed Sun GHA/Dec errors0.02078/0.03420′,
+Moon0.05364/0.03262′; all within0.1′. `voyage91-usno-check.txt` retained.
+Initial comparison script incorrectly matched the Moon row as Sun and failed;
+corrected column parsing checked both rows, rather than ignoring the failure.
+
+Tablet viewer actual typed446/keyboardBack/Go renders final watch form with
+Next disabled. ViewerBack returns request. ExplicitNo then confirmationBack
+leave SHA byte-identical. First-pages preview has complete text through final
+Moon23h row and explicit four-page limit after five actual swipes. PreviewBack
+returns safely. PID5081 continuous throughout. Existing voyage-almanac.pdf
+untouched: only a newly named disposable file was written.
+
+ExplicitYes replaced the backed-up disposable with A5/booklet/signature8:
+224physical pages,595.28x419.53pt,7161028bytes,
+SHA1569ba17dd12da5362dcd9669cf1ed6594e05a3cb187f2892c32f58873f02d17.
+Imposition pairs8/1 first, but **FAIL**: long page8heading crosses centre
+fold into cover; independent full text also shows Moon23h row345°43.1′
+missing although present in A4. Therefore booklet/small-paper are not accepted.
+Runtime92 Android-only repair wraps bounded ASCII headings and uniformly fits
+the complete A4 logical layout to shorter/narrower leaves, retaining all dense
+rows rather than reflowing and truncating. Smaller leaves imply smaller print;
+zoom/full-size A4 remains preferable for dense reference tables. Desktop writer
+unchanged. A separately compiled Android layout regression retains final
+REF-059 across A4/Letter/A5, normal/booklet. 18focused almanac checks pass
+4126ms (`almanac92-focused.log`), Android/desktop build pass. First Android
+compile failed on old-wx FromUTF8(std::string); fixed explicit c_str and retry
+passes. Synthetic A5booklet render inspected: bounded heading and all60rows.
+**Actual corrected tablet output/rotation and other variants still pending.**

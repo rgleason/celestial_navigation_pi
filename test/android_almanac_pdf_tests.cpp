@@ -1,0 +1,50 @@
+// POBsoft (1985-2026): small-paper output must retain every reference row.
+#include <gtest/gtest.h>
+#include "AlmanacGenerator.h"
+#include <wx/file.h>
+#include <wx/filename.h>
+#include <wx/utils.h>
+
+class AndroidAlmanacPdfWriter {
+ public:
+  static bool Write(const AlmanacDocument&, const AlmanacRequest&,
+                    const wxString&, wxString*);
+};
+
+TEST(AndroidAlmanacPdf, SmallPaperAndBookletRetainFinalDenseTableRow) {
+  AlmanacDocument document;
+  AlmanacPage page;
+  page.title = "Friday 21 June 2024 - lunar-distance opportunity";
+  page.section = "Acceptance reference";
+  AlmanacTable table;
+  table.headings = {"Row", "Reference"};
+  for (unsigned i = 0; i < 60; ++i)
+    table.rows.push_back({wxString::Format("%u", i),
+                         wxString::Format("REF-%03u", i)});
+  page.tables.push_back(table);
+  document.pages.push_back(page);
+  for (const auto paper : {AlmanacPaper::A4, AlmanacPaper::Letter,
+                           AlmanacPaper::A5}) {
+    for (bool booklet : {false, true}) {
+      AlmanacRequest request;
+      request.paper = paper;
+      request.booklet = booklet;
+      wxString output;
+      const bool keep = wxGetEnv("CELESTIAL_ANDROID_LAYOUT_PDF", &output) &&
+                        paper == AlmanacPaper::A5 && booklet;
+      if (!keep) output = wxFileName::CreateTempFileName("celestial-layout-");
+      wxString error;
+      ASSERT_TRUE(AndroidAlmanacPdfWriter::Write(document, request, output,
+                                                &error)) << error;
+      wxFile file(output);
+      wxString bytes;
+      ASSERT_TRUE(file.ReadAll(&bytes, wxConvISO8859_1));
+      // This is the lost-data regression, rather than an assertion about the
+      // implementation's scale or chosen line breaks.
+      EXPECT_NE(wxNOT_FOUND, bytes.Find("REF-059"));
+      EXPECT_NE(wxNOT_FOUND, bytes.Find("%%EOF"));
+      file.Close();
+      if (!keep) wxRemoveFile(output);
+    }
+  }
+}

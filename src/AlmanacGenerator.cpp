@@ -438,13 +438,44 @@ void PdfSeriesDash(std::ostringstream& stream, size_t seriesIndex) {
 std::string RenderPage(const AlmanacPage& page, double width, double height,
                        unsigned pageNumber, unsigned totalPages,
                        bool compact) {
+#if defined(__OCPN__ANDROID__) || defined(CELESTIAL_ANDROID_PDF_LAYOUT_TEST)
+  // POBsoft (1985-2026): fit the complete logical page on smaller paper or
+  // booklet leaves. Reflowing dense tables into a shorter leaf previously
+  // discarded trailing rows and let headings cross the centre fold.
+  constexpr double referenceWidth = 595.28, referenceHeight = 841.89;
+  if (width < referenceWidth - 0.01 || height < referenceHeight - 0.01) {
+    const double scale = std::min(width / referenceWidth,
+                                  height / referenceHeight);
+    std::ostringstream fitted;
+    fitted << "q " << scale << " 0 0 " << scale << " "
+           << (width - referenceWidth * scale) / 2.0 << " "
+           << (height - referenceHeight * scale) / 2.0 << " cm\n"
+           << RenderPage(page, referenceWidth, referenceHeight, pageNumber,
+                         totalPages, compact) << "Q\n";
+    return fitted.str();
+  }
+#endif
   std::ostringstream stream;
   const double left = compact ? 36.0 : 42.0;
   const size_t wrapWidth = static_cast<size_t>(std::max(48.0,
       (width - 2.0 * left) / 5.5));
   double y = height - 44.0;
+#if defined(__OCPN__ANDROID__) || defined(CELESTIAL_ANDROID_PDF_LAYOUT_TEST)
+  const double titleSize = compact ? 15.0 : 16.0;
+  // One em bounds every printable ASCII glyph in Helvetica-Bold. The PDF
+  // writer transliterates to ASCII, so this also bounds unbroken user titles
+  // without querying GUI font metrics from the calculation worker.
+  const size_t titleWidth = static_cast<size_t>(
+      (width - 2.0 * left) / titleSize);
+  const std::string asciiTitle = Ascii(page.title);
+  for (const wxString& line : Wrap(wxString::FromUTF8(asciiTitle.c_str()), titleWidth)) {
+    PdfText(stream, left, y, titleSize, line, true);
+    y -= 19.0;
+  }
+#else
   PdfText(stream, left, y, compact ? 15 : 16, page.title, true);
   y -= 19.0;
+#endif
   if (!page.subtitle.empty()) {
     for (const wxString& line : Wrap(page.subtitle, wrapWidth)) {
       PdfText(stream, left, y, 9, line);

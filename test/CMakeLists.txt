@@ -203,6 +203,19 @@ target_compile_definitions(android_sextant_uncertainty_tests PRIVATE __OCPN__AND
 target_include_directories(android_sextant_uncertainty_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(android_sextant_uncertainty_tests PRIVATE GTest::GTest GTest::Main)
 add_test(NAME android_sextant_uncertainty COMMAND android_sextant_uncertainty_tests)
+# Compile the Android PDF layout in isolation, without Qt/Android UI, and
+# keep the production desktop writer in the same process for comparison.
+add_library(android_almanac_pdf_layout OBJECT
+    ${CMAKE_SOURCE_DIR}/src/AlmanacGenerator.cpp)
+target_compile_definitions(android_almanac_pdf_layout PRIVATE
+    CELESTIAL_ANDROID_PDF_LAYOUT_TEST
+    AlmanacGenerator=AndroidAlmanacGenerator
+    AlmanacPdfWriter=AndroidAlmanacPdfWriter)
+target_include_directories(android_almanac_pdf_layout PRIVATE
+    ${CMAKE_SOURCE_DIR}/src ${wxWidgets_INCLUDE_DIRS})
+target_link_libraries(android_almanac_pdf_layout PRIVATE celestial::eclipse_core)
+target_sources(celestial_tests PRIVATE android_almanac_pdf_tests.cpp
+    $<TARGET_OBJECTS:android_almanac_pdf_layout>)
 if(UNIX)
     # Separate processes avoid wx/libc timezone caches masking UTC-boundary bugs.
     foreach(zone UTC Europe/London America/New_York Asia/Kolkata)
