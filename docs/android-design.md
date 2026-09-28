@@ -703,3 +703,15 @@ candidates without visiting Calculations; entered-UTC check evaluates the same
 input; actual Cancel/Back during search keeps the editor and complete saved XML;
 unchanged repeat uses cached results. Portrait/landscape/font1.3, final card/log
 swipes, precision readback and independent reference tolerances remain required.
+
+### Iteration122: rebind copied Android lunar ephemeris (before implementation)
+
+Review of121 before installation found that the callback created by
+RecomputeLunar captures this. Owned searches compute a temporary Sight and
+assign it to the editor; its copied std::function otherwise retains the worker
+object address after return. The same issue follows candidate inspection.
+Android getter will track the callback owner and prepare a fresh callback on
+first use after a copy, without repeating the search or changing provider-status
+flags. Never dereference the previous owner. Preserve desktop implementation.
+Actual entered-UTC branch/residual checks after worker completion and repeated
+results must validate the repair; retain uninstalled121 binaries as provenance.
