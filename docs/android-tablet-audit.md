@@ -2983,3 +2983,12 @@ Builds PASS/PID27411 continuous. Second stationary AppendixD tap reaches
 correct References heading, all enlarged/dimmed text and complete final footer.
 First tap was swallowed: no full tap acceptance.111 owned viewport drag/tap
 adapter designed before implementation. Offline retained during this test.
+
+Physical111d77b714,06:41BST: import ACK/hash PASS, SO
+ ae0a2e8cc39e4eeb045e01b4b9d2874abe378ef99e12393eb37d0c97e17f788a,
+tar92a091941351f9e7929015cb383ab1305a10611071e421013bf474975c055750.
+Both builds PASS/PID27411 continuous. Filter real swipes reach complete table
+and contents; first stationary Circle tap still ignored, second reaches exact
+Chapter2/relative image with readable night text. Caption floats around image
+in Qt HTML5 figure layout: FAIL.112 removes competing native gesture grab and
+maps figure/caption to supported blocks on load; designed before code.

@@ -31,6 +31,18 @@ class DocumentBrowser : public QTextBrowser {
     });
   }
 
+  QVariant loadResource(int type, const QUrl& name) override {
+    QVariant resource = QTextBrowser::loadResource(type, name);
+    if (type != QTextDocument::HtmlResource || !resource.isValid()) return resource;
+    QString html = QString::fromUtf8(resource.toByteArray());
+    // Qt5 rich text does not lay out HTML5 figure/caption blocks.
+    html.replace("<figure>", "<div><p>", Qt::CaseInsensitive);
+    html.replace("</figure>", "</div>", Qt::CaseInsensitive);
+    html.replace("<figcaption>", "</p><p>", Qt::CaseInsensitive);
+    html.replace("</figcaption>", "</p>", Qt::CaseInsensitive);
+    return html.toUtf8();
+  }
+
  private:
   void AdaptDocument() {
     const QColor background = CN_ThemeBackground();
@@ -103,7 +115,9 @@ inline void ShowDocument(wxWindow* parent, const wxString& title,
   text->setStyleSheet(QString("QTextBrowser { font-size: %1pt; padding: 16px; "
       "color: #173849; background: white; border: none; }").arg(CN_FontPointSize()));
   text->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
-  QScroller::grabGesture(text->viewport(), QScroller::TouchGesture);
+  // The owned filter feeds handleInput itself; a native gesture recognizer
+  // would process the same touch sequence and can swallow the first link tap.
+  QScroller::scroller(text->viewport());
   QPointer<DocumentBrowser> safeText(text);
   new CN_AndroidButtonDragFilter(text->viewport(), [safeText](QPoint point) {
     if (!safeText) return;

@@ -616,3 +616,12 @@ setSource; HTTP/HTTPS/mail links use QDesktopServices. Drags never activate
 links and synthesized mouse release is consumed once. Guard browser capture
 with QPointer and preserve native URL history. Check single tap after a swipe,
 repeat tap, external browser return, plain-text taps and long scrolling.
+
+Physical111 first tap still swallowed, second reaches correct Chapter2 and
+relative figure. Native QScroller gesture recognition competes with manual
+handleInput in the viewport drag filter. Use only the explicit filter for
+reader input; initialize QScroller without grabGesture, retaining QTextEdit's
+native scroll event handling. Also map bundled HTML5 figure/figcaption tags to
+Qt-supported div/paragraph blocks during resource loading:111 caption wraps
+around the inline image. Keep original files and all URLs/images unchanged.
+Verify one tap after scrolling plus a caption below its image.
