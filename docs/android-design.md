@@ -465,3 +465,15 @@ after Definitions Back/page switching. Install the existing owned drag filter
 on each read-only QTextEdit viewport, forwarding directly to its own QScroller
 and consuming synthesized mouse selection events. Editable text remains
 unchanged. Repeat drag/tap/type/page-change/Definitions/rotation tests.
+
+
+### External HTML references (28 September, before implementation)
+
+Physical99 reaches the Definitions footer, but tapping its HTTPS reference
+navigates QTextBrowser to a blank page. This widget renders bundled documents
+and cannot retrieve remote pages. Enable its supported external-link handling
+so HTTP/HTTPS references open the Android browser; preserve local relative
+document links and anchors inside the owned help sheet. Back from the browser
+must return to the same help position/editor without a save or data mutation.
+Desktop help remains unchanged. Repeat external/internal links, offline help,
+rotation and long-document final-content scrolling on the tablet.

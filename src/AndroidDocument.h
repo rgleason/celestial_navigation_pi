@@ -15,6 +15,10 @@ inline void ShowDocument(wxWindow* parent, const wxString& title,
   auto* layout = new QVBoxLayout(panel->GetHandle());
   layout->setContentsMargins(0, 0, 0, 0);
   auto* text = new QTextBrowser(panel->GetHandle());
+  // POBsoft (1985-2026): remote references belong in the Android browser;
+  // QTextBrowser itself only renders local help and otherwise shows a blank page.
+  // Relative bundled documents and fragment anchors still navigate in this sheet.
+  text->setOpenExternalLinks(true);
   text->setStyleSheet(QString("QTextBrowser { font-size: %1pt; padding: 16px; "
       "color: #173849; background: white; border: none; }").arg(CN_FontPointSize()));
   text->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
