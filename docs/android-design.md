@@ -684,3 +684,22 @@ On a genuine control drag crossing the movement threshold, commit and clear
 focused text input and hide its IME before scrolling; stationary releases
 still focus editable fields normally. Retest night popup selection/rotation,
 field drag versus tap/type, keyboard Back, reports and Cancel persistence.
+
+### Iteration121: complete lunar results entry (before implementation)
+
+Physical120 reopened the touch-entered public Greenwich lunar copy, selected
+Time on Measurement and obtained an empty recovery sheet; Check at entered UTC
+then failed because no ephemeris had been prepared. Android deliberately defers
+lunar searches, but this baseline action still assumes synchronous desktop
+calculation. Rename the Android action Results and route it through the same
+owned cancellable search used by Calculate lunar UTC, reusing a valid unchanged
+cache. Cancel must leave the editor open and never open an empty results sheet.
+Commit input and end the editor's text focus before the nested worker/results
+surface so native insertion handles do not survive in its popup. Leave desktop
+labels, calculation timing, numerical algorithms and accepted records unchanged.
+
+Acceptance: reopen a saved public-reference lunar, one Results action produces
+candidates without visiting Calculations; entered-UTC check evaluates the same
+input; actual Cancel/Back during search keeps the editor and complete saved XML;
+unchanged repeat uses cached results. Portrait/landscape/font1.3, final card/log
+swipes, precision readback and independent reference tolerances remain required.
