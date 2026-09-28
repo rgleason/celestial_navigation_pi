@@ -44,6 +44,7 @@ set(SRC
     fix_ui_smoke_tests.cpp
     lunar_distance_engine_tests.cpp
     lunar_session_engine_tests.cpp
+    lunar_usno_session_tests.cpp
     lunar_session_worker_tests.cpp
     sextant_calibration_engine_tests.cpp
     lunar_de440_tests.cpp
@@ -176,6 +177,23 @@ endif()
 
 # Add the test
 add_test(NAME celestial_tests COMMAND celestial_tests)
+# Compile the actual Android engine under a distinct entry point, sharing the
+# production ephemeris with the desktop public-reference integration test.
+add_library(android_lunar_session_engine OBJECT
+    ${CMAKE_SOURCE_DIR}/src/LunarSessionEngine.cpp)
+target_compile_definitions(android_lunar_session_engine PRIVATE
+    __OCPN__ANDROID__ Solve=SolveAndroid)
+target_include_directories(android_lunar_session_engine PRIVATE
+    ${CMAKE_SOURCE_DIR}/src)
+target_sources(celestial_tests PRIVATE $<TARGET_OBJECTS:android_lunar_session_engine>)
+add_executable(android_lunar_session_tests lunar_session_engine_tests.cpp
+    ${CMAKE_SOURCE_DIR}/src/LunarSessionEngine.cpp
+    ${CMAKE_SOURCE_DIR}/src/LunarDistanceEngine.cpp)
+target_compile_definitions(android_lunar_session_tests PRIVATE __OCPN__ANDROID__)
+target_include_directories(android_lunar_session_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(android_lunar_session_tests PRIVATE
+    GTest::GTest GTest::Main celestial::eclipse_core)
+add_test(NAME android_lunar_session COMMAND android_lunar_session_tests)
 # Exercise the actual Android numerical branch on the build host without
 # requiring Android UI libraries. Physical ABI/UI acceptance is separate.
 add_executable(android_sextant_uncertainty_tests

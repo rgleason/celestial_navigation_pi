@@ -25,3 +25,25 @@ topocentric azimuth conventions can differ; this is a tolerance check,
 not an assertion that both implementations use identical frames.
 This validates three physical rows at one instant, not all rows/epochs/data
 providers, session solver results or optional terrain accuracy.
+
+## Independent session input
+
+`make_session.py` reproducibly creates `session-sights.xml`, four public
+Moon–Spica/Vega observations at22:00/22:05 from the retained USNO responses.
+It applies USNO parallax/refraction to Hc, computes apparent centre separation
+from those altitudes and published Zn, subtracts Moon semidiameter for near
+contact, and uses the lower Moon limb for altitude. Eye height/IE are zero,
+pressure1013hPa, temperature10°C, uncertainties0.5′, motion off. The same
+Moon-altitude reading is shared between both stars at each epoch.
+The model under test is never used to generate these fixture readings.
+
+These are approximate observations across different apparent-coordinate,
+refraction, UTC/UT1 and disc projection conventions. The low Moon altitude
+(approximately5°) accentuates those differences. Predetermined acceptance
+limits: known-position clock within1s; joint clock within60s and reference
+position within3NM; angular RMS below0.5′. The joint limits cover fixture
+model differences and are not a claim of general navigation accuracy.
+`LunarUsnoSession.PublicGreenwichClockAndJointReference` uses real production
+ephemerides, exercises the Android-compiled session engine, and checks reversed
+observation order. Physical entry/staging, solve, save and reopen are tracked
+separately in the tablet audit; this test alone cannot accept the Android UI.

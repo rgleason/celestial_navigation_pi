@@ -372,3 +372,18 @@ In a known-position solve no position covariance is fitted: show 'Position held
 fixed' instead of infinite NM. Tie Android mode/position/search/robust/bias/motion
 changes to result invalidation so only the current solved snapshot can be saved.
 Keep callbacks weak and defer native spin notifications outside Qt dispatch.
+
+### Joint-session convergence at ephemeris resolution (28 September)
+
+The independent Greenwich four-reading session also fails in the desktop
+production model. An instrumented retained copy reaches clock−3.33s and
+51.47868,0.01203 with stable weighted cost2.1809345, but an undamped correction
+norm around1e−11 never satisfies the mixed-unit1e−12 threshold. The model
+represents epochs at millisecond resolution and uses finite differences.
+For Android use symmetric differences and assess the actual undamped changes
+in their units: clock below0.01s, horizontal position below0.0005NM and fitted
+index bias below0.0001′. These are far below the input uncertainty floor0.05′.
+Never accept a small damped/rejected step or mere iteration exhaustion.
+Retain desktop derivatives/convergence exactly. Test the Android engine branch
+with production public USNO inputs plus convergence/exhaustion/outlier/motion
+regressions, then physically repeat the same fixture and inspect saved bytes.

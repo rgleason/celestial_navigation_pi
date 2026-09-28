@@ -269,6 +269,21 @@ Fit Optimise(const std::vector<SessionObservation>& observations,
         jacobian[row][column] = (next.residuals[row].standardized -
                                  current.residuals[row].standardized) /
                                 finite_step[column];
+#ifdef __OCPN__ANDROID__
+      // POBsoft (1985-2026): symmetric derivatives reduce the one-sided
+      // truncation error at a real, noisy observation's stationary fit.
+      perturbed[column] = values[column] - finite_step[column];
+      const Evaluation previous =
+          Evaluate(observations, options, FromVector(perturbed, options));
+      if (!previous.valid || previous.residuals.size() != current.residuals.size()) {
+        derivative_ok = false;
+        break;
+      }
+      for (int row = 0; row < rows; ++row)
+        jacobian[row][column] = (next.residuals[row].standardized -
+                                 previous.residuals[row].standardized) /
+                                (2.0 * finite_step[column]);
+#endif
     }
     if (!derivative_ok) break;
     std::vector<std::vector<double>> normal(columns,
@@ -290,7 +305,24 @@ Fit Optimise(const std::vector<SessionObservation>& observations,
     if (!SolveLinear(normal, rhs, &undamped)) break;
     double correction_norm = 0;
     for (double value : undamped) correction_norm += value * value;
-    if (std::isfinite(correction_norm) && correction_norm < 1e-12) {
+    bool correction_small = std::isfinite(correction_norm) && correction_norm < 1e-12;
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): assess the undamped correction in physical units,
+    // above millisecond epoch quantisation, far below observation precision.
+    correction_small = std::isfinite(correction_norm) &&
+                       std::fabs(undamped[0] * 3600.0) < 0.01;
+    int parameter = 1;
+    if (options.solve_position) {
+      const double latitude = undamped[parameter++];
+      const double longitude = undamped[parameter++] *
+          std::cos(values[1] * kDegToRad);
+      correction_small = correction_small &&
+                         std::hypot(latitude, longitude) * 60.0 < 0.0005;
+    }
+    if (options.estimate_common_index_bias)
+      correction_small = correction_small && std::fabs(undamped[parameter]) < 0.0001;
+#endif
+    if (correction_small) {
       fit.normal = normal;
       converged = true;
       break;
