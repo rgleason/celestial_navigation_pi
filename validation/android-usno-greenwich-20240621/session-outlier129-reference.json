@@ -1,0 +1,15 @@
+{
+  "source": "Retained primary USNO celnav response at Greenwich, 2024-06-21 22:05 UT1",
+  "source_sha256": "e7e55a0cfc6a63da1c598088067beaf73eaaabb46b4672bf071d573b9bc659ff",
+  "fixture_sha256": "0bb98006eafadae64257e68c7ce786cfe39f070298dd3c9603fef796cfa6b655",
+  "operation": "Independent apparent centre separation minus Moon semidiameter, plus deliberate +12 arcmin LD error; altitude readings unchanged. Select this Deneb triple with the four original clean Spica/Vega triples.",
+  "clean_distance_deg": 82.99097341942714,
+  "imposed_distance_error_arcmin": 12,
+  "expected_clock_seconds": 0,
+  "clock_tolerance_seconds": 10,
+  "expected_deneb_outlier": true,
+  "minimum_deneb_abs_distance_residual_arcmin": 6,
+  "maximum_clean_abs_residual_arcmin": 1,
+  "overall_RMS_limit": null,
+  "scope": "Known position, robust fit enabled, bias and motion disabled. Limits fixed before physical solve. Global RMS intentionally includes the retained outlier; it is not required below the clean-reference limit."
+}

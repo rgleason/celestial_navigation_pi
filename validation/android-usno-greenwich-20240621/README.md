@@ -85,3 +85,15 @@ These allow the same approximate frame/refraction conventions described above.
 runtime127/445cd67: bias+0.724781arcminute, clock−0.049565seconds, displayed
 angular RMS0.20arcminute and all four residuals. This accepts this known-position
 case, not all bias/joint/motion/outlier modes or touch/lifecycle crosscuts.
+
+## Physical robust outlier case
+
+`make_outlier129.py` creates one extra Deneb triple from the independent22:05
+USNO apparent centre separation and lower Moon limb, then adds a deliberate12′
+to LD only. It shares the unchanged Moon reading with the clean Spica/Vega
+triples. `session-outlier129-reference.json` fixes limits before the physical
+solve: clock within10s, Deneb flagged with distance residual above6′, all clean
+residuals below1′. Global RMS includes the retained bad observation.
+Actual runtime128/e0f5cd5 report in `tablet-session-outlier129.json` passes:
+clock−0.304463s/Deneb residual+11.667072′/flag1; all clean residuals below1′.
+This accepts that known-position robust case, with bias/motion disabled.

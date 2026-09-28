@@ -3504,3 +3504,37 @@ anr128 reports no ANR since boot. Report-view PSS509458KiB/RSS574092KiB/swap306K
 Four public biased copies and RESUME128-Bias remain until targeted cleanup;
 all12protected records/5protected solutions stay intact. Broader numeric controls,
 session outliers/motion and final acceptance/19-target CI remain pending.
+
+### Independent robust outlier case129, runtime128/e0f5cd5,09:52–09:57BST
+
+Bias additions were targeted for removal only after full canonical checks of
+12protected sights/5solutions and strict current-file equality. Initial cleanup
+assertion used wrong-case Name instead of actual name; no write occurred. After
+correction, immediate post-exec-in readback was transiently incomplete; host
+remained stopped. Fresh independent readback confirms complete original bytes,
+SHAfba0ee0fdcff99897bd4cb66e3a106c7c1a8de6b3381692c525884e8039ae532,
+sights128-after-cleanup.xml, then host restarted. Never start from an unverified
+transfer; later staging polls bounded independent readbacks until exact equality.
+
+Public make_outlier129.py independently computes Deneb near-contact LD from
+retained USNO22:05 and adds deliberate12′ to LD only. Shared Moon altitude is
+unchanged. Limits declared before actual solve in session-outlier129-reference:
+clock0±10s, Deneb flagged with absLD residual>6′, all clean absresiduals<1′;
+overall RMS intentionally includes the retained bad reading. One disposable
+excluded Deneb appended; all12sights/5solutions preserved, independently staged
+SHA4e63e4ec210c251cfdfc154bf521af2402399b8585272edc8f5ead0a8728e273.
+Cold PID23221; explicitly select cards2/3/4/5/6 only, knownGreenwich mode,
+search±0.25h/robust on/bias off/motion off. Exact numeric focused-field drag
+again moves to final controls without reopening IME. Actual solve retains Deneb,
+flags23.3sigma and gives clock−0.3s/RMS3.37′/timeσ4.0s. Portrait all5residual
+cards and actual settled-landscape final Spica assessment are readable. Initial
+rotation capture shows intermediate cards, not a final-card pass; follow-up
+actual swipes reach final card in resume129-landscape-final.png.
+
+Named disposable RESUME129-Outlier saved. Independent full XML gives additional
+clock−0.30446253241695359s/timeσ4.048520180924867s/DenebLD+11.667072′,
+outlier1, all clean absresiduals<1′ and outlier0. Complete canonical12sights/
+5solutions/root Clock0 unchanged. Public tablet-session-outlier129.json retains
+the actual report; private sights129-outlier-solution/session129-validation.
+Back twice returns chart with PID23221 continuous. Cold report, clipboard and
+other outlier configurations not inferred from this known-position check.
