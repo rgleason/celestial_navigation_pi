@@ -34,7 +34,7 @@ it as an Android time regression or alter shared desktop numerical behavior.
 - [x] Final CI Android package imported, actual library verified and cold reopened.
 - [x] Baseline records, task preferences, original viewport and device settings restored.
 - [x] Original protected files, other libraries, data packs and navigation rows verified.
-- [ ] Final commit/push and Rick's2.8.13review PR (Android/Windows x64 Alpha).
+- [x] Final commit/push and [Rick's2.8.13review PR344](https://github.com/rgleason/celestial_navigation_pi/pull/344) (Android/Windows x64 Alpha).
 - [ ] Explicit publication approval, public hosting/checksums and final Documents URLs.
 
 The complete validation suite now has20targets. Android arm64/armhf and Windows
