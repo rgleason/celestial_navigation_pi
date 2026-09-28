@@ -3880,3 +3880,34 @@ still latest historical04:51:54/runtime98; no ANR since boot. Actual empty
 workspace PSS455612/RSS519084KiB/swapPSS329KiB, foreground dev QtActivity.
 These tests accept the specific sorting/deletion cases; other families and
 final-source crosscuts remain incomplete. Publication remains on hold.
+
+### Nonzero manual clock/cold report141, runtime135/a3c42bf, 12:27–12:35 BST
+
+Protected12sights/5complete reports raw-byte backed up and SHA verified; only
+one public Sun altitude fixture staged. Actual native Clock typed+120 and Apply
+changes only ClockError; every normalized sight attribute, including recorded
+16:58:00 UTC14June2024, unchanged. Reopened field120. Actual report17:00:00
+verifiedDE440s/offlineDUT1−0.017s, geographic23.3078/−74.8864degrees.
+Independent archivedUSNO23.307827/−74.886344 gives0.00162/0.00336arcminute
+errors within predeclared0.1arcminute. The epoch and position are checked in
+actual report screenshots/OCR, not inferred from saved correction alone.
+No independent Ho or numerical chart-polygon sampling claim.
+
+Portrait actual swipes reach finalObservedAltitude; Cancel unchanged file.
+Offline deliberate9545→10024 restart retains entire+120file byte-identically;
+actual reopened clock120 and report17:00:00/sameposition. Rotate landscape:
+all top reference/provenance readable, four actual content swipes reach finalHo.
+All at font1.3. Actual separate−90clockdraft/native numericIME, rotate portrait,
+firstBack dismisses onlykeyboard/retains−90, secondBack opens discard prompt.
+ConfirmationBack and explicitKeepEditing retain draft. HeaderCancel then
+explicitDiscard returnsworkspace and entire+120savedfile exact.
+
+Rangecheck attempts20000: existingnative±10000validator rejects lastdigit,
+leaves2000draft; no explicit error dialog claimed. Cancel/Discard preserves
+entire+120file. Full crashbuffer latesthistorical04:51:54/runtime98, noANR
+sinceboot. ToolsworkspacePSS478046/RSS543044KiB/swapPSS314KiB. PID10024
+continuous through coldreport/rotation/draft/confirmations. Public exact
+results in validation/android-clock-20260928. Guardedrestore requires full
+appliedfixturebyteequality, restores original12/5/Clock0rawbytesfba0ee0f...
+and retains every currentconfigbyte. WiFienabled,portrait, coldcleanup10884;
+actual restoredworkspaceopen fulloriginalfile equality verified.

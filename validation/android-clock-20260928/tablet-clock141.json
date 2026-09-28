@@ -1,0 +1,71 @@
+{
+  "source": "a3c42bf2e63e8897734d31f0d9f2367f0963183e",
+  "runtime": 135,
+  "case": 141,
+  "actual_clock_correction_seconds": 120,
+  "recorded_utc": "2024-06-14T16:58:00Z",
+  "complete_sight_attributes_preserved": true,
+  "report_results": [
+    {
+      "evidence": "resume141-report-top.png",
+      "corrected_utc": "2024-06-14T17:00:00Z",
+      "latitude": 23.3078,
+      "longitude": -74.8864,
+      "errors_arcminutes": [
+        0.0016199999999599868,
+        0.0033600000000433283
+      ],
+      "tolerance_arcminutes": 0.1
+    },
+    {
+      "evidence": "resume141-report-cold.png",
+      "corrected_utc": "2024-06-14T17:00:00Z",
+      "latitude": 23.3078,
+      "longitude": -74.8864,
+      "errors_arcminutes": [
+        0.0016199999999599868,
+        0.0033600000000433283
+      ],
+      "tolerance_arcminutes": 0.1
+    },
+    {
+      "evidence": "resume141-report-land-top.png",
+      "corrected_utc": "2024-06-14T17:00:00Z",
+      "latitude": 23.3078,
+      "longitude": -74.8864,
+      "errors_arcminutes": [
+        0.0016199999999599868,
+        0.0033600000000433283
+      ],
+      "tolerance_arcminutes": 0.1
+    }
+  ],
+  "provider": "verified DE440s",
+  "dut1_report_seconds": -0.017,
+  "offline_cold_entire_file_equality": true,
+  "keyboard_rotation_draft": -90,
+  "keyboard_back_keeps_draft": true,
+  "confirmation_back_keeps_draft": true,
+  "explicit_keep_editing": true,
+  "explicit_discard_entire_file_equality": true,
+  "range_check": {
+    "attempted": 20000,
+    "resulting_unsaved_draft": 2000,
+    "explanation": "Native \u00b110000 validator rejects final digit; no explicit error dialog.",
+    "discarded": true,
+    "saved_entire_file_equality": true
+  },
+  "workflow_pid": 9545,
+  "offline_cold_pid": 10024,
+  "cleanup_pid": 10884,
+  "original_library_exact_restore": true,
+  "workspace_pss_kib": 478046,
+  "workspace_rss_kib": 543044,
+  "workspace_swap_pss_kib": 314,
+  "latest_crash_is_historical": "2026-09-28 04:51:54",
+  "anr": "none since boot",
+  "limits": [
+    "No independent Ho or sampled chart-polygon claim.",
+    "Other feature families and final-source crosscuts remain incomplete."
+  ]
+}

@@ -869,3 +869,14 @@ records, complete record preservation, popup48dp rows, portrait/landscape/Back,
 swipe without activation and selected-record identity. Delete All Yes/No/Back
 must operate only on a temporarily isolated disposable library after verified
 original byte backup; restore original library bytes before further workflows.
+
+### Manual clock cold persistence and report geometry141 (before execution)
+
+Use an isolated one-record public library while original12sights/5reports are
+raw-byte backed up. Recorded Sun16:58:00 on14June2024 plus actual global+120s
+must retain recorded epoch while report uses17:00:00. Compare report geographic
+position against archived primary USNO SunDec23.307827/GHA74.886344 with
+predeclared0.1arcminute limits. No chart-polygon sampling inferred. Verify
+complete original fixture attributes remain unchanged except ClockError; actual
+offline cold/reopened correction/report, keyboard rotation and rejected/Cancel
+edits with full byte preservation. Restore protected original raw library only.
