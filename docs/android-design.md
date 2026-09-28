@@ -853,3 +853,19 @@ or Cancel must not implicitly replace defaults. Artificial horizon clears short
 dip by existing mutual exclusion; test both flag modes separately. Desktop and
 correction mathematics stay unchanged. Verify exact config keys, hot/cold New
 Sight fields, invalid-input refusal, landscape final action and targeted cleanup.
+
+### Observation sort parity (physical139, before implementation)
+
+Actual sort popup only offers Newest, Oldest, Body, Type and Measurement
+(resume139-sort-popup). Source baseline sorts inclusion/type/body/UTC/measurement/
+colour in both directions. Android lacks inclusion/colour and descending body,
+type and measurement. Keep the single native choice and expose all12 explicit
+orders: Newest/Oldest, Body A–Z/Z–A, Type ascending/descending, Measurement
+increasing/decreasing, Excluded/Included first, Colour ascending/descending.
+Use existing comparator and saved-record model; colour ordering is its existing
+colour representation, not colour-name alphabetic order. No desktop changes.
+Verify every actual selected choice against independently ordered disposable
+records, complete record preservation, popup48dp rows, portrait/landscape/Back,
+swipe without activation and selected-record identity. Delete All Yes/No/Back
+must operate only on a temporarily isolated disposable library after verified
+original byte backup; restore original library bytes before further workflows.

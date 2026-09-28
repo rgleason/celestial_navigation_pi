@@ -3818,3 +3818,11 @@ Intentional cleanup cold→7163. Workflow6515 continuous through keyboard,
 rotation/refusal/Back/Cancel. Complete crash buffer still latest historical
 04:51:54/runtime98, ANR none since boot. Workspace PSS482914/RSS546588KiB,
 swapPSS314KiB; xGRIB/xWeatherRouting enabled in actual manager.
+
+### Observation sort reachability139, runtime133/8418700, 12:02 BST
+
+Actual native sort popup offers only5 choices; Back safely dismisses without
+mutation. Baseline source comparator exposes6columns×2directions. Inclusion/
+colour and descending body/type/measurement are inaccessible: feature-parity
+FAIL retained (resume139-sort-popup). Android-only single choice expanded to
+all12 orders after recorded design; builds/physical ordering replay pending.

@@ -69,12 +69,21 @@ void CelestialNavigationDialog::BuildAndroidWorkspace() {
   move(m_horizonEventButton, 0, _("Record sunrise / sunset"));
   auto* sort = new wxChoice(contents[0], wxID_ANY);
   for (const wxString& name : {_("Newest first"), _("Oldest first"),
-                               _("Body"), _("Type"), _("Measurement")}) sort->Append(name);
+                               _("Body A–Z"), _("Body Z–A"),
+                               _("Type ascending"), _("Type descending"),
+                               _("Measurement increasing"), _("Measurement decreasing"),
+                               _("Excluded first"), _("Included first"),
+                               _("Colour ascending"), _("Colour descending")}) sort->Append(name);
   sort->SetSelection(0);
   sort->Bind(wxEVT_CHOICE, [this, sort](wxCommandEvent&) {
-    const int columns[] = {3, 3, 2, 1, 4};
-    m_sortCol = columns[sort->GetSelection()];
-    m_bSortAsc = sort->GetSelection() != 0;
+    // POBsoft (1985-2026): expose both directions of all six desktop columns.
+    const int columns[] = {3, 3, 2, 2, 1, 1, 4, 4, 0, 0, 5, 5};
+    const bool ascending[] = {false, true, true, false, true, false,
+                              true, false, true, false, true, false};
+    const int selection = sort->GetSelection();
+    if (selection < 0 || selection >= static_cast<int>(sizeof(columns) / sizeof(columns[0]))) return;
+    m_sortCol = columns[selection];
+    m_bSortAsc = ascending[selection];
     RebuildList();
   });
   layouts[0]->Add(sort, 0, wxEXPAND | wxALL, 6);
