@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <vector>
 #ifdef __OCPN__ANDROID__
+#include "AndroidTouch.h"
 #include <QTimer>
 #include <memory>
 #include <mutex>
@@ -176,8 +177,21 @@ class UpdatePanel : public wxScrolledWindow {
     Rewrap();
   }
   void Rewrap() {
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): AndroidSurface reparents these labels into a
+    // content panel. Recompute native font heights and lay out that owner
+    // before updating the viewport, including dynamically changed messages.
+    const int width=std::max(160,GetClientSize().x-64);
+    for (auto& item:texts_) CN_WrapAndroidText(item.first,item.second,width);
+    if (!texts_.empty() && texts_.front().first->GetParent()!=this) {
+      auto* content=texts_.front().first->GetParent();
+      content->InvalidateBestSize();
+      content->Layout();
+    }
+#else
     const int width=std::max(200,std::min(780,GetClientSize().x-40));
     for (auto& item:texts_) { item.first->SetLabel(item.second); item.first->Wrap(width); }
+#endif
     Layout(); FitInside();
   }
   void RefreshCoverage() {

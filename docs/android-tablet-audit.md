@@ -2325,5 +2325,32 @@ event queue, drained by the panel's50ms Qt GUI timer. Stop cancels host routing,
 stops both timers and discards only owned download events before next transfer;
 Close destroys the queue. It pumps no unrelated wx application events. Desktop
 path unchanged. Android and desktop compile; physical repaired build pending.
-A second88 transfer and visible Cancel are retained, but the screenshot was
-captured after its timeout and must not establish timely Cancel acceptance.
+A second88 transfer and visible Cancel are retained; the screenshot says
+Download cancelled, but the network had already completed with its events
+stuck. This does not establish cancellation during active network work.
+
+
+### 2026-09-28 02:19–02:25 BST: runtime89 real DUT1 installation, remaining UI defects
+
+Runtime89/source210c8fa imported with continuousPID30939; installed89.so SHA256
+9b000cab6238586572680827e01f1782da827a39b1dcc30469f7424e4cbe4675
+matches reviewed payload. Archive SHA256
+6a2c0fbc59eed5a4efda9c8e3a71ab205abd3df52922da214d5346f74d26157f.
+Actual Check/download validates and installs3768836bytes, extends coverage to
+2027-10-02, restores actions and cleans the temporary celestial-dut1 file.
+App-owned readback iers89-installed.all SHA256
+cc80680ec05c91b65e7d02c6068fe0d44dd0998dc880551975092d2d14aa8e18
+is byte-identical to the independently retrieved official endpoint file.
+Repeated download correctly reports already up to date. Runtime89's event
+bridge therefore physically repairs88's false timeout.
+
+Do not accept complete page UI yet: the two-line success/cancel message is
+clipped even after another final swipe. Displayed Cancel taps/settled press in
+several immediately captured active transfers did not invoke cancelDownload;
+subsequent outcome was already up to date. Screens and download89-system.log
+retain the failed attempts; filenames containing cancel do not establish a pass.
+This page's labels/actions were reparented by AndroidSurface into a content
+panel, while its dynamic Rewrap only laid out the original scroller. Next
+Android repair measures native font heights, invalidates and lays out the
+actual content owner before fitting the viewport. Desktop Wrap unchanged.
+Actual repaired Cancel/Close/offline/cold/import-invalid tests remain pending.
