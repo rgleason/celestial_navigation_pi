@@ -5,6 +5,7 @@
 #include "AndroidDownloadEvents.h"
 #include <QListWidget>
 #include <QVBoxLayout>
+#include <QtAndroidExtras/QAndroidJniEnvironment>
 #endif
 #include "EclipseDialog.h"
 #include "DialogGeometry.h"
@@ -899,6 +900,22 @@ void EclipseDialog::TryCurrentSource() {
     ++m_source_index;
     TryCurrentSource();
   }
+#ifdef __OCPN__ANDROID__
+  else {
+    // POBsoft (1985-2026): the host's background API opens a transparent,
+    // non-cancellable native spinner which intercepts Cancel and Close.
+    // This dialog already owns progress; retain the host's completion state.
+    QtAndroid::androidActivity().callObjectMethod("hideBusyCircle", "()Ljava/lang/String;");
+    QAndroidJniEnvironment env;
+    if (env->ExceptionCheck()) {
+      env->ExceptionClear();
+      OCPN_cancelDownloadFileBackground(m_download_handle);
+      m_download_handle = 0;
+      if (wxFileExists(m_download_temp)) wxRemoveFile(m_download_temp);
+      FinishInstallation(false, _("This host cannot show a cancellable astronomy-data download."));
+    }
+  }
+#endif
 }
 
 void EclipseDialog::OnDownloadEvent(wxEvent& raw) {

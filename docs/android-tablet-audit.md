@@ -4414,3 +4414,46 @@ checks, not independent planetary accuracy claims. Cancel keeps saved library
 unchanged; byte guard and download/restoration closure recorded below when done.
 Early fast-tab harness captured Clock rather than Data; that image is not an
 accepted missing-data result. Final finish164-missing-data-actual is inspected.
+
+### Download event repair165 and touch blocker166, 16:45-17:12BST
+
+Original8bc download164 produced complete official DE440s bytes but stayed
+Downloading: actual completion event was not dispatched by pinned wx/Qt.
+Android-only dedicated pending-event receiver and Qt GUI drain committed
+a9c2da6; host AddPendingEvent clone/order/GUI-thread/once/discard boundary PASS.
+Both Android/desktop builds PASS. Full local CTest9/9 PASS114.47s, fourzones.
+Archive399c33496dbb607c09b0f0f11764de9b8755099243f898dca3d4c4d21aa82527;
+actual manPlug SO2aed59d32ab6a02b15168233b62b9b01694b9391e0a649ead28bcfd1c64c8bf1
+matches retained package. A first read used a nonexistentfiles/plugins path and
+hashed its error text; not an ELF/provenance pass. Correct live/proc/8079/maps
+identifies manPlug. Native import ACK, xGRIB/xWeatherRouting enabled. PID8079.
+
+Actual DE440s165 download now verifies, installs and reports success; installed
+SHA matches officialc1c7feea...exact. Orientation and whole506MiB LOLA also
+complete and independently match official60cd55aa.../f59edf84...hashes. First
+attempted cancellation missed changing control geometry; fresh OCR taps also
+failed to activate while host spinner active. DO NOT claim cancellationPASS.
+WiFi interruption produced explicit trusted-source failure and no partial file;
+WiFi restored ON. Final online replay again completed rather than cancelled.
+Two task-owned downloaded LOLA copies retained separately/in current normal
+names; original6packs/markers remain guarded under.retained164. All original
+12sights/5reports still protected outsideDUT; unsaved body checks byteguard
+required before subsequent staging.
+
+Source root cause: host startAndroidFileDownload always opens noncancellable
+native ProgressDialog, whose transparent window intercepts plugin touches.
+IERS UpdatePanel already dismisses it with JNIhideBusyCircle. Android eclipse
+166 now applies the same existing workaround and handles JNIfailure safely.
+Builds/actual successful completion plus cancellation replay remain pending166.
+Automatic review rejected a coordinateclose which could instead meanSightSave;
+observedOK/Close text worked safely, no permission request/workaround bypass.
+No publication or final19platform CI has run for these new local commits.
+
+Independent AZ geometry165:97 actual shared LOP centre points, SpicaUSNO
+Greenwich21June2024 22UTC GHA38.964494/Dec-11.289809. Independent atan2 initial
+bearing error maximum0.00136396deg<0.01declared limit, true220.63953512345679,
+uncertainty1arcmin, timeuncertainty0/motion0. Tablet chart binding pending.
+Temporary first harness incorrectly usedzeroangularuncertainty (invalidUIinput),
+causing a shared desktoploop crash; corrected positive1arcmin reference passes.
+That harness is not a physical product-crash claim. Public runner/reference
+and full point JSON retained, no pixel/projection accuracy claim.
