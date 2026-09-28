@@ -2572,3 +2572,55 @@ plus normal A5weather page. Actual page458 keyboard/Go and disabledNext work;
 normal A5swipe reaches footer, Letter full footer visible at fit-width.
 AndroidBack returns request. Original voyage-almanac.pdf never overwritten.
 Other paper/booklet combinations, coverage/content/cancellation remain pending.
+
+
+### Runtime94 coverage/content and memory guard (04:00–04:06 BST)
+
+Full Global Annual touch preset selects2024-01-01..12-31 andGlobal. Actual
+estimate366days/20292logical andPDF pages/10146duplex sheets/656.82MiB;
+real nested summary swipes reach the complete large-edition warning.
+Preview rejects before Build allocation:631MiB physical available versus
+5255MiB estimatedwork+256MiB reserve. Full warning wraps and AndroidBack
+returns retained request; PID5081 continuous. This is a guarded oversized
+request, **not an accepted full-global-generation pass**. meminfo94-global:
+PSS536919KiB/RSS433492KiB/swapPSS169737KiB, retained after rejection.
+The earlier94PSS530290/RSS593112/swap5348 snapshot is also retained.
+
+Passage-derived custom request21..23June2024, southern band−40..−30,
+DUT1override+0.500s; planning safety/dependenciesoff; Sun/planets/stars/useful
+unticked, Moon/Aries/events/mooninfo/recommendations/visualaids/instructionson,
+otherreferences/papertablesoff; cadenceEvery2days. Defaultpassage forms2sight,
+1running,1noon,0lunar/watch. Actual A4booklet16/compact/colour-enabled:
+resume94-southband-booklet.pdf78401bytes/10PDFpages/17logical,
+SHAf8e12971442e0ec2fee2fe96b32c2270d735cf7aee49b99dfd2a2523c6c62de3.
+Refreshed estimate17logical/10PDF/5duplex sheets matches. Independent actual
+text has all17footers once, three complete hourlyMoon/Aries days, noSun or
+planet ephemeris, two planningpagesJune21/23 atbandmidpoint−35,0, explicit
+DUT1provenance and planning-reference limitation. Four representative imposed
+renders viewed, complete Moon23h row present. Signature6 rejected explicitly;
+Back/restore16 works. Invalidlatitude91 rejects with full input guidance;
+restoring51.4779 works. ReversedJune21..20 date range rejected beforeoverwrite.
+
+Saved-route selector exposes five routes including three same-named entries.
+ActualthirdUIroute selected; normalA4portrait outputresume94-route.pdf:
+17pages/77701bytes/SHAd035296d395ae61f3034c3a98995463c519801c73ee9306e9427b82b0434e5fc.
+Cover/manifest report150NM corridor and DUT1+0.500; two planned positions
+match hostdatabase8-pointgeometry advanced0/288NM at6kn within.02NM rounding
+using independent GeographicLib sphere lengths and documented coordinate-linear
+leg interpolation. Three same-named routes share sampledgeometry, so output
+cannot independently distinguish theirGUIDs; no unique numerical identity pass
+is claimed. Private database/output/reference log retained locally, never
+uploaded. Initialnavobj.xml lookupfailed (host usesnavobj.db); readbackcorrected.
+PROJPython unavailable; retained GeographicLib used. Actualtyped17/Back/Go,
+Nextdisabled and genuine finalfooter swipe pass; viewerBack returns request.
+
+
+Runtime94 actual active31-day generation (June21..July21, retainedroute/subset):
+progress3/31 screenshot captured, explicitheaderCancel stops and returnsrequest.
+Repeat starts again (admission released), progress3/31 captured; AndroidBack
+also stops and returnsrequest, no cascade. PID5081 continuous, no destination
+resume94-cancel31.pdf exists after either run. ParentBack closesrequestnormally.
+IndependentSightsreadback unchanged SHA53349e1c001d4f58776a4096d7de709cf38190b353a07c47972569e1ba3451ac.
+Five normalA4route renders viewed, complete hourlyMoonfinalrow/manifest/planning
+andfinalnoonform. Normal17pagePDFhas17pages despiteDuplex checked: existing
+baseline setting reports9physicalprinted sheets, not additionalPDFblankpage.

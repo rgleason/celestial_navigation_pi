@@ -30,6 +30,7 @@
 #include <QPointer>
 #include <QStyle>
 #include <QTextEdit>
+#include <QTextDocument>
 #include <QAbstractSpinBox>
 #include <QDateTimeEdit>
 #include <QCalendarWidget>
@@ -92,10 +93,19 @@ inline void CN_StyleAndroidCalendar(wxWindow* window) {
 inline void CN_StyleAndroidDocument(wxWindow* window) {
   auto* text = qobject_cast<QTextEdit*>(window->GetHandle());
   if (!text) return;
+  // POBsoft (1985-2026): wxQt does not reliably map wxTE_READONLY at
+  // creation. Use the declared wx style before choosing touch interaction.
+  const auto* field = wxDynamicCast(window, wxTextCtrl);
+  if (field && (field->GetWindowStyleFlag() & wxTE_READONLY))
+    text->setReadOnly(true);
   if (text->isReadOnly()) {
     text->setTextInteractionFlags(Qt::NoTextInteraction);
     text->setFocusPolicy(Qt::NoFocus);
+    text->setLineWrapMode(QTextEdit::WidgetWidth);
+    text->setWordWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
     QScroller::grabGesture(text->viewport(), QScroller::TouchGesture);
+    QFont font = text->font(); font.setPointSize(CN_FontPointSize());
+    text->document()->setDefaultFont(font);
   }
   QFont font = text->font(); font.setPointSize(CN_FontPointSize()); text->setFont(font);
 }
@@ -516,7 +526,8 @@ inline void CN_StyleAndroidControls(wxWindow* parent) {
       }
       else if (input)
         child->GetHandle()->setStyleSheet(
-            "QLineEdit, QSpinBox, QDoubleSpinBox { font-size: 16pt; min-height: 64px; }");
+            "QLineEdit, QSpinBox, QDoubleSpinBox { font-size: 16pt; min-height: 64px; } "
+            "QTextEdit[readOnly=\"true\"] { font-size: 16pt; }");
       QString style = child->GetHandle()->styleSheet();
       style.replace("font-size: 16pt", QString("font-size: %1pt").arg(CN_FontPointSize()));
       child->GetHandle()->setStyleSheet(style);

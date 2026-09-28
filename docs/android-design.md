@@ -410,3 +410,17 @@ live summary. Keep existing saved trails unchanged.
 The input trail still hardcodes solverVersion2.8.5.1; record the configured
 four-component release version for new snapshots on all platforms. This is
 version provenance only and must not alter desktop numerical behavior.
+
+### Observation calculation log (28 September, before implementation)
+
+Physical94 exposes the saved calculation log but swipes initially select text
+and show a selection handle; its font remains visibly smaller than the19pt
+editor at system scale1.3. The native Qt read-only state cannot be used as the
+sole test for wxTE_READONLY: the supported wxQt creation path does not apply
+that style to QTextEdit. Honour the wx style explicitly, disable selection and
+keyboard focus, and use the existing native document scrolling. Apply the
+scaled font through the QTextEdit stylesheet as well as its document font so
+subsequent wx SetValue/SetFont cannot restore the small default. Wrap long
+read-only report lines to the viewport. Keep editable multiline controls and
+all desktop behavior unchanged. Repeat actual portrait/landscape log swipes to
+the final Ho, page switching, definitions Back, Save/reopen and file checks.
