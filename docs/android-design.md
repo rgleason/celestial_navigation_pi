@@ -424,3 +424,13 @@ subsequent wx SetValue/SetFont cannot restore the small default. Wrap long
 read-only report lines to the viewport. Keep editable multiline controls and
 all desktop behavior unchanged. Repeat actual portrait/landscape log swipes to
 the final Ho, page switching, definitions Back, Save/reopen and file checks.
+
+Physical94 Display also has no visible colour picker and only a tiny desktop
+slider handle. Replace the Android colour-picker presentation with a full-width
+button and an owned colour sheet: common colours, exact RGB fields and a swatch,
+with Apply/Cancel/Back retaining the existing RGB/alpha model. Keep the hidden
+wx picker as the shared controller value. Enlarge the existing transparency
+slider to48dp, show its alpha value and respect its inverse direction when
+handling native touch input. All appearance changes remain within the sight
+transaction until its Save. Test nested colour Cancel/Back, unchanged Apply,
+typed RGB, slider endpoints, XML/reopen, larger font and rotation.

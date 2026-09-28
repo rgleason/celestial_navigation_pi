@@ -412,10 +412,14 @@ protected:
       const bool horizontal = m_slider->orientation() == Qt::Horizontal;
       const int length = horizontal ? m_slider->width() : m_slider->height();
       const int position = qRound(horizontal ? point.x() : point.y());
+      bool upsideDown = horizontal ? m_slider->invertedAppearance()
+                                   : !m_slider->invertedAppearance();
+      if (horizontal && m_slider->layoutDirection() == Qt::RightToLeft)
+        upsideDown = !upsideDown;
       m_slider->setSliderDown(event->type() != QEvent::TouchEnd);
       m_slider->setValue(QStyle::sliderValueFromPosition(
           m_slider->minimum(), m_slider->maximum(), position - 16,
-          qMax(1, length - 32), !horizontal));
+          qMax(1, length - 32), upsideDown));
     }
     if (event->type() == QEvent::TouchEnd || event->type() == QEvent::TouchCancel)
       m_slider->setSliderDown(false);
@@ -431,6 +435,12 @@ inline void CN_EnableAndroidSlider(wxSlider* control,
   auto* slider = qobject_cast<QSlider*>(control->GetHandle());
   if (!slider) slider = control->GetHandle()->findChild<QSlider*>();
   if (!slider) return;
+  const int target = CN_TouchHeight();
+  control->SetMinSize(wxSize(180, target));
+  slider->setMinimumHeight(target);
+  slider->setStyleSheet(QString("QSlider::groove:horizontal { height: 10px; background: #9fb9c6; } "
+      "QSlider::handle:horizontal { width: %1px; margin: -%2px 0; background: #173849; "
+      "border: 1px solid white; border-radius: 8px; }").arg(target/2).arg(target/4));
   new CN_AndroidSliderTouchFilter(slider);
   QObject::connect(slider, &QSlider::valueChanged, slider,
                    [changed](int) { changed(); });

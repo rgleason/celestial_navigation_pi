@@ -1,6 +1,7 @@
 #include "PlatformMessageBox.h"
 #ifdef __OCPN__ANDROID__
 #include "AndroidJob.h"
+#include "AndroidColourEntry.h"
 #endif
 /******************************************************************************
  *
@@ -424,6 +425,15 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   for (size_t i = 0; i < m_notebook1->GetPageCount() &&
                      i < sizeof(sections) / sizeof(sections[0]); ++i)
     m_notebook1->SetPageText(i, sections[i]);
+  celestial_android::AddColourEntry(m_ColourPicker, [this]() { MarkDirty(); Recompute(); });
+  const auto alphaCaption = [this]() {
+    m_staticText14->SetLabel(wxString::Format(_("Opacity: %d / 255 (0 transparent, 255 opaque)"),
+                                             m_sTransparency->GetValue()));
+  };
+  CN_EnableAndroidSlider(m_sTransparency, [this, alphaCaption]() {
+    alphaCaption(); MarkDirty(); Recompute();
+  });
+  alphaCaption();
   if (auto* heading = wxDynamicCast(m_staticText13->GetParent(), wxStaticBox))
     heading->SetLabel(_("Observation timing"));
 #endif
