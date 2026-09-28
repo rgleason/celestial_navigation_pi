@@ -664,3 +664,13 @@ of slow visible-document formatting, not missing input. Group all fragment,
 block, frame and cell changes in one QTextCursor beginEditBlock/endEditBlock
 so visible layout recalculates once. Measure time to ADAPTED and first capture;
 retain corrected timing interpretation and remove diagnostics after validation.
+### Calendar colour follow-up, 28 September 2026
+
+Physical runtime118 dusk testing found Qt's explicit weekend foreground black
+on the dark calendar and an almost invisible selected date. Before changing
+code, the intended correction is to apply the current host ink to all seven
+weekday formats and the calendar header, and give low-light selections a dim
+grey background distinguishable from black. Keep the existing minimum touch
+rows, preceding-week date mapping, calendar value and desktop implementation.
+Retest March Sunday/Saturday taps, selected day, month changes and rotation;
+Cancel must preserve the complete observation file.
