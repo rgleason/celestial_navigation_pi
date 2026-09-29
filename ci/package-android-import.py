@@ -12,6 +12,7 @@ import urllib.parse
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from plugin_version import plugin_version
+from bundled_guides import check_guides
 
 
 def allocated_sections(binary: bytes) -> dict:
@@ -81,12 +82,11 @@ def package(source: Path, metadata: Path, output: Path, url: str, sha: str,
             raise ValueError('Exactly one plugin library is required')
         if not any(name.endswith('/data/vsop87d.txt') for name in names):
             raise ValueError('Required analytical ephemeris absent')
-        with tarfile.open(staged, 'r:gz') as check:
-            for asset in ('Practical_Guide.pdf', 'Celestial_Navigation_Manual_v2.pdf'):
-                entries = [m for m in check if m.name.endswith('/data/' + asset)]
-                if len(entries) != 1 or check.extractfile(entries[0]).read() != (
-                        Path(__file__).resolve().parents[1] / 'data' / asset).read_bytes():
-                    raise ValueError('Bundled PDF differs from source: ' + asset)
+        # Use the same platform-specific policy as retained-archive validation.
+        # Android must contain its own guide/reference manuals, NOT the
+        # deliberately excluded desktop practical PDF/HTML/illustrations.
+        check_guides(staged, Path(__file__).resolve().parents[1],
+                     target=values['target'])
         with tarfile.open(staged, 'r:gz') as check:
             if check.getnames().count('metadata.xml') != 1:
                 raise ValueError('Exactly one root metadata.xml is required')

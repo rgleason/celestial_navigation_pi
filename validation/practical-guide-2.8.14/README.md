@@ -55,3 +55,23 @@ by default and is not part of this documentation PR.
   reference manuals. Both desktop How To actions remain hidden and the desktop
   practical PDF, HTML and PNG assets are excluded from Android packages.
 - No navigation-engine or 2.9.x files were changed.
+
+## Android final-import packaging correction
+
+Pipeline 532 at `c0eadda` passed all 18 desktop builds. Both Android libraries
+also compiled and CPack created their archives, but the subsequent
+`ci/package-android-import.py` verifier still demanded `Practical_Guide.pdf`.
+That obsolete second policy contradicted the deliberate Android exclusion.
+
+The final-import packager now calls the shared platform-specific guide checker
+using the already-validated metadata target. It requires Android's quick guide
+and both reference manuals, and rejects desktop practical guide files. Root
+`metadata.xml`, URL, plugin identity/version and exact ELF runtime-section
+checks are retained.
+
+New end-to-end packager regressions exercise both ARM64/ELF64 and ARMHF/ELF32
+fixtures, root metadata, a missing Android guide, corrupted reference PDF and
+all three prohibited desktop asset forms. Failure preserves an existing output
+archive and removes the incomplete staging file. The real local Android ARM64
+CPack archive passed the final manual-import packaging step too. No installed
+desktop plugin files or calculations are affected by this CI-only correction.
