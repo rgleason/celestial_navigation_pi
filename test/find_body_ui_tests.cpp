@@ -163,12 +163,14 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
              "New", "Duplicate", "Edit", "Delete", "Delete All",
              "Horizon Event...", "Coastal Sextant...", "Sun && Moon...",
              "Lunar Tools...", "Analyze Sights...", "Fix...", "Clock Offset",
-             "Eclipses...", "Generate Almanac...", "Documentation",
-             "PDF Documentation"}) {
+             "Eclipses...", "Generate Almanac...", "How to Guide...", "How to Guide (PDF)...",
+             "Reference Manual...", "Reference Manual (PDF)..."}) {
       auto* button = Find<wxButton>(&main, label);
       ASSERT_NE(nullptr, button) << label;
       EXPECT_TRUE(button->IsShown()) << label;
       EXPECT_TRUE(sightWindow.Contains(button->GetRect())) << label;
+      EXPECT_GE(button->GetSize().x, button->GetBestSize().x) << label;
+      EXPECT_GE(button->GetSize().y, button->GetBestSize().y) << label;
     }
     auto* hideSights = Find<wxToggleButton>(&main, "Hide Sights");
     ASSERT_NE(nullptr, hideSights);
@@ -180,6 +182,31 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
               Find<wxButton>(&main, "Edit")->GetPosition().y);
     EXPECT_LT(Find<wxButton>(&main, "Edit")->GetPosition().y,
               Find<wxButton>(&main, "Analyze Sights...")->GetPosition().y);
+    // Four guide buttons and a full blank row still fit the existing menu.
+    for (const wxSize size : {wxSize(1024, 700), wxSize(1200, 800)}) {
+      main.SetSize(size);
+      main.Layout();
+      const wxRect bounds(wxPoint(0, 0), main.GetClientSize());
+      wxRect previous;
+      auto* almanac = Find<wxButton>(&main, "Generate Almanac...");
+      auto* htmlGuide = Find<wxButton>(&main, "How to Guide...");
+      ASSERT_NE(nullptr, almanac);
+      ASSERT_NE(nullptr, htmlGuide);
+      EXPECT_GE(htmlGuide->GetRect().GetTop() - almanac->GetRect().GetBottom(),
+                almanac->GetSize().y);
+      for (const auto* label : {"How to Guide...", "How to Guide (PDF)...",
+                                "Reference Manual...",
+                                "Reference Manual (PDF)..."}) {
+        auto* button = Find<wxButton>(&main, label);
+        ASSERT_NE(nullptr, button);
+        EXPECT_TRUE(bounds.Contains(button->GetRect())) << label;
+        EXPECT_GE(button->GetSize().x, button->GetBestSize().x) << label;
+        EXPECT_GE(button->GetSize().y, button->GetBestSize().y) << label;
+        if (!previous.IsEmpty())
+          EXPECT_FALSE(previous.Intersects(button->GetRect())) << label;
+        previous = button->GetRect();
+      }
+    }
 #ifdef __WXGTK3__
     const auto sightsSize = main.GetSize();
     GtkAllocation sightsAllocation{0, 0, sightsSize.x, sightsSize.y};

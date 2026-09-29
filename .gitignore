@@ -13,6 +13,7 @@ build-android/
 build-android-boundaries/
 ci/__pycache__/
 build-desktop/
+build-linux/
 artifacts/
 .android-ci/
 retained-artifacts/

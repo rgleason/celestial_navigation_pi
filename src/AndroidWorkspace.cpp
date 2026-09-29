@@ -136,8 +136,10 @@ void CelestialNavigationDialog::BuildAndroidWorkspace() {
     ShowBundledHtmlHelp(this, _("Android quick guide"), _("Android_Quick_Guide.html"));
   });
   layouts[3]->Add(guide, 0, wxEXPAND | wxALL, 6);
-  move(m_bDocumentation, 3, _("Offline manual"));
-  move(m_pdfDocumentationButton, 3, _("PDF manual"));
+  // The practical guide describes desktop controls, not this workspace.
+  // Leave its buttons hidden; Android has its own quick guide above.
+  move(m_bDocumentation, 3, _("Reference Manual"));
+  move(m_pdfDocumentationButton, 3, _("Reference Manual (PDF)"));
   if (m_timeIntegrityPanel->GetContainingSizer())
     m_timeIntegrityPanel->GetContainingSizer()->Detach(m_timeIntegrityPanel);
   m_timeIntegrityPanel->Reparent(contents[3]);
