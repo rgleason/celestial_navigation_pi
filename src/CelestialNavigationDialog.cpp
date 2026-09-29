@@ -142,6 +142,7 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       m_almanacButton(NULL),
       m_pdfDocumentationButton(NULL),
       m_practicalGuideButton(NULL),
+      m_practicalGuideHtmlButton(NULL),
       m_eclipseDialog(NULL),
       m_coastalDialog(NULL),
       m_chronyPollTicks(0),
@@ -236,6 +237,12 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       _("Open the offline practical guide with instructions and worked examples"));
   m_practicalGuideButton->Bind(
       wxEVT_BUTTON, &CelestialNavigationDialog::OnPracticalGuide, this);
+  m_practicalGuideHtmlButton =
+      new wxButton(this, wxID_ANY, _("How to Guide..."));
+  m_practicalGuideHtmlButton->SetToolTip(
+      _("Read the illustrated offline practical guide inside the plugin"));
+  m_practicalGuideHtmlButton->Bind(
+      wxEVT_BUTTON, &CelestialNavigationDialog::OnPracticalGuideHtml, this);
 
   // Keep sight maintenance together on the left and fix/reference tools on
   // the right. All controls were created above (or by the base dialog); only
@@ -248,11 +255,14 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   addAction(m_bDuplicateSight);     addAction(m_bClockOffset);
   addAction(m_bEditSight);          addAction(m_eclipseButton);
   addAction(m_bDeleteSight);        addAction(m_almanacButton);
-  addAction(m_bDeleteAllSights);    addAction(m_practicalGuideButton);
-  addAction(m_horizonEventButton);  addAction(m_bDocumentation);
-  addAction(m_coastalButton);       addAction(m_pdfDocumentationButton);
-  addAction(m_plannerButton);       actionButtons->AddSpacer(0);
-  addAction(m_lunarToolsButton);    actionButtons->AddSpacer(0);
+  // Reserve a complete action row on the right: documentation has its own
+  // region without adding height to the established ten-row desktop layout.
+  addAction(m_bDeleteAllSights);
+  actionButtons->Add(0, m_almanacButton->GetBestSize().y);
+  addAction(m_horizonEventButton);  addAction(m_practicalGuideHtmlButton);
+  addAction(m_coastalButton);       addAction(m_practicalGuideButton);
+  addAction(m_plannerButton);       addAction(m_bDocumentation);
+  addAction(m_lunarToolsButton);    addAction(m_pdfDocumentationButton);
   addAction(m_analyzeButton);       addAction(m_tbHide);
 
   m_lSights->InsertColumn(rmVISIBLE, wxT(""));
@@ -1797,6 +1807,11 @@ void CelestialNavigationDialog::OnPracticalGuide(wxCommandEvent& event) {
           "Practical_Guide.pdf is installed and a PDF viewer is available."),
         _("Celestial Navigation How to Guide"), wxOK | wxICON_ERROR, this);
   }
+}
+
+void CelestialNavigationDialog::OnPracticalGuideHtml(wxCommandEvent& event) {
+  ShowBundledHtmlHelp(this, _("Celestial Navigation How to Guide"),
+                      _T("Practical_Guide.html"));
 }
 
 void CelestialNavigationDialog::OnHide(wxCommandEvent& event) {

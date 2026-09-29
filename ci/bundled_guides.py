@@ -1,17 +1,28 @@
-"""Verify that a retained package includes the exact three offline guides."""
+"""Verify complete offline guides, including every HTML page/illustration."""
 import hashlib
 import tarfile
 from pathlib import Path
 
-GUIDES = ('Practical_Guide.pdf', 'Celestial_Navigation_Manual_v2.pdf',
+GUIDES = ('Practical_Guide.pdf', 'Practical_Guide.html', 'Celestial_Navigation_Manual_v2.pdf',
           'Celestial_Navigation_Information.html')
+ANDROID_GUIDES = ('Android_Quick_Guide.html', 'Celestial_Navigation_Manual_v2.pdf',
+                  'Celestial_Navigation_Information.html')
 
 
 def check_guides(archive_path, root):
+    android = '-android-' in Path(archive_path).name.lower()
+    required = ANDROID_GUIDES if android else GUIDES
     with tarfile.open(archive_path, 'r:gz') as archive:
-        for filename in GUIDES:
-            entries = [m for m in archive.getmembers()
-                       if m.isfile() and Path(m.name).name == filename]
+        filenames = list(required) + ([] if android else ['practical-guide/' + p.name for p in
+                                   sorted((Path(root) / 'data/practical-guide').glob('*'))
+                                   if p.is_file()])
+        members = archive.getmembers()
+        if android and any(m.isfile() and (Path(m.name).name in GUIDES[:2] or
+                                           '/practical-guide/' in m.name) for m in members):
+            raise ValueError('Desktop practical guide must not be bundled for Android')
+        for filename in filenames:
+            entries = [m for m in members
+                       if m.isfile() and (m.name == filename or m.name.endswith('/' + filename))]
             if len(entries) != 1:
                 raise ValueError('Expected exactly one bundled ' + filename)
             actual = archive.extractfile(entries[0]).read()
@@ -23,4 +34,4 @@ def check_guides(archive_path, root):
             if actual != expected:
                 raise ValueError('Bundled guide differs from source: ' + filename)
     return {name: hashlib.sha256((Path(root) / 'data' / name).read_bytes()).hexdigest()
-            for name in GUIDES}
+            for name in required}

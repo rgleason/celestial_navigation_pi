@@ -29,3 +29,29 @@ Android ABIs and native Windows x64. Every retained tarball is now checked for
 the exact bundled guide assets. Windows x64 requires the matching Preview host
 SDK; no actual Windows GUI acceptance is claimed. Publication remains disabled
 by default and is not part of this documentation PR.
+
+## Illustrated HTML follow-up (same open 2.8.14 PR)
+
+- Added a reflowable, selectable-text How to Guide with 66 linked pages,
+  contents and previous/next navigation, and 103 lossless PNG illustrations.
+  Full-resolution views have explicit return links. Only the current page's
+  images are loaded, not the entire guide. The approved PDF hash is unchanged.
+- Four desktop documentation actions use the existing ten-row layout. A full
+  blank action row separates Generate Almanac from the documentation region.
+  Button-bound/size/non-overlap and gap assertions passed at 1024x700 and
+  1200x800. Updated GTK screenshot: `main-window.png`.
+- Actual plugin HTML-reader test passed across all 66 pages. Relative links,
+  full-size illustration navigation and return-to-contents passed. Representative
+  reader captures: `howto-page-09.png`, `howto-page-43.png`,
+  `howto-page-60.png`, `howto-page-62.png`. Screenshot captions are selectable
+  text; illustrations are not JPEG-recompressed.
+- The first combined GUI run exposed missing wxApp initialization in the new
+  test harness, not a plugin fault. The harness was corrected and the final
+  reader test passed independently.
+- Six Python archive/HTML tests pass, covering exact guide assets, missing or
+  corrupt/duplicate files, missing PNGs, all local links, no remote resources
+  or scripts, and Android-specific guide selection.
+- Android arm64 build/package passed. Android retains its own quick guide and
+  reference manuals. Both desktop How To actions remain hidden and the desktop
+  practical PDF, HTML and PNG assets are excluded from Android packages.
+- No navigation-engine or 2.9.x files were changed.

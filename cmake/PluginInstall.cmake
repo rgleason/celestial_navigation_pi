@@ -72,6 +72,14 @@ set(PREFIX_DATA share)
 set(PREFIX_PKGDATA ${PREFIX_DATA}/${PACKAGE_NAME})
 # set(PREFIX_LIB "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
 set(PREFIX_LIB lib)
+set(CELNAV_PLATFORM_DATA_EXCLUDES)
+if(QT_ANDROID)
+  # Desktop worked examples do not describe Android's native workspace.
+  set(CELNAV_PLATFORM_DATA_EXCLUDES
+      PATTERN "Practical_Guide.pdf" EXCLUDE
+      PATTERN "Practical_Guide.html" EXCLUDE
+      PATTERN "practical-guide" EXCLUDE)
+endif()
 
 if (WIN32)
   set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/../OpenCPN)
@@ -112,6 +120,7 @@ if (UNIX AND NOT APPLE)
   if (EXISTS ${PROJECT_SOURCE_DIR}/data)
     install(DIRECTORY data
             DESTINATION ${PREFIX_PARENTDATA}/plugins/${PACKAGE_NAME}
+            ${CELNAV_PLATFORM_DATA_EXCLUDES}
     )
     message(STATUS "${CMLOC}Install data: ${PREFIX_PARENTDATA}/plugins/${PACKAGE_NAME}")
   endif ()

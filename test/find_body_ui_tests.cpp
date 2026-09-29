@@ -163,7 +163,7 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
              "New", "Duplicate", "Edit", "Delete", "Delete All",
              "Horizon Event...", "Coastal Sextant...", "Sun && Moon...",
              "Lunar Tools...", "Analyze Sights...", "Fix...", "Clock Offset",
-             "Eclipses...", "Generate Almanac...", "How to Guide (PDF)...",
+             "Eclipses...", "Generate Almanac...", "How to Guide...", "How to Guide (PDF)...",
              "Reference Manual...", "Reference Manual (PDF)..."}) {
       auto* button = Find<wxButton>(&main, label);
       ASSERT_NE(nullptr, button) << label;
@@ -182,14 +182,19 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
               Find<wxButton>(&main, "Edit")->GetPosition().y);
     EXPECT_LT(Find<wxButton>(&main, "Edit")->GetPosition().y,
               Find<wxButton>(&main, "Analyze Sights...")->GetPosition().y);
-    // A new guide must use the existing spare row, not crowd the menu or
-    // hide the longer reference-PDF label on compact laptop displays.
+    // Four guide buttons and a full blank row still fit the existing menu.
     for (const wxSize size : {wxSize(1024, 700), wxSize(1200, 800)}) {
       main.SetSize(size);
       main.Layout();
       const wxRect bounds(wxPoint(0, 0), main.GetClientSize());
       wxRect previous;
-      for (const auto* label : {"How to Guide (PDF)...",
+      auto* almanac = Find<wxButton>(&main, "Generate Almanac...");
+      auto* htmlGuide = Find<wxButton>(&main, "How to Guide...");
+      ASSERT_NE(nullptr, almanac);
+      ASSERT_NE(nullptr, htmlGuide);
+      EXPECT_GE(htmlGuide->GetRect().GetTop() - almanac->GetRect().GetBottom(),
+                almanac->GetSize().y);
+      for (const auto* label : {"How to Guide...", "How to Guide (PDF)...",
                                 "Reference Manual...",
                                 "Reference Manual (PDF)..."}) {
         auto* button = Find<wxButton>(&main, label);

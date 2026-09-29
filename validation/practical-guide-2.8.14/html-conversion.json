@@ -1,0 +1,924 @@
+{
+  "source_sha256": "825283aeda51dfd6448abecd6c7e0222552892ed03aa7f1af43c938a864428ab",
+  "pages": [
+    {
+      "page": 1,
+      "text_blocks": 6,
+      "figures": []
+    },
+    {
+      "page": 2,
+      "text_blocks": 3,
+      "figures": []
+    },
+    {
+      "page": 3,
+      "text_blocks": 9,
+      "figures": [
+        {
+          "file": "page-03-figure-1.png",
+          "width": 1228,
+          "height": 697
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "text_blocks": 19,
+      "figures": [
+        {
+          "file": "page-04-figure-1.png",
+          "width": 956,
+          "height": 523
+        },
+        {
+          "file": "page-04-figure-2.png",
+          "width": 734,
+          "height": 577
+        },
+        {
+          "file": "page-04-figure-3.png",
+          "width": 623,
+          "height": 248
+        },
+        {
+          "file": "page-04-figure-4.png",
+          "width": 593,
+          "height": 236
+        },
+        {
+          "file": "page-04-figure-5.png",
+          "width": 1392,
+          "height": 309
+        },
+        {
+          "file": "page-04-figure-6.png",
+          "width": 588,
+          "height": 38
+        },
+        {
+          "file": "page-04-figure-7.png",
+          "width": 709,
+          "height": 409
+        },
+        {
+          "file": "page-04-figure-8.png",
+          "width": 565,
+          "height": 39
+        },
+        {
+          "file": "page-04-figure-9.png",
+          "width": 421,
+          "height": 341
+        },
+        {
+          "file": "page-04-figure-10.png",
+          "width": 640,
+          "height": 181
+        },
+        {
+          "file": "page-04-figure-11.png",
+          "width": 623,
+          "height": 363
+        }
+      ]
+    },
+    {
+      "page": 5,
+      "text_blocks": 7,
+      "figures": []
+    },
+    {
+      "page": 6,
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-06-figure-1.png",
+          "width": 546,
+          "height": 545
+        },
+        {
+          "file": "page-06-figure-2.png",
+          "width": 928,
+          "height": 370
+        },
+        {
+          "file": "page-06-figure-3.png",
+          "width": 920,
+          "height": 58
+        }
+      ]
+    },
+    {
+      "page": 7,
+      "text_blocks": 11,
+      "figures": [
+        {
+          "file": "page-07-figure-1.png",
+          "width": 900,
+          "height": 416
+        }
+      ]
+    },
+    {
+      "page": 8,
+      "text_blocks": 7,
+      "figures": [
+        {
+          "file": "page-08-figure-1.png",
+          "width": 888,
+          "height": 419
+        },
+        {
+          "file": "page-08-figure-2.png",
+          "width": 894,
+          "height": 62
+        }
+      ]
+    },
+    {
+      "page": 9,
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-09-figure-1.png",
+          "width": 940,
+          "height": 562
+        },
+        {
+          "file": "page-09-figure-2.png",
+          "width": 860,
+          "height": 536
+        },
+        {
+          "file": "page-09-figure-3.png",
+          "width": 758,
+          "height": 545
+        }
+      ]
+    },
+    {
+      "page": 10,
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-10-figure-1.png",
+          "width": 897,
+          "height": 561
+        }
+      ]
+    },
+    {
+      "page": 11,
+      "text_blocks": 4,
+      "figures": [
+        {
+          "file": "page-11-figure-1.png",
+          "width": 898,
+          "height": 437
+        }
+      ]
+    },
+    {
+      "page": 12,
+      "text_blocks": 16,
+      "figures": [
+        {
+          "file": "page-12-figure-1.png",
+          "width": 523,
+          "height": 433
+        }
+      ]
+    },
+    {
+      "page": 13,
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-13-figure-1.png",
+          "width": 2682,
+          "height": 898
+        }
+      ]
+    },
+    {
+      "page": 14,
+      "text_blocks": 10,
+      "figures": [
+        {
+          "file": "page-14-figure-1.png",
+          "width": 2715,
+          "height": 1253
+        }
+      ]
+    },
+    {
+      "page": 15,
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-15-figure-1.png",
+          "width": 973,
+          "height": 765
+        },
+        {
+          "file": "page-15-figure-2.png",
+          "width": 553,
+          "height": 552
+        }
+      ]
+    },
+    {
+      "page": 16,
+      "text_blocks": 4,
+      "figures": [
+        {
+          "file": "page-16-figure-1.png",
+          "width": 1632,
+          "height": 940
+        }
+      ]
+    },
+    {
+      "page": 17,
+      "text_blocks": 7,
+      "figures": [
+        {
+          "file": "page-17-figure-1.png",
+          "width": 1228,
+          "height": 697
+        },
+        {
+          "file": "page-17-figure-2.png",
+          "width": 909,
+          "height": 416
+        },
+        {
+          "file": "page-17-figure-3.png",
+          "width": 864,
+          "height": 331
+        }
+      ]
+    },
+    {
+      "page": 18,
+      "text_blocks": 2,
+      "figures": [
+        {
+          "file": "page-18-figure-1.png",
+          "width": 559,
+          "height": 537
+        },
+        {
+          "file": "page-18-figure-2.png",
+          "width": 963,
+          "height": 614
+        }
+      ]
+    },
+    {
+      "page": 19,
+      "text_blocks": 7,
+      "figures": [
+        {
+          "file": "page-19-figure-1.png",
+          "width": 544,
+          "height": 526
+        },
+        {
+          "file": "page-19-figure-2.png",
+          "width": 1109,
+          "height": 826
+        }
+      ]
+    },
+    {
+      "page": 20,
+      "text_blocks": 3,
+      "figures": [
+        {
+          "file": "page-20-figure-1.png",
+          "width": 1657,
+          "height": 991
+        }
+      ]
+    },
+    {
+      "page": 21,
+      "text_blocks": 10,
+      "figures": [
+        {
+          "file": "page-21-figure-1.png",
+          "width": 1590,
+          "height": 1186
+        },
+        {
+          "file": "page-21-figure-2.png",
+          "width": 543,
+          "height": 140
+        }
+      ]
+    },
+    {
+      "page": 22,
+      "text_blocks": 3,
+      "figures": [
+        {
+          "file": "page-22-figure-1.png",
+          "width": 1490,
+          "height": 1234
+        }
+      ]
+    },
+    {
+      "page": 23,
+      "text_blocks": 3,
+      "figures": [
+        {
+          "file": "page-23-figure-1.png",
+          "width": 1686,
+          "height": 1258
+        }
+      ]
+    },
+    {
+      "page": 24,
+      "text_blocks": 5,
+      "figures": [
+        {
+          "file": "page-24-figure-1.png",
+          "width": 547,
+          "height": 526
+        },
+        {
+          "file": "page-24-figure-2.png",
+          "width": 1051,
+          "height": 1353
+        }
+      ]
+    },
+    {
+      "page": 25,
+      "text_blocks": 2,
+      "figures": [
+        {
+          "file": "page-25-figure-1.png",
+          "width": 1324,
+          "height": 912
+        },
+        {
+          "file": "page-25-figure-2.png",
+          "width": 1194,
+          "height": 318
+        }
+      ]
+    },
+    {
+      "page": 26,
+      "text_blocks": 3,
+      "figures": [
+        {
+          "file": "page-26-figure-1.png",
+          "width": 1241,
+          "height": 809
+        }
+      ]
+    },
+    {
+      "page": 27,
+      "text_blocks": 3,
+      "figures": [
+        {
+          "file": "page-27-figure-1.png",
+          "width": 1399,
+          "height": 1528
+        }
+      ]
+    },
+    {
+      "page": 28,
+      "text_blocks": 10,
+      "figures": [
+        {
+          "file": "page-28-figure-1.png",
+          "width": 1081,
+          "height": 1446
+        },
+        {
+          "file": "page-28-figure-2.png",
+          "width": 387,
+          "height": 363
+        },
+        {
+          "file": "page-28-figure-3.png",
+          "width": 1241,
+          "height": 1478
+        }
+      ]
+    },
+    {
+      "page": 29,
+      "text_blocks": 3,
+      "figures": [
+        {
+          "file": "page-29-figure-1.png",
+          "width": 1635,
+          "height": 976
+        }
+      ]
+    },
+    {
+      "page": 30,
+      "text_blocks": 3,
+      "figures": [
+        {
+          "file": "page-30-figure-1.png",
+          "width": 2154,
+          "height": 1130
+        }
+      ]
+    },
+    {
+      "page": 31,
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-31-figure-1.png",
+          "width": 1075,
+          "height": 1452
+        },
+        {
+          "file": "page-31-figure-2.png",
+          "width": 582,
+          "height": 553
+        },
+        {
+          "file": "page-31-figure-3.png",
+          "width": 553,
+          "height": 520
+        },
+        {
+          "file": "page-31-figure-4.png",
+          "width": 1686,
+          "height": 1056
+        }
+      ]
+    },
+    {
+      "page": 32,
+      "text_blocks": 6,
+      "figures": []
+    },
+    {
+      "page": 33,
+      "text_blocks": 9,
+      "figures": []
+    },
+    {
+      "page": 34,
+      "text_blocks": 3,
+      "figures": []
+    },
+    {
+      "page": 35,
+      "text_blocks": 6,
+      "figures": []
+    },
+    {
+      "page": 36,
+      "text_blocks": 13,
+      "figures": []
+    },
+    {
+      "page": 37,
+      "text_blocks": 7,
+      "figures": []
+    },
+    {
+      "page": 38,
+      "text_blocks": 15,
+      "figures": [
+        {
+          "file": "page-38-figure-1.png",
+          "width": 2344,
+          "height": 1108
+        }
+      ]
+    },
+    {
+      "page": 39,
+      "text_blocks": 7,
+      "figures": [
+        {
+          "file": "page-39-figure-1.png",
+          "width": 1470,
+          "height": 844
+        }
+      ]
+    },
+    {
+      "page": 40,
+      "text_blocks": 7,
+      "figures": [
+        {
+          "file": "page-40-figure-1.png",
+          "width": 1079,
+          "height": 776
+        }
+      ]
+    },
+    {
+      "page": 41,
+      "text_blocks": 8,
+      "figures": [
+        {
+          "file": "page-41-figure-1.png",
+          "width": 1234,
+          "height": 600
+        },
+        {
+          "file": "page-41-figure-2.png",
+          "width": 1179,
+          "height": 996
+        },
+        {
+          "file": "page-41-figure-3.png",
+          "width": 709,
+          "height": 294
+        }
+      ]
+    },
+    {
+      "page": 42,
+      "text_blocks": 10,
+      "figures": [
+        {
+          "file": "page-42-figure-1.png",
+          "width": 810,
+          "height": 501
+        },
+        {
+          "file": "page-42-figure-2.png",
+          "width": 775,
+          "height": 547
+        },
+        {
+          "file": "page-42-figure-3.png",
+          "width": 810,
+          "height": 504
+        }
+      ]
+    },
+    {
+      "page": 43,
+      "text_blocks": 8,
+      "figures": [
+        {
+          "file": "page-43-figure-1.png",
+          "width": 991,
+          "height": 770
+        }
+      ]
+    },
+    {
+      "page": 44,
+      "text_blocks": 9,
+      "figures": [
+        {
+          "file": "page-44-figure-1.png",
+          "width": 960,
+          "height": 747
+        }
+      ]
+    },
+    {
+      "page": 45,
+      "text_blocks": 8,
+      "figures": [
+        {
+          "file": "page-45-figure-1.png",
+          "width": 1396,
+          "height": 604
+        },
+        {
+          "file": "page-45-figure-2.png",
+          "width": 837,
+          "height": 600
+        },
+        {
+          "file": "page-45-figure-3.png",
+          "width": 1312,
+          "height": 520
+        }
+      ]
+    },
+    {
+      "page": 46,
+      "text_blocks": 7,
+      "figures": [
+        {
+          "file": "page-46-figure-1.png",
+          "width": 876,
+          "height": 628
+        },
+        {
+          "file": "page-46-figure-2.png",
+          "width": 1021,
+          "height": 614
+        }
+      ]
+    },
+    {
+      "page": 47,
+      "text_blocks": 7,
+      "figures": [
+        {
+          "file": "page-47-figure-1.png",
+          "width": 1052,
+          "height": 839
+        },
+        {
+          "file": "page-47-figure-2.png",
+          "width": 959,
+          "height": 743
+        },
+        {
+          "file": "page-47-figure-3.png",
+          "width": 722,
+          "height": 399
+        }
+      ]
+    },
+    {
+      "page": 48,
+      "text_blocks": 11,
+      "figures": [
+        {
+          "file": "page-48-figure-1.png",
+          "width": 482,
+          "height": 383
+        },
+        {
+          "file": "page-48-figure-2.png",
+          "width": 529,
+          "height": 356
+        },
+        {
+          "file": "page-48-figure-3.png",
+          "width": 1244,
+          "height": 290
+        },
+        {
+          "file": "page-48-figure-4.png",
+          "width": 491,
+          "height": 406
+        }
+      ]
+    },
+    {
+      "page": 49,
+      "text_blocks": 13,
+      "figures": [
+        {
+          "file": "page-49-figure-1.png",
+          "width": 1058,
+          "height": 672
+        },
+        {
+          "file": "page-49-figure-2.png",
+          "width": 1542,
+          "height": 248
+        },
+        {
+          "file": "page-49-figure-3.png",
+          "width": 752,
+          "height": 732
+        }
+      ]
+    },
+    {
+      "page": 50,
+      "text_blocks": 12,
+      "figures": [
+        {
+          "file": "page-50-figure-1.png",
+          "width": 1329,
+          "height": 413
+        }
+      ]
+    },
+    {
+      "page": 51,
+      "text_blocks": 10,
+      "figures": []
+    },
+    {
+      "page": 52,
+      "text_blocks": 12,
+      "figures": [
+        {
+          "file": "page-52-figure-1.png",
+          "width": 484,
+          "height": 482
+        },
+        {
+          "file": "page-52-figure-2.png",
+          "width": 1302,
+          "height": 1214
+        },
+        {
+          "file": "page-52-figure-3.png",
+          "width": 351,
+          "height": 675
+        }
+      ]
+    },
+    {
+      "page": 53,
+      "text_blocks": 10,
+      "figures": [
+        {
+          "file": "page-53-figure-1.png",
+          "width": 552,
+          "height": 550
+        },
+        {
+          "file": "page-53-figure-2.png",
+          "width": 1900,
+          "height": 1211
+        }
+      ]
+    },
+    {
+      "page": 54,
+      "text_blocks": 27,
+      "figures": [
+        {
+          "file": "page-54-figure-1.png",
+          "width": 1329,
+          "height": 709
+        }
+      ]
+    },
+    {
+      "page": 55,
+      "text_blocks": 7,
+      "figures": [
+        {
+          "file": "page-55-figure-1.png",
+          "width": 731,
+          "height": 570
+        },
+        {
+          "file": "page-55-figure-2.png",
+          "width": 1131,
+          "height": 804
+        },
+        {
+          "file": "page-55-figure-3.png",
+          "width": 728,
+          "height": 629
+        }
+      ]
+    },
+    {
+      "page": 56,
+      "text_blocks": 11,
+      "figures": [
+        {
+          "file": "page-56-figure-1.png",
+          "width": 731,
+          "height": 570
+        },
+        {
+          "file": "page-56-figure-2.png",
+          "width": 1131,
+          "height": 804
+        },
+        {
+          "file": "page-56-figure-3.png",
+          "width": 728,
+          "height": 629
+        }
+      ]
+    },
+    {
+      "page": 57,
+      "text_blocks": 10,
+      "figures": []
+    },
+    {
+      "page": 58,
+      "text_blocks": 2,
+      "figures": []
+    },
+    {
+      "page": 59,
+      "text_blocks": 13,
+      "figures": [
+        {
+          "file": "page-59-figure-1.png",
+          "width": 1082,
+          "height": 436
+        }
+      ]
+    },
+    {
+      "page": 60,
+      "text_blocks": 14,
+      "figures": [
+        {
+          "file": "page-60-figure-1.png",
+          "width": 2344,
+          "height": 1108
+        }
+      ]
+    },
+    {
+      "page": 61,
+      "text_blocks": 10,
+      "figures": [
+        {
+          "file": "page-61-figure-1.png",
+          "width": 1102,
+          "height": 686
+        },
+        {
+          "file": "page-61-figure-2.png",
+          "width": 1217,
+          "height": 710
+        }
+      ]
+    },
+    {
+      "page": 62,
+      "text_blocks": 49,
+      "figures": [
+        {
+          "file": "page-62-figure-1.png",
+          "width": 2536,
+          "height": 1566
+        }
+      ]
+    },
+    {
+      "page": 63,
+      "text_blocks": 63,
+      "figures": [
+        {
+          "file": "page-63-figure-1.png",
+          "width": 2560,
+          "height": 1508
+        }
+      ]
+    },
+    {
+      "page": 64,
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-64-figure-1.png",
+          "width": 1111,
+          "height": 625
+        },
+        {
+          "file": "page-64-figure-2.png",
+          "width": 1360,
+          "height": 535
+        },
+        {
+          "file": "page-64-figure-3.png",
+          "width": 1111,
+          "height": 592
+        }
+      ]
+    },
+    {
+      "page": 65,
+      "text_blocks": 4,
+      "figures": [
+        {
+          "file": "page-65-figure-1.png",
+          "width": 948,
+          "height": 369
+        },
+        {
+          "file": "page-65-figure-2.png",
+          "width": 992,
+          "height": 508
+        },
+        {
+          "file": "page-65-figure-3.png",
+          "width": 945,
+          "height": 739
+        }
+      ]
+    },
+    {
+      "page": 66,
+      "text_blocks": 4,
+      "figures": []
+    }
+  ],
+  "format": "reflowable HTML with lossless annotated figures"
+}
