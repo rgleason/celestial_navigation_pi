@@ -23,6 +23,8 @@ endif()
 find_package(GTest REQUIRED)
 find_package(wxWidgets COMPONENTS core base net html REQUIRED)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
+add_test(NAME bundled_guides COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/bundled_guides_test.py)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml ${CMAKE_CURRENT_BINARY_DIR}/tinyxml)
 

@@ -69,11 +69,14 @@ bool ShowBundledHtmlHelp(wxWindow* parent, const wxString& title,
 #endif
 }
 
-bool OpenBundledDocumentExternally(const wxString& filename) {
+bool OpenBundledDocumentExternally(const wxString& filename,
+                                   const wxString& title) {
   const wxString path = BundledDataPath(filename);
 #ifdef __OCPN__ANDROID__
-  return wxFileName::FileExists(path) && celestial_android::ShowPdf(GetCanvasByIndex(0), _("Celestial Navigation manual"), path);
+  return wxFileName::FileExists(path) && celestial_android::ShowPdf(
+      GetCanvasByIndex(0), title.empty() ? _("Celestial Navigation manual") : title, path);
 #else
+  (void)title;
   return wxFileName::FileExists(path) && wxLaunchDefaultApplication(path);
 #endif
 }

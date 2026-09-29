@@ -141,6 +141,7 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       m_coastalButton(NULL),
       m_almanacButton(NULL),
       m_pdfDocumentationButton(NULL),
+      m_practicalGuideButton(NULL),
       m_eclipseDialog(NULL),
       m_coastalDialog(NULL),
       m_chronyPollTicks(0),
@@ -219,13 +220,22 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   m_eclipseButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnEclipse,
                         this);
   m_pdfDocumentationButton =
-      new wxButton(this, wxID_ANY, _("PDF Documentation"));
+      new wxButton(this, wxID_ANY, _("Reference Manual (PDF)..."));
+  m_bDocumentation->SetLabel(_("Reference Manual..."));
+  m_bDocumentation->SetToolTip(
+      _("Read the comprehensive offline reference manual inside the plugin"));
   m_pdfDocumentationButton->SetToolTip(
       _("Open the fixed-layout manual in the system PDF viewer"));
   actionButtons->Insert(actionButtons->GetItemCount() - 1,
                         m_pdfDocumentationButton, 0, wxALL | wxEXPAND, 5);
   m_pdfDocumentationButton->Bind(
       wxEVT_BUTTON, &CelestialNavigationDialog::OnPdfDocumentation, this);
+  m_practicalGuideButton =
+      new wxButton(this, wxID_ANY, _("How to Guide (PDF)..."));
+  m_practicalGuideButton->SetToolTip(
+      _("Open the offline practical guide with instructions and worked examples"));
+  m_practicalGuideButton->Bind(
+      wxEVT_BUTTON, &CelestialNavigationDialog::OnPracticalGuide, this);
 
   // Keep sight maintenance together on the left and fix/reference tools on
   // the right. All controls were created above (or by the base dialog); only
@@ -238,9 +248,9 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   addAction(m_bDuplicateSight);     addAction(m_bClockOffset);
   addAction(m_bEditSight);          addAction(m_eclipseButton);
   addAction(m_bDeleteSight);        addAction(m_almanacButton);
-  addAction(m_bDeleteAllSights);    addAction(m_bDocumentation);
-  addAction(m_horizonEventButton);  addAction(m_pdfDocumentationButton);
-  addAction(m_coastalButton);       actionButtons->AddSpacer(0);
+  addAction(m_bDeleteAllSights);    addAction(m_practicalGuideButton);
+  addAction(m_horizonEventButton);  addAction(m_bDocumentation);
+  addAction(m_coastalButton);       addAction(m_pdfDocumentationButton);
   addAction(m_plannerButton);       actionButtons->AddSpacer(0);
   addAction(m_lunarToolsButton);    actionButtons->AddSpacer(0);
   addAction(m_analyzeButton);       addAction(m_tbHide);
@@ -1766,15 +1776,26 @@ void CelestialNavigationDialog::ShowLunarSolutions(wxWindow* parent) {
 }
 
 void CelestialNavigationDialog::OnDocumentation(wxCommandEvent& event) {
-  ShowBundledHtmlHelp(this, _("Celestial Navigation Documentation"),
+  ShowBundledHtmlHelp(this, _("Celestial Navigation Reference Manual"),
                       _T("Celestial_Navigation_Information.html"));
 }
 
 void CelestialNavigationDialog::OnPdfDocumentation(wxCommandEvent& event) {
   if (!OpenBundledDocumentExternally(
-          _T("Celestial_Navigation_Manual_v2.pdf"))) {
-    ShowBundledHtmlHelp(this, _("Celestial Navigation Documentation"),
+          _T("Celestial_Navigation_Manual_v2.pdf"),
+          _("Celestial Navigation Reference Manual"))) {
+    ShowBundledHtmlHelp(this, _("Celestial Navigation Reference Manual"),
                         _T("Celestial_Navigation_Information.html"));
+  }
+}
+
+void CelestialNavigationDialog::OnPracticalGuide(wxCommandEvent& event) {
+  if (!OpenBundledDocumentExternally(_T("Practical_Guide.pdf"),
+                                    _("Celestial Navigation How to Guide"))) {
+    CelestialMessageBox(
+        _("The How to Guide PDF could not be opened. Check that the plugin's "
+          "Practical_Guide.pdf is installed and a PDF viewer is available."),
+        _("Celestial Navigation How to Guide"), wxOK | wxICON_ERROR, this);
   }
 }
 

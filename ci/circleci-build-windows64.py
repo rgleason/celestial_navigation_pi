@@ -18,6 +18,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 from windows64_pe import verify
+from plugin_version import plugin_version
 
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT / '.windows64'
@@ -124,10 +125,11 @@ def main():
         raise RuntimeError('Expected exactly one archive and metadata pair')
     xml = ET.parse(metadata[0]).getroot()
     values = [(xml.findtext(k) or '').strip() for k in ('target', 'target-version', 'target-arch', 'version', 'api-version')]
-    if values != ['msvc-wx32-x64', '10', 'x86_64', '2.8.13.0', '1.18']:
+    version = plugin_version(ROOT)
+    if values != ['msvc-wx32-x64', '10', 'x86_64', version, '1.18']:
         raise RuntimeError('Incorrect Windows x64 metadata: ' + repr(values))
     xml.find('source').text = 'https://github.com/pob220/celestial_navigation_pi/tree/' + revision
-    xml.find('tarball-url').text = 'https://github.com/pob220/celestial_navigation_pi/releases/download/v2.8.13.0/' + archives[0].name
+    xml.find('tarball-url').text = 'https://github.com/pob220/celestial_navigation_pi/releases/download/v' + version + '/' + archives[0].name
     raw_xml = ET.tostring(xml, encoding='utf-8', xml_declaration=True)
     metadata[0].write_bytes(raw_xml)
     with tempfile.TemporaryDirectory() as temporary:
@@ -141,7 +143,7 @@ def main():
         architecture = verify(extracted)
         if len(architecture) != 1 or not any(Path(p).name == 'celestial_navigation_pi.dll' for p in architecture):
             raise RuntimeError('Unexpected packaged native images')
-        for asset in ('vsop87d.txt', 'Android_Quick_Guide.html', 'Celestial_Navigation_Manual_v2.pdf'):
+        for asset in ('vsop87d.txt', 'Android_Quick_Guide.html', 'Celestial_Navigation_Manual_v2.pdf', 'Practical_Guide.pdf'):
             # Compare the actual source bytes for the selected bundled filename.
             originals = list((ROOT / 'data').rglob(asset))
             if not originals:
