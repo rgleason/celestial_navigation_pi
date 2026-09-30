@@ -60,7 +60,21 @@ bool ShowBundledHtmlHelp(wxWindow* parent, const wxString& title,
   const wxString geometryKey = practicalGuide ? _T("PracticalGuide") : _T("Documentation");
   dialog_geometry::Restore(&dialog, geometryKey, initialSize);
   if (practicalGuide)
-    dialog.m_htmlInformation->SetStandardFonts(16);
+    dialog.m_htmlInformation->SetStandardFonts(12);
+  if (practicalGuide) {
+    dialog.m_htmlInformation->SetBorders(12);
+    dialog.m_htmlInformation->Bind(wxEVT_HTML_LINK_CLICKED,
+        [&dialog, title](wxHtmlLinkEvent& event) {
+          const wxString href = event.GetLinkInfo().GetHref();
+          if (href.StartsWith("https://") || href.StartsWith("http://")) {
+            if (!wxLaunchDefaultBrowser(href))
+              CelestialMessageBox(_("The web browser could not be opened."),
+                                  title, wxOK | wxICON_ERROR, &dialog);
+          } else {
+            event.Skip();
+          }
+        });
+  }
   if (!dialog.m_htmlInformation->LoadPage(path)) {
     CelestialMessageBox(wxString::Format(
                      _("The documentation file could not be opened:\n%s"), path),
