@@ -5,6 +5,7 @@ from pathlib import Path
 
 GUIDES = ('Practical_Guide.pdf', 'Practical_Guide.html', 'Celestial_Navigation_Manual_v2.pdf',
           'Celestial_Navigation_Information.html')
+DESKTOP_REFERENCES = ('Celestial_Navigation_Definitions.html',)
 ANDROID_GUIDES = ('Android_Quick_Guide.html', 'Celestial_Navigation_Manual_v2.pdf',
                   'Celestial_Navigation_Information.html')
 
@@ -14,7 +15,7 @@ def check_guides(archive_path, root, target=None):
                else '-android-' in Path(archive_path).name.lower())
     required = ANDROID_GUIDES if android else GUIDES
     with tarfile.open(archive_path, 'r:gz') as archive:
-        filenames = list(required) + ([] if android else ['practical-guide/' + p.name for p in
+        filenames = list(required) + ([] if android else list(DESKTOP_REFERENCES) + ['practical-guide/' + p.name for p in
                                    sorted((Path(root) / 'data/practical-guide').glob('*'))
                                    if p.is_file()])
         members = archive.getmembers()
