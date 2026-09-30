@@ -330,7 +330,6 @@ if(CELESTIAL_PLANNER_INTEGRATION_TEST)
     CELESTIAL_PLANNER_INTEGRATION_TEST=1)
 endif()
 
-
 if (NOT OCPN_FLATPAK_CONFIG)
   # Build environment not available when flatpak is being configured so
   # following statements will not work
