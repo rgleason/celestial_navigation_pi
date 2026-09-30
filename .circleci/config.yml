@@ -7,7 +7,7 @@ parameters:
         default: false
     run_workflow_deploy:
         type: boolean
-        default: false
+        default: true
 
 std-filters: &std-filters
     filters:
