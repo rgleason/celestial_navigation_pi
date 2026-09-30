@@ -16,8 +16,8 @@ Base: released upstream master `1b53a713d0bd0773b980b83452b203c21a173dae`
   wxWidgets readers; all generated HTML uses ASCII with numeric entities.
   The official wxWidgets 3.2.8 parser source only recognises HTTP-EQUIV, unlike
   the 3.2.11 Linux runtime, which also recognises HTML5's short charset form.
-- Restore the two missing PDF annotations: glossary in the bundled reference
-  PDF (relative file, page 32), and lunar section in the guide (page 32).
+- Restore the two missing PDF annotations: Bob's bundled definitions HTML
+  (relative document-launch action), and lunar section in the guide (page 32).
   Keep the existing online accuracy/testing link to issue 131. Equivalent HTML
   links are active; online links launch the system browser.
 - Navigation calculations, source observation values, Android guide selection,
@@ -41,7 +41,7 @@ Base: released upstream master `1b53a713d0bd0773b980b83452b203c21a173dae`
   identical extracted text and rendered pixels before/after annotation repair;
   all 28 bookmarks are retained. Re-running the repair produces the same hash.
 - `qpdf --check` passed. The repaired PDF SHA-256 is
-  `45ee587bcddb9b7253664ecaf8bbe8b3fd28e747f3f1514ea62cd5b7cba72503`.
+  `a8d24f988829f92db587ace741f21d94d372634d0dc7fe32440aa444561db6a3`.
 - Full illustrated assets occupy approximately 26 MB (previously 18 MB),
   reflecting preserved complete compositions and separate previews. The final 2.8.15.0 desktop CPack archive
   passed verification of every guide asset and local definitions target. These assets remain excluded from
@@ -72,3 +72,17 @@ links and the local-bundling explanation. No further related blocker was found. 
 contained the same 73 comments.
 The PDF is installed in the plugin's local `data` directory; only the historical
 accuracy reference requires an online page.
+
+## Final pre-publication thread clarification
+
+The last recheck contained 75 comments, through `5920350068`. Bob supplied
+the local `Celestial_Navigation_Definitions.html` path from his older Mac
+installation. That document is already bundled and is the HTML destination.
+The PDF destination now opens that exact document, rather than the newer
+reference manual's glossary. A PDF reader may prompt for document-launch
+actions or restrict them according to its settings. No further related
+HTML correction was requested.
+
+The initial 2.8.15 revision passed all 20 CircleCI builds and retained-package
+audits. Its publication gate must remain held: the corrected Definitions link
+requires fresh builds from the final PR revision before publication.

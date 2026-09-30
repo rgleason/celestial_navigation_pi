@@ -123,7 +123,8 @@ class BundledGuides(unittest.TestCase):
         self.assertEqual(report['unchanged_rendered_pages'], 66)
         self.assertEqual(report['sha256'], hashlib.sha256((ROOT / 'data/Practical_Guide.pdf').read_bytes()).hexdigest())
         self.assertEqual(len(report['links']), 3)
-        self.assertEqual(report['links'][1]['destination'], 'Celestial_Navigation_Manual_v2.pdf')
+        self.assertEqual(report['links'][1]['destination'], 'Celestial_Navigation_Definitions.html')
+        self.assertEqual(report['links'][1]['action'], 'Launch')
         self.assertEqual(report['links'][2]['page'], 32)
         for link in report['links']:
             if link['offline']:

@@ -56,18 +56,19 @@ annotations. `docs/repair_practical_pdf_links.py` adds their destinations:
 
 - **Accuracy, Goals, Precision and Testing** retains the existing online link to
   issue 131, which contains the April 2025 historical testing material.
-- **Celestial Navigation Definitions** opens the glossary on page 32 of the
-  bundled `Celestial_Navigation_Manual_v2.pdf` using a relative PDF destination.
+- **Celestial Navigation Definitions** opens Bob's bundled
+  `Celestial_Navigation_Definitions.html` using a relative document-launch action.
 - **Lunar Distance Use Case** jumps to page 32 of the combined guide.
 
-The latter two PDF links work offline. A PDF reader may ask to open the separate
-reference PDF according to its local settings. The HTML equivalents open the
+The latter two PDF links resolve to local content. A PDF reader may ask to open
+the definitions HTML in its associated application, or restrict document-launch
+actions according to its settings. The HTML equivalents open the
 bundled definitions HTML and the lunar section; the online testing link launches
 the system browser. No remote images, scripts or fonts are loaded by the guide.
 
 The PDF's text, rendered pages, bookmarks and image content are unchanged by
 adding these annotations. The repaired PDF SHA-256 is
-`45ee587bcddb9b7253664ecaf8bbe8b3fd28e747f3f1514ea62cd5b7cba72503`.
+`a8d24f988829f92db587ace741f21d94d372634d0dc7fe32440aa444561db6a3`.
 The link repair is idempotent. Package integrity checks include every HTML file,
 full-size image and preview. Validation evidence is in
 `validation/practical-guide-2.8.15/`.
