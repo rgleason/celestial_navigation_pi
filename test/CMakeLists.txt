@@ -48,6 +48,7 @@ set(SRC
     sextant_calibration_engine_tests.cpp
     lunar_de440_tests.cpp
     navigation_de440_tests.cpp
+    analytical_epoch_tests.cpp
     lunar_observer_tests.cpp
     dut1_update_tests.cpp
     coastal_navigation_tests.cpp
