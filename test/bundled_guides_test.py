@@ -90,8 +90,9 @@ class BundledGuides(unittest.TestCase):
             for ref in parser.references:
                 parsed = urlsplit(ref)
                 if parsed.scheme or parsed.netloc:
-                    self.assertEqual(ref, 'https://github.com/rgleason/celestial_navigation_pi/issues/131')
-                    self.assertEqual(path.name, 'page-01.html')
+                    online = {'page-01.html': 'https://github.com/rgleason/celestial_navigation_pi/issues/131',
+                              'definitions.html': 'https://www.siranah.de/html/sail040e.htm#a2'}
+                    self.assertEqual(ref, online.get(path.name))
                     continue
                 if parsed.path:
                     target = (path.parent / unquote(parsed.path)).resolve()
@@ -106,7 +107,7 @@ class BundledGuides(unittest.TestCase):
         assets = ROOT / 'data/practical-guide'
         overview = (assets / 'page-04.html').read_text()
         self.assertEqual(overview.count('<img '), 1)
-        audit = json.loads((ROOT / 'validation/practical-guide-2.8.15/html-conversion.json').read_text())
+        audit = json.loads((ROOT / 'validation/practical-guide-2.8.16/html-conversion.json').read_text())
         self.assertEqual(audit['pages'][3]['figures'][0]['clip'], [0, 0, 1920, 1080])
         for page in audit['pages']:
             for figure in page['figures']:
@@ -119,16 +120,60 @@ class BundledGuides(unittest.TestCase):
     def test_pdf_link_audit_matches_bundled_documents(self):
         import hashlib
         import json
-        report = json.loads((ROOT / 'validation/practical-guide-2.8.15/pdf-links.json').read_text())
+        report = json.loads((ROOT / 'validation/practical-guide-2.8.16/pdf-links.json').read_text())
         self.assertEqual(report['unchanged_rendered_pages'], 66)
         self.assertEqual(report['sha256'], hashlib.sha256((ROOT / 'data/Practical_Guide.pdf').read_bytes()).hexdigest())
         self.assertEqual(len(report['links']), 3)
-        self.assertEqual(report['links'][1]['destination'], 'Celestial_Navigation_Definitions.html')
-        self.assertEqual(report['links'][1]['action'], 'Launch')
+        self.assertEqual(report['links'][1]['destination'], 'Practical_Guide.pdf')
+        self.assertEqual(report['links'][1]['action'], 'GoTo')
+        self.assertEqual(report['links'][1]['page'], 67)
+        self.assertEqual(report['pages'], 66 + report['appendix_pages'])
+        self.assertGreater(report['appendix_pages'], 0)
+        self.assertEqual(report['definitions_source_sha256'],
+                         hashlib.sha256((ROOT / 'data/Celestial_Navigation_Definitions.html').read_bytes()).hexdigest())
         self.assertEqual(report['links'][2]['page'], 32)
         for link in report['links']:
             if link['offline']:
                 self.assertTrue((ROOT / 'data' / link['destination']).is_file())
+
+    def test_definitions_appendix_contains_the_complete_source_and_internal_navigation(self):
+        import re
+        class BodyText(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.inside, self.parts = False, []
+            def handle_starttag(self, tag, attrs):
+                if tag == 'body':
+                    self.inside = True
+            def handle_endtag(self, tag):
+                if tag == 'body':
+                    self.inside = False
+            def handle_data(self, text):
+                if self.inside:
+                    self.parts.append(text)
+        source = BodyText()
+        source.feed((ROOT / 'data/Celestial_Navigation_Definitions.html').read_text())
+        appendix_path = ROOT / 'data/practical-guide/definitions.html'
+        appendix = BodyText()
+        markup = appendix_path.read_text()
+        appendix.feed(markup)
+        def normal(text):
+            text = text.replace('\u00a0', ' ').replace('\u2011', '-').replace('\u2013', '-').replace('\u2014', ' - ')
+            return ' '.join(text.split())
+        self.assertIn(normal(''.join(source.parts)), normal(''.join(appendix.parts)))
+        contents = (ROOT / 'data/Practical_Guide.html').read_text()
+        first = (ROOT / 'data/practical-guide/page-01.html').read_text()
+        last = (ROOT / 'data/practical-guide/page-66.html').read_text()
+        self.assertIn('practical-guide/definitions.html#definitions-section-0', contents)
+        self.assertIn('href="definitions.html"', first)
+        self.assertIn('href="definitions.html"', last)
+        self.assertIn('href="../Practical_Guide.html"', markup)
+        for anchor in re.findall(r'practical-guide/definitions\.html#([^"\s]+)', contents):
+            self.assertIn('name="' + anchor + '"', markup)
+        with tempfile.TemporaryDirectory() as folder:
+            archive = self.make_archive(Path(folder), exclude='practical-guide/definitions.html')
+            with self.assertRaises(ValueError):
+                guides.check_guides(archive, ROOT)
 
     def test_version_follows_cmake_and_rejects_ambiguity(self):
         with tempfile.TemporaryDirectory() as folder:

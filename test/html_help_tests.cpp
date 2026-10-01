@@ -100,8 +100,22 @@ TEST(HtmlHelp, PracticalGuideOfflineNavigationAndRendering) {
         EXPECT_TRUE(html->GetOpenedPage().EndsWith("page-09.html"));
         html->OnLinkClicked(wxHtmlLinkInfo("../Practical_Guide.html"));
         EXPECT_TRUE(html->ToText().Contains("Contents"));
-        html->OnLinkClicked(wxHtmlLinkInfo("Celestial_Navigation_Definitions.html"));
-        EXPECT_TRUE(html->GetOpenedPage().EndsWith("Celestial_Navigation_Definitions.html"));
+        html->OnLinkClicked(wxHtmlLinkInfo("practical-guide/definitions.html"));
+        EXPECT_TRUE(html->GetOpenedPage().EndsWith("definitions.html"));
+        EXPECT_TRUE(html->ToText().Contains("DRIPS mnemonic"));
+        EXPECT_TRUE(html->ToText().Contains("Sign conventions"));
+        EXPECT_EQ(html->GetVirtualSize().x, html->GetClientSize().x);
+#ifdef __WXGTK3__
+        CaptureGuide(viewer, "/tmp/celnav-howto-definitions.png");
+#endif
+        html->OnLinkClicked(wxHtmlLinkInfo("../Practical_Guide.html"));
+        EXPECT_TRUE(html->ToText().Contains("Contents"));
+        html->OnLinkClicked(wxHtmlLinkInfo("practical-guide/definitions.html#definitions-section-11"));
+        EXPECT_EQ(html->GetOpenedAnchor(), "definitions-section-11");
+        EXPECT_GT(html->GetScrollPos(wxVERTICAL), 0);
+        EXPECT_TRUE(html->LoadPage(root + "/data/practical-guide/page-66.html"));
+        html->OnLinkClicked(wxHtmlLinkInfo("definitions.html"));
+        EXPECT_TRUE(html->ToText().Contains("Terrestrial Time"));
         EXPECT_TRUE(html->LoadPage(root + "/data/practical-guide/page-01.html"));
         html->OnLinkClicked(wxHtmlLinkInfo("page-32.html"));
         EXPECT_TRUE(html->ToText().Contains("Lunar distance topics"));
@@ -110,6 +124,8 @@ TEST(HtmlHelp, PracticalGuideOfflineNavigationAndRendering) {
           viewer->Layout();
           wxYield();
           EXPECT_TRUE(html->LoadPage(root + "/data/practical-guide/page-04.html"));
+          EXPECT_LE(html->GetVirtualSize().x, html->GetClientSize().x) << width;
+          EXPECT_TRUE(html->LoadPage(root + "/data/practical-guide/definitions.html"));
           EXPECT_LE(html->GetVirtualSize().x, html->GetClientSize().x) << width;
         }
         EXPECT_TRUE(html->LoadPage(root + "/data/practical-guide/page-43.html"));

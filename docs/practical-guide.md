@@ -4,7 +4,7 @@ The desktop main window groups four documentation actions:
 
 - **How to Guide...** opens Bob Bossert's altitude/coastal and lunar worked
   examples in the plugin's offline HTML reader.
-- **How to Guide (PDF)...** opens the same 66-page guide in the system PDF viewer.
+- **How to Guide (PDF)...** opens the same guide in the system PDF viewer.
 - **Reference Manual...** opens the comprehensive HTML reference.
 - **Reference Manual (PDF)...** opens the PDF reference, with an HTML fallback.
 
@@ -16,7 +16,9 @@ reports an error instead of opening a different manual.
 
 The approved combined guide was assembled from Bob's training PDFs attached to
 [issue 319](https://github.com/rgleason/celestial_navigation_pi/issues/319).
-It retains 66 pages, 28 bookmarks, the original screenshots and worked examples.
+The original 66 pages and 28 bookmarks are retained, with the original
+screenshots and worked examples. The Definitions appendix brings the guide
+to 73 pages and adds section bookmarks.
 The incorporated corrections remain:
 
 - Page 7: the new lunar sight's total UTC search span is **86,400 seconds**.
@@ -56,19 +58,29 @@ annotations. `docs/repair_practical_pdf_links.py` adds their destinations:
 
 - **Accuracy, Goals, Precision and Testing** retains the existing online link to
   issue 131, which contains the April 2025 historical testing material.
-- **Celestial Navigation Definitions** opens Bob's bundled
-  `Celestial_Navigation_Definitions.html` using a relative document-launch action.
+- **Celestial Navigation Definitions** jumps to the complete definitions
+  appendix on page 67 of the same PDF.
 - **Lunar Distance Use Case** jumps to page 32 of the combined guide.
 
-The latter two PDF links resolve to local content. A PDF reader may ask to open
-the definitions HTML in its associated application, or restrict document-launch
-actions according to its settings. The HTML equivalents open the
-bundled definitions HTML and the lunar section; the online testing link launches
-the system browser. No remote images, scripts or fonts are loaded by the guide.
+Both definitions and lunar references are internal PDF page jumps. They need no
+external-file permissions. The HTML reader includes the same complete definitions
+appendix with contents links and return navigation. The historical accuracy link
+and the definitions author's additional reference open online pages; no remote
+images, scripts or fonts are loaded by the guide.
 
-The PDF's text, rendered pages, bookmarks and image content are unchanged by
-adding these annotations. The repaired PDF SHA-256 is
-`a8d24f988829f92db587ace741f21d94d372634d0dc7fe32440aa444561db6a3`.
-The link repair is idempotent. Package integrity checks include every HTML file,
+The 2.8.16 appendix resolves macOS Preview's refusal to open the separate HTML
+file reported in issue 319. The filename was correctly plural; this was an
+external-file permission failure. The full definitions were not in the original
+66-page guide.
+
+`docs/guide_definitions.py` reads the complete bundled source for both formats.
+`docs/repair_practical_pdf_links.py` uses ReportLab and PyMuPDF to append it,
+retaining the source revision, author credits and terminology. All 107 source
+text blocks are verified in the appended PDF; the original 66 pages retain
+identical text and rendered appearance. The PDF has only internal page links
+and the two explicit online references, with no external-file actions.
+
+Regeneration does not duplicate the appendix or change an already-current PDF.
+Package integrity checks include the appendix HTML, every worked-example page,
 full-size image and preview. Validation evidence is in
-`validation/practical-guide-2.8.15/`.
+`validation/practical-guide-2.8.16/`.

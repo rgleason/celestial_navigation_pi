@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import re
 import pymupdf as pdf
+from guide_definitions import APPENDIX_TITLE, CORE_PAGES, SOURCE as DEFINITIONS, definitions_html, read_definitions
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'data/Practical_Guide.pdf'
@@ -158,7 +159,7 @@ def page_block_html(block, number):
     if number == 1:
         for label, target in [
             ('Accuracy, Goals, Precision and Testing', 'https://github.com/rgleason/celestial_navigation_pi/issues/131'),
-            ('Celestial Navigation Definitions', '../Celestial_Navigation_Definitions.html'),
+            ('Celestial Navigation Definitions', 'definitions.html'),
             ('Lunar Distance Use Case', 'page-32.html'),
         ]:
             markup = markup.replace(label, f'<a href="{target}">{label}</a>')
@@ -167,7 +168,8 @@ def page_block_html(block, number):
 
 def navigation(number, count):
     previous = f'<a href="page-{number-1:02d}.html">Previous</a>' if number > 1 else 'Previous'
-    following = f'<a href="page-{number+1:02d}.html">Next</a>' if number < count else 'Next'
+    following = (f'<a href="page-{number+1:02d}.html">Next</a>' if number < count else
+                 '<a href="definitions.html">Next: Definitions</a>')
     return f'''<table class="navigation" width="100%" bgcolor="#edf2f6" cellpadding="10" cellspacing="0">
 <tr><td width="25%">{previous}</td><td align="center"><a href="../Practical_Guide.html">Contents</a></td>
 <td width="25%" align="right">{following}</td></tr></table>'''
@@ -176,7 +178,9 @@ def navigation(number, count):
 def main():
     ASSETS.mkdir(exist_ok=True)
     document = pdf.open(SOURCE)
-    assert len(document) == len(TITLES), 'Review headings when the source changes'
+    assert len(TITLES) == CORE_PAGES and len(document) > CORE_PAGES
+    definitions = read_definitions()
+    anchors = {block['text']: block['anchor'] for block in definitions if 'anchor' in block}
     output = [HEAD, '<h1>Celestial Navigation</h1><h2>How to Guide</h2>',
               '<p>Practical instructions and worked examples by <b>Robert Bossert</b>.</p>',
               '<p>Choose a topic below, or start with the <a href="practical-guide/page-01.html">introduction</a>. '
@@ -184,24 +188,30 @@ def main():
               '<a name="contents"></a><h2>Contents</h2>']
     section = None
     for level, title, page_number in document.get_toc():
+        if page_number > CORE_PAGES:
+            anchor = 'definitions-section-0' if level == 1 else anchors[title]
+            target = 'practical-guide/definitions.html#' + anchor
+        else:
+            target = f'practical-guide/page-{page_number:02d}.html'
         if level == 1:
             if section is not None:
                 output.append('</ul>')
             section = title
-            output.append(f'<h2><a href="practical-guide/page-{page_number:02d}.html">{escape(title)}</a></h2><ul>')
+            output.append(f'<h2><a href="{target}">{escape(title)}</a></h2><ul>')
         else:
-            output.append(f'<li><a href="practical-guide/page-{page_number:02d}.html">{escape(title)}</a></li>')
+            output.append(f'<li><a href="{target}">{escape(title)}</a></li>')
     output.append('</ul>')
-    output.append('<h2>Reference documents</h2><ul><li><a href="Celestial_Navigation_Definitions.html">'
-                  'Abbreviations, definitions and measurements</a></li><li><a href="Celestial_Navigation_Information.html">'
+    output.append('<h2>Reference documents</h2><ul><li><a href="Celestial_Navigation_Information.html">'
                   'Reference manual</a></li></ul>')
     audit = {'source_sha256': hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
-             'pages': [], 'format': 'reflowable HTML with complete annotated illustrations'}
+             'pages': [], 'format': 'reflowable HTML with complete annotated illustrations',
+             'definitions_source_sha256': hashlib.sha256(DEFINITIONS.read_bytes()).hexdigest(),
+             'definitions_text_blocks': len(definitions), 'pdf_pages': len(document)}
     written = set()
-    for number, page in enumerate(document, 1):
-        nav = navigation(number, len(document))
+    for number, page in enumerate(list(document)[:CORE_PAGES], 1):
+        nav = navigation(number, CORE_PAGES)
         part = 'Altitude sights and coastal navigation' if number < 32 else 'Lunar distances'
-        page_output = [HEAD, nav, f'<p><font color="#627484">{part} &middot; Page {number} of {len(document)}</font></p>',
+        page_output = [HEAD, nav, f'<p><font color="#627484">{part} &middot; Page {number} of {CORE_PAGES}</font></p>',
                        '<h1>' + escape(TITLES[number - 1]) + '</h1>']
         blocks = text_blocks(page)
         clip, included = illustration(page, blocks, number)
@@ -251,15 +261,22 @@ alt="{escape(TITLES[number - 1])}: complete illustration"></a></td></tr>
         page_output.extend(['<hr>', nav, '</body></html>'])
         write_html(ASSETS / f'page-{number:02d}.html', '\n'.join(page_output))
         written.add(f'page-{number:02d}.html')
+    appendix_nav = '''<table class="navigation" width="100%" bgcolor="#edf2f6" cellpadding="10" cellspacing="0">
+<tr><td width="25%"><a href="page-66.html">Previous</a></td><td align="center"><a href="../Practical_Guide.html">Contents</a></td>
+<td width="25%" align="right"><a href="page-01.html">Introduction</a></td></tr></table>'''
+    appendix = [HEAD, appendix_nav, '<p><font color="#627484">' + APPENDIX_TITLE + '</font></p>',
+                definitions_html(definitions), '<hr>', appendix_nav, '</body></html>']
+    write_html(ASSETS / 'definitions.html', '\n'.join(appendix))
     for old in ASSETS.iterdir():
         if old.is_file() and old.name not in written and re.fullmatch(r'page-\d{2}(?:-figure-\d+(?:-preview)?)?\.(?:png|html)', old.name):
             old.unlink()
     output.append('</body></html>')
     write_html(ROOT / 'data/Practical_Guide.html', '\n'.join(output))
-    report = ROOT / 'validation/practical-guide-2.8.15/html-conversion.json'
+    report = ROOT / 'validation/practical-guide-2.8.16/html-conversion.json'
     report.parent.mkdir(parents=True, exist_ok=True)
     report.write_text(json.dumps(audit, indent=2) + '\n')
-    print(f'Converted {len(document)} pages; {sum(len(p["figures"]) for p in audit["pages"])} complete illustrations')
+    print(f'Converted {CORE_PAGES} worked-example pages and definitions appendix; '
+          f'{sum(len(p["figures"]) for p in audit["pages"])} complete illustrations')
 
 
 if __name__ == '__main__':
