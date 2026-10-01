@@ -124,10 +124,10 @@ def main():
         raise RuntimeError('Expected exactly one archive and metadata pair')
     xml = ET.parse(metadata[0]).getroot()
     values = [(xml.findtext(k) or '').strip() for k in ('target', 'target-version', 'target-arch', 'version', 'api-version')]
-    if values != ['msvc-wx32-x64', '10', 'x86_64', '2.8.13.0', '1.18']:
+    if values != ['msvc-wx32-x64', '10', 'x86_64', '2.9.2.0', '1.18']:
         raise RuntimeError('Incorrect Windows x64 metadata: ' + repr(values))
     xml.find('source').text = 'https://github.com/pob220/celestial_navigation_pi/tree/' + revision
-    xml.find('tarball-url').text = 'https://github.com/pob220/celestial_navigation_pi/releases/download/v2.8.13.0/' + archives[0].name
+    xml.find('tarball-url').text = 'https://github.com/pob220/celestial_navigation_pi/releases/download/v2.9.2.0-alpha1/' + archives[0].name
     raw_xml = ET.tostring(xml, encoding='utf-8', xml_declaration=True)
     metadata[0].write_bytes(raw_xml)
     with tempfile.TemporaryDirectory() as temporary:

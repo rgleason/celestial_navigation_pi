@@ -2,6 +2,7 @@
 #pragma once
 #include "NavigationAlgorithms.h"
 #include "AndroidPlannerCancellation.h"
+#include <array>
 #include <chrono>
 #include <condition_variable>
 #include <exception>
@@ -16,7 +17,10 @@ struct PlannerResults {
   std::vector<MoonPhaseEvent> phases;
   MoonInformation moon;
   BodyState moonState, sun, polaris;
+  PlanningResult planning;
   std::vector<RankedBody> allBodies;
+  std::vector<PlannerSkyPoint> ecliptic;
+  std::array<std::vector<PlannerSkyPoint>, 3> moonPaths;
   std::vector<AlmanacRow> almanac;
   wxString error;
   long elapsedMs = 0;
@@ -81,8 +85,17 @@ class PlannerWorker {
         result.sun = CelestialEphemeris::Evaluate("Sun", m.referenceUtc, m.latitude, m.longitude);
         result.polaris = CelestialEphemeris::Evaluate("Polaris", m.referenceUtc, m.latitude, m.longitude);
         stage_ = 3;
-        result.allBodies = SightRanker::VisibleBodies(m.referenceUtc, m.latitude,
-            m.longitude, -90, 90, std::numeric_limits<double>::infinity());
+        result.planning = PlannerRecommendations::Calculate(
+            m.referenceUtc, m.latitude, m.longitude);
+        result.allBodies = result.planning.bodies;
+        CheckPlannerCancellation();
+        result.ecliptic = PlannerRecommendations::Ecliptic(
+            m.referenceUtc, m.latitude, m.longitude);
+        const int spans[] = {3, 6, 12};
+        for (int i = 0; i < 3; ++i) {
+          result.moonPaths[i] = PlannerRecommendations::MoonPath(m, spans[i]);
+          CheckPlannerCancellation();
+        }
         CheckPlannerCancellation();
         stage_ = 4;
         result.almanac = BuildAlmanac(m.referenceUtc, 24,

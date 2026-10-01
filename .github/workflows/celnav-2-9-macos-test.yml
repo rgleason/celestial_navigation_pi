@@ -1,0 +1,36 @@
+name: Celestial Navigation 2.9 macOS test tarball
+
+on:
+  push:
+    branches:
+      - feature/planner-modes-ecliptic-v2.9
+      - feature/celnav-v2.9.0-alpha
+      - pob220-improvements
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos-universal:
+    runs-on: macos-15
+    timeout-minutes: 120
+    env:
+      OCPN_TARGET: macos
+      CMAKE_BUILD_PARALLEL_LEVEL: 2
+      WX_VER: 32
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Build macOS universal plugin
+        run: bash ci/circleci-build-macos-universal.sh
+      - name: Package for manual OpenCPN import
+        run: bash ci/make-importable-test-package.sh build artifacts/celnav-2.9-macos
+      - name: Save Bob's test tarball
+        uses: actions/upload-artifact@v7
+        with:
+          name: Celestial-Navigation-2.9.0.0-macOS-universal-importable
+          path: artifacts/celnav-2.9-macos/*.tar.gz
+          if-no-files-found: error
+          retention-days: 30

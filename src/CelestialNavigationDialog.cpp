@@ -29,23 +29,29 @@
 #include <wx/wx.h>
 #include <wx/clipbrd.h>
 #include <wx/fileconf.h>
+#include <wx/filedlg.h>
 
 #include <wx/filename.h>
+#include <wx/menu.h>
 #include <wx/stdpaths.h>
 #include <wx/imaglist.h>
 #include <wx/statbox.h>
 #include <wx/utils.h>
 #include <wx/textdlg.h>
+#include <wx/spinctrl.h>
+#include <wx/checkbox.h>
 #include <wx/clipbrd.h>
 
 #include "tinyxml.h"
 
 #include "AtomicXmlFile.h"
+#include "AndroidFileDialog.h"
 #include "DialogGeometry.h"
 #include "OcpnApiCompat.h"
 
 #include "celestial_navigation_pi.h"
 #include "Sight.h"
+#include "SightPalette.h"
 #include "SightDialog.h"
 #include "HorizonEventDialog.h"
 #include "PlannerDialog.h"
@@ -109,11 +115,13 @@ enum {
   rmTIME,
   rmMEASUREMENT,
   rmCOLOR,
+  rmREMARKS,
   rmMAX
 };  // RMColumns;
 
 wxString columns[] = {
-    "", _("Type"), _("Body"), _("Time (UTC)"), _("Measurement"), _("Color"),
+    "", _("Type"), _("Body"), _("Time (UTC)"), _("Measurement"),
+    _("Color"), _("Remarks"),
 };
 
 CelestialNavigationDialog::CelestialNavigationDialog(
@@ -141,6 +149,7 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       m_coastalButton(NULL),
       m_almanacButton(NULL),
       m_pdfDocumentationButton(NULL),
+      m_manageSightsButton(NULL),
       m_eclipseDialog(NULL),
       m_coastalDialog(NULL),
       m_chronyPollTicks(0),
@@ -226,6 +235,11 @@ CelestialNavigationDialog::CelestialNavigationDialog(
                         m_pdfDocumentationButton, 0, wxALL | wxEXPAND, 5);
   m_pdfDocumentationButton->Bind(
       wxEVT_BUTTON, &CelestialNavigationDialog::OnPdfDocumentation, this);
+  m_manageSightsButton = new wxButton(this, wxID_ANY, _("Manage Sights..."));
+  m_manageSightsButton->SetToolTip(
+      _("Back up, import or restore your sight log"));
+  m_manageSightsButton->Bind(wxEVT_BUTTON,
+                             &CelestialNavigationDialog::OnManageSights, this);
 
   // Keep sight maintenance together on the left and fix/reference tools on
   // the right. All controls were created above (or by the base dialog); only
@@ -239,16 +253,26 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   addAction(m_bEditSight);          addAction(m_eclipseButton);
   addAction(m_bDeleteSight);        addAction(m_almanacButton);
   addAction(m_bDeleteAllSights);    addAction(m_bDocumentation);
-  addAction(m_horizonEventButton);  addAction(m_pdfDocumentationButton);
+  addAction(m_manageSightsButton);  addAction(m_pdfDocumentationButton);
+  addAction(m_horizonEventButton);  actionButtons->AddSpacer(0);
   addAction(m_coastalButton);       actionButtons->AddSpacer(0);
   addAction(m_plannerButton);       actionButtons->AddSpacer(0);
   addAction(m_lunarToolsButton);    actionButtons->AddSpacer(0);
-  addAction(m_analyzeButton);       addAction(m_tbHide);
+  addAction(m_analyzeButton);
+  auto* chartDisplay = new wxButton(this, wxID_ANY, _("Chart display..."));
+  chartDisplay->SetToolTip(_("Set chart-wide line, outline, shading and hover defaults. "
+      "Edit each sight's colour and transparency on its Config tab."));
+  chartDisplay->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnChartDisplay, this);
+  addAction(chartDisplay);
 
   m_lSights->InsertColumn(rmVISIBLE, wxT(""));
   for (int i = 1; i < rmMAX; i++) {
     m_lSights->InsertColumn(i, columns[i]);
   }
+  m_lSights->SetColumnWidth(rmREMARKS, 190);
+  for (int column = 0; column < rmREMARKS; ++column)
+    m_lSights->SetColumnWidth(column, column == rmVISIBLE
+        ? 28 : wxLIST_AUTOSIZE_USEHEADER);
 
   m_sights_path = celestial_navigation_pi::StandardPath() + _T("Sights.xml");
 
@@ -268,6 +292,11 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   bool showTimeIntegrity = true;
   pConf->Read(_T("ShowTimeIntegrity"), &showTimeIntegrity, true);
   BuildTimeIntegrityPanel(showTimeIntegrity);
+  pConf->Read("ChartLineWidthMm", &m_chartStyle.lineWidthMm, 0.5);
+  m_chartStyle.lineWidthMm = std::max(0.2, std::min(2.0, m_chartStyle.lineWidthMm));
+  pConf->Read("ChartBandOpacity", &m_chartStyle.bandOpacityPercent, 100);
+  pConf->Read("ChartContrastHalo", &m_chartStyle.contrastHalo, true);
+  pConf->Read("ChartHoverLabels", &m_chartStyle.hoverLabels, true);
   m_timeTimer.SetOwner(this);
   Bind(wxEVT_TIMER, &CelestialNavigationDialog::OnTimeTimer, this,
        m_timeTimer.GetId());
@@ -281,7 +310,8 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   double mmx = PlugInGetDisplaySizeMM();
   int sx, sy;
   wxDisplaySize(&sx, &sy);
-  m_pix_per_mm = ((double)sx) / (mmx);
+  m_pix_per_mm = std::isfinite(mmx) && mmx > 0 ? double(sx) / mmx
+                                              : 96.0 / 25.4;
 
 #ifdef __OCPN__ANDROID__
   BuildAndroidWorkspace();
@@ -289,6 +319,15 @@ CelestialNavigationDialog::CelestialNavigationDialog(
 
   // Retain the established main-window settings while recovering safely from
   // a removed monitor or a smaller replacement display.
+#ifndef __OCPN__ANDROID__
+  // A sight log needs room for its time, measurement and Remarks columns.
+  // Existing users may still have the original narrow dialog size stored.
+  const int minimumWidth = std::min(1100, std::max(580, sx - 40));
+  const wxSize minimum = ClientToWindowSize(GetSizer()->CalcMin());
+  SetMinSize(wxSize(minimumWidth, minimum.y));
+  SetSize(std::max(GetSize().x, minimumWidth),
+          std::max(GetSize().y, minimum.y));
+#endif
   dialog_geometry::EnsureVisible(this);
 }
 
@@ -421,6 +460,9 @@ void CelestialNavigationDialog::BuildTimeIntegrityPanel(bool visible) {
   title->SetFont(titleFont);
   header->Add(title, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
   header->AddStretchSpacer();
+  m_tbHide->SetLabel(_("Hide sight log"));
+  m_tbHide->SetToolTip(_("Collapse the list. Use its eye symbols to show or hide chart sights."));
+  header->Add(m_tbHide, 0, wxRIGHT, 6);
   m_timeIntegrityToggle =
       new wxToggleButton(this, wxID_ANY,
                          visible ? _("Hide Time") : _("Show Time"));
@@ -549,7 +591,7 @@ void CelestialNavigationDialog::SetTimeIntegrityVisible(bool visible,
   wxSize minimum = GetSizer()->CalcMin();
   if (visible) minimum.x = wxMax(minimum.x, 590);
   SetMinSize(minimum);
-  if (resize && visible) {
+  if (resize) {
     const wxSize current = GetSize();
     SetSize(wxMax(current.x, minimum.x), wxMax(current.y, minimum.y));
   }
@@ -731,33 +773,39 @@ bool AttributeBool(TiXmlElement* e, const char* name, bool def) {
   return AttributeInt(e, name, def) != 0;
 }
 
-bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
+bool CelestialNavigationDialog::ReadSightsXml(
+    const wxString& path, std::vector<Sight>* sights, int* clockCorrection,
+    std::vector<LunarSolutionRecord>* lunarSolutions, wxString* errorOut,
+    bool strict) {
   TiXmlDocument doc;
   wxString error;
+  std::vector<Sight> parsed;
+  std::vector<LunarSolutionRecord> parsedSolutions;
+  int parsedCorrection = 0;
 
-  wxFileName fn(m_sights_path);
-
-  if (!doc.LoadFile(m_sights_path.mb_str()))
-    FAIL(_("Failed to load file: ") + m_sights_path);
+  if (!doc.LoadFile(path.utf8_str()))
+    FAIL(_("Failed to load file: ") + path);
   else {
-    TiXmlHandle root(doc.RootElement());
-
-    if (strcmp(root.Element()->Value(), "OpenCPNCelestialNavigation"))
+    TiXmlElement* rootElement = doc.RootElement();
+    if (!rootElement ||
+        strcmp(rootElement->Value(), "OpenCPNCelestialNavigation"))
       FAIL(_("Invalid xml file"));
-
-    m_Sights.clear();
-    m_lunarSolutions.clear();
+    TiXmlHandle root(rootElement);
 
     for (TiXmlElement* e = root.FirstChild().Element(); e;
          e = e->NextSiblingElement()) {
       if (!strcmp(e->Value(), "ClockError")) {
-        m_ClockCorrection = AttributeInt(e, "Seconds", 0);
-        m_lunarSolutions = ReadLunarSolutions(e);
+        parsedCorrection = AttributeInt(e, "Seconds", 0);
+        parsedSolutions = ReadLunarSolutions(e);
       } else if (!strcmp(e->Value(), "Sight")) {
         Sight s;
 
         s.m_bVisible = AttributeBool(e, "Visible", true);
         s.m_Type = (Sight::Type)AttributeInt(e, "Type", 0);
+        if (s.m_Type < Sight::ALTITUDE || s.m_Type > Sight::HORIZON ||
+            !e->Attribute("Body") || !e->Attribute("Date") ||
+            !e->Attribute("Time"))
+          FAIL(_("A sight has missing or invalid required fields."));
         s.m_Body = wxString::FromUTF8(e->Attribute("Body"));
         s.m_BodyLimb = (Sight::BodyLimb)AttributeInt(e, "BodyLimb", 0);
         s.m_LunarMoonAltitude = AttributeDouble(e, "LunarMoonAltitude", 0);
@@ -796,26 +844,37 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_LunarCourseTrue = AttributeDouble(e, "LunarCourseTrue", 0.0);
         s.m_LunarSpeedKnots = AttributeDouble(e, "LunarSpeedKnots", 0.0);
 
+        const char* savedDate = e->Attribute("Date");
+        const char* savedTime = e->Attribute("Time");
+        if (!savedDate || !savedTime) {
+          if (strict) FAIL(_("A sight has an invalid date or time."));
+          continue;
+        }
 #ifdef __OCPN__ANDROID__
-        if (!e->Attribute("Date") || !e->Attribute("Time") ||
-            !UtcDateTime::ParseUtc(wxString::FromUTF8(e->Attribute("Date")) + " " +
-                wxString::FromUTF8(e->Attribute("Time")), &s.m_DateTime)) continue;
+        if (!UtcDateTime::ParseUtc(wxString::FromUTF8(savedDate) + " " +
+                wxString::FromUTF8(savedTime), &s.m_DateTime)) {
+          if (strict) FAIL(_("A sight has an invalid date or time."));
+          continue;
+        }
         const int milliseconds = AttributeInt(e, "Milliseconds", 0);
-        if (milliseconds < 0 || milliseconds > 999) continue;
+        if (milliseconds < 0 || milliseconds > 999) {
+          if (strict) FAIL(_("A sight has an invalid millisecond value."));
+          continue;
+        }
         s.m_DateTime.SetMillisecond(milliseconds);
 #else
-        s.m_DateTime.ParseISODate(wxString::FromUTF8(e->Attribute("Date")));
-
+        const bool validDate = s.m_DateTime.ParseISODate(wxString::FromUTF8(savedDate));
         wxDateTime time;
-        time.ParseISOTime(wxString::FromUTF8(e->Attribute("Time")));
-
-        if (s.m_DateTime.IsValid() && time.IsValid()) {
+        const bool validTime = time.ParseISOTime(wxString::FromUTF8(savedTime));
+        if (validDate && validTime) {
           s.m_DateTime.SetHour(time.GetHour());
           s.m_DateTime.SetMinute(time.GetMinute());
           s.m_DateTime.SetSecond(time.GetSecond());
           s.m_DateTime.SetMillisecond(AttributeInt(e, "Milliseconds", 0));
-        } else
-          continue; /* skip if invalid */
+        } else {
+          if (strict) FAIL(_("A sight has an invalid date or time."));
+          continue;  // Older releases skipped malformed sight dates on load.
+        }
 #endif
 
         s.m_TimeCertainty = AttributeDouble(e, "TimeCertainty", 0);
@@ -841,8 +900,16 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_ShiftBearing = AttributeDouble(e, "ShiftBearing", 0);
         s.m_bMagneticShiftBearing = AttributeBool(e, "MagneticShiftBearing", 0);
 
-        s.m_ColourName = wxString::FromUTF8(e->Attribute("ColourName"));
-        s.m_Colour = wxColour(wxString::FromUTF8(e->Attribute("Colour")));
+        if (const char* colourName = e->Attribute("ColourName"))
+          s.m_ColourName = wxString::FromUTF8(colourName);
+        if (const char* remarks = e->Attribute("Remarks"))
+          s.m_Remarks = wxString::FromUTF8(remarks);
+        if (const char* colour = e->Attribute("Colour")) {
+          wxColour parsedColour(wxString::FromUTF8(colour));
+          if (!parsedColour.IsOk())
+            FAIL(_("A sight has an invalid colour."));
+          s.m_Colour = parsedColour;
+        }
         s.m_Colour.Set(s.m_Colour.Red(), s.m_Colour.Green(), s.m_Colour.Blue(),
                        AttributeInt(e, "Transparency", 150));
 
@@ -872,35 +939,55 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
         s.m_bCalculated = false;
         s.m_bSelected = false;
 
-        if (s.m_bVisible) {
-          s.Recompute(m_ClockCorrection);
-          s.RebuildPolygons();
-        }
-        m_Sights.push_back(std::move(s));
+        parsed.push_back(std::move(s));
       } else
         FAIL(_("Unrecognized xml node"));
     }
   }
 
+  for (Sight& sight : parsed) {
+    if (sight.m_bVisible) {
+      sight.Recompute(parsedCorrection);
+      sight.RebuildPolygons();
+    }
+  }
+
+  *sights = std::move(parsed);
+  *clockCorrection = parsedCorrection;
+  *lunarSolutions = std::move(parsedSolutions);
+  if (errorOut) errorOut->clear();
+  return true;
+failed:
+  if (errorOut) *errorOut = error;
+  return false;
+}
+
+bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
+  wxString error;
+  std::vector<Sight> parsed;
+  std::vector<LunarSolutionRecord> solutions;
+  int correction = 0;
+  if (!ReadSightsXml(m_sights_path, &parsed, &correction, &solutions, &error,
+                     false)) {
+    if (reportfailure)
+      CelestialMessageBox(error, _("Celestial Navigation"), wxOK | wxICON_ERROR, this);
+    return false;
+  }
+  m_Sights = std::move(parsed);
+  m_lunarSolutions = std::move(solutions);
+  m_ClockCorrection = correction;
   RebuildList();
   m_lSights->SetColumnWidth(0, 28);
   for (int i = 1; i < rmMAX; i++) {
     m_lSights->SetColumnWidth(i, wxLIST_AUTOSIZE_USEHEADER);
   }
+  m_lSights->SetColumnWidth(rmREMARKS, 190);
   if (m_lSights->GetItemCount() > 0) {
     m_Sights[0].SetSelected(true);
     m_lSights->SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
   }
   RequestRefresh(GetParent());
   return true;
-failed:
-
-  if (reportfailure) {
-    CelestialMessageDialog mdlg(this, error, _("Celestial Navigation"),
-                         wxOK | wxICON_ERROR);
-    mdlg.ShowModal();
-  }
-  return false;
 }
 
 void SetFloatAttribute(TiXmlElement* c, const char* label, Sight& s,
@@ -998,6 +1085,8 @@ bool CelestialNavigationDialog::SaveXML() {
     c->SetAttribute("MagneticShiftBearing", s.m_bMagneticShiftBearing);
 
     c->SetAttribute("ColourName", s.m_ColourName.mb_str());
+    if (!s.m_Remarks.empty())
+      c->SetAttribute("Remarks", s.m_Remarks.utf8_str());
     c->SetAttribute("Colour", s.m_Colour.GetAsString().mb_str());
     c->SetAttribute("Transparency", s.m_Colour.Alpha());
 
@@ -1033,6 +1122,216 @@ bool CelestialNavigationDialog::SaveXML() {
   return true;
 }
 
+void CelestialNavigationDialog::OnManageSights(wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+  wxDialog sheet(this, wxID_ANY, _("Manage sights"));
+  auto* actions = new wxBoxSizer(wxVERTICAL);
+  auto addAction = [&](int id, const wxString& label) {
+    auto* button = new wxButton(&sheet, wxID_ANY, label);
+    button->Bind(wxEVT_BUTTON, [&sheet, id](wxCommandEvent&) {
+      sheet.EndModal(id);
+    });
+    actions->Add(button, 0, wxEXPAND | wxALL, 8);
+  };
+  const int backupId = wxWindow::NewControlId();
+  const int addId = wxWindow::NewControlId();
+  const int restoreId = wxWindow::NewControlId();
+  addAction(backupId, _("Save backup of all sights..."));
+  addAction(addId, _("Import sights (add to current log)..."));
+  addAction(restoreId, _("Restore sights (replace current log)..."));
+  sheet.SetSizer(actions);
+  const int selection = celestial_android::ModalResult(sheet);
+#else
+  wxMenu menu;
+  const int backupId = wxWindow::NewControlId();
+  const int addId = wxWindow::NewControlId();
+  const int restoreId = wxWindow::NewControlId();
+  menu.Append(backupId, _("Save backup of all sights..."));
+  menu.AppendSeparator();
+  menu.Append(addId, _("Import sights (add to current log)..."));
+  menu.Append(restoreId, _("Restore sights (replace current log)..."));
+  const int selection = GetPopupMenuSelectionFromUser(
+      menu, m_manageSightsButton->GetPosition() +
+                wxPoint(0, m_manageSightsButton->GetSize().y));
+#endif
+  if (selection == backupId)
+    BackupSights();
+  else if (selection == addId)
+    ImportSights(false);
+  else if (selection == restoreId)
+    ImportSights(true);
+}
+
+void CelestialNavigationDialog::BackupSights() {
+#ifdef __OCPN__ANDROID__
+  wxString directory = *GetpPrivateApplicationDataLocation();
+#elif wxCHECK_VERSION(3, 1, 0)
+  wxString directory =
+      wxStandardPaths::Get().GetUserDir(wxStandardPaths::Dir_Downloads);
+#else
+  // wx 3.0 has no portable Downloads lookup; keep the save location selectable.
+  wxString directory = wxStandardPaths::Get().GetDocumentsDir();
+#endif
+  if (!wxFileName::DirExists(directory)) directory = wxGetHomeDir();
+  const wxString filename =
+      "Sights-" + wxDateTime::Now().Format("%Y%m%d-%H%M%S") + ".xml";
+  CelestialFileDialog dialog(this, _("Save a copy of all sights"), directory, filename,
+                      _("Celestial Navigation XML (*.xml)|*.xml"),
+                      wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+  if (dialog.ShowModal() != wxID_OK) return;
+  wxString error;
+  if (!BackupSightsTo(dialog.GetPath(), &error)) {
+    CelestialMessageBox(error, _("Backup not saved"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+  CelestialMessageBox(_("Sight log saved to:") + "\n" + dialog.GetPath(),
+               _("Backup complete"), wxOK | wxICON_INFORMATION, this);
+}
+
+bool CelestialNavigationDialog::BackupSightsTo(const wxString& path,
+                                                wxString* error) {
+  wxFileName destination(path);
+  wxFileName current(m_sights_path);
+  destination.Normalize();
+  current.Normalize();
+  if (destination.GetFullPath() == current.GetFullPath()) {
+    if (error) *error = _("Choose a different filename for the backup.");
+    return false;
+  }
+  if (!SaveXML()) {
+    if (error) *error = _("The current sight log could not be saved.");
+    return false;
+  }
+  return celestial_navigation::CopyFileAtomically(m_sights_path, path, error);
+}
+
+bool CelestialNavigationDialog::ImportSightsFile(
+    const wxString& path, bool replace, wxString* safetyBackup,
+    wxString* error) {
+  std::vector<Sight> incoming;
+  std::vector<LunarSolutionRecord> solutions;
+  int correction = 0;
+  if (!ReadSightsXml(path, &incoming, &correction, &solutions, error))
+    return false;
+  return ApplyImportedSights(std::move(incoming), correction,
+                             std::move(solutions), replace, safetyBackup,
+                             error);
+}
+
+void CelestialNavigationDialog::ImportSights(bool replace) {
+  CelestialFileDialog dialog(this, replace ? _("Restore a sight log")
+                                    : _("Import sights into the current log"),
+                      wxEmptyString, wxEmptyString,
+                      _("Celestial Navigation XML (*.xml)|*.xml"),
+                      wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+  if (dialog.ShowModal() != wxID_OK) return;
+  std::vector<Sight> incoming;
+  std::vector<LunarSolutionRecord> incomingSolutions;
+  int incomingCorrection = 0;
+  wxString error;
+  if (!ReadSightsXml(dialog.GetPath(), &incoming, &incomingCorrection,
+                     &incomingSolutions, &error)) {
+    CelestialMessageBox(error, _("Import failed"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+  if (!replace && incomingCorrection != m_ClockCorrection) {
+    CelestialMessageBox(
+        _("This file uses a different clock correction. Adding its sights "
+          "would give them the wrong times. Restore the complete file instead, "
+          "or make the clock corrections match before importing."),
+        _("Import stopped"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+  if (incoming.empty() && !replace) {
+    CelestialMessageBox(_("The selected file contains no sights."),
+                 _("Nothing to import"), wxOK | wxICON_INFORMATION, this);
+    return;
+  }
+  const wxString prompt =
+      replace ? wxString::Format(
+                    _("Replace the current %lu sights with %lu sights from "
+                      "the selected file? A safety backup will be saved first."),
+                    static_cast<unsigned long>(m_Sights.size()),
+                    static_cast<unsigned long>(incoming.size()))
+              : wxString::Format(
+                    _("Add %lu sights to the current log? A safety backup "
+                      "will be saved first. Lunar solution records from the "
+                      "selected file will also be added."),
+                    static_cast<unsigned long>(incoming.size()));
+  if (CelestialMessageBox(prompt, replace ? _("Restore sight log")
+                                  : _("Import sights"),
+                   wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION, this) != wxYES)
+    return;
+  wxString safety;
+  if (!ApplyImportedSights(std::move(incoming), incomingCorrection,
+                           std::move(incomingSolutions), replace, &safety,
+                           &error)) {
+    CelestialMessageBox(error, _("Import failed"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+  CelestialMessageBox(_("Sight log updated. The previous log was saved to:") +
+                   "\n" + safety,
+               _("Import complete"), wxOK | wxICON_INFORMATION, this);
+}
+
+bool CelestialNavigationDialog::ApplyImportedSights(
+    std::vector<Sight> incoming, int incomingCorrection,
+    std::vector<LunarSolutionRecord> incomingSolutions, bool replace,
+    wxString* safetyBackup, wxString* error) {
+  if (!replace && incomingCorrection != m_ClockCorrection) {
+    if (error) *error = _("The imported file uses a different clock correction.");
+    return false;
+  }
+  if (!replace && incoming.empty()) {
+    if (error) *error = _("The imported file contains no sights.");
+    return false;
+  }
+  if (!SaveXML()) {
+    if (error) *error = _("The current sight log could not be saved.");
+    return false;
+  }
+  const wxDateTime now = wxDateTime::UNow();
+  const wxString stamp = now.Format("%Y%m%d-%H%M%S") +
+                         wxString::Format("-%03d", now.GetMillisecond());
+  const wxFileName current(m_sights_path);
+  const wxString safetyStem =
+      current.GetPathWithSep() + "Sights-before-import-" + stamp;
+  wxString safety = safetyStem + ".xml";
+  for (int suffix = 2; wxFileExists(safety); ++suffix)
+    safety = safetyStem + wxString::Format("-%d.xml", suffix);
+  if (!celestial_navigation::CopyFileAtomically(m_sights_path, safety,
+                                                error)) {
+    return false;
+  }
+
+  std::vector<Sight> previous = m_Sights;
+  std::vector<LunarSolutionRecord> previousSolutions = m_lunarSolutions;
+  const int previousCorrection = m_ClockCorrection;
+  if (replace) {
+    m_Sights = std::move(incoming);
+    m_lunarSolutions = std::move(incomingSolutions);
+    m_ClockCorrection = incomingCorrection;
+  } else {
+    m_Sights.insert(m_Sights.end(), incoming.begin(), incoming.end());
+    m_lunarSolutions.insert(m_lunarSolutions.end(), incomingSolutions.begin(),
+                            incomingSolutions.end());
+  }
+  RebuildList(false);
+  if (!SaveXML()) {
+    m_Sights = std::move(previous);
+    m_lunarSolutions = std::move(previousSolutions);
+    m_ClockCorrection = previousCorrection;
+    RebuildList(false);
+    if (error) *error = _("The imported sight log could not be saved.");
+    return false;
+  }
+  if (m_FixDialog) m_FixDialog->Update(m_ClockCorrection);
+  RequestRefresh(GetParent());
+  if (safetyBackup) *safetyBackup = safety;
+  if (error) error->clear();
+  return true;
+}
+
 bool compareSightAsc(const Sight& a, const Sight& b, int sortCol) {
   switch (sortCol) {
     case rmVISIBLE:
@@ -1055,6 +1354,9 @@ bool compareSightAsc(const Sight& a, const Sight& b, int sortCol) {
     case rmCOLOR:
       if (a.m_Colour.GetAsString() != b.m_Colour.GetAsString())
         return a.m_Colour.GetAsString() < b.m_Colour.GetAsString();
+      break;
+    case rmREMARKS:
+      if (a.m_Remarks != b.m_Remarks) return a.m_Remarks < b.m_Remarks;
       break;
   }
 
@@ -1083,7 +1385,7 @@ bool compareSight(const Sight& a, const Sight& b, int sortCol, bool sortAsc) {
 #endif
 }
 
-void CelestialNavigationDialog::RebuildList() {
+void CelestialNavigationDialog::RebuildList(bool persist) {
   using namespace std::placeholders;
   std::sort(m_Sights.begin(), m_Sights.end(),
             std::bind(compareSight, _1, _2, m_sortCol, m_bSortAsc));
@@ -1127,7 +1429,9 @@ void CelestialNavigationDialog::RebuildList() {
           _("Time Correction") +
               wxString::Format(_T(": %ld s"), s.m_TimeCorrection));
     else
-      m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName);
+      m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName.empty()
+          ? SightColourLabel(s.m_Colour) : s.m_ColourName);
+    m_lSights->SetItem(idx, rmREMARKS, s.m_Remarks);
 
     if (s.IsSelected()) {
       m_lSights->SetItemState(idx, wxLIST_STATE_SELECTED,
@@ -1138,7 +1442,7 @@ void CelestialNavigationDialog::RebuildList() {
 
   UpdateButtons();
   UpdateFix();
-  SaveXML();
+  if (persist) SaveXML();
 #ifdef __OCPN__ANDROID__
   RefreshAndroidCards();
 #endif
@@ -1164,7 +1468,9 @@ void CelestialNavigationDialog::UpdateSight(int idx) {
                        _("Time Correction") +
                            wxString::Format(_T(": %ld s"), s.m_TimeCorrection));
   else
-    m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName);
+    m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName.empty()
+        ? SightColourLabel(s.m_Colour) : s.m_ColourName);
+  m_lSights->SetItem(idx, rmREMARKS, s.m_Remarks);
 
   UpdateButtons();
   UpdateFix();
@@ -1778,15 +2084,57 @@ void CelestialNavigationDialog::OnPdfDocumentation(wxCommandEvent& event) {
   }
 }
 
+void CelestialNavigationDialog::OnChartDisplay(wxCommandEvent&) {
+  wxDialog dialog(this, wxID_ANY, _("Chart sight display"));
+  auto* layout = new wxBoxSizer(wxVERTICAL);
+  layout->Add(new wxStaticText(&dialog, wxID_ANY,
+      _("These chart-wide rendering controls do not change individual "
+        "sights or their saved colours and transparency.")),
+      0, wxALL, 6);
+  layout->Add(new wxStaticText(&dialog, wxID_ANY, _("Nominal line width (mm)")),
+              0, wxALL, 6);
+  auto* width = new wxSpinCtrlDouble(&dialog, wxID_ANY, wxEmptyString,
+      wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0.2, 2.0,
+      m_chartStyle.lineWidthMm, 0.1);
+  width->SetDigits(1);
+  layout->Add(width, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 6);
+  auto* halo = new wxCheckBox(&dialog, wxID_ANY, _("Contrasting outline"));
+  halo->SetValue(m_chartStyle.contrastHalo);
+  layout->Add(halo, 0, wxALL, 6);
+  layout->Add(new wxStaticText(&dialog, wxID_ANY,
+      _("Uncertainty shading (% of sight opacity)")), 0, wxALL, 6);
+  auto* opacity = new wxSpinCtrl(&dialog, wxID_ANY, wxEmptyString,
+      wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 100,
+      m_chartStyle.bandOpacityPercent);
+  layout->Add(opacity, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 6);
+  auto* hover = new wxCheckBox(&dialog, wxID_ANY, _("Show body and UTC near chart cursor"));
+  hover->SetValue(m_chartStyle.hoverLabels);
+  layout->Add(hover, 0, wxALL, 6);
+  layout->Add(dialog.CreateButtonSizer(wxOK | wxCANCEL), 0, wxALL | wxALIGN_RIGHT, 8);
+  dialog.SetSizerAndFit(layout);
+  if (dialog.ShowModal() != wxID_OK) return;
+  m_chartStyle.lineWidthMm = width->GetValue();
+  m_chartStyle.bandOpacityPercent = opacity->GetValue();
+  m_chartStyle.contrastHalo = halo->GetValue();
+  m_chartStyle.hoverLabels = hover->GetValue();
+  auto* config = GetOCPNConfigObject();
+  config->SetPath("/PlugIns/CelestialNavigation");
+  config->Write("ChartLineWidthMm", m_chartStyle.lineWidthMm);
+  config->Write("ChartBandOpacity", m_chartStyle.bandOpacityPercent);
+  config->Write("ChartContrastHalo", m_chartStyle.contrastHalo);
+  config->Write("ChartHoverLabels", m_chartStyle.hoverLabels);
+  RequestRefresh(GetOCPNCanvasWindow());
+}
+
 void CelestialNavigationDialog::OnHide(wxCommandEvent& event) {
   if (m_tbHide->GetValue()) {
-    m_tbHide->SetLabel(_("Show Sights"));
+    m_tbHide->SetLabel(_("Show sight log"));
     m_fullSize = GetSize();
     m_lSights->Hide();
     Layout();
     Fit();
   } else {
-    m_tbHide->SetLabel(_("Hide Sights"));
+    m_tbHide->SetLabel(_("Hide sight log"));
     m_lSights->Show();
     Layout();
     Fit();

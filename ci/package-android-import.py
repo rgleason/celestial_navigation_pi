@@ -46,7 +46,7 @@ def package(source: Path, metadata: Path, output: Path, url: str, sha: str,
         raise ValueError('An exact HTTPS URL ending in the final archive filename is required')
     root = ET.fromstring(metadata.read_bytes())
     values = {child.tag: (child.text or '').strip() for child in root}
-    if values.get('name') != 'Celestial Navigation' or values.get('version') != '2.8.13.0':
+    if values.get('name') != 'Celestial Navigation' or values.get('version') != '2.9.2.0':
         raise ValueError('Unexpected plugin identity/version')
     if values.get('target') not in ('android-arm64', 'android-armhf') or values.get('api-version') != '1.18':
         raise ValueError('Unexpected Android target/plugin API')

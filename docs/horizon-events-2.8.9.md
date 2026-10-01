@@ -61,7 +61,7 @@ cover/version/date, removes the experimental label, and corrects or expands:
 
 The existing index-error/calibration separation and Windows runtime notes
 already describe the recent behaviour. The local 2.9 documentation additionally
-needs its planning modes, ecliptic/Moon-path views, Remarks and sight-log
+includes its planning modes, ecliptic/Moon-path views, Remarks and sight-log
 backup/import/restore controls; these are not 2.8 features.
 
 HTML source, packaged HTML, PDF and DOCX are regenerated together. The manual

@@ -53,10 +53,6 @@ double AlmanacDut1(const AlmanacRequest& request, const wxDateTime& utc) {
       std::numeric_limits<double>::quiet_NaN();
 }
 
-double AnalyticalDut1(double seconds) {
-  return std::isfinite(seconds) ? seconds : 0.0;
-}
-
 // Record the source returned by the engine, including interpolation endpoints.
 // Do not infer kernel availability from a filename or from the first date.
 struct AlmanacSourceAudit {
@@ -110,7 +106,7 @@ struct AlmanacSourceAudit {
       "GHA and declination are geocentric apparent quantities; apply the printed altitude corrections to the sextant reading separately. GHA is westward, SHA is westward from Aries, and longitude is east-positive in the LHA formula.",
       "Angles are rounded to 0.1 arcminute for printing. Signed d is hourly declination change. v is excess over the stated base GHA rate; use the matching increment tables. Rounded agreement does not imply zero physical error.",
       "DE440s is used automatically for supported body centres and dates when installed. This edition retains analytical Mars, Jupiter and Saturn rather than substituting planetary-system barycentres. DE440s Venus includes the engine's almanac phase correction.",
-      "These are independently generated tables, not reproductions of a printed almanac. Exact printed agreement depends on the reference edition's time assumptions, conventions and rounding."};
+      "The hourly layout and independent Ageton/direct reduction tables are not reproductions of Reeds or its versine/ABC method. Compact output omits optional planning and exhaustive direct tables, not hourly samples."};
     if (invalid) page.paragraphs.push_back("WARNING: some ephemeris evaluations were invalid; do not use affected entries.");
     return page;
   }
@@ -223,14 +219,13 @@ std::vector<AlmanacTable> UniversalTables(const AlmanacRequest& request,
   for (int hour = 0; hour < 24; ++hour) {
     const wxDateTime utc = AtHour(day, hour);
     const double dut1 = AlmanacDut1(request, utc);
-    const wxDateTime ut1 = ShiftInstant(utc, AnalyticalDut1(dut1));
     const wxDateTime nextUtc = ShiftInstant(utc, 3600.0);
     const BodyState sun = audit->Evaluate(request, "Sun", utc);
     const BodyState moon = audit->Evaluate(request, "Moon", utc);
     const BodyState nextSun = audit->Evaluate(request, "Sun", nextUtc);
     const BodyState nextMoon = audit->Evaluate(request, "Moon", nextUtc);
     const BodyState polaris =
-        CelestialEphemeris::Evaluate("Polaris", ut1, 0, 0);
+        CelestialEphemeris::Evaluate("Polaris", utc, 0, 0, 1010.0, 10.0, dut1);
     const double aries = sun.valid ? sun.ghaAries :
                          Wrap360(polaris.gha - polaris.sha);
     std::vector<wxString> sunRow{wxString::Format("%02d", hour)};
@@ -728,6 +723,24 @@ void AlmanacGenerator::ApplyPreset(AlmanacPreset preset,
     request->runningFixForms = 5;
     request->noonPolarisForms = request->lunarForms = 4;
     request->watchForms = 3;
+  } else if (preset == AlmanacPreset::CompactAstronavigation) {
+    request->coverage = AlmanacCoverage::Global;
+    request->safety = AlmanacSafety::CalculatorFree;
+    request->selfContained = true;
+    request->includeStars = true;
+    request->includeCorrections = request->includeInstructions = true;
+    request->includeEmergencyGuide = true;
+    request->includeIncrementTables = true;
+    request->includeCompactReductionTables = true;
+    request->includeAltitudeCorrectionTables = true;
+    request->includeEvents = request->includeMoonInformation = false;
+    request->includeRecommendations = request->includeStarCharts = false;
+    request->includeVisualAids = request->includeLunar = false;
+    request->planningIntervalDays = 0;
+    request->monthlyStarData = true;
+    request->sightForms = 2;
+    request->runningFixForms = request->noonPolarisForms = 1;
+    request->lunarForms = request->watchForms = 0;
   }
 }
 

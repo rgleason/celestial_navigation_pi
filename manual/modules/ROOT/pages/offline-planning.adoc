@@ -1,9 +1,11 @@
 = Offline planning, running fixes and sight analysis
 
 The navigation-planning tools are designed for offshore use. They perform no
-network access and do not depend on the optional eclipse data packs. Ordinary
-Sun, Moon, planet and star calculations use the same bundled VSOP87D,
-ELP2000/82 and navigational-star implementation used by sight reduction.
+network access and do not require the optional eclipse data packs. In 2.9.0,
+Sun, Moon, Mercury and Venus calculations prefer an installed DE440s kernel
+for supported dates from 1972 onward and use the bundled analytical ephemeris
+when it is unavailable or out of range. Other planets and navigational stars
+retain their bundled models. The calculation source is reported by the plugin.
 
 == Sun, Moon and Sight Planner
 
@@ -74,25 +76,58 @@ Sun.
 
 === Bodies and best sights
 
-The body table reports Hc, Zn true, GHA, declination, approximate visual
-magnitude and a planning score for every catalogued body above the geometric
-horizon. Click a heading to sort that column and again to reverse it. *Limit
-recommendations by Hc* optionally applies its editable minimum and maximum only
-to suggested pairs and triads; the initial preferred range is 10 to 75 degrees.
-Bodies outside that preferred range remain visible in the table. The individual
-score gives 65% weight to altitude near 40 degrees and 35% to brightness, with
-a daylight/twilight penalty for stars. Planets do not currently receive an
-equivalent twilight penalty, so score alone is not a guarantee of practical
-visibility. Recommended pairs additionally favour a near-right-angle crossing;
-triads use the determinant of their two-dimensional bearing information matrix.
+The planning mode determines the recommendations and their order:
 
-The polar sky plot has independent magnitude limits of 1, 2 or 3 and can show
-bodies below the horizon. The Sun is yellow, Moon blue, planets red, daylight
-stars grey and below-horizon bodies hollow. Only the first 14 score-ranked
-bodies are considered for labels, and overlapping labels are suppressed. An
-unlabeled dot does not mean that the body is missing. The explanation and plot
-make the recommendation auditable but do not replace the navigator's assessment
-of cloud, glare, horizon and identification risk.
+* *Practical Fix* favours observable bodies and sound pair or triad geometry.
+* *Bright Bodies* puts brightness first when visibility is difficult.
+* *Lunar Candidates* compares the Moon with each potential companion.
+* *Show All* lists bodies alphabetically without a recommendation ranking.
+
+The *All bodies* table remains available in every mode. It reports Hc, Zn
+true, GHA, declination, approximate visual magnitude, the applicable planning
+score, ecliptic latitude and an explanation. It initially includes every
+catalogued body above the geometric horizon; *Include below-horizon bodies*
+adds the rest. Click a heading to sort that column and again to reverse it.
+*Limit recommendations by Hc* optionally applies its editable 10–75 degree
+default range to recommendations only; bodies outside it stay in the full
+table. The observability score weights altitude near 40 degrees (65%) and
+brightness (35%), with a daylight/twilight penalty for stars. A score is a
+planning aid, not a claim that a body will be visible through glare or cloud.
+Pairs additionally favour a near-right-angle crossing; triads use the
+determinant of their bearing-information matrix.
+
+*Lunar Candidates* lists predicted geocentric Moon–body distance, signed
+distance change in arcminutes/hour, the approximate number of seconds
+represented by 0.1 arcminute, the companion's signed ecliptic latitude,
+Moon/companion Hc and Zn, illumination, and an assessment. Positive rate means
+the distance is increasing. Both planners default to fewest planning cautions,
+then strongest timing sensitivity. The explicit timing-first option changes
+that priority; below-horizon pairs stay last. Cautions flag Hc outside 10–75
+degrees, distance outside 20–100 degrees, absolute rate below 10 arcminutes/hour,
+magnitude above 2.5, and Sun Hc above -6 degrees for companions fainter than -2.
+Ecliptic latitude describes geometry without adding a second timing weight.
+These are planning preferences, not a guarantee of visibility.
+
+Select a companion in *All bodies* and choose *Lunar windows for selected
+body…* for a 24-hour search sampled every 10 minutes. The reported intervals
+meet these preferences, using the entered course/speed if moving-observer mode
+is enabled. Boundaries and best times are sampled estimates, not exact events.
+All eligible above-horizon bodies contribute to pair/triad recommendations;
+there is no preliminary top-18 shortlist.
+
+The plot has independent magnitude and below-horizon controls. *Show ecliptic*
+and *Show Moon path* can each be enabled or disabled, including both together
+or neither. The ecliptic uses the date-specific astronomical obliquity; the
+Moon track follows the ephemeris for the chosen ±3, ±6 or ±12 hour span. The
+*Local sky* view shows altitudes and true bearings at the planning position.
+The *SHA / Declination* view is better for a longer Moon track because its
+coordinates do not depend on the changing local horizon. The Sun is yellow,
+Moon blue, planets red, daylight stars grey and below-horizon bodies hollow.
+Only a limited number of the brightest bodies are labeled to keep the plots
+legible; unlabeled dots remain plotted. The ecliptic defaults on and the Moon
+path defaults off. Moon-track start, middle and end are labelled in UTC, and
+the selected body is highlighted. Neither plot replaces the navigator's assessment of cloud,
+glare, horizon and body-identification risk.
 
 Select a row and use *Create selected sight…* to open the normal Sight dialog
 with body, time and DR already filled. No zero-altitude observation is silently

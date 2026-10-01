@@ -2,6 +2,7 @@
 #include "NavigationEphemerisProvider.h"
 
 #include "celestial_navigation_pi.h"
+#include "astrolabe/astrolabe.hpp"
 
 #include "eclipse/data_pack.h"
 #include "eclipse/dut1.h"
@@ -29,7 +30,11 @@ int TargetId(const wxString& body) {
 }
 
 wxString KernelPath() {
-#ifdef UNIT_TESTS
+#ifdef CELESTIAL_LAB
+  wxString selected;
+  if (wxGetEnv("CELNAV_LAB_DE440_PATH", &selected)) return selected;
+  return wxString();
+#elif defined(UNIT_TESTS)
   // Baseline tests deliberately remain analytical. Dedicated integration
   // tests opt into the same DE440s path without requiring wxStandardPaths.
   wxString enabled;
@@ -130,6 +135,52 @@ bool PrepareEpoch(const wxDateTime& utc_fields,
   return true;
 }
 }  // namespace
+
+bool ResolveAnalyticalNavigationEpoch(const wxDateTime& time,
+                                     AnalyticalNavigationEpoch* epoch,
+                                     double dut1_override_seconds,
+                                     bool time_is_instant) {
+  if (!epoch || !time.IsValid()) return false;
+  // Extract UTC directly from actual instants. Reconstructing UTC fields in
+  // the local timezone can lose an hour at a computer-local DST transition.
+  const auto fields = time.GetTm(time_is_instant ? wxDateTime::UTC
+                                                : wxDateTime::Local);
+  eclipse::CalendarDateTime utc;
+  utc.year = fields.year;
+  utc.month = static_cast<int>(fields.mon) + 1;
+  utc.day = fields.mday;
+  utc.hour = fields.hour;
+  utc.minute = fields.min;
+  utc.second = fields.sec + fields.msec / 1000.0;
+  AnalyticalNavigationEpoch result;
+  if (!eclipse::CalendarToJulianDate(utc, &result.utc_jd, nullptr)) return false;
+  const bool override_dut1 = std::isfinite(dut1_override_seconds);
+  if (utc.year >= 1972) {
+    const auto dated = eclipse::LookupDut1(result.utc_jd);
+    const double tai = std::isfinite(dated.tai_minus_utc)
+        ? dated.tai_minus_utc : eclipse::TaiMinusUtcSeconds(utc);
+    if (!std::isfinite(tai)) return false;
+    result.modern_utc = true;
+    result.dut1_available = override_dut1 || dated.available;
+    result.dut1_from_update = !override_dut1 && dated.from_update && dated.available;
+    result.dut1_seconds = override_dut1 ? dut1_override_seconds
+        : dated.available ? dated.seconds : 0.0;
+    // DUT1 rotates the Earth, but must not shift the ephemeris epoch in TT.
+    result.tt_jd = result.utc_jd + (tai + 32.184) / 86400.0;
+    result.delta_t_seconds = tai + 32.184 - result.dut1_seconds;
+  } else {
+    result.dut1_seconds = override_dut1 ? dut1_override_seconds : 0.0;
+    result.dut1_available = override_dut1;
+  }
+  result.ut1_jd = result.utc_jd + result.dut1_seconds / 86400.0;
+  if (!result.modern_utc) {
+    result.delta_t_seconds =
+        astrolabe::dynamical::deltaT_seconds(result.ut1_jd);
+    result.tt_jd = astrolabe::dynamical::ut_to_dt(result.ut1_jd);
+  }
+  *epoch = result;
+  return true;
+}
 
 bool TryDe440NavigationSample(const wxString& body,
                               const wxDateTime& utc_fields,

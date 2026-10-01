@@ -6,6 +6,10 @@
 #include "UtcDateTime.h"
 #include "geodesic.h"
 
+#include <algorithm>
+#include <cmath>
+#include <wx/init.h>
+
 namespace {
 wxDateTime UtcFields(const char* text) {
   wxDateTime value;
@@ -505,6 +509,156 @@ TEST(SightRanking, SkyLabelsPrioritiseBrightnessWithoutChangingScores) {
   EXPECT_EQ("Medium", bodies[order[1]].state.body);
   EXPECT_EQ("Dim", bodies[order[2]].state.body);
   EXPECT_DOUBLE_EQ(99.0, bodies[0].score);
+}
+
+TEST(PlannerRecommendations, AllEligibleBodiesContributeToFixGeometry) {
+  std::vector<RankedBody> bodies(19);
+  for (size_t i = 0; i < bodies.size(); ++i) {
+    bodies[i].state.body = wxString::Format("Body%lu", (unsigned long)i);
+    bodies[i].state.geometricAltitude = 40;
+    bodies[i].state.azimuthTrue = 0;
+    bodies[i].score = 90;
+  }
+  bodies.back().state.azimuthTrue = 90;
+  bodies.back().score = 50;
+  const auto pairs = SightRanker::BestCombinations(bodies, 2, 1);
+  ASSERT_EQ(1u, pairs.size());
+  EXPECT_EQ("Body18", pairs.front().bodies.back().state.body);
+  EXPECT_TRUE(SightRanker::BestCombinations(bodies, 2, 0).empty());
+  bodies.back().state.geometricAltitude = -1;
+  EXPECT_EQ(18u, SightRanker::RecommendationCandidates(bodies, false, 10, 75).size());
+}
+
+TEST(PlannerRecommendations, LunarOrderingExplainsConstraintsAndTimingChoice) {
+  PlanningResult plan;
+  for (int i = 0; i < 3; ++i) {
+    RankedBody body;
+    body.state.body = wxString::Format("Body%d", i);
+    body.state.geometricAltitude = 30;
+    body.lunarValid = true;
+    body.lunarTimingSeconds = 30 - i * 10;
+    body.lunarConstraints = i;
+    body.lunarBelowHorizon = i == 2;
+    plan.bodies.push_back(body);
+  }
+  const auto practical = PlannerRecommendations::Order(
+      plan, PlanningMode::LunarCandidates, true);
+  EXPECT_EQ("Body0", practical[0].state.body);
+  const auto timing = PlannerRecommendations::Order(
+      plan, PlanningMode::LunarCandidates, true, true);
+  EXPECT_EQ("Body1", timing[0].state.body);
+  EXPECT_EQ("Body2", timing.back().state.body);
+}
+
+TEST(PlannerRecommendations, LunarWindowsRespectMotionAndSampledLimits) {
+  wxInitializer initializer;
+  ASSERT_TRUE(initializer.IsOk());
+  for (double latitude : {-31.0, 43.0}) {
+    ObserverMotion motion;
+    motion.referenceUtc = Utc("2025-12-14T00:00:00");
+    motion.latitude = latitude;
+    motion.longitude = 179.9;
+    motion.courseTrue = 90;
+    motion.speedKnots = 12;
+    motion.moving = true;
+    const auto windows = PlannerRecommendations::ObservingWindows("Sun", motion);
+    ASSERT_FALSE(windows.empty());
+    for (const auto& window : windows) {
+      EXPECT_LE(window.startUtc, window.bestUtc);
+      EXPECT_LE(window.bestUtc, window.endUtc);
+      for (auto t = window.startUtc; t <= window.endUtc;
+           t += wxTimeSpan::Minutes(10)) {
+        double lat, lon;
+        motion.PositionAt(t, &lat, &lon);
+        const auto moon = CelestialEphemeris::Evaluate("Moon", t, lat, lon);
+        const auto sun = CelestialEphemeris::Evaluate("Sun", t, lat, lon);
+        EXPECT_GE(moon.geometricAltitude, 10);
+        EXPECT_LE(moon.geometricAltitude, 75);
+        EXPECT_GE(sun.geometricAltitude, 10);
+        EXPECT_LE(sun.geometricAltitude, 75);
+        const auto pair = PlannerRecommendations::LunarPair("Sun", t, lat, lon);
+        EXPECT_GE(pair.lunarDistance, 20);
+        EXPECT_LE(pair.lunarDistance, 100);
+        EXPECT_GE(std::abs(pair.lunarRateArcminHour), 10);
+        EXPECT_GE(pair.lunarTimingSeconds, window.best.lunarTimingSeconds - 1e-9);
+      }
+    }
+  }
+  EXPECT_TRUE(PlannerRecommendations::ObservingWindows("Sun", ObserverMotion()).empty());
+}
+
+TEST(PlannerRecommendations, EclipticLatitudeUsesSphericalGeometry) {
+  const wxDateTime utc = Utc("2025-12-14T10:00:00");
+  BodyState onEcliptic;
+  onEcliptic.sha = 270.0;  // RA 90 degrees.
+  onEcliptic.declination = 23.44;
+  EXPECT_NEAR(0.0,
+              PlannerRecommendations::EclipticLatitude(onEcliptic, utc),
+              0.05);
+  onEcliptic.declination = 0.0;
+  EXPECT_NEAR(-23.44,
+              PlannerRecommendations::EclipticLatitude(onEcliptic, utc),
+              0.05);
+  onEcliptic.sha = 0.0;
+  EXPECT_NEAR(0.0,
+              PlannerRecommendations::EclipticLatitude(onEcliptic, utc),
+              0.001);
+}
+
+TEST(PlannerRecommendations, BobNorthernAndSouthernCasesPreserveCandidates) {
+  wxInitializer initializer;
+  ASSERT_TRUE(initializer.IsOk());
+  struct Case {
+    const char* utc;
+    double latitude, longitude;
+  };
+  for (const Case& sample : {
+           Case{"2025-12-14T10:00:00", 43.0 + 10.0 / 60.0, -77.5},
+           Case{"2025-12-14T16:00:00", -31.0, 172.0}}) {
+    const wxDateTime utc = Utc(sample.utc);
+    const auto result = PlannerRecommendations::Calculate(
+        utc, sample.latitude, sample.longitude);
+    ASSERT_GT(result.bodies.size(), 50u);
+    const auto all = PlannerRecommendations::Order(
+        result, PlanningMode::ShowAll, true);
+    const auto visible = PlannerRecommendations::Order(
+        result, PlanningMode::ShowAll, false);
+    EXPECT_EQ(result.bodies.size(), all.size());
+    EXPECT_LT(visible.size(), all.size());
+    EXPECT_TRUE(std::is_sorted(all.begin(), all.end(),
+                             [](const RankedBody& a, const RankedBody& b) {
+                               return a.state.body.CmpNoCase(b.state.body) < 0;
+                             }));
+    for (const auto mode : {PlanningMode::PracticalFix,
+                            PlanningMode::BrightBodies,
+                            PlanningMode::LunarCandidates}) {
+      const auto ordered = PlannerRecommendations::Order(result, mode, true);
+      EXPECT_EQ(all.size(), ordered.size());
+    }
+    for (const auto& body : result.bodies) {
+      if (body.state.body == "Sun")
+        EXPECT_NEAR(0.0, body.eclipticLatitude, 0.5);
+      if (body.state.body == "Moon")
+        EXPECT_LE(std::abs(body.eclipticLatitude), 7.0);
+      if (body.state.body == "Jupiter") {
+        EXPECT_GT(body.lunarDistance, 0.0);
+        EXPECT_NEAR(360.0 / std::abs(body.lunarRateArcminHour),
+                    body.lunarTimingSeconds, 0.001);
+      }
+    }
+    const auto ecliptic = PlannerRecommendations::Ecliptic(
+        utc, sample.latitude, sample.longitude);
+    ASSERT_EQ(121u, ecliptic.size());
+    EXPECT_NEAR(0.0, ecliptic.front().sha, 0.001);
+    EXPECT_NEAR(0.0, ecliptic.back().sha, 0.001);
+    ObserverMotion motion;
+    motion.referenceUtc = utc;
+    motion.latitude = sample.latitude;
+    motion.longitude = sample.longitude;
+    const auto moonPath = PlannerRecommendations::MoonPath(motion, 3);
+    ASSERT_EQ(13u, moonPath.size());
+    EXPECT_EQ(utc, moonPath[6].utc);
+  }
 }
 
 TEST(RunningFix, RecoversACommonEpochPositionFromTimeTaggedSights) {

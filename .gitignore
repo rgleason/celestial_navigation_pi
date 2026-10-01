@@ -10,6 +10,7 @@ build-test/
 build-implementation/
 
 build-android/
+build-android-armhf/
 build-android-boundaries/
 ci/__pycache__/
 build-desktop/

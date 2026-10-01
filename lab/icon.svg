@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="sea" x2="0" y2="1">
+      <stop stop-color="#132d4a"/>
+      <stop offset="1" stop-color="#071b2c"/>
+    </linearGradient>
+    <linearGradient id="brass" x2="0" y2="1">
+      <stop stop-color="#f6d988"/>
+      <stop offset="1" stop-color="#ba7d31"/>
+    </linearGradient>
+  </defs>
+  <rect x="40" y="40" width="944" height="944" rx="200" fill="url(#sea)"/>
+  <circle cx="750" cy="258" r="94" fill="#e9f3ed"/>
+  <circle cx="788" cy="225" r="94" fill="#132d4a"/>
+  <path d="M205 700 Q500 390 825 667" fill="none" stroke="#4cc4d2"
+        stroke-width="30" stroke-linecap="round"/>
+  <path d="M198 758 Q500 510 827 729" fill="none" stroke="#f6d988"
+        stroke-width="23" stroke-linecap="round"/>
+  <path d="M266 734 L496 351 L736 734" fill="none" stroke="url(#brass)"
+        stroke-width="44" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="496" cy="351" r="37" fill="#f6d988"/>
+  <circle cx="496" cy="351" r="17" fill="#132d4a"/>
+  <path d="M496 352 L496 718" stroke="#f6d988" stroke-width="18"/>
+  <path d="M265 735 H738" stroke="#f6d988" stroke-width="40" stroke-linecap="round"/>
+  <path d="M198 236 L212 196 L226 236 L266 250 L226 264 L212 304 L198 264 L158 250 Z"
+        fill="#e9f3ed"/>
+  <path d="M304 149 L313 125 L322 149 L346 158 L322 167 L313 191 L304 167 L280 158 Z"
+        fill="#e9f3ed"/>
+</svg>

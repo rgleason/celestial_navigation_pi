@@ -43,4 +43,9 @@ TEST(AndroidPlannerWorker, ReplacedContextPublishesOnlyLatestPreciseEpoch) {
   EXPECT_NEAR(20.5129, result.sun.declination, 0.1 / 60);
   EXPECT_EQ(4u, result.phases.size());
   EXPECT_FALSE(result.events.events.empty());
+  EXPECT_EQ(result.planning.bodies.size(), result.allBodies.size());
+  EXPECT_FALSE(result.planning.bodies.empty());
+  EXPECT_EQ(121u, result.ecliptic.size());
+  EXPECT_LT(result.moonPaths[0].size(), result.moonPaths[1].size());
+  EXPECT_LT(result.moonPaths[1].size(), result.moonPaths[2].size());
 }
