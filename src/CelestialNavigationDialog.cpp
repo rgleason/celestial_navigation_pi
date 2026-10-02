@@ -2113,7 +2113,11 @@ void CelestialNavigationDialog::OnChartDisplay(wxCommandEvent&) {
   layout->Add(hover, 0, wxALL, 6);
   layout->Add(dialog.CreateButtonSizer(wxOK | wxCANCEL), 0, wxALL | wxALIGN_RIGHT, 8);
   dialog.SetSizerAndFit(layout);
+#ifdef __OCPN__ANDROID__
+  if (celestial_android::ModalResult(dialog) != wxID_OK) return;
+#else
   if (dialog.ShowModal() != wxID_OK) return;
+#endif
   m_chartStyle.lineWidthMm = width->GetValue();
   m_chartStyle.bandOpacityPercent = opacity->GetValue();
   m_chartStyle.contrastHalo = halo->GetValue();
