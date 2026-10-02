@@ -34,8 +34,8 @@ public:
 private:
   ObserverMotion ReadMotion(bool showErrors);
   wxDateTime ReadUtc(bool showErrors);
-  wxDateTime ReadEntryFields(int format, bool showErrors);
   void SetUtcControls(const wxDateTime& utc);
+  void StepPlanningTime(int hours);
   void ChangeInputTimeBasis(wxCommandEvent& event);
   void ChangeEntryFormat(wxCommandEvent& event);
   void UpdateInputTimeLabels();
@@ -108,6 +108,8 @@ private:
   wxListCtrl* m_combinations;
   wxListCtrl* m_lunarPairs;
   wxChoice* m_lunarOrder;
+  wxChoice* m_lunarCompanions;
+  wxCheckBox* m_includePolarisRecommendations;
   wxNotebook* m_resultsNotebook;
   wxStaticText* m_noRecommendations;
   wxChoice* m_planningMode;
@@ -122,6 +124,7 @@ private:
   wxCheckBox* m_showMoonPath;
   wxChoice* m_moonSpan;
   wxChoice* m_plotMagnitude;
+  wxChoice* m_plotLabels;
   wxCheckBox* m_plotBelowHorizon;
   wxListCtrl* m_almanac;
   wxChoice* m_specialBody;

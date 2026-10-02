@@ -14,6 +14,7 @@
 #include "astrolabe/astrolabe.hpp"
 #include "moon.h"
 
+#include <wx/wrapsizer.h>
 #include <wx/button.h>
 #include <wx/checklst.h>
 #include <wx/choice.h>
@@ -152,6 +153,7 @@ LunarToolsDialog::~LunarToolsDialog() {
   config->SetPath(_T("/PlugIns/CelestialNavigation/LunarTools"));
   config->Write(_T("EntryFormat"),
                 static_cast<long>(m_entryFormat->GetSelection()));
+  config->Write(_T("LunarCompanions"), static_cast<long>(m_plannerCompanions->GetSelection()));
 }
 
 void LunarToolsDialog::CreateUtcEntry(wxWindow* parent,
@@ -431,7 +433,7 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
   auto* note = new wxStaticText(
       page, wxID_ANY,
       CN_UTF8_("Pairs use the same ordering as Bodies & Best Sights: fewest "
-               "planning cautions, then 0.1′ time; timing-first is optional. "
+               "planning cautions, brightness, then 0.1′ time; timing-first is optional. "
                "Below-horizon pairs come last. The time is the approximate "
                "UTC change corresponding to 0.1′ of lunar distance. "
                "Visibility and instrument range require your judgement."));
@@ -466,11 +468,23 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
   controls->Add(timeRow, 0, wxEXPAND);
   top->Add(controls, 0, wxEXPAND | wxALL, 6);
   m_plannerOrder = new wxChoice(page, wxID_ANY);
-  m_plannerOrder->Append(_("Lunar order: fewest cautions, then timing"));
+  m_plannerOrder->Append(_("Lunar order: cautions, brightness, timing"));
   m_plannerOrder->Append(_("Lunar order: timing sensitivity"));
   m_plannerOrder->SetSelection(0);
   m_plannerOrder->Bind(wxEVT_CHOICE, &LunarToolsDialog::CalculatePlanner, this);
-  top->Add(m_plannerOrder, 0, wxALL, 6);
+  auto* companionControls = new wxWrapSizer(wxHORIZONTAL);
+  m_plannerCompanions = new wxChoice(page, wxID_ANY);
+  m_plannerCompanions->Append(_("Traditional lunar companions"));
+  m_plannerCompanions->Append(_("All calculated companions"));
+  auto* config = GetOCPNConfigObject();
+  long companions = 0;
+  config->Read(_T("/PlugIns/CelestialNavigation/LunarTools/LunarCompanions"), &companions, 0L);
+  m_plannerCompanions->SetSelection(std::max(0L, std::min(1L, companions)));
+  m_plannerCompanions->SetToolTip(_("Sun, Venus, Mars, Jupiter, Saturn and nine traditional lunar stars. Choose All calculated companions to compare other bodies without an extra ecliptic penalty."));
+  m_plannerCompanions->Bind(wxEVT_CHOICE, &LunarToolsDialog::CalculatePlanner, this);
+  companionControls->Add(m_plannerCompanions, 0, wxRIGHT | wxBOTTOM, 8);
+  companionControls->Add(m_plannerOrder, 0, wxBOTTOM, 4);
+  top->Add(companionControls, 0, wxALL | wxEXPAND, 6);
   m_plannerList = new wxListCtrl(page, wxID_ANY, wxDefaultPosition,
                                  wxDefaultSize, wxLC_REPORT | wxBORDER_SUNKEN);
   const wxString columns[] = {
@@ -1006,7 +1020,7 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
       "Moon", instant, observerLatitude, observerLongitude);
   auto rows = PlannerRecommendations::Order(
       plan, PlanningMode::LunarCandidates, true,
-      m_plannerOrder->GetSelection() == 1);
+      m_plannerOrder->GetSelection() == 1, m_plannerCompanions->GetSelection() == 0);
   rows.erase(std::remove_if(rows.begin(), rows.end(),
       [](const RankedBody& b) { return !b.lunarValid; }), rows.end());
   for (std::size_t index = 0; index < rows.size(); ++index) {

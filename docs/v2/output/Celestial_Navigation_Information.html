@@ -53,7 +53,7 @@ code { font-family: "Liberation Mono", monospace; font-size: .94em; }
   <h1 style="margin-top: 230px; text-align: center;">Celestial Navigation for OpenCPN</h1>
   <p class="subtitle" style="text-align: center;">Principles, practical methods and plugin manual</p>
   <p style="text-align: center;"><strong>User manual</strong></p>
-  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.9.0<br>Documentation revision 25 September 2026</p>
+  <p class="edition" style="text-align: center;">Celestial Navigation plugin 2.9.3<br>Documentation revision 2 October 2026</p>
   <p class="small" style="text-align: center;">Designed for completely offline use at sea</p>
 </section>
 
@@ -564,7 +564,10 @@ zone offset or eye height automatically refresh the results after a short
 pause. <strong>Calculate / refresh</strong> remains available for an explicit
 update. Planner choices including COG/SOG and entry/display formats persist,
 but a newly opened planner starts its date/time at <strong>Now</strong>. Eye
-height is reloaded from the main plugin defaults each time.</p>
+height is reloaded from the main plugin defaults each time. Related fields stay
+together when the header wraps. <strong>−1 h</strong> and <strong>+1 h</strong>
+step the complete sky by one UTC hour, switching to manual time. With a moving
+observer, the entered position advances too and switches to Manual.</p>
 
 <p>Eye height affects dip of the visible horizon used for rise and set. It does
 not alter the geometric body-centre Hc shown in the body table.</p>
@@ -592,19 +595,29 @@ applies the adjacent, editable minimum and maximum only to suggested pairs and
 triads. The initial preferred range is 10°–75°. Bodies outside it remain in the
 table and are marked below or above the preferred Hc; disabling the option
 makes every above-horizon body eligible for recommendations. All eligible
-bodies are considered for pair/triad geometry, not just a brightness shortlist.</p>
+bodies are considered for pair/triad geometry. Three-body fixes are listed first.
+Polaris remains available in the body list and latitude helper; enable
+<strong>Include Polaris in fixes</strong> to include its mainly latitude
+constraint in recommendations with other suitable bearings. Daylight stars
+remain listed but are excluded from recommended fixes.</p>
 
-<p><strong>Lunar Candidates</strong> shows predicted geocentric Moon-body
-distance, signed distance rate, the seconds represented by 0.1′, companion
-ecliptic latitude, both altitudes and bearings, illumination and guidance.
-A positive rate means increasing distance. Both planners use the same
-explainable default: fewest planning cautions, then strongest timing sensitivity.
-Choose <strong>Lunar order: timing sensitivity</strong> to put timing first.
-Below-horizon pairs remain last. Cautions flag altitude outside 10°–75°,
-distance outside 20°–100°, absolute rate below 10′/hour, companion magnitude
-above 2.5, or Sun altitude above −6° for companions fainter than magnitude −2.
-These preferences do not establish visibility. Ecliptic latitude is descriptive,
-not an additional weight on top of the calculated rate.</p>
+<p><strong>Lunar Candidates</strong> shows geocentric Moon-body distance,
+signed distance rate, seconds represented by 0.1′, companion magnitude and
+ecliptic latitude, altitudes, bearings, illumination and guidance. A positive
+rate means increasing distance. Both planners initially offer
+<strong>Traditional lunar companions</strong>: Sun, Venus, Mars, Jupiter,
+Saturn, Aldebaran, Altair, Antares, Fomalhaut, Hamal, Markab, Pollux, Regulus
+and Spica. Choose <strong>All calculated companions</strong> to compare other
+bodies; the general body list is unaffected.</p>
+
+<p>The practical lunar order prefers fewer cautions, then brighter companions,
+then timing sensitivity. Choose <strong>Lunar order: timing sensitivity</strong>
+to put timing first. Below-horizon pairs remain last. Cautions flag altitude
+outside 10°–75°, distance outside 20°–100°, absolute rate below 10′/hour,
+companion magnitude above 1.5, or Sun above −6° for companions fainter than
+magnitude −2. Ecliptic latitude is context, not an extra penalty on the actual
+distance rate. The 0.1′ time describes distance sensitivity alone, not the
+uncertainty of a complete lunar observation or position solution.</p>
 
 <p>Select a companion in <strong>All bodies</strong>, then choose
 <strong>Lunar windows for selected body…</strong> to search the next 24 hours
@@ -613,30 +626,34 @@ the best sampled timing within each interval. The search uses the entered
 moving-observer course and speed when enabled. Boundaries are approximate;
 an empty result does not prove that the pair cannot be observed.</p>
 
-<p>The individual score gives 65% weight to altitude near 40° and 35% to
-brightness, with a daylight/twilight penalty for stars. Planets currently
-receive no equivalent twilight penalty, so the score is not by itself a
-guarantee that Mercury or another planet is practically observable. Suggested
-pairs additionally favour a crossing angle near 90°; triads rank their
-two-dimensional bearing geometry separately.</p>
+<p>The <strong>Visibility</strong> column gives guidance rather than a
+probability of seeing a body. <strong>Why</strong> distinguishes visibility from
+sextant handling. The internal planning preference combines 75% brightness and
+sky conditions with 25% altitude handling; it favours moderate altitudes and
+advises presetting the sextant for high bright stars. Twilight penalises faint
+stars more than bright ones. Planets receive solar-glare/daylight penalties.
+Sun, Moon and planet magnitudes are representative values, not current
+photometry; check Moon phase and glare. Pair crossing angles and triad bearing
+geometry are assessed separately. Recommendation scores are heuristics, not
+accuracy estimates.</p>
 
-<p>The polar sky plot has independent magnitude limits of 1, 2 or 3 and can
-optionally show bodies below the horizon. Sun symbols are yellow, the Moon is
-blue, planets are red, stars rendered during daylight are grey, and
-below-horizon bodies are hollow. Labels favour the brightest bodies and share
-the available label allowance across the four compass quadrants. The allowance
-adapts to the plot size, and labels are still suppressed when they would
-overlap; an unlabeled dot does not mean the body is absent from the catalogue.</p>
+<p>The plots have magnitude limits of 1, 2 or 3. <strong>Star labels</strong>
+offers <strong>Sparse</strong>, <strong>Balanced</strong> (default) and
+<strong>More</strong>. Names favour brighter bodies, use the available space and
+avoid other labels and dots; short leaders identify offset names. The selected
+body has first priority and remains plotted when above the horizon even if
+fainter than the magnitude limit. Hover over a dot for its name. More means as
+many labels as fit, so some crowded dots may remain unnamed. Label density is
+remembered independently of the magnitude filter.</p>
 
-<p><strong>Show ecliptic</strong> and <strong>Show Moon path</strong> are
-independent overlays. The ecliptic defaults on and the Moon path off; the path
-can span ±3, ±6 or ±12 hours around the planning instant. <strong>Local
-sky</strong> shows altitude and true bearing at the planning position.
-<strong>SHA / Declination</strong> shows celestial coordinates and is useful
-for a longer Moon track. The ecliptic follows the date's obliquity and the Moon
-path follows the selected ephemeris, with UTC labels at its start, middle and
-end. Selecting a body highlights its plotted symbol. Neither overlay replaces
-a visibility check.</p>
+<p><strong>Local sky</strong> shows altitude and true bearing at the selected
+instant. Sun symbols are yellow, Moon blue, planets red; daylight stars are
+grey and below-horizon bodies hollow. <strong>Show ecliptic</strong> draws the
+amber reference at that same instant. The blue <strong>Show Moon path</strong>
+overlay is available only on <strong>SHA / Declination</strong>, where it shows
+motion relative to the stars over ±3, ±6 or ±12 hours with UTC labels at the
+start, selected time and end. Use the hour-step buttons to move the whole local
+sky together. The SHA chart includes the polar regions through ±90°.</p>
 
 <p>These rankings and the sky plot are planning aids, not commands. Weather,
 deck obstruction, glare, horizon quality and a navigator's ability to identify
@@ -980,7 +997,7 @@ against clock correction and should not be treated as a sextant calibration.</di
 <h2>12.6 Lunar pair planner</h2>
 <p><strong>Lunar Tools… → Lunar planner</strong> uses the same default ordering
 and optional timing-first choice as <strong>Bodies &amp; Best Sights</strong>,
-with below-horizon pairs last. It shows centre separation, signed distance rate in
+with below-horizon pairs last and the same traditional/all-companion choice. It shows centre separation, signed distance rate in
 arcminutes per hour, Moon/body altitude and true azimuth, Moon illumination,
 body magnitude and which body is below the geometric horizon. A small time
 value indicates greater timing sensitivity. There is no combined quality
@@ -1240,7 +1257,7 @@ celestial-navigation fix.</p>
 <tr><td>Sunrise/sunset differs by about an hour</td><td>Distinguish UTC from local civil time and daylight-saving time. Verify the planner's independent entry-time and display-time selectors.</td></tr>
 <tr><td>Planner or Lunar Tools date appears in an unexpected order or uses AM/PM</td><td>Select <strong>Nautical: YYYY-MM-DD, 24-hour</strong>. The alternative OpenCPN/platform format intentionally follows the native operating-system controls.</td></tr>
 <tr><td>Editing a live position or “Now” time stops following it</td><td>This is intentional: a direct edit changes that source to Manual so an automatic update cannot immediately overwrite the entered value. Reselect the live source to follow it again.</td></tr>
-<tr><td>A body dot has no sky-plot label</td><td>Labels favour bright bodies, are shared across compass quadrants and are suppressed when they would overlap. Enlarge the planner or use the sortable body table to identify and inspect every listed body.</td></tr>
+<tr><td>A body dot has no sky-plot label</td><td>Labels favour bright bodies and avoid overlaps. Choose Balanced or More, enlarge the planner, hover over a dot, or select its body in the table to give its name priority.</td></tr>
 <tr><td>A body is listed but absent from the recommended pairs or triads</td><td>Check <strong>Limit recommendations by Hc</strong> and its preferred minimum and maximum. Bodies outside the range remain available in the table but are deliberately excluded from recommendations while the limit is enabled.</td></tr>
 <tr><td>An invalid planner date or time leaves no results</td><td>This is intentional: the plugin clears previously calculated events, bodies, almanac and helper results so stale output cannot be mistaken for the invalid planning context. Correct the entry using YYYY-MM-DD and HH:MM:SS.</td></tr>
 <tr><td>GNSS UTC unavailable</td><td>Confirm a valid NMEA RMC or ZDA sentence is reaching OpenCPN. The plugin does not infer GNSS time from position alone.</td></tr>

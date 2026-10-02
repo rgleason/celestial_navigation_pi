@@ -85,4 +85,5 @@ sources/packs are unchanged.
 Windows, macOS and Android native build/execution and device performance remain
 CI/release qualification work. Local verification is Linux GCC/Clang; this is a
 development commit, not evidence of catalogue publication. The HTML help and
-README explain the new policy; existing PDF/DOCX manual editions are retained.
+README explain the new policy. The issue #354 follow-up also regenerates the
+PDF/DOCX manual editions from the current 2.9.3 source.

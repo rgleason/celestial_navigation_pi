@@ -60,6 +60,15 @@ class OverlayPreviewSight : public Sight {
   using Sight::polygons;
 };
 
+template <typename T, typename Predicate>
+T* FindPlannerControl(wxWindow* root, Predicate match) {
+  for (auto* child : root->GetChildren()) {
+    if (auto* value = dynamic_cast<T*>(child)) if (match(value)) return value;
+    if (auto* nested = FindPlannerControl<T>(child, match)) return nested;
+  }
+  return nullptr;
+}
+
 bool ContainsStaticText(wxWindow* window, const wxString& text) {
   for (auto* child : window->GetChildren()) {
     if (auto* label = dynamic_cast<wxStaticText*>(child)) {
@@ -720,6 +729,16 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
           wxMilliSleep(30);
         }
         ExpectUnclippedNonOverlappingChildren(bodiesPage);
+        ExpectUnclippedNonOverlappingChildren(&planner);
+        auto text = [&](const wxString& label) {
+          return FindPlannerControl<wxStaticText>(&planner,
+              [&label](wxStaticText* t) { return t->GetLabel() == label; });
+        };
+        ASSERT_NE(text("Latitude"), nullptr); ASSERT_NE(text("Longitude"), nullptr);
+        EXPECT_EQ(text("Latitude")->GetPosition().y, text("Longitude")->GetPosition().y);
+        ASSERT_NE(text("Display event times as"), nullptr); ASSERT_NE(text("Zone offset (h)"), nullptr);
+        EXPECT_EQ(text("Display event times as")->GetPosition().y,
+                  text("Zone offset (h)")->GetPosition().y);
 #ifdef __WXGTK3__
         GtkAllocation requested{0, 0, size.x, size.y};
         gtk_widget_size_allocate(GTK_WIDGET(planner.GetHandle()), &requested);
@@ -735,6 +754,64 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
         cairo_surface_destroy(surface);
 #endif
       }
+      auto* labels = FindPlannerControl<wxChoice>(bodiesPage,
+          [](wxChoice* c) { return c->FindString("Balanced") != wxNOT_FOUND; });
+      ASSERT_NE(labels, nullptr);
+      EXPECT_EQ(1, labels->GetSelection());
+      for (int density = 0; density < 3; ++density) {
+        labels->SetSelection(density);
+        wxCommandEvent changed(wxEVT_CHOICE, labels->GetId());
+        changed.SetEventObject(labels); labels->ProcessWindowEvent(changed);
+        planner.SetSize(wxSize(1370, 820)); planner.Layout(); bodiesPage->Layout();
+        for (int i = 0; i < 3; ++i) { wxTheApp->Yield(); wxMilliSleep(20); }
+      }
+      // UTC stepping across the London DST transition preserves elapsed time.
+      auto* date = FindPlannerControl<wxTextCtrl>(&planner,
+          [](wxTextCtrl* t) { return t->GetHint() == "YYYY-MM-DD"; });
+      auto* clock = FindPlannerControl<wxTextCtrl>(&planner,
+          [](wxTextCtrl* t) { return t->GetHint() == "HH:MM:SS"; });
+      ASSERT_NE(date, nullptr); ASSERT_NE(clock, nullptr);
+      date->ChangeValue("2026-03-29"); clock->ChangeValue("00:30:00");
+      auto* plus = FindPlannerControl<wxButton>(&planner,
+          [](wxButton* b) { return b->GetLabel() == "+1 h"; });
+      auto* minus = FindPlannerControl<wxButton>(&planner,
+          [](wxButton* b) { return b->GetLabel() == "-1 h"; });
+      ASSERT_NE(plus, nullptr); ASSERT_NE(minus, nullptr);
+      for (auto* step : {plus, minus}) {
+        wxCommandEvent clicked(wxEVT_BUTTON, step->GetId());
+        clicked.SetEventObject(step); step->ProcessWindowEvent(clicked);
+        EXPECT_EQ("2026-03-29", date->GetValue());
+        EXPECT_EQ(step == plus ? "01:30:00" : "00:30:00", clock->GetValue());
+        EXPECT_TRUE(ContainsStaticText(&planner, step == plus
+            ? "2026-03-29 01:30:00 UTC" : "2026-03-29 00:30:00 UTC"));
+      }
+      auto* format = FindPlannerControl<wxChoice>(&planner,
+          [](wxChoice* c) { return c->FindString("OpenCPN / platform format") != wxNOT_FOUND; });
+      ASSERT_NE(format, nullptr);
+      // Native time-only fields must also preserve a valid UTC hour which is
+      // absent from the computer's local calendar on the same date.
+      date->ChangeValue("2026-03-29"); clock->ChangeValue("01:30:00");
+      for (int entry : {1, 0}) {
+        format->SetSelection(entry);
+        wxCommandEvent changed(wxEVT_CHOICE, format->GetId());
+        changed.SetEventObject(format); format->ProcessWindowEvent(changed);
+        wxCommandEvent clicked(wxEVT_BUTTON, plus->GetId());
+        clicked.SetEventObject(plus); plus->ProcessWindowEvent(clicked);
+        EXPECT_TRUE(ContainsStaticText(&planner, entry == 1
+            ? "2026-03-29 02:30:00 UTC" : "2026-03-29 03:30:00 UTC"));
+      }
+      auto* latitude = FindPlannerControl<wxTextCtrl>(&planner,
+          [](wxTextCtrl* t) { return t->GetName() == "PlannerLatitude"; });
+      auto* longitude = FindPlannerControl<wxTextCtrl>(&planner,
+          [](wxTextCtrl* t) { return t->GetName() == "PlannerLongitude"; });
+      ASSERT_NE(latitude, nullptr); ASSERT_NE(longitude, nullptr);
+      latitude->ChangeValue("N 43 16.7061"); longitude->ChangeValue("W 076 58.3941");
+      date->ChangeValue("2026-10-03"); clock->ChangeValue("08:30:00");
+      auto* refresh = FindPlannerControl<wxButton>(&planner,
+          [](wxButton* b) { return b->GetLabel() == "Calculate / refresh"; });
+      ASSERT_NE(refresh, nullptr);
+      wxCommandEvent refreshed(wxEVT_BUTTON, refresh->GetId());
+      refreshed.SetEventObject(refresh); refresh->ProcessWindowEvent(refreshed);
       wxChoice* planningMode = nullptr;
       wxCheckBox* showEcliptic = nullptr;
       wxCheckBox* showMoonPath = nullptr;
@@ -750,8 +827,11 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       ASSERT_NE(planningMode, nullptr);
       ASSERT_NE(showEcliptic, nullptr);
       ASSERT_NE(showMoonPath, nullptr);
+      EXPECT_FALSE(showMoonPath->IsEnabled());
       auto* lunarPairs = FindListWithColumn(bodiesPage, "Moon + body");
       ASSERT_NE(lunarPairs, nullptr);
+      EXPECT_EQ(8, lunarPairs->GetColumnCount());
+      EXPECT_NE(FindListWithColumn(bodiesPage, "Mag"), nullptr);
       for (int mode = 0; mode < 4; ++mode) {
         planningMode->SetSelection(mode);
         wxCommandEvent changed(wxEVT_CHOICE, planningMode->GetId());
@@ -782,6 +862,22 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
 #endif
         }
       }
+      for (int density = 0; density < 3; ++density) {
+        labels->SetSelection(density);
+        wxCommandEvent changed(wxEVT_CHOICE, labels->GetId());
+        changed.SetEventObject(labels); labels->ProcessWindowEvent(changed);
+        planner.SetSize(wxSize(1370, 820)); planner.Layout(); bodiesPage->Layout();
+        for (int i = 0; i < 4; ++i) { wxTheApp->Yield(); wxMilliSleep(20); }
+#ifdef __WXGTK3__
+        GtkAllocation allocation{0, 0, 1370, 820};
+        gtk_widget_size_allocate(GTK_WIDGET(planner.GetHandle()), &allocation);
+        auto* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1370, 820);
+        auto* cr = cairo_create(surface); gtk_widget_draw(GTK_WIDGET(planner.GetHandle()), cr);
+        const auto path = wxString::Format("/tmp/celestial-planner-labels-%d.png", density);
+        EXPECT_EQ(cairo_surface_write_to_png(surface, path.utf8_str()), CAIRO_STATUS_SUCCESS);
+        cairo_destroy(cr); cairo_surface_destroy(surface);
+#endif
+      }
       planningMode->SetSelection(2);
       wxCommandEvent lunarChanged(wxEVT_CHOICE, planningMode->GetId());
       lunarChanged.SetEventObject(planningMode);
@@ -796,6 +892,7 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
               notebook->GetPageText(0) == "Local sky") plotNotebook = notebook;
       ASSERT_NE(plotNotebook, nullptr);
       plotNotebook->SetSelection(1);
+      EXPECT_TRUE(showMoonPath->IsEnabled());
       for (int i = 0; i < 6; ++i) { wxTheApp->Yield(); wxMilliSleep(20); }
       for (int mask = 0; mask < 4; ++mask) {
         showEcliptic->SetValue((mask & 1) != 0);
