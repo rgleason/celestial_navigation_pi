@@ -50,3 +50,12 @@ built successfully; all 55 focused Compact, lunar DE440/boundary, navigation,
 DUT1 and lunar-worker tests passed, including the two new concurrency cases.
 The Compact package integrity check passed with the integration patch recorded.
 Windows DLL imports are verified by the three MSVC jobs in the PR's fresh CI run.
+
+The next run (pipeline 551, `1365a0f`) confirmed that the Windows x64 DLL
+has no MSVC mutex imports and generated its archive. It exposed a second,
+unrelated validation defect: the x64 script expected version `2.9.2.0` and
+emitted a matching stale release URL. The script now derives the expected
+plugin/API versions from the checked-out `CMakeLists.txt` and uses that plugin
+version in the development Alpha URL. Architecture and API checks remain
+strict. Three metadata regression tests cover version bumps, wrong platform/API
+values, and missing or duplicate source version settings.

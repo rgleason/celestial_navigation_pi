@@ -237,6 +237,9 @@ if (NOT MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(celestial_tests PUBLIC "-O0")
 endif()
 
+add_test(NAME windows64_metadata_validation
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/windows64_metadata_test.py ${CMAKE_SOURCE_DIR})
+
 add_test(NAME compact_package_integrity
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/compact_package_test.py ${CMAKE_SOURCE_DIR})
 

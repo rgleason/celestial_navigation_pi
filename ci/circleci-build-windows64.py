@@ -82,6 +82,31 @@ def prepare_sdk():
     return sdk, wx, wxlib
 
 
+def project_versions(cmake_file=ROOT / 'CMakeLists.txt'):
+    """Read the release and API versions independently of generated metadata."""
+    source = cmake_file.read_text(encoding='utf-8')
+    def version(prefix, components):
+        values = []
+        for component in components:
+            name = prefix + '_' + component
+            matches = re.findall(r'^\s*set\(\s*' + name +
+                                 r'\s+"?([0-9]+)"?\s*\)', source, re.MULTILINE)
+            if len(matches) != 1:
+                raise RuntimeError('Expected one numeric CMake setting: ' + name)
+            values.append(matches[0])
+        return '.'.join(values)
+    return (version('VERSION', ('MAJOR', 'MINOR', 'PATCH', 'TWEAK')),
+            version('OCPN_API_VERSION', ('MAJOR', 'MINOR')))
+
+
+def verify_metadata(xml, plugin_version, api_version):
+    values = [(xml.findtext(k) or '').strip() for k in
+              ('target', 'target-version', 'target-arch', 'version', 'api-version')]
+    if values != ['msvc-wx32-x64', '10', 'x86_64', plugin_version, api_version]:
+        raise RuntimeError('Incorrect Windows x64 metadata: ' + repr(values))
+    return values
+
+
 def main():
     if sys.platform != 'win32':
         raise SystemExit('Use a native Windows x64 MSVC environment')
@@ -123,11 +148,10 @@ def main():
     if len(archives) != 1 or len(metadata) != 1:
         raise RuntimeError('Expected exactly one archive and metadata pair')
     xml = ET.parse(metadata[0]).getroot()
-    values = [(xml.findtext(k) or '').strip() for k in ('target', 'target-version', 'target-arch', 'version', 'api-version')]
-    if values != ['msvc-wx32-x64', '10', 'x86_64', '2.9.2.0', '1.18']:
-        raise RuntimeError('Incorrect Windows x64 metadata: ' + repr(values))
+    plugin_version, api_version = project_versions()
+    values = verify_metadata(xml, plugin_version, api_version)
     xml.find('source').text = 'https://github.com/pob220/celestial_navigation_pi/tree/' + revision
-    xml.find('tarball-url').text = 'https://github.com/pob220/celestial_navigation_pi/releases/download/v2.9.2.0-alpha1/' + archives[0].name
+    xml.find('tarball-url').text = 'https://github.com/pob220/celestial_navigation_pi/releases/download/v' + plugin_version + '-alpha1/' + archives[0].name
     raw_xml = ET.tostring(xml, encoding='utf-8', xml_declaration=True)
     metadata[0].write_bytes(raw_xml)
     with tempfile.TemporaryDirectory() as temporary:
