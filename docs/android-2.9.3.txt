@@ -1,0 +1,46 @@
+Android 2.9.3 development port
+==============================
+
+Baseline: android/celnav-2.9.2-alpha, 5515a38. Desktop features carried from
+c9b1bec and 73abd82. This is a separate Android branch and retains the touch
+workspace, native cards, owned Qt timers, cancellable background workers,
+scoped file import and exact UTC/fractional input adapters.
+
+Bundled Compact 0.2.0 and the corrected lunar solver use the same qualified
+sources/data as desktop 2.9.3. Provider order: appropriate installed DE440s,
+Compact for 1972–2100, Classic when Compact is disabled/unavailable/outside
+coverage. Advanced exposes a persisted default-on Compact switch. Android
+workers read its atomic snapshot, never the GUI configuration object.
+
+Planner includes absolute -1 h/+1 h stepping with vessel advance, separated
+visibility/handling guidance, triads before pairs, optional Polaris, traditional
+lunar companions/all companions and magnitude. Native cards remain authoritative.
+Sparse/Balanced/More plot labels use shared collision placement; touch users
+identify a dot by tapping. Selected bodies have priority and remain plotted
+beyond the brightness filter. Moon paths appear on SHA/Declination; Local sky
+shows the current instant and changes coherently with time steps.
+
+Android's own quick guide describes its touch workflows. The retained general
+numerical reference is updated to 2.9.3; desktop workflow/layout changes do not
+replace the Android workspace.
+
+Checks before tablet installation, 2 October 2026:
+- ARM64 release plugin and Android import package built with NDK 26.1.10909125,
+  API 21 toolchain and retained matching wxQt/Qt 5.12.2 support.
+- 10 host CTest groups passed, including shared Compact, lunar reference and
+  boundary qualification, Android solver adapters and timezone audits.
+- Four Android boundary families passed. Actual Android planner parser tested
+  in UTC, London, New York and Auckland, including fractions, ship-zone offsets,
+  absolute hour steps and refusal of missing/repeated local times.
+- Physical SM-X210 ARM64: all 20 lunar boundary/reference/limb tests passed.
+- 1,407 Compact cross-architecture cases: 67 bodies, seven epochs 1972–2099,
+  three observer locations including polar latitude and DST-labelled epochs.
+  Maximum angular difference 3.01e-9 degrees; maximum range difference 10.7 mm.
+  This checks architecture parity, not an additional independent accuracy claim.
+  Independent accuracy qualification is retained in compact-engine-2.9.3.txt.
+
+The existing org.opencpn.opencpn.dev 5.14.1-pob220-import-fix host (129) is
+compatible and is retained. Before installation, the original library, profile,
+navigation database, complete sights/astronomy directory and install metadata
+were archived; 60 backed-up files verified. Backups remain under ignored
+build-android/tablet-backup. Other plugin library hashes are separately retained.

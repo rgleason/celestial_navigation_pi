@@ -1,3 +1,4 @@
+#include "CompactEphemerisProvider.h"
 #include "PlatformMessageBox.h"
 /******************************************************************************
  *
@@ -125,6 +126,8 @@ celestial_navigation_pi::~celestial_navigation_pi(void) {}
 //---------------------------------------------------------------------------------------------------------
 
 int celestial_navigation_pi::Init(void) {
+  celestial_navigation::InitializeCompactEphemerisPreference();
+  celestial_navigation_pi_DataDir();
 #ifdef __OCPN__ANDROID__
   celestial_android::CleanAbandonedImports();
 #endif

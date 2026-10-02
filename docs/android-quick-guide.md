@@ -1,4 +1,4 @@
-# Celestial Navigation 2.8.13 — Android quick guide
+# Celestial Navigation 2.9.3 — Android quick guide
 
 Tap the stock Celestial Navigation icon in OpenCPN to open the workspace.
 Four task buttons take you to **Observe**, **Fix**, **Plan** and **Tools**.
@@ -51,7 +51,19 @@ approximate: the shared method found the June 2024 Full Moon about ten minutes
 earlier than USNO. Use an authoritative almanac when an exact phase time matters.
 **Bodies & Best Sights** has Sort and Direction above a scrollable list; select
 a card to enable **Create sight**. The separate **Recommendations & sky** page
-has visibility limits, suggested combinations and the sky plot. **Almanac**
+has visibility limits, suggested combinations and the sky plot. Choose **Sparse**, **Balanced** or **More** star labels on that page. Names
+fit without overlap, brightest first; tap a plot dot to identify the body or
+select its body card. The selected body has label priority. Use **-1 h / +1 h**
+in Context to move the whole sky by one UTC hour; a moving observer advances
+with the entered course and speed. The Moon path belongs to **SHA / Declination**;
+the Local sky plot shows the current instant. Visibility guidance describes
+brightness and twilight separately from altitude handling and fix geometry.
+Suggested triads precede pairs; Polaris is optional for recommendations.
+Lunar Candidates uses traditional companions by default; choose **All calculated
+companions** to compare other bodies. Magnitude and cautions help assess a pair;
+a planning preference is not a probability of seeing or measuring it.
+
+**Almanac**
 shows 25 hourly epochs for seven bodies and can export a CSV; its UTC column
 keeps fractional seconds. Review the chosen folder and confirm before replacing
 an existing file. **Noon & Polaris** takes corrected observed altitude, not the
@@ -62,6 +74,16 @@ LOLA-refined eclipse contact times are approximate. The retained 2027 comparison
 found differences of up to 2.9 seconds from a full terrain scan. Displayed
 hundredths of a second do not establish timing accuracy. Eclipse times use UT1;
 future UTC also depends on Earth rotation.
+
+## Offline ephemeris choice
+
+For supported bodies and dates, an installed verified DE440s pack takes priority.
+Otherwise the bundled Compact 0.2.0 engine supplies the Sun, Moon, planets and
+navigation stars for 1972–2100. No large download is needed. In **Tools > Lunar
+Tools > Advanced**, disable **Use compact analytical fallback (recommended)**
+to use Classic Analytical instead. Classic also covers dates outside Compact's
+range or unavailable Compact data. The corrected lunar solver applies to every
+provider; inspect the calculation trail for the source and DUT1 availability.
 
 ## Specialized tools and documents
 

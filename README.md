@@ -3,6 +3,17 @@ Celestial Navigation Plugin for OpenCPN
 
 Perform sight reductions and plot positions from celestial observations.
 
+Development version **2.9.3** bundles the verified Compact 0.2.0 ephemeris and
+corrected lunar solver 0.1.0. DE440s retains priority for applicable installed
+body centres; Compact is the default offline fallback, including navigation
+stars, for 1972–2100. Disable **Use compact analytical fallback (recommended)**
+in **Lunar Tools → Advanced** to use classic analytical calculations. Classic
+also handles dates outside Compact coverage or unavailable Compact data. Lunar
+geometry corrections remain active with every provider. The engine data adds
+about 3.74 MiB; no download is required. See
+[the integration and validation notes](docs/compact-engine-2.9.3.txt).
+
+
 Version 2.8.9 corrects ambiguous Horizon Event position estimates and removes
 the misleading filled uncertainty disc. The bundled HTML, PDF and editable
 manuals cover the current running-fix and lunar-planning workflows. See the

@@ -52,6 +52,9 @@ set(SRC
     lunar_de440_tests.cpp
     navigation_de440_tests.cpp
     analytical_epoch_tests.cpp
+    compact_navigation_tests.cpp
+    lunar_boundary_tests.cpp
+    lunar_reference_tests.cpp
     lunar_observer_tests.cpp
     dut1_update_tests.cpp
     coastal_navigation_tests.cpp
@@ -85,6 +88,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/BodyCatalog.cpp
     ${CMAKE_SOURCE_DIR}/src/NavigationAlgorithms.cpp
     ${CMAKE_SOURCE_DIR}/src/NavigationEphemerisProvider.cpp
+    ${CMAKE_SOURCE_DIR}/src/CompactEphemerisProvider.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacGenerator.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacPaperTables.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacDialog.cpp
@@ -140,6 +144,8 @@ endif()
 
 target_compile_definitions(celestial_tests
     PUBLIC
+        CELNAV_COMPACT_TEST_DATA="${CMAKE_SOURCE_DIR}/data/compact"
+        LUNAR_REFERENCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/lunar-fixtures/references"
         USE_MOCK_DEFS
         CMAKE_BINARY_DIR="${CMAKE_BINARY_DIR}"
         TESTDATA="${CMAKE_CURRENT_LIST_DIR}/testdata"
@@ -171,6 +177,7 @@ target_link_libraries(celestial_tests
         ocpn::wxjson
         ocpn::plugin-dc
         celestial::eclipse_core
+        celnav::compact
 )
 
 # The first standalone validation application deliberately compiles the same
@@ -200,7 +207,7 @@ if(CELESTIAL_BUILD_LAB)
         ${wxWidgets_INCLUDE_DIRS})
     target_link_libraries(celestial_navigation_lab PRIVATE
         ${wxWidgets_LIBRARIES} ocpn::api ocpn::tinyxml ocpn::wxjson
-        ocpn::plugin-dc celestial::eclipse_core)
+        ocpn::plugin-dc celestial::eclipse_core celnav::compact)
     if(GTK3_LIBRARIES)
         target_link_libraries(celestial_navigation_lab PRIVATE ${GTK3_LIBRARIES})
     endif()
@@ -229,6 +236,9 @@ endif()
 if (NOT MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(celestial_tests PUBLIC "-O0")
 endif()
+
+add_test(NAME compact_package_integrity
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/compact_package_test.py ${CMAKE_SOURCE_DIR})
 
 # Add the test
 add_test(NAME celestial_tests COMMAND celestial_tests)
@@ -277,7 +287,7 @@ if(UNIX)
         string(REPLACE "/" "_" test_zone "${zone}")
         add_test(NAME numerical_audit_${test_zone}
             COMMAND ${CMAKE_COMMAND} -E env "TZ=${zone}"
-                $<TARGET_FILE:celestial_tests> --gtest_filter=NumericalAudit.*)
+                $<TARGET_FILE:celestial_tests> --gtest_filter=NumericalAudit.*:CompactNavigation.RealInstantPreservesUtcAtDstTransitions:CompactNavigation.LunarCallbackKeepsUtcAcrossLocalDstGap)
     endforeach()
 endif()
 add_test(
