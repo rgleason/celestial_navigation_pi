@@ -849,9 +849,13 @@ geocentric ephemeris over a search interval.</p>
 
 <p>When its checksum-verified local JPL DE440s kernel is installed and covers
 the sight date, Moon–Sun, Moon–Mercury and Moon–Venus calculations use it.
-Moon–star and other Moon–planet calculations, or any sight outside the compact
-kernel's range, use the bundled analytical ephemeris. The result identifies
-the source used. DE440s is optional for navigation, no calculation downloads
+Moon–star and other Moon–planet calculations use the bundled Compact engine
+by default for 1972–2100. Compact also supplies the fallback when DE440s is
+unavailable. In Lunar Tools → Advanced, disable <strong>Use compact analytical
+fallback (recommended)</strong> to retain classic analytical calculations.
+Classic also handles dates outside Compact coverage or unavailable Compact data.
+The corrected lunar solver remains active with every provider, and the result
+identifies the source used. DE440s is optional for navigation, no calculation downloads
 data, and LOLA terrain is unrelated to lunar-distance clearing.</p>
 
 <figure>

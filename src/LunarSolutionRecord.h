@@ -45,10 +45,11 @@ struct LunarSolutionRecord {
         Summary() + "\nSaved UTC: " + created_utc + "\nMethod: " + method +
         wxString::Format(
             "\nExisting correction: %+.3f s\nAdditional correction: %+.3f s\n"
-            "Time uncertainty: %.3f s (1-sigma)\n"
             "Recorded readings and global correction were not changed.\n\n",
-            base_correction_seconds, additional_correction_seconds,
-            time_sigma_seconds);
+            base_correction_seconds, additional_correction_seconds);
+    text += std::isfinite(time_sigma_seconds)
+        ? wxString::Format("Time uncertainty: %.3f s (1-sigma)\n", time_sigma_seconds)
+        : "Time uncertainty: unavailable\n";
     for (const auto& input : inputs) text += input + "\n";
     return text + "\n" + report;
   }
@@ -82,8 +83,8 @@ inline wxString LunarInputSnapshot(const Sight& sight) {
     << " searchSpan_s=" << sight.m_TimeCertainty << " recordedTimeBasis="
     << (sight.m_LunarTimeIsWatch ? "watch" : "nominalUTC")
     << " earthModel=" << (o.use_ellipsoid ? "WGS84" : "sphere") << " ephemeris="
-    << (sight.m_LunarUsesDe440 ? "DE440s-apparent" : "analytical-fallback")
-    << " solverVersion=2.8.5.1";
+    << (sight.m_LunarUsesDe440 ? "DE440s-apparent" : sight.m_LunarUsesCompact ? "compact-0.2.0" : "classic-analytical")
+    << " solverVersion=0.1.0/plugin-2.9.3";
   return wxString::FromUTF8(s.str().c_str());
 }
 

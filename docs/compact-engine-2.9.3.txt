@@ -1,0 +1,88 @@
+Celestial Navigation 2.9.3 development integration
+================================================
+
+Provider policy
+---------------
+DE440s retains its existing priority for available, supported Sun, Moon,
+Mercury and Venus centres. Compact 0.2.0 is bundled and enabled by default
+as the offline fallback. It covers Sun, Moon, Mercury, Venus, Mars, Jupiter,
+Saturn, Aries and the existing 59 navigation-star entries for 1972-2100.
+The VSOP2013 Jupiter/Saturn positions represent their system barycentres;
+this release does not add satellite ephemerides or replace the star catalogue.
+
+Lunar Tools -> Advanced contains "Use compact analytical fallback
+(recommended)". Disabling it selects classic analytical fallback. Classic is
+also used when Compact's data cannot load or its supported dates do not cover
+a complete requested lunar workflow. DE440s eligibility is unchanged by this
+switch. Reports and almanac source tables identify the provider actually used.
+
+The corrected lunar solver 0.1.0 is independent of ephemeris selection and
+remains active with DE440s, Compact and classic. Lunar selection checks the
+whole search interval, separately timed altitude offsets, reference diagnostics
+and prediction margins before choosing a provider. Provider, data handles,
+reference epoch and imported DUT1/leap history are retained for the callback's
+lifetime. A failed trial does not silently switch providers. Classic callbacks
+own an isolated sight snapshot and serialize access; enhanced callbacks never
+mutate a live sight.
+
+The Compact lunar adapter uses the independently qualified geocentric
+positions/ranges and the corrected solver's WGS84 vector-parallax/limb/refraction
+model. It does not apply the library's optional observer outputs a second time.
+The DE440s lunar path retains its observer-specific light-time callback.
+Planning uses Compact's observer-specific airless direction, followed by the
+existing atmospheric correction. Ordinary sight reductions retain their
+established observational constants and correction policies.
+
+UTC is extracted directly from actual wxDateTime instants in the ephemeris
+adapters; reconstructing UTC as local fields is avoided at DST gaps. Lunar
+callbacks advance actual instants from a fixed reference. The historical
+recorded-sight UTC-field representation is retained for file compatibility.
+Imported IERS data remain authoritative, including later leap history; new
+imports do not change a running lunar session.
+
+Source and packaging
+--------------------
+Compact numerical sources and coefficient packs are copied unchanged from the
+qualified standalone 0.2.0 component. The lunar numerical source/header are
+copied unchanged from the qualified standalone 0.1.0 companion. The embedded
+CMake target builds only the private, prefixed runtime; no diagnostic CLI, SDK
+archives, developer full-series packs or SPK kernel are shipped. The existing
+plugin data installer carries data/compact on all supported platforms.
+
+compact/PROVENANCE.json records imported source/data SHA-256 hashes and the
+standalone archive hashes. data/compact/manifest.json records coefficient-pack
+sizes/hashes and selection provenance. GPL, ERFA BSD and ELP notices are
+installed with the packs. C++17 is required by the compact runtime.
+
+The unchanged, qualified model data total 3,920,063 bytes (3.74 MiB); shipped
+licence notices add 74,293 bytes. Actual binary and compressed package sizes
+vary by platform. Runtime calculation requires no network or separate download.
+
+Validation
+----------
+The integration tests retain explicit classic-provider recorded-value
+regressions and separately test the production default. They cover all
+navigation bodies, DE440s priority, stars, disabling Compact, missing-data
+fallback/recovery, out-of-range dates, retained provider settings, imported
+DUT1/leap history, saved unavailable uncertainties and DST transitions.
+
+Independent Skyfield/DE440s reference tables supply 32 lunar cases. Each is
+replayed through the actual plugin Sight path in simultaneous mode and in
+separately timed/moving-observer mode (64 production workflows). The solver's
+standalone boundary and independent-reference tests are compiled against the
+plugin's numerical source too: 512 scan/observer/timing variants, neighbouring
+polar cases, limb/contact combinations, concurrent solves and retained noisy
+successes/rejections. Synthetic success does not certify every real sextant
+observation or independently validate catalogue truth.
+
+Release-specific results are recorded in validation/compact-v2.9.3/summary.json.
+The actual Advanced/results UI test runs against an isolated temporary profile
+and confirms the default checkbox and both toggle directions; panel images
+were visually inspected. Package verification checks every coefficient-pack
+hash and installed runtime notice. Existing 2.8 worktree and qualified standalone
+sources/packs are unchanged.
+
+Windows, macOS and Android native build/execution and device performance remain
+CI/release qualification work. Local verification is Linux GCC/Clang; this is a
+development commit, not evidence of catalogue publication. The HTML help and
+README explain the new policy; existing PDF/DOCX manual editions are retained.

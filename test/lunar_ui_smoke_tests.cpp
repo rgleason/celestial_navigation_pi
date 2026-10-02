@@ -10,6 +10,7 @@
 #include "LunarSolutionRecord.h"
 #include "CelestialNavigationDialog.h"
 #include "LunarToolsDialog.h"
+#include "CompactEphemerisProvider.h"
 #include "FindBodyDialog.h"
 #include "PlannerDialog.h"
 #include "SightDialog.h"
@@ -425,6 +426,23 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       EXPECT_EQ(0.0, duplicated.m_TimeCertainty);
     }
     {
+      Sight boundary = sight;
+      for (auto& candidate : boundary.m_LunarCandidates) {
+        candidate.local_slope_available = false;
+        candidate.uncertainty_available = false;
+        candidate.slope_arcmin_per_hour = NAN;
+        candidate.time_uncertainty_seconds = INFINITY;
+      }
+      LunarResultsDialog dialog(&frame, boundary);
+      auto* candidates = FindListWithColumn(&dialog, "UTC uncertainty");
+      ASSERT_NE(candidates, nullptr);
+      ASSERT_GT(candidates->GetItemCount(), 0);
+      EXPECT_EQ(candidates->GetItemText(0, 3), "Unavailable");
+      EXPECT_EQ(candidates->GetItemText(0, 4), "Indeterminate");
+      EXPECT_FALSE(candidates->GetItemText(0, 0).empty());
+      EXPECT_TRUE(boundary.m_LunarSolutionValid);
+    }
+    {
       LunarResultsDialog dialog(&frame, sight);
       wxChoice* mode = nullptr;
       wxButton* save = nullptr;
@@ -482,7 +500,22 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
     {
       celestial_navigation_pi plugin(nullptr);
       CelestialNavigationDialog main(&frame,&plugin);
+      const bool oldCompact=celestial_navigation::CompactEphemerisEnabled();
+      struct RestoreCompact { bool value;
+        ~RestoreCompact(){celestial_navigation::SetCompactEphemerisEnabled(value);} } restoreCompact{oldCompact};
+      GetOCPNConfigObject()->DeleteEntry("/PlugIns/CelestialNavigation/UseCompactEphemeris");
       LunarToolsDialog dialog(&main);
+      auto* compact=dynamic_cast<wxCheckBox*>(wxWindow::FindWindowByName("UseCompactEphemeris",&dialog));
+      ASSERT_NE(compact,nullptr);
+      EXPECT_TRUE(compact->GetValue());
+      compact->SetValue(false);
+      wxCommandEvent disableCompact(wxEVT_CHECKBOX,compact->GetId());
+      disableCompact.SetEventObject(compact);
+      compact->GetEventHandler()->ProcessEvent(disableCompact);
+      EXPECT_FALSE(celestial_navigation::CompactEphemerisEnabled());
+      compact->SetValue(true);
+      compact->GetEventHandler()->ProcessEvent(disableCompact);
+      EXPECT_TRUE(celestial_navigation::CompactEphemerisEnabled());
       wxNotebook* notebook=nullptr;
       for (auto* child:dialog.GetChildren())
         if (auto* value=dynamic_cast<wxNotebook*>(child)) notebook=value;

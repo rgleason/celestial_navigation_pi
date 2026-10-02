@@ -49,6 +49,7 @@ struct ObserverMotion {
 
 struct BodyState {
   bool valid = false;
+  bool usedCompact = false;
   bool usedDe440 = false;  // Actual source of the geocentric ephemeris.
   wxString body;
   wxDateTime utc;

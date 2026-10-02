@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <limits>
 #include <map>
+#include <set>
 #include <sstream>
 
 namespace {
@@ -51,7 +52,7 @@ double AlmanacDut1(const AlmanacRequest& request, const wxDateTime& utc) {
 // Record the source returned by the engine, including interpolation endpoints.
 // Do not infer kernel availability from a filename or from the first date.
 struct AlmanacSourceAudit {
-  std::map<wxString, std::pair<unsigned, unsigned>> bodies;
+  std::map<wxString, std::set<wxString>> bodies;
   unsigned datedDut1 = 0;
   unsigned zeroDut1 = 0;
   unsigned invalid = 0;
@@ -66,8 +67,8 @@ struct AlmanacSourceAudit {
     const BodyState state = CelestialEphemeris::Evaluate(
         body, utc, 0, 0, 1010.0, 10.0, dut1);
     if (!state.valid) ++invalid;
-    else if (state.usedDe440) ++bodies[body].first;
-    else ++bodies[body].second;
+    else bodies[body].insert(state.usedDe440 ? "DE440s" :
+                            state.usedCompact ? "Compact 0.2.0" : "Classic analytical");
     return state;
   }
 
@@ -78,18 +79,21 @@ struct AlmanacSourceAudit {
     page.subtitle = "Actual sources for tabulated ephemerides, including interpolation endpoints.";
     AlmanacTable table;
     table.headings = {"Body / group", "Source used"};
-    bool stars = false;
+    std::set<wxString> starSources;
+    auto sourceText = [](const std::set<wxString>& sources) {
+      wxString text;
+      for (const auto& source : sources) { if (!text.empty()) text += " / "; text += source; }
+      return text;
+    };
     for (const auto& entry : bodies) {
       const CelestialBodyInfo* info = BodyCatalog::Find(entry.first);
       if (info && info->kind == CelestialBodyKind::Star) {
-        stars = true;
+        starSources.insert(entry.second.begin(), entry.second.end());
         continue;
       }
-      table.rows.push_back({entry.first,
-          entry.second.first && entry.second.second ? "Mixed DE440s / analytical" :
-          entry.second.first ? "DE440s" : "Analytical"});
+      table.rows.push_back({entry.first, sourceText(entry.second)});
     }
-    if (stars) table.rows.push_back({"Stars / Polaris", "Stellar catalogue and analytical apparent place"});
+    if (!starSources.empty()) table.rows.push_back({"Stars / Polaris", sourceText(starSources)});
     if (request.includeAries)
       table.rows.push_back({"Aries", "Earth rotation and equinox model; not a DE440s body"});
     page.tables.push_back(table);
@@ -100,7 +104,7 @@ struct AlmanacSourceAudit {
       "Hours label UTC. Earth rotation uses UT1 = UTC + DUT1; ephemeris dynamics use the engine's dynamical timescale. Fractional seconds are retained internally.",
       "GHA and declination are geocentric apparent quantities; apply the printed altitude corrections to the sextant reading separately. GHA is westward, SHA is westward from Aries, and longitude is east-positive in the LHA formula.",
       "Angles are rounded to 0.1 arcminute for printing. Signed d is hourly declination change. v is excess over the stated base GHA rate; use the matching increment tables. Rounded agreement does not imply zero physical error.",
-      "DE440s is used automatically for supported body centres and dates when installed. This edition retains analytical Mars, Jupiter and Saturn rather than substituting planetary-system barycentres. DE440s Venus includes the engine's almanac phase correction.",
+      "DE440s is used automatically for supported body centres and dates when installed. Compact 0.2.0 is the default fallback for 1972-2100, including stars; classic analytical remains available in Advanced settings and outside compact coverage. The VSOP2013 Jupiter/Saturn models represent their system barycentres. Venus uses the existing navigational phase correction.",
       "The hourly layout and independent Ageton/direct reduction tables are not reproductions of Reeds or its versine/ABC method. Compact output omits optional planning and exhaustive direct tables, not hourly samples."};
     if (invalid) page.paragraphs.push_back("WARNING: some ephemeris evaluations were invalid; do not use affected entries.");
     return page;
@@ -874,7 +878,8 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
   AlmanacSourceAudit audit;
   document.manifest = wxString::Format(
       "Celestial Navigation %d.%d.%d.%d; DE440s for available Sun, Moon, "
-      "Mercury and Venus centres, otherwise analytical VSOP87D/ELP; "
+      "Mercury and Venus centres; Compact 0.2.0 fallback when enabled and covered, "
+      "otherwise classic analytical VSOP87D/ELP; actual sources listed in the document; "
       "DUT1 %s",
       PLUGIN_VERSION_MAJOR, PLUGIN_VERSION_MINOR, PLUGIN_VERSION_PATCH,
       PLUGIN_VERSION_TWEAK,

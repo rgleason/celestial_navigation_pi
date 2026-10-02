@@ -6,6 +6,7 @@
 
 #include <string>
 #include <limits>
+#include "eclipse/dut1.h"
 
 namespace celestial_navigation {
 
@@ -28,11 +29,12 @@ struct AnalyticalNavigationEpoch {
 bool ResolveAnalyticalNavigationEpoch(
     const wxDateTime& time, AnalyticalNavigationEpoch* epoch,
     double dut1_override_seconds = std::numeric_limits<double>::quiet_NaN(),
-    bool time_is_instant = false);
+    bool time_is_instant = false,
+    const std::shared_ptr<const eclipse::Dut1Table>* time_data = nullptr);
 
 // Only solar-system body centres actually present in the compact DE440s SPK
 // can use this provider. A false return means the established analytical
-// path remains in charge; it is never a partially populated result.
+// provider-selection path remains in charge; it is never a partially populated result.
 struct De440NavigationSample {
   double gha_deg = 0.0;
   double declination_deg = 0.0;
@@ -62,7 +64,8 @@ bool TryDe440NavigationSample(const wxString& body,
                               De440NavigationSample* sample,
                               std::string* reason = nullptr,
                               double dut1_override_seconds =
-                                  std::numeric_limits<double>::quiet_NaN());
+                                  std::numeric_limits<double>::quiet_NaN(),
+                              bool time_is_instant = false);
 
 // WGS84 observer-specific light time and parallax, without atmospheric
 // refraction. The observer height is above the reference ellipsoid in metres.
@@ -73,7 +76,8 @@ bool TryDe440ObserverDirection(const wxString& body,
                               De440ObserverDirection* direction,
                               std::string* reason = nullptr,
                               double dut1_override_seconds =
-                                  std::numeric_limits<double>::quiet_NaN());
+                                  std::numeric_limits<double>::quiet_NaN(),
+                              bool time_is_instant = false);
 
 }  // namespace celestial_navigation
 

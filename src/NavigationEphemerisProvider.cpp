@@ -94,7 +94,7 @@ bool PrepareEpoch(const wxDateTime& utc_fields,
                   eclipse::SpkKernel** kernel,
                   eclipse::NavigationEpoch* epoch,
                   eclipse::Dut1Result* dut1_used,
-                  std::string* reason) {
+                  std::string* reason, bool time_is_instant) {
   if (!utc_fields.IsValid() || !kernel || !epoch || !dut1_used) {
     if (reason) *reason = "Invalid navigation epoch input";
     return false;
@@ -102,12 +102,13 @@ bool PrepareEpoch(const wxDateTime& utc_fields,
   *kernel = VerifiedKernel(reason);
   if (!*kernel) return false;
   eclipse::CalendarDateTime utc;
-  utc.year = utc_fields.GetYear();
-  utc.month = static_cast<int>(utc_fields.GetMonth()) + 1;
-  utc.day = utc_fields.GetDay();
-  utc.hour = utc_fields.GetHour();
-  utc.minute = utc_fields.GetMinute();
-  utc.second = utc_fields.GetSecond() + utc_fields.GetMillisecond() / 1000.0;
+  const auto fields = utc_fields.GetTm(time_is_instant ? wxDateTime::UTC : wxDateTime::Local);
+  utc.year = fields.year;
+  utc.month = static_cast<int>(fields.mon) + 1;
+  utc.day = fields.mday;
+  utc.hour = fields.hour;
+  utc.minute = fields.min;
+  utc.second = fields.sec + fields.msec / 1000.0;
   if (utc.year < 1972) {
     if (reason) *reason =
         "Automatic UTC-to-TT conversion is unsupported before 1972";
@@ -138,7 +139,8 @@ bool PrepareEpoch(const wxDateTime& utc_fields,
 bool ResolveAnalyticalNavigationEpoch(const wxDateTime& time,
                                      AnalyticalNavigationEpoch* epoch,
                                      double dut1_override_seconds,
-                                     bool time_is_instant) {
+                                     bool time_is_instant,
+                                     const std::shared_ptr<const eclipse::Dut1Table>* time_data) {
   if (!epoch || !time.IsValid()) return false;
   // Extract UTC directly from actual instants. Reconstructing UTC fields in
   // the local timezone can lose an hour at a computer-local DST transition.
@@ -155,7 +157,8 @@ bool ResolveAnalyticalNavigationEpoch(const wxDateTime& time,
   if (!eclipse::CalendarToJulianDate(utc, &result.utc_jd, nullptr)) return false;
   const bool override_dut1 = std::isfinite(dut1_override_seconds);
   if (utc.year >= 1972) {
-    const auto dated = eclipse::LookupDut1(result.utc_jd);
+    const auto dated = time_data ? eclipse::LookupDut1(result.utc_jd, *time_data)
+                                 : eclipse::LookupDut1(result.utc_jd);
     const double tai = std::isfinite(dated.tai_minus_utc)
         ? dated.tai_minus_utc : eclipse::TaiMinusUtcSeconds(utc);
     if (!std::isfinite(tai)) return false;
@@ -185,7 +188,7 @@ bool TryDe440NavigationSample(const wxString& body,
                               const wxDateTime& utc_fields,
                               De440NavigationSample* sample,
                               std::string* reason,
-                              double dut1_override_seconds) {
+                              double dut1_override_seconds, bool time_is_instant) {
   if (!sample || !utc_fields.IsValid()) {
     if (reason) *reason = "Invalid navigation sample input";
     return false;
@@ -199,7 +202,7 @@ bool TryDe440NavigationSample(const wxString& body,
   eclipse::NavigationEpoch epoch;
   eclipse::Dut1Result dut1;
   if (!PrepareEpoch(utc_fields, dut1_override_seconds, &kernel, &epoch,
-                    &dut1, reason))
+                    &dut1, reason, time_is_instant))
     return false;
   eclipse::NavigationGeocentricState state;
   if (!eclipse::GeocentricNavigationState(*kernel, target, epoch,
@@ -237,7 +240,7 @@ bool TryDe440ObserverDirection(const wxString& body,
                               double height_m,
                               De440ObserverDirection* direction,
                               std::string* reason,
-                              double dut1_override_seconds) {
+                              double dut1_override_seconds, bool time_is_instant) {
   if (!direction) {
     if (reason) *reason = "Missing observer direction output";
     return false;
@@ -251,7 +254,7 @@ bool TryDe440ObserverDirection(const wxString& body,
   eclipse::NavigationEpoch epoch;
   eclipse::Dut1Result dut1;
   if (!PrepareEpoch(utc_fields, dut1_override_seconds, &kernel, &epoch,
-                    &dut1, reason))
+                    &dut1, reason, time_is_instant))
     return false;
   De440ObserverDirection result;
   if (!eclipse::ObserverApparentTargetDirection(

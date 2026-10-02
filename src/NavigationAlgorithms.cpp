@@ -3,6 +3,7 @@
 #include "BodyCatalog.h"
 #include "Sight.h"
 #include "NavigationEphemerisProvider.h"
+#include "CompactEphemerisProvider.h"
 #include "UtcDateTime.h"
 #include "geodesic.h"
 #include "moon.h"
@@ -374,12 +375,43 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
     return result;
   }
 
+  celestial_navigation::De440NavigationSample selected;
+  if (!celestial_navigation::TryDe440NavigationSample(body, utc, &selected,
+                                                     nullptr, dut1OverrideSeconds, true) &&
+      celestial_navigation::CompactEphemerisEnabled()) {
+    celnav::Result compact;
+    if (celestial_navigation::TryCompactNavigationSample(
+            body, utc, &selected, nullptr, dut1OverrideSeconds, &compact,
+            observerLat, observerLon, 0, true)) {
+      result.usedCompact = true;
+      result.latitude = result.declination = compact.declination_deg;
+      result.longitude = Wrap180(-compact.gha_deg);
+      result.gha = compact.gha_deg; result.ghaAries = compact.aries_gha_deg;
+      result.sha = Wrap360(result.gha - result.ghaAries);
+      result.geometricAltitude = compact.geometric_hc_deg;
+      result.azimuthTrue = compact.azimuth_deg;
+      result.geocentricSemidiameter = compact.geocentric_semidiameter_deg;
+      result.semidiameter = compact.observer_semidiameter_deg;
+      result.horizontalParallax = compact.horizontal_parallax_deg;
+      result.distance = info->kind == CelestialBodyKind::Sun ? compact.distance_km/149597870.7
+                                                               : compact.distance_km;
+      result.visualMagnitude = info->visualMagnitude;
+      result.isStar = info->kind == CelestialBodyKind::Star;
+      result.isPlanet = info->kind == CelestialBodyKind::Planet;
+      result.apparentAltitude = compact.airless_altitude_deg +
+          RefractionDegrees(compact.airless_altitude_deg, pressureMb, temperatureC);
+      result.valid = std::isfinite(result.geometricAltitude) && std::isfinite(result.azimuthTrue);
+      if (!result.valid) result.error = "Compact observer direction undefined";
+      return result;
+    }
+  }
   Sight sight(Sight::ALTITUDE, info->name, Sight::CENTER, utc, 0.0, 0.0, 1.0);
   double ghaast = 0.0, radius = 0.0, distance = 0.0;
-  bool usedDe440 = false;
+  bool usedDe440 = false, usedCompact = false;
   sight.BodyLocation(utc, &result.latitude, &result.longitude, &ghaast, &radius,
-                     &distance, true, true, dut1OverrideSeconds, &usedDe440);
+                     &distance, true, true, dut1OverrideSeconds, &usedDe440, &usedCompact);
   result.usedDe440 = usedDe440;
+  result.usedCompact = usedCompact;
   sight.AltitudeAzimuth(observerLat, observerLon, result.latitude,
                         result.longitude, &result.geometricAltitude,
                         &result.azimuthTrue);
@@ -411,8 +443,8 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
   if (usedDe440) {
     celestial_navigation::De440ObserverDirection observer;
     if (celestial_navigation::TryDe440ObserverDirection(
-            body, UtcDateTime::FromInstant(utc), observerLat, observerLon,
-            0.0, &observer, nullptr, dut1OverrideSeconds)) {
+            body, utc, observerLat, observerLon,
+            0.0, &observer, nullptr, dut1OverrideSeconds, true)) {
       topocentricAltitude = observer.airless_altitude_deg;
       result.azimuthTrue = Wrap360(observer.azimuth_deg);
       if (observer.semidiameter_deg > 0.0)

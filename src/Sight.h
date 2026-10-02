@@ -33,6 +33,7 @@
 #include <vector>
 #include "pidc.h"
 #include "LunarDistanceEngine.h"
+#include "eclipse/dut1.h"
 #include "HorizonPosition.h"
 #include "SightOverlay.h"
 
@@ -155,6 +156,9 @@ public:
   // Defaults to production's automatic DE440s/analytical selection.  The
   // standalone validation lab can disable DE440s for an A/B calculation.
   bool m_AllowDe440 = true;
+  bool m_AllowCompact = true;
+  bool m_BodyUsesCompact = false;
+  wxString m_EphemerisFallbackReason;
   bool m_DipShort;            // DIP Short ?
   double m_DipShortDistance;  // DIP Short distance
   bool m_ArtificialHorizon;   // Artificial Horizon ?
@@ -177,7 +181,8 @@ public:
                     bool useDe440 = true,
                     double dut1OverrideSeconds =
                         std::numeric_limits<double>::quiet_NaN(),
-                    bool* usedDe440 = nullptr);
+                    bool* usedDe440 = nullptr, bool* usedCompact = nullptr,
+                    const std::shared_ptr<const eclipse::Dut1Table>* timeData = nullptr);
   void AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
                        double* hc, double* zn);
   void EstimateHs(double hc, double* hs, double* error);
@@ -218,6 +223,7 @@ public:
   lunar_distance::PositionResult m_LunarPositionResult;
   int m_LunarSelectedPosition;
   bool m_LunarUsesDe440;
+  bool m_LunarUsesCompact = false;
   bool m_LunarDut1Fallback = false;
   lunar_distance::EphemerisFunction m_LunarEphemeris;
 

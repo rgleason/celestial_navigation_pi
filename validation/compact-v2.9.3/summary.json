@@ -1,0 +1,82 @@
+{
+  "plugin_version": "2.9.3.0",
+  "compact_version": "0.2.0",
+  "lunar_solver_version": "0.1.0",
+  "platform": "Linux x86_64",
+  "compilers": {
+    "gcc": "c++ (GCC) 16.2.1 20260810",
+    "clang": "clang version 22.1.8"
+  },
+  "gcc_ctest": {
+    "passed": 8,
+    "failed": 0,
+    "gtest_passed": 260,
+    "gtest_skipped": 11,
+    "timezone_processes": [
+      "UTC",
+      "Europe/London",
+      "America/New_York",
+      "Asia/Kolkata"
+    ],
+    "timezone_tests_each": 12
+  },
+  "clang_core_integration": {
+    "passed": 49,
+    "failed": 0
+  },
+  "native_ui": {
+    "passed": 1,
+    "failed": 0,
+    "temporary_profile": true,
+    "checks": [
+      "Advanced default enabled",
+      "disable and enable events persisted",
+      "valid UTC survives unavailable diagnostics",
+      "rate Unavailable and uncertainty Indeterminate labels"
+    ],
+    "visually_inspected": [
+      "advanced-880.png",
+      "advanced-1120.png"
+    ]
+  },
+  "independent_production_lunars": {
+    "reference_cases": 32,
+    "simultaneous_workflows": 32,
+    "sequential_moving_workflows": 32,
+    "maximum_utc_error_seconds": 1.7431640625
+  },
+  "data": {
+    "qualified_bytes": 3920063,
+    "packaged_with_licenses_bytes": 3994356,
+    "qualified_source_data_git_blob_hashes_verified": true,
+    "package_all_data_hashes_verified": true
+  },
+  "package": {
+    "name": "celestial_navigation_pi-2.9.3.0-arch-x86_64-rolling.tar.gz",
+    "bytes": 7139978,
+    "sha256": "d893515c3616da65b3bd484459b93989a52186d0a1e2a92784f39b09ec228459",
+    "libraries": [
+      {
+        "path": "celestial_navigation_pi-2.9.3.0-arch-x86_64-rolling/usr/local/lib/opencpn/libcelestial_navigation_pi.so",
+        "bytes": 4698648
+      }
+    ],
+    "contains_spk_or_sdk_archives": false
+  },
+  "regression_worktree": {
+    "path": ".worktrees/celnav-2.8.14",
+    "head": "2705b133954049174382c28a11b8c0f149c96477",
+    "unchanged": true
+  },
+  "limits": [
+    "Windows/macOS/Android native build/execution and device performance await CI/release qualification",
+    "Existing star catalogue retained; synthetic workflows do not certify all real observations",
+    "Existing PDF/DOCX manual editions retained; HTML/README document new routing"
+  ],
+  "log_sha256": {
+    "gcc_ctest": "b7f2e2756f0e10123e2c27cc68d7aed040fdd6e0eac4dbcfc2a2e50724d804b3",
+    "gcc_last_test": "afcd17d838d713d4f161a7878872db1f24b0a543b97b14b51041f7d4b0fc0930",
+    "clang_core": "71a062fc156d864d3520f385c8b0ba5fa4cead2a9e2aaac8da76c78dfa7e4222",
+    "native_ui": "19a8a7e61c4a59018ca3fe042e12dd53666c118ec392d4d79dcca5502c9a6793"
+  }
+}
