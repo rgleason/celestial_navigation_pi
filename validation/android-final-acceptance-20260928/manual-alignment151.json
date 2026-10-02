@@ -1,0 +1,17 @@
+{
+  "qa": "All42pages of current manual DOCX rendered with bundled LibreOffice and inspected at full resolution in iteration25, recorded in audit. Resources unchanged since cf161ce; carry forward full QA and physical offline manual/PDF/night/link acceptance. Retained LO preview PDF has its own renderer metadata and is not the shipping PDF hash.",
+  "resources": {
+    "docs/v2/output/Celestial_Navigation_Manual_v2.docx": {
+      "sha256": "e88f1a42c727da328a05df579bcf1eb7df48d490d61914d4915066335b3fe858",
+      "unchanged_from": "cf161ce"
+    },
+    "docs/v2/output/Celestial_Navigation_Manual_v2.pdf": {
+      "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+      "unchanged_from": "cf161ce"
+    },
+    "data/Celestial_Navigation_Manual_v2.pdf": {
+      "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+      "unchanged_from": "cf161ce"
+    }
+  }
+}

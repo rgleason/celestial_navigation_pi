@@ -1,0 +1,23 @@
+{
+  "source": "8bc86ec",
+  "host_pid": 27701,
+  "result": "PASS",
+  "first_epoch_position_deg": [
+    43.85,
+    -69.08
+  ],
+  "independent_position_deg": [
+    43.85,
+    -69.08
+  ],
+  "position_error_nm": 0,
+  "limit_position_nm": 0.001,
+  "interval_s": 600,
+  "course_T": 90,
+  "speed_kn": 6,
+  "residuals_arcmin": [
+    0,
+    0
+  ],
+  "scope": "Synthetic sequential integration; unchanged shared numerical engine; not field accuracy"
+}

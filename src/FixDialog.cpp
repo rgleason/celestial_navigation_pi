@@ -46,6 +46,7 @@
 #include <wx/timectrl.h>
 
 #ifdef __OCPN__ANDROID__
+#include "AndroidFixMath.h"
 #include <wx/qt/private/wxQtGesture.h>
 #endif
 
@@ -90,6 +91,22 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
   celestial_navigation_pi_BoatPos(lat, lon);
   m_sInitialLatitude->SetValue(lat);
   m_sInitialLongitude->SetValue(lon);
+#ifdef __OCPN__ANDROID__
+  m_androidInitialLatitude = new NavigationAngleCtrl(
+      m_sInitialLatitude->GetParent(), NavigationAngleKind::Latitude, lat, -90, 90);
+  m_androidInitialLongitude = new NavigationAngleCtrl(
+      m_sInitialLongitude->GetParent(), NavigationAngleKind::Longitude, lon, -180, 180);
+  m_sInitialLatitude->GetContainingSizer()->Replace(
+      m_sInitialLatitude, m_androidInitialLatitude, true);
+  m_sInitialLongitude->GetContainingSizer()->Replace(
+      m_sInitialLongitude, m_androidInitialLongitude, true);
+  m_sInitialLatitude->Hide();
+  m_sInitialLongitude->Hide();
+  // This selector has four fixed algorithms; the full field opens its popup.
+  if (auto* combo = qobject_cast<QComboBox*>(m_cbFixAlgorithm->GetHandle()))
+    combo->setEditable(false);
+  m_bGo->SetLabel(_("Show fix on chart"));
+#endif
   int x, y;
   GetTextExtent(_T("000° 00.0000' S"), &x, &y);
   m_stLatitude->SetSizeHints(x + 20, -1);
@@ -125,7 +142,7 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
   epoch->Add(m_epochDate, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 12);
   epoch->Add(new wxStaticText(this, wxID_ANY, _("Time")), 0,
              wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-  m_epochTime = new wxTimePickerCtrl(this, wxID_ANY);
+  m_epochTime = new CelestialTimePicker(this, wxID_ANY);
   epoch->Add(m_epochTime, 0, wxALIGN_CENTER_VERTICAL);
   running->Add(epoch, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
 
@@ -167,6 +184,13 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
   m_residuals->InsertColumn(5, _("Saved bearing"), wxLIST_FORMAT_LEFT, 105);
   m_residuals->InsertColumn(6, _("Used bearing T"), wxLIST_FORMAT_LEFT, 105);
   running->Add(m_residuals, 1, wxALL | wxEXPAND, 5);
+#ifdef __OCPN__ANDROID__
+  // Keep the shared report model, but present every column vertically so none
+  // requires precise horizontal scrolling or a clipped desktop table row.
+  m_androidResiduals = new wxStaticText(this, wxID_ANY, wxEmptyString);
+  running->Replace(m_residuals, m_androidResiduals);
+  m_residuals->Hide();
+#endif
   GetSizer()->Insert(1, running, 1, wxALL | wxEXPAND, 5);
 
   const BoatNavigationSnapshot boat =
@@ -204,17 +228,33 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
                     [this](wxDateEvent&) { Update(m_clock_offset); });
   m_courseTrue->Bind(wxEVT_SPINCTRLDOUBLE, &FixDialog::OnRunningControl, this);
   m_speedKnots->Bind(wxEVT_SPINCTRLDOUBLE, &FixDialog::OnRunningControl, this);
+#ifdef __OCPN__ANDROID__
+  m_androidInitialLatitude->Bind(wxEVT_TEXT, &FixDialog::OnRunningControl, this);
+  m_androidInitialLongitude->Bind(wxEVT_TEXT, &FixDialog::OnRunningControl, this);
+  // Pinned wxQt does not send its spin event for typed double values. Native
+  // valueChanged must request a calculation too, after the input callback.
+  // Install only after programmatic initialization, and let dialog ownership
+  // cancel the timer on Close/unload. Consecutive edits coalesce into one update.
+  auto* motionUpdate = new QTimer(GetHandle());
+  motionUpdate->setSingleShot(true);
+  wxWeakRef<FixDialog> weakFix(this);
+  QObject::connect(motionUpdate, &QTimer::timeout, GetHandle(), [weakFix]() {
+    if (weakFix) weakFix->Update(weakFix->m_clock_offset);
+  });
+  for (auto* control : {m_courseTrue, m_speedKnots}) {
+    if (auto* native = qobject_cast<QDoubleSpinBox*>(control->GetHandle()))
+      QObject::connect(native,
+          static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
+          motionUpdate, [motionUpdate](double) { motionUpdate->start(0); });
+  }
+#endif
   GetSizer()->Fit(this);
   SetMinSize(wxSize(700, 480));
   dialog_geometry::Restore(this, _T("Fix"), GetSize());
   Bind(wxEVT_CLOSE_WINDOW, &FixDialog::OnWindowClose, this);
 
 #ifdef __OCPN__ANDROID__
-  GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
-  GetHandle()->grabGesture(Qt::PanGesture);
-  Connect(wxEVT_QT_PANGESTURE,
-          (wxObjectEventFunction)(wxEventFunction)&FixDialog::OnEvtPanGesture,
-          NULL, this);
+  // The Android surface owns scrolling and both halves of Back.
 #endif
 }
 
@@ -230,20 +270,39 @@ wxDateTime FixDialog::ReadEpochUtc() const {
   const wxDateTime date = m_epochDate->GetValue();
   const wxDateTime time = m_epochTime->GetValue();
   if (!date.IsValid() || !time.IsValid()) return wxDateTime();
+#ifdef __OCPN__ANDROID__
+  const auto f = UtcDateTime::Fields(time);
+  const wxDateTime entered = UtcDateTime::FromCalendar(date, f.hour, f.min,
+                                         f.sec + f.msec / 1000.0);
+  return m_epochTimeBasis->GetSelection() == 1
+             ? UtcDateTime::LocalWallToInstant(entered) : entered;
+#else
   wxDateTime entered(date.GetDay(), date.GetMonth(), date.GetYear(),
                      time.GetHour(), time.GetMinute(), time.GetSecond());
   return m_epochTimeBasis->GetSelection() == 1
              ? entered
              : UtcDateTime::ToInstant(entered);
+#endif
 }
 
 void FixDialog::SetEpochControls(const wxDateTime& utc) {
   if (!utc.IsValid()) return;
   wxDateTime value = m_epochTimeBasis->GetSelection() == 1
                          ? utc
+#ifdef __OCPN__ANDROID__
+                         : UtcDateTime::FromInstant(utc);
+#else
                          : UtcDateTime::CopyFields(utc.ToUTC());
+#endif
+#ifdef __OCPN__ANDROID__
+  value = m_epochTimeBasis->GetSelection() == 1
+              ? UtcDateTime::InstantToLocalWall(utc) : utc;
+  m_epochDate->SetValue(UtcDateTime::CalendarDate(value));
+  m_epochTime->SetValue(value);
+#else
   m_epochDate->SetValue(value);
   m_epochTime->SetValue(value);
+#endif
 }
 
 void FixDialog::ChangeEpochTimeBasis(wxCommandEvent&) {
@@ -398,6 +457,15 @@ int matrix_invert3(double a[3][3]) {
 }
 
 void FixDialog::Update(int clock_offset) {
+#ifdef __OCPN__ANDROID__
+  m_androidResiduals->SetLabel(wxEmptyString);
+  // Result labels change after calculation, including validation failures.
+  // Recompute their Android font heights and the actual scrolling content.
+  struct RefreshLayout {
+    FixDialog* dialog;
+    ~RefreshLayout() { celestial_android::LayoutScrolls(dialog); }
+  } refreshLayout{this};
+#endif
   m_clock_offset = clock_offset;
   double effective_correction = clock_offset;
   const LunarSolutionRecord* record = nullptr;
@@ -443,6 +511,17 @@ void FixDialog::Update(int clock_offset) {
 
   double initiallat = m_sInitialLatitude->GetValue(),
          initiallon = m_sInitialLongitude->GetValue();
+#ifdef __OCPN__ANDROID__
+  if (!m_androidInitialLatitude->GetAngle(&initiallat) ||
+      !m_androidInitialLongitude->GetAngle(&initiallon)) {
+    m_fixlat = m_fixlon = m_fixerror = NAN;
+    m_stLatitude->SetValue(_("N/A"));
+    m_stLongitude->SetValue(_("N/A"));
+    m_stFixError->SetValue(_("Invalid DR position"));
+    m_bGo->Disable();
+    return;
+  }
+#endif
   X[0] = cos(d_to_r(initiallat)) * cos(d_to_r(initiallon));
   X[1] = cos(d_to_r(initiallat)) * sin(d_to_r(initiallon));
   X[2] = sin(d_to_r(initiallat));
@@ -507,9 +586,15 @@ again:
       {
         double t2 = X[0] * X[0] + X[1] * X[1] + X[2] * X[2], t = sqrt(t2);
         if (t < .1) goto plane;
+#ifdef __OCPN__ANDROID__
+        const auto gradient = celestial_android::ConeAltitudeGradient(
+            {{x, y, z}}, {{X[0], X[1], X[2]}});
+        v.assign(gradient.begin(), gradient.end());
+#else
         v.push_back(x / t - x * X[0] * X[0] / (t * t2));
         v.push_back(y / t - y * X[1] * X[1] / (t * t2));
         v.push_back(z / t - z * X[2] * X[2] / (t * t2));
+#endif
         d = sm - (X[0] * x + X[1] * y + X[2] * z) / t;
       } break;
     }
@@ -614,6 +699,9 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
   const bool manual = m_motionMode->GetSelection() == 1;
   m_residuals->DeleteAllItems();
   std::vector<FixObservation> observations;
+#ifdef __OCPN__ANDROID__
+  std::vector<wxString> androidShiftDetails;
+#endif
   for (const Sight& sight : m_workingSights) {
     if (!sight.IsVisible() ||
         (sight.m_Type != Sight::ALTITUDE && sight.m_Type != Sight::HORIZON))
@@ -643,9 +731,23 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
       }
     }
     observations.push_back(observation);
+#ifdef __OCPN__ANDROID__
+    wxString shift = _("Saved DR shift: ") +
+        celestial_android::NumberText(sight.m_ShiftNm) + " NM";
+    if (sight.m_ShiftNm != 0.0) {
+      shift += " | " + _("Saved bearing: ") +
+          celestial_android::NumberText(sight.m_ShiftBearing) +
+          (sight.m_bMagneticShiftBearing ? " deg M" : " deg T");
+      if (manual)
+        shift += " | " + _("Used true bearing: ") +
+            celestial_android::NumberText(std::fmod(
+                observation.displacementBearingTrue + 360.0, 360.0)) + " deg T";
+    }
+    androidShiftDetails.push_back(shift);
+#endif
     const long row = m_residuals->InsertItem(
         m_residuals->GetItemCount(),
-        observation.utc.Format("%m-%d %H:%M:%S", wxDateTime::UTC));
+        UtcDateTime::FormatInstant(observation.utc, "%m-%d %H:%M:%S"));
     m_residuals->SetItem(row, 1, observation.body);
     m_residuals->SetItem(row, 4,
                          wxString::Format("%.2f", sight.m_ShiftNm));
@@ -689,6 +791,17 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
   motion.referenceUtc = epoch;
   motion.latitude = m_sInitialLatitude->GetValue();
   motion.longitude = m_sInitialLongitude->GetValue();
+#ifdef __OCPN__ANDROID__
+  if (!m_androidInitialLatitude->GetAngle(&motion.latitude) ||
+      !m_androidInitialLongitude->GetAngle(&motion.longitude)) {
+    m_fixlat = m_fixlon = m_fixerror = NAN;
+    m_stLatitude->SetValue(_("N/A"));
+    m_stLongitude->SetValue(_("N/A"));
+    m_stFixError->SetValue(_("Invalid DR position"));
+    m_bGo->Disable();
+    return;
+  }
+#endif
   motion.courseTrue = manual ? 0.0 : m_courseTrue->GetValue();
   motion.speedKnots = manual ? 0.0 : m_speedKnots->GetValue();
   motion.moving = motion.speedKnots != 0.0;
@@ -711,7 +824,11 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
   m_stFixError->SetValue(wxString::Format(_("%.2f' RMS"), fix.rmsMinutes));
   m_runningSummary->SetLabel(wxString::Format(
       _("Common epoch %s UTC | %u iterations | RMS %.2f' | uncertainty ellipse %.2f x %.2f NM at %.0f%c"),
-      fix.epochUtc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC).c_str(),
+#ifdef __OCPN__ANDROID__
+      UtcDateTime::FormatInstant(fix.epochUtc, "%Y-%m-%d %H:%M:%S.%l").c_str(),
+#else
+      UtcDateTime::FormatInstant(fix.epochUtc, "%Y-%m-%d %H:%M:%S").c_str(),
+#endif
       fix.iterations, fix.rmsMinutes, fix.semiMajorNm, fix.semiMinorNm,
       fix.ellipseBearing, 0x00b0));
   m_runningSummary->Wrap(660);
@@ -723,6 +840,20 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
     m_residuals->SetItem(
         row, 3, wxString::Format("%+.2f'", residual.interceptMinutes));
   }
+#ifdef __OCPN__ANDROID__
+  wxString details;
+  for (size_t index = 0; index < fix.residuals.size(); ++index) {
+    const auto& residual = fix.residuals[index];
+    details += observations[index].body + " | " +
+        UtcDateTime::FormatInstant(observations[index].utc, "%Y-%m-%d %H:%M:%S.%l") +
+        " UTC\n" + _("Hc: ") + FormatNavigationAngle(residual.calculatedAltitude) +
+        " | " + _("Ho minus Hc: ") +
+        wxString::Format("%+.2f'", residual.interceptMinutes) +
+        "\n" + androidShiftDetails[index];
+    details += "\n\n";
+  }
+  m_androidResiduals->SetLabel(details);
+#endif
   Layout();
   m_Parent->SetLastFix(m_fixlat, m_fixlon, fix.epochUtc);
   m_bGo->Enable();
@@ -736,6 +867,10 @@ void FixDialog::OnGo(wxCommandEvent& event) {
   if (scale > 1e-3) scale = 1e-3;
 
   JumpToPosition(m_fixlat, m_fixlon, scale);
+#ifdef __OCPN__ANDROID__
+  m_Parent->OnFixClose();
+  m_Parent->Hide();
+#endif
 }
 
 void FixDialog::OnClose(wxCommandEvent& event) { m_Parent->OnFixClose(); }

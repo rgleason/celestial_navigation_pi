@@ -1,0 +1,30 @@
+{
+  "dependencies": {
+    "spiceypy": "8.2.0",
+    "cspice": "CSPICE_N0067",
+    "pyerfa": "2.0.1.5"
+  },
+  "files": [
+    {
+      "name": "de440s.bsp",
+      "bytes": 32726016,
+      "sha256": "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2"
+    },
+    {
+      "name": "moon_pa_de440_200625.bpc",
+      "bytes": 12863488,
+      "sha256": "60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f"
+    },
+    {
+      "name": "lola64-pa.bin",
+      "bytes": 530841624,
+      "sha256": "f59edf8437442b05525345b3c29b65f0f31af8fc96420abf2dd18af3480f7ff4"
+    },
+    {
+      "name": "moon_de440_250416.tf",
+      "bytes": 19478,
+      "sha256": "a47c71e9c9f33796bdafb2c9d69a7ee447b6016ecad80f71cd6f3e479f9cf768",
+      "source": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/satellites/moon_de440_250416.tf"
+    }
+  ]
+}

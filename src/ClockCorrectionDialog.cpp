@@ -1,3 +1,4 @@
+#include "PlatformMessageBox.h"
 /******************************************************************************
  *
  * Project:  OpenCPN
@@ -31,6 +32,9 @@
 
 #include "OcpnApiCompat.h"
 #include "Sight.h"
+#ifdef __OCPN__ANDROID__
+#include "AndroidSurface.h"
+#endif
 
 ClockCorrectionDialog::ClockCorrectionDialog(CelestialNavigationDialog* parent,
                                              int value)
@@ -44,13 +48,16 @@ ClockCorrectionDialog::ClockCorrectionDialog(CelestialNavigationDialog* parent,
   SetAffirmativeId(wxID_OK);
   SetEscapeId(wxID_CANCEL);
   Bind(wxEVT_CLOSE_WINDOW, &ClockCorrectionDialog::OnWindowClose, this);
+#ifdef __OCPN__ANDROID__
+  celestial_android::Decorate(this, _("Clock correction"), [this]() { Close(); });
+#endif
 }
 
 void ClockCorrectionDialog::OnUpdate(wxSpinEvent& event) {}
 
 void ClockCorrectionDialog::OnWindowClose(wxCloseEvent& event) {
   if (m_sClockCorrection->GetValue() != m_initialValue && event.CanVeto()) {
-    wxMessageDialog confirm(
+    CelestialMessageDialog confirm(
         this, _("Discard your changes?"), _("Unsaved Clock Correction"),
         wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
     confirm.SetYesNoLabels(_("Discard Changes"), _("Keep Editing"));

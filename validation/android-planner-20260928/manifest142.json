@@ -1,0 +1,20 @@
+[
+  {
+    "file": "polar-summer142.json",
+    "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-06-21&coords=78%2C15&tz=0",
+    "sha256": "0216e7b01543b07d1f1bab8825f50c14c13831c5ce9010bae0227dbbe2dc4a72",
+    "retrieved": "2026-09-28"
+  },
+  {
+    "file": "polar-winter142.json",
+    "url": "https://aa.usno.navy.mil/api/rstt/oneday?date=2024-12-21&coords=78%2C15&tz=0",
+    "sha256": "a812573ed16ff0707f6830b989447015634a1bafab9e0b6d364cf421b4b26b91",
+    "retrieved": "2026-09-28"
+  },
+  {
+    "file": "southern-noon142.json",
+    "url": "https://aa.usno.navy.mil/api/celnav?date=2024-06-21&time=12%3A02%3A00&coords=-35%2C0",
+    "sha256": "4af4886823366f11afe67972175042b50266845ba695aab85065adfb78e4b39a",
+    "retrieved": "2026-09-28"
+  }
+]

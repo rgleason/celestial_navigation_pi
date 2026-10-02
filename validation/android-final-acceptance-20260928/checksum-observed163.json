@@ -1,0 +1,12 @@
+{
+  "source": "8bc86ec",
+  "host_pid": 443,
+  "input_bytes": 32726016,
+  "fixture": "official DE440s with byte1000 flipped",
+  "actual": "explicit SHA-256 mismatch rejection",
+  "before_sha256": "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2",
+  "after_sha256": "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2",
+  "staging": "empty",
+  "status": "PASS",
+  "screenshot": "finish163-checksum-reject.png"
+}

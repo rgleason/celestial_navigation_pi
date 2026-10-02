@@ -19,10 +19,11 @@ def main() -> int:
             # conversion wrapper therefore commonly appears just above the
             # line containing the non-ASCII character.
             context = "\n".join(lines[max(0, index - 6) : index + 1])
-            if "CN_UTF8_(" not in context and "_T(" not in context:
+            if not any(wrapper in context for wrapper in
+                       ("CN_UTF8_(", "_T(", "QString::fromUtf8(")):
                 failures.append(f"{path}:{index + 1}: {line.strip()}")
     if failures:
-        print("Non-ASCII UI source must use CN_UTF8_ (or a wide _T literal):")
+        print("Non-ASCII UI source must use CN_UTF8_, QString::fromUtf8, or a wide _T literal:")
         print("\n".join(failures))
         return 1
     return 0

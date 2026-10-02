@@ -1,3 +1,8 @@
+#include "PlatformMessageBox.h"
+#ifdef __OCPN__ANDROID__
+#include "AndroidJob.h"
+#include <QAbstractItemView>
+#endif
 #include "LunarResultsDialog.h"
 
 #include "DialogGeometry.h"
@@ -20,6 +25,15 @@
 #include <cmath>
 
 namespace {
+#ifdef __OCPN__ANDROID__
+wxString AndroidResultCell(wxListCtrl* list, long row, int column) {
+  auto* view = qobject_cast<QAbstractItemView*>(list->GetHandle());
+  if (!view) view = list->GetHandle()->findChild<QAbstractItemView*>();
+  if (!view || !view->model()) return wxEmptyString;
+  return wxString::FromUTF8(view->model()->index(row, column)
+      .data(Qt::DisplayRole).toString().toUtf8().constData());
+}
+#endif
 bool HasSavedDr(const Sight& sight) {
   return std::isfinite(sight.m_DRLat) && std::isfinite(sight.m_DRLon) &&
          std::fabs(sight.m_DRLat) <= 90.0 &&
@@ -113,8 +127,15 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
                                       : _("LD cleared"));
   m_candidates->InsertColumn(3, _("Local rate"));
   m_candidates->InsertColumn(4, _("UTC uncertainty"));
+#ifdef __OCPN__ANDROID__
+  m_candidates->Hide();
+  m_androidCandidates = new wxPanel(resultsPage);
+  m_androidCandidates->SetSizer(new wxBoxSizer(wxVERTICAL));
+  results->Add(m_androidCandidates, 0, wxALL | wxEXPAND, 8);
+#else
   m_candidates->SetMinSize(wxSize(-1, std::max(130, 6 * GetCharHeight())));
   results->Add(m_candidates, 1, wxLEFT | wxRIGHT | wxEXPAND, 10);
+#endif
 
   results->Add(new wxStaticText(
                 resultsPage, wxID_ANY,
@@ -130,7 +151,14 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
   m_positions->InsertColumn(2, _("Longitude"));
   m_positions->InsertColumn(3, _("From saved DR"));
   m_positions->InsertColumn(4, _("Position uncertainty"));
+#ifdef __OCPN__ANDROID__
+  m_positions->Hide();
+  m_androidPositions = new wxPanel(resultsPage);
+  m_androidPositions->SetSizer(new wxBoxSizer(wxVERTICAL));
+  results->Add(m_androidPositions, 0, wxALL | wxEXPAND, 8);
+#else
   results->Add(m_positions, 0, wxLEFT | wxRIGHT | wxEXPAND, 10);
+#endif
   m_geometry = new wxStaticText(resultsPage, wxID_ANY, wxEmptyString);
   results->Add(m_geometry, 0, wxALL | wxEXPAND, 10);
 
@@ -209,6 +237,9 @@ LunarResultsDialog::~LunarResultsDialog() {
 }
 
 void LunarResultsDialog::UpdateResults() {
+#ifdef __OCPN__ANDROID__
+  RefreshAndroidCards();
+#endif
   m_candidates->DeleteAllItems();
   m_positions->DeleteAllItems();
   const bool checking = m_mode->GetSelection() == 1;
@@ -341,6 +372,9 @@ void LunarResultsDialog::UpdateResults() {
 }
 
 void LunarResultsDialog::UpdatePositions(long candidate_index) {
+#ifdef __OCPN__ANDROID__
+  RefreshAndroidCards();
+#endif
   m_positions->DeleteAllItems();
   const bool checking = m_mode->GetSelection() == 1;
   wxListItem uncertainty_column;
@@ -357,7 +391,24 @@ void LunarResultsDialog::UpdatePositions(long candidate_index) {
   if (!checking && candidate_index >= 0 &&
       static_cast<std::size_t>(candidate_index) <
           m_sight.m_LunarCandidates.size()) {
+#ifdef __OCPN__ANDROID__
+    Sight candidate = m_sight;
+    wxString error;
+    const bool completed = celestial_android::RunJob(this, _("Inspect lunar solution"),
+        [&](celestial_android::JobState& state) {
+          candidate.m_androidCheckpoint = [&state]() { state.Checkpoint(); };
+          candidate.RecomputeLunar(static_cast<int>(candidate_index));
+        }, &error);
+    candidate.m_androidCheckpoint = {};
+    if (!completed) {
+      if (!error.empty()) CelestialMessageBox(error, _("Lunar result"), wxOK | wxICON_ERROR, this);
+      return;
+    }
+    m_sight = candidate;
+    m_androidSelectedCandidate = candidate_index;
+#else
     m_sight.RecomputeLunar(static_cast<int>(candidate_index));
+#endif
     m_details->SetValue(m_sight.m_CalcStr);
     time_candidate =
         &m_sight.m_LunarCandidates[static_cast<std::size_t>(candidate_index)];
@@ -460,6 +511,11 @@ void LunarResultsDialog::UpdatePositions(long candidate_index) {
                                          : m_sight.m_LunarPositionResult.error)
                                    .c_str()));
   }
+#ifdef __OCPN__ANDROID__
+  // A worker modal loop may deliver the first queued refresh while this
+  // list is still empty. Refresh again after all branches are committed.
+  RefreshAndroidCards();
+#endif
   m_geometry->Wrap(880);
   for (int column = 0; column < 5; ++column)
     m_positions->SetColumnWidth(column, wxLIST_AUTOSIZE_USEHEADER);
@@ -471,11 +527,15 @@ void LunarResultsDialog::UpdatePositions(long candidate_index) {
 }
 
 void LunarResultsDialog::ApplySelectedWatchOffset(wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+  const long selected = m_androidSelectedCandidate;
+#else
   long selected = m_candidates->GetNextItem(
       -1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+#endif
   if (selected < 0 ||
       static_cast<std::size_t>(selected) >= m_sight.m_LunarCandidates.size()) {
-    wxMessageBox(_("Select a UTC candidate first."), _("Lunar distance"),
+    CelestialMessageBox(_("Select a UTC candidate first."), _("Lunar distance"),
                  wxOK | wxICON_INFORMATION, this);
     return;
   }
@@ -501,3 +561,81 @@ void LunarResultsDialog::ApplySelectedWatchOffset(wxCommandEvent&) {
       m_details->GetValue();
   if (mainDialog->SaveLunarSolution(record)) m_applyOffset->Enable(false);
 }
+
+#ifdef __OCPN__ANDROID__
+void LunarResultsDialog::RefreshAndroidCards() {
+  if (!m_androidCandidates || m_androidRefreshPending) return;
+  m_androidRefreshPending = true;
+  wxWeakRef<LunarResultsDialog> weak(this);
+  // Rebuild only after a selection callback (and any owned worker) returns.
+  QTimer::singleShot(0, GetHandle(), [weak]() {
+    if (!weak) return;
+    auto* self = weak.get();
+    self->m_androidRefreshPending = false;
+    auto* candidates = self->m_androidCandidates->GetSizer();
+    auto* positions = self->m_androidPositions->GetSizer();
+    candidates->Clear(true);
+    positions->Clear(true);
+    const bool checking = self->m_mode->GetSelection() == 1;
+    const long selected = self->m_androidSelectedCandidate;
+    for (long row = 0; row < self->m_candidates->GetItemCount(); ++row) {
+      wxString caption = checking ? _("Entered UTC check")
+          : wxString::Format(row == selected ? _("Selected UTC candidate %ld")
+                                             : _("UTC candidate %ld"), row + 1);
+      caption += "\nUTC: " + AndroidResultCell(self->m_candidates, row, 0);
+      caption += checking ? "\nModel - observed (arcmin): " : "\nAdditional correction: ";
+      if (!checking && static_cast<size_t>(row) < self->m_sight.m_LunarCandidates.size())
+        caption += wxString::Format("%+.6f s", self->m_sight.m_LunarCandidates[row].offset_seconds);
+      else caption += AndroidResultCell(self->m_candidates, row, 1);
+      caption += "\nLD cleared: " + AndroidResultCell(self->m_candidates, row, 2);
+      caption += "\nLocal rate: " + AndroidResultCell(self->m_candidates, row, 3);
+      caption += "\nUTC uncertainty: " + AndroidResultCell(self->m_candidates, row, 4);
+      auto* card = new wxButton(self->m_androidCandidates, wxID_ANY, caption);
+      card->GetHandle()->setProperty("cnSelectedCandidate", row == selected && !checking);
+      if (!checking) card->Bind(wxEVT_BUTTON, [weak, row](wxCommandEvent&) {
+        if (!weak) return;
+        // The native clicked callback must return before selection can enter
+        // a modal worker loop and rebuild/destroy its originating card.
+        QTimer::singleShot(0, weak->GetHandle(), [weak, row]() {
+          if (!weak || row >= weak->m_candidates->GetItemCount()) return;
+          if (weak->m_androidSelectedCandidate == row) return;
+          // wxQt programmatic selection does not reliably emit the wx list
+          // notification. Invoke the existing branch controller explicitly.
+          weak->UpdatePositions(row);
+        });
+      });
+      candidates->Add(card, 0, wxEXPAND | wxALL, 6);
+    }
+    for (long row = 0; row < self->m_positions->GetItemCount(); ++row) {
+      const wxString latitude = AndroidResultCell(self->m_positions, row, 1);
+      wxString caption = latitude.empty() ? AndroidResultCell(self->m_positions, row, 0)
+          : _("Position branch ") + AndroidResultCell(self->m_positions, row, 0);
+      if (!latitude.empty()) {
+        caption += "\nLatitude: " + AndroidResultCell(self->m_positions, row, 1);
+        caption += "\nLongitude: " + AndroidResultCell(self->m_positions, row, 2);
+        caption += "\nFrom saved DR: " + AndroidResultCell(self->m_positions, row, 3);
+        caption += checking ? "\nModel - observed (arcmin): " : "\nHorizontal RMS uncertainty: ";
+        caption += AndroidResultCell(self->m_positions, row, 4);
+      }
+      auto* card = new wxStaticText(self->m_androidPositions, wxID_ANY, caption);
+      positions->Add(card, 0, wxEXPAND | wxALL, 12);
+    }
+    CN_StyleAndroidControls(self->m_androidCandidates);
+    CN_StyleAndroidControls(self->m_androidPositions);
+    // Styling must precede height and selection colour, since it styles
+    // descendants rather than the parent passed to it.
+    for (auto* child : self->m_androidCandidates->GetChildren()) {
+      auto* card = wxDynamicCast(child, wxButton);
+      if (!card) continue;
+      const int height = QFontMetrics(card->GetHandle()->font()).lineSpacing() * 6 + 32;
+      card->SetMinSize(wxSize(0, qMax(CN_TouchHeight(), height)));
+      if (card->GetHandle()->property("cnSelectedCandidate").toBool())
+        card->GetHandle()->setStyleSheet(card->GetHandle()->styleSheet() +
+            "QPushButton { background: #d1e8f1; color: #102e3b; }");
+    }
+    self->m_androidCandidates->Layout();
+    self->m_androidPositions->Layout();
+    celestial_android::LayoutScrolls(self);
+  });
+}
+#endif

@@ -42,6 +42,14 @@ private:
   void NewObservation(wxCommandEvent& event);
   void ClearPlots(wxCommandEvent& event);
   void RefreshChart();
+#ifdef __OCPN__ANDROID__
+  void ShowAndroidChart(bool vertical);
+  wxButton* m_androidVerticalChart = nullptr;
+  wxButton* m_androidHorizontalChart = nullptr;
+  coastal_navigation::GeoPoint m_androidVerticalTarget;
+  coastal_navigation::GeoPoint m_androidHorizontalCentre;
+  double m_androidRangeNm = 0;
+#endif
   void SetWrappedLabel(wxStaticText* control, const wxString& text);
   void Rewrap();
   void UpdateVerticalGuidance();

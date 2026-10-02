@@ -1,0 +1,11 @@
+{
+  "archive": "msvc/x64/OpenCPN-Windows-x64-plugin-sdk-94cf6909.zip",
+  "sha256": "936f368d6d4365be721bf3767d3b5bbfe9b3252961618fd32bdee1212ded96fb",
+  "core_revision": "94cf6909107e09df9793444e07ade87ad9816036",
+  "source_build": "https://github.com/pob220/OpenCPN-Chart-Aware/actions/runs/35443540536",
+  "wx_archives": {
+    "wxMSW-3.2.8_vc14x_x64_Dev.7z": "7eccb9d56902b43bc64693490b59c02a433cca68547b18fdc5d821a07e6883a5",
+    "wxMSW-3.2.8_vc14x_x64_ReleaseDLL.7z": "fbc0ac9416344021650fcac210646984a15acfd4f402772282459c7e090dc922",
+    "wxWidgets-3.2.8-headers.7z": "996041908057574ee3836a5f5e03f40858ffc61011231f19a5e87297b74b74e2"
+  }
+}

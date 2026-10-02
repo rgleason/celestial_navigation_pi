@@ -1,0 +1,30 @@
+{
+  "source": "8bc86ec",
+  "host_pid": 443,
+  "actual_contact_UT1_seconds": [
+    31291.97,
+    36198.28,
+    36583.86,
+    41255.83
+  ],
+  "local_model_errors_seconds": [
+    0.0049127137135656085,
+    0.0030359856973518617,
+    2.755799505393952e-05,
+    0.003839983357465826
+  ],
+  "limit_seconds": 0.1,
+  "local_model_binding": "PASS",
+  "whole_grid_accuracy": "FAIL predeclared0.1second comparison for C1/C2: shared two-degree terrain search differs by2.889338/1.221378seconds; no full-terrain accuracy claim",
+  "desktop_contacts_UT1_seconds": [
+    31291.965070429,
+    36198.283016744,
+    36583.86000401,
+    41255.826133552
+  ],
+  "desktop_source_lunar_limb_identical_to_f201326": true,
+  "larger_font_search": "PASS2027two complete event cards, August selection drives local event",
+  "boat_binding": "PASSmanual0/0 overwritten53deg10.7702N/2deg51.4869W, matching live boat at displayed precision",
+  "screenshot": "finish162-terrain-checked.png",
+  "scope": "Android preserves existing shared geometric/terrain model; guide qualifies precision. No atmospheric/observational accuracy claim."
+}

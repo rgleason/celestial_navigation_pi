@@ -1,3 +1,4 @@
+#include "UtcDateTime.h"
 #include "NavigationEphemerisProvider.h"
 
 #include "celestial_navigation_pi.h"
@@ -102,12 +103,12 @@ bool PrepareEpoch(const wxDateTime& utc_fields,
   *kernel = VerifiedKernel(reason);
   if (!*kernel) return false;
   eclipse::CalendarDateTime utc;
-  utc.year = utc_fields.GetYear();
-  utc.month = static_cast<int>(utc_fields.GetMonth()) + 1;
-  utc.day = utc_fields.GetDay();
-  utc.hour = utc_fields.GetHour();
-  utc.minute = utc_fields.GetMinute();
-  utc.second = utc_fields.GetSecond() + utc_fields.GetMillisecond() / 1000.0;
+  utc.year = UtcDateTime::Fields(utc_fields).year;
+  utc.month = static_cast<int>(UtcDateTime::Fields(utc_fields).mon) + 1;
+  utc.day = UtcDateTime::Fields(utc_fields).mday;
+  utc.hour = UtcDateTime::Fields(utc_fields).hour;
+  utc.minute = UtcDateTime::Fields(utc_fields).min;
+  utc.second = UtcDateTime::Fields(utc_fields).sec + utc_fields.GetMillisecond() / 1000.0;
   if (utc.year < 1972) {
     if (reason) *reason =
         "Automatic UTC-to-TT conversion is unsupported before 1972";

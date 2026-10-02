@@ -1,0 +1,44 @@
+{
+  "runtime_source_sha": "841870004a8904cfd1e0b77e92042fd101a092df",
+  "artificial_saved_defaults": {
+    "DefaultEyeHeight": "3.25",
+    "DefaultTemperature": "12",
+    "DefaultPressure": "1008",
+    "DefaultIndexError": "-1.75",
+    "DefaultDIPShort": "0",
+    "DefaultDIPShortDistance": "2.5",
+    "DefaultArtificialHorizon": "1"
+  },
+  "artificial_cold_defaults": {
+    "DefaultEyeHeight": "3.25",
+    "DefaultTemperature": "12",
+    "DefaultPressure": "1008",
+    "DefaultIndexError": "-1.75",
+    "DefaultDIPShort": "0",
+    "DefaultDIPShortDistance": "2.5",
+    "DefaultArtificialHorizon": "1"
+  },
+  "short_dip_saved_defaults": {
+    "DefaultEyeHeight": "3.25",
+    "DefaultTemperature": "12",
+    "DefaultPressure": "1008",
+    "DefaultIndexError": "-1.75",
+    "DefaultDIPShort": "1",
+    "DefaultDIPShortDistance": "2.5",
+    "DefaultArtificialHorizon": "0"
+  },
+  "short_dip_cold_defaults": {
+    "DefaultEyeHeight": "3.25",
+    "DefaultTemperature": "12",
+    "DefaultPressure": "1008",
+    "DefaultIndexError": "-1.75",
+    "DefaultDIPShort": "1",
+    "DefaultDIPShortDistance": "2.5",
+    "DefaultArtificialHorizon": "0"
+  },
+  "invalid_pressure": -1,
+  "invalid_attempt_entire_config_unchanged": true,
+  "full_sights_file_unchanged": true,
+  "original_default_keys_absent_restored": true,
+  "scope": "Explicit native Set As Defaults; offline cold New Sight; no astronomical accuracy claim"
+}

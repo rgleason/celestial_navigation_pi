@@ -1,0 +1,50 @@
+{
+  "source_sha": "7b34fd4",
+  "inputs": {
+    "date": "2024-06-21",
+    "time_utc": "22:00:00",
+    "latitude": 51.4779,
+    "longitude": 0
+  },
+  "transcribed_from_physical_screenshots": {
+    "spica": "resume84-greenwich-output.png",
+    "vega": "resume84-deneb-reference.png",
+    "deneb": "resume84-deneb-complete.png"
+  },
+  "rows": {
+    "spica": {
+      "distance_deg": 65.09208666666666,
+      "rate_arcmin_hour": 33.7,
+      "sensitivity_seconds": 10.7,
+      "hc_deg": 18.767333333333333
+    },
+    "vega": {
+      "distance_deg": 67.80056,
+      "rate_arcmin_hour": -4.2,
+      "sensitivity_seconds": 86.0,
+      "hc_deg": 60.25158833333333
+    },
+    "deneb": {
+      "distance_deg": 82.70403166666667,
+      "rate_arcmin_hour": -15.0,
+      "sensitivity_seconds": 24.0,
+      "hc_deg": 44.950981666666664
+    }
+  },
+  "sextant": {
+    "transcribed_from_physical_screenshots": [
+      "resume84-sextant-public-input.png",
+      "resume84-sextant-deneb.png",
+      "resume84-sextant-usno.png"
+    ],
+    "bodies": [
+      "deneb",
+      "vega"
+    ],
+    "contact": "centre to centre",
+    "pressure_hpa": 1013,
+    "temperature_c": 10,
+    "apparent_distance_deg": 23.835591672966757,
+    "tolerance_arcmin": 0.1
+  }
+}

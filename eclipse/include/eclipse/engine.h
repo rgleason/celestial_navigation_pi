@@ -1,3 +1,6 @@
+#ifdef __OCPN__ANDROID__
+#include <functional>
+#endif
 #ifndef CELESTIAL_ECLIPSE_ENGINE_H
 #define CELESTIAL_ECLIPSE_ENGINE_H
 
@@ -88,6 +91,9 @@ struct MagnitudeContour {
 
 class EclipseEngine {
 public:
+#ifdef __OCPN__ANDROID__
+  void SetAndroidCheckpoint(std::function<void()> checkpoint) { androidCheckpoint_ = std::move(checkpoint); }
+#endif
   bool OpenEphemeris(const std::string& path, std::string* error);
   bool State(double tt_jd, double delta_t_seconds, SolarLunarState* state,
              EarthOrientation* orientation, std::string* error) const;
@@ -120,6 +126,9 @@ public:
                               std::string* error) const;
 
 private:
+#ifdef __OCPN__ANDROID__
+  std::function<void()> androidCheckpoint_;
+#endif
   double AxisDistance(double tt_jd, double delta_t_seconds,
                       std::string* error) const;
   bool Classify(double maximum_tt_jd, double delta_t_seconds,

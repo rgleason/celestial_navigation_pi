@@ -1,3 +1,4 @@
+#include "AndroidFileDialog.h"
 #include "Dut1UpdatePanel.h"
 #include "Utf8Translation.h"
 #include "AtomicXmlFile.h"
@@ -14,9 +15,43 @@
 #include <wx/stattext.h>
 #include <algorithm>
 #include <vector>
+#ifdef __OCPN__ANDROID__
+#include "AndroidTouch.h"
+#include <QTimer>
+#include <QtAndroidExtras/QAndroidJniEnvironment>
+#include <memory>
+#include <mutex>
+#endif
 
 namespace celestial_navigation {
 namespace {
+#ifdef __OCPN__ANDROID__
+// POBsoft (1985-2026): the pinned Android wx/Qt loop does not dispatch a
+// standalone handler's pending queue. Own the host events and drain them on
+// the panel's Qt GUI timer, without pumping unrelated application events.
+class AndroidDownloadEvents : public wxEvtHandler {
+ public:
+  void QueueEvent(wxEvent* event) override {
+    std::lock_guard<std::mutex> lock(mutex_);
+    events_.emplace_back(event);
+  }
+  void Drain() {
+    std::vector<std::unique_ptr<wxEvent>> events;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      events.swap(events_);
+    }
+    for (auto& event : events) SafelyProcessEvent(*event);
+  }
+  void Discard() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    events_.clear();
+  }
+ private:
+  std::mutex mutex_;
+  std::vector<std::unique_ptr<wxEvent>> events_;
+};
+#endif
 const wxString kUrl = "https://datacenter.iers.org/data/9/finals2000A.all";
 wxString UpdatePath() {
   return GetpPrivateApplicationDataLocation()
@@ -67,12 +102,46 @@ class UpdatePanel : public wxScrolledWindow {
         _("There is no data-expiry lockout. Outside all available dates the plugin "
           "still calculates using UT1 = UTC and reports reduced accuracy. "
           "No internet connection is required for sights or solving.")));
+#ifdef __OCPN__ANDROID__
+    auto* buttons=new wxBoxSizer(wxVERTICAL);
+#else
     auto* buttons=new wxBoxSizer(wxHORIZONTAL);
+#endif
     download_=new wxButton(this,wxID_ANY,CN_UTF8_("Check / download update…"));
     import_=new wxButton(this,wxID_ANY,CN_UTF8_("Import local file…"));
+#ifdef __OCPN__ANDROID__
+    buttons->Add(download_,0,wxEXPAND|wxBOTTOM,12);
+    buttons->Add(import_,0,wxEXPAND|wxBOTTOM,12);
+#else
     buttons->Add(download_,0,wxRIGHT,12);
     buttons->Add(import_,0);
-    layout->Add(buttons,0,wxLEFT|wxRIGHT|wxBOTTOM,18);
+#endif
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): one cancellable background transfer belongs to
+    // this panel; the Android GUI must never wait in the synchronous JNI API.
+    cancel_=new wxButton(this,wxID_ANY,_("Cancel download"));
+    buttons->Add(cancel_,0,wxEXPAND);
+    cancel_->Hide();
+    cancel_->Bind(wxEVT_BUTTON,[this](wxCommandEvent&) {
+      FinishDownload(false,_("Download cancelled. Existing offline data is unchanged."));
+    });
+    download_events_.Connect(wxID_ANY,wxEVT_DOWNLOAD_EVENT,
+            wxEventHandler(UpdatePanel::OnDownloadEvent),nullptr,this);
+    download_poll_=new QTimer(GetHandle());
+    QObject::connect(download_poll_,&QTimer::timeout,GetHandle(),[this]() {
+      download_events_.Drain();
+    });
+    timeout_=new QTimer(GetHandle());
+    timeout_->setSingleShot(true);
+    QObject::connect(timeout_,&QTimer::timeout,GetHandle(),[this]() {
+      FinishDownload(false,_("Download timed out. Existing offline data is unchanged."));
+    });
+#endif
+    layout->Add(buttons,0,
+#ifdef __OCPN__ANDROID__
+                wxEXPAND|
+#endif
+                wxLEFT|wxRIGHT|wxBOTTOM,18);
     AddText(layout,new wxStaticText(this,wxID_ANY,
         _("Only the download button connects to IERS (about 4 MB). The file is checked "
           "and prepared automatically; no compiler or restart is needed. "
@@ -84,11 +153,20 @@ class UpdatePanel : public wxScrolledWindow {
     Bind(wxEVT_SIZE,[this](wxSizeEvent& event) { Rewrap(); event.Skip(); });
     download_->Bind(wxEVT_BUTTON,[this](wxCommandEvent&) { Download(); });
     import_->Bind(wxEVT_BUTTON,[this](wxCommandEvent&) {
-      wxFileDialog dialog(this,_("Import IERS Earth-rotation data"),wxEmptyString,
+      CelestialFileDialog dialog(this,_("Import IERS Earth-rotation data"),wxEmptyString,
                           "finals2000A.all",_("All files (*)|*"),wxFD_OPEN|wxFD_FILE_MUST_EXIST);
       if (dialog.ShowModal()==wxID_OK) Install(dialog.GetPath());
     });
   }
+#ifdef __OCPN__ANDROID__
+  ~UpdatePanel() override {
+    download_events_.Disconnect(wxID_ANY,wxEVT_DOWNLOAD_EVENT,
+               wxEventHandler(UpdatePanel::OnDownloadEvent),nullptr,this);
+    StopDownload();
+    delete download_poll_;
+    delete timeout_;
+  }
+#endif
  private:
   void AddText(wxSizer* layout,wxStaticText* text) {
     texts_.push_back({text,text->GetLabel()});
@@ -100,8 +178,21 @@ class UpdatePanel : public wxScrolledWindow {
     Rewrap();
   }
   void Rewrap() {
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): AndroidSurface reparents these labels into a
+    // content panel. Recompute native font heights and lay out that owner
+    // before updating the viewport, including dynamically changed messages.
+    const int width=std::max(160,GetClientSize().x-64);
+    for (auto& item:texts_) CN_WrapAndroidText(item.first,item.second,width);
+    if (!texts_.empty() && texts_.front().first->GetParent()!=this) {
+      auto* content=texts_.front().first->GetParent();
+      content->InvalidateBestSize();
+      content->Layout();
+    }
+#else
     const int width=std::max(200,std::min(780,GetClientSize().x-40));
     for (auto& item:texts_) { item.first->SetLabel(item.second); item.first->Wrap(width); }
+#endif
     Layout(); FitInside();
   }
   void RefreshCoverage() {
@@ -121,6 +212,36 @@ class UpdatePanel : public wxScrolledWindow {
     SetText(message_,message); RefreshCoverage();
   }
   void Download() {
+#ifdef __OCPN__ANDROID__
+    if (downloading_) return;
+    download_temp_=wxFileName::CreateTempFileName("celestial-dut1-");
+    if (download_temp_.empty()) {
+      SetText(message_,_("Could not create a download file. Existing data is unchanged."));
+      return;
+    }
+    downloading_=true;
+    download_->Disable(); import_->Disable(); cancel_->Show();
+    SetText(message_,CN_UTF8_("Downloading IERS Earth-rotation data…"));
+    timeout_->start(30000);
+    download_poll_->start(50);
+    const auto status=OCPN_downloadFileBackground(kUrl,download_temp_,&download_events_,&download_handle_);
+    if (status==OCPN_DL_NO_ERROR) FinishDownload(true,wxEmptyString);
+    else if (status!=OCPN_DL_STARTED)
+      FinishDownload(false,_("Download failed. Existing offline data is unchanged."));
+    else {
+      // POBsoft (1985-2026): even the host's background API opens a native
+      // non-cancellable ProgressDialog. Its transparent window intercepts
+      // touches outside the spinner, including our Cancel/Close/Back actions.
+      // This transfer already has owned progress and cancellation controls.
+      // Dismiss its spinner; normal host completion still clears busy state.
+      QtAndroid::androidActivity().callObjectMethod("hideBusyCircle", "()Ljava/lang/String;");
+      QAndroidJniEnvironment env;
+      if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        FinishDownload(false,_("This host cannot show a cancellable download. Existing data is unchanged."));
+      }
+    }
+#else
     download_->Disable(); import_->Disable();
     // The host owns the cancellable progress dialog. Only this explicit action
     // accesses the network; solving and startup never perform a download.
@@ -135,7 +256,50 @@ class UpdatePanel : public wxScrolledWindow {
       wxRemoveFile(temp);
     } else SetText(message_,_("Could not create a download file. Existing data is unchanged."));
     download_->Enable(); import_->Enable();
+#endif
   }
+#ifdef __OCPN__ANDROID__
+  void StopDownload() {
+    timeout_->stop();
+    download_poll_->stop();
+    downloading_=false;
+    if (download_handle_) OCPN_cancelDownloadFileBackground(download_handle_);
+    download_handle_=0;
+    // Discard queued events from this completed/cancelled generation before
+    // admitting another transfer. This handler owns download events only.
+    download_events_.Discard();
+    if (!download_temp_.empty() && wxFileExists(download_temp_))
+      wxRemoveFile(download_temp_);
+    download_temp_.clear();
+  }
+  void FinishDownload(bool success,const wxString& message) {
+    if (!downloading_) return;
+    if (success) Install(download_temp_);
+    else SetText(message_,message);
+    StopDownload();
+    download_->Enable(); import_->Enable(); cancel_->Hide();
+    Rewrap();
+  }
+  void OnDownloadEvent(wxEvent& raw) {
+    if (!downloading_) return;
+    auto& event=static_cast<OCPN_downloadEvent&>(raw);
+    if (event.getDLEventCondition()==OCPN_DL_EVENT_TYPE_PROGRESS) {
+      SetText(message_,wxString::Format(_("Downloading IERS data: %ld of %ld bytes."),
+                                        event.getTransferred(),event.getTotal()));
+    } else if (event.getDLEventCondition()==OCPN_DL_EVENT_TYPE_END) {
+      download_handle_=0;  // The host has finished this transfer.
+      FinishDownload(event.getDLEventStatus()==OCPN_DL_NO_ERROR,
+          _("Download failed or was cancelled. Existing offline data is unchanged."));
+    }
+  }
+  wxButton* cancel_;
+  QTimer* timeout_;
+  QTimer* download_poll_;
+  bool downloading_=false;
+  long download_handle_=0;
+  wxString download_temp_;
+  AndroidDownloadEvents download_events_;
+#endif
   wxStaticText *status_,*message_;
   wxButton *download_,*import_;
   std::vector<std::pair<wxStaticText*,wxString>> texts_;

@@ -437,11 +437,21 @@ std::vector<int> DirectDeclinations(const AlmanacRequest& request) {
     const std::vector<CelestialBodyInfo> bodies = BodyCatalog::Navigational(
         request.includeSun, request.includeMoon, request.includePlanets,
         request.includeStars);
+#ifdef __OCPN__ANDROID__
+    const auto from = UtcDateTime::Fields(request.fromUtc);
+    const auto to = UtcDateTime::Fields(request.toUtc);
+    wxDateTime day = UtcDateTime::Create(from.year, from.mon + 1, from.mday);
+    wxDateTime last = UtcDateTime::Create(to.year, to.mon + 1, to.mday);
+#else
     wxDateTime day(request.fromUtc.GetDay(), request.fromUtc.GetMonth(),
                    request.fromUtc.GetYear(), 0, 0, 0);
     wxDateTime last(request.toUtc.GetDay(), request.toUtc.GetMonth(),
                     request.toUtc.GetYear(), 0, 0, 0);
+#endif
     while (!day.IsLaterThan(last)) {
+#ifdef __OCPN__ANDROID__
+      if (request.androidProgress) request.androidProgress(0, 0, "Determining direct-table declination coverage");
+#endif
       const wxDateTime instant = UtcDateTime::ToInstant(day);
       const auto tabulated = eclipse::LookupDut1(instant.GetJulianDayNumber());
       const double dut1 = request.dut1Known ? request.dut1Seconds :
@@ -477,6 +487,9 @@ void AddDirectReductionPages(const AlmanacRequest& request,
   const std::vector<int> declinations = DirectDeclinations(request);
   const unsigned declinationsPerBlock = 5;
   for (int latitude : latitudes) {
+#ifdef __OCPN__ANDROID__
+    if (request.androidProgress) request.androidProgress(latitude - latitudes.front(), latitudes.size(), "Calculating direct reduction tables");
+#endif
     for (size_t firstDec = 0; firstDec < declinations.size();
          firstDec += declinationsPerBlock) {
       for (unsigned part = 0; part < 3; ++part) {
@@ -550,6 +563,9 @@ unsigned AlmanacPaperTables::PageCount(const AlmanacRequest& request) {
 void AlmanacPaperTables::Append(const AlmanacRequest& request,
                                 AlmanacDocument* document) {
   if (!document) return;
+#ifdef __OCPN__ANDROID__
+  if (request.androidProgress) request.androidProgress(0, 0, "Building paper reference tables");
+#endif
   const bool any = request.includeIncrementTables ||
                    request.includeCompactReductionTables ||
                    request.includeAltitudeCorrectionTables;

@@ -336,6 +336,12 @@ if (NOT "${PKG_TARGET_VERSION}" STREQUAL "")
   string(STRIP ${PKG_TARGET_VERSION} PKG_TARGET_VERSION)
   string(TOLOWER ${PKG_TARGET_VERSION} PKG_TARGET_VERSION)
 endif ()
+# POBsoft (1985-2026): keep native Windows x64 separate from x86 packages.
+if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set(PKG_TARGET "msvc-wx32-x64")
+  set(PKG_TARGET_VERSION "10")
+  unset(PKG_TARGET_WX_VER)
+endif()
 set(PKG_TARGET_NVR ${PKG_TARGET}-${PKG_TARGET_VERSION})
 message(
   STATUS

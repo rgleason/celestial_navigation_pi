@@ -4,6 +4,18 @@ The default CircleCI workflow is validation-only. It builds every platform in
 `.circleci/config.yml`, retains each package, metadata file and checksum as a
 CircleCI artifact, and never requests a Cloudsmith credential.
 
+## Deliberate validation without repeated browser steps
+
+The pob220 CircleCI GitHub App project uses the existing **run-ci label added
+to PR** trigger. Development PR #1 targets main from android/celnav-2.8.13 and
+remains a draft until physical acceptance is complete. To request validation
+after pushing a concrete revision, add that label with authenticated GitHub
+CLI. Remove it first if it already exists, then add it again; only adding the
+label is the triggering event. Confirm the resulting CircleCI config and
+checkout SHA both match the intended revision. This does not authorize merge,
+publication or catalogue changes. The branch default is run_workflow_deploy=false.
+Automatic-trigger verification is recorded in the dated Android audit.
+
 The Debian 12 x86_64 job also runs the plugin tests and the standalone eclipse
 engine tests. It downloads the three data packs from the versioned
 [`eclipse-data-2026.1` GitHub release](https://github.com/pob220/celestial_navigation_pi/releases/tag/eclipse-data-2026.1)
@@ -25,7 +37,7 @@ optional refinements for eclipse contact calculations.
 
 Publication must be started explicitly with the CircleCI pipeline parameter
 `run_workflow_deploy=true`. This performs fresh builds of the complete matrix
-and then stops at `hold-for-alpha-approval`. Only after a maintainer approves
+and then stops at `approve-publication`. Only after a maintainer approves
 that gate does the final job receive the `celestial-navigation-deployment`
 context and publish the retained packages.
 
@@ -58,15 +70,15 @@ For an official alpha candidate:
    `run_workflow_deploy=true`. This deliberately performs a fresh 19-target
    build rather than reusing artifacts from an older validation run.
 4. Inspect the retained archives, XML and `SHA256SUMS`, then approve
-   `hold-for-alpha-approval`. The final job embeds the exact Cloudsmith URLs in
+   `approve-publication`. The final job embeds the exact Cloudsmith URLs in
    each XML file and uploads the reviewed packages and metadata.
 5. In a checkout of the official
    [`OpenCPN/plugins`](https://github.com/OpenCPN/plugins) `Alpha` branch, fetch
    the published metadata using its normal frontend2 helper:
 
    ```sh
-   ./download_xml_bash.sh celestial-navigation 2.7.0.0 opencpn alpha
-   ./validate_xml.sh celestial_navigation_pi 2.7.0.0
+   ./download_xml_bash.sh celestial-navigation 2.8.13.0 opencpn alpha
+   ./validate_xml.sh celestial_navigation_pi 2.8.13.0
    ```
 
    If the release version changes, use that version in both commands.

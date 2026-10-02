@@ -1,0 +1,20 @@
+{
+  "source": "https://aa.usno.navy.mil/data/api",
+  "retrieved": "2026-09-27",
+  "date": "2025-07-20",
+  "coords": "43.2366916666667,-77.533415",
+  "files": {
+    "usno-worksheet-33.json": {
+      "time_ut1": "17:16:33",
+      "sha256": "ace4ab344195460fb0c383b908a6bb5d31cba2e24960118cc38df237d63c3acd"
+    },
+    "usno-worksheet-34.json": {
+      "time_ut1": "17:16:34",
+      "sha256": "025c5ace57ff6fdebb6270f78a21f391de1b2f7d5d79127c8934bfd7790c17c3"
+    },
+    "usno-worksheet-fraction70.json": {
+      "time_ut1": "17:16:33.987",
+      "sha256": "327a912445cb54850fc0e9295ad7b0f770206721f74a2cdefd1b4f283e20713a"
+    }
+  }
+}

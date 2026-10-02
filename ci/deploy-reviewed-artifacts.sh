@@ -61,11 +61,11 @@ while IFS= read -r -d '' archive; do
   rm -rf "$work/unpacked/root"
 
   staged_xml="$work/metadata.xml"
-  sed -e "s|--pkg_repo--|$CELESTIAL_CLOUDSMITH_REPO|g" \
-      -e "s|--name--|$package_name|g" \
-      -e "s|--version--|$cloudsmith_version|g" \
-      -e "s|--filename--|$(basename "$archive")|g" \
-      "$metadata" > "$staged_xml"
+  # Android validation packages already contain an exact development URL.
+  # Replacing placeholders alone would publish that stale URL unchanged.
+  python3 "$(dirname "${BASH_SOURCE[0]}")/prepare-published-metadata.py" \
+    "$metadata" "$staged_xml" "$CELESTIAL_CLOUDSMITH_REPO" \
+    "$package_name" "$cloudsmith_version" "$(basename "$archive")"
   cp "$staged_xml" "$work/unpacked/metadata.xml"
   tar -C "$work/unpacked" -cf "$staged_tar" .
   gzip "$staged_tar"
