@@ -250,7 +250,7 @@ private:
   void DrawTrackTime(wxDC& dc, const PlannerSkyPoint& sample,
                      const wxPoint& point, const wxRect& bounds,
                      const wxColour& colour, std::vector<wxRect>& labels) {
-    const wxString text = sample.utc.Format("%H:%MZ", wxDateTime::UTC);
+    const wxString text = UtcDateTime::FormatInstant(sample.utc, "%H:%MZ");
     const wxSize extent = dc.GetTextExtent(text);
     for (int row : {-1, 1, -2, 2, -3, 3, -4, 4}) {
       for (int side : {1, -1}) {
@@ -892,7 +892,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_moonSpan->Append(_("12 hours"));
   m_moonSpan->SetSelection(0);
   spanRow->Add(m_moonSpan);
-  plotControls->Add(spanRow, 0, wxTOP, 3);
+  plotControls->Add(spanRow, 0, wxTOP | wxEXPAND, 3);
   plotSizer->Add(plotControls, 0, wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 8);
   m_plotNotebook = new wxNotebook(bodiesPage, wxID_ANY, wxDefaultPosition,
                                    wxSize(340, 350));
@@ -1585,7 +1585,7 @@ void PlannerDialog::StepPlanningTime(int hours) {
   if (!observer.referenceUtc.IsValid()) return;
   const wxDateTime next = observer.referenceUtc + wxTimeSpan::Hours(hours);
   long year = 0;
-  next.Format("%Y", wxDateTime::UTC).ToLong(&year);
+  UtcDateTime::FormatInstant(next, "%Y").ToLong(&year);
   if (year < 1900 || year > 2100) return;
   m_refreshTimer.Stop();
 #ifdef __OCPN__ANDROID__
@@ -2805,8 +2805,8 @@ void PlannerDialog::ExportBodyTable(wxCommandEvent&) {
     if (index < 0 || static_cast<size_t>(index) >= m_rankedBodies.size())
       continue;
     const RankedBody& body = m_rankedBodies[index];
-    csv += field(motion.referenceUtc.Format("%Y-%m-%dT%H:%M:%SZ",
-                                                 wxDateTime::UTC)) + "," +
+    csv += field(UtcDateTime::FormatInstant(motion.referenceUtc,
+                                          "%Y-%m-%dT%H:%M:%SZ")) + "," +
            field(m_planningMode->GetStringSelection()) + "," +
            field(body.state.body) + "," +
            wxString::Format("%.5f,%.5f,%.5f,%.5f,%.2f,%.1f,%.1f,%.3f,"
@@ -2885,9 +2885,9 @@ void PlannerDialog::FindLunarWindows(wxCommandEvent&) {
         _("Moon + %s\n%s to %s UTC\nBest sampled timing: %s UTC\n"
           "LD %.2f deg; rate %+.1f arcmin/hour; 0.1' time %.1f s\n"
           "Moon Hc %.1f deg; body Hc %.1f deg\n\n"),
-        body.c_str(), window.startUtc.Format("%Y-%m-%d %H:%M", wxDateTime::UTC),
-        window.endUtc.Format("%Y-%m-%d %H:%M", wxDateTime::UTC),
-        window.bestUtc.Format("%Y-%m-%d %H:%M", wxDateTime::UTC),
+        body.c_str(), UtcDateTime::FormatInstant(window.startUtc, "%Y-%m-%d %H:%M"),
+        UtcDateTime::FormatInstant(window.endUtc, "%Y-%m-%d %H:%M"),
+        UtcDateTime::FormatInstant(window.bestUtc, "%Y-%m-%d %H:%M"),
         window.best.lunarDistance, window.best.lunarRateArcminHour,
         window.best.lunarTimingSeconds, window.moonAltitude,
         window.best.state.geometricAltitude);
