@@ -116,11 +116,13 @@ TEST(SightLogUi, RemarksAndManagerRoundTripOldAndNewXml) {
     ASSERT_NE(nullptr, list);
     ASSERT_EQ(1, list->GetItemCount());
     ASSERT_GT(list->GetColumnCount(), 6);
+    EXPECT_EQ("red", list->GetItemText(0, 5));
     wxListItem remarksColumn;
     ASSERT_TRUE(list->GetColumn(6, remarksColumn));
     EXPECT_EQ("Remarks", remarksColumn.GetText());
     main.m_Sights[0].m_Remarks = remark;
     main.UpdateSights();
+    EXPECT_EQ("red", list->GetItemText(0, 5));
     EXPECT_EQ(remark, list->GetItemText(0, 6));
     EXPECT_TRUE(ReadFile(active).Contains("Cloud &amp; spray"));
     EXPECT_TRUE(ReadFile(active).Contains("&quot;N&quot;"));
@@ -129,6 +131,8 @@ TEST(SightLogUi, RemarksAndManagerRoundTripOldAndNewXml) {
     wxDateTime markedUtc;
     SightDialog sightEditor(&main, ordinary, 0, markedUtc,
                             SightDialog::Mode::Edit);
+    sightEditor.Recompute();
+    EXPECT_EQ("red", ordinary.m_ColourName);
     EXPECT_TRUE(HasTextValue(&sightEditor, remark));
     auto* book = Notebook(&sightEditor);
     ASSERT_NE(nullptr, book);

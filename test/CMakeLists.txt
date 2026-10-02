@@ -30,6 +30,7 @@ set(SRC
     atomic_xml_file_tests.cpp
     dialog_geometry_tests.cpp
     dialog_transaction_state_tests.cpp
+    sight_search_span_ui_tests.cpp
     eclipse_data_files_tests.cpp
     eclipse_verification_worker_tests.cpp
     altitude_tests.cpp
@@ -47,6 +48,7 @@ set(SRC
     sextant_calibration_engine_tests.cpp
     lunar_de440_tests.cpp
     navigation_de440_tests.cpp
+    analytical_epoch_tests.cpp
     lunar_observer_tests.cpp
     dut1_update_tests.cpp
     coastal_navigation_tests.cpp

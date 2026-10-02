@@ -256,6 +256,8 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   addAction(m_lunarToolsButton);    actionButtons->AddSpacer(0);
   addAction(m_analyzeButton);
   auto* chartDisplay = new wxButton(this, wxID_ANY, _("Chart display..."));
+  chartDisplay->SetToolTip(_("Set chart-wide line, outline, shading and hover defaults. "
+      "Edit each sight's colour and transparency on its Config tab."));
   chartDisplay->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnChartDisplay, this);
   addAction(chartDisplay);
 
@@ -1318,7 +1320,8 @@ void CelestialNavigationDialog::RebuildList(bool persist) {
           _("Time Correction") +
               wxString::Format(_T(": %ld s"), s.m_TimeCorrection));
     else
-      m_lSights->SetItem(idx, rmCOLOR, SightColourLabel(s.m_Colour));
+      m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName.empty()
+          ? SightColourLabel(s.m_Colour) : s.m_ColourName);
     m_lSights->SetItem(idx, rmREMARKS, s.m_Remarks);
 
     if (s.IsSelected()) {
@@ -1353,7 +1356,8 @@ void CelestialNavigationDialog::UpdateSight(int idx) {
                        _("Time Correction") +
                            wxString::Format(_T(": %ld s"), s.m_TimeCorrection));
   else
-    m_lSights->SetItem(idx, rmCOLOR, SightColourLabel(s.m_Colour));
+    m_lSights->SetItem(idx, rmCOLOR, s.m_ColourName.empty()
+        ? SightColourLabel(s.m_Colour) : s.m_ColourName);
   m_lSights->SetItem(idx, rmREMARKS, s.m_Remarks);
 
   UpdateButtons();
@@ -1888,6 +1892,10 @@ void CelestialNavigationDialog::OnPdfDocumentation(wxCommandEvent& event) {
 void CelestialNavigationDialog::OnChartDisplay(wxCommandEvent&) {
   wxDialog dialog(this, wxID_ANY, _("Chart sight display"));
   auto* layout = new wxBoxSizer(wxVERTICAL);
+  layout->Add(new wxStaticText(&dialog, wxID_ANY,
+      _("These chart-wide rendering controls do not change individual "
+        "sights or their saved colours and transparency.")),
+      0, wxALL, 6);
   layout->Add(new wxStaticText(&dialog, wxID_ANY, _("Nominal line width (mm)")),
               0, wxALL, 6);
   auto* width = new wxSpinCtrlDouble(&dialog, wxID_ANY, wxEmptyString,

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "eclipse/dut1.h"
 #include "eclipse/time.h"
+#include "NavigationEphemerisProvider.h"
 #include "Dut1UpdatePanel.h"
 #include "AtomicXmlFile.h"
 #include <wx/file.h>
@@ -61,6 +62,29 @@ TEST(Dut1Update, ParsesHistoryAndFutureLeapWithoutSmearing) {
     EXPECT_EQ(actual->Lookup(2457754.5).tai_minus_utc,37);
     EXPECT_NEAR(actual->Lookup(2457754.5).seconds,0.59122,0.001);
   }
+}
+TEST(Dut1Update, AnalyticalEpochUsesUpdateAndRetainsLastKnownLeapAfterCoverage) {
+  const auto previous = eclipse::GetDut1Update();
+  struct Restore {
+    std::shared_ptr<const eclipse::Dut1Table> previous;
+    ~Restore() { eclipse::SetDut1Update(previous); }
+  } restore{previous};
+  std::string error;
+  const auto table = eclipse::ParseDut1Update(Fixture(), &error);
+  ASSERT_TRUE(table) << error;
+  eclipse::SetDut1Update(table);
+  celestial_navigation::AnalyticalNavigationEpoch epoch;
+  ASSERT_TRUE(celestial_navigation::ResolveAnalyticalNavigationEpoch(
+      wxDateTime(1, wxDateTime::Jan, 2030, 0, 0, 0), &epoch));
+  EXPECT_TRUE(epoch.dut1_available);
+  EXPECT_TRUE(epoch.dut1_from_update);
+  EXPECT_NEAR(epoch.dut1_seconds, 0.4, 1e-6);
+  EXPECT_NEAR((epoch.tt_jd - epoch.utc_jd) * 86400.0, 70.184, 0.00005);
+  ASSERT_TRUE(celestial_navigation::ResolveAnalyticalNavigationEpoch(
+      wxDateTime(1, wxDateTime::Jan, 2040, 0, 0, 0), &epoch));
+  EXPECT_FALSE(epoch.dut1_available);
+  EXPECT_DOUBLE_EQ(epoch.dut1_seconds, 0.0);
+  EXPECT_NEAR((epoch.tt_jd - epoch.utc_jd) * 86400.0, 70.184, 0.00005);
 }
 TEST(Dut1Update, RejectsTruncationGarbageAndDamagedEpochs) {
   const auto valid=Fixture();

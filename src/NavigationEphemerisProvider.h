@@ -9,6 +9,27 @@
 
 namespace celestial_navigation {
 
+// Analytical calculations need the same separated time scales as the kernel
+// provider. No kernel or network access is required. Before 1972 the established
+// historical UT/DeltaT model is retained, rather than inventing modern UTC.
+// By default time contains UTC calendar fields; time_is_instant selects direct
+// extraction of UTC from an actual wxDateTime instant (planner convention).
+struct AnalyticalNavigationEpoch {
+  double utc_jd = 0.0;
+  double ut1_jd = 0.0;
+  double tt_jd = 0.0;
+  double dut1_seconds = 0.0;
+  double delta_t_seconds = 0.0;
+  bool modern_utc = false;
+  bool dut1_available = false;
+  bool dut1_from_update = false;
+};
+
+bool ResolveAnalyticalNavigationEpoch(
+    const wxDateTime& time, AnalyticalNavigationEpoch* epoch,
+    double dut1_override_seconds = std::numeric_limits<double>::quiet_NaN(),
+    bool time_is_instant = false);
+
 // Only solar-system body centres actually present in the compact DE440s SPK
 // can use this provider. A false return means the established analytical
 // path remains in charge; it is never a partially populated result.

@@ -48,10 +48,6 @@ double AlmanacDut1(const AlmanacRequest& request, const wxDateTime& utc) {
       std::numeric_limits<double>::quiet_NaN();
 }
 
-double AnalyticalDut1(double seconds) {
-  return std::isfinite(seconds) ? seconds : 0.0;
-}
-
 // Record the source returned by the engine, including interpolation endpoints.
 // Do not infer kernel availability from a filename or from the first date.
 struct AlmanacSourceAudit {
@@ -218,14 +214,13 @@ std::vector<AlmanacTable> UniversalTables(const AlmanacRequest& request,
   for (int hour = 0; hour < 24; ++hour) {
     const wxDateTime utc = AtHour(day, hour);
     const double dut1 = AlmanacDut1(request, utc);
-    const wxDateTime ut1 = ShiftInstant(utc, AnalyticalDut1(dut1));
     const wxDateTime nextUtc = ShiftInstant(utc, 3600.0);
     const BodyState sun = audit->Evaluate(request, "Sun", utc);
     const BodyState moon = audit->Evaluate(request, "Moon", utc);
     const BodyState nextSun = audit->Evaluate(request, "Sun", nextUtc);
     const BodyState nextMoon = audit->Evaluate(request, "Moon", nextUtc);
     const BodyState polaris =
-        CelestialEphemeris::Evaluate("Polaris", ut1, 0, 0);
+        CelestialEphemeris::Evaluate("Polaris", utc, 0, 0, 1010.0, 10.0, dut1);
     const double aries = sun.valid ? sun.ghaAries :
                          Wrap360(polaris.gha - polaris.sha);
     std::vector<wxString> sunRow{wxString::Format("%02d", hour)};

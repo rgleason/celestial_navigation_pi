@@ -105,6 +105,10 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   m_sMinutes->SetValue(m_Sight.m_DateTime.Format(_T("%M")));
   m_sSeconds->SetValue(m_Sight.m_DateTime.Format(_T("%S")));
 
+  // Set the range before loading a saved value. The generated control used
+  // to start with a 10800-second maximum, silently clamping wider lunar
+  // search spans before the range was expanded later in this constructor.
+  m_sCertaintySeconds->SetRange(0, 172800);
   m_sCertaintySeconds->SetValue(m_Sight.m_TimeCertainty);
 
   m_sTransparency->SetValue(m_Sight.m_Colour.Alpha());
@@ -176,6 +180,7 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   m_colourPalette->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
     const int selection = m_colourPalette->GetSelection();
     if (selection >= 0 && size_t(selection) < SightPalette().size()) {
+      m_Sight.m_ColourName = wxGetTranslation(SightPalette()[selection].name);
       m_ColourPicker->SetColour(SightPalette()[selection].Colour());
       MarkDirty();
       Recompute();
@@ -365,7 +370,6 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
                           });
   UpdateLunarTimeControls();
   m_panel2->FitInside();
-  m_sCertaintySeconds->SetRange(0, 172800);
   if (m_Sight.m_Type == Sight::LUNAR && m_Sight.m_TimeCertainty <= 0.0) {
     m_Sight.m_TimeCertainty = 86400.0;
     m_sCertaintySeconds->SetValue(86400);
@@ -786,7 +790,12 @@ void SightDialog::Recompute() {
   m_Sight.m_Remarks = m_remarks->GetValue();
 
   wxColour fc = m_ColourPicker->GetColour();
-  m_Sight.m_ColourName = SightColourLabel(fc);
+  // Do not replace an existing user's descriptive name just because the
+  // editor recomputes the sight. Only a real colour change gets a new label.
+  if (fc.Red() != m_Sight.m_Colour.Red() ||
+      fc.Green() != m_Sight.m_Colour.Green() ||
+      fc.Blue() != m_Sight.m_Colour.Blue())
+    m_Sight.m_ColourName = SightColourLabel(fc);
   UpdateColourChoice();
 
   m_Sight.m_Colour =
