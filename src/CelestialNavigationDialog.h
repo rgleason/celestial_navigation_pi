@@ -46,6 +46,7 @@
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
+class QTimer;
 #endif
 
 class CelestialNavigationDialog : public CelestialNavigationDialogBase {
@@ -89,6 +90,17 @@ public:
   bool GetMarkedUtc(wxDateTime* utcFields) const;
 
 private:
+  long SelectedSightIndex() const;
+#ifdef __OCPN__ANDROID__
+  void BuildAndroidWorkspace();
+  void RefreshAndroidCards();
+  void SelectAndroidSight(size_t index);
+  wxScrolledWindow* m_androidObservations = nullptr;
+  wxPanel* m_androidCards = nullptr;
+  wxButton* m_androidInclude = nullptr;
+  bool m_androidRefreshPending = false;
+  QTimer* m_androidClockTimer = nullptr;
+#endif
   bool OpenXML(bool reportfailure);
   bool ReadSightsXml(const wxString& path, std::vector<Sight>* sights,
                      int* clockCorrection,
@@ -180,6 +192,7 @@ private:
   wxButton* m_almanacButton;
   wxButton* m_pdfDocumentationButton;
   wxButton* m_manageSightsButton;
+  wxButton* m_chartDisplayButton;
   EclipseDialog* m_eclipseDialog;
   CoastalNavigationDialog* m_coastalDialog;
   wxTimer m_timeTimer;

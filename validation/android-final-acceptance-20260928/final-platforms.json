@@ -1,0 +1,562 @@
+{
+  "version": "2.8.13.0",
+  "publication": "HOLD",
+  "existing19_workflow": "24be20b7-e1a1-4235-a88f-9ddd809887cf",
+  "existing19_source": "8bdec0cb99f5600f742920f35624be5cabcc372e",
+  "existing19": [
+    {
+      "job": "build-android-arm64",
+      "archive": "celestial_navigation_pi-2.8.13.0-android-arm64-16-android-arm64.tar.gz",
+      "sha256": "e84161042f002ca3f4e072c75e2666d667e723e7ceaa138cbdfea348e3641988",
+      "library_sha256": "1b322245a83e8551a10a7c0868f8df18e49380d90b298594ac6fe107eea6ac74",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-android-armhf",
+      "archive": "celestial_navigation_pi-2.8.13.0-android-armhf-16-android-armhf.tar.gz",
+      "sha256": "c6f6cfaa1091df6a2f4451a8eb850bb40eece08d59a6a652b46450af2d68041f",
+      "library_sha256": "82effac0001b898cf6f505ecaf5d34e545a5e5707dcd8bab870680970873f25c",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-debian-arm64-11-bullseye",
+      "archive": "celestial_navigation_pi-2.8.13.0-debian-arm64-11-bullseye-arm64.tar.gz",
+      "sha256": "8d0b4f9a052a331de13c2a6a26ae820ed218afc1e810652c62046082e7440708",
+      "library_sha256": "ca053fd707e2064eea1d3218bbf5b57017c8c553c5f0ed51048e3c8aaa95758b",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-debian-arm64-12-bookworm",
+      "archive": "celestial_navigation_pi-2.8.13.0-debian-arm64-12-bookworm-arm64.tar.gz",
+      "sha256": "ab824ba2b51c6642657fe1ae40b29aa991a1c415cd177fdc686bd2db14ba948d",
+      "library_sha256": "0abbb67b304696d2cc1d3f84940a8409f204b9b793a990e0df0e16f5564622d6",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-debian-arm64-13-trixie",
+      "archive": "celestial_navigation_pi-2.8.13.0-debian-arm64-13-trixie-arm64.tar.gz",
+      "sha256": "37b409da8a3154f694f0d70507f6a04143bfe7a4d52d797eb48b51af2a849430",
+      "library_sha256": "c91682aaeec4c3e7bdea0abcb945ce024126f34a99f2a574c295376879effb23",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-debian-armhf-11-bullseye",
+      "archive": "celestial_navigation_pi-2.8.13.0-debian-armhf-11-bullseye-armhf.tar.gz",
+      "sha256": "fa17bb48ea977d55e9738be58041a24269378bfbf463e73ce23ed2ad5ac0b554",
+      "library_sha256": "9888993ebd08ab2769615462413363062770e666fc9f41cd413fbc013deb8db8",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-debian-armhf-12-bookworm",
+      "archive": "celestial_navigation_pi-2.8.13.0-debian-armhf-12-bookworm-armhf.tar.gz",
+      "sha256": "94d200b2ce1fea25e7091a7e5f27e7a9376125890faec1d5927aaf2ffce5197c",
+      "library_sha256": "a240fe337daa394d47bc40db6f80a2d614001604ee0d65340c6b68582f9b2ebf",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-debian-armhf-13-trixie",
+      "archive": "celestial_navigation_pi-2.8.13.0-debian-armhf-13-trixie-armhf.tar.gz",
+      "sha256": "03ad5d3788021ef3d2e0a50f32e2a0fb9441a41a330812617178e462bf6ef0b1",
+      "library_sha256": "0943807abd4f7592497dc0430f7b8ab7390c80feb0b50fbadd8184eee8966fc5",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-debian-x86_64-11-bullseye",
+      "archive": "celestial_navigation_pi-2.8.13.0-debian-x86_64-11-bullseye.tar.gz",
+      "sha256": "1b154a230d55870d33b1048f4cb81b10bd38c44b2c4a2c9ba7c6cd2724411a0c",
+      "library_sha256": "12d3f99a17f703c113e4eaff9df8c8e1433ea0ff17bf134d714ca40161444deb",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-debian-x86_64-12-bookworm",
+      "archive": "celestial_navigation_pi-2.8.13.0-debian-x86_64-12-bookworm.tar.gz",
+      "sha256": "38f029ee64d89c55e1c94b97e3c309281cc6c7d6ca1da214808be910b0705485",
+      "library_sha256": "ed787fdb1ec81f274ebf8e7d07e28c84d3a9a7355d49de82bed3028b8719c926",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-debian-x86_64-13-trixie",
+      "archive": "celestial_navigation_pi-2.8.13.0-debian-x86_64-13-trixie.tar.gz",
+      "sha256": "593578309357b4e3424819b29cf5e294ed38c67a44adb46371628ff0a54a1e06",
+      "library_sha256": "c93a1b43ebcbb7a3228d0a639dce3c85f441cb750552d3fa4c4da39872c29890",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-flatpak-aarch64-2208",
+      "archive": "celestial_navigation_pi-2.8.13.0-aarch64_flatpak-22.08.tar.gz",
+      "sha256": "bcfe778aaf27266b372be322398485e16fe2c55536f4da0973c7d3468698d558",
+      "library_sha256": "9d7c52cdd6870fad9075e64edf2ec56ecda4c9cbdfab556192b7c92ff00132c0",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-flatpak-aarch64-2408",
+      "archive": "celestial_navigation_pi-2.8.13.0-aarch64_flatpak-24.08.tar.gz",
+      "sha256": "9e5b6648499674a63c065e750aeebe0472becd9bb2ad9d7e34f2a2169bb82a16",
+      "library_sha256": "6c446835ee5cbf67655ae17ceb51af08d25ba6995c2582971b6a5a2563bc8eb7",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-flatpak-x86-2208",
+      "archive": "celestial_navigation_pi-2.8.13.0-x86_64_flatpak-22.08.tar.gz",
+      "sha256": "794b0c7c7b4fb5db82ebe1836331db14c20d03fecbd14de2f6be6922e2c46710",
+      "library_sha256": "2530ee46ab76b32a42b2abf1a281707786a975a49d33eb8541ae5fdadb1f1214",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-flatpak-x86-2408",
+      "archive": "celestial_navigation_pi-2.8.13.0-x86_64_flatpak-24.08.tar.gz",
+      "sha256": "01669932ac3a26c41d6bf6bac1556e26fd3cf9dac423752a68700865c75d3f43",
+      "library_sha256": "b175e52e981f15f87923d13c9b0ed36b367f7455cbf36c5418d4f93e13dbe150",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-macos-universal",
+      "archive": "celestial_navigation_pi-2.8.13.0-darwin-wx32-arm64-x86_64-14.3.1-macos.tar.gz",
+      "sha256": "5bd119b7f2b1218eda2ee9ac29143f71cf9634b00c1ea7d82dd21164be77b270",
+      "library_sha256": "c08517cae1b43ae5ffbd78d964e7a10c2f6991e4ddc41cf1f8b456260e79a93d",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    },
+    {
+      "job": "build-msvc-2022",
+      "archive": "celestial_navigation_pi-2.8.13.0-msvc-x86-10.0.20348-MSVC.tar.gz",
+      "sha256": "60a71704cffa36814bdb699aa6267d0ab98ef27e98f04113eb2ea42fb44b5716",
+      "library_sha256": "fcff01a6ed1c1fb2a41fbe899a7e566bc39cb172c6ebac7f660f14d47e5d2db1",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "8a5367e0ec3cc075f1a254ebb84e9e84fd9ba5b6e0883032e40ac1bd58928bc1",
+          "match": "Windows checkout CRLF only"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "e79114ca04851eac2979d8a399a33910e8ae778b258e85eaa329bdd8a0c96f64",
+          "match": "Windows checkout CRLF only"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "a4c6b4145ded89546ad146822455cc09847a7c5e7dcd15e4a9322ea1b6f7415a",
+          "match": "Windows checkout CRLF only"
+        }
+      }
+    },
+    {
+      "job": "build-msvc-wx32-2022",
+      "archive": "celestial_navigation_pi-2.8.13.0-msvc-x86-wx32-10.0.20348-MSVC.tar.gz",
+      "sha256": "7beff8ffc3f5b16e9a56cbc770b18b6ef4fbadcac393bd379f359129968416cd",
+      "library_sha256": "7b1c2e688bd3d0857107a0c702169e70cff7611fa730c72b90c9f8b8525a8dbb",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "8a5367e0ec3cc075f1a254ebb84e9e84fd9ba5b6e0883032e40ac1bd58928bc1",
+          "match": "Windows checkout CRLF only"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "e79114ca04851eac2979d8a399a33910e8ae778b258e85eaa329bdd8a0c96f64",
+          "match": "Windows checkout CRLF only"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "a4c6b4145ded89546ad146822455cc09847a7c5e7dcd15e4a9322ea1b6f7415a",
+          "match": "Windows checkout CRLF only"
+        }
+      }
+    },
+    {
+      "job": "build-ubuntu-x86_64-2204-jammy",
+      "archive": "celestial_navigation_pi-2.8.13.0-ubuntu-x86_64-22.04-jammy.tar.gz",
+      "sha256": "c09bd999a5cbc7db571e5d8d83abf5a9c775c435c4be64836535e64c294cf8f7",
+      "library_sha256": "9241d68c7d28d7fec849b1730cd27f7439f934d50e79d64006d3f799b0ed4444",
+      "assets": {
+        "vsop87d.txt": {
+          "sha256": "e1412a7ebf0fe86554505ddceea747eb6551b304a70bb1c7a6ae39ee9abd3de4",
+          "match": "exact"
+        },
+        "Android_Quick_Guide.html": {
+          "sha256": "1fcf903fa237002130fa94e372da98e32e0df6064f2dbfc104c1979f0f9e474c",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Manual_v2.pdf": {
+          "sha256": "09378036dc64e467d988d61dd91984153ffa24240f50cb94e5bcaa2d24a76427",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Information.html": {
+          "sha256": "5d67f2476a84fd03277e28d0233656f479447024e0554089d88b639fb706c8d1",
+          "match": "exact"
+        },
+        "Celestial_Navigation_Definitions.html": {
+          "sha256": "fb1bde7076d6ca9f1011b92fc4dad9edc0cca82e5d9d954e68959d4a78f6b1a1",
+          "match": "exact"
+        }
+      }
+    }
+  ],
+  "new_windows_x64": {
+    "job": 148,
+    "status": "PASS",
+    "source": "1818c1e7f55f194bc50fba3ea0e89847b6aa88ea",
+    "archive": "celestial_navigation_pi-2.8.13.0-msvc-wx32-x64-x86_64-10-MSVC-x64.tar.gz",
+    "sha256": "12ca4e01647ce196862d6e7020940330b02c7d83949590dd4e12555b14f19937",
+    "dll_sha256": "eb16b7d02d465d04e0791077f6ca9d27bd1b3b61f254d76fb041021fdbdcb332",
+    "pe_machine": "AMD64",
+    "pe_format": "PE32+",
+    "root_metadata": 1,
+    "channel": "Alpha",
+    "runtime_gui": "Not exercised on Windows"
+  },
+  "channels": {
+    "android-arm64": "Alpha",
+    "android-armhf": "Alpha",
+    "msvc-wx32-x64": "Alpha",
+    "existing_desktop_targets": "stable candidate for master"
+  },
+  "carried_results": "src and data unchanged between existing19 and new Windows x64 build; new CMake branches run only on native MSVC x64",
+  "windows_gui_runtime": "not exercised",
+  "installed_android_so_sha256": "1b322245a83e8551a10a7c0868f8df18e49380d90b298594ac6fe107eea6ac74"
+}

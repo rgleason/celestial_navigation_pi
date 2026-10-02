@@ -9,6 +9,9 @@ class wxStaticText;
 class wxTextCtrl;
 class wxButton;
 class wxChoice;
+#ifdef __OCPN__ANDROID__
+class wxPanel;
+#endif
 
 class LunarResultsDialog : public wxDialog {
 public:
@@ -29,6 +32,13 @@ private:
   wxButton* m_applyOffset;
   wxChoice* m_mode;
   wxStaticText* m_geometry;
+#ifdef __OCPN__ANDROID__
+  void RefreshAndroidCards();
+  wxPanel* m_androidCandidates = nullptr;
+  wxPanel* m_androidPositions = nullptr;
+  bool m_androidRefreshPending = false;
+  long m_androidSelectedCandidate = -1;
+#endif
 };
 
 #endif

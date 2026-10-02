@@ -53,7 +53,11 @@ private:
   wxCalendarCtrl* m_calendar;
   wxSpinCtrl* m_hours;
   wxSpinCtrl* m_minutes;
+#ifdef __OCPN__ANDROID__
+  wxSpinCtrlDouble* m_seconds;
+#else
   wxSpinCtrl* m_seconds;
+#endif
   wxSpinCtrlDouble* m_timeUncertainty;
   wxChoice* m_timeSource;
   wxCheckBox* m_hasBearing;
@@ -70,6 +74,9 @@ private:
   wxStaticText* m_trueBearing;
   wxStaticText* m_preview;
   wxTextCtrl* m_remarks;
+#ifdef __OCPN__ANDROID__
+  bool m_androidCapturingTime = false;
+#endif
 };
 
 #endif

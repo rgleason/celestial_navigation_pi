@@ -1,0 +1,19 @@
+{
+  "source": "https://aa.usno.navy.mil/api/celnav?date=2024-06-21&time=22:05:00&coords=51.477897896095,0.022214513995",
+  "retrieved": "2026-09-28",
+  "sha256": "e2cbe69a0e75cce942abb2fd8b24676ff586a93ee75e2a451553cca9f2174c98",
+  "motion": {
+    "start": [
+      51.4779,
+      0
+    ],
+    "COG_true": 90,
+    "SOG_knots": 10,
+    "elapsed_seconds": 300,
+    "WGS84_destination": [
+      51.477897896095,
+      0.022214513995
+    ],
+    "independent_geodesic": "PROJ geod +ellps=WGS84; 1543.3333333333333 metres"
+  }
+}

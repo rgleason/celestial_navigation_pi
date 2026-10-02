@@ -1,0 +1,55 @@
+{
+  "apiversion": "4.0.1", 
+  "geometry": {
+    "coordinates": [
+      15.0, 
+      78.0
+    ], 
+    "type": "Point"
+  }, 
+  "properties": {
+    "data": {
+      "closestphase": {
+        "day": 22, 
+        "month": 6, 
+        "phase": "Full Moon", 
+        "time": "01:08", 
+        "year": 2024
+      }, 
+      "curphase": "Waxing Gibbous", 
+      "day": 21, 
+      "day_of_week": "Friday", 
+      "fracillum": "99%", 
+      "isdst": false, 
+      "label": null, 
+      "month": 6, 
+      "moondata": [
+        {
+          "phen": "Object continuously below the Horizon", 
+          "time": null
+        }
+      ], 
+      "sundata": [
+        {
+          "phen": "Object continuously above the Horizon", 
+          "time": null
+        }, 
+        {
+          "phen": "Object continuously above the Twilight Limit", 
+          "time": null
+        }, 
+        {
+          "phen": "Upper Transit", 
+          "time": "11:02"
+        }, 
+        {
+          "phen": "Lower Transit", 
+          "time": "23:02"
+        }
+      ], 
+      "tz": 0.0, 
+      "year": 2024
+    }
+  }, 
+  "type": "Feature"
+}

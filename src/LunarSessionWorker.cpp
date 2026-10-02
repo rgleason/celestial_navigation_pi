@@ -5,13 +5,13 @@
 
 namespace celestial_navigation {
 
-class LunarSessionWorker::WorkerThread : public wxThread {
+class LunarSessionWorker::WorkerThread : public CelestialWorkerThread {
 public:
   WorkerThread(LunarSessionWorker* owner,
                const std::vector<lunar_session::SessionObservation>& entries,
                const lunar_session::Options& options,
                const SolveFunction& solve)
-      : wxThread(wxTHREAD_JOINABLE),
+      : CelestialWorkerThread(wxTHREAD_JOINABLE),
         m_owner(owner),
         m_entries(entries),
         m_options(options),
@@ -56,7 +56,7 @@ bool LunarSessionWorker::Start(
     return false;
   }
   {
-    wxCriticalSectionLocker lock(m_result_lock);
+    CelestialWorkerLock lock(m_result_lock);
     m_result = lunar_session::Result();
     m_result_ready = false;
   }
@@ -85,7 +85,7 @@ bool LunarSessionWorker::Start(
 bool LunarSessionWorker::TryTakeResult(lunar_session::Result* result) {
   if (!result || !m_thread) return false;
   {
-    wxCriticalSectionLocker lock(m_result_lock);
+    CelestialWorkerLock lock(m_result_lock);
     if (!m_result_ready) return false;
     *result = m_result;
     m_result_ready = false;
@@ -103,7 +103,7 @@ void LunarSessionWorker::Wait() {
 }
 
 void LunarSessionWorker::Publish(const lunar_session::Result& result) {
-  wxCriticalSectionLocker lock(m_result_lock);
+  CelestialWorkerLock lock(m_result_lock);
   m_result = result;
   m_result_ready = true;
 }

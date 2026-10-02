@@ -3,6 +3,10 @@
 
 #include <string>
 #include <vector>
+#ifdef __OCPN__ANDROID__
+#include <memory>
+namespace celestial_android { struct ImportedDocument; }
+#endif
 
 #include <wx/dialog.h>
 #include <wx/timer.h>
@@ -22,6 +26,11 @@ class wxSpinCtrl;
 class wxStaticText;
 class wxTextCtrl;
 class celestial_navigation_pi;
+#ifdef __OCPN__ANDROID__
+class QTimer;
+class QListWidget;
+class AndroidDownloadEvents;
+#endif
 
 class EclipseDialog : public wxDialog {
 public:
@@ -33,6 +42,14 @@ public:
 
 private:
   void BuildInterface();
+#ifdef __OCPN__ANDROID__
+  void BuildAndroidInterface();
+  void RefreshAndroidEvents();
+  void UpdateAndroidSelection();
+  QListWidget* m_androidEvents = nullptr;
+  wxStaticText* m_androidSelectedSearch = nullptr;
+  wxStaticText* m_androidSelectedLocal = nullptr;
+#endif
   void UpdateDataStatus();
   bool OpenEngine(bool report_error);
   void OnImportDe440(wxCommandEvent& event);
@@ -106,6 +123,11 @@ private:
   bool m_cancel_requested;
 
   wxTimer m_verification_timer;
+#ifdef __OCPN__ANDROID__
+  QTimer* m_androidVerificationPoll = nullptr;
+  std::unique_ptr<AndroidDownloadEvents> m_androidDownloadEvents;
+  std::shared_ptr<celestial_android::ImportedDocument> m_androidImport;
+#endif
   celestial_navigation::EclipseVerificationWorker m_verification_worker;
   bool m_verifying;
   int m_verification_purpose;

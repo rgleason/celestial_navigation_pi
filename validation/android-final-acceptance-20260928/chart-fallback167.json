@@ -1,0 +1,26 @@
+{
+  "source": "98d612c",
+  "host_pid": 10624,
+  "original_data": "all six original pack/marker hashes verified after restoration",
+  "library": "two owned fixtures with five original raw nested reports retained; no save during inspection",
+  "azimuth": {
+    "geometry_reference": "azimuth-geometry165.json",
+    "chart_rotation_degrees": 45,
+    "chart_center": [
+      51.4779,
+      0
+    ],
+    "native_included_card": "Spica / Azimuth 220 degrees 38.3721 minutes; 2024-06-21 22:00:00.000 UTC",
+    "screen": "finish167-az-day-restored.png",
+    "result": "PASS visual binding; independent 97 point bearing check carried forward; no pixel-projection accuracy claim"
+  },
+  "outside_de440_coverage": {
+    "date": "2160-06-21 12:00:00.125 UTC",
+    "body": "Sun",
+    "native_report": "Ephemeris = Analytical; DUT1 = analytical time model",
+    "screen": "finish167-future-calculation.png",
+    "cancel": "Android Back, PID continuous",
+    "status": "PASS provider fallback, not future accuracy validation"
+  },
+  "night_font": "report readable at font 1.3 in dark scheme; day restored"
+}

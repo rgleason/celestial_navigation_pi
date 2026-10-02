@@ -13,7 +13,10 @@
 #include "SightPalette.h"
 
 TEST(SightPalette, NamesExactRgbAndPreservesCustomColours) {
+  EXPECT_GT(SightPalette().size(), 40u);
+  EXPECT_GE(DefaultSightPaletteIndices().size(), 16u);
   EXPECT_EQ(SightColourLabel(wxColour(0, 114, 178, 12)), "Blue");
+  EXPECT_EQ(SightColourLabel(wxColour(199, 21, 133)), "Medium Violet Red");
   EXPECT_EQ(SightColourLabel(wxColour(18, 171, 239)), "Custom (#12ABEF)");
   EXPECT_EQ(SightPaletteIndex(wxColour(18, 171, 239)), -1);
   for (size_t i = 0; i < SightPalette().size(); ++i)

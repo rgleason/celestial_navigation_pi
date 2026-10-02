@@ -1,0 +1,240 @@
+{
+  "source": "a3c42bf2e63e8897734d31f0d9f2367f0963183e",
+  "runtime": 135,
+  "physical_case": 140,
+  "installed_library_sha256": "c07a53322d3efa6ed02810532c16b5450b2352430e9a08962c29e72ecfda3666",
+  "package_sha256": "9fea66fe47e53e0ef30d065a325ded0cc0ee1277dd5bf7b7c5095edcecf7b7ad",
+  "font_scale": 1.3,
+  "sort_results": [
+    {
+      "caption": "Newest first",
+      "expected": [
+        "Mars",
+        "Venus",
+        "Sun"
+      ],
+      "actual": [
+        "Mars",
+        "Venus",
+        "Sun"
+      ],
+      "complete_record_equality": true,
+      "selected": "Mars",
+      "selection_evidence": "resume140-sort-0-result.png",
+      "saved_xml_sha256": "b07d69c62965c3c5f20c00cc884cfb1ab4a128a913f0b3f9bc346fff6449ef12"
+    },
+    {
+      "caption": "Oldest first",
+      "expected": [
+        "Sun",
+        "Venus",
+        "Mars"
+      ],
+      "actual": [
+        "Sun",
+        "Venus",
+        "Mars"
+      ],
+      "complete_record_equality": true,
+      "selected": "Mars",
+      "selection_evidence": "resume140-sort-1-result.png",
+      "saved_xml_sha256": "9e1057c7394ab1b40974fd062dde204d1bfbeb46c3d6a2001c6a305ed8bfed4a"
+    },
+    {
+      "caption": "Body A-Z",
+      "expected": [
+        "Mars",
+        "Sun",
+        "Venus"
+      ],
+      "actual": [
+        "Mars",
+        "Sun",
+        "Venus"
+      ],
+      "complete_record_equality": true,
+      "selected": "Mars",
+      "selection_evidence": "resume140-sort-2-result.png",
+      "saved_xml_sha256": "50b45eb36b4c4623e594aad67f2cd5ff83aef4f365de280164defd0f56fa4926"
+    },
+    {
+      "caption": "Body Z-A",
+      "expected": [
+        "Venus",
+        "Sun",
+        "Mars"
+      ],
+      "actual": [
+        "Venus",
+        "Sun",
+        "Mars"
+      ],
+      "complete_record_equality": true,
+      "selected": "Mars",
+      "selection_evidence": "resume140-sort-3-result.png",
+      "saved_xml_sha256": "4b8bb12ddfe161b5fdc1520b003d62e6a36d81972d176f3adc1fe241f2589a26"
+    },
+    {
+      "caption": "Type ascending",
+      "expected": [
+        "Mars",
+        "Sun",
+        "Venus"
+      ],
+      "actual": [
+        "Mars",
+        "Sun",
+        "Venus"
+      ],
+      "complete_record_equality": true,
+      "selected": "Mars",
+      "selection_evidence": "resume140-sort-4-result.png",
+      "saved_xml_sha256": "50b45eb36b4c4623e594aad67f2cd5ff83aef4f365de280164defd0f56fa4926"
+    },
+    {
+      "caption": "Type descending",
+      "expected": [
+        "Venus",
+        "Sun",
+        "Mars"
+      ],
+      "actual": [
+        "Venus",
+        "Sun",
+        "Mars"
+      ],
+      "complete_record_equality": true,
+      "selected": "Mars",
+      "selection_evidence": "resume140-sort-5-result.png",
+      "saved_xml_sha256": "4b8bb12ddfe161b5fdc1520b003d62e6a36d81972d176f3adc1fe241f2589a26"
+    },
+    {
+      "caption": "Measurement increasing",
+      "expected": [
+        "Mars",
+        "Sun",
+        "Venus"
+      ],
+      "actual": [
+        "Mars",
+        "Sun",
+        "Venus"
+      ],
+      "complete_record_equality": true,
+      "selected": "Mars",
+      "selection_evidence": "resume140-sort-6-result.png",
+      "saved_xml_sha256": "50b45eb36b4c4623e594aad67f2cd5ff83aef4f365de280164defd0f56fa4926"
+    },
+    {
+      "caption": "Measurement decreasing",
+      "expected": [
+        "Venus",
+        "Sun",
+        "Mars"
+      ],
+      "actual": [
+        "Venus",
+        "Sun",
+        "Mars"
+      ],
+      "complete_record_equality": true,
+      "selected": "Mars",
+      "selection_evidence": "resume140-sort-7-result.png",
+      "saved_xml_sha256": "4b8bb12ddfe161b5fdc1520b003d62e6a36d81972d176f3adc1fe241f2589a26"
+    },
+    {
+      "caption": "Excluded first",
+      "expected": [
+        "Venus",
+        "Mars",
+        "Sun"
+      ],
+      "actual": [
+        "Venus",
+        "Mars",
+        "Sun"
+      ],
+      "complete_record_equality": true,
+      "selected": "Mars",
+      "selection_evidence": "resume140-sort-8-result.png",
+      "saved_xml_sha256": "561649182739c64883cb358f20ad768f4d04c25d0bf190c0a95742e70264e933"
+    },
+    {
+      "caption": "Included first",
+      "expected": [
+        "Sun",
+        "Mars",
+        "Venus"
+      ],
+      "actual": [
+        "Sun",
+        "Mars",
+        "Venus"
+      ],
+      "complete_record_equality": true,
+      "selected": "Mars",
+      "selection_evidence": "resume140-sort-9-result.png",
+      "saved_xml_sha256": "6d4d899cf746b344ce9671cc702d8fe6f95b35b196b620f7e796b0e0e67beb3d"
+    },
+    {
+      "caption": "Colour ascending",
+      "expected": [
+        "Sun",
+        "Venus",
+        "Mars"
+      ],
+      "actual": [
+        "Sun",
+        "Venus",
+        "Mars"
+      ],
+      "complete_record_equality": true,
+      "selected": "Mars",
+      "selection_evidence": "resume140-sort-10-result.png",
+      "saved_xml_sha256": "9e1057c7394ab1b40974fd062dde204d1bfbeb46c3d6a2001c6a305ed8bfed4a"
+    },
+    {
+      "caption": "Colour descending",
+      "expected": [
+        "Mars",
+        "Venus",
+        "Sun"
+      ],
+      "actual": [
+        "Mars",
+        "Venus",
+        "Sun"
+      ],
+      "complete_record_equality": true,
+      "selected": "Mars",
+      "selection_evidence": "resume140-sort-11-result.png",
+      "saved_xml_sha256": "b07d69c62965c3c5f20c00cc884cfb1ab4a128a913f0b3f9bc346fff6449ef12"
+    }
+  ],
+  "popup_portrait_and_landscape_row_px": 72,
+  "density": 1.5,
+  "landscape_swipe_then_back_file_identical": true,
+  "rotation_dismissal_file_identical": true,
+  "delete_all_no_and_back_file_identical": true,
+  "delete_all_yes_observation_count": 0,
+  "empty_chart_guidance": true,
+  "empty_actions_disabled": true,
+  "new_cancel_file_identical": true,
+  "offline_cold_empty_file_identical": true,
+  "workflow_pid": 7826,
+  "cold_empty_pid": 9058,
+  "restore_pid": 9252,
+  "original_library_exact_restore": true,
+  "latest_crash_is_historical": "2026-09-28 04:51:54",
+  "anr": "none since boot",
+  "workspace_pss_kib": 455612,
+  "workspace_rss_kib": 519084,
+  "workspace_swap_pss_kib": 329,
+  "limits": [
+    "No astronomical accuracy claim from these ordering fixtures.",
+    "Rotation dismisses the native popup; it does not retain it open.",
+    "Sort resets to Newest first on cold startup.",
+    "Delete All fixture has no stored solutions; original complete reports are protected outside it.",
+    "Other acceptance families remain PARTIAL."
+  ]
+}

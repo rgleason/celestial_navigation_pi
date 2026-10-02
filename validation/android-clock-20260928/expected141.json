@@ -1,0 +1,10 @@
+{
+  "watch_utc": "2024-06-14T16:58:00Z",
+  "manual_correction_seconds": 120,
+  "corrected_utc": "2024-06-14T17:00:00Z",
+  "reference": "../android-usno-greenwich-20240621/usno-20240614-170000.json",
+  "expected_sun_geographic_latitude": 23.307827,
+  "expected_sun_geographic_longitude": -74.886344,
+  "tolerance_arcminutes": 0.1,
+  "limits": "Geographic position in actual calculation report, not numerical chart-polygon sampling; Hs is only a disposable input."
+}

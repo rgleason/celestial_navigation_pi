@@ -1,0 +1,47 @@
+{
+  "method": "Independent CSPICE CN vectors and official lunar PA transform, pyERFA WGS84/Earth orientation, scipy root finding, numpy full-grid support scan; no DUT routines",
+  "scope": "Agreement under the documented geometric contact model, not atmospheric/observational accuracy",
+  "reference_versions": {
+    "spiceypy": "8.2.0",
+    "cspice": "CSPICE_N0067",
+    "pyerfa": "2.0.1.5"
+  },
+  "date": "2027-08-02",
+  "position": [
+    25.505,
+    33.18333333333333
+  ],
+  "DeltaT_seconds": 76.06,
+  "height_metres": 0,
+  "contact_limit_seconds": 0.1,
+  "rows": [
+    {
+      "contact": "C1",
+      "standard_UT1_seconds": 31289.778631887988,
+      "terrain_support_radius_km": 1738.4264795482811,
+      "terrain_UT1_seconds": 31289.075749298012,
+      "shift_seconds": -0.7028825899760704
+    },
+    {
+      "contact": "C2",
+      "standard_UT1_seconds": 36199.932640899206,
+      "terrain_support_radius_km": 1738.5515279802994,
+      "terrain_UT1_seconds": 36197.061658048624,
+      "shift_seconds": -2.8709828505816404
+    },
+    {
+      "contact": "C3",
+      "standard_UT1_seconds": 36582.372716391,
+      "terrain_support_radius_km": 1737.637100751392,
+      "terrain_UT1_seconds": 36583.859972442006,
+      "shift_seconds": 1.487256051004806
+    },
+    {
+      "contact": "C4",
+      "standard_UT1_seconds": 41255.95400142531,
+      "terrain_support_radius_km": 1737.8740507384523,
+      "terrain_UT1_seconds": 41255.826160016644,
+      "shift_seconds": -0.12784140866278904
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "source": "usno-220000.json original static triples and usno-220500-motion.json extra destination triples",
+  "motion_provenance": "manifest-motion123.json: independent PROJ WGS84 destination 51.477897896095,0.022214513995 after 300s at true90deg/10kn from51.4779,0",
+  "source_sha256": "e2cbe69a0e75cce942abb2fd8b24676ff586a93ee75e2a451553cca9f2174c98",
+  "fixture_sha256": "e630667ca404776dcf3f66bfd760505f74656c7cb2ed579c7e28cac654cc903d",
+  "selection": "Only original22:00 Spica/Vega and extra moving22:05 Spica/Vega; exclude original static22:05 observations",
+  "expected_reference_position": [
+    51.4779,
+    0
+  ],
+  "COG_true_deg": 90,
+  "SOG_knots": 10,
+  "expected_clock_seconds": 0,
+  "clock_tolerance_seconds": 10,
+  "angular_RMS_limit_arcmin": 0.5,
+  "scope": "Known position at earliest distance-reading epoch; advance with session COG/SOG. Robust on, bias off. Approximate frame/refraction fixture tolerances fixed before solve.",
+  "joint_mode_limits_declared_before_joint_solve": {
+    "clock_tolerance_seconds": 60,
+    "reference_position_tolerance_nm": 3,
+    "angular_RMS_limit_arcmin": 0.5
+  }
+}
