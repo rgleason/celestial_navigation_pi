@@ -1,6 +1,7 @@
 #include "celnav/engine.hpp"
 #include "models.hpp"
 #include "erfa.h"
+#include "eclipse/mutex.h"
 #include <algorithm>
 #include <cmath>
 #include <fstream>
@@ -45,7 +46,7 @@ struct Engine::Impl{
   std::map<std::string,Star> stars;
   std::vector<Day> days;
   double moon_bias[3][3]{};
-  mutable std::mutex context_mutex;
+  mutable eclipse::Mutex context_mutex;
   mutable std::vector<std::pair<double,Context>> contexts;
   explicit Impl(Options opts):options(std::move(opts)),
     planets(options.data_directory+(options.full_series?"/../.work/vsop-full.bin":"/vsop2013.bin")),
@@ -99,14 +100,14 @@ struct Engine::Impl{
   }
   Context context(const Epoch&e)const{
     if(options.cache_epoch_context){
-      std::lock_guard<std::mutex> lock(context_mutex);
+      eclipse::MutexGuard lock(context_mutex);
       for(const auto& entry:contexts)if(entry.first==e.tdb_jd)return entry.second;
     }
     constexpr double step=.005;
     Context c;c.earthHelio=earthHelio(e.tdb_jd);c.sun=solarBarycentre(e.tdb_jd);c.earth=add(c.earthHelio,c.sun);
     c.earthVelocity=mul(sub(earthBary(e.tdb_jd+step),earthBary(e.tdb_jd-step)),1/(2*step));
     if(options.cache_epoch_context){
-      std::lock_guard<std::mutex> lock(context_mutex);
+      eclipse::MutexGuard lock(context_mutex);
       for(const auto& entry:contexts)if(entry.first==e.tdb_jd)return entry.second;
       if(contexts.size()==16)contexts.erase(contexts.begin());
       contexts.emplace_back(e.tdb_jd,c);

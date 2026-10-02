@@ -10,6 +10,8 @@
 #include <wx/fileconf.h>
 #include <wx/utils.h>
 #include <cmath>
+#include <atomic>
+#include <thread>
 
 namespace {
 struct CompactScope {
@@ -307,4 +309,108 @@ TEST(CompactNavigation, LunarCallbackKeepsUtcAcrossLocalDstGap) {
   EXPECT_NEAR(std::remainder(
                   -sample.moon_geographic_longitude_deg - moon.gha_deg, 360.0),
               0, 1e-12);
+}
+
+// More epochs than the 16-entry cache force insertion and eviction while
+// independent callers share the production engine.
+TEST(CompactNavigation, ConcurrentEpochCacheMatchesUncachedResults) {
+  CompactScope scope;
+  const auto engine = celestial_navigation::CompactEngine();
+  ASSERT_TRUE(engine);
+  celnav::Options options;
+  options.data_directory = CELNAV_COMPACT_TEST_DATA;
+  options.cache_epoch_context = false;
+  const celnav::Engine uncached(options);
+  std::vector<celnav::Request> requests;
+  std::vector<celnav::Result> expected;
+  const char* bodies[] = {"Moon", "Sun", "Sirius", "Venus", "Jupiter"};
+  for (int i = 0; i < 24; ++i) {
+    celnav::Request request;
+    request.body = bodies[i % 5];
+    request.utc = "2024-06-13T" + (i < 10 ? std::string("0") : std::string()) +
+                  std::to_string(i) + ":26:00.125";
+    request.latitude_deg = 41;
+    request.longitude_deg = -71;
+    request.venus_phase = request.body == "Venus";
+    expected.push_back(uncached.Evaluate(request));
+    requests.push_back(request);
+  }
+  std::atomic_bool start{false};
+  std::vector<std::thread> workers;
+  for (int worker = 0; worker < 6; ++worker) {
+    workers.emplace_back([&, worker] {
+      while (!start.load()) std::this_thread::yield();
+      for (int i = 0; i < 48; ++i) {
+        const auto index = (i + worker * 5) % requests.size();
+        const auto actual = engine->Evaluate(requests[index]);
+        EXPECT_DOUBLE_EQ(actual.gha_deg, expected[index].gha_deg);
+        EXPECT_DOUBLE_EQ(actual.declination_deg, expected[index].declination_deg);
+        EXPECT_DOUBLE_EQ(actual.distance_km, expected[index].distance_km);
+        EXPECT_DOUBLE_EQ(actual.airless_altitude_deg,
+                         expected[index].airless_altitude_deg);
+      }
+    });
+  }
+  start.store(true);
+  for (auto& worker : workers) worker.join();
+}
+
+TEST(CompactNavigation, ConcurrentRetainedLunarProvidersMatchSerialSamples) {
+  CompactScope scope;
+  wxSetEnv("CELNAV_TEST_DE440_PATH",
+           wxString::FromUTF8(ECLIPSE_DE440_TEST_PATH));
+  const auto fields = UtcFields("2024-06-13T19:26:00");
+  const auto update = eclipse::GetDut1Update();
+  std::vector<lunar_distance::EphemerisFunction> providers;
+  for (const bool de : {false, true}) {
+    auto selected = celestial_navigation::SelectEnhancedLunarProvider(
+        "Sun", fields, -120, 120, de, true, update);
+    ASSERT_TRUE(selected.ephemeris);
+    EXPECT_EQ(selected.used_de440, de);
+    EXPECT_EQ(selected.used_compact, !de);
+    providers.push_back(selected.ephemeris);
+  }
+  Sight classic(Sight::LUNAR, "Sun", Sight::LUNAR_NEAR, fields, 240, 85, .2);
+  classic.m_AllowDe440 = false;
+  classic.m_AllowCompact = false;
+  classic.Recompute(0);
+  ASSERT_TRUE(classic.LunarEphemeris());
+  providers.push_back(classic.LunarEphemeris());
+  for (const auto& provider : providers) {
+    std::vector<lunar_distance::EphemerisSample> expected(9);
+    std::string error;
+    for (int i = 0; i < 9; ++i)
+      ASSERT_TRUE(provider(i * 30 - 120, &expected[i], &error)) << error;
+    std::atomic_bool start{false};
+    std::vector<std::thread> workers;
+    for (int worker = 0; worker < 4; ++worker) {
+      workers.emplace_back([&, worker] {
+        while (!start.load()) std::this_thread::yield();
+        for (int i = 0; i < 18; ++i) {
+          const auto index = (i + worker) % expected.size();
+          lunar_distance::EphemerisSample actual;
+          std::string reason;
+          ASSERT_TRUE(provider(index * 30.0 - 120, &actual, &reason)) << reason;
+          EXPECT_DOUBLE_EQ(actual.predicted_distance_deg,
+                           expected[index].predicted_distance_deg);
+          EXPECT_DOUBLE_EQ(actual.moon_geographic_latitude_deg,
+                           expected[index].moon_geographic_latitude_deg);
+          EXPECT_DOUBLE_EQ(actual.body_geographic_longitude_deg,
+                           expected[index].body_geographic_longitude_deg);
+          if (actual.observer_direction) {
+            double alt, az, sd, expected_alt, expected_az, expected_sd;
+            ASSERT_TRUE(actual.observer_direction(41, -71, 2, true,
+                                                   &alt, &az, &sd));
+            ASSERT_TRUE(expected[index].observer_direction(41, -71, 2, true,
+                     &expected_alt, &expected_az, &expected_sd));
+            EXPECT_DOUBLE_EQ(alt, expected_alt);
+            EXPECT_DOUBLE_EQ(az, expected_az);
+            EXPECT_DOUBLE_EQ(sd, expected_sd);
+          }
+        }
+      });
+    }
+    start.store(true);
+    for (auto& worker : workers) worker.join();
+  }
 }

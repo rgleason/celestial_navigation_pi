@@ -11,7 +11,9 @@ add_library(celnav::compact ALIAS compact_engine)
 set_target_properties(compact_engine PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(compact_engine PUBLIC cxx_std_17)
 target_include_directories(compact_engine PUBLIC include PRIVATE
-  src third_party/elp third_party/erfa/src)
+  src third_party/elp third_party/erfa/src
+  # Reuse the plugin's header-only Windows runtime-compatible lock.
+  ${CMAKE_CURRENT_SOURCE_DIR}/../eclipse/include)
 target_compile_definitions(compact_engine PUBLIC COMPACT_WITH_BASELINE=0)
 target_link_libraries(compact_engine PRIVATE Threads::Threads)
 foreach(target compact_erfa compact_engine)

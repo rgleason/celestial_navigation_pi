@@ -1363,14 +1363,14 @@ void Sight::RecomputeLunar(int preferred_candidate
     const auto snapshot = std::make_shared<Sight>(*this);
     snapshot->m_LunarEphemeris = {};
     snapshot->m_LunarCandidates.clear();
-    const auto classic_mutex = std::make_shared<std::mutex>();
+    const auto classic_mutex = std::make_shared<eclipse::Mutex>();
     snapshot->m_AllowDe440 = false;
     snapshot->m_AllowCompact = false;
     const auto classic_reference=UtcDateTime::ToInstant(snapshot->m_CorrectedDateTime);
     provider = [snapshot, selected_body, time_data, classic_mutex, classic_reference](double offset,
                             lunar_distance::EphemerisSample* sample,
                             std::string* error) {
-      std::lock_guard<std::mutex> lock(*classic_mutex);
+      eclipse::MutexGuard lock(*classic_mutex);
       const auto time = classic_reference + wxTimeSpan::Milliseconds(
           static_cast<long long>(std::llround(offset*1000.0)));
       if (!sample || !time.IsValid()) { if(error)*error="Invalid lunar UTC"; return false; }

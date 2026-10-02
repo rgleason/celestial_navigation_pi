@@ -5,7 +5,7 @@
   "lunar_source_archive_sha256": "519c56e115eee0970f76a5026412611619f0ec5b2db36c0fc95d805647e780e8",
   "files": {
     "compact/COPYING": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b",
-    "compact/src/engine.cpp": "4e757221b42c8baf58fb556eefad77c8cd52c9b6986fa7bfe32b000cebceefe8",
+    "compact/src/engine.cpp": "c31ce5ff6a8e310344a0a390ecb0ecab5bc9e6280544586762360f74ff1b2f74",
     "compact/src/vendor_prefix.hpp": "25d6c1b96f2a9aeb819d6be85b26aa1cf0f6abb2bd7c9543a08816ad5377ff08",
     "compact/src/moon.cpp": "7b6e4573677bd3cebfe043e247118c6c140ac59e5ac7c12e7bd432b3f1c2e90d",
     "compact/src/cli.cpp": "e11a8bb8e44e61bddabdcfcd030d5a60c7db9a7bb0e06102ada5f509da15ea4b",
@@ -287,6 +287,14 @@
     "data/compact/licenses/ELP.txt": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b",
     "data/compact/licenses/ERFA.txt": "b1858f9a263f22c438a455a32945da51a31a0ae25a21055da13bb7ed57cc3b51",
     "src/LunarDistanceEngine.cpp": "01f75529b3e81d05d1172ea0943701e884ae89a7447d7a1bf8d887ccf9589808",
-    "src/LunarDistanceEngine.h": "b67594e6c1999b9f5d0c4c9da2aa93155103f20c55fbf642d301d51c01c5fd3d"
-  }
+    "src/LunarDistanceEngine.h": "b67594e6c1999b9f5d0c4c9da2aa93155103f20c55fbf642d301d51c01c5fd3d",
+    "eclipse/include/eclipse/mutex.h": "f47a540f771e1af5fe1d7a16471f38fb9492a1619d2bb23891977ea2fd8a5253"
+  },
+  "integration_patches": [
+    {
+      "file": "compact/src/engine.cpp",
+      "upstream_sha256": "4e757221b42c8baf58fb556eefad77c8cd52c9b6986fa7bfe32b000cebceefe8",
+      "change": "Use the existing eclipse::Mutex/MutexGuard for the epoch cache: native SRW locking on Windows, std::mutex on other platforms. Numerical calculations and data are unchanged."
+    }
+  ]
 }

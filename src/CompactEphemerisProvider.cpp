@@ -4,6 +4,7 @@
 #include "eclipse/astronomy.h"
 #include "eclipse/data_pack.h"
 #include "eclipse/navigation.h"
+#include "eclipse/mutex.h"
 #include "eclipse/spk.h"
 #include "eclipse/time.h"
 #include <wx/fileconf.h>
@@ -13,7 +14,6 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
-#include <mutex>
 #include <stdexcept>
 
 namespace celestial_navigation {
@@ -106,7 +106,7 @@ void SetGeometry(lunar_distance::EphemerisSample* s, double moon_gha,
 }
 struct LunarKernel {
   eclipse::SpkKernel kernel;
-  std::mutex mutex;
+  eclipse::Mutex mutex;
 };
 }  // namespace
 
@@ -147,7 +147,7 @@ std::string CompactUtc(const wxDateTime& time, bool instant) {
 #endif
 }
 std::shared_ptr<const celnav::Engine> CompactEngine(std::string* reason) {
-  static std::mutex mutex;
+  static eclipse::Mutex mutex;
   static wxString retained_path;
   static wxDateTime retained_mtime;
   static std::shared_ptr<const celnav::Engine> retained;
@@ -156,7 +156,7 @@ std::shared_ptr<const celnav::Engine> CompactEngine(std::string* reason) {
   const wxFileName manifest(path + "/manifest.json");
   const wxDateTime mtime =
       manifest.FileExists() ? manifest.GetModificationTime() : wxDateTime();
-  std::lock_guard<std::mutex> lock(mutex);
+  eclipse::MutexGuard lock(mutex);
   if (!retained || retained_path != path || retained_mtime != mtime) {
     retained.reset();
     retained_path = path;
@@ -284,7 +284,7 @@ EnhancedLunarProvider SelectEnhancedLunarProvider(
                                             &epoch, reason))
             return false;
           eclipse::NavigationGeocentricState moon, other;
-          std::lock_guard<std::mutex> lock(context->mutex);
+          eclipse::MutexGuard lock(context->mutex);
           if (!eclipse::GeocentricNavigationState(context->kernel, 301, epoch,
                                                   &moon, reason) ||
               !eclipse::GeocentricNavigationState(context->kernel, target,
@@ -299,7 +299,7 @@ EnhancedLunarProvider SelectEnhancedLunarProvider(
                                            double height, bool is_moon,
                                            double* alt, double* az,
                                            double* sd) {
-            std::lock_guard<std::mutex> lock(context->mutex);
+            eclipse::MutexGuard lock(context->mutex);
             std::string error;
             double range;
             const int id = is_moon ? 301 : target;

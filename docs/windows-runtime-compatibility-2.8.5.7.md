@@ -24,3 +24,29 @@ OpenCPN should still update its bundled Microsoft runtime because other modern
 plugins can encounter the same host-wide incompatibility. This plugin-side
 change allows Celestial Navigation to remain compatible with already installed
 OpenCPN releases without modifying their files.
+
+## Extension to the 2.9.3 Compact and lunar paths
+
+The first full 2.9.3 CI run (Rick's pipeline 550, commit `16f029f`) built
+all 17 non-Windows jobs successfully. Each of the three Windows jobs compiled
+and linked the plugin, then failed the existing DLL import check on `_Mtx_lock`.
+New ordinary `std::mutex` locks had bypassed the earlier compatibility fix.
+
+The Compact epoch cache, retained Compact engine loader, session-owned DE440
+stream and retained Classic lunar callback now reuse `eclipse::Mutex` and
+`eclipse::MutexGuard`. The existing wrapper uses native SRW locks only on
+Windows; Linux, macOS and Android still use `std::mutex`. The numerical
+calculations, coefficient/data files and provider selection are unchanged.
+The DLL import check remains enabled for all three Windows build variants.
+
+The vendored Compact provenance records this integration patch and the original
+upstream engine hash separately. Concurrent regression cases compare a shared,
+evicting Compact cache against uncached calculations and compare parallel
+retained Compact, DE440 and Classic lunar callbacks against serial samples,
+including retained observer-direction callbacks where available.
+
+Local validation of this extension: the Release plugin and test executable
+built successfully; all 55 focused Compact, lunar DE440/boundary, navigation,
+DUT1 and lunar-worker tests passed, including the two new concurrency cases.
+The Compact package integrity check passed with the integration patch recorded.
+Windows DLL imports are verified by the three MSVC jobs in the PR's fresh CI run.
