@@ -1,0 +1,27 @@
+
+Fontconfig error: No writable cache directories
+	/var/cache/fontconfig
+	/home/paul/.cache/fontconfig
+	/home/paul/.fontconfig
+
+Fontconfig error: No writable cache directories
+	/var/cache/fontconfig
+	/home/paul/.cache/fontconfig
+	/home/paul/.fontconfig
+convert <repository>/docs/v2/Celestial_Navigation_Manual_v2.html as a Writer/Web document -> /tmp/celnav-lo-docx.a4rosc/Celestial_Navigation_Manual_v2.docx using filter : Office Open XML Text
+Embedded 10 images in <repository>/docs/v2/output/Celestial_Navigation_Manual_v2.docx
+
+Fontconfig error: No writable cache directories
+	/var/cache/fontconfig
+	/home/paul/.cache/fontconfig
+	/home/paul/.fontconfig
+
+Fontconfig error: No writable cache directories
+	/var/cache/fontconfig
+	/home/paul/.cache/fontconfig
+	/home/paul/.fontconfig
+convert <repository>/docs/v2/output/Celestial_Navigation_Manual_v2.docx as a Writer document -> /tmp/celnav-lo-pdf.2rQ0d7/Celestial_Navigation_Manual_v2.pdf using filter : writer_pdf_Export
+Validated 10 figures, 57 abbreviations, 77 glossary terms, embedded DOCX images, scaled offline HTML and bundled PDF.
+<repository>/docs/v2/output/Celestial_Navigation_Information.html
+<repository>/docs/v2/output/Celestial_Navigation_Manual_v2.docx
+<repository>/docs/v2/output/Celestial_Navigation_Manual_v2.pdf
