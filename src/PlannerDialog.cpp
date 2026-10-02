@@ -556,7 +556,11 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
       new wxCheckBox(this, wxID_ANY, _("Auto zone from longitude"));
   m_autoZoneOffset->SetValue(true);
 
-  wxWrapSizer* motion = new wxWrapSizer(wxHORIZONTAL);
+#ifdef __OCPN__ANDROID__
+  auto* motion = new wxBoxSizer(wxVERTICAL);
+#else
+  auto* motion = new wxWrapSizer(wxHORIZONTAL);
+#endif
   m_moving = new wxCheckBox(this, wxID_ANY, _("Time-tagged moving observer"));
   m_moving->SetToolTip(_("The entered position is at the reference time above. Course and speed propagate it to each planning instant."));
   m_course =
@@ -573,16 +577,49 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
       wxSP_ARROW_KEYS, 0, 100, defaults.eyeHeight, 0.1);
   m_eyeHeight->SetDigits(1);
   wxButton* calculate = new wxButton(this, wxID_ANY, _("Calculate / refresh"));
+#ifdef __OCPN__ANDROID__
+  // One full-width field per row matches the existing touch baseline. Wrapping
+  // desktop field groups constrains the native angle and date adapters.
+  auto* header = new wxBoxSizer(wxVERTICAL);
+  auto entry = [header](wxWindow* label, wxWindow* control) {
+    header->Add(label, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 8);
+    header->Add(control, 0, wxEXPAND | wxALL, 8);
+  };
+  auto field = [this, &entry](const wxString& text, wxWindow* control) {
+    entry(new wxStaticText(this, wxID_ANY, text), control);
+  };
+  field(_("Position"), m_positionSource);
+  field(_("Latitude"), m_latitude);
+  field(_("Longitude"), m_longitude);
+  field(_("Time"), m_timeSource);
+  entry(m_dateLabel, m_dateContainer);
+  entry(m_timeLabel, m_timeContainer);
+  auto* steps = new wxBoxSizer(wxHORIZONTAL);
+  for (int hours : {-1, 1}) {
+    auto* step = new wxButton(this, wxID_ANY, hours < 0 ? _("-1 h") : _("+1 h"));
+    step->SetToolTip(_("Step the whole sky by one UTC hour; advance the entered position when the moving observer is enabled."));
+    step->Bind(wxEVT_BUTTON, [this, hours](wxCommandEvent&) { StepPlanningTime(hours); });
+    steps->Add(step, 1, wxEXPAND | wxALL, 8);
+  }
+  header->Add(steps, 0, wxEXPAND);
+  field(_("Enter time as"), m_inputTimeBasis);
+  field(_("Display event times as"), m_displayTime);
+  field(_("Zone offset (h)"), m_fixedOffset);
+  field(_("Date/time entry"), m_entryFormat);
+  header->Add(m_autoZoneOffset, 0, wxEXPAND | wxALL, 8);
+  field(_("Eye height (m)"), m_eyeHeight);
+  header->Add(calculate, 0, wxEXPAND | wxALL, 8);
+  // The motion group also retains full-width controls at either orientation.
+  motion->Add(m_moving, 0, wxEXPAND | wxALL, 8);
+  motion->Add(new wxStaticText(this, wxID_ANY, _("COG (true)")), 0, wxEXPAND | wxALL, 8);
+  motion->Add(m_course, 0, wxEXPAND | wxALL, 8);
+  motion->Add(new wxStaticText(this, wxID_ANY, _("SOG (kn)")), 0, wxEXPAND | wxALL, 8);
+  motion->Add(m_speed, 0, wxEXPAND | wxALL, 8);
+#else
   // Reflow complete fields and related pairs. A column-count change must not
   // split latitude/longitude or the display-time/zone-offset relationship.
   auto field = [this](const wxString& label, wxWindow* control) {
-    auto* pair = new wxBoxSizer(
-#ifdef __OCPN__ANDROID__
-        wxVERTICAL
-#else
-        wxHORIZONTAL
-#endif
-    );
+    auto* pair = new wxBoxSizer(wxHORIZONTAL);
     pair->Add(new wxStaticText(this, wxID_ANY, label), 0,
               wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
     pair->Add(control, 0, wxALIGN_CENTER_VERTICAL);
@@ -591,13 +628,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   auto* header = new wxBoxSizer(wxVERTICAL);
   auto* positionRow = new wxWrapSizer(wxHORIZONTAL);
   positionRow->Add(field(_("Position"), m_positionSource), 0, wxRIGHT, 12);
-  auto* coordinates = new wxBoxSizer(
-#ifdef __OCPN__ANDROID__
-      wxVERTICAL
-#else
-      wxHORIZONTAL
-#endif
-  );
+  auto* coordinates = new wxBoxSizer(wxHORIZONTAL);
   coordinates->Add(field(_("Latitude"), m_latitude), 0, wxRIGHT, 12);
   coordinates->Add(field(_("Longitude"), m_longitude));
   positionRow->Add(coordinates);
@@ -605,13 +636,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
 
   auto* timeRow = new wxWrapSizer(wxHORIZONTAL);
   timeRow->Add(field(_("Time"), m_timeSource), 0, wxRIGHT, 12);
-  auto* dateTime = new wxBoxSizer(
-#ifdef __OCPN__ANDROID__
-      wxVERTICAL
-#else
-      wxHORIZONTAL
-#endif
-  );
+  auto* dateTime = new wxBoxSizer(wxHORIZONTAL);
   dateTime->Add(m_dateLabel, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
   dateTime->Add(m_dateContainer, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 12);
   dateTime->Add(m_timeLabel, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
@@ -629,13 +654,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
 
   auto* basisRow = new wxWrapSizer(wxHORIZONTAL);
   basisRow->Add(field(_("Enter time as"), m_inputTimeBasis), 0, wxRIGHT, 12);
-  auto* displayZone = new wxBoxSizer(
-#ifdef __OCPN__ANDROID__
-      wxVERTICAL
-#else
-      wxHORIZONTAL
-#endif
-  );
+  auto* displayZone = new wxBoxSizer(wxHORIZONTAL);
   displayZone->Add(field(_("Display event times as"), m_displayTime), 0, wxRIGHT, 12);
   displayZone->Add(field(_("Zone offset (h)"), m_fixedOffset));
   basisRow->Add(displayZone);
@@ -650,6 +669,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   motion->Add(m_moving, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 14);
   motion->Add(field(_("COG (true)"), m_course), 0, wxRIGHT, 14);
   motion->Add(field(_("SOG (kn)"), m_speed));
+#endif
   context->Add(header, 0, wxALL | wxEXPAND, 6);
   m_resolvedUtc = new wxStaticText(
       this, wxID_ANY, _("Resolved UTC: waiting for a valid date and time"));
@@ -881,14 +901,20 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_equatorialPlot = new SkyPlotPanel(m_plotNotebook, true);
 #ifdef __OCPN__ANDROID__
   auto bodyTapped = [this](const wxString& name) {
-    m_skyPlot->SetSelectedBody(name); m_equatorialPlot->SetSelectedBody(name);
     const auto text = QString::fromUtf8(name.utf8_str());
-    for (int row=0; row<m_androidBodies->count(); ++row) {
-      if (m_androidBodies->item(row)->data(Qt::UserRole+1).toString() == text) {
-        m_androidBodies->setCurrentRow(row); break;
+    int selectedRow = -1;
+    for (int row = 0; row < m_androidBodies->count(); ++row) {
+      if (m_androidBodies->item(row)->data(Qt::UserRole + 1).toString() == text) {
+        selectedRow = row; break;
       }
     }
-    m_androidSelectedBody->SetLabel(_("Selected: ") + name);
+    // A dot may belong to a body excluded by the current planning mode.
+    // Keep the Create sight action bound to the authoritative native card.
+    m_androidBodies->setCurrentRow(selectedRow);
+    m_androidCreateSight->Enable(selectedRow >= 0);
+    m_androidSelectedBody->SetLabel(selectedRow >= 0 ? _("Selected: ") + name
+        : _("Plot body: ") + name + _("; select its body card to create a sight."));
+    m_skyPlot->SetSelectedBody(name); m_equatorialPlot->SetSelectedBody(name);
     RefreshSkyPlot();
     celestial_android::LayoutScrolls(this);
   };
@@ -1056,11 +1082,14 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   });
   auto* selectionRow = new wxBoxSizer(wxHORIZONTAL);
   m_androidSelectedBody = new wxStaticText(bodiesPage, wxID_ANY, _("Select a body card"));
-  selectionRow->Add(m_androidSelectedBody, 1, wxALIGN_CENTER_VERTICAL | wxALL, 8);
+  bodiesRoot->Add(m_androidSelectedBody, 0, wxEXPAND | wxALL, 8);
+  createSight->Reparent(bodiesPage);
+  exportBodies->Reparent(bodiesPage);
   createSight->SetLabel(_("Create sight"));
   if (auto* native = qobject_cast<QAbstractButton*>(createSight->GetHandle()))
     native->setText(QString::fromUtf8(_("Create sight").utf8_str()));
-  selectionRow->Add(createSight, 0, wxALL, 8);
+  selectionRow->Add(createSight, 1, wxEXPAND | wxALL, 8);
+  selectionRow->Add(exportBodies, 1, wxEXPAND | wxALL, 8);
   bodiesRoot->Add(selectionRow, 0, wxEXPAND);
   windows->Reparent(bodiesPage);
   bodiesRoot->Add(windows, 0, wxEXPAND | wxALL, 8);
@@ -1111,6 +1140,9 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   recommendationRoot->Add(m_plotNotebook, 0, wxEXPAND | wxALL, 8);
   recommendationRoot->Add(plotLegend, 0, wxEXPAND | wxALL, 8);
   recommendationRoot->ShowItems(true);
+  // Reparenting the native Qt controls can restore their enabled state.
+  m_showMoonPath->Enable(m_plotNotebook->GetSelection() == 1);
+  m_moonSpan->Enable(m_plotNotebook->GetSelection() == 1 && m_showMoonPath->GetValue());
   spanRow->ShowItems(false);
   recommendationPage->SetSizer(recommendationRoot);
   m_notebook->InsertPage(3, recommendationPage, _("Recommendations && sky"));
@@ -2242,14 +2274,14 @@ void PlannerDialog::RefreshBodies() {
       combinations += wxString::Format(
           _("Moon + %s\nLD: %.2f degrees; rate: %+.1f arcmin/hour; 0.1' time: %s\n"
             "Moon Hc/Zn: %.0f/%.0f degrees; body Hc/Zn: %.0f/%.0f degrees\n"
-            "Illumination: %.0f%%; ecliptic latitude: %+.1f degrees; cautions: %d\n%s\n\n"),
+            "Magnitude: %.1f; illumination: %.0f%%; ecliptic latitude: %+.1f degrees; cautions: %d\n%s\n\n"),
           body.state.body.c_str(), body.lunarDistance, body.lunarRateArcminHour,
           (std::isfinite(body.lunarTimingSeconds)
                ? wxString::Format("%.1f s", body.lunarTimingSeconds)
                : CN_UTF8_("—")).c_str(),
           moon.geometricAltitude, moon.azimuthTrue,
           body.state.geometricAltitude, body.state.azimuthTrue,
-          m_planningResult.moon.illuminatedFraction * 100.0,
+          body.state.visualMagnitude, m_planningResult.moon.illuminatedFraction * 100.0,
           body.eclipticLatitude, body.lunarConstraints,
           body.lunarReason.c_str());
 #endif
@@ -2588,6 +2620,7 @@ void PlannerDialog::RefreshSkyPlot() {
   m_skyPlot->SetOverlays(ecliptic, {}, m_showEcliptic->GetValue(), false);
   m_skyPlot->SetLabelDensity(m_plotLabels->GetSelection());
   m_equatorialPlot->SetLabelDensity(m_plotLabels->GetSelection());
+  m_showMoonPath->Enable(m_plotNotebook->GetSelection() == 1);
   m_moonSpan->Enable(m_plotNotebook->GetSelection() == 1 && m_showMoonPath->GetValue());
   m_equatorialPlot->SetOverlays(ecliptic, moonPath,
                                 m_showEcliptic->GetValue(),
