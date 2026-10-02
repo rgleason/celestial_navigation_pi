@@ -74,10 +74,9 @@ set(LONG_DESCRIPTION
 )
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "9")
-
-set(VERSION_PATCH "2")
+set(VERSION_PATCH "3")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "27/09/2026" )# DD/MM/YYYY format
+set(VERSION_DATE  "02/10/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -114,7 +113,7 @@ set(XML_DESCRIPTION ${LONG_DESCRIPTION})
 
 option(PLUGIN_USE_SVG "Use SVG graphics" ON)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 # Use local version of GLU library requires libs/glu directory
 set(USE_LOCAL_GLU FALSE)
@@ -194,6 +193,7 @@ SET(SRCS
         src/BodyCatalog.cpp
         src/NavigationAlgorithms.cpp
         src/NavigationEphemerisProvider.cpp
+        src/CompactEphemerisProvider.cpp
         src/PlannerDialog.cpp
         src/WaypointPositionSource.cpp
         src/WaypointPickerDialog.cpp
@@ -317,7 +317,8 @@ set(ECLIPSE_BUILD_CLI OFF CACHE BOOL "" FORCE)
 set(ECLIPSE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ECLIPSE_BUILD_LOLA_TOOL OFF CACHE BOOL "" FORCE)
 add_subdirectory(eclipse)
-target_link_libraries(${PACKAGE_NAME} celestial::eclipse_core)
+add_subdirectory(compact)
+target_link_libraries(${PACKAGE_NAME} celestial::eclipse_core celnav::compact)
 option(CELESTIAL_ECLIPSE_INTEGRATION_TEST
        "Open and exercise the 2027 eclipse planner automatically" OFF)
 if(CELESTIAL_ECLIPSE_INTEGRATION_TEST)

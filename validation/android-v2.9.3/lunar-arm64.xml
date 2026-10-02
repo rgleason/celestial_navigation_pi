@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="20" failures="0" disabled="0" errors="0" time="9.679" timestamp="2026-10-02T16:06:58.251" name="AllTests">
+  <testsuite name="LunarBoundary" tests="12" failures="0" disabled="0" skipped="0" errors="0" time="0.056" timestamp="2026-10-02T16:06:58.251">
+    <testcase name="RefinesInvalidToValidBoundaryWithoutChangingCoarseStep" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_boundary_tests.cpp" line="79" status="run" result="completed" time="0.005" timestamp="2026-10-02T16:06:58.251" classname="LunarBoundary" />
+    <testcase name="EndpointsUseOneSidedDiagnosticsInsideSearchBounds" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_boundary_tests.cpp" line="100" status="run" result="completed" time="0.002" timestamp="2026-10-02T16:06:58.257" classname="LunarBoundary" />
+    <testcase name="ValidRootSurvivesUnavailableDiagnostics" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_boundary_tests.cpp" line="124" status="run" result="completed" time="0." timestamp="2026-10-02T16:06:58.260" classname="LunarBoundary" />
+    <testcase name="InvalidGapDoesNotManufactureAZeroCrossing" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_boundary_tests.cpp" line="141" status="run" result="completed" time="0." timestamp="2026-10-02T16:06:58.260" classname="LunarBoundary" />
+    <testcase name="ValidButDiscontinuousProviderDoesNotManufactureARoot" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_boundary_tests.cpp" line="157" status="run" result="completed" time="0." timestamp="2026-10-02T16:06:58.260" classname="LunarBoundary" />
+    <testcase name="FindsTwoRootsOnOppositeSidesOfAnInvalidGap" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_boundary_tests.cpp" line="170" status="run" result="completed" time="0." timestamp="2026-10-02T16:06:58.261" classname="LunarBoundary" />
+    <testcase name="BoundedProbeDiscoversInteriorFeasibleIsland" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_boundary_tests.cpp" line="190" status="run" result="completed" time="0.001" timestamp="2026-10-02T16:06:58.262" classname="LunarBoundary" />
+    <testcase name="ProviderFailureAndNonfiniteForwardDirectionsNeverFallBack" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_boundary_tests.cpp" line="201" status="run" result="completed" time="0." timestamp="2026-10-02T16:06:58.264" classname="LunarBoundary" />
+    <testcase name="InvalidAndExcessiveSearchInputsStopBeforeCallingProvider" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_boundary_tests.cpp" line="222" status="run" result="completed" time="0." timestamp="2026-10-02T16:06:58.264" classname="LunarBoundary" />
+    <testcase name="ExactEpochCacheIsLocalToOneSolve" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_boundary_tests.cpp" line="239" status="run" result="completed" time="0.002" timestamp="2026-10-02T16:06:58.264" classname="LunarBoundary" />
+    <testcase name="ConcurrentSolvesHaveIndependentCachesAndResults" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_boundary_tests.cpp" line="257" status="run" result="completed" time="0.042" timestamp="2026-10-02T16:06:58.266" classname="LunarBoundary" />
+    <testcase name="DirectScanTerminatesWhenStepIsBelowEpochPrecision" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_boundary_tests.cpp" line="335" status="run" result="completed" time="0." timestamp="2026-10-02T16:06:58.308" classname="LunarBoundary" />
+  </testsuite>
+  <testsuite name="LunarSphericalConvention" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.002" timestamp="2026-10-02T16:06:58.308">
+    <testcase name="EveryLimbAndDistanceContactRoundTrips" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_boundary_tests.cpp" line="274" status="run" result="completed" time="0.001" timestamp="2026-10-02T16:06:58.308" classname="LunarSphericalConvention" />
+    <testcase name="DirectEndpointRootDoesNotRequireEphemerisOutsideBracket" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_boundary_tests.cpp" line="314" status="run" result="completed" time="0." timestamp="2026-10-02T16:06:58.310" classname="LunarSphericalConvention" />
+  </testsuite>
+  <testsuite name="LunarReference" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="9.62" timestamp="2026-10-02T16:06:58.310">
+    <testcase name="All32CasesRecoverAcrossStepsAndObserverCallbacks" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_reference_tests.cpp" line="3" status="run" result="completed" time="2.039" timestamp="2026-10-02T16:06:58.310" classname="LunarReference" />
+    <testcase name="OriginalArcturusBoundaryAndNeighboursRecover" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_reference_tests.cpp" line="20" status="run" result="completed" time="1.29" timestamp="2026-10-02T16:07:00.350" classname="LunarReference" />
+    <testcase name="ReturnedNoisySolutionsReproduceAllThreeObservedAngles" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_reference_tests.cpp" line="41" status="run" result="completed" time="1.022" timestamp="2026-10-02T16:07:01.641" classname="LunarReference">
+      <properties>
+        <property name="noisy_solutions" value="256"/>
+        <property name="noisy_rejections" value="0"/>
+      </properties>
+    </testcase>
+    <testcase name="LosingFirstIntersectionDoesNotRelabelSecondBranch" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_reference_tests.cpp" line="78" status="run" result="completed" time="0.005" timestamp="2026-10-02T16:07:02.663" classname="LunarReference" />
+    <testcase name="RealisticNoiseReturnsConsistentSolutionsOrExplicitRejections" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_reference_tests.cpp" line="128" status="run" result="completed" time="5.125" timestamp="2026-10-02T16:07:02.669" classname="LunarReference">
+      <properties>
+        <property name="realistic_noise_solutions" value="247"/>
+        <property name="realistic_noise_rejections" value="9"/>
+      </properties>
+    </testcase>
+    <testcase name="Wgs84SolutionsBeyondSphericalSeedBoundaryAreRecovered" file="/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/lunar_reference_tests.cpp" line="179" status="run" result="completed" time="0.136" timestamp="2026-10-02T16:07:07.794" classname="LunarReference" />
+  </testsuite>
+</testsuites>

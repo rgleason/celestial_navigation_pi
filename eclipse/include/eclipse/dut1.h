@@ -32,6 +32,8 @@ class Dut1Table {
   explicit Dut1Table(std::vector<Dut1Day> days) : days_(std::move(days)) {}
   std::vector<Dut1Day> days_;
 };
+Dut1Result LookupDut1(double utc_jd,
+                      const std::shared_ptr<const Dut1Table>& update);
 // Strictly validate the complete official finals2000A format before activation.
 std::shared_ptr<const Dut1Table> ParseDut1Update(const std::string& contents,
                                               std::string* error);

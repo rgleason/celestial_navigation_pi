@@ -348,14 +348,17 @@ void LunarResultsDialog::UpdateResults() {
         row, 2, FormatNavigationAngle(candidate.cleared_distance_deg));
     m_candidates->SetItem(
         row, 3,
-        wxString::Format("%.2f%s/h (%.3f%s/min)",
+        candidate.local_slope_available && std::isfinite(candidate.slope_arcmin_per_hour)
+            ? wxString::Format("%.2f%s/h (%.3f%s/min)%s",
                          candidate.slope_arcmin_per_hour,
                          wxString::FromUTF8("\xE2\x80\xB2"),
                          candidate.slope_arcmin_per_hour / 60.0,
-                         wxString::FromUTF8("\xE2\x80\xB2")));
+                         wxString::FromUTF8("\xE2\x80\xB2"),
+                         candidate.used_one_sided_slope ? _(" (one-sided)") : wxString())
+            : _("Unavailable"));
     m_candidates->SetItem(
         row, 4,
-        std::isfinite(candidate.time_uncertainty_seconds)
+        candidate.uncertainty_available && std::isfinite(candidate.time_uncertainty_seconds)
             ? wxString::Format("%.1f s (1-sigma)",
                                candidate.time_uncertainty_seconds)
             : _("Indeterminate"));

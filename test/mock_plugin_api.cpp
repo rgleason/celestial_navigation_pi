@@ -47,7 +47,13 @@ bool GetGlobalColor(wxString colorName, wxColour* pcolour) { return true; }
 static wxFileConfig* s_config = NULL;
 wxFileConfig* GetOCPNConfigObject(void) {
   if (!s_config) {
-    s_config = new wxFileConfig();
+    // Each test process owns a temporary configuration, never the user profile.
+    s_config = new wxFileConfig("CelestialNavigationTest", "OpenCPN",
+        wxFileName::CreateTempFileName("celnav-test-config-"), wxEmptyString,
+        wxCONFIG_USE_LOCAL_FILE);
+    // Preserve classic-provider recorded-value regressions. Compact tests
+    // remove/override this key and exercise the production default separately.
+    s_config->Write("/PlugIns/CelestialNavigation/UseCompactEphemeris", false);
     // Add test defaults
     s_config->Write(_T("/PlugIns/CelestialNavigation/DefaultEyeHeight"), 2.0);
     s_config->Write(_T("/PlugIns/CelestialNavigation/DefaultTemperature"),

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "BodyCatalog.h"
+#include "SkyLabelLayout.h"
 #include "NavigationUIUtils.h"
 #include "NavigationAlgorithms.h"
 #include "UtcDateTime.h"
@@ -915,4 +916,110 @@ TEST(SpecialWorkflows, NoonAltitudeRecoversLatitudeNearTheDrEstimate) {
   const double solved = SolveLatitudeFromAltitude(
       "Sun", transit, observer.longitude, altitude, 34.0);
   EXPECT_NEAR(observer.latitude, solved, 0.001);
+}
+
+
+TEST(SightRanking, BrightHighStarRemainsUsefulAndTwilightPenalisesFaintStars) {
+  BodyState sun, bright, faint;
+  sun.valid = bright.valid = faint.valid = true;
+  sun.body = "Sun";
+  sun.geometricAltitude = -8.0;
+  bright.body = "Capella"; bright.isStar = true;
+  bright.visualMagnitude = 0.08; bright.geometricAltitude = 77.6;
+  faint.body = "Alpheratz"; faint.isStar = true;
+  faint.visualMagnitude = 2.06; faint.geometricAltitude = 40.0;
+  const auto capella = SightRanker::AssessBody(bright, sun);
+  const auto alpheratz = SightRanker::AssessBody(faint, sun);
+  EXPECT_GT(capella.score, alpheratz.score);
+  EXPECT_GT(capella.visibilityScore, alpheratz.visibilityScore);
+  EXPECT_TRUE(capella.handlingGuidance.Contains("preset"));
+  const auto twilight = SightRanker::AssessBody(faint, sun);
+  sun.geometricAltitude = -18;
+  EXPECT_GT(SightRanker::AssessBody(faint, sun).visibilityScore, twilight.visibilityScore);
+  sun.geometricAltitude = 10;
+  const auto daylight = SightRanker::AssessBody(bright, sun);
+  EXPECT_TRUE(daylight.visibilityUnavailable);
+  EXPECT_TRUE(SightRanker::RecommendationCandidates({daylight}, false, 0, 90).empty());
+}
+
+TEST(SightRanking, PolarisIsOptionalWithoutRemovingItsLatitudeLine) {
+  RankedBody polaris, east;
+  polaris.state.body = "Polaris"; polaris.state.geometricAltitude = 43;
+  polaris.state.azimuthTrue = 0; polaris.score = 70;
+  east.state.body = "Other"; east.state.geometricAltitude = 40;
+  east.state.azimuthTrue = 90; east.score = 80;
+  const std::vector<RankedBody> table = {polaris, east};
+  EXPECT_EQ(1u, SightRanker::RecommendationCandidates(table, true, 10, 75, false).size());
+  const auto allowed = SightRanker::RecommendationCandidates(table, true, 10, 75, true);
+  EXPECT_EQ(2u, allowed.size());
+  const auto pair = SightRanker::BestCombinations(allowed, 2, 1);
+  ASSERT_EQ(1u, pair.size());
+  EXPECT_TRUE(pair[0].reason.Contains("90"));
+  EXPECT_EQ(2u, table.size());
+}
+
+TEST(PlannerRecommendations, TraditionalSelectionDoesNotChangeCalculatedCandidatesOrTiming) {
+  const auto plan = PlannerRecommendations::Calculate(Utc("2026-10-03T08:30:00"),
+      43 + 16.7061 / 60, -(76 + 58.3941 / 60));
+  const auto all = PlannerRecommendations::Order(plan, PlanningMode::LunarCandidates, true, true);
+  const auto traditional = PlannerRecommendations::Order(plan, PlanningMode::LunarCandidates, true, true, true);
+  ASSERT_EQ(14u, traditional.size());
+  EXPECT_GT(all.size(), traditional.size());
+  for (const auto& selected : traditional) {
+    EXPECT_TRUE(PlannerRecommendations::IsTraditionalLunarCompanion(selected.state.body));
+    const auto original = std::find_if(all.begin(), all.end(), [&](const RankedBody& b) {
+      return b.state.body == selected.state.body;
+    });
+    ASSERT_NE(all.end(), original);
+    EXPECT_DOUBLE_EQ(original->lunarTimingSeconds, selected.lunarTimingSeconds);
+  }
+  EXPECT_FALSE(PlannerRecommendations::IsTraditionalLunarCompanion("Alpheratz"));
+  EXPECT_FALSE(PlannerRecommendations::IsTraditionalLunarCompanion("Mercury"));
+  EXPECT_TRUE(PlannerRecommendations::IsTraditionalLunarCompanion("Markab"));
+  EXPECT_TRUE(PlannerRecommendations::IsTraditionalLunarCompanion("Altair"));
+}
+
+TEST(PlannerRecommendations, PracticalLunarOrderDistinguishesBrightnessFromTiming) {
+  PlanningResult plan;
+  RankedBody bright, dim;
+  bright.state.body = "Aldebaran"; bright.state.visualMagnitude = 0.86;
+  dim.state.body = "Alpheratz"; dim.state.visualMagnitude = 2.06;
+  bright.lunarValid = dim.lunarValid = true;
+  bright.lunarTimingSeconds = 11.1; dim.lunarTimingSeconds = 11.0;
+  plan.bodies = {dim, bright};
+  EXPECT_EQ("Aldebaran", PlannerRecommendations::Order(plan, PlanningMode::LunarCandidates, true)[0].state.body);
+  EXPECT_EQ("Alpheratz", PlannerRecommendations::Order(plan, PlanningMode::LunarCandidates, true, true)[0].state.body);
+}
+
+TEST(SkyLabels, DensityGrowsWithSpaceAndOffsetLabelsAvoidDotsAndOtherNames) {
+  EXPECT_LT(sky_labels::Budget(wxSize(600, 350), 0), sky_labels::Budget(wxSize(600, 350), 1));
+  EXPECT_LT(sky_labels::Budget(wxSize(600, 350), 1), sky_labels::Budget(wxSize(600, 350), 2));
+  EXPECT_LT(sky_labels::Budget(wxSize(300, 200), 1), sky_labels::Budget(wxSize(600, 350), 1));
+  const wxRect bounds(0, 0, 300, 200);
+  const wxPoint point(150, 100);
+  std::vector<wxRect> markers = {wxRect(145, 95, 11, 11), wxRect(180, 95, 11, 11)};
+  std::vector<wxRect> labels;
+  for (int i = 0; i < 5; ++i) {
+    wxRect label;
+    ASSERT_TRUE(sky_labels::Place(point, wxSize(70, 16), bounds, labels, markers, &label));
+    wxRect padded = label; padded.Inflate(2);
+    EXPECT_TRUE(bounds.Contains(padded));
+    for (const auto& used : labels) EXPECT_FALSE(used.Intersects(padded));
+    for (const auto& marker : markers) EXPECT_FALSE(marker.Intersects(padded));
+    labels.push_back(padded);
+  }
+  wxRect result;
+  EXPECT_FALSE(sky_labels::Place(point, wxSize(400, 16), bounds, labels, markers, &result));
+}
+
+TEST(SkyLabels, SelectedBodyCanUseFreeSpaceAwayFromCrowdedNearbyPlacements) {
+  const wxRect bounds(0, 0, 500, 300);
+  const wxPoint point(150, 150);
+  const std::vector<wxRect> occupied = {wxRect(50, 0, 250, 300)};
+  wxRect result;
+  EXPECT_FALSE(sky_labels::Place(point, wxSize(70, 16), bounds, occupied, {}, &result));
+  ASSERT_TRUE(sky_labels::Place(point, wxSize(70, 16), bounds, occupied, {}, &result, true));
+  wxRect padded = result; padded.Inflate(2);
+  EXPECT_TRUE(bounds.Contains(padded));
+  EXPECT_FALSE(occupied[0].Intersects(padded));
 }
