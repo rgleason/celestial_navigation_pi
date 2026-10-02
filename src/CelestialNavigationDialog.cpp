@@ -150,6 +150,7 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       m_almanacButton(NULL),
       m_pdfDocumentationButton(NULL),
       m_manageSightsButton(NULL),
+      m_chartDisplayButton(NULL),
       m_eclipseDialog(NULL),
       m_coastalDialog(NULL),
       m_chronyPollTicks(0),
@@ -259,11 +260,11 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   addAction(m_plannerButton);       actionButtons->AddSpacer(0);
   addAction(m_lunarToolsButton);    actionButtons->AddSpacer(0);
   addAction(m_analyzeButton);
-  auto* chartDisplay = new wxButton(this, wxID_ANY, _("Chart display..."));
-  chartDisplay->SetToolTip(_("Set chart-wide line, outline, shading and hover defaults. "
+  m_chartDisplayButton = new wxButton(this, wxID_ANY, _("Chart display..."));
+  m_chartDisplayButton->SetToolTip(_("Set chart-wide line, outline, shading and hover defaults. "
       "Edit each sight's colour and transparency on its Config tab."));
-  chartDisplay->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnChartDisplay, this);
-  addAction(chartDisplay);
+  m_chartDisplayButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnChartDisplay, this);
+  addAction(m_chartDisplayButton);
 
   m_lSights->InsertColumn(rmVISIBLE, wxT(""));
   for (int i = 1; i < rmMAX; i++) {

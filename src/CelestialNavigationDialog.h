@@ -192,6 +192,7 @@ private:
   wxButton* m_almanacButton;
   wxButton* m_pdfDocumentationButton;
   wxButton* m_manageSightsButton;
+  wxButton* m_chartDisplayButton;
   EclipseDialog* m_eclipseDialog;
   CoastalNavigationDialog* m_coastalDialog;
   wxTimer m_timeTimer;
