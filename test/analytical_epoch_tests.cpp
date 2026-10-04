@@ -200,7 +200,7 @@ TEST(AnalyticalEpoch, CalculationTrailReportsTableAndUnavailableFallback) {
     Sight sight(Sight::ALTITUDE, "Sun", Sight::CENTER,
                 wxDateTime(13, wxDateTime::Jun, year, 19, 26, 0), 30, 0, 1);
     sight.Recompute(0);
-    EXPECT_NE(sight.m_CalcStr.Find("Ephemeris = Analytical"), wxNOT_FOUND);
+    EXPECT_NE(sight.m_CalcStr.Find("Ephemeris = Classic analytical"), wxNOT_FOUND);
     EXPECT_NE(sight.m_CalcStr.Find(year == 2024 ? "bundled offline table"
         : "UT1=UTC fallback; table unavailable"), wxNOT_FOUND);
   }

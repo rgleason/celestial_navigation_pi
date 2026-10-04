@@ -6,6 +6,7 @@
 #include "BodyCatalog.h"
 #include "Sight.h"
 #include "NavigationEphemerisProvider.h"
+#include "CompactEphemerisProvider.h"
 #include "UtcDateTime.h"
 #include "geodesic.h"
 #include "moon.h"
@@ -380,16 +381,47 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
     return result;
   }
 
+  celestial_navigation::De440NavigationSample selected;
+  if (!celestial_navigation::TryDe440NavigationSample(body, utc, &selected,
+                                                     nullptr, dut1OverrideSeconds, true) &&
+      celestial_navigation::CompactEphemerisEnabled()) {
+    celnav::Result compact;
+    if (celestial_navigation::TryCompactNavigationSample(
+            body, utc, &selected, nullptr, dut1OverrideSeconds, &compact,
+            observerLat, observerLon, 0, true)) {
+      result.usedCompact = true;
+      result.latitude = result.declination = compact.declination_deg;
+      result.longitude = Wrap180(-compact.gha_deg);
+      result.gha = compact.gha_deg; result.ghaAries = compact.aries_gha_deg;
+      result.sha = Wrap360(result.gha - result.ghaAries);
+      result.geometricAltitude = compact.geometric_hc_deg;
+      result.azimuthTrue = compact.azimuth_deg;
+      result.geocentricSemidiameter = compact.geocentric_semidiameter_deg;
+      result.semidiameter = compact.observer_semidiameter_deg;
+      result.horizontalParallax = compact.horizontal_parallax_deg;
+      result.distance = info->kind == CelestialBodyKind::Sun ? compact.distance_km/149597870.7
+                                                               : compact.distance_km;
+      result.visualMagnitude = info->visualMagnitude;
+      result.isStar = info->kind == CelestialBodyKind::Star;
+      result.isPlanet = info->kind == CelestialBodyKind::Planet;
+      result.apparentAltitude = compact.airless_altitude_deg +
+          RefractionDegrees(compact.airless_altitude_deg, pressureMb, temperatureC);
+      result.valid = std::isfinite(result.geometricAltitude) && std::isfinite(result.azimuthTrue);
+      if (!result.valid) result.error = "Compact observer direction undefined";
+      return result;
+    }
+  }
   Sight sight(Sight::ALTITUDE, info->name, Sight::CENTER, utc, 0.0, 0.0, 1.0
 #ifdef __OCPN__ANDROID__
               , true
 #endif
               );
   double ghaast = 0.0, radius = 0.0, distance = 0.0;
-  bool usedDe440 = false;
+  bool usedDe440 = false, usedCompact = false;
   sight.BodyLocation(utc, &result.latitude, &result.longitude, &ghaast, &radius,
-                     &distance, true, true, dut1OverrideSeconds, &usedDe440);
+                     &distance, true, true, dut1OverrideSeconds, &usedDe440, &usedCompact);
   result.usedDe440 = usedDe440;
+  result.usedCompact = usedCompact;
   sight.AltitudeAzimuth(observerLat, observerLon, result.latitude,
                         result.longitude, &result.geometricAltitude,
                         &result.azimuthTrue);
@@ -421,8 +453,8 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
   if (usedDe440) {
     celestial_navigation::De440ObserverDirection observer;
     if (celestial_navigation::TryDe440ObserverDirection(
-            body, UtcDateTime::FromInstant(utc), observerLat, observerLon,
-            0.0, &observer, nullptr, dut1OverrideSeconds)) {
+            body, utc, observerLat, observerLon,
+            0.0, &observer, nullptr, dut1OverrideSeconds, true)) {
       topocentricAltitude = observer.airless_altitude_deg;
       result.azimuthTrue = Wrap360(observer.azimuth_deg);
       if (observer.semidiameter_deg > 0.0)
@@ -606,6 +638,64 @@ std::vector<MoonPhaseEvent> NextPrincipalMoonPhases(const wxDateTime& utc,
   return result;
 }
 
+RankedBody SightRanker::AssessBody(const BodyState& state, const BodyState& sun) {
+  RankedBody candidate;
+  candidate.state = state;
+  // Keep visibility and instrument handling distinct. This is an explainable
+  // planning preference; weather, horizon contrast and identification are unknown.
+  const double brightness = Clamp((3.0 - state.visualMagnitude) / 4.5, 0.0, 1.0);
+  const double faintness = Clamp((state.visualMagnitude + 1.5) / 4.5, 0.0, 1.0);
+  double visibility = brightness;
+  if (state.isStar) {
+    const double darkness = Clamp((-sun.geometricAltitude - 2.0) / 10.0, 0.0, 1.0);
+    visibility = Clamp(brightness - 0.8 * (1.0 - darkness) * faintness, 0.0, 1.0);
+    candidate.visibilityUnavailable = sun.geometricAltitude >= 0.0;
+    candidate.visibilityGuidance = candidate.visibilityUnavailable
+        ? _("Daylight: not recommended")
+        : sun.geometricAltitude > -12.0 ? _("Twilight: check visibility")
+                                       : _("Dark sky: check horizon");
+    if (candidate.visibilityUnavailable) visibility = 0.0;
+  } else if (state.body == "Sun") {
+    visibility = 1.0;
+    candidate.visibilityGuidance = _("Use solar filters");
+  } else if (state.body == "Moon") {
+    visibility = 1.0;
+    candidate.visibilityGuidance = _("Check phase and glare");
+  } else {
+    // Planet magnitudes are representative, not date-specific photometry.
+    const double separation = AngularSeparation(state.declination, -state.gha,
+                                                sun.declination, -sun.gha);
+    visibility *= Clamp((separation - 5.0) / 25.0, 0.0, 1.0);
+    if (sun.geometricAltitude >= 0.0)
+      visibility *= Clamp((-state.visualMagnitude - 2.0) / 3.0, 0.0, 1.0);
+    candidate.visibilityGuidance = separation < 20.0 ? _("Near Sun: glare")
+        : sun.geometricAltitude > -6.0 ? _("Bright sky: check visibility")
+                                      : _("Check planet visibility");
+  }
+  const double altitude = state.geometricAltitude;
+  double handling = 1.0;
+  if (altitude < 20.0) {
+    handling = Clamp(altitude / 20.0, 0.0, 1.0);
+    candidate.handlingGuidance = altitude < 10.0 ? _("Low: refraction and horizon")
+                                               : _("Low altitude: check horizon");
+  } else if (altitude > 65.0) {
+    // A bright high star remains useful with a preset sextant. Near the zenith
+    // azimuth/handling is awkward regardless of brightness.
+    handling -= Clamp((altitude - 65.0) / 25.0, 0.0, 1.0) *
+                (state.isStar ? 0.25 + 0.5 * faintness : 0.35);
+    candidate.handlingGuidance = altitude > 85.0 ? _("Near zenith: difficult handling")
+                                               : _("High: preset sextant");
+  } else candidate.handlingGuidance = _("Preferred altitude");
+  candidate.visibilityScore = 100.0 * visibility;
+  candidate.score = 100.0 * (0.75 * visibility + 0.25 * handling);
+  if (altitude < 0.0 || candidate.visibilityUnavailable) candidate.score = 0.0;
+  candidate.reason = wxString::Format(_("Visibility: %s; handling: %s"),
+      candidate.visibilityGuidance.c_str(), candidate.handlingGuidance.c_str());
+  if (state.body == "Polaris")
+    candidate.reason += _("; mainly latitude information; pair with a suitable bearing");
+  return candidate;
+}
+
 std::vector<RankedBody> SightRanker::VisibleBodies(const wxDateTime& utc,
                                                    double lat, double lon,
                                                    double minAltitude,
@@ -621,23 +711,7 @@ std::vector<RankedBody> SightRanker::VisibleBodies(const wxDateTime& utc,
         (info.kind != CelestialBodyKind::Sun &&
          info.visualMagnitude > maxMagnitude))
       continue;
-    RankedBody candidate;
-    candidate.state = state;
-    const double altitudeScore =
-        1.0 - std::abs(state.geometricAltitude - 40.0) / 40.0;
-    const double brightnessScore =
-        Clamp((3.0 - info.visualMagnitude) / 5.0, 0.0, 1.0);
-    const double twilightPenalty =
-        info.kind == CelestialBodyKind::Star
-            ? Clamp((sun.geometricAltitude + 12.0) / 12.0, 0.0, 1.0)
-            : 0.0;
-    candidate.score =
-        100.0 * Clamp(0.65 * altitudeScore + 0.35 * brightnessScore -
-                          0.55 * twilightPenalty,
-                      0.0, 1.0);
-    candidate.reason = wxString::Format(
-        "Hc %.1f%c, Zn %.0f%c, mag %.1f", state.geometricAltitude, 0x00b0,
-        state.azimuthTrue, 0x00b0, info.visualMagnitude);
+    RankedBody candidate = AssessBody(state, sun);
     result.push_back(candidate);
   }
   std::sort(result.begin(), result.end(),
@@ -718,12 +792,14 @@ std::vector<RankedCombination> SightRanker::BestCombinations(
 
 std::vector<RankedBody> SightRanker::RecommendationCandidates(
     const std::vector<RankedBody>& bodies, bool limitAltitude,
-    double minimumAltitude, double maximumAltitude) {
+    double minimumAltitude, double maximumAltitude, bool includePolaris) {
   std::vector<RankedBody> candidates;
   if (limitAltitude && minimumAltitude >= maximumAltitude) return candidates;
   std::copy_if(bodies.begin(), bodies.end(), std::back_inserter(candidates),
-               [limitAltitude, minimumAltitude, maximumAltitude](const RankedBody& body) {
-                 return body.state.geometricAltitude >= 0 &&
+               [limitAltitude, minimumAltitude, maximumAltitude, includePolaris](const RankedBody& body) {
+                 return !body.visibilityUnavailable &&
+                        (includePolaris || body.state.body != "Polaris") &&
+                        body.state.geometricAltitude >= 0 &&
                         (!limitAltitude ||
                          (body.state.geometricAltitude >= minimumAltitude &&
                           body.state.geometricAltitude <= maximumAltitude));
@@ -791,11 +867,12 @@ void LunarDetails(RankedBody& body, const BodyState& moon,
   if (body.lunarDistance < 20 || body.lunarDistance > 100)
     caution(_("LD outside preferred 20-100 degrees"));
   if (rate < 10) caution(_("LD rate below 10 arcmin/hour"));
-  if (body.state.visualMagnitude > 2.5) caution(_("Companion fainter than magnitude 2.5"));
+  if (body.state.visualMagnitude > 1.5) caution(_("Fainter companion: check identification and twilight"));
   if (body.state.visualMagnitude > -2 && sun.geometricAltitude > -6)
     caution(_("Sun above -6 degrees: check companion visibility"));
   if (body.lunarReason.empty())
     body.lunarReason = _("Within planning limits; check glare, weather and horizon");
+  body.lunarReason += _("; ") + body.visibilityGuidance;
 }
 }  // namespace
 
@@ -804,10 +881,11 @@ RankedBody PlannerRecommendations::LunarPair(const wxString& name,
   RankedBody body;
   if (!utc.IsValid() || !std::isfinite(lat) || !std::isfinite(lon) ||
       std::abs(lat) > 90) return body;
-  body.state = CelestialEphemeris::Evaluate(name, utc, lat, lon);
+  const auto sun = CelestialEphemeris::Evaluate("Sun", utc, lat, lon);
+  body = SightRanker::AssessBody(CelestialEphemeris::Evaluate(name, utc, lat, lon), sun);
   const auto later = AddSeconds(utc, 300);
   LunarDetails(body, CelestialEphemeris::Evaluate("Moon", utc, lat, lon),
-      CelestialEphemeris::Evaluate("Sun", utc, lat, lon),
+      sun,
       CelestialEphemeris::Evaluate("Moon", later, lat, lon),
       CelestialEphemeris::Evaluate(name, later, lat, lon), utc);
   return body;
@@ -831,12 +909,24 @@ PlanningResult PlannerRecommendations::Calculate(const wxDateTime& utc,
   return result;
 }
 
+bool PlannerRecommendations::IsTraditionalLunarCompanion(const wxString& body) {
+  // Nine stars in the historical Nautical Almanac lunar tables, also listed
+  // in Bob Bossert's Practical Guide, plus the Sun and four navigation planets.
+  static const char* names[] = {"Sun", "Venus", "Mars", "Jupiter", "Saturn",
+      "Aldebaran", "Altair", "Antares", "Fomalhaut", "Hamal", "Markab",
+      "Pollux", "Regulus", "Spica"};
+  return std::any_of(std::begin(names), std::end(names),
+      [&body](const char* name) { return body == name; });
+}
+
 std::vector<RankedBody> PlannerRecommendations::Order(
     const PlanningResult& result, PlanningMode mode, bool includeBelowHorizon,
-    bool lunarTimingFirst) {
+    bool lunarTimingFirst, bool traditionalLunarOnly) {
   std::vector<RankedBody> bodies;
   for (const auto& body : result.bodies) {
     if (!includeBelowHorizon && body.state.geometricAltitude < 0) continue;
+    if (mode == PlanningMode::LunarCandidates && traditionalLunarOnly &&
+        !IsTraditionalLunarCompanion(body.state.body)) continue;
     bodies.push_back(body);
   }
   std::stable_sort(bodies.begin(), bodies.end(),
@@ -848,6 +938,8 @@ std::vector<RankedBody> PlannerRecommendations::Order(
       if (a.lunarBelowHorizon != b.lunarBelowHorizon) return !a.lunarBelowHorizon;
       if (!lunarTimingFirst && a.lunarConstraints != b.lunarConstraints)
         return a.lunarConstraints < b.lunarConstraints;
+      if (!lunarTimingFirst && a.state.visualMagnitude != b.state.visualMagnitude)
+        return a.state.visualMagnitude < b.state.visualMagnitude;
       if (a.lunarTimingSeconds != b.lunarTimingSeconds)
         return a.lunarTimingSeconds < b.lunarTimingSeconds;
     } else {
@@ -1006,10 +1098,10 @@ wxString FormatNauticalPlannerTime(const wxDateTime& fields) {
 #endif
 }
 
+#ifdef __OCPN__ANDROID__
 bool ParseNauticalPlannerDateTime(const wxString& dateText,
                                   const wxString& timeText,
                                   wxDateTime* fields) {
-#ifdef __OCPN__ANDROID__
   if (!fields || dateText.length() != 10 || timeText.length() < 8 ||
       timeText.length() > 12 || (timeText.length() > 8 && timeText[8] != '.')) return false;
   for (size_t i = 0; i < dateText.length(); ++i) {
@@ -1024,9 +1116,22 @@ bool ParseNauticalPlannerDateTime(const wxString& dateText,
   if (!UtcDateTime::ParseUtc(dateText + " " + timeText, fields)) return false;
   const int year = UtcDateTime::Fields(*fields).year;
   return year >= 1900 && year <= 2100;
+}
+bool ParseNauticalPlannerInstant(const wxString& dateText, const wxString& timeText,
+                                  PlannerTimeBasis basis, double zoneOffsetHours,
+                                  wxDateTime* utc) {
+  if (!utc || !std::isfinite(zoneOffsetHours) || zoneOffsetHours < -12 || zoneOffsetHours > 14) return false;
+  wxDateTime fields;
+  if (!ParseNauticalPlannerDateTime(dateText, timeText, &fields)) return false;
+  *utc = PlannerFieldsToUtc(fields, basis, zoneOffsetHours);
+  return utc->IsValid();
+}
 #else
-  if (!fields) return false;
-  long year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0;
+namespace {
+bool ParsePlannerCalendar(const wxString& dateText, const wxString& timeText,
+                          long (&parts)[6]) {
+  auto& year = parts[0]; auto& month = parts[1]; auto& day = parts[2];
+  auto& hour = parts[3]; auto& minute = parts[4]; auto& second = parts[5];
   if (dateText.length() != 10 || dateText[4] != '-' || dateText[7] != '-' ||
       timeText.length() != 8 || timeText[2] != ':' || timeText[5] != ':' ||
       !dateText.Mid(0, 4).ToLong(&year) || !dateText.Mid(5, 2).ToLong(&month) ||
@@ -1039,27 +1144,54 @@ bool ParseNauticalPlannerDateTime(const wxString& dateText,
   const wxDateTime::Month dateMonth = static_cast<wxDateTime::Month>(month - 1);
   if (day > wxDateTime::GetNumberOfDays(dateMonth, static_cast<int>(year)))
     return false;
-#ifdef __OCPN__ANDROID__
-  wxDateTime value = UtcDateTime::Create(year, month, day, hour, minute, second);
-#else
-  wxDateTime value(static_cast<wxDateTime::wxDateTime_t>(day), dateMonth,
-                   static_cast<int>(year),
-                   static_cast<wxDateTime::wxDateTime_t>(hour),
-                   static_cast<wxDateTime::wxDateTime_t>(minute),
-                   static_cast<wxDateTime::wxDateTime_t>(second));
-#endif
-#ifdef __OCPN__ANDROID__
-  if (!value.IsValid())
-#else
-  if (!value.IsValid() || value.GetDay() != day ||
-      static_cast<long>(value.GetMonth()) + 1 != month ||
-      value.GetYear() != year)
-#endif
+  for (size_t i = 0; i < dateText.size(); ++i)
+    if (i != 4 && i != 7 && (dateText[i] < '0' || dateText[i] > '9')) return false;
+  for (size_t i = 0; i < timeText.size(); ++i)
+    if (i != 2 && i != 5 && (timeText[i] < '0' || timeText[i] > '9')) return false;
+  return true;
+}
+}  // namespace
+
+bool ParseNauticalPlannerInstant(const wxString& dateText, const wxString& timeText,
+                                 PlannerTimeBasis basis, double zoneOffsetHours,
+                                 wxDateTime* utc) {
+  if (!utc || !std::isfinite(zoneOffsetHours) || zoneOffsetHours < -12 || zoneOffsetHours > 14)
     return false;
+  long parts[6] = {};
+  if (!ParsePlannerCalendar(dateText, timeText, parts)) return false;
+  wxDateTime value;
+  if (basis == PlannerTimeBasis::ComputerLocal) {
+    value = wxDateTime(parts[2], static_cast<wxDateTime::Month>(parts[1] - 1),
+                       parts[0], parts[3], parts[4], parts[5]);
+    // A nonexistent local wall-clock time must not silently normalise.
+    if (!value.IsValid() || value.Format("%Y-%m-%d") != dateText ||
+        value.Format("%H:%M:%S") != timeText) return false;
+  } else {
+    // Julian midnight plus integer seconds is an actual instant, independent
+    // of whether these UTC/ship-zone clock fields exist in the computer zone.
+    value.Set(astrolabe::calendar::cal_to_jd(parts[0], parts[1], parts[2]));
+    value += wxTimeSpan::Seconds(parts[3] * 3600 + parts[4] * 60 + parts[5]);
+    if (basis == PlannerTimeBasis::ZoneTime)
+      value -= wxTimeSpan::Seconds(static_cast<long>(std::lround(zoneOffsetHours * 3600)));
+  }
+  *utc = value;
+  return value.IsValid();
+}
+
+bool ParseNauticalPlannerDateTime(const wxString& dateText, const wxString& timeText,
+                                  wxDateTime* fields) {
+  if (!fields) return false;
+  long parts[6] = {};
+  if (!ParsePlannerCalendar(dateText, timeText, parts)) return false;
+  wxDateTime value(parts[2], static_cast<wxDateTime::Month>(parts[1] - 1),
+                   parts[0], parts[3], parts[4], parts[5]);
+  if (!value.IsValid() || value.GetDay() != parts[2] ||
+      static_cast<long>(value.GetMonth()) + 1 != parts[1] ||
+      value.GetYear() != parts[0]) return false;
   *fields = value;
   return true;
-#endif
 }
+#endif
 
 RunningFixResult RunningFixSolver::Solve(
     const std::vector<FixObservation>& sights, const ObserverMotion& motion,

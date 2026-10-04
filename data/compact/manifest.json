@@ -1,0 +1,556 @@
+{
+  "support": "1972-01-01 through 2100-12-31, subject to time-data coverage",
+  "vsop": [
+    {
+      "planet": 1,
+      "variable": 0,
+      "original": 72908,
+      "retained": 20,
+      "omitted_absolute_bound": 9.606544147050312e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 1,
+      "variable": 1,
+      "original": 63516,
+      "retained": 120,
+      "omitted_absolute_bound": 9.974515808172323e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 1,
+      "variable": 2,
+      "original": 52447,
+      "retained": 78,
+      "omitted_absolute_bound": 9.925720916797712e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 1,
+      "variable": 3,
+      "original": 52825,
+      "retained": 79,
+      "omitted_absolute_bound": 9.938788168408436e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 1,
+      "variable": 4,
+      "original": 14159,
+      "retained": 3,
+      "omitted_absolute_bound": 9.685085421878967e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 1,
+      "variable": 5,
+      "original": 16504,
+      "retained": 8,
+      "omitted_absolute_bound": 9.519820599679428e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 2,
+      "variable": 0,
+      "original": 73332,
+      "retained": 1285,
+      "omitted_absolute_bound": 9.992365850337557e-09,
+      "budget": 1e-08,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 2,
+      "variable": 1,
+      "original": 66850,
+      "retained": 3809,
+      "omitted_absolute_bound": 9.997683151743737e-09,
+      "budget": 1e-08,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 2,
+      "variable": 2,
+      "original": 58680,
+      "retained": 2744,
+      "omitted_absolute_bound": 9.99741668107658e-09,
+      "budget": 1e-08,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 2,
+      "variable": 3,
+      "original": 58741,
+      "retained": 2734,
+      "omitted_absolute_bound": 9.99863903520643e-09,
+      "budget": 1e-08,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 2,
+      "variable": 4,
+      "original": 16348,
+      "retained": 381,
+      "omitted_absolute_bound": 9.99108339175461e-09,
+      "budget": 1e-08,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 2,
+      "variable": 5,
+      "original": 15695,
+      "retained": 370,
+      "omitted_absolute_bound": 9.997939924018164e-09,
+      "budget": 1e-08,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 3,
+      "variable": 0,
+      "original": 74615,
+      "retained": 3401,
+      "omitted_absolute_bound": 9.997492830172114e-09,
+      "budget": 1e-08,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 3,
+      "variable": 1,
+      "original": 69871,
+      "retained": 7192,
+      "omitted_absolute_bound": 9.999456629988233e-09,
+      "budget": 1e-08,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 3,
+      "variable": 2,
+      "original": 61209,
+      "retained": 5308,
+      "omitted_absolute_bound": 9.997569463803014e-09,
+      "budget": 1e-08,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 3,
+      "variable": 3,
+      "original": 60504,
+      "retained": 5202,
+      "omitted_absolute_bound": 9.997618920740683e-09,
+      "budget": 1e-08,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 3,
+      "variable": 4,
+      "original": 14483,
+      "retained": 531,
+      "omitted_absolute_bound": 9.995127553278494e-09,
+      "budget": 1e-08,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 3,
+      "variable": 5,
+      "original": 13743,
+      "retained": 497,
+      "omitted_absolute_bound": 9.977764600184285e-09,
+      "budget": 1e-08,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 4,
+      "variable": 0,
+      "original": 80726,
+      "retained": 566,
+      "omitted_absolute_bound": 9.97876319085643e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 4,
+      "variable": 1,
+      "original": 76092,
+      "retained": 1060,
+      "omitted_absolute_bound": 9.992247845040039e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 4,
+      "variable": 2,
+      "original": 65168,
+      "retained": 600,
+      "omitted_absolute_bound": 9.990232046183448e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 4,
+      "variable": 3,
+      "original": 63539,
+      "retained": 588,
+      "omitted_absolute_bound": 9.999998801821584e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 4,
+      "variable": 4,
+      "original": 12070,
+      "retained": 27,
+      "omitted_absolute_bound": 9.89693700695731e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 4,
+      "variable": 5,
+      "original": 11544,
+      "retained": 27,
+      "omitted_absolute_bound": 9.654315587489997e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 5,
+      "variable": 0,
+      "original": 90153,
+      "retained": 1681,
+      "omitted_absolute_bound": 9.99234328996013e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 5,
+      "variable": 1,
+      "original": 77481,
+      "retained": 986,
+      "omitted_absolute_bound": 9.994921437393133e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 5,
+      "variable": 2,
+      "original": 65689,
+      "retained": 623,
+      "omitted_absolute_bound": 9.996936311485188e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 5,
+      "variable": 3,
+      "original": 66081,
+      "retained": 627,
+      "omitted_absolute_bound": 9.992787450017252e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 5,
+      "variable": 4,
+      "original": 12589,
+      "retained": 42,
+      "omitted_absolute_bound": 9.915738077239658e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 5,
+      "variable": 5,
+      "original": 12614,
+      "retained": 42,
+      "omitted_absolute_bound": 9.731285558427768e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 6,
+      "variable": 0,
+      "original": 91737,
+      "retained": 7978,
+      "omitted_absolute_bound": 9.998984470392809e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 6,
+      "variable": 1,
+      "original": 81187,
+      "retained": 2521,
+      "omitted_absolute_bound": 9.996159489681953e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 6,
+      "variable": 2,
+      "original": 74387,
+      "retained": 2008,
+      "omitted_absolute_bound": 9.99892046157636e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 6,
+      "variable": 3,
+      "original": 74292,
+      "retained": 1973,
+      "omitted_absolute_bound": 9.994194011130659e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 6,
+      "variable": 4,
+      "original": 14460,
+      "retained": 106,
+      "omitted_absolute_bound": 9.93062088766287e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    },
+    {
+      "planet": 6,
+      "variable": 5,
+      "original": 14461,
+      "retained": 108,
+      "omitted_absolute_bound": 9.84687138932445e-07,
+      "budget": 1e-06,
+      "tau_max": 0.101
+    }
+  ],
+  "moon": [
+    {
+      "fit": 0,
+      "file": "elp_main.long",
+      "original": 1023,
+      "retained": 491,
+      "omitted_absolute_bound": 1.9353124580109833e-07
+    },
+    {
+      "fit": 0,
+      "file": "elp_main.lat",
+      "original": 918,
+      "retained": 405,
+      "omitted_absolute_bound": 2.4176834792761735e-07
+    },
+    {
+      "fit": 0,
+      "file": "elp_main.dist",
+      "original": 704,
+      "retained": 295,
+      "omitted_absolute_bound": 0.09906541279927385
+    },
+    {
+      "fit": 0,
+      "file": "elp_pert.longT0",
+      "original": 11314,
+      "retained": 8316,
+      "omitted_absolute_bound": 1.9387967720708058e-07
+    },
+    {
+      "fit": 0,
+      "file": "elp_pert.longT1",
+      "original": 1199,
+      "retained": 218,
+      "omitted_absolute_bound": 1.93214463604824e-07
+    },
+    {
+      "fit": 0,
+      "file": "elp_pert.longT2",
+      "original": 219,
+      "retained": 0,
+      "omitted_absolute_bound": 7.361635958767204e-08
+    },
+    {
+      "fit": 0,
+      "file": "elp_pert.longT3",
+      "original": 2,
+      "retained": 0,
+      "omitted_absolute_bound": 6.822671841551014e-11
+    },
+    {
+      "fit": 0,
+      "file": "elp_pert.latT0",
+      "original": 6462,
+      "retained": 3521,
+      "omitted_absolute_bound": 2.4231875731361946e-07
+    },
+    {
+      "fit": 0,
+      "file": "elp_pert.latT1",
+      "original": 516,
+      "retained": 27,
+      "omitted_absolute_bound": 2.3322683536979448e-07
+    },
+    {
+      "fit": 0,
+      "file": "elp_pert.latT2",
+      "original": 52,
+      "retained": 0,
+      "omitted_absolute_bound": 5.3316569122226896e-09
+    },
+    {
+      "fit": 0,
+      "file": "elp_pert.distT0",
+      "original": 12115,
+      "retained": 4741,
+      "omitted_absolute_bound": 0.09996951454081457
+    },
+    {
+      "fit": 0,
+      "file": "elp_pert.distT1",
+      "original": 1165,
+      "retained": 36,
+      "omitted_absolute_bound": 0.09804511401697079
+    },
+    {
+      "fit": 0,
+      "file": "elp_pert.distT2",
+      "original": 210,
+      "retained": 0,
+      "omitted_absolute_bound": 0.0068198693563885915
+    },
+    {
+      "fit": 0,
+      "file": "elp_pert.distT3",
+      "original": 2,
+      "retained": 0,
+      "omitted_absolute_bound": 1.2251921665629776e-06
+    },
+    {
+      "fit": 1,
+      "file": "elp_main.long",
+      "original": 1023,
+      "retained": 491,
+      "omitted_absolute_bound": 1.9353124416864606e-07
+    },
+    {
+      "fit": 1,
+      "file": "elp_main.lat",
+      "original": 918,
+      "retained": 405,
+      "omitted_absolute_bound": 2.41768346096467e-07
+    },
+    {
+      "fit": 1,
+      "file": "elp_main.dist",
+      "original": 704,
+      "retained": 295,
+      "omitted_absolute_bound": 0.09906541200525394
+    },
+    {
+      "fit": 1,
+      "file": "elp_pert.longT0",
+      "original": 11314,
+      "retained": 8316,
+      "omitted_absolute_bound": 1.9387967720708058e-07
+    },
+    {
+      "fit": 1,
+      "file": "elp_pert.longT1",
+      "original": 1199,
+      "retained": 218,
+      "omitted_absolute_bound": 1.93214463604824e-07
+    },
+    {
+      "fit": 1,
+      "file": "elp_pert.longT2",
+      "original": 219,
+      "retained": 0,
+      "omitted_absolute_bound": 7.361635958767204e-08
+    },
+    {
+      "fit": 1,
+      "file": "elp_pert.longT3",
+      "original": 2,
+      "retained": 0,
+      "omitted_absolute_bound": 6.822671841551014e-11
+    },
+    {
+      "fit": 1,
+      "file": "elp_pert.latT0",
+      "original": 6462,
+      "retained": 3521,
+      "omitted_absolute_bound": 2.4231875731361946e-07
+    },
+    {
+      "fit": 1,
+      "file": "elp_pert.latT1",
+      "original": 516,
+      "retained": 27,
+      "omitted_absolute_bound": 2.3322683536979448e-07
+    },
+    {
+      "fit": 1,
+      "file": "elp_pert.latT2",
+      "original": 52,
+      "retained": 0,
+      "omitted_absolute_bound": 5.3316569122226896e-09
+    },
+    {
+      "fit": 1,
+      "file": "elp_pert.distT0",
+      "original": 12115,
+      "retained": 4741,
+      "omitted_absolute_bound": 0.09996951454081457
+    },
+    {
+      "fit": 1,
+      "file": "elp_pert.distT1",
+      "original": 1165,
+      "retained": 36,
+      "omitted_absolute_bound": 0.09804511401697079
+    },
+    {
+      "fit": 1,
+      "file": "elp_pert.distT2",
+      "original": 210,
+      "retained": 0,
+      "omitted_absolute_bound": 0.0068198693563885915
+    },
+    {
+      "fit": 1,
+      "file": "elp_pert.distT3",
+      "original": 2,
+      "retained": 0,
+      "omitted_absolute_bound": 1.2251921665629776e-06
+    }
+  ],
+  "files": {
+    "dut1.tsv": {
+      "bytes": 376730,
+      "sha256": "56fbef80a0581c477bb26bd0eca484736606f72b5d08bf45d02f5585ec83425e"
+    },
+    "moon-0.bin": {
+      "bytes": 758168,
+      "sha256": "700d771425739173ef5ab3edcac0d6ba23c1d73272e9bf93920f6debee464b4d"
+    },
+    "moon-1.bin": {
+      "bytes": 758168,
+      "sha256": "fb61d4c104085ff6a1c6b25c2664ed4d5db46b15b812914bcc5ad2319ade288a"
+    },
+    "stars.json": {
+      "bytes": 18372,
+      "sha256": "ee979640a37ce7806c2c9a9434ec9c8c66e80229072d2bf796b362f883c1a7b8"
+    },
+    "stars.tsv": {
+      "bytes": 4032,
+      "sha256": "b5dc9837959481f87cabf04fe661d51ceceb7a14ee0930265f43b59f3f49af51"
+    },
+    "vsop2013.bin": {
+      "bytes": 1991712,
+      "sha256": "c951208be715d293a3dde2add892b871b0d209b670132a2b309d15b061106529"
+    }
+  },
+  "elp_source_commit": "e25e08f6082a3f3211b3d14e062d935558ad3ea6",
+  "component_version": "0.2.0",
+  "full_vsop_sha256": "0dbddd7337269e0aa1e1107a93dee0e9e00a78fec590c2cba7d77d73131e7bfc"
+}

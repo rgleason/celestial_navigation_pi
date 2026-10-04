@@ -167,7 +167,7 @@ void AlmanacDialog::BuildInterface() {
   AddLabelled(setupSizer, setup, _("DUT1 (seconds)"), m_dut1);
   wxStaticText* sources = new wxStaticText(setup, wxID_ANY,
       _("Automatic offline ephemeris: DE440s where installed and supported; "
-        "analytical fallback otherwise. Leave DUT1 unchecked to use dated "
+        "Compact fallback otherwise (classic when disabled or outside coverage). Leave DUT1 unchecked to use dated "
         "offline IERS data, with UT1=UTC on uncovered dates. "
         "The PDF reports the sources actually used."));
 #ifndef __OCPN__ANDROID__

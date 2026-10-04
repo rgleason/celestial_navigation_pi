@@ -1,5 +1,7 @@
 #include "AndroidFileDialog.h"
 #include "Dut1UpdatePanel.h"
+#include "CompactEphemerisProvider.h"
+#include <wx/checkbox.h>
 #include "Utf8Translation.h"
 #include "AtomicXmlFile.h"
 #include "celestial_navigation_pi.h"
@@ -86,6 +88,22 @@ class UpdatePanel : public wxScrolledWindow {
     SetScrollRate(0,10);
     auto* layout=new wxBoxSizer(wxVERTICAL);
     layout->AddSpacer(18);
+    auto* compactTitle=new wxStaticText(this,wxID_ANY,_("Navigation ephemeris"));
+    compactTitle->SetFont(compactTitle->GetFont().Bold());
+    AddText(layout,compactTitle);
+    auto* compact=new wxCheckBox(this,wxID_ANY,_("Use compact analytical fallback (recommended)"));
+    compact->SetValue(CompactEphemerisEnabled());
+    compact->SetName("UseCompactEphemeris");
+    layout->Add(compact,0,wxEXPAND|wxLEFT|wxRIGHT|wxBOTTOM,18);
+    AddText(layout,new wxStaticText(this,wxID_ANY,
+        _("DE440s retains priority where installed and applicable. Otherwise the bundled "
+          "Compact engine supplies Sun, Moon, planets and navigation stars for 1972-2100. "
+          "Disable it to use classic analytical calculations. The corrected lunar solver "
+          "remains active with either provider. This setting applies to new calculations.")));
+    compact->Bind(wxEVT_CHECKBOX,[compact](wxCommandEvent&) {
+      SetCompactEphemerisEnabled(compact->GetValue());
+    });
+
     auto* title=new wxStaticText(this,wxID_ANY,CN_UTF8_("Earth-rotation data (DUT1) — precision updates"));
     title->SetFont(title->GetFont().Bold());
     AddText(layout,title);
