@@ -1,0 +1,66 @@
+Fix starting DR and two-sight ambiguity: issue 361
+================================================
+
+Releases: production 2.8.17; development 2.9.4. 4 October 2026.
+Issue: https://github.com/rgleason/celestial_navigation_pi/issues/361
+
+The fix dialog previously started from the current boat position, independently
+of the DR stored with historical sights. Bob's Capella/Schedar example therefore
+selected the Greenland intersection when the observations' saved DR was in Asia.
+
+Starting DR is now above the results. Its default is the latest included,
+eligible sight's saved DR by UTC time, independently of sight-list order.
+Users can choose a different sight, enter a precise DR, or explicitly choose the
+current boat position. Missing/invalid saved DR never silently selects the boat.
+
+Two stationary sight circles are intersected directly on the sphere. Both
+validated positions are shown with distance from DR; neither is accepted until
+selected. Acceptance enables plotting and updates the last calculated fix.
+Changed DR, observations, inclusion, clock correction or running-fix inputs
+invalidate acceptance. Closing/reopening unchanged inputs preserves selection.
+Tangent, parallel, invalid and impossible geometry block acceptance.
+
+For two running sights, both candidates must satisfy the complete production
+solver's per-sight time and movement model (residual RMS <=0.01 arcminute).
+Analytic seeds and bounded independent starts recover and deduplicate roots.
+This numerical search is not a proof that every possible root of arbitrary
+movement data has been found. Fewer than two validated candidates blocks plotting
+and asks for another sight or checked motion. Existing multi-sight fits retain
+their solver. Ephemeris providers and sight-reduction equations are unchanged.
+
+Desktop content scrolls while Close remains visible. Android retains its native
+scrolling/touch surface, styles dynamically created candidate cards, and opens
+at the DR source. Its quick guide describes the new workflow.
+
+Validation
+----------
+Both branches: all 11 existing/new CTest groups passed. Final complete numerical
+executables and focused dialog tests passed after the final changes. Tests cover
+500 generated geometries, independent angular-distance checks of both roots,
+reversed circles, dateline/polar distance, singular/impossible/tangent geometry,
+chronological DR, excluded/invalid records, explicit acceptance and invalidation.
+Running-fix tests cover stationary, COG/SOG, saved per-sight movement and a
+singular pair. Dialog tests reproduce Bob's recorded inputs with boat position
+near Greenland; cover both candidate buttons, reorder, 2-to-3-to-2 sight changes,
+inclusion changes, observation edits, explicit boat DR, manual DR and missing DR.
+
+Both Android ARM64 release plugins and import archives built against the retained
+OpenCPN/wxQt/Qt support. The attached SM-X210 ran all five identical shared
+geometry/selection tests successfully, including the 500 generated cases.
+Physical UI checks on both versions verified visible latest-sight DR and both
+readable candidate cards. Selecting Thailand gives approximately
+03 degrees 17.0802 minutes N, 099 degrees 19.525 minutes E. The exact other
+intersection is approximately 64 degrees 01.419 minutes N, 043 degrees 00.500
+minutes W; both satisfy the original sight-circle equations. Bob's reported
+rounded Greenland position is not used as an independent numerical oracle.
+Explicit boat-position selection clears acceptance and reverses the nearest
+candidate. The development build's selected fix was plotted on the chart.
+
+Before tests, the host profile, sights, navigation database, astronomy files and
+original plugin were archived. Ten original data files and all five plugin
+libraries were restored and verified byte-for-byte before the final import.
+The existing OpenCPN host APK was retained. Raw temporary library swaps during
+comparison are distinct from the final Plugin Manager installation. Local
+backups, binary hashes, test logs and screenshots are in ignored build directories.
+Physical testing covers this ARM64 tablet; the wider platform CI suite remains
+separate. No catalogue change or publication is made by these local commits.
