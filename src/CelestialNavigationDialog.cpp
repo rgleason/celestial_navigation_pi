@@ -1910,21 +1910,19 @@ void CelestialNavigationDialog::OnDeleteAll(wxCommandEvent& event) {
 void CelestialNavigationDialog::OnFix(wxCommandEvent& event) {
   if (m_FixDialog == NULL) {
     m_FixDialog = new FixDialog(this);
-    m_FixDialog->Update(m_ClockCorrection);
     RequestRefresh(GetParent()->GetParent());
   }
+  m_FixDialog->Update(m_ClockCorrection);
   m_FixDialog->Show();
+  m_FixDialog->FocusStartingDr();
   m_FixDialog->Raise();
 }
 
 void CelestialNavigationDialog::OnFixClose() {
   m_FixDialog->Hide();
-#ifndef __OCPN__ANDROID__
-  m_FixDialog->Destroy();
-  m_FixDialog = NULL;
-#else
+  // Retain a confirmed candidate for unchanged inputs. Update on reopening
+  // refreshes sight DR and invalidates a changed calculation on all platforms.
   RequestRefresh(GetParent());
-#endif
 }
 
 void CelestialNavigationDialog::OnDRShift(wxCommandEvent& event) {

@@ -2,6 +2,7 @@
 
 #include <wx/app.h>
 #include <wx/checkbox.h>
+#include <wx/button.h>
 #include <wx/choice.h>
 #include <wx/filename.h>
 #include <wx/frame.h>
@@ -16,6 +17,8 @@
 
 #include "CelestialNavigationDialog.h"
 #include "FixDialog.h"
+#include "FixAmbiguity.h"
+#include "NavigationUIUtils.h"
 #include "celestial_navigation_pi.h"
 #include "mock_plugin_api.h"
 
@@ -189,6 +192,108 @@ TEST(FixUi, SavedVisibleDrShiftsSelectRunningFixAndShowInputs) {
     auto* hiddenMode = MotionChoice(&hiddenShift);
     ASSERT_NE(nullptr, hiddenMode);
     EXPECT_EQ(0, hiddenMode->GetSelection());
+
+    // Bob's recorded sights must use their saved Thailand DR even when the
+    // host boat position is near the other intersection in Greenland.
+    CelestialNavigationDialog bob(&frame, &plugin);
+    boat.Lat = 64.23; boat.Lon = -41.48; plugin.SetPositionFixEx(boat);
+    bob.m_Sights.clear();
+    wxDateTime capellaTime, schedarTime;
+    ASSERT_TRUE(capellaTime.ParseISOCombined("2026-07-20T22:39:25"));
+    ASSERT_TRUE(schedarTime.ParseISOCombined("2026-07-20T22:48:48"));
+    for (const auto& entry : {std::make_tuple("Capella",capellaTime,23+38.8/60),
+                             std::make_tuple("Schedar",schedarTime,38.0)}) {
+      Sight sight(Sight::ALTITUDE,std::get<0>(entry),Sight::CENTER,
+                  std::get<1>(entry),0,std::get<2>(entry),0.2);
+      sight.m_DRLat=7+20.0/60; sight.m_DRLon=100+40.0/60;
+      sight.m_IndexError=112.8; sight.m_EyeHeight=3.7;
+      sight.m_Temperature=10; sight.m_Pressure=1010;
+      sight.Recompute(0); bob.m_Sights.push_back(sight);
+    }
+    FixDialog bobFix(&bob); bobFix.Update(0);
+    bobFix.Show(); bobFix.FocusStartingDr(); bobFix.Layout();
+    auto named=[&](const char* name) { return wxWindow::FindWindowByName(name,&bobFix); };
+    auto* source=dynamic_cast<wxChoice*>(named("FixDrSource"));
+    auto* drLat=dynamic_cast<NavigationAngleCtrl*>(named("FixDrLatitude"));
+    auto* drLon=dynamic_cast<NavigationAngleCtrl*>(named("FixDrLongitude"));
+    auto* go=dynamic_cast<wxButton*>(named("FixShowOnChart"));
+    auto* near=dynamic_cast<wxButton*>(named("FixCandidate0"));
+    auto* other=dynamic_cast<wxButton*>(named("FixCandidate1"));
+    ASSERT_TRUE(source && drLat && drLon && go && near && other);
+    EXPECT_TRUE(source->GetStringSelection().StartsWith("Schedar"));
+    double latitude,longitude;
+    ASSERT_TRUE(drLat->GetAngle(&latitude)); ASSERT_TRUE(drLon->GetAngle(&longitude));
+    EXPECT_NEAR(7+20.0/60,latitude,1e-6); EXPECT_NEAR(100+40.0/60,longitude,1e-6);
+    EXPECT_FALSE(go->IsEnabled()); EXPECT_FALSE(std::isfinite(bobFix.m_fixlat));
+    // Candidate controls must remain scrollable and the Close action reachable.
+    EXPECT_TRUE(near->IsShown()); EXPECT_TRUE(other->IsShown());
+    wxTheApp->Yield(true);
+#ifdef __WXGTK3__
+    const auto bobSize = bobFix.GetSize();
+    GtkAllocation bobAllocation{0, 0, bobSize.x, bobSize.y};
+    gtk_widget_size_allocate(GTK_WIDGET(bobFix.GetHandle()), &bobAllocation);
+    auto* bobSurface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, bobSize.x, bobSize.y);
+    auto* bobCr = cairo_create(bobSurface);
+    gtk_widget_draw(GTK_WIDGET(bobFix.GetHandle()), bobCr);
+    EXPECT_EQ(cairo_surface_write_to_png(bobSurface,"/tmp/celestial-fix-ambiguity.png"),CAIRO_STATUS_SUCCESS);
+    cairo_destroy(bobCr); cairo_surface_destroy(bobSurface);
+#endif
+    EXPECT_FALSE(bob.GetLastFix(&latitude,&longitude));
+    auto click=[](wxButton* button) { wxCommandEvent event(wxEVT_BUTTON,button->GetId());
+      event.SetEventObject(button); button->GetEventHandler()->ProcessEvent(event); };
+    click(near);
+    EXPECT_TRUE(go->IsEnabled());
+    EXPECT_NEAR(3+17.1/60,bobFix.m_fixlat,0.03);
+    EXPECT_NEAR(99+19.5/60,bobFix.m_fixlon,0.03);
+    EXPECT_TRUE(bob.GetLastFix(&latitude,&longitude));
+    bobFix.Hide(); bobFix.Update(0); EXPECT_TRUE(go->IsEnabled());
+    std::reverse(bob.m_Sights.begin(),bob.m_Sights.end());
+    bobFix.Update(0); EXPECT_TRUE(go->IsEnabled());
+    click(other); EXPECT_GT(bobFix.m_fixlat,60);
+    EXPECT_LT(bobFix.m_fixlon,-40);
+    // Independently verify each returned candidate against angular distance
+    // to both GPs; an old iterative fix's rounded coordinates are not an oracle.
+    for (auto* candidate : {near,other}) {
+      click(candidate);
+      for (auto& sight : bob.m_Sights) {
+        double gpLat,gpLon;
+        sight.BodyLocation(sight.m_DateTime,&gpLat,&gpLon,nullptr,nullptr,nullptr);
+        const double angularDistance=fix_selection::DistanceNm(
+          {bobFix.m_fixlat,bobFix.m_fixlon},{gpLat,gpLon})/60;
+        EXPECT_NEAR(90-angularDistance,sight.m_ObservedAltitude,1e-7);
+      }
+    }
+    bob.m_Sights[0].m_Measurement += 0.01; bob.m_Sights[0].Recompute(0);
+    bobFix.Update(0); EXPECT_FALSE(go->IsEnabled());
+    click(near);
+    // Leaving and returning to the two-sight calculation cannot revive an
+    // acceptance made before the included sight set changed.
+    bob.m_Sights.push_back(bob.m_Sights.front()); bobFix.Update(0);
+    bob.m_Sights.pop_back(); bobFix.Update(0); EXPECT_FALSE(go->IsEnabled());
+    click(near);
+    bob.m_Sights[0].SetVisible(false); bobFix.Update(0);
+    bob.m_Sights[0].SetVisible(true); bobFix.Update(0); EXPECT_FALSE(go->IsEnabled());
+    click(near);
+    source->SetSelection(1);
+    wxCommandEvent choice(wxEVT_CHOICE,source->GetId());choice.SetEventObject(source);
+    source->GetEventHandler()->ProcessEvent(choice);
+    EXPECT_FALSE(go->IsEnabled());
+    EXPECT_TRUE(source->GetStringSelection().Contains("boat"));
+    ASSERT_TRUE(drLat->GetAngle(&latitude));EXPECT_NEAR(64.23,latitude,1e-6);
+    click(near); EXPECT_GT(bobFix.m_fixlat,60); // nearest now explicitly uses boat DR
+    drLat->SetValue("7.333333");
+    wxCommandEvent edit(wxEVT_TEXT,drLat->GetId());edit.SetEventObject(drLat);
+    drLat->GetEventHandler()->ProcessEvent(edit);
+    EXPECT_FALSE(go->IsEnabled()); EXPECT_EQ(0,source->GetSelection());
+    // Losing the last usable saved DR cannot fall back to host GPS implicitly.
+    for(auto& sight:bob.m_Sights) sight.m_DRLat=NAN;
+    bobFix.Update(0);
+    EXPECT_FALSE(go->IsEnabled()); EXPECT_TRUE(drLat->GetValue().empty());
+    drLat->SetValue("7.333333"); drLon->SetValue("100.666667");
+    drLat->GetEventHandler()->ProcessEvent(edit); bobFix.Update(0);
+    ASSERT_TRUE(drLat->GetAngle(&latitude)); EXPECT_NEAR(7.333333,latitude,1e-6);
+    ASSERT_TRUE(near->IsShown()); click(near); EXPECT_TRUE(go->IsEnabled());
+
   }
   SetTestPrivateDataPath(wxString());
   SetTestPluginDataRoot(wxString());

@@ -31,6 +31,7 @@
 #include "CelestialNavigationUI.h"
 #include "CelestialNavigationDialog.h"
 #include "NavigationAlgorithms.h"
+#include "FixAmbiguity.h"
 
 #include <list>
 
@@ -39,6 +40,7 @@
 class NavigationAngleCtrl;
 #endif
 
+class NavigationAngleCtrl;
 class Sight;
 class wxChoice;
 class wxDatePickerCtrl;
@@ -50,6 +52,7 @@ class wxTimePickerCtrl;
 using CelestialTimePicker = wxTimePickerCtrl;
 #endif
 class wxCloseEvent;
+class wxScrolledWindow;
 
 class FixDialog : public FixDialogBase {
 public:
@@ -57,11 +60,37 @@ public:
   ~FixDialog() override;
   void Update(int clock_offset);
   void RunIntegrationScenario();
+  void FocusStartingDr();
 
   int m_clock_offset;
   double m_fixlat, m_fixlon, m_fixerror;
 
 private:
+  wxScrolledWindow* m_desktopScroll = nullptr;
+  void RefreshDrSources();
+  void ChangeDrSource(wxCommandEvent&);
+  void EditDr(wxCommandEvent&);
+  bool ReadDr(double* latitude, double* longitude);
+  std::string CalculationKey(double correction);
+  bool ChooseCandidate(const std::vector<fix_selection::Position>& candidates,
+                       const std::string& key);
+  void HideCandidates();
+  bool UpdateTwoSightFix(double correction, double latitude, double longitude);
+  NavigationAngleCtrl* m_fixDrLatitude = nullptr;
+  NavigationAngleCtrl* m_fixDrLongitude = nullptr;
+  wxChoice* m_drSource = nullptr;
+  wxStaticText* m_drExplanation = nullptr;
+  wxStaticText* m_candidateWarning = nullptr;
+  wxBoxSizer* m_candidateSizer = nullptr;
+  std::vector<wxButton*> m_candidateButtons;
+  std::vector<fix_selection::DrRecord> m_drRecords;
+  wxString m_drSourceKey;
+  bool m_hasDr = false;
+  bool m_drSourcesReady = false;
+  bool m_changingDr = false;
+  fix_selection::Acceptance m_acceptance;
+  std::string m_runningCandidateKey;
+  std::vector<RunningFixResult> m_runningCandidates;
   wxDateTime ReadEpochUtc() const;
   void SetEpochControls(const wxDateTime& utc);
   void ChangeEpochTimeBasis(wxCommandEvent& event);
@@ -76,8 +105,6 @@ private:
   void OnUpdateSpin(wxSpinEvent& event) { Update(m_clock_offset); }
 #ifdef __OCPN__ANDROID__
   void OnEvtPanGesture(wxQT_PanGestureEvent& event);
-  NavigationAngleCtrl* m_androidInitialLatitude;
-  NavigationAngleCtrl* m_androidInitialLongitude;
   wxStaticText* m_androidResiduals;
 #endif
 

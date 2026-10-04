@@ -4,6 +4,7 @@
 #include "SkyLabelLayout.h"
 #include "NavigationUIUtils.h"
 #include "NavigationAlgorithms.h"
+#include "FixAmbiguity.h"
 #include "UtcDateTime.h"
 #include "geodesic.h"
 
@@ -1022,4 +1023,63 @@ TEST(SkyLabels, SelectedBodyCanUseFreeSpaceAwayFromCrowdedNearbyPlacements) {
   wxRect padded = result; padded.Inflate(2);
   EXPECT_TRUE(bounds.Contains(padded));
   EXPECT_FALSE(occupied[0].Intersects(padded));
+}
+
+TEST(RunningFixCandidates, ValidatesBothStationaryAndMovingIntersections) {
+  wxInitializer initializer;
+  ASSERT_TRUE(initializer.IsOk());
+  for (double speed : {0.0, 8.0}) {
+    ObserverMotion truth;
+    truth.latitude = 7.3; truth.longitude = 100.6;
+    truth.referenceUtc = Utc("2026-07-20T22:48:48");
+    truth.courseTrue = 65; truth.speedKnots = speed; truth.moving = speed > 0;
+    std::vector<FixObservation> observations = {
+      Synthetic("Capella", Utc("2026-07-20T22:39:25"), truth),
+      Synthetic("Schedar", truth.referenceUtc, truth)};
+    wxString error;
+    const auto candidates = RunningFixSolver::Candidates(observations, truth, 64, -41, &error);
+    ASSERT_GE(candidates.size(), 2u) << error;
+    double nearest = 1e20;
+    for (const auto& candidate : candidates) {
+      EXPECT_TRUE(candidate.valid);
+      EXPECT_LT(candidate.rmsMinutes, 0.01);
+      nearest = std::min(nearest, fix_selection::DistanceNm({truth.latitude, truth.longitude},
+                                           {candidate.latitude, candidate.longitude}));
+    }
+    EXPECT_LT(nearest, 0.01);
+  }
+}
+
+TEST(RunningFixCandidates, SavedDisplacementsResolveBothAndSingularPairFailsClosed) {
+  wxInitializer initializer;
+  ASSERT_TRUE(initializer.IsOk());
+  ObserverMotion truth;
+  truth.latitude=7.3; truth.longitude=100.6;
+  truth.referenceUtc=Utc("2026-07-20T22:48:48");
+  truth.courseTrue=65; truth.speedKnots=8; truth.moving=true;
+  std::vector<FixObservation> observations={
+    Synthetic("Capella",Utc("2026-07-20T22:39:25"),truth),
+    Synthetic("Schedar",truth.referenceUtc,truth)};
+  for (auto& sight:observations) {
+    double latitude,longitude;
+    truth.PositionAt(sight.utc,&latitude,&longitude);
+    sight.hasManualDisplacement=true;
+    ll_gc_ll_reverse(latitude,longitude,truth.latitude,truth.longitude,
+                     &sight.displacementBearingTrue,&sight.displacementNm);
+  }
+  ObserverMotion stationary;
+  stationary.referenceUtc=truth.referenceUtc;
+  wxString error;
+  const auto candidates=RunningFixSolver::Candidates(observations,stationary,64,-41,&error);
+  ASSERT_GE(candidates.size(),2u) << error;
+  double nearest=1e20;
+  for (const auto& candidate:candidates) {
+    EXPECT_LT(candidate.rmsMinutes,0.01);
+    nearest=std::min(nearest,fix_selection::DistanceNm({truth.latitude,truth.longitude},
+      {candidate.latitude,candidate.longitude}));
+  }
+  EXPECT_LT(nearest,0.01);
+  observations[1]=observations[0];
+  EXPECT_TRUE(RunningFixSolver::Candidates(observations,stationary,7.3,100.6,&error).empty());
+  EXPECT_FALSE(error.empty());
 }
