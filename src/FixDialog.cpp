@@ -39,10 +39,14 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
+#include <iomanip>
+#include <locale>
+#include <sstream>
 #include <wx/choice.h>
 #include <wx/datectrl.h>
 #include <wx/listctrl.h>
 #include <wx/spinctrl.h>
+#include <wx/scrolwin.h>
 #include <wx/timectrl.h>
 
 #ifdef __OCPN__ANDROID__
@@ -87,25 +91,38 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
                         [this](wxCommandEvent&) { Update(m_clock_offset); });
   correctionRow->Add(m_lunarSolution, 0, wxALL | wxEXPAND, 5);
   GetSizer()->Insert(1, correctionRow, 0, wxEXPAND);
-  double lat, lon;
-  celestial_navigation_pi_BoatPos(lat, lon);
-  m_sInitialLatitude->SetValue(lat);
-  m_sInitialLongitude->SetValue(lon);
+  // Keep the starting DR above results, with the same precise angle entry on
+  // desktop and Android. Legacy integer-degree controls are no longer used.
+  m_sInitialLatitude->Hide(); m_sInitialLongitude->Hide();
+  m_staticText34->Hide(); m_staticText35->Hide();
+  auto* drBox = new wxStaticBoxSizer(wxVERTICAL, this, _("Starting DR for this fix"));
+  m_drSource = new wxChoice(drBox->GetStaticBox(), wxID_ANY);
+  m_drSource->SetName("FixDrSource");
+  drBox->Add(m_drSource, 0, wxALL | wxEXPAND, 5);
+  m_drExplanation = new wxStaticText(drBox->GetStaticBox(), wxID_ANY, wxEmptyString);
+  m_drExplanation->SetName("FixDrExplanation");
+  drBox->Add(m_drExplanation, 0, wxALL | wxEXPAND, 5);
+  drBox->Add(new wxStaticText(drBox->GetStaticBox(), wxID_ANY, _("DR latitude")), 0, wxALL, 5);
+  m_fixDrLatitude = new NavigationAngleCtrl(drBox->GetStaticBox(), NavigationAngleKind::Latitude, 0, -90, 90);
+  m_fixDrLatitude->SetName("FixDrLatitude");
+  drBox->Add(m_fixDrLatitude, 0, wxALL | wxEXPAND, 5);
+  drBox->Add(new wxStaticText(drBox->GetStaticBox(), wxID_ANY, _("DR longitude")), 0, wxALL, 5);
+  m_fixDrLongitude = new NavigationAngleCtrl(drBox->GetStaticBox(), NavigationAngleKind::Longitude, 0, -180, 180);
+  m_fixDrLongitude->SetName("FixDrLongitude");
+  drBox->Add(m_fixDrLongitude, 0, wxALL | wxEXPAND, 5);
+  m_candidateWarning = new wxStaticText(drBox->GetStaticBox(), wxID_ANY, wxEmptyString);
+  m_candidateWarning->SetName("FixCandidateWarning");
+  drBox->Add(m_candidateWarning, 0, wxALL | wxEXPAND, 5);
+  m_candidateSizer = new wxBoxSizer(wxVERTICAL);
+  drBox->Add(m_candidateSizer, 0, wxEXPAND);
+  GetSizer()->Insert(0, drBox, 0, wxALL | wxEXPAND, 5);
+  m_drSource->Bind(wxEVT_CHOICE, &FixDialog::ChangeDrSource, this);
+  m_fixDrLatitude->Bind(wxEVT_TEXT, &FixDialog::EditDr, this);
+  m_fixDrLongitude->Bind(wxEVT_TEXT, &FixDialog::EditDr, this);
+  m_bGo->SetName("FixShowOnChart");
+  m_bGo->SetLabel(_("Show selected fix on chart"));
 #ifdef __OCPN__ANDROID__
-  m_androidInitialLatitude = new NavigationAngleCtrl(
-      m_sInitialLatitude->GetParent(), NavigationAngleKind::Latitude, lat, -90, 90);
-  m_androidInitialLongitude = new NavigationAngleCtrl(
-      m_sInitialLongitude->GetParent(), NavigationAngleKind::Longitude, lon, -180, 180);
-  m_sInitialLatitude->GetContainingSizer()->Replace(
-      m_sInitialLatitude, m_androidInitialLatitude, true);
-  m_sInitialLongitude->GetContainingSizer()->Replace(
-      m_sInitialLongitude, m_androidInitialLongitude, true);
-  m_sInitialLatitude->Hide();
-  m_sInitialLongitude->Hide();
-  // This selector has four fixed algorithms; the full field opens its popup.
-  if (auto* combo = qobject_cast<QComboBox*>(m_cbFixAlgorithm->GetHandle()))
-    combo->setEditable(false);
-  m_bGo->SetLabel(_("Show fix on chart"));
+  if (auto* combo = qobject_cast<QComboBox*>(m_cbFixAlgorithm->GetHandle())) combo->setEditable(false);
 #endif
   int x, y;
   GetTextExtent(_T("000° 00.0000' S"), &x, &y);
@@ -191,7 +208,7 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
   running->Replace(m_residuals, m_androidResiduals);
   m_residuals->Hide();
 #endif
-  GetSizer()->Insert(1, running, 1, wxALL | wxEXPAND, 5);
+  GetSizer()->Insert(2, running, 1, wxALL | wxEXPAND, 5);
 
   const BoatNavigationSnapshot boat =
       parent->GetPlugin()->GetBoatNavigationSnapshot();
@@ -229,8 +246,6 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
   m_courseTrue->Bind(wxEVT_SPINCTRLDOUBLE, &FixDialog::OnRunningControl, this);
   m_speedKnots->Bind(wxEVT_SPINCTRLDOUBLE, &FixDialog::OnRunningControl, this);
 #ifdef __OCPN__ANDROID__
-  m_androidInitialLatitude->Bind(wxEVT_TEXT, &FixDialog::OnRunningControl, this);
-  m_androidInitialLongitude->Bind(wxEVT_TEXT, &FixDialog::OnRunningControl, this);
   // Pinned wxQt does not send its spin event for typed double values. Native
   // valueChanged must request a calculation too, after the input callback.
   // Install only after programmatic initialization, and let dialog ownership
@@ -248,7 +263,29 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
           motionUpdate, [motionUpdate](double) { motionUpdate->start(0); });
   }
 #endif
+  RefreshDrSources();
+#ifndef __OCPN__ANDROID__
+  // Keep Close reachable when candidate cards increase the content height.
+  auto* content = GetSizer();
+  content->Detach(m_sdbSizer8);
+  SetSizer(nullptr, false);
+  m_desktopScroll = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition,
+                                        wxDefaultSize, wxVSCROLL);
+  std::vector<wxWindow*> children;
+  for (auto* child : GetChildren()) children.push_back(child);
+  for (auto* child : children)
+    if (child != m_desktopScroll && child != m_sdbSizer8OK)
+      child->Reparent(m_desktopScroll);
+  m_desktopScroll->SetSizer(content);
+  m_desktopScroll->SetScrollRate(0, 12);
+  auto* root = new wxBoxSizer(wxVERTICAL);
+  root->Add(m_desktopScroll, 1, wxEXPAND);
+  root->Add(m_sdbSizer8, 0, wxALL | wxEXPAND, 5);
+  SetSizer(root);
+  SetSize(wxSize(760, 740));
+#else
   GetSizer()->Fit(this);
+#endif
   SetMinSize(wxSize(700, 480));
   dialog_geometry::Restore(this, _T("Fix"), GetSize());
   Bind(wxEVT_CLOSE_WINDOW, &FixDialog::OnWindowClose, this);
@@ -258,7 +295,309 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
 #endif
 }
 
+void FixDialog::RefreshDrSources() {
+  std::vector<fix_selection::DrRecord> records;
+  std::vector<wxString> labels;
+  std::ostringstream signature;
+  signature.imbue(std::locale::classic());
+  signature << std::setprecision(17);
+  std::vector<std::string> keys;
+  for (const auto& sight : m_Parent->m_Sights) {
+    if (!sight.IsVisible() ||
+        (sight.m_Type != Sight::ALTITUDE && sight.m_Type != Sight::HORIZON) ||
+        (!m_runningFix->GetValue() && sight.m_ShiftNm != 0) ||
+        !sight.m_DateTime.IsValid())
+      continue;
+    const auto time = UtcDateTime::ToInstant(sight.m_DateTime);
+    const fix_selection::Position position{sight.m_DRLat, sight.m_DRLon};
+    if (!fix_selection::Valid(position)) continue;
+    std::ostringstream key;
+    key.imbue(std::locale::classic());
+    key << std::setprecision(17) << sight.m_Body.ToStdString() << ':'
+        << time.GetValue().GetValue() << ':' << position.latitude << ':'
+        << position.longitude;
+    records.push_back({position, time.GetValue().GetValue(), true, key.str()});
+    keys.push_back(key.str());
+    labels.push_back(sight.m_Body + " | " +
+                     UtcDateTime::FormatInstant(time, "%Y-%m-%d %H:%M:%S") +
+                     " UTC | " +
+                     FormatNavigationAngle(position.latitude,
+                                           NavigationAngleKind::Latitude) +
+                     " " +
+                     FormatNavigationAngle(position.longitude,
+                                           NavigationAngleKind::Longitude));
+  }
+  std::sort(keys.begin(), keys.end());
+  for (const auto& key : keys) signature << key << ';';
+  const auto newKey = wxString::FromUTF8(signature.str().c_str());
+  if (m_drSourcesReady && newKey == m_drSourceKey) return;
+  m_drSourcesReady = true;
+  m_drSourceKey = newKey;
+  m_drRecords = records;
+  m_drSource->Clear();
+  m_drSource->Append(_("Enter a DR position"));
+  m_drSource->Append(_("Use current boat position (explicit choice)"));
+  for (const auto& label : labels) m_drSource->Append(label);
+  const int latest = fix_selection::LatestDr(records);
+  m_changingDr = true;
+  if (latest >= 0) {
+    m_drSource->SetSelection(latest + 2);
+    m_fixDrLatitude->SetAngle(records[latest].position.latitude);
+    m_fixDrLongitude->SetAngle(records[latest].position.longitude);
+    m_drExplanation->SetLabel(_("Saved DR from ") + labels[latest]);
+    m_hasDr = true;
+  } else {
+    m_drSource->SetSelection(0);
+    m_fixDrLatitude->ChangeValue(wxEmptyString);
+    m_fixDrLongitude->ChangeValue(wxEmptyString);
+    m_drExplanation->SetLabel(
+        _("No usable included sight DR. Enter a position or explicitly choose "
+          "the boat position."));
+    m_hasDr = false;
+  }
+  m_changingDr = false;
+  m_acceptance.Clear();
+  m_runningCandidateKey.clear();
+}
+
+void FixDialog::ChangeDrSource(wxCommandEvent&) {
+  const int source = m_drSource->GetSelection();
+  m_changingDr = true;
+  m_hasDr = false;
+  if (source >= 2 && std::size_t(source - 2) < m_drRecords.size()) {
+    const auto position = m_drRecords[source - 2].position;
+    m_fixDrLatitude->SetAngle(position.latitude);
+    m_fixDrLongitude->SetAngle(position.longitude);
+    m_drExplanation->SetLabel(_("Saved DR from ") +
+                              m_drSource->GetStringSelection());
+    m_hasDr = true;
+  } else if (source == 1) {
+    double lat, lon;
+    if (m_Parent->GetPlugin()->GetBoatPosition(&lat, &lon)) {
+      m_fixDrLatitude->SetAngle(lat);
+      m_fixDrLongitude->SetAngle(lon);
+      m_hasDr = true;
+      m_drExplanation->SetLabel(
+          _("Current boat position selected explicitly. This may differ from "
+            "the saved sight DR."));
+    } else {
+      m_fixDrLatitude->ChangeValue(wxEmptyString);
+      m_fixDrLongitude->ChangeValue(wxEmptyString);
+      m_drExplanation->SetLabel(
+          _("No valid boat position is available. Enter a DR position."));
+    }
+  } else {
+    m_drExplanation->SetLabel(_("User-entered DR for this fix"));
+    double lat, lon;
+    m_hasDr =
+        m_fixDrLatitude->GetAngle(&lat) && m_fixDrLongitude->GetAngle(&lon);
+  }
+  m_changingDr = false;
+  m_acceptance.Clear();
+  Update(m_clock_offset);
+}
+void FixDialog::EditDr(wxCommandEvent&) {
+  if (m_changingDr) return;
+  m_drSource->SetSelection(0);
+  m_drExplanation->SetLabel(_("User-entered DR for this fix"));
+  m_hasDr = true;
+  m_acceptance.Clear();
+  Update(m_clock_offset);
+}
+bool FixDialog::ReadDr(double* latitude, double* longitude) {
+  if (m_hasDr && m_fixDrLatitude->GetAngle(latitude) &&
+      m_fixDrLongitude->GetAngle(longitude))
+    return true;
+  HideCandidates();
+  m_fixlat = m_fixlon = m_fixerror = NAN;
+  m_stLatitude->SetValue(_("N/A"));
+  m_stLongitude->SetValue(_("N/A"));
+  m_stFixError->SetValue(_("Enter a valid DR position"));
+  m_bGo->Disable();
+  return false;
+}
+std::string FixDialog::CalculationKey(double correction) {
+  std::ostringstream key;
+  key.imbue(std::locale::classic());
+  key << std::setprecision(17);
+  double lat = NAN, lon = NAN;
+  m_fixDrLatitude->GetAngle(&lat);
+  m_fixDrLongitude->GetAngle(&lon);
+  key << lat << '|' << lon << '|'
+      << m_drSource->GetStringSelection().ToStdString() << '|' << correction
+      << '|' << m_runningFix->GetValue();
+  if (m_runningFix->GetValue()) {
+    const auto epoch = ReadEpochUtc();
+    key << '|' << (epoch.IsValid() ? epoch.GetValue().GetValue() : -1) << '|'
+        << m_motionMode->GetSelection() << '|' << m_courseTrue->GetValue()
+        << '|' << m_speedKnots->GetValue();
+  }
+  std::vector<std::string> entries;
+  for (auto& s : m_workingSights) {
+    if (!s.IsVisible() ||
+        (s.m_Type != Sight::ALTITUDE && s.m_Type != Sight::HORIZON) ||
+        (!m_runningFix->GetValue() && s.m_ShiftNm != 0))
+      continue;
+    std::ostringstream entry;
+    entry.imbue(std::locale::classic());
+    entry << std::setprecision(17) << s.m_Body.ToStdString() << '|'
+          << (s.m_DateTime.IsValid() ? s.m_DateTime.GetValue().GetValue() : -1) << '|' << s.m_ObservedAltitude
+          << '|' << s.m_MeasurementCertainty << '|' << s.m_ShiftNm << '|'
+          << s.m_ShiftBearing << '|' << s.m_bMagneticShiftBearing;
+    double bodyLat = NAN, bodyLon = NAN;
+    if (s.m_DateTime.IsValid())
+      s.BodyLocation(UtcDateTime::AddSeconds(s.m_DateTime, correction), &bodyLat,
+                     &bodyLon, nullptr, nullptr, nullptr);
+    entry << '|' << bodyLat << '|' << bodyLon;
+    entries.push_back(entry.str());
+  }
+  std::sort(entries.begin(), entries.end());
+  for (const auto& entry : entries) key << '|' << entry;
+  return key.str();
+}
+void FixDialog::HideCandidates() {
+  m_candidateWarning->SetLabel(wxEmptyString);
+  for (auto* button : m_candidateButtons) button->Hide();
+}
+bool FixDialog::ChooseCandidate(
+    const std::vector<fix_selection::Position>& candidates,
+    const std::string& key) {
+  m_acceptance.SetInputs(key);
+  m_candidateWarning->SetLabel(
+      _("These sights give multiple possible positions. Select the one "
+        "consistent with your estimated position. Each satisfies the "
+        "observations."));
+#ifndef __OCPN__ANDROID__
+  m_candidateWarning->Wrap(660);
+#endif
+  double lat, lon;
+  m_fixDrLatitude->GetAngle(&lat);
+  m_fixDrLongitude->GetAngle(&lon);
+#ifdef __OCPN__ANDROID__
+  const bool added = m_candidateButtons.size() < candidates.size();
+#endif
+  while (m_candidateButtons.size() < candidates.size()) {
+    const auto index = m_candidateButtons.size();
+    auto* button =
+        new wxButton(m_candidateWarning->GetParent(), wxID_ANY, wxEmptyString);
+    button->SetName(wxString::Format("FixCandidate%u", unsigned(index)));
+    button->Bind(wxEVT_BUTTON, [this, index](wxCommandEvent&) {
+      m_acceptance.Select(static_cast<int>(index));
+      Update(m_clock_offset);
+    });
+    m_candidateSizer->Add(button, 0, wxALL | wxEXPAND, 5);
+    m_candidateButtons.push_back(button);
+  }
+#ifdef __OCPN__ANDROID__
+  if (added) CN_StyleAndroidControls(m_candidateWarning->GetParent());
+#endif
+  for (std::size_t i = 0; i < m_candidateButtons.size(); ++i) {
+    if (i >= candidates.size()) {
+      m_candidateButtons[i]->Hide();
+      continue;
+    }
+    const auto& p = candidates[i];
+    wxString caption =
+        (i == 0 ? _("Nearest your DR") : _("Alternative position"));
+    caption +=
+        "\n" +
+        FormatNavigationAngle(p.latitude, NavigationAngleKind::Latitude) +
+        "  " +
+        FormatNavigationAngle(p.longitude, NavigationAngleKind::Longitude) +
+        wxString::Format(_("\n%.1f NM from starting DR"),
+                         fix_selection::DistanceNm({lat, lon}, p));
+    if (m_acceptance.Selected() == static_cast<int>(i))
+      caption = _("Selected: ") + caption;
+    m_candidateButtons[i]->SetLabel(caption);
+    m_candidateButtons[i]->Show();
+#ifdef __OCPN__ANDROID__
+    m_candidateButtons[i]->SetMinSize(wxSize(0, 3 * CN_TouchHeight()));
+#endif
+  }
+  Layout();
+  if (m_acceptance.Selected() >= 0 &&
+      std::size_t(m_acceptance.Selected()) < candidates.size())
+    return true;
+  m_fixlat = m_fixlon = m_fixerror = NAN;
+  m_stLatitude->SetValue(_("Select a candidate"));
+  m_stLongitude->SetValue(_("Select a candidate"));
+  m_stFixError->SetValue(_("Two possible fixes"));
+  m_bGo->Disable();
+  return false;
+}
+bool FixDialog::UpdateTwoSightFix(double correction, double latitude,
+                                  double longitude) {
+  std::vector<const Sight*> sights;
+  for (const auto& sight : m_workingSights)
+    if (sight.IsVisible() &&
+        (sight.m_Type == Sight::ALTITUDE || sight.m_Type == Sight::HORIZON) &&
+        sight.m_ShiftNm == 0)
+      sights.push_back(&sight);
+  if (sights.size() != 2) return false;
+  fix_selection::Circle circles[2];
+  for (int i = 0; i < 2; ++i) {
+    const auto& s = *sights[i];
+    double lat = NAN, lon = NAN;
+    if (s.m_DateTime.IsValid()) const_cast<Sight&>(s).BodyLocation(
+        UtcDateTime::AddSeconds(s.m_DateTime, correction), &lat, &lon, nullptr,
+        nullptr, nullptr);
+    circles[i] = {{lat, std::remainder(lon, 360.0)}, s.m_ObservedAltitude};
+  }
+  auto pair = fix_selection::Intersect(circles[0], circles[1]);
+  if (pair.positions.empty()) {
+    HideCandidates();
+    m_fixlat = m_fixlon = m_fixerror = NAN;
+    m_stLatitude->SetValue(_("N/A"));
+    m_stLongitude->SetValue(_("N/A"));
+    m_stFixError->SetValue(_("Unresolved sight geometry"));
+    m_candidateWarning->SetLabel(wxString::FromUTF8(pair.error.c_str()));
+    m_bGo->Disable();
+    return true;
+  }
+  std::sort(
+      pair.positions.begin(), pair.positions.end(),
+      [&](fix_selection::Position a, fix_selection::Position b) {
+        const double da = fix_selection::DistanceNm({latitude, longitude}, a),
+                     db = fix_selection::DistanceNm({latitude, longitude}, b);
+        if (std::abs(da - db) > 1e-6) return da < db;
+        return a.latitude != b.latitude ? a.latitude < b.latitude
+                                        : a.longitude < b.longitude;
+      });
+  if (pair.positions.size() != 2) {
+    HideCandidates();
+    m_fixlat = m_fixlon = m_fixerror = NAN;
+    m_stLatitude->SetValue(_("N/A"));
+    m_stLongitude->SetValue(_("N/A"));
+    m_stFixError->SetValue(_("Tangent sight geometry"));
+    m_candidateWarning->SetLabel(
+        _("The sight circles are tangent. Include another sight to obtain a "
+          "reliable fix."));
+    m_bGo->Disable();
+    return true;
+  }
+  if (!ChooseCandidate(pair.positions, CalculationKey(correction))) return true;
+  const auto p = pair.positions[m_acceptance.Selected()];
+  m_fixlat = p.latitude;
+  m_fixlon = p.longitude;
+  m_fixerror = 0.001;
+  m_stLatitude->SetValue(toSDMM_PlugIn(1, m_fixlat, true));
+  m_stLongitude->SetValue(toSDMM_PlugIn(2, m_fixlon, true));
+  m_stFixError->SetValue(_("Selected intersection"));
+  m_Parent->SetLastFix(m_fixlat, m_fixlon);
+  m_bGo->Enable();
+  RequestRefresh(GetParent()->GetParent());
+  return true;
+}
+
 FixDialog::~FixDialog() { dialog_geometry::Save(this, _T("Fix")); }
+
+void FixDialog::FocusStartingDr() {
+  m_drSource->SetFocus();
+  for (wxWindow* window = m_drSource; window && window != this;
+       window = window->GetParent()) {
+    if (auto* scroll = wxDynamicCast(window, wxScrolledWindow)) scroll->Scroll(0, 0);
+  }
+}
 
 void FixDialog::RunIntegrationScenario() {
   m_runningFix->SetValue(true);
@@ -465,8 +804,15 @@ void FixDialog::Update(int clock_offset) {
     FixDialog* dialog;
     ~RefreshLayout() { celestial_android::LayoutScrolls(dialog); }
   } refreshLayout{this};
+#else
+  struct RefreshLayout {
+    wxScrolledWindow* scroll;
+    ~RefreshLayout() { if (scroll) { scroll->Layout(); scroll->FitInside(); } }
+  } refreshLayout{m_desktopScroll};
 #endif
   m_clock_offset = clock_offset;
+  RefreshDrSources();
+  m_bGo->Disable();
   double effective_correction = clock_offset;
   const LunarSolutionRecord* record = nullptr;
   const int selection = m_lunarSolution->GetSelection();
@@ -486,6 +832,7 @@ void FixDialog::Update(int clock_offset) {
     m_bGo->Disable();
     return;
   }
+  m_acceptance.SetInputs(CalculationKey(effective_correction));
   if (m_runningFix && m_runningFix->GetValue()) {
     UpdateRunningFix(effective_correction);
     return;
@@ -509,19 +856,10 @@ void FixDialog::Update(int clock_offset) {
 
   double X[3]; /* result */
 
-  double initiallat = m_sInitialLatitude->GetValue(),
-         initiallon = m_sInitialLongitude->GetValue();
-#ifdef __OCPN__ANDROID__
-  if (!m_androidInitialLatitude->GetAngle(&initiallat) ||
-      !m_androidInitialLongitude->GetAngle(&initiallon)) {
-    m_fixlat = m_fixlon = m_fixerror = NAN;
-    m_stLatitude->SetValue(_("N/A"));
-    m_stLongitude->SetValue(_("N/A"));
-    m_stFixError->SetValue(_("Invalid DR position"));
-    m_bGo->Disable();
-    return;
-  }
-#endif
+  double initiallat, initiallon;
+  if (!ReadDr(&initiallat, &initiallon)) return;
+  if (UpdateTwoSightFix(effective_correction, initiallat, initiallon)) return;
+  HideCandidates();
   X[0] = cos(d_to_r(initiallat)) * cos(d_to_r(initiallon));
   X[1] = cos(d_to_r(initiallat)) * sin(d_to_r(initiallon));
   X[2] = sin(d_to_r(initiallat));
@@ -789,24 +1127,41 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
   }
   ObserverMotion motion;
   motion.referenceUtc = epoch;
-  motion.latitude = m_sInitialLatitude->GetValue();
-  motion.longitude = m_sInitialLongitude->GetValue();
-#ifdef __OCPN__ANDROID__
-  if (!m_androidInitialLatitude->GetAngle(&motion.latitude) ||
-      !m_androidInitialLongitude->GetAngle(&motion.longitude)) {
-    m_fixlat = m_fixlon = m_fixerror = NAN;
-    m_stLatitude->SetValue(_("N/A"));
-    m_stLongitude->SetValue(_("N/A"));
-    m_stFixError->SetValue(_("Invalid DR position"));
-    m_bGo->Disable();
-    return;
-  }
-#endif
+  if (!ReadDr(&motion.latitude, &motion.longitude)) return;
   motion.courseTrue = manual ? 0.0 : m_courseTrue->GetValue();
   motion.speedKnots = manual ? 0.0 : m_speedKnots->GetValue();
   motion.moving = motion.speedKnots != 0.0;
-  const RunningFixResult fix = RunningFixSolver::Solve(
-      observations, motion, motion.latitude, motion.longitude);
+  RunningFixResult fix;
+  if (observations.size() == 2) {
+    const auto key = CalculationKey(clock_offset);
+    wxString error;
+    if (key != m_runningCandidateKey) {
+      m_runningCandidates = RunningFixSolver::Candidates(
+          observations, motion, motion.latitude, motion.longitude, &error);
+      m_runningCandidateKey = key;
+    }
+    if (m_runningCandidates.size() < 2) {
+      HideCandidates();
+      m_fixlat = m_fixlon = m_fixerror = NAN;
+      m_stLatitude->SetValue(_("N/A"));
+      m_stLongitude->SetValue(_("N/A"));
+      m_stFixError->SetValue(_("Unresolved ambiguity"));
+      m_candidateWarning->SetLabel(
+          _("Both running-fix intersections could not be validated. Include "
+            "another sight or check the motion data."));
+      m_bGo->Disable();
+      return;
+    }
+    std::vector<fix_selection::Position> positions;
+    for (const auto& candidate : m_runningCandidates)
+      positions.push_back({candidate.latitude, candidate.longitude});
+    if (!ChooseCandidate(positions, key)) return;
+    fix = m_runningCandidates[m_acceptance.Selected()];
+  } else {
+    HideCandidates();
+    fix = RunningFixSolver::Solve(observations, motion, motion.latitude,
+                                  motion.longitude);
+  }
   if (!fix.valid) {
     m_fixlat = m_fixlon = m_fixerror = NAN;
     m_stLatitude->SetValue(_("   N/A   "));
@@ -861,6 +1216,7 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
 }
 
 void FixDialog::OnGo(wxCommandEvent& event) {
+  if (!m_bGo->IsEnabled() || !std::isfinite(m_fixlat) || !std::isfinite(m_fixlon)) return;
   double scale = 1e-5 / m_fixerror;
   if (scale < 1e-4) scale = 1e-4;
 

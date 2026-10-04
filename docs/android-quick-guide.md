@@ -32,7 +32,16 @@ the observation to inspect its stored values.
 
 In **Fix**, calculate a celestial fix or analyze a sight sequence. Review which
 observations are included, the assumed position, residuals and uncertainty.
-Use **Show fix on chart** only after checking the result.
+The starting DR appears above the results. It defaults to the latest included
+observation's saved DR. Choose another observation, enter a DR manually, or
+explicitly select the current boat position. Boat position is never an implicit
+replacement for missing saved DR.
+
+Two observations can give two valid intersections far apart. Review both
+positions and their distances from the starting DR, then select a candidate.
+**Show selected fix on chart** remains disabled until you make that selection.
+Changing the observations, DR, time correction or running-fix motion requires
+selecting again. Tangent or unresolved geometry requires another sight.
 Motion and timing matter for running observations; a formal uncertainty does
 not include every source of navigation error.
 
