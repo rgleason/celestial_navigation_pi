@@ -1,0 +1,24 @@
+{
+  "device_model": "Samsung SM-X210",
+  "abi": "arm64-v8a",
+  "ndk": "26.1.10909125",
+  "optimized_runtime_source": "8d2f43d42b67a7eaf1113ce79e1f48fbb7e93f01",
+  "baseline_source": "6083bae141d1f64b8e7e4082ff619a09ee7cde70",
+  "fixture_states": 1584,
+  "same_platform_baseline_vs_optimized_maximum_differences": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "unchanged_baseline_vs_linux_fixture_max_angle_deg": 5.589811280515278e-09,
+  "unchanged_baseline_vs_linux_fixture_max_range_km": 1.4543533325195312e-05,
+  "lunar_original_summation_samples": 6192,
+  "maximum_lunar_coordinate_rounding_mm": 7.275957614183426e-06,
+  "checks_run_in_adb_temporary_directory": true,
+  "opencpn_profile_and_plugin_untouched": true,
+  "checker_executable_sha256": "c8d74045e6240f03ccb91b9ce234f97846a745556c653ae99249baa6775ac8cd"
+}

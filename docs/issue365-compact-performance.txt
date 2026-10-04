@@ -104,6 +104,16 @@ Geometry boundary, cancellation/concurrent engine and provider-selection tests
 remain green. The UI test supersedes several jobs, verifies final-position
 almanac values, and closes with work pending to exercise cancellation/join.
 
+The isolated ARM64 checker also passes on the connected SM-X210 tablet:
+1584 optimized states match the unchanged 2.9.4 engine's ARM64 results exactly.
+The original ARM64 engine itself differs from the frozen Linux capture by up
+to 5.6e-9 degrees and 1.5 cm in range; the cross-platform regression limit is
+therefore 1e-8 degrees / 0.1 m. This is a test-portability adjustment, not a
+change in astronomical calculations. Both lunar fits pass all 6192 samples
+on ARM64, with maximum coordinate rounding of 0.00000728 mm. See the Android
+checker/evidence in validation/compact-performance. This check uses /data/local/tmp
+and leaves the installed OpenCPN plugin, profile and user sights untouched.
+
 2.9.5 remains Alpha. CI and public Mac universal/Android test packages qualify
 those builds separately; this local report does not claim Mac/Android timing
 measurements. No 2.8.x source or production catalogue publication is changed.

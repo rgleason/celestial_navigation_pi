@@ -91,8 +91,12 @@ TEST(CompactPerformance, FrozenPreOptimizationCoordinatesAreUnchanged) {
         actual.geometric_hc_deg, actual.observer_semidiameter_deg};
     // Cross-platform libm rounding is allowed; tolerances remain far below
     // the engine's independently qualified astronomical accuracy budgets.
+    // Unchanged 2.9.4 on ARM64 differs from this Linux capture by up to
+    // 5.6e-9 degrees and 1.5 cm at planetary distances; use a small
+    // range bound. The 0.1 m tolerance also covers cancellation rounding
+    // when subtracting the much larger terrestrial barycentric position.
     for (unsigned i = 0; i < 7; ++i)
-      EXPECT_NEAR(std::stod(row[i+4]), values[i], i == 2 ? 1e-6 : 1e-9);
+      EXPECT_NEAR(std::stod(row[i+4]), values[i], i == 2 ? 1e-4 : 1e-8);
   }
 }
 
