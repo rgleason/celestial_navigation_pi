@@ -6,6 +6,8 @@
 
 #include <wx/dialog.h>
 #include <wx/timer.h>
+#include "AndroidPlannerWorker.h"
+#include <memory>
 
 class CelestialNavigationDialog;
 class NavigationAngleCtrl;
@@ -22,8 +24,6 @@ class wxStaticText;
 class wxTextCtrl;
 #ifdef __OCPN__ANDROID__
 #include "NauticalTimeCtrl.h"
-#include "AndroidPlannerWorker.h"
-#include <memory>
 class QListWidget;
 class wxButton;
 using CelestialTimePicker = NauticalTimeCtrl;
@@ -82,6 +82,16 @@ private:
   void CreateSelectedSight(wxCommandEvent& event);
   void FindLunarWindows(wxCommandEvent& event);
   void SolveSpecialLatitude(wxCommandEvent& event);
+#ifndef __OCPN__ANDROID__
+  void StartDesktopCalculation(const ObserverMotion& motion);
+  void PollDesktopCalculation(wxTimerEvent& event);
+  std::unique_ptr<celestial_android::PlannerWorker> m_desktopWorker;
+  celestial_android::PlannerResults m_desktopResults;
+  unsigned m_desktopGeneration = 0;
+  bool m_desktopReady = false, m_desktopPending = false;
+  int m_desktopMoonPathSpan = -1;
+  wxTimer m_calculationPoll;
+#endif
 #ifdef CELESTIAL_PLANNER_INTEGRATION_TEST
   bool SelectWaypointForIntegration(const wxString& name);
   void OnWaypointIntegrationTimer(wxTimerEvent& event);
@@ -185,6 +195,7 @@ private:
   std::vector<RankedBody> m_rankedBodies;
   PlanningResult m_planningResult;
   std::vector<AlmanacRow> m_almanacRows;
+  DailyEventsResult m_dailyEvents;
 };
 
 #endif

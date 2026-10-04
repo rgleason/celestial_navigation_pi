@@ -1,0 +1,29 @@
+Running main() from /usr/src/debug/gtest/googletest-1.18.0/googletest/src/gtest_main.cc
+Note: Google Test filter = CompactPerformanceUi.*
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from CompactPerformanceUi
+[ RUN      ] CompactPerformanceUi.DialogReturnsImmediatelyAndOnlyPublishesLatestContext
+21:13:17: Loading toolbar icon: /home/paul/src/OpenCPN/.worktrees/celnav-fix-2.9.4/test/../data/celestial_navigation.svg
+21:13:17: Loading toolbar icon: /home/paul/src/OpenCPN/.worktrees/celnav-fix-2.9.4/test/../data/celestial_navigation_rollover.svg
+21:13:17: Loading toolbar icon: /home/paul/src/OpenCPN/.worktrees/celnav-fix-2.9.4/test/../data/celestial_navigation_toggled.svg
+21:13:17: Debug: Adding duplicate image handler for 'PNG file'
+21:13:17: Debug: Adding duplicate image handler for 'JPEG file'
+21:13:17: Debug: Adding duplicate image handler for 'TIFF file'
+21:13:17: Debug: Adding duplicate image handler for 'GIF file'
+21:13:17: Debug: Adding duplicate image handler for 'PNM file'
+21:13:17: Debug: Adding duplicate image handler for 'PCX file'
+21:13:17: Debug: Adding duplicate image handler for 'IFF file'
+21:13:17: Debug: Adding duplicate image handler for 'Windows icon file'
+21:13:17: Debug: Adding duplicate image handler for 'Windows cursor file'
+21:13:17: Debug: Adding duplicate image handler for 'Windows animated cursor file'
+21:13:17: Debug: Adding duplicate image handler for 'TGA file'
+21:13:17: Debug: Adding duplicate image handler for 'XPM file'
+21:13:17: Debug: Using icon path: /home/paul/src/OpenCPN/.worktrees/celnav-fix-2.9.4/test/../data/celestial_navigation_panel.png
+21:13:19: Debug: window wxWindow@0x5645145f0840 ("panel") lost focus even though it didn't have it
+[       OK ] CompactPerformanceUi.DialogReturnsImmediatelyAndOnlyPublishesLatestContext (1960 ms)
+[----------] 1 test from CompactPerformanceUi (1960 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (1960 ms total)
+[  PASSED  ] 1 test.

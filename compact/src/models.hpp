@@ -5,17 +5,18 @@
 #include <vector>
 namespace celnav {
 using Vec = std::array<double,3>;
-struct PlanetTerm { unsigned planet, variable, power; double sine, cosine, phase, rate; };
+struct PlanetTerm { unsigned planet, variable, power; double sine, cosine, phase, rate; unsigned argument = 0; };
 class PlanetModel {
  public:
   explicit PlanetModel(const std::string& path);
   Vec Evaluate(int planet, double jd) const;
  private:
   std::array<std::vector<PlanetTerm>,7> terms_;
+  std::array<std::vector<std::array<double,2>>,7> arguments_;
 };
 class MoonModel {
  public:
-  MoonModel(const std::string& path, int fit);
+  MoonModel(const std::string& path, int fit, bool reuse = true);
   ~MoonModel();
   Vec Evaluate(double jd) const;
  private:
