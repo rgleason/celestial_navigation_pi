@@ -7,10 +7,12 @@
 #include <fstream>
 #include <map>
 #include <locale>
+#include <list>
 #include <mutex>
 #include <regex>
 #include <sstream>
 #include <stdexcept>
+#include <tuple>
 
 namespace celnav {
 namespace {
@@ -24,7 +26,40 @@ Vec unit(const Vec&v){double n=norm(v);if(!(n>0))throw std::runtime_error("Zero 
 double wrap(double x){return std::fmod(std::fmod(x,360)+360,360);}
 struct Star{double ra,dec,pmra,pmdec,rv,parallax;};
 struct Day{int mjd;double dut1;char quality;};
-struct Context{Vec earth,earthHelio,earthVelocity,sun;};
+struct Context{Vec earth,earthHelio,earthVelocity,sun,earthEmb,moon;};
+// A planner scans hundreds of epochs before revisiting them. Keep exact
+// results in a bounded LRU, rather than expiring a day after sixteen samples.
+// Separate caches belong to each Engine/data pack and use Windows-safe locks.
+template<class Key,class Value,size_t Capacity=2048> class ExactCache {
+  mutable eclipse::Mutex mutex_;
+  mutable std::list<Key> order_;
+  mutable std::map<Key,std::pair<Value,typename std::list<Key>::iterator>> values_;
+ public:
+  bool Get(const Key& key,Value* value)const{
+    eclipse::MutexGuard lock(mutex_);
+    auto found=values_.find(key);if(found==values_.end())return false;
+    order_.splice(order_.end(),order_,found->second.second);
+    *value=found->second.first;return true;
+  }
+  void Put(const Key& key,const Value& value)const{
+    eclipse::MutexGuard lock(mutex_);
+    auto found=values_.find(key);
+    if(found!=values_.end())return;
+    if(values_.size()==Capacity){values_.erase(order_.front());order_.pop_front();}
+    order_.push_back(key);
+    values_.emplace(key,std::make_pair(value,std::prev(order_.end())));
+  }
+};
+using ResultKey=std::tuple<std::string,std::string,double,double,double,double,double,double,double,bool,bool>;
+ResultKey resultKey(const Request& r){
+  auto time=[](double v){return std::isnan(v)?std::numeric_limits<double>::infinity():v;};
+  return {r.body,r.utc,r.latitude_deg,r.longitude_deg,r.height_m,time(r.dut1_seconds),
+    time(r.tai_minus_utc),r.polar_x_arcsec,r.polar_y_arcsec,r.venus_phase,r.observer_direction};
+}
+struct Geocentric{Vec direction;double range=0;std::map<double,Vec> targets,suns;};
+using GeocentricKey=std::tuple<std::string,double,bool>;
+struct Orientation{double bpn[3][3]{},cirs[3][3]{},fixed[3][3]{};double aries=0,era=0,sp=0;};
+using OrientationKey=std::tuple<double,double,double,double>;
 struct Calendar {int y,m,d,h,min;double sec;};
 Calendar parse(const std::string&s){
   static const std::regex format(R"(^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2}(?:\.[0-9]+)?)(?:Z)?$)");
@@ -46,11 +81,13 @@ struct Engine::Impl{
   std::map<std::string,Star> stars;
   std::vector<Day> days;
   double moon_bias[3][3]{};
-  mutable eclipse::Mutex context_mutex;
-  mutable std::vector<std::pair<double,Context>> contexts;
+  ExactCache<double,Context> contexts;
+  ExactCache<ResultKey,Result> results;
+  ExactCache<GeocentricKey,Geocentric> geocentric;
+  ExactCache<OrientationKey,Orientation> orientations;
   explicit Impl(Options opts):options(std::move(opts)),
     planets(options.data_directory+(options.full_series?"/../.work/vsop-full.bin":"/vsop2013.bin")),
-    moon(options.data_directory+(options.full_series?"/../.work/moon-full-":"/moon-")+std::to_string(options.lunar_fit)+".bin",options.lunar_fit){
+    moon(options.data_directory+(options.full_series?"/../.work/moon-full-":"/moon-")+std::to_string(options.lunar_fit)+".bin",options.lunar_fit,options.reuse_lunar_arguments){
     std::ifstream input(options.data_directory+"/stars.tsv");input.imbue(std::locale::classic());std::string line;
     while(std::getline(input,line)){
       std::istringstream stream(line);stream.imbue(std::locale::classic());std::string name;std::getline(stream,name,'\t');Star s;
@@ -79,15 +116,20 @@ struct Engine::Impl{
     return sub(VsopEclipticToIcrf(planets.Evaluate(3,jd)),mul(moonIcrf(jd),1/(au*(emrat+1))));
   }
   Vec earthBary(double jd)const{return add(earthHelio(jd),solarBarycentre(jd));}
-  Vec target(const std::string&body,double jd)const{
-    if(body=="Sun")return solarBarycentre(jd);
+  Vec target(const std::string&body,double jd,std::map<double,Vec>& suns)const{
+    auto solar=[&]{
+      auto found=suns.find(jd);
+      if(found==suns.end())found=suns.emplace(jd,solarBarycentre(jd)).first;
+      return found->second;
+    };
+    if(body=="Sun")return solar();
     if(body=="Moon"){
       const Vec lunar=moonIcrf(jd);
 #if COMPACT_WITH_BASELINE
       if(options.legacy_orbits)return add(earthBary(jd),mul(lunar,1/au));
 #endif
       // EMB to lunar barycentric position: evaluate the lunar series once.
-      return add(add(VsopEclipticToIcrf(planets.Evaluate(3,jd)),solarBarycentre(jd)),
+      return add(add(VsopEclipticToIcrf(planets.Evaluate(3,jd)),solar()),
                  mul(lunar,(1-1/(emrat+1))/au));
     }
     static const std::map<std::string,int> ids={{"Mercury",1},{"Venus",2},{"Mars",4},{"Jupiter",5},{"Saturn",6}};
@@ -96,27 +138,48 @@ struct Engine::Impl{
 #if COMPACT_WITH_BASELINE
     if(options.legacy_orbits)helio=LegacyHeliocentric(it->second,jd,options.data_directory+"/../baseline/vsop87d.txt");
 #endif
-    return add(helio,solarBarycentre(jd));
+    return add(helio,solar());
   }
   Context context(const Epoch&e)const{
-    if(options.cache_epoch_context){
-      eclipse::MutexGuard lock(context_mutex);
-      for(const auto& entry:contexts)if(entry.first==e.tdb_jd)return entry.second;
-    }
+    Context c;
+    if(options.cache_epoch_context&&contexts.Get(e.tdb_jd,&c))return c;
     constexpr double step=.005;
-    Context c;c.earthHelio=earthHelio(e.tdb_jd);c.sun=solarBarycentre(e.tdb_jd);c.earth=add(c.earthHelio,c.sun);
-    c.earthVelocity=mul(sub(earthBary(e.tdb_jd+step),earthBary(e.tdb_jd-step)),1/(2*step));
-    if(options.cache_epoch_context){
-      eclipse::MutexGuard lock(context_mutex);
-      for(const auto& entry:contexts)if(entry.first==e.tdb_jd)return entry.second;
-      if(contexts.size()==16)contexts.erase(contexts.begin());
-      contexts.emplace_back(e.tdb_jd,c);
+    c.moon=moonIcrf(e.tdb_jd);
+#if COMPACT_WITH_BASELINE
+    if(options.legacy_orbits){
+      c.earthEmb=LegacyHeliocentric(3,e.tdb_jd,options.data_directory+"/../baseline/vsop87d.txt");
+      c.earthHelio=c.earthEmb;
+    }else
+#endif
+    {
+      c.earthEmb=VsopEclipticToIcrf(planets.Evaluate(3,e.tdb_jd));
+      c.earthHelio=sub(c.earthEmb,mul(c.moon,1/(au*(emrat+1))));
     }
+    c.sun=solarBarycentre(e.tdb_jd);c.earth=add(c.earthHelio,c.sun);
+    c.earthVelocity=mul(sub(earthBary(e.tdb_jd+step),earthBary(e.tdb_jd-step)),1/(2*step));
+    if(options.cache_epoch_context)contexts.Put(e.tdb_jd,c);
     return c;
+  }
+  Orientation orientation(const Request&r,const Epoch&e)const{
+    const OrientationKey key{e.tt_jd,e.ut1_jd,r.polar_x_arcsec,r.polar_y_arcsec};
+    Orientation o;
+    if(options.cache_epoch_context&&orientations.Get(key,&o))return o;
+    // Use the identical ERFA building blocks underlying Gst06a, C2i06a
+    // and C2t06a, sharing their common IAU 2006/2000A matrix once.
+    eraPnm06a(2451545,e.tt_jd-2451545,o.bpn);
+    o.aries=wrap(eraGst06(2451545,e.ut1_jd-2451545,2451545,e.tt_jd-2451545,o.bpn)/deg);
+    double x,y;eraBpn2xy(o.bpn,&x,&y);
+    eraC2ixys(x,y,eraS06(2451545,e.tt_jd-2451545,x,y),o.cirs);
+    o.era=eraEra00(2451545,e.ut1_jd-2451545);o.sp=eraSp00(2451545,e.tt_jd-2451545);
+    double polar[3][3];eraPom00(r.polar_x_arcsec*deg/3600,r.polar_y_arcsec*deg/3600,o.sp,polar);
+    eraC2tcio(o.cirs,o.era,polar,o.fixed);
+    if(options.cache_epoch_context)orientations.Put(key,o);
+    return o;
   }
   Vec direction(const Request&r,const Epoch&e,const Context&context,const Vec&station,const Vec&stationVelocity,double&range,
                 std::map<double,Vec>& targets,std::map<double,Vec>& suns)const{
     const Vec observer=add(context.earth,station);
+    suns.emplace(e.tdb_jd,context.sun);
     const Vec velocity=add(context.earthVelocity,stationVelocity);
     auto star=stars.find(r.body);
     if(star!=stars.end()){
@@ -134,7 +197,18 @@ struct Engine::Impl{
     double emission=e.tdb_jd;Vec targetPosition{},delta{};bool converged=false;
     for(int i=0;i<12;i++){
       auto pos=targets.find(emission);
-      if(pos==targets.end())pos=targets.emplace(emission,target(r.body,emission)).first;
+      if(pos==targets.end()){
+        Vec value;
+        if(emission==e.tdb_jd&&r.body=="Sun")value=context.sun;
+        else if(emission==e.tdb_jd&&r.body=="Moon"){
+#if COMPACT_WITH_BASELINE
+          if(options.legacy_orbits)value=add(context.earth,mul(context.moon,1/au));
+          else
+#endif
+          value=add(add(context.earthEmb,context.sun),mul(context.moon,(1-1/(emrat+1))/au));
+        }else value=target(r.body,emission,suns);
+        pos=targets.emplace(emission,value).first;
+      }
       targetPosition=pos->second;delta=sub(targetPosition,observer);
       double next=e.tdb_jd-norm(delta)/cAuDay;
       if(std::abs(next-emission)<5e-10){converged=true;break;}emission=next;
@@ -205,30 +279,43 @@ Epoch Engine::ResolveEpoch(const Request&r)const{
 Result Engine::Evaluate(const Request&r)const{
   for(double value:{r.latitude_deg,r.longitude_deg,r.height_m,r.polar_x_arcsec,r.polar_y_arcsec})if(!std::isfinite(value))throw std::invalid_argument("Nonfinite observer input");
   if(std::abs(r.latitude_deg)>90||std::abs(r.longitude_deg)>180||r.height_m<=-6370000)throw std::invalid_argument("Invalid observer coordinates");
-  Result out;out.body=r.body;out.epoch=ResolveEpoch(r);const auto&e=out.epoch;
+  if(std::isinf(r.tai_minus_utc)||std::isinf(r.dut1_seconds))throw std::invalid_argument("Infinite time offset");
+  Result out;
+  const auto key=resultKey(r);
+  if(impl_->options.cache_epoch_context&&impl_->results.Get(key,&out))return out;
+  out.body=r.body;out.epoch=ResolveEpoch(r);const auto&e=out.epoch;
   out.source=impl_->options.legacy_orbits?"Modern astrometry / legacy orbits":impl_->stars.count(r.body)?"ERFA / frozen stellar catalogue":"Compact VSOP2013 / ELP-MPP02";
-  out.aries_gha_deg=wrap(eraGst06a(2451545,e.ut1_jd-2451545,2451545,e.tt_jd-2451545)/deg);
+  auto orientation=impl_->orientation(r,e);
+  out.aries_gha_deg=orientation.aries;
   if(r.body=="Aries"){out.gha_deg=out.aries_gha_deg;out.source="IAU 2006/2000A Earth rotation";return out;}
   Vec zero{};double range;
-  std::map<double,Vec> targets,suns;
   const auto context=impl_->context(e);
-  Vec geocentric=impl_->direction(r,e,context,zero,zero,range,targets,suns);
+  const GeocentricKey geoKey{r.body,e.tdb_jd,r.venus_phase};
+  Geocentric geo;
+  if(!impl_->options.cache_epoch_context||!impl_->geocentric.Get(geoKey,&geo)){
+    geo.direction=impl_->direction(r,e,context,zero,zero,geo.range,geo.targets,geo.suns);
+    if(impl_->options.cache_epoch_context)impl_->geocentric.Put(geoKey,geo);
+  }
+  Vec geocentric=geo.direction;range=geo.range;
   out.distance_km=range;angles(geocentric,out.icrf_ra_deg,out.icrf_declination_deg);
-  double bpn[3][3];eraPnm06a(2451545,e.tt_jd-2451545,bpn);Vec equinox{};eraRxp(bpn,geocentric.data(),equinox.data());
+  Vec equinox{};eraRxp(orientation.bpn,geocentric.data(),equinox.data());
   angles(equinox,out.ra_deg,out.declination_deg);out.gha_deg=wrap(out.aries_gha_deg-out.ra_deg);
   double radius=r.body=="Sun"?695700:r.body=="Moon"?1737.4:0;
   if(range>6378.137){out.horizontal_parallax_deg=std::asin(6378.137/range)/deg;if(radius>0)out.geocentric_semidiameter_deg=std::asin(radius/range)/deg;}
-  double cirs[3][3],stationPV[2][3];eraC2i06a(2451545,e.tt_jd-2451545,cirs);
+  if(!r.observer_direction){
+    if(impl_->options.cache_epoch_context)impl_->results.Put(key,out);
+    return out;
+  }
+  double stationPV[2][3];
   eraPvtob(r.longitude_deg*deg,r.latitude_deg*deg,r.height_m,r.polar_x_arcsec*deg/3600,r.polar_y_arcsec*deg/3600,
-           eraSp00(2451545,e.tt_jd-2451545),eraEra00(2451545,e.ut1_jd-2451545),stationPV);
-  Vec station{},stationVelocity{};eraTrxp(cirs,stationPV[0],station.data());eraTrxp(cirs,stationPV[1],stationVelocity.data());
+           orientation.sp,orientation.era,stationPV);
+  Vec station{},stationVelocity{};eraTrxp(orientation.cirs,stationPV[0],station.data());eraTrxp(orientation.cirs,stationPV[1],stationVelocity.data());
   station=mul(station,1/(au*1000));stationVelocity=mul(stationVelocity,86400/(au*1000));
-  Vec observed=impl_->direction(r,e,context,station,stationVelocity,range,targets,suns);
+  Vec observed=impl_->direction(r,e,context,station,stationVelocity,range,geo.targets,geo.suns);
   angles(observed,out.observer_icrf_ra_deg,out.observer_icrf_declination_deg);
   if(radius>0)out.observer_semidiameter_deg=std::asin(radius/range)/deg;
-  double fixedMatrix[3][3];eraC2t06a(2451545,e.tt_jd-2451545,2451545,e.ut1_jd-2451545,r.polar_x_arcsec*deg/3600,r.polar_y_arcsec*deg/3600,fixedMatrix);
   auto horizon=[&](const Vec&direction,double&alt,double*az){
-    Vec fixed{};eraRxp(fixedMatrix,const_cast<double*>(direction.data()),fixed.data());
+    Vec fixed{};eraRxp(orientation.fixed,const_cast<double*>(direction.data()),fixed.data());
     double lat=r.latitude_deg*deg,lon=r.longitude_deg*deg;
     double east=-sin(lon)*fixed[0]+cos(lon)*fixed[1];
     double north=-sin(lat)*cos(lon)*fixed[0]-sin(lat)*sin(lon)*fixed[1]+cos(lat)*fixed[2];
@@ -237,6 +324,7 @@ Result Engine::Evaluate(const Request&r)const{
     if(az){out.azimuth_defined=hypot(east,north)>1e-12;*az=out.azimuth_defined?wrap(atan2(east,north)/deg):std::numeric_limits<double>::quiet_NaN();}
   };
   horizon(geocentric,out.geometric_hc_deg,nullptr);horizon(observed,out.airless_altitude_deg,&out.azimuth_deg);
+  if(impl_->options.cache_epoch_context)impl_->results.Put(key,out);
   return out;
 }
 std::vector<Result> Engine::EvaluateMany(const std::vector<Request>& requests)const{

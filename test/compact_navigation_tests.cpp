@@ -311,8 +311,7 @@ TEST(CompactNavigation, LunarCallbackKeepsUtcAcrossLocalDstGap) {
               0, 1e-12);
 }
 
-// More epochs than the 16-entry cache force insertion and eviction while
-// independent callers share the production engine.
+// Independent callers share exact epoch/result caches safely.
 TEST(CompactNavigation, ConcurrentEpochCacheMatchesUncachedResults) {
   CompactScope scope;
   const auto engine = celestial_navigation::CompactEngine();

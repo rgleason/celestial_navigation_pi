@@ -11,6 +11,8 @@
 #include <wx/filename.h>
 #include <wx/log.h>
 #include <wx/utils.h>
+#include <wx/thread.h>
+#include <wx/app.h>
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -121,6 +123,9 @@ bool CompactEphemerisEnabled() {
 #ifdef __OCPN__ANDROID__
   return compact_enabled.load();
 #else
+  // Desktop planner workers use the preference captured on the GUI thread.
+  // wxFileConfig and its current path must never be read by a worker.
+  if (wxTheApp && !wxThread::IsMain()) return compact_enabled.load();
   bool enabled = true;
   if (auto* config = GetOCPNConfigObject())
     config->Read("/PlugIns/CelestialNavigation/UseCompactEphemeris", &enabled,
@@ -151,13 +156,15 @@ std::shared_ptr<const celnav::Engine> CompactEngine(std::string* reason) {
   static wxString retained_path;
   static wxDateTime retained_mtime;
   static std::shared_ptr<const celnav::Engine> retained;
+  static bool attempted = false;
   static std::string failure;
   const wxString path = DataPath();
   const wxFileName manifest(path + "/manifest.json");
   const wxDateTime mtime =
       manifest.FileExists() ? manifest.GetModificationTime() : wxDateTime();
   eclipse::MutexGuard lock(mutex);
-  if (!retained || retained_path != path || retained_mtime != mtime) {
+  if (!attempted || retained_path != path || retained_mtime != mtime) {
+    attempted = true;
     retained.reset();
     retained_path = path;
     retained_mtime = mtime;
@@ -173,10 +180,9 @@ std::shared_ptr<const celnav::Engine> CompactEngine(std::string* reason) {
   if (!retained && reason) *reason = "Compact data unavailable: " + failure;
   return retained;
 }
-celnav::Request CompactRequest(
+static celnav::Request RequestWithTimeData(
     const wxString& body, const wxDateTime& time, double override_dut1,
-    const std::shared_ptr<const eclipse::Dut1Table>& update, bool instant) {
-  const auto d = TimeData(time, update, instant);
+    const eclipse::Dut1Result& d, bool instant) {
   celnav::Request r;
   r.body = body.ToStdString();
   r.utc = CompactUtc(time, instant);
@@ -188,6 +194,12 @@ celnav::Request CompactRequest(
                         : eclipse::TaiMinusUtcSeconds(Calendar(time, instant));
   r.venus_phase = body == "Venus";
   return r;
+}
+celnav::Request CompactRequest(
+    const wxString& body, const wxDateTime& time, double override_dut1,
+    const std::shared_ptr<const eclipse::Dut1Table>& update, bool instant) {
+  return RequestWithTimeData(body, time, override_dut1,
+                             TimeData(time, update, instant), instant);
 }
 bool TryCompactNavigationSample(const wxString& body, const wxDateTime& time,
                                 De440NavigationSample* sample,
@@ -201,20 +213,16 @@ bool TryCompactNavigationSample(const wxString& body, const wxDateTime& time,
   const auto engine = CompactEngine(reason);
   if (!engine) return false;
   try {
-    const auto coverage =
-        engine->CheckCoverage(body.ToStdString(), CompactUtc(time, instant),
-                              CompactUtc(time, instant));
-    if (!coverage.supported) {
-      if (reason) *reason = coverage.reason;
-      return false;
-    }
     const auto update = eclipse::GetDut1Update();
-    auto request = CompactRequest(body, time, override_dut1, update, instant);
+    const auto dated = TimeData(time, update, instant);
+    auto request = RequestWithTimeData(body, time, override_dut1, dated, instant);
     request.latitude_deg = latitude;
     request.longitude_deg = longitude;
     request.height_m = height;
+    // BodyLocation/almanac consumers don't use observer directions. Retain
+    // the full forward calculation only for consumers requesting that result.
+    request.observer_direction = output != nullptr;
     auto result = engine->Evaluate(request);
-    const auto dated = TimeData(time, update, instant);
     result.epoch.dut1_available =
         std::isfinite(override_dut1) || dated.available;
     De440NavigationSample value;
@@ -349,6 +357,8 @@ EnhancedLunarProvider SelectEnhancedLunarProvider(
             const auto dated = TimeData(time, update, true);
             auto moon_request = CompactRequest("Moon", time, NAN, update, true);
             auto other_request = CompactRequest(body, time, NAN, update, true);
+            moon_request.observer_direction = false;
+            other_request.observer_direction = false;
             const auto values =
                 engine->EvaluateMany({moon_request, other_request});
             const auto& m = values[0];

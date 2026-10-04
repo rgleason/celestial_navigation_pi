@@ -1,0 +1,26 @@
+mode=compact scenario=ui
+20:00:17: Debug: Adding duplicate image handler for 'PNG file'
+20:00:17: Debug: Adding duplicate image handler for 'JPEG file'
+20:00:17: Debug: Adding duplicate image handler for 'TIFF file'
+20:00:17: Debug: Adding duplicate image handler for 'GIF file'
+20:00:17: Debug: Adding duplicate image handler for 'PNM file'
+20:00:17: Debug: Adding duplicate image handler for 'PCX file'
+20:00:17: Debug: Adding duplicate image handler for 'IFF file'
+20:00:17: Debug: Adding duplicate image handler for 'Windows icon file'
+20:00:17: Debug: Adding duplicate image handler for 'Windows cursor file'
+20:00:17: Debug: Adding duplicate image handler for 'Windows animated cursor file'
+20:00:17: Debug: Adding duplicate image handler for 'TGA file'
+20:00:17: Debug: Adding duplicate image handler for 'XPM file'
+20:00:17: Debug: Using icon path: /home/paul/src/OpenCPN/.worktrees/celnav-fix-2.9.4/data/celestial_navigation_panel.png
+planner_construct ms=16956.4 count=1
+
+(celnav365-benchmark:1111797): Gtk-CRITICAL **: 20:00:34.637: gtk_widget_event: assertion 'WIDGET_REALIZED_FOR_EVENT (widget, event)' failed
+
+(celnav365-benchmark:1111797): Gtk-CRITICAL **: 20:00:52.121: gtk_widget_event: assertion 'WIDGET_REALIZED_FOR_EVENT (widget, event)' failed
+
+(celnav365-benchmark:1111797): Gtk-CRITICAL **: 20:00:52.121: gtk_widget_event: assertion 'WIDGET_REALIZED_FOR_EVENT (widget, event)' failed
+
+(celnav365-benchmark:1111797): Gtk-CRITICAL **: 20:00:52.121: gtk_widget_event: assertion 'WIDGET_REALIZED_FOR_EVENT (widget, event)' failed
+20:00:52: Debug: window wxWindow@0x55ebc9960500 ("panel") lost focus even though it didn't have it
+switch_now_to_manual ms=18362.8 count=1
+latitude_edit ms=18066 count=1

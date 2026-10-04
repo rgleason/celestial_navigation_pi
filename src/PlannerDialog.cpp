@@ -515,6 +515,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
       new wxTextCtrl(m_dateContainer, wxID_ANY, wxEmptyString,
                      wxDefaultPosition, wxSize(145, -1), wxTE_PROCESS_ENTER);
   m_nauticalDate->SetHint(_("YYYY-MM-DD"));
+  m_nauticalDate->SetName("PlannerDate");
   dateSizer->Add(m_utcDate, 0, wxEXPAND);
   dateSizer->Add(m_nauticalDate, 0, wxEXPAND);
   m_dateContainer->SetSizer(dateSizer);
@@ -526,6 +527,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
       new wxTextCtrl(m_timeContainer, wxID_ANY, wxEmptyString,
                      wxDefaultPosition, wxSize(145, -1), wxTE_PROCESS_ENTER);
   m_nauticalTime->SetHint(_("HH:MM:SS"));
+  m_nauticalTime->SetName("PlannerTime");
   timeSizer->Add(m_utcTime, 0, wxEXPAND);
   timeSizer->Add(m_nauticalTime, 0, wxEXPAND);
   m_timeContainer->SetSizer(timeSizer);
@@ -673,6 +675,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   context->Add(header, 0, wxALL | wxEXPAND, 6);
   m_resolvedUtc = new wxStaticText(
       this, wxID_ANY, _("Resolved UTC: waiting for a valid date and time"));
+  m_resolvedUtc->SetName("PlannerResolvedUtc");
   wxFont resolvedFont = m_resolvedUtc->GetFont();
   resolvedFont.SetWeight(wxFONTWEIGHT_BOLD);
   m_resolvedUtc->SetFont(resolvedFont);
@@ -683,6 +686,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   context->Add(motion, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 8);
   m_status = new wxStaticText(this, wxID_ANY,
                               _("All calculations use bundled offline data."));
+  m_status->SetName("PlannerStatus");
   context->Add(m_status, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 8);
   root->Add(context, 0, wxALL | wxEXPAND, 6);
 
@@ -692,6 +696,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   wxBoxSizer* eventsSizer = new wxBoxSizer(wxVERTICAL);
   m_events = new wxListCtrl(eventsPage, wxID_ANY, wxDefaultPosition,
                             wxDefaultSize, wxLC_REPORT | wxLC_HRULES);
+  m_events->SetName("PlannerEvents");
   AddColumn(m_events, 0, _("Event"), 170);
   AddColumn(m_events, 1, _("UTC"), 190);
   AddColumn(m_events, 2, _("Selected display time"), 235);
@@ -772,6 +777,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_bodies =
       new wxListCtrl(allBodiesPage, wxID_ANY, wxDefaultPosition, wxDefaultSize,
                      wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES);
+  m_bodies->SetName("PlannerBodies");
   AddColumn(m_bodies, 0, _("Body"), 115);
   AddColumn(m_bodies, 1, _("Hc"), 115);
   AddColumn(m_bodies, 2, _("Zn true"), 80);
@@ -963,6 +969,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   almanacSizer->Add(almanacNote, 0, wxALL, 6);
   m_almanac = new wxListCtrl(almanacPage, wxID_ANY, wxDefaultPosition,
                              wxDefaultSize, wxLC_REPORT | wxLC_HRULES);
+  m_almanac->SetName("PlannerAlmanac");
   AddColumn(m_almanac, 0, _("UTC"), 155);
   AddColumn(m_almanac, 1, _("Body"), 90);
   AddColumn(m_almanac, 2, _("GHA"), 120);
@@ -1335,6 +1342,12 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_refreshTimer.SetOwner(this);
   Bind(wxEVT_TIMER, &PlannerDialog::OnRefreshTimer, this,
        m_refreshTimer.GetId());
+#ifndef __OCPN__ANDROID__
+  m_calculationPoll.SetOwner(this);
+  Bind(wxEVT_TIMER, &PlannerDialog::PollDesktopCalculation, this,
+       m_calculationPoll.GetId());
+  m_calculationPoll.Start(40);
+#endif
 #ifdef __OCPN__ANDROID__
   m_androidRefresh = new QTimer(GetHandle());
   m_androidRefresh->setSingleShot(true);
@@ -1468,6 +1481,10 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
 }
 
 PlannerDialog::~PlannerDialog() {
+#ifndef __OCPN__ANDROID__
+  m_calculationPoll.Stop();
+  m_desktopWorker.reset();
+#endif
 #ifdef __OCPN__ANDROID__
   m_androidRefresh->stop();
   m_androidPoll->stop();
@@ -1730,6 +1747,12 @@ void PlannerDialog::ScheduleRefresh() {
   if (m_androidSolve) m_androidSolve->Enable(false);
   if (m_androidRefresh) m_androidRefresh->start(350);
 #else
+  if (m_desktopWorker) {
+    m_desktopWorker->Cancel();
+    m_desktopReady = false;
+    ClearCalculatedResults(_("Context changed; refreshing results..."));
+    m_desktopPending = true;
+  }
   m_refreshTimer.StartOnce(350);
 #endif
 }
@@ -1751,6 +1774,12 @@ void PlannerDialog::OnRefreshTimer(wxTimerEvent&) {
 #ifdef __OCPN__ANDROID__
   StartAndroidCalculation(motion);
 #else
+  if (celestial_navigation::CompactEphemerisEnabled()) {
+    StartDesktopCalculation(motion);
+    return;
+  }
+  if (m_desktopWorker) m_desktopWorker->Cancel();
+  m_desktopReady = m_desktopPending = false;
   RefreshEvents();
   RefreshBodies();
   RefreshAlmanac();
@@ -2059,6 +2088,12 @@ void PlannerDialog::RefreshAll(wxCommandEvent&) {
 #ifdef __OCPN__ANDROID__
   StartAndroidCalculation(motion);
 #else
+  if (celestial_navigation::CompactEphemerisEnabled()) {
+    StartDesktopCalculation(motion);
+    return;
+  }
+  if (m_desktopWorker) m_desktopWorker->Cancel();
+  m_desktopReady = m_desktopPending = false;
   RefreshEvents();
   RefreshBodies();
   RefreshAlmanac();
@@ -2070,9 +2105,15 @@ void PlannerDialog::RefreshAll(wxCommandEvent&) {
 }
 
 void PlannerDialog::ClearCalculatedResults(const wxString& status) {
+#ifndef __OCPN__ANDROID__
+  if (m_desktopWorker) m_desktopWorker->Cancel();
+  m_desktopReady = m_desktopPending = false;
+  m_dailyEvents = {};
+#endif
   m_events->DeleteAllItems();
   m_moonSummary->SetLabel(wxEmptyString);
   m_rankedBodies.clear();
+  m_planningResult = {};
   m_bodies->DeleteAllItems();
   m_combinations->DeleteAllItems();
   m_lunarPairs->DeleteAllItems();
@@ -2102,6 +2143,9 @@ void PlannerDialog::ClearCalculatedResults(const wxString& status) {
 }
 
 void PlannerDialog::RefreshEvents() {
+#ifndef __OCPN__ANDROID__
+  if (m_desktopPending) return;
+#endif
   m_events->DeleteAllItems();
 #ifdef __OCPN__ANDROID__
   wxString report;
@@ -2111,8 +2155,10 @@ void PlannerDialog::RefreshEvents() {
   if (!m_androidReady) return;
   const DailyEventsResult& table = m_androidResults.events;
 #else
-  const DailyEventsResult table = HorizonEventCalculator::Calculate(
-      motion.referenceUtc, motion, m_eyeHeight->GetValue());
+  m_dailyEvents = m_desktopReady ? m_desktopResults.events
+      : HorizonEventCalculator::Calculate(
+          motion.referenceUtc, motion, m_eyeHeight->GetValue());
+  const DailyEventsResult& table = m_dailyEvents;
 #endif
   for (const auto& event : table.events) {
 #ifndef __OCPN__ANDROID__
@@ -2146,8 +2192,8 @@ void PlannerDialog::RefreshEvents() {
 #ifdef __OCPN__ANDROID__
   const auto& phases = m_androidResults.phases;
 #else
-  const auto phases = NextPrincipalMoonPhases(
-      motion.referenceUtc, motion.latitude, motion.longitude);
+  const auto phases = m_desktopReady ? m_desktopResults.phases
+      : NextPrincipalMoonPhases(motion.referenceUtc, motion.latitude, motion.longitude);
 #endif
   for (const auto& phase : phases) {
 #ifndef __OCPN__ANDROID__
@@ -2172,10 +2218,10 @@ void PlannerDialog::RefreshEvents() {
   const auto& moon = m_androidResults.moon;
   const auto& moonState = m_androidResults.moonState;
 #else
-  const MoonInformation moon = CalculateMoonInformation(
-      motion.referenceUtc, motion.latitude, motion.longitude);
-  const BodyState moonState = CelestialEphemeris::Evaluate(
-      "Moon", motion.referenceUtc, motion.latitude, motion.longitude);
+  const MoonInformation moon = m_desktopReady ? m_desktopResults.moon
+      : CalculateMoonInformation(motion.referenceUtc, motion.latitude, motion.longitude);
+  const BodyState moonState = m_desktopReady ? m_desktopResults.moonState
+      : CelestialEphemeris::Evaluate("Moon", motion.referenceUtc, motion.latitude, motion.longitude);
 #endif
   wxString polar;
   if (table.sunAlwaysAbove) polar += _(" Sun above the horizon all day.");
@@ -2198,6 +2244,9 @@ void PlannerDialog::RefreshEvents() {
 }
 
 void PlannerDialog::RefreshBodies() {
+#ifndef __OCPN__ANDROID__
+  if (m_desktopPending) return;
+#endif
   m_combinations->DeleteAllItems();
 #ifdef __OCPN__ANDROID__
   wxString combinations;
@@ -2208,8 +2257,8 @@ void PlannerDialog::RefreshBodies() {
 #ifdef __OCPN__ANDROID__
   m_planningResult = m_androidResults.planning;
 #else
-  m_planningResult = PlannerRecommendations::Calculate(
-      motion.referenceUtc, motion.latitude, motion.longitude);
+  m_planningResult = m_desktopReady ? m_desktopResults.planning
+      : PlannerRecommendations::Calculate(motion.referenceUtc, motion.latitude, motion.longitude);
 #endif
   const PlanningMode mode =
       static_cast<PlanningMode>(m_planningMode->GetSelection());
@@ -2424,8 +2473,8 @@ void PlannerDialog::RebuildBodyList() {
 #ifdef __OCPN__ANDROID__
   const auto& sun = m_androidResults.sun;
 #else
-  const BodyState sun = CelestialEphemeris::Evaluate(
-      "Sun", motion.referenceUtc, motion.latitude, motion.longitude);
+  const BodyState sun = m_desktopReady ? m_desktopResults.sun
+      : CelestialEphemeris::Evaluate("Sun", motion.referenceUtc, motion.latitude, motion.longitude);
 #endif
   const bool daylight = sun.valid && sun.geometricAltitude >= 0.0;
   for (const size_t index : order) {
@@ -2504,6 +2553,40 @@ void PlannerDialog::RebuildBodyList() {
 #endif
 }
 
+#ifndef __OCPN__ANDROID__
+void PlannerDialog::StartDesktopCalculation(const ObserverMotion& motion) {
+  ClearCalculatedResults(_("Calculating the current context..."));
+  try {
+    // Capture preference on the GUI thread; calculation code reads an atomic.
+    celestial_navigation::InitializeCompactEphemerisPreference();
+    if (!m_desktopWorker)
+      m_desktopWorker.reset(new celestial_android::PlannerWorker());
+    m_desktopMoonPathSpan = m_showMoonPath->GetValue()
+        ? std::max(0, std::min(2, m_moonSpan->GetSelection())) : -1;
+    m_desktopGeneration = m_desktopWorker->Submit(
+        motion, m_eyeHeight->GetValue(), m_desktopMoonPathSpan);
+    m_desktopPending = true;
+  } catch (const std::exception& error) {
+    ClearCalculatedResults(_("Planning failed: ") + wxString::FromUTF8(error.what()));
+  }
+}
+
+void PlannerDialog::PollDesktopCalculation(wxTimerEvent&) {
+  if (!m_desktopWorker || !m_desktopPending || m_refreshTimer.IsRunning()) return;
+  celestial_android::PlannerResults result;
+  if (!m_desktopWorker->Take(m_desktopGeneration, &result)) return;
+  m_desktopPending = false;
+  if (!result.error.empty()) {
+    ClearCalculatedResults(_("Planning failed: ") + result.error);
+    return;
+  }
+  m_desktopResults = std::move(result);
+  m_desktopReady = true;
+  RefreshEvents(); RefreshBodies(); RefreshAlmanac(); RefreshSpecial();
+  m_status->SetLabel(_("Planning context updated; calculations remain fully offline."));
+}
+#endif
+
 #ifdef __OCPN__ANDROID__
 void PlannerDialog::StartAndroidCalculation(const ObserverMotion& motion) {
   if (!m_androidWorker) {
@@ -2567,6 +2650,14 @@ void PlannerDialog::UpdateAndroidBodySelection() {
 #endif
 
 void PlannerDialog::RefreshSkyPlot() {
+#ifndef __OCPN__ANDROID__
+  if (m_desktopPending) return;
+  if (m_desktopReady && m_showMoonPath->GetValue() &&
+      m_desktopMoonPathSpan != m_moonSpan->GetSelection()) {
+    ScheduleRefresh();
+    return;
+  }
+#endif
   const ObserverMotion motion = ReadMotion(false);
   if (!motion.referenceUtc.IsValid()) return;
   const double magnitude =
@@ -2581,11 +2672,19 @@ void PlannerDialog::RefreshSkyPlot() {
          body.state.visualMagnitude <= magnitude || body.state.body == m_skyPlot->SelectedBody())) plotBodies.push_back(body);
   const auto& sun = m_androidResults.sun;
 #else
-  std::vector<RankedBody> plotBodies = SightRanker::VisibleBodies(
-      motion.referenceUtc, motion.latitude, motion.longitude, minimumAltitude,
-      90.0, magnitude);
-  const BodyState sun = CelestialEphemeris::Evaluate(
-      "Sun", motion.referenceUtc, motion.latitude, motion.longitude);
+  std::vector<RankedBody> plotBodies;
+  if (m_desktopReady) {
+    for (const auto& body : m_desktopResults.allBodies)
+      if (body.state.geometricAltitude >= minimumAltitude &&
+          (!(body.state.isStar || body.state.isPlanet) ||
+           body.state.visualMagnitude <= magnitude ||
+           body.state.body == m_skyPlot->SelectedBody())) plotBodies.push_back(body);
+  } else {
+    plotBodies = SightRanker::VisibleBodies(motion.referenceUtc, motion.latitude,
+        motion.longitude, minimumAltitude, 90.0, magnitude);
+  }
+  const BodyState sun = m_desktopReady ? m_desktopResults.sun
+      : CelestialEphemeris::Evaluate("Sun", motion.referenceUtc, motion.latitude, motion.longitude);
 #endif
   const bool daylight = sun.valid && sun.geometricAltitude >= 0.0;
 #ifndef __OCPN__ANDROID__
@@ -2606,15 +2705,17 @@ void PlannerDialog::RefreshSkyPlot() {
       std::max(0, std::min(2, m_moonSpan->GetSelection()))];
 #else
   const auto ecliptic = m_showEcliptic->GetValue()
-                            ? PlannerRecommendations::Ecliptic(
-                                  motion.referenceUtc, motion.latitude,
-                                  motion.longitude)
+                            ? (m_desktopReady ? m_desktopResults.ecliptic
+                                : PlannerRecommendations::Ecliptic(
+                                  motion.referenceUtc, motion.latitude, motion.longitude))
                             : std::vector<PlannerSkyPoint>{};
   const int spans[] = {3, 6, 12};
   const auto moonPath = m_showMoonPath->GetValue()
-                            ? PlannerRecommendations::MoonPath(
+                            ? (m_desktopReady ? m_desktopResults.moonPaths[
+                                  std::max(0, std::min(2, m_moonSpan->GetSelection()))]
+                                : PlannerRecommendations::MoonPath(
                                   motion, spans[std::max(0, std::min(2,
-                                      m_moonSpan->GetSelection()))])
+                                      m_moonSpan->GetSelection()))]))
                             : std::vector<PlannerSkyPoint>{};
 #endif
   m_skyPlot->SetOverlays(ecliptic, {}, m_showEcliptic->GetValue(), false);
@@ -2638,6 +2739,9 @@ void PlannerDialog::SortBodies(wxListEvent& event) {
 }
 
 void PlannerDialog::RefreshAlmanac() {
+#ifndef __OCPN__ANDROID__
+  if (m_desktopPending) return;
+#endif
   m_almanac->DeleteAllItems();
 #ifdef __OCPN__ANDROID__
   m_androidAlmanac->clear();
@@ -2647,9 +2751,9 @@ void PlannerDialog::RefreshAlmanac() {
   if (!m_androidReady) return;
   m_almanacRows = m_androidResults.almanac;
 #else
-  m_almanacRows = BuildAlmanac(
-      motion.referenceUtc, 24,
-      {"Sun", "Moon", "Venus", "Mars", "Jupiter", "Saturn", "Polaris"}, motion);
+  m_almanacRows = m_desktopReady ? m_desktopResults.almanac
+      : BuildAlmanac(motion.referenceUtc, 24,
+          {"Sun", "Moon", "Venus", "Mars", "Jupiter", "Saturn", "Polaris"}, motion);
 #endif
   for (const auto& item : m_almanacRows) {
 #ifndef __OCPN__ANDROID__
@@ -2691,6 +2795,9 @@ void PlannerDialog::RefreshAlmanac() {
 }
 
 void PlannerDialog::RefreshSpecial() {
+#ifndef __OCPN__ANDROID__
+  if (m_desktopPending) return;
+#endif
 #ifdef __OCPN__ANDROID__
   if (!m_androidReady) return;
 #endif
@@ -2699,8 +2806,8 @@ void PlannerDialog::RefreshSpecial() {
 #ifdef __OCPN__ANDROID__
     const auto& polaris = m_androidResults.polaris;
 #else
-    const BodyState polaris = CelestialEphemeris::Evaluate(
-        "Polaris", motion.referenceUtc, motion.latitude, motion.longitude);
+    const BodyState polaris = m_desktopReady ? m_desktopResults.polaris
+        : CelestialEphemeris::Evaluate("Polaris", motion.referenceUtc, motion.latitude, motion.longitude);
 #endif
     if (!polaris.valid || polaris.geometricAltitude < 0.0) {
       m_specialSummary->SetLabel(
@@ -2724,8 +2831,10 @@ void PlannerDialog::RefreshSpecial() {
 #ifdef __OCPN__ANDROID__
   const auto& events = m_androidResults.noonEvents;
 #else
-  const DailyEventsResult events =
-      HorizonEventCalculator::Calculate(motion.referenceUtc, motion);
+  // Eye height changes limb crossings, never solar upper transit. The Events
+  // page already calculated this exact transit for the current context.
+  const DailyEventsResult events = m_desktopReady ? m_dailyEvents
+      : HorizonEventCalculator::Calculate(motion.referenceUtc, motion);
 #endif
   for (const auto& event : events.events) {
     if (event.kind == HorizonEventKind::UpperTransit) {
@@ -2927,6 +3036,12 @@ void PlannerDialog::CreateSelectedSight(wxCommandEvent&) {
 }
 
 void PlannerDialog::SolveSpecialLatitude(wxCommandEvent&) {
+#ifndef __OCPN__ANDROID__
+  if (m_desktopPending) {
+    m_status->SetLabel(_("Wait for the current planning results before solving latitude."));
+    return;
+  }
+#endif
   ObserverMotion motion = ReadMotion(false);
 #ifdef __OCPN__ANDROID__
   if (!m_androidReady || !motion.referenceUtc.IsValid()) {
@@ -2940,7 +3055,8 @@ void PlannerDialog::SolveSpecialLatitude(wxCommandEvent&) {
 #ifdef __OCPN__ANDROID__
     const auto& events = m_androidResults.noonEvents.events;
 #else
-    const auto events = HorizonEventCalculator::Calculate(time, motion).events;
+    const auto events = m_desktopReady ? m_dailyEvents.events
+        : HorizonEventCalculator::Calculate(time, motion).events;
 #endif
     for (const auto& event : events)
       if (event.kind == HorizonEventKind::UpperTransit) time = event.utc;

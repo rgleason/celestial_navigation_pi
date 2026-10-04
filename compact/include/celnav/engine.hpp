@@ -14,6 +14,9 @@ struct Request {
   double tai_minus_utc = std::numeric_limits<double>::quiet_NaN();
   double polar_x_arcsec = 0, polar_y_arcsec = 0;
   bool venus_phase = false;  // Physical centre by default; navigation convention explicit.
+  // Almanacs/phase searches need geocentric fields only. Observer fields are
+  // left at their defaults when this is false; the astronomical model is shared.
+  bool observer_direction = true;
 };
 struct Epoch {
   double utc_jd = 0, tt_jd = 0, tdb_jd = 0, ut1_jd = 0;
@@ -37,7 +40,8 @@ struct Options {
   bool full_series = false;  // Developer-only comparison, requires .work full packs.
   bool legacy_orbits = false;  // Modern astrometry with old coefficients: ablation.
   int lunar_fit = 1;  // Published DE405-fit ELP/MPP02; 0=published LLR fit.
-  bool cache_epoch_context = true;  // Bounded, per-instance, exact-epoch cache.
+  bool reuse_lunar_arguments = true;  // Disable for comparison with the original ELP summation.
+  bool cache_epoch_context = true;  // Bounded, per-instance exact-result/context caches.
 };
 struct Coverage {
   bool supported = false;

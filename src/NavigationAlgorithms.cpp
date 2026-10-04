@@ -1,9 +1,7 @@
 #include "NavigationAlgorithms.h"
 #include "FixAmbiguity.h"
 
-#ifdef __OCPN__ANDROID__
 #include "AndroidPlannerCancellation.h"
-#endif
 #include "BodyCatalog.h"
 #include "Sight.h"
 #include "NavigationEphemerisProvider.h"
@@ -18,6 +16,7 @@
 #include <iterator>
 #include <limits>
 #include <numeric>
+#include <wx/thread.h>
 
 namespace {
 constexpr double kPi = 3.14159265358979323846;
@@ -85,6 +84,14 @@ PlannerSkyPoint ToSkyPoint(const wxDateTime& utc, double observerLat,
   return point;
 }
 
+double EventValue(const BodyState& state, double threshold,
+                  bool limbEvent, double dipDegrees) {
+  if (!state.valid) return std::numeric_limits<double>::quiet_NaN();
+  if (limbEvent)
+    return state.apparentAltitude + state.semidiameter + dipDegrees;
+  return state.geometricAltitude - threshold;
+}
+
 double EventValue(const wxString& body, const wxDateTime& utc,
                   const ObserverMotion& observer, double threshold,
                   bool limbEvent, double dipDegrees, BodyState* output) {
@@ -92,10 +99,7 @@ double EventValue(const wxString& body, const wxDateTime& utc,
   observer.PositionAt(utc, &lat, &lon);
   BodyState state = CelestialEphemeris::Evaluate(body, utc, lat, lon);
   if (output) *output = state;
-  if (!state.valid) return std::numeric_limits<double>::quiet_NaN();
-  if (limbEvent)
-    return state.apparentAltitude + state.semidiameter + dipDegrees;
-  return state.geometricAltitude - threshold;
+  return EventValue(state, threshold, limbEvent, dipDegrees);
 }
 
 bool RefineRoot(const wxString& body, const ObserverMotion& observer,
@@ -134,16 +138,22 @@ void FindCrossings(const wxString& body, const wxDateTime& start,
                    bool limbEvent, double dipDegrees,
                    HorizonEventKind risingKind, HorizonEventKind settingKind,
                    std::vector<HorizonEventResult>* events, bool* alwaysAbove,
-                   bool* alwaysBelow) {
+                   bool* alwaysBelow,
+                   const std::vector<BodyState>* samples = nullptr) {
   const int stepSeconds = 300;
   wxDateTime previousTime = start;
-  double previous = EventValue(body, previousTime, observer, threshold,
-                               limbEvent, dipDegrees, nullptr);
+  double previous = samples
+      ? EventValue((*samples)[0], threshold, limbEvent, dipDegrees)
+      : EventValue(body, previousTime, observer, threshold,
+                   limbEvent, dipDegrees, nullptr);
   double minimum = previous, maximum = previous;
   for (int seconds = stepSeconds; seconds <= 86400; seconds += stepSeconds) {
     const wxDateTime currentTime = AddSeconds(start, seconds);
-    const double current = EventValue(body, currentTime, observer, threshold,
-                                      limbEvent, dipDegrees, nullptr);
+    const double current = samples
+        ? EventValue((*samples)[seconds / stepSeconds], threshold,
+                     limbEvent, dipDegrees)
+        : EventValue(body, currentTime, observer, threshold,
+                     limbEvent, dipDegrees, nullptr);
     if (std::isfinite(current)) {
       minimum = std::min(minimum, current);
       maximum = std::max(maximum, current);
@@ -370,9 +380,7 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
                                        double observerLat, double observerLon,
                                        double pressureMb, double temperatureC,
                                        double dut1OverrideSeconds) {
-#ifdef __OCPN__ANDROID__
   celestial_android::CheckPlannerCancellation();
-#endif
   BodyState result;
   result.body = body;
   result.utc = utc;
@@ -415,6 +423,8 @@ BodyState CelestialEphemeris::Evaluate(const wxString& body,
   Sight sight(Sight::ALTITUDE, info->name, Sight::CENTER, utc, 0.0, 0.0, 1.0
 #ifdef __OCPN__ANDROID__
               , true
+#else
+              , !wxThread::IsMain()
 #endif
               );
   double ghaast = 0.0, radius = 0.0, distance = 0.0;
@@ -477,20 +487,35 @@ DailyEventsResult HorizonEventCalculator::Calculate(
   const wxDateTime start = UtcDayStart(dayUtc);
   DailyEventsResult result;
   const double dip = 1.76 * std::sqrt(std::max(0.0, eyeHeightMetres)) / 60.0;
+  // One exact daily Sun grid supplies all four thresholds. Root refinement
+  // still evaluates the original model at each requested instant.
+  std::vector<BodyState> sunSamples;
+  const std::vector<BodyState>* sharedSun = nullptr;
+  if (celestial_navigation::CompactEphemerisEnabled()) {
+    sunSamples.reserve(289);
+    for (int seconds = 0; seconds <= 86400; seconds += 300) {
+      const auto time = AddSeconds(start, seconds);
+      double lat, lon;
+      observer.PositionAt(time, &lat, &lon);
+      sunSamples.push_back(CelestialEphemeris::Evaluate("Sun", time, lat, lon));
+    }
+    sharedSun = &sunSamples;
+  }
 
   FindCrossings("Sun", start, observer, -18.0, false, 0.0,
                 HorizonEventKind::AstronomicalDawn,
                 HorizonEventKind::AstronomicalDusk, &result.events, nullptr,
-                nullptr);
+                nullptr, sharedSun);
   FindCrossings("Sun", start, observer, -12.0, false, 0.0,
                 HorizonEventKind::NauticalDawn, HorizonEventKind::NauticalDusk,
-                &result.events, nullptr, nullptr);
+                &result.events, nullptr, nullptr, sharedSun);
   FindCrossings("Sun", start, observer, -6.0, false, 0.0,
                 HorizonEventKind::CivilDawn, HorizonEventKind::CivilDusk,
-                &result.events, nullptr, nullptr);
+                &result.events, nullptr, nullptr, sharedSun);
   FindCrossings("Sun", start, observer, 0.0, true, dip,
                 HorizonEventKind::Sunrise, HorizonEventKind::Sunset,
-                &result.events, &result.sunAlwaysAbove, &result.sunAlwaysBelow);
+                &result.events, &result.sunAlwaysAbove, &result.sunAlwaysBelow,
+                sharedSun);
   FindCrossings("Moon", start, observer, 0.0, true, dip,
                 HorizonEventKind::Moonrise, HorizonEventKind::Moonset,
                 &result.events, &result.moonAlwaysAbove,
@@ -591,6 +616,38 @@ std::vector<MoonPhaseEvent> NextPrincipalMoonPhases(const wxDateTime& utc,
       {"Last quarter", 3.0 * 29.530588853 / 4.0, 90.0}};
   const MoonInformation current =
       CalculateMoonInformation(utc, observerLat, observerLon);
+  BodyState initialSun, initialMoon;
+  if (celestial_navigation::CompactEphemerisEnabled()) {
+    initialSun = CelestialEphemeris::Evaluate("Sun", utc, observerLat, observerLon);
+    initialMoon = CelestialEphemeris::Evaluate("Moon", utc, observerLat, observerLon);
+  }
+  const auto compactEngine = initialSun.usedCompact && initialMoon.usedCompact
+      ? celestial_navigation::CompactEngine() : nullptr;
+  const bool compactSearch = compactEngine && compactEngine->CheckCoverage(
+      "Moon", celestial_navigation::CompactUtc(utc, true),
+      celestial_navigation::CompactUtc(AddSeconds(utc, 40 * 86400.0), true)).supported;
+  // Searching elongation doesn't require a waxing/waning classification,
+  // a second epoch six hours later, or an observer horizon. Keep the same
+  // geocentric phase convention and search/refinement, using the selected
+  // provider. Classic's calculation path remains unchanged.
+  const auto elongation = [&](const wxDateTime& time) {
+    celestial_android::CheckPlannerCancellation();
+    if (celestial_navigation::CompactEphemerisEnabled()) {
+      celestial_navigation::De440NavigationSample sun, moon;
+      const auto sample = [&](const wxString& body,
+                              celestial_navigation::De440NavigationSample* s) {
+        return celestial_navigation::TryDe440NavigationSample(
+                   body, time, s, nullptr, NAN, true) ||
+               celestial_navigation::TryCompactNavigationSample(
+                   body, time, s, nullptr, NAN, nullptr, 0, 0, 0, true);
+      };
+      if (sample("Sun", &sun) && sample("Moon", &moon))
+        return AngularSeparation(sun.declination_deg, -sun.gha_deg,
+                                 moon.declination_deg, -moon.gha_deg);
+    }
+    return CalculateMoonInformation(time, observerLat, observerLon)
+        .elongationDegrees;
+  };
   std::vector<MoonPhaseEvent> result;
   for (const auto& target : targets) {
     double days = target.age - current.ageDays;
@@ -598,30 +655,45 @@ std::vector<MoonPhaseEvent> NextPrincipalMoonPhases(const wxDateTime& utc,
     wxDateTime guess = AddSeconds(utc, days * 86400.0);
     wxDateTime best = guess;
     double bestError = 1000.0;
-    for (int hour = -36; hour <= 36; ++hour) {
+    for (int hour = -36; hour <= 36; hour += compactSearch ? 6 : 1) {
       const wxDateTime candidate = AddSeconds(guess, hour * 3600.0);
-      const MoonInformation info =
-          CalculateMoonInformation(candidate, observerLat, observerLon);
-      const double error = std::abs(info.elongationDegrees - target.elongation);
+      const double error = std::abs(elongation(candidate) - target.elongation);
       if (error < bestError) {
         bestError = error;
         best = candidate;
       }
+    }
+    if (compactSearch) {
+      // This same +/-36-hour search contains one principal-phase minimum.
+      // A six-hour bracket followed by golden-section refinement reuses one
+      // previous evaluation at every step, rather than computing both again.
+      const double guessOffset = SecondsBetween(guess, best);
+      double lo = std::max(-6 * 3600.0, guessOffset - 37 * 3600.0);
+      double hi = std::min(6 * 3600.0, guessOffset + 37 * 3600.0);
+      constexpr double ratio = 0.6180339887498948482;
+      double a = hi - ratio * (hi - lo), b = lo + ratio * (hi - lo);
+      double ea = std::abs(elongation(AddSeconds(best, a)) - target.elongation);
+      double eb = std::abs(elongation(AddSeconds(best, b)) - target.elongation);
+      for (int i = 0; i < 28; ++i) {
+        if (ea > eb) {
+          lo = a; a = b; ea = eb; b = lo + ratio * (hi - lo);
+          eb = std::abs(elongation(AddSeconds(best, b)) - target.elongation);
+        } else {
+          hi = b; b = a; eb = ea; a = hi - ratio * (hi - lo);
+          ea = std::abs(elongation(AddSeconds(best, a)) - target.elongation);
+        }
+      }
+      result.push_back({target.name, AddSeconds(best, (lo + hi) / 2)});
+      continue;
     }
     double lo = -3600.0, hi = 3600.0;
     for (int i = 0; i < 20; ++i) {
       const double a = lo + (hi - lo) / 3.0;
       const double b = hi - (hi - lo) / 3.0;
       const double ea =
-          std::abs(CalculateMoonInformation(AddSeconds(best, a), observerLat,
-                                            observerLon)
-                       .elongationDegrees -
-                   target.elongation);
+          std::abs(elongation(AddSeconds(best, a)) - target.elongation);
       const double eb =
-          std::abs(CalculateMoonInformation(AddSeconds(best, b), observerLat,
-                                            observerLon)
-                       .elongationDegrees -
-                   target.elongation);
+          std::abs(elongation(AddSeconds(best, b)) - target.elongation);
       if (ea > eb)
         lo = a;
       else

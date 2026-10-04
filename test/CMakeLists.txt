@@ -54,6 +54,7 @@ set(SRC
     navigation_de440_tests.cpp
     analytical_epoch_tests.cpp
     compact_navigation_tests.cpp
+    compact_performance_tests.cpp
     lunar_boundary_tests.cpp
     lunar_reference_tests.cpp
     lunar_observer_tests.cpp

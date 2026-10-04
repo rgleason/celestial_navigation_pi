@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <fstream>
+#include <map>
 #include <stdexcept>
 
 namespace celnav {
@@ -19,11 +20,18 @@ PlanetModel::PlanetModel(const std::string& path) {
   if(!in || std::string(magic,8)!="CVSOP001")throw std::runtime_error("Invalid planetary pack: "+path);
   uint32_t n=0;for(int i=0;i<4;i++){int c=in.get();if(c<0)throw std::runtime_error("Truncated pack header");n|=uint32_t(c)<<(8*i);}
   bool covered[7][6]={};
+  std::array<std::map<std::pair<double,double>,unsigned>,7> arguments;
   if(n>2000000)throw std::runtime_error("Planetary pack count exceeds bound");
   for(uint32_t i=0;i<n;i++){
     int p=in.get(),v=in.get(),power=in.get(),reserved=in.get();
     if(p<1||p>6||v<0||v>5||power<0||power>20||reserved!=0)throw std::runtime_error("Invalid planetary term");
     PlanetTerm t{unsigned(p),unsigned(v),unsigned(power),number(in),number(in),number(in),number(in)};
+    // Identical harmonics occur in several elements and powers. Evaluate
+    // their trigonometry once, retaining the original term/summation order.
+    const auto key=std::make_pair(t.phase,t.rate);
+    auto inserted=arguments[p].emplace(key,arguments_[p].size());
+    if(inserted.second)arguments_[p].push_back({t.phase,t.rate});
+    t.argument=inserted.first->second;
     covered[p][v]=true;
     terms_[p].push_back(t);
   }
@@ -35,9 +43,15 @@ Vec PlanetModel::Evaluate(int planet,double jd) const {
   const double t=(jd-2451545.0)/365250.0;
   std::array<double,21> powers{};powers[0]=1;for(int i=1;i<21;i++)powers[i]=powers[i-1]*t;
   double el[6]={}, compensation[6]={};
+  std::vector<std::array<double,2>> trig;
+  trig.reserve(arguments_[planet].size());
+  for(const auto& argument:arguments_[planet]){
+    const double arg=argument[0]+argument[1]*t;
+    trig.push_back({std::sin(arg),std::cos(arg)});
+  }
   for(const auto& term:terms_[planet]){
-    double arg=term.phase+term.rate*t;
-    double add=powers[term.power]*(term.sine*std::sin(arg)+term.cosine*std::cos(arg));
+    const auto& harmonic=trig[term.argument];
+    double add=powers[term.power]*(term.sine*harmonic[0]+term.cosine*harmonic[1]);
     double y=add-compensation[term.variable],z=el[term.variable]+y;
     compensation[term.variable]=(z-el[term.variable])-y;el[term.variable]=z;
   }

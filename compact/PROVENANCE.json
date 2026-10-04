@@ -5,12 +5,12 @@
   "lunar_source_archive_sha256": "519c56e115eee0970f76a5026412611619f0ec5b2db36c0fc95d805647e780e8",
   "files": {
     "compact/COPYING": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b",
-    "compact/src/engine.cpp": "c31ce5ff6a8e310344a0a390ecb0ecab5bc9e6280544586762360f74ff1b2f74",
+    "compact/src/engine.cpp": "0b2c838361d368230ebf8df787c6853120958322a6526ff7ac8e22348a4c193d",
     "compact/src/vendor_prefix.hpp": "25d6c1b96f2a9aeb819d6be85b26aa1cf0f6abb2bd7c9543a08816ad5377ff08",
-    "compact/src/moon.cpp": "7b6e4573677bd3cebfe043e247118c6c140ac59e5ac7c12e7bd432b3f1c2e90d",
+    "compact/src/moon.cpp": "9a7cbf85bfe31bebc8b33e5b49495f42458d38e22a2485eb1f310666db64ae82",
     "compact/src/cli.cpp": "e11a8bb8e44e61bddabdcfcd030d5a60c7db9a7bb0e06102ada5f509da15ea4b",
-    "compact/src/planet.cpp": "16bb068660fa4429841be0a243c99a12a5758f150fb9c4afa0fd9947f8ac0206",
-    "compact/src/models.hpp": "bef2ae1b4658570319345fac6cabb202d349e244669a6c05f8501f3bef9e178a",
+    "compact/src/planet.cpp": "a740d616f72718d26f3425c9fb8dae8200c2ff34df6ce5a5a6b0ed4e2151d11e",
+    "compact/src/models.hpp": "88c64cdc7df042e5768120b52387751382de6bd30ac122ac77174c1f176884a7",
     "compact/third_party/elp/ElpMpp02.cpp": "d980ae56ae4768522807adbd5f6fc0057a5bbb267efed22cde9df65c6978fa72",
     "compact/third_party/elp/ElpMpp02.h": "cfbdabe536b6a356ce7402db32aa83b68e1f91f4673533dfabb44930da53f2f8",
     "compact/third_party/elp/LICENSE": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b",
@@ -275,7 +275,7 @@
     "compact/third_party/erfa/src/faom03.c": "d101f54bc44c92786cc91daa9700625f17d7e83226adc9787e0fe100e148aa49",
     "compact/third_party/erfa/src/pnm00a.c": "c526c570b0d29a751eeb4e5dc031379b277642754695af4f4338f9e01bac454f",
     "compact/third_party/erfa/src/s2c.c": "89579ba39fadb9d1d6844c829d1a040690a9c95b20b0fb252d129990a91f6ed3",
-    "compact/include/celnav/engine.hpp": "d70e61ae10c5d96204b651567e6d0ba95d54218f67c7181fc24729f94905f89a",
+    "compact/include/celnav/engine.hpp": "ee2b82de27a407a6601e32aec9ce6f4df138ae8e1a42a6f6b5f2f1e43b0f3a74",
     "data/compact/stars.tsv": "b5dc9837959481f87cabf04fe661d51ceceb7a14ee0930265f43b59f3f49af51",
     "data/compact/moon-1.bin": "fb61d4c104085ff6a1c6b25c2664ed4d5db46b15b812914bcc5ad2319ade288a",
     "data/compact/stars.json": "ee979640a37ce7806c2c9a9434ec9c8c66e80229072d2bf796b362f883c1a7b8",
@@ -296,5 +296,32 @@
       "upstream_sha256": "4e757221b42c8baf58fb556eefad77c8cd52c9b6986fa7bfe32b000cebceefe8",
       "change": "Use the existing eclipse::Mutex/MutexGuard for the epoch cache: native SRW locking on Windows, std::mutex on other platforms. Numerical calculations and data are unchanged."
     }
-  ]
+  ],
+  "integration_changes": {
+    "issue": "https://github.com/rgleason/celestial_navigation_pi/issues/365",
+    "base_commit": "6083bae141d1f64b8e7e4082ff619a09ee7cde70",
+    "description": "Bounded exact-result/context reuse, shared planetary and lunar harmonics, shared ERFA orientation, optional geocentric-only requests. All coefficients and third-party sources unchanged; lunar harmonic identities introduce only separately checked floating-point rounding.",
+    "files": {
+      "compact/src/engine.cpp": {
+        "imported_sha256": "c31ce5ff6a8e310344a0a390ecb0ecab5bc9e6280544586762360f74ff1b2f74",
+        "integrated_sha256": "0b2c838361d368230ebf8df787c6853120958322a6526ff7ac8e22348a4c193d"
+      },
+      "compact/src/planet.cpp": {
+        "imported_sha256": "16bb068660fa4429841be0a243c99a12a5758f150fb9c4afa0fd9947f8ac0206",
+        "integrated_sha256": "a740d616f72718d26f3425c9fb8dae8200c2ff34df6ce5a5a6b0ed4e2151d11e"
+      },
+      "compact/src/models.hpp": {
+        "imported_sha256": "bef2ae1b4658570319345fac6cabb202d349e244669a6c05f8501f3bef9e178a",
+        "integrated_sha256": "88c64cdc7df042e5768120b52387751382de6bd30ac122ac77174c1f176884a7"
+      },
+      "compact/include/celnav/engine.hpp": {
+        "imported_sha256": "d70e61ae10c5d96204b651567e6d0ba95d54218f67c7181fc24729f94905f89a",
+        "integrated_sha256": "ee2b82de27a407a6601e32aec9ce6f4df138ae8e1a42a6f6b5f2f1e43b0f3a74"
+      },
+      "compact/src/moon.cpp": {
+        "imported_sha256": "7b6e4573677bd3cebfe043e247118c6c140ac59e5ac7c12e7bd432b3f1c2e90d",
+        "integrated_sha256": "9a7cbf85bfe31bebc8b33e5b49495f42458d38e22a2485eb1f310666db64ae82"
+      }
+    }
+  }
 }

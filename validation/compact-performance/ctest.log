@@ -1,0 +1,27 @@
+Test project /home/paul/src/OpenCPN/.worktrees/celnav-fix-2.9.4/build-desktop
+      Start  1: ci_apt_settings
+ 1/11 Test  #1: ci_apt_settings ....................   Passed    0.01 sec
+      Start  2: windows64_metadata_validation
+ 2/11 Test  #2: windows64_metadata_validation ......   Passed    0.10 sec
+      Start  3: compact_package_integrity
+ 3/11 Test  #3: compact_package_integrity ..........   Passed    0.08 sec
+      Start  4: celestial_tests
+ 4/11 Test  #4: celestial_tests ....................   Passed   57.11 sec
+      Start  5: android_lunar_session
+ 5/11 Test  #5: android_lunar_session ..............   Passed    0.13 sec
+      Start  6: android_sextant_uncertainty
+ 6/11 Test  #6: android_sextant_uncertainty ........   Passed    0.00 sec
+      Start  7: numerical_audit_UTC
+ 7/11 Test  #7: numerical_audit_UTC ................   Passed    2.04 sec
+      Start  8: numerical_audit_Europe_London
+ 8/11 Test  #8: numerical_audit_Europe_London ......   Passed    2.05 sec
+      Start  9: numerical_audit_America_New_York
+ 9/11 Test  #9: numerical_audit_America_New_York ...   Passed    2.12 sec
+      Start 10: numerical_audit_Asia_Kolkata
+10/11 Test #10: numerical_audit_Asia_Kolkata .......   Passed    2.09 sec
+      Start 11: ui_utf8_literals
+11/11 Test #11: ui_utf8_literals ...................   Passed    0.13 sec
+
+100% tests passed out of 11
+
+Total Test time (real) =  65.87 sec
