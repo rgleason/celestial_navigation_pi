@@ -1910,21 +1910,19 @@ void CelestialNavigationDialog::OnDeleteAll(wxCommandEvent& event) {
 void CelestialNavigationDialog::OnFix(wxCommandEvent& event) {
   if (m_FixDialog == NULL) {
     m_FixDialog = new FixDialog(this);
-    m_FixDialog->Update(m_ClockCorrection);
     RequestRefresh(GetParent()->GetParent());
   }
+  m_FixDialog->Update(m_ClockCorrection);
   m_FixDialog->Show();
+  m_FixDialog->FocusStartingDr();
   m_FixDialog->Raise();
 }
 
 void CelestialNavigationDialog::OnFixClose() {
   m_FixDialog->Hide();
-#ifndef __OCPN__ANDROID__
-  m_FixDialog->Destroy();
-  m_FixDialog = NULL;
-#else
+  // Retain a confirmed candidate for unchanged inputs. Update on reopening
+  // refreshes sight DR and invalidates a changed calculation on all platforms.
   RequestRefresh(GetParent());
-#endif
 }
 
 void CelestialNavigationDialog::OnDRShift(wxCommandEvent& event) {
@@ -2088,17 +2086,22 @@ void CelestialNavigationDialog::OnPdfDocumentation(wxCommandEvent& event) {
 void CelestialNavigationDialog::OnChartDisplay(wxCommandEvent&) {
   wxDialog dialog(this, wxID_ANY, _("Chart sight display"));
   auto* layout = new wxBoxSizer(wxVERTICAL);
-  layout->Add(new wxStaticText(&dialog, wxID_ANY,
+  auto* explanation = new wxStaticText(&dialog, wxID_ANY,
       _("These chart-wide rendering controls do not change individual "
-        "sights or their saved colours and transparency.")),
-      0, wxALL, 6);
+        "sights or their saved colours and transparency."));
+#ifndef __OCPN__ANDROID__
+  // Fit to the controls, rather than the full explanatory sentence. Android
+  // wraps labels to its touch surface's available width during decoration.
+  explanation->Wrap(dialog.ConvertDialogToPixels(wxSize(190, 0)).x);
+#endif
+  layout->Add(explanation, 0, wxALL, 6);
   layout->Add(new wxStaticText(&dialog, wxID_ANY, _("Nominal line width (mm)")),
               0, wxALL, 6);
   auto* width = new wxSpinCtrlDouble(&dialog, wxID_ANY, wxEmptyString,
       wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0.2, 2.0,
       m_chartStyle.lineWidthMm, 0.1);
   width->SetDigits(1);
-  layout->Add(width, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 6);
+  layout->Add(width, 0, wxLEFT | wxRIGHT | wxBOTTOM, 6);
   auto* halo = new wxCheckBox(&dialog, wxID_ANY, _("Contrasting outline"));
   halo->SetValue(m_chartStyle.contrastHalo);
   layout->Add(halo, 0, wxALL, 6);
@@ -2107,7 +2110,7 @@ void CelestialNavigationDialog::OnChartDisplay(wxCommandEvent&) {
   auto* opacity = new wxSpinCtrl(&dialog, wxID_ANY, wxEmptyString,
       wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 100,
       m_chartStyle.bandOpacityPercent);
-  layout->Add(opacity, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 6);
+  layout->Add(opacity, 0, wxLEFT | wxRIGHT | wxBOTTOM, 6);
   auto* hover = new wxCheckBox(&dialog, wxID_ANY, _("Show body and UTC near chart cursor"));
   hover->SetValue(m_chartStyle.hoverLabels);
   layout->Add(hover, 0, wxALL, 6);

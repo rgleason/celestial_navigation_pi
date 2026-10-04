@@ -154,7 +154,8 @@ metadata=("$plugin_build"/"$package_name"-*-android-$abi.xml)
 test "${#packages[@]}" -eq 1
 test "${#metadata[@]}" -eq 1
 filename=$(basename "${packages[0]}")
-base_url=${CELESTIAL_ANDROID_TARBALL_BASE_URL:-https://github.com/pob220/celestial_navigation_pi/releases/download/android-v2.9.3.0-alpha1}
+plugin_version=$(python3 -c 'import sys, xml.etree.ElementTree as E; print(E.parse(sys.argv[1]).findtext("version"))' "${metadata[0]}")
+base_url=${CELESTIAL_ANDROID_TARBALL_BASE_URL:-https://github.com/pob220/celestial_navigation_pi/releases/download/android-v${plugin_version}-alpha1}
 python3 "$source_dir/ci/package-android-import.py" "${packages[0]}" "${metadata[0]}" \
   "$artifacts/package/$filename" --url "$base_url/$filename" --source-sha "$(git -C "$source_dir" rev-parse HEAD)" \
   --library "$plugin_build/lib${package_name}.so"
