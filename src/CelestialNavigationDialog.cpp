@@ -914,8 +914,14 @@ bool CelestialNavigationDialog::ReadSightsXml(
         s.m_Colour.Set(s.m_Colour.Red(), s.m_Colour.Green(), s.m_Colour.Blue(),
                        AttributeInt(e, "Transparency", 150));
 
+#ifdef __OCPN__ANDROID__
+        // Missing saved DR must block an Android fix, not invent a position.
+        s.m_DRLat = AttributeDouble(e, "DRLat", NAN);
+        s.m_DRLon = AttributeDouble(e, "DRLon", NAN);
+#else
         s.m_DRLat = AttributeDouble(e, "DRLat", 0);
         s.m_DRLon = AttributeDouble(e, "DRLon", 0);
+#endif
         s.m_DRBoatPosition = AttributeBool(e, "DRBoatPosition", false);
         s.m_DRMagneticAzimuth = AttributeBool(e, "DRMagneticAzimuth", false);
         s.m_TimeCorrection = AttributeInt(e, "TimeCorrection", 0);
@@ -1910,19 +1916,27 @@ void CelestialNavigationDialog::OnDeleteAll(wxCommandEvent& event) {
 void CelestialNavigationDialog::OnFix(wxCommandEvent& event) {
   if (m_FixDialog == NULL) {
     m_FixDialog = new FixDialog(this);
+    m_FixDialog->Update(m_ClockCorrection);
     RequestRefresh(GetParent()->GetParent());
   }
+#ifdef __OCPN__ANDROID__
   m_FixDialog->Update(m_ClockCorrection);
+#endif
   m_FixDialog->Show();
+#ifdef __OCPN__ANDROID__
   m_FixDialog->FocusStartingDr();
+#endif
   m_FixDialog->Raise();
 }
 
 void CelestialNavigationDialog::OnFixClose() {
   m_FixDialog->Hide();
-  // Retain a confirmed candidate for unchanged inputs. Update on reopening
-  // refreshes sight DR and invalidates a changed calculation on all platforms.
+#ifndef __OCPN__ANDROID__
+  m_FixDialog->Destroy();
+  m_FixDialog = NULL;
+#else
   RequestRefresh(GetParent());
+#endif
 }
 
 void CelestialNavigationDialog::OnDRShift(wxCommandEvent& event) {

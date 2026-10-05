@@ -1,5 +1,4 @@
 #include "NavigationAlgorithms.h"
-#include "FixAmbiguity.h"
 
 #include "AndroidPlannerCancellation.h"
 #include "BodyCatalog.h"
@@ -1401,65 +1400,6 @@ RunningFixResult RunningFixSolver::Solve(
       std::isfinite(result.semiMajorNm) && std::isfinite(result.rmsMinutes);
   if (!result.valid) result.error = "Running-fix uncertainty is not finite";
   return result;
-}
-
-std::vector<RunningFixResult> RunningFixSolver::Candidates(
-    const std::vector<FixObservation>& sights, const ObserverMotion& motion,
-    double drLatitude, double drLongitude, wxString* error) {
-  std::vector<RunningFixResult> results;
-  if (sights.size() != 2) {
-    if (error) *error = "Two sights are required for alternative intersections";
-    return results;
-  }
-  std::vector<fix_selection::Position> seeds;
-  const auto first = CelestialEphemeris::Evaluate(sights[0].body, sights[0].utc,
-                                                  drLatitude, drLongitude);
-  const auto second = CelestialEphemeris::Evaluate(
-      sights[1].body, sights[1].utc, drLatitude, drLongitude);
-  if (!first.valid || !second.valid) {
-    if (error) *error = "Ephemeris unavailable for alternative intersections";
-    return results;
-  }
-  const auto pair = fix_selection::Intersect(
-      {{first.declination, std::remainder(-first.gha, 360.0)},
-       sights[0].observedAltitude},
-      {{second.declination, std::remainder(-second.gha, 360.0)},
-       sights[1].observedAltitude});
-  seeds = pair.positions;
-  seeds.push_back({drLatitude, drLongitude});
-  // Motion can move a root away from its unshifted circle intersection.
-  // Independent, bounded starts help recover both; every result is checked
-  // against the complete time/displacement model, never used as an estimate.
-  for (double latitude : {-60.0, 0.0, 60.0})
-    for (double longitude : {-135.0, -45.0, 45.0, 135.0})
-      seeds.push_back({latitude, longitude});
-  for (const auto& seed : seeds) {
-    const auto result = Solve(sights, motion, seed.latitude, seed.longitude);
-    if (!result.valid || result.rmsMinutes > 0.01) continue;
-    const fix_selection::Position position{result.latitude, result.longitude};
-    if (std::any_of(
-            results.begin(), results.end(), [&](const RunningFixResult& other) {
-              return fix_selection::DistanceNm(
-                         position, {other.latitude, other.longitude}) < 0.01;
-            }))
-      continue;
-    results.push_back(result);
-  }
-  std::sort(results.begin(), results.end(),
-            [&](const RunningFixResult& a, const RunningFixResult& b) {
-              const double da = fix_selection::DistanceNm(
-                  {drLatitude, drLongitude}, {a.latitude, a.longitude});
-              const double db = fix_selection::DistanceNm(
-                  {drLatitude, drLongitude}, {b.latitude, b.longitude});
-              if (std::abs(da - db) > 1e-6) return da < db;
-              return a.latitude != b.latitude ? a.latitude < b.latitude
-                                              : a.longitude < b.longitude;
-            });
-  if (results.size() < 2 && error)
-    *error =
-        "Both intersections could not be resolved for this running fix; "
-        "include another sight or check the motion data";
-  return results;
 }
 
 SequenceStatistics SightSequenceAnalyzer::Analyze(
