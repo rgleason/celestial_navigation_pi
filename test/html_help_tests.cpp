@@ -71,6 +71,7 @@ TEST(HtmlHelp, PracticalGuideOfflineNavigationAndRendering) {
           EXPECT_TRUE(html->LoadPage(root + wxString::Format(
               "/data/practical-guide/page-%02d.html", page))) << page;
           EXPECT_TRUE(html->ToText().Contains("Next"));
+          EXPECT_FALSE(html->ToText().Contains("Selectable transcription"));
           EXPECT_EQ(html->GetVirtualSize().x, html->GetClientSize().x) << page;
 #ifdef __WXGTK3__
           if (std::getenv("CELESTIAL_GUIDE_CAPTURE_ALL")) {
@@ -81,7 +82,7 @@ TEST(HtmlHelp, PracticalGuideOfflineNavigationAndRendering) {
           }
 #endif
         }
-        for (int page : {1, 4, 6, 9, 43, 60, 62}) {
+        for (int page : {1, 4, 5, 6, 9, 17, 43, 60, 62, 71, 77}) {
           viewer->SetSize(wxSize(900, 760));
           EXPECT_TRUE(html->LoadPage(root + wxString::Format(
               "/data/practical-guide/page-%02d.html", page)));
@@ -94,16 +95,21 @@ TEST(HtmlHelp, PracticalGuideOfflineNavigationAndRendering) {
         }
         // Follow actual relative links, including full-size and explicit return.
         EXPECT_TRUE(html->LoadPage(root + "/data/practical-guide/page-09.html"));
-        html->OnLinkClicked(wxHtmlLinkInfo("page-09-full.html"));
-        EXPECT_TRUE(html->GetOpenedPage().EndsWith("page-09-full.html"));
+        html->OnLinkClicked(wxHtmlLinkInfo("page-09-figure-1.html"));
+        EXPECT_TRUE(html->GetOpenedPage().EndsWith("page-09-figure-1.html"));
         EXPECT_TRUE(html->ToText().Contains("Full-size illustration"));
         html->OnLinkClicked(wxHtmlLinkInfo("page-09.html"));
         EXPECT_TRUE(html->GetOpenedPage().EndsWith("page-09.html"));
         html->OnLinkClicked(wxHtmlLinkInfo("../Practical_Guide.html"));
         EXPECT_TRUE(html->ToText().Contains("Contents"));
-        html->OnLinkClicked(wxHtmlLinkInfo("practical-guide/page-71.html"));
-        EXPECT_TRUE(html->GetOpenedPage().EndsWith("page-71.html"));
+        html->OnLinkClicked(wxHtmlLinkInfo("practical-guide/definitions.html"));
+        EXPECT_TRUE(html->GetOpenedPage().EndsWith("definitions.html"));
         EXPECT_TRUE(html->ToText().Contains("Definitions"));
+        EXPECT_TRUE(html->ToText().Contains("Rev 15 Dec 2025"));
+        EXPECT_EQ(html->GetVirtualSize().x, html->GetClientSize().x);
+#ifdef __WXGTK3__
+        CaptureGuide(viewer, "/tmp/celnav-howto-definitions.png");
+#endif
         html->OnLinkClicked(wxHtmlLinkInfo("../Practical_Guide.html"));
         EXPECT_TRUE(html->ToText().Contains("Contents"));
         html->OnLinkClicked(wxHtmlLinkInfo("practical-guide/page-36.html"));

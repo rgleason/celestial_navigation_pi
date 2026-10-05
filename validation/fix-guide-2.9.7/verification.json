@@ -27,5 +27,15 @@
     "Android tools have no desktop How to Guide"
   ],
   "tablet_restoration": "Original Celestial Navigation library/sights verified by SHA-256; only two temporary configuration values restored; all other current settings, databases and preferences preserved for concurrent xGRIB testing",
-  "android_lunar_coordinate_label_layout": "expanded labels after native review; final native label appearance pending"
+  "android_lunar_coordinate_label_layout": "expanded labels after native review; final native label appearance pending",
+  "html_presentation_followup": {
+    "pdf_sha256_unchanged": "0f5e4f707e6e40ba289f95b3d3d53d4a65994f08000af1948ac4c3913367ae08",
+    "approach": "later 2.8.x reflowed reader, following Bob source content/order",
+    "source_pages": 70,
+    "pdf_appendix_pages": 7,
+    "complete_illustrated_compositions": 57,
+    "definitions_text_blocks": 107,
+    "native_wx_reader_pages_passed": 77,
+    "horizontal_overflow_pages": 0
+  }
 }

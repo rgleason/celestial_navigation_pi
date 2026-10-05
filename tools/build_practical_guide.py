@@ -1,29 +1,20 @@
 #!/usr/bin/env python3
 """Merge Bob's issue-370 PDFs, refresh the FIX illustrations, and build offline HTML.
 
-Requires PyMuPDF and Pillow. Regeneration inputs and hashes are recorded in the
+Requires PyMuPDF. Regeneration inputs and hashes are recorded in the
 validation report. The release build consumes the generated, bundled assets.
 """
 import argparse
 import hashlib
-import html
 import json
 from pathlib import Path
 
 import pymupdf as fitz
-from PIL import Image
+from build_practical_html import main as build_html
 
 
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-
-
-def markup(title, body):
-    return ('<!DOCTYPE html><html lang="en"><head><meta http-equiv="Content-Type" '
-            'content="text/html; charset=utf-8"><meta name="viewport" '
-            'content="width=device-width, initial-scale=1"><title>' + html.escape(title) +
-            '</title></head><body bgcolor="#ffffff" text="#263442" link="#245b87">' +
-            body + '</body></html>').encode('ascii', 'xmlcharrefreplace')
 
 
 def build(args):
@@ -98,33 +89,13 @@ def build(args):
     doc.close()
     doc = fitz.open(pdf)
     assert len(doc) == 77
-    contents = '<h1>Celestial Navigation 2.9.x How to Guide</h1><p>Bob Bossert\'s altitude, coastal '
-    contents += 'and lunar-distance worked examples. FIX illustrations updated for 2.9.7.</p><h2>Contents</h2><ul>'
-    contents += ''.join(f'<li><a href="practical-guide/page-{n:02d}.html">{html.escape(t)}</a></li>'
-                        for n, t in chapters)
-    contents += '</ul><p>Illustrations have full-size views. A selectable transcription follows each page.</p>'
-    (data / 'Practical_Guide.html').write_bytes(markup('How to Guide', contents))
     page_records = []
     for i, page in enumerate(doc):
         n = i + 1
         full = assets / f'page-{n:02d}.png'
-        preview = assets / f'page-{n:02d}-preview.png'
         pix = page.get_pixmap(matrix=fitz.Matrix(1, 1), alpha=False)
         pix.save(full)
-        with Image.open(full) as image:
-            image.resize((762, round(image.height * 762 / image.width)), Image.Resampling.LANCZOS).save(preview)
-        navigation = (f'<p><a href="page-{max(1,n-1):02d}.html">Previous</a> | '
-                      '<a href="../Practical_Guide.html">Contents</a> | '
-                      f'<a href="page-{min(77,n+1):02d}.html">Next</a></p>')
         text = page.get_text(sort=True)
-        paragraphs = ''.join('<p>' + html.escape(line) + '</p>' for line in text.splitlines() if line.strip())
-        body = navigation + f'<h2>Page {n} of 77</h2><p><a href="page-{n:02d}-full.html">'
-        body += f'<img src="{preview.name}" width="762" alt="Complete illustrated page {n}"></a></p>'
-        body += '<h3>Selectable transcription</h3>' + paragraphs + navigation
-        (assets / f'page-{n:02d}.html').write_bytes(markup(f'How to Guide - page {n}', body))
-        full_body = f'<p><a href="page-{n:02d}.html">Return to page {n}</a></p><h2>Full-size illustration</h2>'
-        full_body += f'<p><img src="{full.name}" alt="Full-size guide page {n}"></p>'
-        (assets / f'page-{n:02d}-full.html').write_bytes(markup('Full-size illustration', full_body))
         page_records.append(dict(page=n, text_sha256=hashlib.sha256(text.encode()).hexdigest(),
                                  image_sha256=digest(full)))
     report = dict(version='2.9.7.0', pages=77, core_pages=70, definitions_pages=7,
@@ -135,6 +106,7 @@ def build(args):
                   links=[dict(page=1,label='Definitions',target=71),dict(page=1,label='Lunar distance',target=36)],
                   page_records=page_records)
     (audit / 'guide-audit.json').write_text(json.dumps(report,indent=2)+'\n')
+    build_html()
     print('Created 77-page desktop guide with updated FIX images on pages 5 and 17.')
 
 

@@ -88,7 +88,7 @@ https://github.com/user-attachments/files/33041420/Celestial.Navigation.Plugin.A
 https://github.com/user-attachments/files/33041422/Lunar.Distance.Use.Case.1.Sun-Moon.Sodus.Bay.version.4.Oct.2026.v2.9x.release.PDF.pdf
 Definitions appendix: data/Practical_Guide.pdf from production 2.8.17.
 
-Regeneration (PyMuPDF and Pillow):
+Regeneration (PyMuPDF):
 python tools/build_practical_guide.py --altitude altitude-coastal.pdf \
   --lunar lunar-distance.pdf --production-guide production-2.8.17-guide.pdf \
   --fix-screenshot validation/fix-guide-2.9.7/fix-form.png \
@@ -121,3 +121,36 @@ labels were expanded for wxQt; their final appearance remains for tablet review.
 The original tablet plugin and sights were restored with SHA-256 verification.
 Only two temporary configuration values were restored; all other current
 settings, preferences and databases were retained for concurrent xGRIB work.
+
+HTML presentation correction (same 2.9.7 development PR)
+------------------------------------------------------
+The initial 2.9.7 HTML used page images followed by line-by-line extracted text
+labelled "Selectable transcription". That label was an authoring choice, not
+missing content, but the approach omitted the reader improvements already
+recorded in production docs/practical-guide.md for 2.8.15/2.8.16.
+
+tools/build_practical_html.py now adopts that established conversion, adapting
+it to Bob's 70 development pages and the seven-page definitions appendix.
+Content and source-page order follow the bundled PDF; the PDF itself is
+unchanged. Grouped contents, descriptive page headings, joined paragraphs,
+actual bullet lists, compact source captions and consistent Previous/Contents/
+Next navigation replace the scan-and-transcription presentation. The 57
+complete illustrated compositions retain screenshots, arrows and annotations
+together. Reading-size previews fit the native reader; full-size lossless
+views retain small labels and selectable illustration text.
+
+The complete definitions source is reflowed into definitions.html with section
+anchors, original credits/revision and reference link, matching later 2.8.x.
+The first-page definitions, lunar and historical accuracy references work.
+Windows-compatible UTF-8 metadata/numeric entities and the established native
+12-point reader font are retained. No script, remote image/font or desktop
+guide asset is introduced into Android.
+
+Rebuild only HTML without re-exporting the PDF:
+  python tools/build_practical_html.py
+The full PDF merge builder delegates its HTML conversion to the same tool,
+so regeneration retains this presentation. html-conversion.json records all
+70 page titles, source prose and figure bounds plus all 107 definitions blocks.
+Validation compares those blocks with the generated HTML, checks links and
+packaged assets, and renders all 77 pages in the native wx reader without
+horizontal overflow.
