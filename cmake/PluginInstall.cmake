@@ -1,3 +1,13 @@
+# Desktop practical guide describes a different workflow from Android.
+set(CELNAV_PLATFORM_DATA_EXCLUDES)
+if(QT_ANDROID)
+  set(CELNAV_PLATFORM_DATA_EXCLUDES
+      PATTERN "Practical_Guide.pdf" EXCLUDE
+      PATTERN "Practical_Guide.html" EXCLUDE
+      PATTERN "Celestial_Navigation_Definitions.html" EXCLUDE
+      PATTERN "practical-guide" EXCLUDE)
+endif()
+
 # ---------------------------------------------------------------------------
 # Author:      Pavel Kalian (Based on the work of Sean D'Epagnier) Copyright:
 # 2014 License:     GPLv3+
@@ -90,7 +100,7 @@ if (WIN32)
   endif (EXISTS ${PROJECT_SOURCE_DIR}/UserIcons)
 
   if (EXISTS ${PROJECT_SOURCE_DIR}/data)
-    install(DIRECTORY data DESTINATION "${INSTALL_DIRECTORY}")
+    install(DIRECTORY data DESTINATION "${INSTALL_DIRECTORY}" ${CELNAV_PLATFORM_DATA_EXCLUDES})
     message(STATUS "${CMLOC}Install Data: ${INSTALL_DIRECTORY}")
   endif (EXISTS ${PROJECT_SOURCE_DIR}/data)
 
@@ -112,6 +122,7 @@ if (UNIX AND NOT APPLE)
   if (EXISTS ${PROJECT_SOURCE_DIR}/data)
     install(DIRECTORY data
             DESTINATION ${PREFIX_PARENTDATA}/plugins/${PACKAGE_NAME}
+            ${CELNAV_PLATFORM_DATA_EXCLUDES}
     )
     message(STATUS "${CMLOC}Install data: ${PREFIX_PARENTDATA}/plugins/${PACKAGE_NAME}")
   endif ()

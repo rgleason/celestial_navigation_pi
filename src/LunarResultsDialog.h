@@ -9,6 +9,8 @@ class wxStaticText;
 class wxTextCtrl;
 class wxButton;
 class wxChoice;
+class wxPanel;
+class NavigationAngleCtrl;
 #ifdef __OCPN__ANDROID__
 class wxPanel;
 #endif
@@ -32,6 +34,10 @@ private:
   wxButton* m_applyOffset;
   wxChoice* m_mode;
   wxStaticText* m_geometry;
+  wxPanel* m_accuracyPanel;
+  NavigationAngleCtrl* m_knownLatitude;
+  NavigationAngleCtrl* m_knownLongitude;
+  wxStaticText* m_distanceCheck;
 #ifdef __OCPN__ANDROID__
   void RefreshAndroidCards();
   wxPanel* m_androidCandidates = nullptr;

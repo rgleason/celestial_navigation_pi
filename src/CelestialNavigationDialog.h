@@ -149,6 +149,8 @@ private:
   void OnClockOffset(wxCommandEvent& event);
   void OnDocumentation(wxCommandEvent& event);
   void OnPdfDocumentation(wxCommandEvent& event);
+  void OnPracticalGuide(wxCommandEvent& event);
+  void OnPracticalGuideHtml(wxCommandEvent& event);
   void OnHide(wxCommandEvent& event);
   void OnClose(wxCloseEvent& event);
 
@@ -191,6 +193,8 @@ private:
   wxButton* m_lunarToolsButton;
   wxButton* m_almanacButton;
   wxButton* m_pdfDocumentationButton;
+  wxButton* m_practicalGuideButton;
+  wxButton* m_practicalGuideHtmlButton;
   wxButton* m_manageSightsButton;
   wxButton* m_chartDisplayButton;
   EclipseDialog* m_eclipseDialog;

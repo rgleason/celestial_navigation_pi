@@ -38,8 +38,14 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
+#include <iomanip>
+#include <locale>
+#include <sstream>
 #include <vector>
 #include <wx/choice.h>
+#include <wx/panel.h>
+#include "FixDrSource.h"
 #include <wx/datectrl.h>
 #include <wx/listctrl.h>
 #include <wx/spinctrl.h>
@@ -47,24 +53,16 @@
 
 #ifdef __OCPN__ANDROID__
 #include "AndroidFixMath.h"
-#include "FixDrSource.h"
-#include <iomanip>
-#include <locale>
-#include <sstream>
+#include "AndroidSurface.h"
 #include <wx/scrolwin.h>
 #include <wx/qt/private/wxQtGesture.h>
 #endif
 
-// #include <cmath>
 using namespace std;
 
 namespace {
-#ifdef __OCPN__ANDROID__
-constexpr const wxChar* kFixGeometryKey = _T("Fix");
-#else
 // Do not inherit the enlarged geometry saved by the regressed desktop form.
-constexpr const wxChar* kFixGeometryKey = _T("FixDesktop");
-#endif
+constexpr const wxChar* kFixGeometryKey = _T("Fix297");
 }  // namespace
 
 FixDialog::FixDialog(CelestialNavigationDialog* parent)
@@ -74,7 +72,6 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
       m_fixlon(NAN),
       m_fixerror(NAN),
       m_Parent(parent),
-      m_runningFix(NULL),
       m_motionMode(NULL),
       m_epochTimeBasis(NULL),
       m_epochDate(NULL),
@@ -84,214 +81,335 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
       m_runningSummary(NULL),
       m_residuals(NULL),
       m_lastEpochTimeBasis(0) {
-  m_sdbSizer8OK->SetLabel(_("Close"));
-  m_sdbSizer8->Layout();
-  auto* correctionRow = new wxBoxSizer(wxVERTICAL);
-  correctionRow->Add(
-      new wxStaticText(this, wxID_ANY,
-                       _("Correction for this fix only. Select visible sights "
-                         "from the same watch and clock.")),
-      0, wxALL, 5);
-  m_lunarSolution = new wxChoice(this, wxID_ANY);
+  // Reuse the generated result and algorithm controls in the compact form.
+  std::function<void(wxWindow*)> hideTree = [&](wxWindow* window) {
+    for (auto* child : window->GetChildren()) hideTree(child);
+    window->Hide();
+  };
+  for (auto* child : GetChildren()) hideTree(child);
+  for (auto* control :
+       std::vector<wxWindow*>{m_stLatitude, m_stLongitude, m_stFixError,
+                              m_cbFixAlgorithm, m_bGo, m_sdbSizer8OK}) {
+    control->Reparent(this);
+    control->Show();
+#ifdef __OCPN__ANDROID__
+    control->GetHandle()->show();
+#endif
+  }
+  auto* root = new wxBoxSizer(wxVERTICAL);
+  SetSizer(root);
+  auto* drBox = new wxStaticBoxSizer(wxVERTICAL, this, _("Starting DR"));
+  auto* source = new wxBoxSizer(wxHORIZONTAL);
+  source->Add(new wxStaticText(this, wxID_ANY, _("DR source")), 0,
+              wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+  m_drSource = new wxChoice(this, wxID_ANY);
+  m_drSource->SetName("FixDrSource");
+  source->Add(m_drSource, 1, wxEXPAND);
+  drBox->Add(source, 0, wxALL | wxEXPAND, 6);
+  m_drExplanation = new wxStaticText(this, wxID_ANY, wxEmptyString);
+  m_drExplanation->SetName("FixDrExplanation");
+  drBox->Add(m_drExplanation, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 6);
+#ifdef __OCPN__ANDROID__
+  auto* drRow = new wxBoxSizer(wxVERTICAL);
+#else
+  auto* drRow = new wxBoxSizer(wxHORIZONTAL);
+#endif
+  m_initialLatitude =
+      new NavigationAngleCtrl(this, NavigationAngleKind::Latitude, 0, -90, 90);
+  m_initialLongitude = new NavigationAngleCtrl(
+      this, NavigationAngleKind::Longitude, 0, -180, 180);
+  m_initialLatitude->UsePreferredDisplayFormat();
+  m_initialLongitude->UsePreferredDisplayFormat();
+  m_initialLatitude->SetName("FixDrLatitude");
+  m_initialLongitude->SetName("FixDrLongitude");
+#ifndef __OCPN__ANDROID__
+  for (auto* entry :
+       {static_cast<wxTextCtrl*>(m_initialLatitude), m_stLatitude})
+    entry->SetMinSize(
+        wxSize(entry->GetTextExtent(FormatNavigationAngle(
+                                        90, NavigationAngleKind::Latitude))
+                       .x +
+                   32,
+               -1));
+  for (auto* entry :
+       {static_cast<wxTextCtrl*>(m_initialLongitude), m_stLongitude})
+    entry->SetMinSize(
+        wxSize(entry->GetTextExtent(FormatNavigationAngle(
+                                        -180, NavigationAngleKind::Longitude))
+                       .x +
+                   32,
+               -1));
+  m_stFixError->SetMinSize(
+      wxSize(m_stFixError->GetTextExtent("999.99' RMS").x + 28, -1));
+#endif
+
+  auto addAngle = [this](wxBoxSizer* row, const wxString& label,
+                         wxWindow* entry) {
+#ifdef __OCPN__ANDROID__
+    row->Add(new wxStaticText(this, wxID_ANY, label), 0, wxALL, 5);
+    row->Add(entry, 0, wxALL | wxEXPAND, 5);
+#else
+    row->Add(new wxStaticText(this, wxID_ANY, label), 0,
+             wxALIGN_CENTER_VERTICAL | wxALL, 5);
+    row->Add(entry, 1, wxALL | wxEXPAND, 5);
+#endif
+  };
+  addAngle(drRow, _("DR latitude"), m_initialLatitude);
+  addAngle(drRow, _("DR longitude"), m_initialLongitude);
+  auto* calculate = new wxButton(this, wxID_ANY, _("Calculate"));
+  calculate->SetName("FixCalculate");
+  calculate->Bind(wxEVT_BUTTON,
+                  [this](wxCommandEvent&) { Update(m_clock_offset); });
+  drRow->Add(calculate, 0, wxALL | wxEXPAND, 5);
+  drBox->Add(drRow, 0, wxEXPAND);
+  root->Add(drBox, 0, wxALL | wxEXPAND, 5);
+
+  auto* results =
+      new wxStaticBoxSizer(wxVERTICAL, this, _("Fix from included sights"));
+#ifdef __OCPN__ANDROID__
+  auto* resultRow = new wxBoxSizer(wxVERTICAL);
+#else
+  auto* resultRow = new wxBoxSizer(wxHORIZONTAL);
+#endif
+  addAngle(resultRow, _("FIX latitude"), m_stLatitude);
+  addAngle(resultRow, _("FIX longitude"), m_stLongitude);
+  addAngle(resultRow, _("Error"), m_stFixError);
+  m_stLatitude->SetName("FixLatitude");
+  m_stLongitude->SetName("FixLongitude");
+  m_stFixError->SetName("FixError");
+  results->Add(resultRow, 0, wxEXPAND);
+  auto* algorithm = new wxBoxSizer(
+#ifdef __OCPN__ANDROID__
+      wxVERTICAL
+#else
+      wxHORIZONTAL
+#endif
+  );
+  algorithm->Add(new wxStaticText(this, wxID_ANY, _("Algorithm")), 0,
+                 wxALIGN_CENTER_VERTICAL | wxALL, 5);
+  m_cbFixAlgorithm->SetName("FixAlgorithm");
+  algorithm->Add(m_cbFixAlgorithm, 0, wxALL | wxEXPAND, 5);
+  m_bGo->SetLabel(_("Show fix on chart"));
+  m_bGo->SetName("FixShowOnChart");
+  m_bGo->InvalidateBestSize();
+  m_bGo->SetMinSize(m_bGo->GetBestSize());
+#ifndef __OCPN__ANDROID__
+  algorithm->AddStretchSpacer();
+#endif
+  algorithm->Add(m_bGo, 0, wxALL | wxEXPAND, 5);
+  results->Add(algorithm, 0, wxEXPAND);
+  root->Add(results, 0, wxALL | wxEXPAND, 5);
+
+  auto* motionRow = new wxBoxSizer(wxHORIZONTAL);
+  motionRow->Add(new wxStaticText(this, wxID_ANY, _("Vessel motion")), 0,
+                 wxALIGN_CENTER_VERTICAL | wxALL, 5);
+  m_motionMode = new wxChoice(this, wxID_ANY);
+  m_motionMode->SetName("FixMotion");
+  m_motionMode->Append(_("Stationary"));
+  m_motionMode->Append(_("One COG and SOG"));
+  m_motionMode->Append(_("Each sight's DR Shift"));
+  m_motionMode->SetSelection(0);
+  motionRow->Add(m_motionMode, 1, wxALL | wxEXPAND, 5);
+  root->Add(motionRow, 0, wxEXPAND);
+  m_motionInputs = new wxPanel(this);
+  auto* motion = new wxBoxSizer(
+#ifdef __OCPN__ANDROID__
+      wxVERTICAL
+#else
+      wxHORIZONTAL
+#endif
+  );
+  motion->Add(new wxStaticText(m_motionInputs, wxID_ANY, _("COG true")), 0,
+              wxALIGN_CENTER_VERTICAL | wxALL, 5);
+  m_courseTrue =
+      new wxSpinCtrlDouble(m_motionInputs, wxID_ANY, "0", wxDefaultPosition,
+                           wxSize(95, -1), wxSP_ARROW_KEYS, 0, 359.9, 0, 0.1);
+  m_courseTrue->SetName("FixCourse");
+  m_courseTrue->SetDigits(1);
+  motion->Add(m_courseTrue, 0, wxALL, 5);
+  motion->Add(new wxStaticText(m_motionInputs, wxID_ANY, _("SOG kn")), 0,
+              wxALIGN_CENTER_VERTICAL | wxALL, 5);
+  m_speedKnots =
+      new wxSpinCtrlDouble(m_motionInputs, wxID_ANY, "0", wxDefaultPosition,
+                           wxSize(95, -1), wxSP_ARROW_KEYS, 0, 100, 0, 0.1);
+  m_speedKnots->SetName("FixSpeed");
+  m_speedKnots->SetDigits(1);
+  motion->Add(m_speedKnots, 0, wxALL, 5);
+  m_motionInputs->SetSizer(motion);
+  root->Add(m_motionInputs, 0, wxEXPAND);
+  m_epochSummary = new wxStaticText(this, wxID_ANY, wxEmptyString);
+  m_epochSummary->SetName("FixEpochSummary");
+  root->Add(m_epochSummary, 0, wxALL | wxEXPAND, 6);
+  m_runningSummary = new wxStaticText(this, wxID_ANY, wxEmptyString);
+  m_runningSummary->SetName("FixStatus");
+  root->Add(m_runningSummary, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 6);
+
+  m_residuals = new wxListCtrl(this, wxID_ANY, wxDefaultPosition,
+                               wxSize(-1, 125), wxLC_REPORT | wxLC_HRULES);
+  m_residuals->SetName("FixSightDetails");
+  const std::vector<wxString> headings = {
+      _("UTC"),           _("Body"),        _("Hc"),
+      _("Ho-Hc"),         _("DR shift NM"), _("Saved bearing"),
+      _("Used bearing T")};
+  const std::vector<wxString> samples = {
+      "12-31 23:59:59",
+      "Menkent",
+      wxString::FromUTF8("000\xc2\xb0 00.0000'"),
+      "+999.99'",
+      "999.99",
+      wxString::FromUTF8("359.9\xc2\xb0 M"),
+      wxString::FromUTF8("359.9\xc2\xb0 T")};
+  int tableWidth = 0;
+  for (size_t index = 0; index < headings.size(); ++index) {
+    const int width = std::max(m_residuals->GetTextExtent(headings[index]).x,
+                               m_residuals->GetTextExtent(samples[index]).x) +
+                      20;
+    tableWidth += width;
+    m_residuals->InsertColumn(index, headings[index], wxLIST_FORMAT_LEFT,
+                              width);
+  }
+#ifndef __OCPN__ANDROID__
+  m_residuals->SetMinSize(wxSize(tableWidth + 6, 125));
+#endif
+#ifndef __OCPN__ANDROID__
+  root->Add(m_residuals, 1, wxALL | wxEXPAND, 5);
+#else
+  m_residuals->Hide();
+  m_androidResiduals = new wxStaticText(this, wxID_ANY, wxEmptyString);
+  root->Add(m_androidResiduals, 0, wxALL | wxEXPAND, 5);
+#endif
+  auto* more = new wxButton(this, wxID_ANY, _("More options..."));
+  more->SetName("FixMoreOptions");
+  root->Add(more, 0, wxALL, 5);
+  m_moreOptions = new wxPanel(this);
+  auto* advanced = new wxBoxSizer(wxVERTICAL);
+#ifdef __OCPN__ANDROID__
+  auto* epoch = new wxBoxSizer(wxVERTICAL);
+#else
+  auto* epoch = new wxBoxSizer(wxHORIZONTAL);
+#endif
+  epoch->Add(new wxStaticText(m_moreOptions, wxID_ANY, _("Fix time")), 0, wxALL,
+             5);
+  m_epochTimeBasis = new wxChoice(m_moreOptions, wxID_ANY);
+  m_epochTimeBasis->Append(_("UTC"));
+  m_epochTimeBasis->Append(_("Computer local time"));
+  m_epochTimeBasis->SetSelection(0);
+  epoch->Add(m_epochTimeBasis, 0, wxALL, 5);
+  m_epochDate = new wxDatePickerCtrl(m_moreOptions, wxID_ANY);
+  m_epochTime = new CelestialTimePicker(m_moreOptions, wxID_ANY);
+  m_epochDate->SetName("FixEpochDate");
+  m_epochTime->SetName("FixEpochTime");
+  epoch->Add(m_epochDate, 0, wxALL, 5);
+  epoch->Add(m_epochTime, 0, wxALL, 5);
+  auto* latest = new wxButton(m_moreOptions, wxID_ANY, _("Latest sight"));
+  latest->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    SetEpochToLatestVisibleSight(m_clock_offset);
+    Update(m_clock_offset);
+  });
+  epoch->Add(latest, 0, wxALL, 5);
+  advanced->Add(epoch, 0, wxEXPAND);
+  advanced->Add(new wxStaticText(m_moreOptions, wxID_ANY,
+                                 _("Clock correction for this fix. Use sights "
+                                   "from the same watch and clock.")),
+                0, wxALL, 5);
+  m_lunarSolution = new wxChoice(m_moreOptions, wxID_ANY);
   m_lunarSolution->Append(_("Use existing manual clock correction"));
   for (const auto& record : parent->LunarSolutions())
     m_lunarSolution->Append(record.Summary());
   m_lunarSolution->SetSelection(0);
-  m_lunarSolution->Bind(wxEVT_CHOICE,
-                        [this](wxCommandEvent&) { Update(m_clock_offset); });
-  correctionRow->Add(m_lunarSolution, 0, wxALL | wxEXPAND, 5);
-  GetSizer()->Insert(1, correctionRow, 0, wxEXPAND);
+  advanced->Add(m_lunarSolution, 0, wxALL | wxEXPAND, 5);
+  m_runningDetails = new wxStaticText(m_moreOptions, wxID_ANY, wxEmptyString);
+  advanced->Add(m_runningDetails, 0, wxALL | wxEXPAND, 5);
+  m_moreOptions->SetSizer(advanced);
+  m_moreOptions->Hide();
+  root->Add(m_moreOptions, 0, wxALL | wxEXPAND, 5);
+  more->Bind(wxEVT_BUTTON, [this, more](wxCommandEvent&) {
+    const bool show = !m_moreOptions->IsShown();
+    m_moreOptions->Show(show);
+    more->SetLabel(show ? _("Fewer options") : _("More options..."));
+    Layout();
 #ifndef __OCPN__ANDROID__
-  double lat, lon;
-  celestial_navigation_pi_BoatPos(lat, lon);
-  m_sInitialLatitude->SetValue(lat);
-  m_sInitialLongitude->SetValue(lon);
+    GetSizer()->Fit(this);
 #else
-  // Android must expose the DR used by the calculation before the results.
-  // Never initialize these controls from the live boat implicitly.
-  m_sInitialLatitude->Hide(); m_sInitialLongitude->Hide();
-  m_staticText34->Hide(); m_staticText35->Hide();
-  auto* drBox = new wxStaticBoxSizer(wxVERTICAL, this, _("Starting DR for this fix"));
-  m_drSource = new wxChoice(drBox->GetStaticBox(), wxID_ANY);
-  m_drSource->SetName("FixDrSource");
-  drBox->Add(m_drSource, 0, wxALL | wxEXPAND, 5);
-  m_drExplanation = new wxStaticText(drBox->GetStaticBox(), wxID_ANY, wxEmptyString);
-  m_drExplanation->SetName("FixDrExplanation");
-  drBox->Add(m_drExplanation, 0, wxALL | wxEXPAND, 5);
-  drBox->Add(new wxStaticText(drBox->GetStaticBox(), wxID_ANY, _("DR latitude")), 0, wxALL, 5);
-  m_androidInitialLatitude = new NavigationAngleCtrl(drBox->GetStaticBox(), NavigationAngleKind::Latitude, 0, -90, 90);
-  m_androidInitialLatitude->SetName("FixDrLatitude");
-  drBox->Add(m_androidInitialLatitude, 0, wxALL | wxEXPAND, 5);
-  drBox->Add(new wxStaticText(drBox->GetStaticBox(), wxID_ANY, _("DR longitude")), 0, wxALL, 5);
-  m_androidInitialLongitude = new NavigationAngleCtrl(drBox->GetStaticBox(), NavigationAngleKind::Longitude, 0, -180, 180);
-  m_androidInitialLongitude->SetName("FixDrLongitude");
-  drBox->Add(m_androidInitialLongitude, 0, wxALL | wxEXPAND, 5);
-  GetSizer()->Insert(0, drBox, 0, wxALL | wxEXPAND, 5);
-  m_drSource->Bind(wxEVT_CHOICE, &FixDialog::ChangeDrSource, this);
-  m_androidInitialLatitude->Bind(wxEVT_TEXT, &FixDialog::EditDr, this);
-  m_androidInitialLongitude->Bind(wxEVT_TEXT, &FixDialog::EditDr, this);
-  // This selector has four fixed algorithms; the full field opens its popup.
-  if (auto* combo = qobject_cast<QComboBox*>(m_cbFixAlgorithm->GetHandle()))
-    combo->setEditable(false);
-  m_bGo->SetLabel(_("Show fix on chart"));
+    celestial_android::LayoutScrolls(this);
 #endif
-  int x, y;
-  GetTextExtent(_T("000° 00.0000' S"), &x, &y);
-  m_stLatitude->SetSizeHints(x + 20, -1);
-  m_stLongitude->SetSizeHints(x + 20, -1);
+  });
+  m_sdbSizer8OK->SetLabel(_("Close"));
+  auto* close = new wxBoxSizer(wxHORIZONTAL);
+  close->AddStretchSpacer();
+  close->Add(m_sdbSizer8OK, 0, wxALL, 5);
+  root->Add(close, 0, wxEXPAND);
 
-  wxStaticBoxSizer* running =
-      new wxStaticBoxSizer(wxVERTICAL, this, _("Time-tagged running fix"));
-  m_runningFix = new wxCheckBox(this, wxID_ANY,
-                                _("Propagate every sight to a common epoch"));
-  running->Add(m_runningFix, 0, wxALL, 5);
-
-  wxBoxSizer* motionMode = new wxBoxSizer(wxHORIZONTAL);
-  motionMode->Add(new wxStaticText(this, wxID_ANY, _("Vessel motion")), 0,
-                  wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-  m_motionMode = new wxChoice(this, wxID_ANY);
-  m_motionMode->Append(_("One COG and SOG"));
-  m_motionMode->Append(_("Each sight's DR Shift"));
-  m_motionMode->SetSelection(0);
-  motionMode->Add(m_motionMode, 0, wxALIGN_CENTER_VERTICAL);
-  running->Add(motionMode, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
-
-  wxBoxSizer* epoch = new wxBoxSizer(wxHORIZONTAL);
-  epoch->Add(new wxStaticText(this, wxID_ANY, _("Enter epoch as")), 0,
-             wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-  m_epochTimeBasis = new wxChoice(this, wxID_ANY);
-  m_epochTimeBasis->Append(_("UTC"));
-  m_epochTimeBasis->Append(_("Computer local time"));
-  m_epochTimeBasis->SetSelection(0);
-  epoch->Add(m_epochTimeBasis, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 12);
-  epoch->Add(new wxStaticText(this, wxID_ANY, _("Date")), 0,
-             wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-  m_epochDate = new wxDatePickerCtrl(this, wxID_ANY);
-  epoch->Add(m_epochDate, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 12);
-  epoch->Add(new wxStaticText(this, wxID_ANY, _("Time")), 0,
-             wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-  m_epochTime = new CelestialTimePicker(this, wxID_ANY);
-  epoch->Add(m_epochTime, 0, wxALIGN_CENTER_VERTICAL);
-  running->Add(epoch, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
-
-  wxBoxSizer* motion = new wxBoxSizer(wxHORIZONTAL);
-  motion->Add(new wxStaticText(this, wxID_ANY, _("COG true")), 0,
-              wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-  m_courseTrue = new wxSpinCtrlDouble(this, wxID_ANY, "0", wxDefaultPosition,
-                                      wxSize(85, -1), wxSP_ARROW_KEYS, 0,
-                                      359.9, 0, 0.1);
-  m_courseTrue->SetDigits(1);
-  motion->Add(m_courseTrue, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 12);
-  motion->Add(new wxStaticText(this, wxID_ANY, _("SOG kn")), 0,
-              wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-  m_speedKnots = new wxSpinCtrlDouble(this, wxID_ANY, "0", wxDefaultPosition,
-                                      wxSize(80, -1), wxSP_ARROW_KEYS, 0, 100,
-                                      0, 0.1);
-  m_speedKnots->SetDigits(1);
-  motion->Add(m_speedKnots, 0, wxALIGN_CENTER_VERTICAL);
-  running->Add(motion, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
-  auto* shiftNote = new wxStaticText(
-      this, wxID_ANY,
-      _("For per-sight DR Shift, enter the distance and bearing travelled "
-        "from each sight to the selected epoch. The latest sight usually "
-        "has zero shift. COG/SOG is not added in this mode."));
-  shiftNote->Wrap(690);
-  running->Add(shiftNote, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 6);
-  m_runningSummary = new wxStaticText(
-      this, wxID_ANY,
-      _("Enable this for sights taken while underway; stationary algorithms remain available above."));
-  m_runningSummary->Wrap(660);
-  running->Add(m_runningSummary, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 6);
-  m_residuals = new wxListCtrl(this, wxID_ANY, wxDefaultPosition,
-                               wxSize(-1, 130), wxLC_REPORT | wxLC_HRULES);
-  m_residuals->InsertColumn(0, _("UTC"), wxLIST_FORMAT_LEFT, 125);
-  m_residuals->InsertColumn(1, _("Body"), wxLIST_FORMAT_LEFT, 65);
-  m_residuals->InsertColumn(2, _("Hc"), wxLIST_FORMAT_LEFT, 100);
-  m_residuals->InsertColumn(3, _("Ho-Hc"), wxLIST_FORMAT_LEFT, 70);
-  m_residuals->InsertColumn(4, _("DR shift NM"), wxLIST_FORMAT_LEFT, 95);
-  m_residuals->InsertColumn(5, _("Saved bearing"), wxLIST_FORMAT_LEFT, 105);
-  m_residuals->InsertColumn(6, _("Used bearing T"), wxLIST_FORMAT_LEFT, 105);
-  running->Add(m_residuals, 1, wxALL | wxEXPAND, 5);
-#ifdef __OCPN__ANDROID__
-  // Keep the shared report model, but present every column vertically so none
-  // requires precise horizontal scrolling or a clipped desktop table row.
-  m_androidResiduals = new wxStaticText(this, wxID_ANY, wxEmptyString);
-  running->Replace(m_residuals, m_androidResiduals);
-  m_residuals->Hide();
-#endif
-#ifdef __OCPN__ANDROID__
-  GetSizer()->Insert(2, running, 1, wxALL | wxEXPAND, 5);
-#else
-  GetSizer()->Insert(1, running, 1, wxALL | wxEXPAND, 5);
-#endif
-
-  const BoatNavigationSnapshot boat =
-      parent->GetPlugin()->GetBoatNavigationSnapshot();
+  const auto boat = parent->GetPlugin()->GetBoatNavigationSnapshot();
   if (boat.valid) {
     m_courseTrue->SetValue(boat.cogTrue);
     m_speedKnots->SetValue(boat.sogKnots);
   }
   SetEpochControls(wxDateTime::UNow());
-  // Existing sight files already carry the vessel's per-sight movement.
-  // Select that method on opening only when a visible calculation sight uses
-  // it; leave ordinary unshifted fixes in their established stationary mode.
   const bool savedShift = std::any_of(
-      m_Parent->m_Sights.begin(), m_Parent->m_Sights.end(),
-      [](const Sight& sight) {
-        return sight.IsVisible() &&
-               (sight.m_Type == Sight::ALTITUDE ||
-                sight.m_Type == Sight::HORIZON) &&
-               sight.m_ShiftNm != 0.0;
+      parent->m_Sights.begin(), parent->m_Sights.end(), [](const Sight& s) {
+        return s.IsVisible() &&
+               (s.m_Type == Sight::ALTITUDE || s.m_Type == Sight::HORIZON) &&
+               s.m_ShiftNm != 0;
       });
-  if (savedShift) {
-    m_motionMode->SetSelection(1);
-    m_runningFix->SetValue(true);
-    m_courseTrue->Disable();
-    m_speedKnots->Disable();
-    SetEpochToLatestVisibleSight(m_clock_offset);
-  }
-  m_runningFix->Bind(wxEVT_CHECKBOX, &FixDialog::OnRunningControl, this);
+  if (savedShift) m_motionMode->SetSelection(2);
+  SetEpochToLatestVisibleSight(m_clock_offset);
+  UpdateMotionControls();
+  RefreshDrSources();
+  m_drSource->Bind(wxEVT_CHOICE, &FixDialog::ChangeDrSource, this);
+  m_initialLatitude->Bind(wxEVT_TEXT, &FixDialog::EditDr, this);
+  m_initialLongitude->Bind(wxEVT_TEXT, &FixDialog::EditDr, this);
   m_motionMode->Bind(wxEVT_CHOICE, &FixDialog::ChangeMotionMode, this);
-  m_epochTimeBasis->Bind(wxEVT_CHOICE, &FixDialog::ChangeEpochTimeBasis,
-                         this);
+  m_lunarSolution->Bind(wxEVT_CHOICE,
+                        [this](wxCommandEvent&) { Update(m_clock_offset); });
+  m_epochTimeBasis->Bind(wxEVT_CHOICE, &FixDialog::ChangeEpochTimeBasis, this);
   m_epochDate->Bind(wxEVT_DATE_CHANGED,
                     [this](wxDateEvent&) { Update(m_clock_offset); });
   m_epochTime->Bind(wxEVT_TIME_CHANGED,
                     [this](wxDateEvent&) { Update(m_clock_offset); });
   m_courseTrue->Bind(wxEVT_SPINCTRLDOUBLE, &FixDialog::OnRunningControl, this);
   m_speedKnots->Bind(wxEVT_SPINCTRLDOUBLE, &FixDialog::OnRunningControl, this);
+  m_courseTrue->Bind(wxEVT_TEXT, &FixDialog::OnRunningControl, this);
+  m_speedKnots->Bind(wxEVT_TEXT, &FixDialog::OnRunningControl, this);
 #ifdef __OCPN__ANDROID__
-  // Pinned wxQt does not send its spin event for typed double values. Native
-  // valueChanged must request a calculation too, after the input callback.
-  // Install only after programmatic initialization, and let dialog ownership
-  // cancel the timer on Close/unload. Consecutive edits coalesce into one update.
+  if (auto* combo = qobject_cast<QComboBox*>(m_cbFixAlgorithm->GetHandle()))
+    combo->setEditable(false);
   auto* motionUpdate = new QTimer(GetHandle());
   motionUpdate->setSingleShot(true);
   wxWeakRef<FixDialog> weakFix(this);
   QObject::connect(motionUpdate, &QTimer::timeout, GetHandle(), [weakFix]() {
     if (weakFix) weakFix->Update(weakFix->m_clock_offset);
   });
-  for (auto* control : {m_courseTrue, m_speedKnots}) {
+  for (auto* control : {m_courseTrue, m_speedKnots})
     if (auto* native = qobject_cast<QDoubleSpinBox*>(control->GetHandle()))
       QObject::connect(native,
-          static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
-          motionUpdate, [motionUpdate](double) { motionUpdate->start(0); });
-  }
-#endif
-#ifdef __OCPN__ANDROID__
-  RefreshDrSources();
+                       static_cast<void (QDoubleSpinBox::*)(double)>(
+                           &QDoubleSpinBox::valueChanged),
+                       motionUpdate,
+                       [motionUpdate](double) { motionUpdate->start(0); });
 #endif
   GetSizer()->Fit(this);
-  SetMinSize(wxSize(700, 480));
+#ifndef __OCPN__ANDROID__
+  SetMinSize(GetSize());
   dialog_geometry::Restore(this, kFixGeometryKey, GetSize());
+#endif
   Bind(wxEVT_CLOSE_WINDOW, &FixDialog::OnWindowClose, this);
-
 #ifdef __OCPN__ANDROID__
-  // The Android surface owns scrolling and both halves of Back.
+  celestial_android::Decorate(this, GetTitle(),
+                              [this]() { m_Parent->OnFixClose(); });
+  // The reused controls predate the new Qt group boxes. Raise them above the
+  // opaque group-box backgrounds after reparenting to the scrolling surface.
+  for (auto* control :
+       std::vector<wxWindow*>{m_stLatitude, m_stLongitude, m_stFixError,
+                              m_cbFixAlgorithm, m_bGo}) {
+    GetSizer()->Show(control, true, true);
+    control->GetHandle()->setParent(control->GetParent()->GetHandle());
+    control->GetHandle()->show();
+    control->GetHandle()->raise();
+  }
 #endif
 }
 
-#ifdef __OCPN__ANDROID__
 void FixDialog::RefreshDrSources() {
   std::vector<fix_dr::DrRecord> records;
   std::vector<wxString> labels;
@@ -302,8 +420,7 @@ void FixDialog::RefreshDrSources() {
   for (const auto& sight : m_Parent->m_Sights) {
     if (!sight.IsVisible() ||
         (sight.m_Type != Sight::ALTITUDE && sight.m_Type != Sight::HORIZON) ||
-        (!m_runningFix->GetValue() && sight.m_ShiftNm != 0) ||
-        !sight.m_DateTime.IsValid())
+        (!IsRunning() && sight.m_ShiftNm != 0) || !sight.m_DateTime.IsValid())
       continue;
     const auto time = UtcDateTime::ToInstant(sight.m_DateTime);
     const fix_dr::Position position{sight.m_DRLat, sight.m_DRLon};
@@ -316,13 +433,7 @@ void FixDialog::RefreshDrSources() {
     records.push_back({position, time.GetValue().GetValue(), true, key.str()});
     keys.push_back(key.str());
     labels.push_back(sight.m_Body + " | " +
-                     UtcDateTime::FormatInstant(time, "%Y-%m-%d %H:%M:%S") +
-                     " UTC | " +
-                     FormatNavigationAngle(position.latitude,
-                                           NavigationAngleKind::Latitude) +
-                     " " +
-                     FormatNavigationAngle(position.longitude,
-                                           NavigationAngleKind::Longitude));
+                     UtcDateTime::FormatInstant(time, "%Y-%m-%d %H:%M:%S") + " UTC");
   }
   std::sort(keys.begin(), keys.end());
   for (const auto& key : keys) signature << key << ';';
@@ -339,14 +450,14 @@ void FixDialog::RefreshDrSources() {
   m_changingDr = true;
   if (latest >= 0) {
     m_drSource->SetSelection(latest + 2);
-    m_androidInitialLatitude->SetAngle(records[latest].position.latitude);
-    m_androidInitialLongitude->SetAngle(records[latest].position.longitude);
+    m_initialLatitude->SetAngle(records[latest].position.latitude);
+    m_initialLongitude->SetAngle(records[latest].position.longitude);
     m_drExplanation->SetLabel(_("Saved DR from ") + labels[latest]);
     m_hasDr = true;
   } else {
     m_drSource->SetSelection(0);
-    m_androidInitialLatitude->ChangeValue(wxEmptyString);
-    m_androidInitialLongitude->ChangeValue(wxEmptyString);
+    m_initialLatitude->ChangeValue(wxEmptyString);
+    m_initialLongitude->ChangeValue(wxEmptyString);
     m_drExplanation->SetLabel(
         _("No usable included sight DR. Enter a position or explicitly choose "
           "the boat position."));
@@ -361,23 +472,23 @@ void FixDialog::ChangeDrSource(wxCommandEvent&) {
   m_hasDr = false;
   if (source >= 2 && std::size_t(source - 2) < m_drRecords.size()) {
     const auto position = m_drRecords[source - 2].position;
-    m_androidInitialLatitude->SetAngle(position.latitude);
-    m_androidInitialLongitude->SetAngle(position.longitude);
+    m_initialLatitude->SetAngle(position.latitude);
+    m_initialLongitude->SetAngle(position.longitude);
     m_drExplanation->SetLabel(_("Saved DR from ") +
                               m_drSource->GetStringSelection());
     m_hasDr = true;
   } else if (source == 1) {
     double lat, lon;
     if (m_Parent->GetPlugin()->GetBoatPosition(&lat, &lon)) {
-      m_androidInitialLatitude->SetAngle(lat);
-      m_androidInitialLongitude->SetAngle(lon);
+      m_initialLatitude->SetAngle(lat);
+      m_initialLongitude->SetAngle(lon);
       m_hasDr = true;
       m_drExplanation->SetLabel(
           _("Current boat position selected explicitly. This may differ from "
             "the saved sight DR."));
     } else {
-      m_androidInitialLatitude->ChangeValue(wxEmptyString);
-      m_androidInitialLongitude->ChangeValue(wxEmptyString);
+      m_initialLatitude->ChangeValue(wxEmptyString);
+      m_initialLongitude->ChangeValue(wxEmptyString);
       m_drExplanation->SetLabel(
           _("No valid boat position is available. Enter a DR position."));
     }
@@ -385,7 +496,7 @@ void FixDialog::ChangeDrSource(wxCommandEvent&) {
     m_drExplanation->SetLabel(_("User-entered DR for this fix"));
     double lat, lon;
     m_hasDr =
-        m_androidInitialLatitude->GetAngle(&lat) && m_androidInitialLongitude->GetAngle(&lon);
+        m_initialLatitude->GetAngle(&lat) && m_initialLongitude->GetAngle(&lon);
   }
   m_changingDr = false;
   Update(m_clock_offset);
@@ -398,28 +509,31 @@ void FixDialog::EditDr(wxCommandEvent&) {
   Update(m_clock_offset);
 }
 bool FixDialog::ReadDr(double* latitude, double* longitude) {
-  if (m_hasDr && m_androidInitialLatitude->GetAngle(latitude) &&
-      m_androidInitialLongitude->GetAngle(longitude))
+  if (m_hasDr && m_initialLatitude->GetAngle(latitude) &&
+      m_initialLongitude->GetAngle(longitude))
     return true;
   m_fixlat = m_fixlon = m_fixerror = NAN;
   m_stLatitude->SetValue(_("N/A"));
   m_stLongitude->SetValue(_("N/A"));
-  m_stFixError->SetValue(_("Enter a valid DR position"));
+  m_stFixError->SetValue(_("N/A"));
+  m_runningSummary->SetLabel(_("Enter a valid DR or explicitly choose the boat position."));
   m_bGo->Disable();
   return false;
 }
 void FixDialog::FocusStartingDr() {
   m_drSource->SetFocus();
+#ifdef __OCPN__ANDROID__
   for (auto* window = m_drSource->GetParent(); window;
        window = window->GetParent())
     if (auto* scroll = wxDynamicCast(window, wxScrolledWindow)) scroll->Scroll(0, 0);
-}
 #endif
+}
 
 FixDialog::~FixDialog() { dialog_geometry::Save(this, kFixGeometryKey); }
 
 void FixDialog::RunIntegrationScenario() {
-  m_runningFix->SetValue(true);
+  m_motionMode->SetSelection(1);
+  UpdateMotionControls();
   Update(m_clock_offset);
   Raise();
 }
@@ -473,12 +587,24 @@ void FixDialog::ChangeEpochTimeBasis(wxCommandEvent&) {
   Update(m_clock_offset);
 }
 
+bool FixDialog::IsRunning() const { return m_motionMode->GetSelection() > 0; }
+
+void FixDialog::UpdateMotionControls() {
+  const bool course = m_motionMode->GetSelection() == 1;
+  m_motionInputs->Show(course);
+  m_courseTrue->Enable(course); m_speedKnots->Enable(course);
+  m_cbFixAlgorithm->Enable(!IsRunning());
+  m_epochDate->Enable(IsRunning()); m_epochTime->Enable(IsRunning());
+  m_epochTimeBasis->Enable(IsRunning());
+  m_epochSummary->Show(IsRunning());
+  Layout();
+#ifndef __OCPN__ANDROID__
+  if (GetSizer()) GetSizer()->Fit(this);
+#endif
+}
+
 void FixDialog::ChangeMotionMode(wxCommandEvent&) {
-  const bool manual = m_motionMode->GetSelection() == 1;
-  if (manual) m_runningFix->SetValue(true);
-  m_courseTrue->Enable(!manual);
-  m_speedKnots->Enable(!manual);
-  if (manual) SetEpochToLatestVisibleSight(m_clock_offset);
+  UpdateMotionControls();
   Update(m_clock_offset);
 }
 
@@ -623,11 +749,24 @@ void FixDialog::Update(int clock_offset) {
     FixDialog* dialog;
     ~RefreshLayout() { celestial_android::LayoutScrolls(dialog); }
   } refreshLayout{this};
+#else
+  struct RefreshLayout {
+    FixDialog* dialog;
+    ~RefreshLayout() {
+      dialog->m_runningSummary->Wrap(dialog->GetClientSize().x - 20);
+      dialog->Layout();
+    }
+  } refreshLayout{this};
 #endif
   m_clock_offset = clock_offset;
-#ifdef __OCPN__ANDROID__
+  m_bGo->Disable();
+  m_fixlat = m_fixlon = m_fixerror = NAN;
+  m_Parent->SetLastFix(NAN, NAN);
+  m_stLatitude->ChangeValue(_("N/A"));
+  m_stLongitude->ChangeValue(_("N/A"));
+  m_stFixError->ChangeValue(_("N/A"));
+  m_runningDetails->SetLabel(wxEmptyString);
   RefreshDrSources();
-#endif
   double effective_correction = clock_offset;
   const LunarSolutionRecord* record = nullptr;
   const int selection = m_lunarSolution->GetSelection();
@@ -647,7 +786,9 @@ void FixDialog::Update(int clock_offset) {
     m_bGo->Disable();
     return;
   }
-  if (m_runningFix && m_runningFix->GetValue()) {
+  if (IsRunning()) {
+    m_epochSummary->SetLabel(_("Fix time: ") +
+        UtcDateTime::FormatInstant(ReadEpochUtc(), "%Y-%m-%d %H:%M:%S") + " UTC");
     UpdateRunningFix(effective_correction);
     return;
   }
@@ -670,11 +811,8 @@ void FixDialog::Update(int clock_offset) {
 
   double X[3]; /* result */
 
-  double initiallat = m_sInitialLatitude->GetValue(),
-         initiallon = m_sInitialLongitude->GetValue();
-#ifdef __OCPN__ANDROID__
+  double initiallat, initiallon;
   if (!ReadDr(&initiallat, &initiallon)) return;
-#endif
   X[0] = cos(d_to_r(initiallat)) * cos(d_to_r(initiallon));
   X[1] = cos(d_to_r(initiallat)) * sin(d_to_r(initiallon));
   X[2] = sin(d_to_r(initiallat));
@@ -834,6 +972,7 @@ again:
     m_stLongitude->SetValue(toSDMM_PlugIn(2, m_fixlon, true));
     m_stFixError->SetValue(wxString::Format(_T("%.3g"), m_fixerror));
     m_Parent->SetLastFix(m_fixlat, m_fixlon);
+    FillStationaryDetails(effective_correction);
     m_bGo->Enable();
   } else {
   fail:
@@ -847,9 +986,55 @@ again:
   RequestRefresh(GetParent()->GetParent());
 }
 
+void FixDialog::FillStationaryDetails(double correction) {
+  double squared = 0;
+  unsigned count = 0;
+#ifdef __OCPN__ANDROID__
+  wxString details;
+#endif
+  for (Sight& sight : m_workingSights) {
+    if (!sight.IsVisible() || sight.m_ShiftNm != 0 ||
+        (sight.m_Type != Sight::ALTITUDE && sight.m_Type != Sight::HORIZON))
+      continue;
+    double lat, lon;
+    sight.BodyLocation(UtcDateTime::AddSeconds(sight.m_DateTime, correction),
+                       &lat, &lon, nullptr, nullptr, nullptr);
+    const double altitude = r_to_d(std::asin(std::max(
+        -1.0,
+        std::min(1.0, std::sin(d_to_r(m_fixlat)) * std::sin(d_to_r(lat)) +
+                          std::cos(d_to_r(m_fixlat)) * std::cos(d_to_r(lat)) *
+                              std::cos(d_to_r(m_fixlon - lon))))));
+    const double residual = 60 * (sight.m_ObservedAltitude - altitude);
+    squared += residual * residual;
+    ++count;
+    const wxString utc = UtcDateTime::FormatInstant(
+        UtcDateTime::ToInstant(
+            UtcDateTime::AddSeconds(sight.m_DateTime, correction)),
+        "%m-%d %H:%M:%S");
+    const long row = m_residuals->InsertItem(m_residuals->GetItemCount(), utc);
+    m_residuals->SetItem(row, 1, sight.m_Body);
+    m_residuals->SetItem(row, 2, FormatNavigationAngle(altitude));
+    m_residuals->SetItem(row, 3, wxString::Format("%+.2f'", residual));
+    m_residuals->SetItem(row, 4, "0.00");
+#ifdef __OCPN__ANDROID__
+    details += sight.m_Body + " | " + utc + " UTC\n" + _("Hc: ") +
+               FormatNavigationAngle(altitude) + _(" | Ho minus Hc: ") +
+               wxString::Format("%+.2f'\n\n", residual);
+#endif
+  }
+  if (count)
+    m_stFixError->ChangeValue(
+        wxString::Format("%.2f' RMS", std::sqrt(squared / count)));
+  if (m_runningSummary->GetLabel().empty())
+    m_runningSummary->SetLabel(wxString::Format(_("%u included sights"), count));
+#ifdef __OCPN__ANDROID__
+  m_androidResiduals->SetLabel(details);
+#endif
+}
+
 void FixDialog::UpdateRunningFix(double clock_offset) {
   const wxDateTime epoch = ReadEpochUtc();
-  const bool manual = m_motionMode->GetSelection() == 1;
+  const bool manual = m_motionMode->GetSelection() == 2;
   m_residuals->DeleteAllItems();
   std::vector<FixObservation> observations;
 #ifdef __OCPN__ANDROID__
@@ -942,11 +1127,7 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
   }
   ObserverMotion motion;
   motion.referenceUtc = epoch;
-  motion.latitude = m_sInitialLatitude->GetValue();
-  motion.longitude = m_sInitialLongitude->GetValue();
-#ifdef __OCPN__ANDROID__
   if (!ReadDr(&motion.latitude, &motion.longitude)) return;
-#endif
   motion.courseTrue = manual ? 0.0 : m_courseTrue->GetValue();
   motion.speedKnots = manual ? 0.0 : m_speedKnots->GetValue();
   motion.moving = motion.speedKnots != 0.0;
@@ -967,7 +1148,9 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
   m_stLatitude->SetValue(toSDMM_PlugIn(1, m_fixlat, true));
   m_stLongitude->SetValue(toSDMM_PlugIn(2, m_fixlon, true));
   m_stFixError->SetValue(wxString::Format(_("%.2f' RMS"), fix.rmsMinutes));
-  m_runningSummary->SetLabel(wxString::Format(
+  m_runningSummary->SetLabel(wxString::Format(_("%u included sights; "), unsigned(observations.size())) +
+      m_motionMode->GetStringSelection());
+  m_runningDetails->SetLabel(wxString::Format(
       _("Common epoch %s UTC | %u iterations | RMS %.2f' | uncertainty ellipse %.2f x %.2f NM at %.0f%c"),
 #ifdef __OCPN__ANDROID__
       UtcDateTime::FormatInstant(fix.epochUtc, "%Y-%m-%d %H:%M:%S.%l").c_str(),
@@ -976,7 +1159,7 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
 #endif
       fix.iterations, fix.rmsMinutes, fix.semiMajorNm, fix.semiMinorNm,
       fix.ellipseBearing, 0x00b0));
-  m_runningSummary->Wrap(660);
+  m_runningDetails->Wrap(740);
   for (size_t index = 0; index < fix.residuals.size(); ++index) {
     const auto& residual = fix.residuals[index];
     const long row = static_cast<long>(index);

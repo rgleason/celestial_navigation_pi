@@ -140,9 +140,16 @@ SightDialog::SightDialog(wxWindow* parent, Sight& s, int clock_offset,
   remarksRow->Add(new wxStaticText(m_panel8, wxID_ANY, _("Remarks")), 0,
                   wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
   m_remarks = new wxTextCtrl(m_panel8, wxID_ANY, m_Sight.m_Remarks);
+  m_remarks->SetName("SightRemarks");
   remarksRow->Add(m_remarks, 1, wxEXPAND);
-  m_panel8->GetSizer()->Add(remarksRow, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,
-                           8);
+  // The generated one-column flex grid does not grow its column. Wrap it so
+  // Remarks spans the notebook page instead of the parameter grid's minimum.
+  auto* parameterSizer = m_panel8->GetSizer();
+  m_panel8->SetSizer(nullptr, false);
+  auto* parameters = new wxBoxSizer(wxVERTICAL);
+  parameters->Add(parameterSizer, 0, wxEXPAND);
+  parameters->Add(remarksRow, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
+  m_panel8->SetSizer(parameters);
   m_remarks->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
     MarkDirty();
     m_Sight.m_Remarks = m_remarks->GetValue();

@@ -6,6 +6,48 @@
 
 namespace ld = lunar_distance;
 
+TEST(LunarDistanceEngine, IndependentKnownPositionCheckExposesSightError) {
+  ld::Observation observation;
+  observation.use_ellipsoid = true;
+  observation.moon_contact = ld::DistanceContact::Center;
+  observation.body_contact = ld::DistanceContact::Center;
+  observation.pressure_hpa = 0;
+  observation.raw_distance_deg = 60;
+  ld::EphemerisSample vacuum;
+  vacuum.predicted_distance_deg = 60;
+  vacuum.moon_geographic_longitude_deg = 0;
+  vacuum.body_geographic_longitude_deg = 60;
+  auto provider = [vacuum](double epoch, ld::EphemerisSample* sample, std::string*) {
+    EXPECT_DOUBLE_EQ(0, epoch);  // Never apply the solved lunar watch correction.
+    *sample = vacuum;
+    return true;
+  };
+  for (double error : {-1., 0., 1.}) {
+    observation.raw_distance_deg = 60 + error/60;
+    // Deliberately inconsistent measured altitudes cannot absorb the LD error.
+    observation.moon_altitude_deg = 5;
+    observation.body_altitude_deg = 80;
+    observation.separate_times = true;
+    observation.moon_time_offset_seconds = -300;
+    observation.body_time_offset_seconds = 120;
+    const auto check = ld::CheckDistanceAtPosition(observation, provider, {0, 30});
+    ASSERT_TRUE(check.valid) << check.error;
+    EXPECT_NEAR(60, check.true_distance_deg, 1e-10);
+    EXPECT_NEAR(60, check.predicted_raw_distance_deg, 1e-10);
+    EXPECT_NEAR(60+error/60, check.cleared_distance_deg, 1e-10);
+    EXPECT_NEAR(error, check.lunar_error_arcmin, 1e-8);
+  }
+  EXPECT_FALSE(ld::CheckDistanceAtPosition(observation, provider, {NAN, 30}).valid);
+  EXPECT_FALSE(ld::CheckDistanceAtPosition(observation, provider, {0, 181}).valid);
+  EXPECT_FALSE(ld::CheckDistanceAtPosition(observation, {}, {0, 30}).valid);
+  auto failed = [](double, ld::EphemerisSample*, std::string* error) {
+    *error = "offline data unavailable"; return false;
+  };
+  const auto unavailable = ld::CheckDistanceAtPosition(observation, failed, {0, 30});
+  EXPECT_FALSE(unavailable.valid);
+  EXPECT_EQ("offline data unavailable", unavailable.error);
+}
+
 TEST(LunarDistanceEngine, Wgs84MotionMatchesIndependentGeographicLibExample) {
   ld::Observation settings;
   settings.use_ellipsoid = true;

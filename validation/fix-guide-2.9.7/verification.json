@@ -1,0 +1,31 @@
+{
+  "version": "2.9.7.0",
+  "desktop_build": "wxGTK Linux x86_64 Release/API 1.18",
+  "android_build": "wxQt arm64 Release/API 1.18",
+  "ctest_groups_passed": 12,
+  "native_desktop": [
+    "normal and large-font FIX",
+    "Remarks full UTF-8 save/backup/import",
+    "all 77 guide pages and links in native HTML reader",
+    "main-menu sight routes",
+    "lunar accuracy and recorded-input preservation"
+  ],
+  "source_pdf_pages_unchanged": 75,
+  "source_pdf_pages_updated": [
+    5,
+    17
+  ],
+  "native_windows_macos_visual_review": "pending platform testers",
+  "predecessor_pr": "https://github.com/rgleason/celestial_navigation_pi/pull/373",
+  "native_android": [
+    "saved sight DR produces nearby Thailand fix",
+    "explicit boat position produces alternate Greenland fix",
+    "invalid DR clears results and disables chart navigation",
+    "portrait full-width FIX and motion controls",
+    "full-width Remarks",
+    "independent entered-UTC lunar accuracy readouts",
+    "Android tools have no desktop How to Guide"
+  ],
+  "tablet_restoration": "Original Celestial Navigation library/sights verified by SHA-256; only two temporary configuration values restored; all other current settings, databases and preferences preserved for concurrent xGRIB testing",
+  "android_lunar_coordinate_label_layout": "expanded labels after native review; final native label appearance pending"
+}

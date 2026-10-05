@@ -1,4 +1,4 @@
-// Saved-sight DR selection for the Android FIX dialog.
+// Saved-sight DR selection for the FIX dialog.
 #pragma once
 #include <cmath>
 #include <cstdint>

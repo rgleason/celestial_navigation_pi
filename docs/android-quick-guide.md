@@ -1,4 +1,4 @@
-# Celestial Navigation 2.9.3 — Android quick guide
+# Celestial Navigation 2.9.7 — Android quick guide
 
 Tap the stock Celestial Navigation icon in OpenCPN to open the workspace.
 Four task buttons take you to **Observe**, **Fix**, **Plan** and **Tools**.
@@ -36,6 +36,11 @@ The starting DR appears above the results. It defaults to the latest included
 observation's saved DR. Choose another observation, enter a DR manually, or
 explicitly select the current boat position. Boat position is never an implicit
 replacement for missing saved DR.
+
+Choose **Stationary**, **One COG and SOG**, or **Each sight's DR Shift** in the
+vessel-motion selector. A running fix shows its reference UTC time;
+**More options** lets you change that time and the fix's clock correction.
+**Calculate** refreshes the result, and **Show fix on chart** plots it.
 
 Two observations can give two valid intersections far apart. The starting DR
 guides the calculation toward the nearby solution. Check that the shown DR
@@ -98,7 +103,12 @@ provider; inspect the calculation trail for the source and DUT1 availability.
 
 For a lunar observation, **Results** calculates the UTC candidates and opens
 the result pages. **Check at entered UTC** checks the recorded instant; it does
-not apply a recovered clock correction. On **Time**, choose whether the readings
+not apply a recovered clock correction. For sight accuracy, confirm an independently
+known position at the distance-reading time. Results show True LD, model-corrected
+Cleared LD and signed lunar error (cleared minus true, in arcminutes). A positive
+error means the distance reading is too large. The correction uses the same
+WGS84 forward model as the solver; measured altitudes do not fit this check.
+Wrong UTC, position or environmental inputs also affect the error. On **Time**, choose whether the readings
 are UTC or watch readings. If the distance and altitudes were measured at
 different times, enable separate times and enter all three readings on the same
 basis. Enable vessel advance only when the entered true COG and speed describe

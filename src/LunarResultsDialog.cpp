@@ -98,6 +98,62 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
   m_mode->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) { UpdateResults(); });
   results->Add(m_mode, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
 
+  m_accuracyPanel = new wxPanel(resultsPage);
+  auto* accuracy = new wxBoxSizer(wxVERTICAL);
+  auto* explanationCheck = new wxStaticText(
+      m_accuracyPanel, wxID_ANY,
+      _("Lunar sight accuracy: enter an independently known position at the "
+        "distance-reading time and use a reliable UTC. Saved DR fills these "
+        "fields initially; confirm it before judging the sight. Position and "
+        "UTC are not fitted from this lunar."));
+  explanationCheck->Wrap(740);
+  accuracy->Add(explanationCheck, 0, wxALL | wxEXPAND, 5);
+  auto* positionRow = new wxBoxSizer(
+#ifdef __OCPN__ANDROID__
+      wxVERTICAL
+#else
+      wxHORIZONTAL
+#endif
+  );
+  m_knownLatitude = new NavigationAngleCtrl(
+      m_accuracyPanel, NavigationAngleKind::Latitude, m_sight.m_DRLat, -90, 90);
+  m_knownLongitude =
+      new NavigationAngleCtrl(m_accuracyPanel, NavigationAngleKind::Longitude,
+                              m_sight.m_DRLon, -180, 180);
+  m_knownLatitude->SetName("LunarKnownLatitude");
+  m_knownLongitude->SetName("LunarKnownLongitude");
+  if (!HasSavedDr(m_sight)) {
+    m_knownLatitude->ChangeValue("");
+    m_knownLongitude->ChangeValue("");
+  }
+  for (const auto& field :
+       {std::make_pair(_("Known latitude"), m_knownLatitude),
+        std::make_pair(_("Known longitude"), m_knownLongitude)}) {
+    positionRow->Add(new wxStaticText(m_accuracyPanel, wxID_ANY, field.first),
+                     0, wxALL |
+#ifdef __OCPN__ANDROID__
+                            wxEXPAND,
+#else
+                            wxALIGN_CENTER_VERTICAL,
+#endif
+                     5);
+    positionRow->Add(field.second,
+#ifdef __OCPN__ANDROID__
+                     0,
+#else
+                     1,
+#endif
+                     wxALL | wxEXPAND, 5);
+    field.second->Bind(wxEVT_TEXT,
+                       [this](wxCommandEvent&) { UpdateResults(); });
+  }
+  accuracy->Add(positionRow, 0, wxEXPAND);
+  m_distanceCheck = new wxStaticText(m_accuracyPanel, wxID_ANY, wxEmptyString);
+  m_distanceCheck->SetName("LunarDistanceCheck");
+  accuracy->Add(m_distanceCheck, 0, wxALL | wxEXPAND, 5);
+  m_accuracyPanel->SetSizer(accuracy);
+  results->Add(m_accuracyPanel, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
+
   m_status = new wxStaticText(resultsPage, wxID_ANY, wxEmptyString);
   m_status->Wrap(880);
   results->Add(m_status, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
@@ -230,6 +286,10 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
   SetMinSize(wxSize(760, 500));
   dialog_geometry::Restore(this, _T("LunarResults"), wxSize(1040, 720));
   UpdateResults();
+#ifdef __OCPN__ANDROID__
+  close->Hide();
+  celestial_android::Decorate(this, GetTitle(), [this]() { EndModal(wxID_CLOSE); });
+#endif
 }
 
 LunarResultsDialog::~LunarResultsDialog() {
@@ -243,10 +303,17 @@ void LunarResultsDialog::UpdateResults() {
   m_candidates->DeleteAllItems();
   m_positions->DeleteAllItems();
   const bool checking = m_mode->GetSelection() == 1;
+  m_accuracyPanel->Show(checking);
+  Layout();
+  if (auto* scrolled = dynamic_cast<wxScrolledWindow*>(m_accuracyPanel->GetParent()))
+    scrolled->FitInside();
   wxListItem column;
-  column.SetText(checking ? _("Model - observed (arcmin)")
+  column.SetText(checking ? _("Lunar error (arcmin)")
                           : _("Additional clock correction"));
   m_candidates->SetColumn(1, column);
+  column.SetText(checking ? _("True LD")
+      : m_sight.m_LunarSeparateTimes ? _("Predicted geocentric distance") : _("LD cleared"));
+  m_candidates->SetColumn(2, column);
   if (checking) {
     lunar_distance::EphemerisSample sample;
     std::string error;
@@ -255,39 +322,49 @@ void LunarResultsDialog::UpdateResults() {
         !m_sight.LunarEphemeris()(0, &sample, &error)) {
       m_status->SetLabel(_("Cannot evaluate entered UTC: ") +
                          wxString::FromUTF8(error.c_str()));
+      m_distanceCheck->SetLabel(
+          _("True LD: unavailable\nCleared LD: unavailable\nLunar error: "
+            "unavailable"));
       m_details->Clear();
       return;
     }
     const auto observation = m_sight.LunarObservation();
-    const auto position = lunar_distance::PositionAtTime(
-        observation, m_sight.LunarEphemeris(), 0);
     double residual = NAN;
-    double distance = sample.predicted_distance_deg;
-    if (!observation.separate_times && !observation.use_ellipsoid) {
-      const auto cleared = lunar_distance::ClearDistance(observation, sample);
-      if (cleared.valid) {
-        distance = cleared.cleared_distance_deg;
-        residual = 60 * (sample.predicted_distance_deg - distance);
+    double latitude, longitude;
+    if (m_knownLatitude->GetAngle(&latitude) &&
+        m_knownLongitude->GetAngle(&longitude)) {
+      const auto check = lunar_distance::CheckDistanceAtPosition(
+          observation, m_sight.LunarEphemeris(), {latitude, longitude});
+      if (check.valid) {
+        residual = check.lunar_error_arcmin;
+        m_distanceCheck->SetLabel(wxString::Format(
+            _("True LD: %s\nCleared LD (model corrected): %s\n"
+              "Lunar error (cleared - true): %+.4f arcmin\n"
+              "Positive error means the observed distance is too large. "
+              "Clearing subtracts the forward model's index, limb, refraction "
+              "and parallax correction at the known position. "
+              "Measured altitudes are retained for the position solution; "
+              "they are not used to fit this accuracy check."),
+            FormatNavigationAngle(check.true_distance_deg),
+            FormatNavigationAngle(check.cleared_distance_deg), residual));
+      } else {
+        m_distanceCheck->SetLabel(_("Lunar accuracy check unavailable: ") +
+                                  wxString::FromUTF8(check.error.c_str()));
       }
-    } else if (position.valid) {
-      auto nearest = position.candidates.front();
-      const lunar_distance::GeographicPoint dr(m_sight.m_DRLat,
-                                               m_sight.m_DRLon);
-      for (const auto& p : position.candidates)
-        if (lunar_distance::GreatCircleDistanceNm(dr, p) <
-            lunar_distance::GreatCircleDistanceNm(dr, nearest))
-          nearest = p;
-      const auto predicted = lunar_distance::PredictTimeTaggedObservation(
-          observation, m_sight.LunarEphemeris(), 0, nearest);
-      if (predicted.valid)
-        residual =
-            60 * (predicted.raw_distance_deg - observation.raw_distance_deg);
+    } else {
+      m_distanceCheck->SetLabel(
+          _("True LD: ") +
+          FormatNavigationAngle(sample.predicted_distance_deg) +
+          _("\nCleared LD and lunar error: enter a valid known latitude and "
+            "longitude."));
     }
+    m_distanceCheck->Wrap(740);
     m_status->SetLabel(
         _("Checking the entered UTC and existing correction. No lunar-derived "
           "time shift is used. "
-          "The distance residual uses the nearest saved-DR position branch; "
-          "branch residuals are shown below."));
+          "The accuracy check uses only the entered known position. "
+          "Position branches from the measured altitudes are shown separately "
+          "below."));
     m_status->Wrap(740);
     m_candidates->InsertItem(0,
                              UtcDateTime::FormatUtc(m_sight.m_CorrectedDateTime,
@@ -296,7 +373,8 @@ void LunarResultsDialog::UpdateResults() {
                           std::isfinite(residual)
                               ? wxString::Format("%+.6f", residual)
                               : _("Indeterminate"));
-    m_candidates->SetItem(0, 2, FormatNavigationAngle(distance));
+    m_candidates->SetItem(0, 2,
+                          FormatNavigationAngle(sample.predicted_distance_deg));
     m_candidates->SetItem(0, 3, _("Not solving UTC"));
     m_candidates->SetItem(0, 4, _("Not estimated"));
     for (int c = 0; c < 5; ++c)
@@ -304,28 +382,32 @@ void LunarResultsDialog::UpdateResults() {
     m_details->SetValue(
         _("CHECK AT ENTERED UTC\n") + LunarInputSnapshot(m_sight) +
         wxString::Format("\nUTC: %s\nEphemeris centre distance: %.9f "
-                         "deg\nDistance residual: %+.6f arcmin\n"
+                         "deg\nLunar error (observed - model): %+.6f arcmin\n"
                          "WGS84 ellipsoid. No additional lunar clock "
                          "correction has been solved or applied.\n",
                          UtcDateTime::FormatUtc(m_sight.m_CorrectedDateTime,
                                                 "%Y-%m-%d %H:%M:%S"),
                          sample.predicted_distance_deg, residual));
+    m_details->AppendText("\n" + m_distanceCheck->GetLabel());
     UpdatePositions(-1);
     return;
   }
   m_details->SetValue(m_sight.m_CalcStr);
   if (!m_sight.m_LunarSolutionValid) {
-    m_status->SetLabel(_("No UTC solution: ") +
-                       m_sight.m_LunarSolutionError);
+    m_status->SetLabel(_("No UTC solution: ") + m_sight.m_LunarSolutionError);
   } else {
     m_status->SetLabel(wxString::Format(
         m_sight.m_LunarCandidates.size() == 1
             ? _("One UTC solution was found in the selected search interval.")
             : _("%zu possible UTC solutions were found. The default uses "
-                "proximity to DR when available, otherwise proximity to entered "
-                "UTC. Even closely spaced solutions are unresolved alternatives, "
-                "not measurements to average. Check all candidates; use another "
-                "observation or independent position/time evidence to distinguish them."),
+                "proximity to DR when available, otherwise proximity to "
+                "entered "
+                "UTC. Even closely spaced solutions are unresolved "
+                "alternatives, "
+                "not measurements to average. Check all candidates; use "
+                "another "
+                "observation or independent position/time evidence to "
+                "distinguish them."),
         m_sight.m_LunarCandidates.size()));
   }
   m_status->Wrap(880);
@@ -586,11 +668,11 @@ void LunarResultsDialog::RefreshAndroidCards() {
           : wxString::Format(row == selected ? _("Selected UTC candidate %ld")
                                              : _("UTC candidate %ld"), row + 1);
       caption += "\nUTC: " + AndroidResultCell(self->m_candidates, row, 0);
-      caption += checking ? "\nModel - observed (arcmin): " : "\nAdditional correction: ";
+      caption += checking ? "\nLunar error (arcmin): " : "\nAdditional correction: ";
       if (!checking && static_cast<size_t>(row) < self->m_sight.m_LunarCandidates.size())
         caption += wxString::Format("%+.6f s", self->m_sight.m_LunarCandidates[row].offset_seconds);
       else caption += AndroidResultCell(self->m_candidates, row, 1);
-      caption += "\nLD cleared: " + AndroidResultCell(self->m_candidates, row, 2);
+      caption += (checking ? "\nTrue LD: " : "\nLD cleared: ") + AndroidResultCell(self->m_candidates, row, 2);
       caption += "\nLocal rate: " + AndroidResultCell(self->m_candidates, row, 3);
       caption += "\nUTC uncertainty: " + AndroidResultCell(self->m_candidates, row, 4);
       auto* card = new wxButton(self->m_androidCandidates, wxID_ANY, caption);
