@@ -307,11 +307,6 @@ struct RunningFixResult {
 
 class RunningFixSolver {
 public:
-  // Resolve and validate alternative intersections for a two-sight running fix.
-  // Empty/one-result searches are explicitly reported as unresolved ambiguity.
-  static std::vector<RunningFixResult> Candidates(
-      const std::vector<FixObservation>& sights, const ObserverMotion& motion,
-      double drLatitude, double drLongitude, wxString* error = nullptr);
   static RunningFixResult Solve(const std::vector<FixObservation>& sights,
                                 const ObserverMotion& motion, double initialLat,
                                 double initialLon, unsigned maximumIterations = 40);

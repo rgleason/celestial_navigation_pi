@@ -37,11 +37,11 @@ observation's saved DR. Choose another observation, enter a DR manually, or
 explicitly select the current boat position. Boat position is never an implicit
 replacement for missing saved DR.
 
-Two observations can give two valid intersections far apart. Review both
-positions and their distances from the starting DR, then select a candidate.
-**Show selected fix on chart** remains disabled until you make that selection.
-Changing the observations, DR, time correction or running-fix motion requires
-selecting again. Tangent or unresolved geometry requires another sight.
+Two observations can give two valid intersections far apart. The starting DR
+guides the calculation toward the nearby solution. Check that the shown DR
+belongs to these observations, then use **Show fix on chart** to plot the result.
+If no usable saved DR is available, enter one or choose boat position explicitly;
+the calculation is blocked until a valid starting position is supplied.
 Motion and timing matter for running observations; a formal uncertainty does
 not include every source of navigation error.
 

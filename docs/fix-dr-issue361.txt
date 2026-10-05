@@ -1,66 +1,53 @@
-Fix starting DR and two-sight ambiguity: issue 361
-================================================
+Android FIX starting DR and desktop regression: issue 361
+=======================================================
 
-Releases: production 2.8.17; development 2.9.4. 4 October 2026.
+Releases: production 2.8.18; development 2.9.6. 5 October 2026.
 Issue: https://github.com/rgleason/celestial_navigation_pi/issues/361
 
-The fix dialog previously started from the current boat position, independently
-of the DR stored with historical sights. Bob's Capella/Schedar example therefore
-selected the Greenland intersection when the observations' saved DR was in Asia.
+Bob's Capella/Schedar example has saved DR 07 degrees 20 minutes N,
+100 degrees 40 minutes E. Using the current boat position near Greenland
+instead selects the remote solution. The Android fix now starts from the latest
+included eligible sight's valid saved DR, selected by UTC rather than row order.
+That DR and its source are visible above the results. Users can select another
+saved sight, enter a DR, or explicitly choose the current boat position.
+Missing/invalid saved DR leaves the inputs blank and blocks plotting until the
+user supplies a valid position. Absent XML DR attributes remain missing on
+Android; a genuinely saved 0,0 position remains valid. Explicit/manual choices
+survive reopening when the eligible saved DR inputs have not changed.
 
-Starting DR is now above the results. Its default is the latest included,
-eligible sight's saved DR by UTC time, independently of sight-list order.
-Users can choose a different sight, enter a precise DR, or explicitly choose the
-current boat position. Missing/invalid saved DR never silently selects the boat.
+The changes to non-Android FIX introduced in 2.8.17/2.9.4 are reverted: the
+compact inline DR controls, short Go button, existing algorithm selector,
+running-fix table and normal dialog layout are restored. Desktop FIX again
+closes by destroying the form. A separate FixDesktop geometry key prevents an
+oversized saved regression layout from carrying forward. Existing desktop DR
+initialization and calculation behavior are retained.
 
-Two stationary sight circles are intersected directly on the sphere. Both
-validated positions are shown with distance from DR; neither is accepted until
-selected. Acceptance enables plotting and updates the last calculated fix.
-Changed DR, observations, inclusion, clock correction or running-fix inputs
-invalidate acceptance. Closing/reopening unchanged inputs preserves selection.
-Tangent, parallel, invalid and impossible geometry block acceptance.
-
-For two running sights, both candidates must satisfy the complete production
-solver's per-sight time and movement model (residual RMS <=0.01 arcminute).
-Analytic seeds and bounded independent starts recover and deduplicate roots.
-This numerical search is not a proof that every possible root of arbitrary
-movement data has been found. Fewer than two validated candidates blocks plotting
-and asks for another sight or checked motion. Existing multi-sight fits retain
-their solver. Ephemeris providers and sight-reduction equations are unchanged.
-
-Desktop content scrolls while Close remains visible. Android retains its native
-scrolling/touch surface, styles dynamically created candidate cards, and opens
-at the DR source. Its quick guide describes the new workflow.
+The mandatory two-candidate selection UI, added sphere-intersection path and
+running-fix multi-root search are removed on all platforms. The existing
+stationary algorithms and running-fix solver calculate using the displayed DR.
+The Android saved-DR correction applies to both paths. The development branch's
+2.9.5 ephemeris/performance changes are retained. Android help describes this
+workflow without candidate-selection instructions.
 
 Validation
 ----------
-Both branches: all 11 existing/new CTest groups passed. Final complete numerical
-executables and focused dialog tests passed after the final changes. Tests cover
-500 generated geometries, independent angular-distance checks of both roots,
-reversed circles, dateline/polar distance, singular/impossible/tangent geometry,
-chronological DR, excluded/invalid records, explicit acceptance and invalidation.
-Running-fix tests cover stationary, COG/SOG, saved per-sight movement and a
-singular pair. Dialog tests reproduce Bob's recorded inputs with boat position
-near Greenland; cover both candidate buttons, reorder, 2-to-3-to-2 sight changes,
-inclusion changes, observation edits, explicit boat DR, manual DR and missing DR.
+Both desktop and Android ARM64 plugins build. All 11 CTest groups passed on each
+branch; explicit desktop GUI tests also passed at normal and 150 percent font
+scaling after the final layout changes. Tests cover chronology, row order,
+excluded/invalid/missing saved DR, legitimate zero coordinates, stable timestamp
+ties, desktop layout/geometry/lifecycle, original running-fix inputs and Bob's
+example using the restored Sphere algorithm.
 
-Both Android ARM64 release plugins and import archives built against the retained
-OpenCPN/wxQt/Qt support. The attached SM-X210 ran all five identical shared
-geometry/selection tests successfully, including the 500 generated cases.
-Physical UI checks on both versions verified visible latest-sight DR and both
-readable candidate cards. Selecting Thailand gives approximately
-03 degrees 17.0802 minutes N, 099 degrees 19.525 minutes E. The exact other
-intersection is approximately 64 degrees 01.419 minutes N, 043 degrees 00.500
-minutes W; both satisfy the original sight-circle equations. Bob's reported
-rounded Greenland position is not used as an independent numerical oracle.
-Explicit boat-position selection clears acceptance and reverses the nearest
-candidate. The development build's selected fix was plotted on the chart.
+Physical SM-X210 Android testing of both versions confirms that Bob's saved DR
+is selected even with the boat near Greenland. The computed fix is approximately
+03 degrees 17.08 minutes N, 099 degrees 19.53 minutes E. Explicit boat-position
+selection gives the Greenland solution. Closing/reopening preserves that explicit
+choice. Missing saved DR gives blank inputs and disables plotting; manual DR
+entry restores calculation. The development result was also plotted on the chart.
+Temporary raw-library swaps were used for these UI comparisons, with the host APK
+retained. They are separate from Plugin Manager import-package validation.
 
-Before tests, the host profile, sights, navigation database, astronomy files and
-original plugin were archived. Ten original data files and all five plugin
-libraries were restored and verified byte-for-byte before the final import.
-The existing OpenCPN host APK was retained. Raw temporary library swaps during
-comparison are distinct from the final Plugin Manager installation. Local
-backups, binary hashes, test logs and screenshots are in ignored build directories.
-Physical testing covers this ARM64 tablet; the wider platform CI suite remains
-separate. No catalogue change or publication is made by these local commits.
+Native Windows UI verification remains outstanding. The non-Android source
+restoration and Linux GUI checks support the desktop correction, but do not
+replace testing Bob's Windows setup. No catalogue change or release publication
+is made by these commits.
