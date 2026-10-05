@@ -47,7 +47,7 @@ set(SRC
     lunar_ui_smoke_tests.cpp
     find_body_ui_tests.cpp
     fix_ui_smoke_tests.cpp
-    fix_ambiguity_tests.cpp
+    fix_dr_tests.cpp
     lunar_distance_engine_tests.cpp
     lunar_session_engine_tests.cpp
     lunar_usno_session_tests.cpp
