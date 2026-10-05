@@ -318,6 +318,7 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
   wxApp::SetInstance(new wxApp);
   ASSERT_TRUE(wxEntryStart(argc, argv));
   ASSERT_TRUE(wxTheApp->CallOnInit());
+  SetTestPluginDataRoot(wxFileName(__FILE__).GetPath() + "/..");
   const auto previousAssertHandler = wxSetAssertHandler(
       [](const wxString& file, int line, const wxString&,
          const wxString& condition, const wxString& message) {
@@ -495,7 +496,28 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
         mode->ProcessWindowEvent(event);
         EXPECT_EQ(selection == 0, save->IsEnabled());
         EXPECT_EQ(snapshot, LunarInputSnapshot(sight));
+        if (selection == 1) {
+          EXPECT_TRUE(ContainsStaticText(&dialog, "True LD:"));
+          EXPECT_TRUE(ContainsStaticText(&dialog, "Cleared LD (model corrected):"));
+          EXPECT_TRUE(ContainsStaticText(&dialog, "Lunar error (cleared - true):"));
+        }
       }
+#ifdef __WXGTK3__
+      dialog.SetSize(wxSize(1040, 1100)); dialog.Layout(); wxTheApp->Yield();
+      const auto checkSize = dialog.GetSize();
+      GtkAllocation checkAllocation{0, 0, checkSize.x, checkSize.y};
+      gtk_widget_size_allocate(GTK_WIDGET(dialog.GetHandle()), &checkAllocation);
+      auto* checkSurface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, checkSize.x, checkSize.y);
+      auto* checkCr = cairo_create(checkSurface);
+      gtk_widget_draw(GTK_WIDGET(dialog.GetHandle()), checkCr);
+      EXPECT_EQ(cairo_surface_write_to_png(checkSurface, "/tmp/celnav297-lunar-check.png"), CAIRO_STATUS_SUCCESS);
+      cairo_destroy(checkCr); cairo_surface_destroy(checkSurface);
+#endif
+      auto* knownLatitude = dynamic_cast<wxTextCtrl*>(wxWindow::FindWindowByName("LunarKnownLatitude", &dialog));
+      ASSERT_NE(nullptr, knownLatitude);
+      knownLatitude->SetValue("invalid");
+      EXPECT_TRUE(ContainsStaticText(&dialog, "enter a valid known latitude"));
+      EXPECT_EQ(snapshot, LunarInputSnapshot(sight));
     }
     // Exercise the actual main and Lunar Tools dialogs, with isolated host
     // state. No installed sights, configuration or network are touched.
@@ -843,6 +865,13 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
           bodiesPage->Layout();
           for (int i = 0; i < 5; ++i) { wxTheApp->Yield(); wxMilliSleep(20); }
           ExpectUnclippedNonOverlappingChildren(bodiesPage);
+          // Desktop planning runs asynchronously; wait for the requested
+          // lunar mode rather than inspecting the previous mode's results.
+          if (mode == 2)
+            for (int pending = 0; pending < 250 &&
+                 (!lunarPairs->IsShown() || lunarPairs->GetItemCount() == 0); ++pending) {
+              wxTheApp->Yield(); wxMilliSleep(20);
+            }
           EXPECT_EQ(mode == 2, lunarPairs->IsShown());
           if (mode == 2) EXPECT_GT(lunarPairs->GetItemCount(), 0);
 #ifdef __WXGTK3__

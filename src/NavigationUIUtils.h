@@ -87,9 +87,13 @@ public:
 
   using wxTextCtrl::SetValue;
 
+  // FIX can display the preferred coordinates while keeping the same angle parser.
+  void UsePreferredDisplayFormat() { m_preferredDisplay = true; Normalize(); }
+
   void SetAngle(double degrees) {
 #ifdef __OCPN__ANDROID__
-    ChangeValue(celestial_android::NumberText(degrees));
+    ChangeValue(m_preferredDisplay ? FormatNavigationAngle(degrees, m_kind)
+                                  : celestial_android::NumberText(degrees));
 #else
     ChangeValue(FormatNavigationAngle(degrees, m_kind));
 #endif
@@ -113,6 +117,7 @@ public:
   }
 
 private:
+  bool m_preferredDisplay = false;
   NavigationAngleKind m_kind;
   double m_minimum;
   double m_maximum;

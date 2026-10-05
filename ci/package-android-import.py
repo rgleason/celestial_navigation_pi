@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Create and verify a manual-import Android archive with its exact download URL."""
+from bundled_guides import check_guides
 import argparse
 import hashlib
 import io
@@ -97,6 +98,7 @@ def package(source: Path, metadata: Path, output: Path, url: str, sha: str,
             embedded = ET.fromstring(check.extractfile('metadata.xml').read())
             if embedded.findtext('tarball-url') != url:
                 raise ValueError('Embedded URL mismatch')
+        check_guides(staged, Path(__file__).resolve().parents[1], target=values['target'])
         os.replace(staged, output)
     finally:
         staged.unlink(missing_ok=True)

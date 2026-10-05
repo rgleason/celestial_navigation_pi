@@ -1633,6 +1633,45 @@ SolveResult SolveTimeTagged(const Observation& observation,
   return result;
 }
 
+DistanceCheck CheckDistanceAtPosition(const Observation& observation,
+                                      const EphemerisFunction& ephemeris,
+                                      const GeographicPoint& known_position) {
+  DistanceCheck result;
+  if (!Finite(known_position.latitude_deg) ||
+      !Finite(known_position.longitude_deg) ||
+      std::fabs(known_position.latitude_deg) > 90 ||
+      std::fabs(known_position.longitude_deg) > 180 ||
+      !Finite(observation.raw_distance_deg) ||
+      observation.raw_distance_deg < 0 || observation.raw_distance_deg > 180) {
+    result.error = "Enter a valid known position and lunar distance";
+    return result;
+  }
+  EphemerisSample sample;
+  if (!ephemeris) {
+    result.error = "No ephemeris is available";
+    return result;
+  }
+  if (!ephemeris(0, &sample, &result.error)) return result;
+  result.true_distance_deg = sample.predicted_distance_deg;
+  result.predicted_raw_distance_deg =
+      PredictedRawDistance(observation, sample, known_position);
+  result.cleared_distance_deg =
+      observation.raw_distance_deg +
+      (result.true_distance_deg - result.predicted_raw_distance_deg);
+  result.lunar_error_arcmin =
+      60 * (observation.raw_distance_deg - result.predicted_raw_distance_deg);
+  result.valid =
+      Finite(result.true_distance_deg) && result.true_distance_deg >= 0 &&
+      result.true_distance_deg <= 180 &&
+      Finite(result.predicted_raw_distance_deg) &&
+      Finite(result.cleared_distance_deg) && result.cleared_distance_deg >= 0 &&
+      result.cleared_distance_deg <= 180;
+  if (!result.valid)
+    result.error =
+        "The lunar-distance check is not finite or is outside 0..180 degrees";
+  return result;
+}
+
 PredictedObservation PredictTimeTaggedObservation(
     const Observation& settings, const EphemerisFunction& ephemeris,
     double clock_correction_seconds,

@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from bundled_guides import check_guides
 
 root = Path.cwd()
 job = os.environ.get('CIRCLE_JOB', 'local')
@@ -30,6 +31,8 @@ for folder in ('build', 'artifacts'):
             shutil.copy2(p, out / p.name)
 for p in out.iterdir():
     if p.is_file():
+        if p.name.endswith('.tar.gz'):
+            check_guides(p, root)
         files.append(dict(name=p.name,sha256=hashlib.sha256(p.read_bytes()).hexdigest(),bytes=p.stat().st_size))
 if not any(x['name'].endswith('.tar.gz') for x in files):
     raise RuntimeError('No platform plugin archive was retained')

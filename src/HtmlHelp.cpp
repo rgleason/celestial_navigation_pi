@@ -50,12 +50,31 @@ bool ShowBundledHtmlHelp(wxWindow* parent, const wxString& title,
   celestial_android::ShowDocument(parent, title, path, true);
   return true;
 #else
+  const bool practicalGuide = filename == _T("Practical_Guide.html");
+  const wxSize initialSize = practicalGuide ? wxSize(900, 760) : wxSize(760, 650);
   InformationDialog dialog(parent, wxID_ANY, title, wxDefaultPosition,
-                           wxSize(760, 650));
+                           initialSize);
   if (wxWindow* close = dialog.FindWindow(wxID_OK))
     close->SetLabel(_("Close"));
   dialog.SetMinSize(wxSize(600, 450));
-  dialog_geometry::Restore(&dialog, _T("Documentation"), wxSize(760, 650));
+  const wxString geometryKey = practicalGuide ? _T("PracticalGuide") : _T("Documentation");
+  dialog_geometry::Restore(&dialog, geometryKey, initialSize);
+  if (practicalGuide)
+    dialog.m_htmlInformation->SetStandardFonts(12);
+  if (practicalGuide) {
+    dialog.m_htmlInformation->SetBorders(12);
+    dialog.m_htmlInformation->Bind(wxEVT_HTML_LINK_CLICKED,
+        [&dialog, title](wxHtmlLinkEvent& event) {
+          const wxString href = event.GetLinkInfo().GetHref();
+          if (href.StartsWith("https://") || href.StartsWith("http://")) {
+            if (!wxLaunchDefaultBrowser(href))
+              CelestialMessageBox(_("The web browser could not be opened."),
+                                  title, wxOK | wxICON_ERROR, &dialog);
+          } else {
+            event.Skip();
+          }
+        });
+  }
   if (!dialog.m_htmlInformation->LoadPage(path)) {
     CelestialMessageBox(wxString::Format(
                      _("The documentation file could not be opened:\n%s"), path),
@@ -64,16 +83,19 @@ bool ShowBundledHtmlHelp(wxWindow* parent, const wxString& title,
   }
 
   dialog.ShowModal();
-  dialog_geometry::Save(&dialog, _T("Documentation"));
+  dialog_geometry::Save(&dialog, geometryKey);
   return true;
 #endif
 }
 
-bool OpenBundledDocumentExternally(const wxString& filename) {
+bool OpenBundledDocumentExternally(const wxString& filename,
+                                   const wxString& title) {
   const wxString path = BundledDataPath(filename);
 #ifdef __OCPN__ANDROID__
-  return wxFileName::FileExists(path) && celestial_android::ShowPdf(GetCanvasByIndex(0), _("Celestial Navigation manual"), path);
+  return wxFileName::FileExists(path) && celestial_android::ShowPdf(
+      GetCanvasByIndex(0), title.empty() ? _("Celestial Navigation manual") : title, path);
 #else
+  (void)title;
   return wxFileName::FileExists(path) && wxLaunchDefaultApplication(path);
 #endif
 }

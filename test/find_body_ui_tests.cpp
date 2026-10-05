@@ -163,8 +163,8 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
              "New", "Duplicate", "Edit", "Delete", "Delete All",
              "Horizon Event...", "Coastal Sextant...", "Sun && Moon...",
              "Lunar Tools...", "Analyze Sights...", "Fix...", "Clock Offset",
-             "Eclipses...", "Generate Almanac...", "Documentation",
-             "PDF Documentation"}) {
+             "Eclipses...", "Generate Almanac...", "How to Guide...", "How to Guide (PDF)...",
+             "Reference Manual...", "Reference Manual (PDF)..."}) {
       auto* button = Find<wxButton>(&main, label);
       ASSERT_NE(nullptr, button) << label;
       EXPECT_TRUE(button->IsShown()) << label;

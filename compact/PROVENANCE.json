@@ -286,8 +286,8 @@
     "data/compact/licenses/GPL-3.0.txt": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b",
     "data/compact/licenses/ELP.txt": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b",
     "data/compact/licenses/ERFA.txt": "b1858f9a263f22c438a455a32945da51a31a0ae25a21055da13bb7ed57cc3b51",
-    "src/LunarDistanceEngine.cpp": "01f75529b3e81d05d1172ea0943701e884ae89a7447d7a1bf8d887ccf9589808",
-    "src/LunarDistanceEngine.h": "b67594e6c1999b9f5d0c4c9da2aa93155103f20c55fbf642d301d51c01c5fd3d",
+    "src/LunarDistanceEngine.cpp": "740e07453476890ee81778f44f2ce576480ac3f76760b97ca9268ce3ca83e2f9",
+    "src/LunarDistanceEngine.h": "4d79a56e749298e3931acc629bd43bcdb7f997e515a7484da6584d8ca1ac88c7",
     "eclipse/include/eclipse/mutex.h": "f47a540f771e1af5fe1d7a16471f38fb9492a1619d2bb23891977ea2fd8a5253"
   },
   "integration_patches": [
@@ -321,6 +321,20 @@
       "compact/src/moon.cpp": {
         "imported_sha256": "7b6e4573677bd3cebfe043e247118c6c140ac59e5ac7c12e7bd432b3f1c2e90d",
         "integrated_sha256": "9a7cbf85bfe31bebc8b33e5b49495f42458d38e22a2485eb1f310666db64ae82"
+      }
+    }
+  },
+  "lunar_diagnostic_integration": {
+    "issue": "https://github.com/rgleason/celestial_navigation_pi/issues/341",
+    "description": "Add a separate known-position lunar-distance diagnostic using the existing forward model at entered UTC. UTC/position solver and compact ephemeris calculations are unchanged.",
+    "files": {
+      "src/LunarDistanceEngine.cpp": {
+        "previous_sha256": "01f75529b3e81d05d1172ea0943701e884ae89a7447d7a1bf8d887ccf9589808",
+        "integrated_sha256": "740e07453476890ee81778f44f2ce576480ac3f76760b97ca9268ce3ca83e2f9"
+      },
+      "src/LunarDistanceEngine.h": {
+        "previous_sha256": "b67594e6c1999b9f5d0c4c9da2aa93155103f20c55fbf642d301d51c01c5fd3d",
+        "integrated_sha256": "4d79a56e749298e3931acc629bd43bcdb7f997e515a7484da6584d8ca1ac88c7"
       }
     }
   }

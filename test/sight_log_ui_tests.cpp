@@ -101,7 +101,7 @@ TEST(SightLogUi, RemarksAndManagerRoundTripOldAndNewXml) {
   wxString badDate = OldFile("Mars");
   badDate.Replace("2026-09-18", "not-a-date");
   WriteFile(invalidDate, badDate);
-  const wxString remark = wxString::FromUTF8("Cloud & spray \"N\" — café");
+  const wxString remark = wxString::FromUTF8("Cloud & spray \"N\" — café ") + wxString('n', 120);
   {
     wxFrame host(nullptr, wxID_ANY, "Sight log test host");
     celestial_navigation_pi plugin(nullptr);
@@ -120,6 +120,7 @@ TEST(SightLogUi, RemarksAndManagerRoundTripOldAndNewXml) {
     wxListItem remarksColumn;
     ASSERT_TRUE(list->GetColumn(6, remarksColumn));
     EXPECT_EQ("Remarks", remarksColumn.GetText());
+    EXPECT_GE(list->GetColumnWidth(6), list->GetTextExtent(wxString('n', 50)).x);
     main.m_Sights[0].m_Remarks = remark;
     main.UpdateSights();
     EXPECT_EQ("red", list->GetItemText(0, 5));
@@ -141,6 +142,9 @@ TEST(SightLogUi, RemarksAndManagerRoundTripOldAndNewXml) {
         book->SetSelection(page);
     sightEditor.Show();
     wxTheApp->Yield(true);
+    auto* remarks = dynamic_cast<wxTextCtrl*>(wxWindow::FindWindowByName("SightRemarks", &sightEditor));
+    ASSERT_NE(nullptr, remarks);
+    EXPECT_GT(remarks->GetSize().x, remarks->GetParent()->GetClientSize().x - 120);
 #ifdef __WXGTK3__
     const auto editorSize = sightEditor.GetSize();
     GtkAllocation editorAllocation{0, 0, editorSize.x, editorSize.y};

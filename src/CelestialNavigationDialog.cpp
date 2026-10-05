@@ -149,6 +149,8 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       m_coastalButton(NULL),
       m_almanacButton(NULL),
       m_pdfDocumentationButton(NULL),
+      m_practicalGuideButton(NULL),
+      m_practicalGuideHtmlButton(NULL),
       m_manageSightsButton(NULL),
       m_chartDisplayButton(NULL),
       m_eclipseDialog(NULL),
@@ -229,13 +231,18 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   m_eclipseButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnEclipse,
                         this);
   m_pdfDocumentationButton =
-      new wxButton(this, wxID_ANY, _("PDF Documentation"));
+      new wxButton(this, wxID_ANY, _("Reference Manual (PDF)..."));
   m_pdfDocumentationButton->SetToolTip(
       _("Open the fixed-layout manual in the system PDF viewer"));
   actionButtons->Insert(actionButtons->GetItemCount() - 1,
                         m_pdfDocumentationButton, 0, wxALL | wxEXPAND, 5);
   m_pdfDocumentationButton->Bind(
       wxEVT_BUTTON, &CelestialNavigationDialog::OnPdfDocumentation, this);
+  m_bDocumentation->SetLabel(_("Reference Manual..."));
+  m_practicalGuideButton = new wxButton(this, wxID_ANY, _("How to Guide (PDF)..."));
+  m_practicalGuideButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnPracticalGuide, this);
+  m_practicalGuideHtmlButton = new wxButton(this, wxID_ANY, _("How to Guide..."));
+  m_practicalGuideHtmlButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnPracticalGuideHtml, this);
   m_manageSightsButton = new wxButton(this, wxID_ANY, _("Manage Sights..."));
   m_manageSightsButton->SetToolTip(
       _("Back up, import or restore your sight log"));
@@ -253,11 +260,11 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   addAction(m_bDuplicateSight);     addAction(m_bClockOffset);
   addAction(m_bEditSight);          addAction(m_eclipseButton);
   addAction(m_bDeleteSight);        addAction(m_almanacButton);
-  addAction(m_bDeleteAllSights);    addAction(m_bDocumentation);
-  addAction(m_manageSightsButton);  addAction(m_pdfDocumentationButton);
-  addAction(m_horizonEventButton);  actionButtons->AddSpacer(0);
-  addAction(m_coastalButton);       actionButtons->AddSpacer(0);
-  addAction(m_plannerButton);       actionButtons->AddSpacer(0);
+  addAction(m_bDeleteAllSights);    actionButtons->Add(0, m_almanacButton->GetBestSize().y);
+  addAction(m_manageSightsButton);  addAction(m_practicalGuideHtmlButton);
+  addAction(m_horizonEventButton);  addAction(m_practicalGuideButton);
+  addAction(m_coastalButton);       addAction(m_bDocumentation);
+  addAction(m_plannerButton);       addAction(m_pdfDocumentationButton);
   addAction(m_lunarToolsButton);    actionButtons->AddSpacer(0);
   addAction(m_analyzeButton);
   m_chartDisplayButton = new wxButton(this, wxID_ANY, _("Chart display..."));
@@ -270,7 +277,7 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   for (int i = 1; i < rmMAX; i++) {
     m_lSights->InsertColumn(i, columns[i]);
   }
-  m_lSights->SetColumnWidth(rmREMARKS, 190);
+  m_lSights->SetColumnWidth(rmREMARKS, m_lSights->GetTextExtent(wxString('n', 50)).x + 20);
   for (int column = 0; column < rmREMARKS; ++column)
     m_lSights->SetColumnWidth(column, column == rmVISIBLE
         ? 28 : wxLIST_AUTOSIZE_USEHEADER);
@@ -914,14 +921,9 @@ bool CelestialNavigationDialog::ReadSightsXml(
         s.m_Colour.Set(s.m_Colour.Red(), s.m_Colour.Green(), s.m_Colour.Blue(),
                        AttributeInt(e, "Transparency", 150));
 
-#ifdef __OCPN__ANDROID__
-        // Missing saved DR must block an Android fix, not invent a position.
+        // Missing saved DR must block a fix, not invent a position.
         s.m_DRLat = AttributeDouble(e, "DRLat", NAN);
         s.m_DRLon = AttributeDouble(e, "DRLon", NAN);
-#else
-        s.m_DRLat = AttributeDouble(e, "DRLat", 0);
-        s.m_DRLon = AttributeDouble(e, "DRLon", 0);
-#endif
         s.m_DRBoatPosition = AttributeBool(e, "DRBoatPosition", false);
         s.m_DRMagneticAzimuth = AttributeBool(e, "DRMagneticAzimuth", false);
         s.m_TimeCorrection = AttributeInt(e, "TimeCorrection", 0);
@@ -988,7 +990,7 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
   for (int i = 1; i < rmMAX; i++) {
     m_lSights->SetColumnWidth(i, wxLIST_AUTOSIZE_USEHEADER);
   }
-  m_lSights->SetColumnWidth(rmREMARKS, 190);
+  m_lSights->SetColumnWidth(rmREMARKS, m_lSights->GetTextExtent(wxString('n', 50)).x + 20);
   if (m_lSights->GetItemCount() > 0) {
     m_Sights[0].SetSelected(true);
     m_lSights->SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
@@ -2087,6 +2089,15 @@ void CelestialNavigationDialog::ShowLunarSolutions(wxWindow* parent) {
 void CelestialNavigationDialog::OnDocumentation(wxCommandEvent& event) {
   ShowBundledHtmlHelp(this, _("Celestial Navigation Documentation"),
                       _T("Celestial_Navigation_Information.html"));
+}
+
+void CelestialNavigationDialog::OnPracticalGuide(wxCommandEvent&) {
+  if (!OpenBundledDocumentExternally(_T("Practical_Guide.pdf")))
+    CelestialMessageBox(_("The How to Guide PDF could not be opened. Check the installed guide and PDF viewer."),
+        _("How to Guide"), wxOK | wxICON_ERROR, this);
+}
+void CelestialNavigationDialog::OnPracticalGuideHtml(wxCommandEvent&) {
+  ShowBundledHtmlHelp(this, _("How to Guide"), _T("Practical_Guide.html"));
 }
 
 void CelestialNavigationDialog::OnPdfDocumentation(wxCommandEvent& event) {

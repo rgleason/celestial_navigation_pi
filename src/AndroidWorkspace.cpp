@@ -136,6 +136,7 @@ void CelestialNavigationDialog::BuildAndroidWorkspace() {
     ShowBundledHtmlHelp(this, _("Android quick guide"), _("Android_Quick_Guide.html"));
   });
   layouts[3]->Add(guide, 0, wxEXPAND | wxALL, 6);
+  // Desktop How To buttons remain hidden: Android has its own workflow.
   move(m_bDocumentation, 3, _("Offline manual"));
   move(m_pdfDocumentationButton, 3, _("PDF manual"));
   move(m_manageSightsButton, 3, _("Manage sights and backups"));
