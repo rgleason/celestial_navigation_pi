@@ -1,0 +1,128 @@
+Compact planner performance -- 2.9.5.0 -- issue #365
+===================================================
+
+Issue: https://github.com/rgleason/celestial_navigation_pi/issues/365
+Baseline source: 6083bae141d1f64b8e7e4082ff619a09ee7cde70 (2.9.4.0).
+Measurements: 4 October 2026, Linux x86_64, Core i7-12700H, release build.
+Evidence and repeatable probe: validation/compact-performance.
+
+The planner repeated the Sun's daily grid for four different event thresholds,
+repeated Sun/Moon daily events to obtain noon, and computed a waxing/waning
+classification six hours later for every elongation search sample. Compact
+repeated planetary harmonics, lunar argument combinations, light-time targets
+and IAU orientation matrices. Its 16-entry epoch cache could not retain a day.
+The desktop dialog performed the entire workload before opening/on every edit.
+
+2.9.5 retains the coefficients, supported dates, light-time iteration, observer
+geometry, DE440s priority and Classic numerical engine. Changes are:
+
+* Bounded per-Engine LRU caches (2048 entries each) for exact requests, epoch
+  contexts, geocentric directions and Earth orientation. Complete keys include
+  observer position/height, time offsets, polar motion and Venus phase option.
+  Epoch/geocentric calculations are reused across bodies and observer changes.
+* Compute each identical planetary harmonic once; retain original summation
+  order. Prepare a graph of shared integer lunar harmonics and fixed phases
+  once at load time, then use trigonometric identities at each exact epoch.
+  No coefficient truncation, interpolation or model/time quantization is added.
+* Share the same ERFA orientation building blocks. Reuse already evaluated
+  Earth/Moon/Sun and light-time targets when their epochs are identical.
+* Geocentric-only consumers skip observer directions. Principal-phase searches
+  use geocentric elongation, a six-hour coarse bracket and golden refinement;
+  the existing phase/limb conventions and search limits are preserved.
+* Share one exact Sun grid across four event thresholds; refine each crossing
+  as before. Reuse the computed solar transit for noon. Android Moon-path spans
+  share the overlapping half-hour grid. Desktop computes only the selected path.
+* Compact desktop planning uses the existing cancellable owned-worker pattern.
+  Controls stay responsive, old results clear immediately, and only the latest
+  context can publish. Close cancels and joins the worker. Main-thread settings
+  capture and calculation-only Sight objects keep configuration/colour work out
+  of the worker. Desktop uses wx threading and eclipse::Mutex, retaining the
+  established Windows runtime workaround.
+
+Classic's equations, coefficient files and synchronous desktop calculation path
+are unchanged. Shared wrappers permit Compact worker use without changing the
+Classic astronomical results. The Compact data pack remains unchanged. Failed
+pack loading is retained until its path/manifest changes instead of retrying
+on every evaluation. The advanced Compact-disable option remains available.
+
+Comparable planner calculation timings, milliseconds
+----------------------------------------------------
+Fixed UTC 2025-07-16 12:00, 41 N / 71 W, stationary observer, eye height 3.7 m.
+Seven-body 24-hour almanac (175 rows), 66 ranked bodies, daily horizon events
+and four principal phases. Second run changes latitude to 41.1 N.
+
+                               2.9.4 Compact  2.9.5 Compact  Classic
+First full calculation               17845           1010      170
+Position edit, epochs retained        17876            282      170
+
+Original totals include the redundant noon event calculation which 2.9.5
+eliminates; the probe still measures it separately for audit. 2.9.5 totals
+exclude that unused duplicate. Fresh first work is about 18x faster; position
+edits are about 63x faster. Compact's first calculation is still about 6x
+Classic and subsequent position work about 1.7x Classic. These are laptop
+measurements, not a promise of identical timings on every platform.
+
+Actual desktop dialog probe, milliseconds
+----------------------------------------
+                               2.9.4 Compact  2.9.5 Compact  Classic
+Constructor/opening                  16956             63      263
+First results after constructor           0           1105        0
+Latitude edit to results             18066            743      682
+
+Opening and first results are different measures: moving work off the GUI
+thread alone would not reduce calculation cost. Combined initial readiness
+is about 1.17 seconds; about 0.9 seconds longer than Classic, rather than a
+17-second UI freeze. Edit timings include the existing 350 ms debounce and
+UI pumping/row rendering; the final Compact/Classic edit gap is about 61 ms.
+The DE440s + Compact-star workload is also reduced (about 533 ms fresh), while
+DE440s retains priority. A fresh Compact pack load/Sun request takes ~30 ms.
+
+Validation
+----------
+All 11 CTest groups pass, including 286 ordinary celestial tests and numerical
+checks in UTC, London, New York and Kolkata. Opt-in GUI tests must be run in
+separate processes; CompactPerformanceUi, DisplayUi and FindBodyUi all pass.
+Desktop plugin and Android ARM64 plugin builds pass locally.
+
+1584 captured before/after body states cover six epochs from 1972 to 2100,
+four latitudes including +/-89.9 degrees, every supported non-Aries body,
+observer directions/ranges/semidiameters and Venus phase. On this Linux build
+all seven captured output fields match exactly. Frozen crossing times/bearings
+match; principal phases differ by less than one second. Tests exercise changed
+observer/time/polar inputs, geocentric-only requests, cache-disabled numerical
+agreement, invalid inputs and repeated-request speed.
+
+The shared lunar harmonics are compared separately with the untouched original
+ELP summation at 6192 twice-monthly samples across 1972-2100 and both published
+fits. Maximum coordinate rounding difference is 0.0000874 mm, below a 0.1 mm
+regression limit. All coefficients and third-party source hashes are retained;
+modified integration source hashes are recorded in compact/PROVENANCE.json.
+
+The 32 independent DE440/reference lunar cases, simultaneous and moving
+observations, retain the worst UTC error of 1.743164 seconds (2-second budget).
+Geometry boundary, cancellation/concurrent engine and provider-selection tests
+remain green. The UI test supersedes several jobs, verifies final-position
+almanac values, and closes with work pending to exercise cancellation/join.
+
+The isolated ARM64 checker also passes on the connected SM-X210 tablet:
+1584 optimized states match the unchanged 2.9.4 engine's ARM64 results exactly.
+The original ARM64 engine itself differs from the frozen Linux capture by up
+to 5.6e-9 degrees and 1.5 cm in range; the cross-platform regression limit is
+therefore 1e-8 degrees / 0.1 m. This is a test-portability adjustment, not a
+change in astronomical calculations. Both lunar fits pass all 6192 samples
+on ARM64, with maximum coordinate rounding of 0.00000728 mm. See the Android
+checker/evidence in validation/compact-performance. This check uses /data/local/tmp
+and leaves the installed OpenCPN plugin, profile and user sights untouched.
+
+2.9.5 remains Alpha. CI and public Mac universal/Android test packages qualify
+those builds separately; this local report does not claim Mac/Android timing
+measurements. No 2.8.x source or production catalogue publication is changed.
+
+To rebuild the measurement probe after building celestial_tests with Ninja:
+  python3 validation/compact-performance/build-benchmark.py . build-desktop /tmp/celnav-bench
+  DISPLAY=:1 /tmp/celnav-bench compact components
+  DISPLAY=:1 /tmp/celnav-bench classic components
+  DISPLAY=:1 /tmp/celnav-bench compact ui
+  DISPLAY=:1 /tmp/celnav-bench classic ui
+Use isolated profiles (the probe creates its own); do not run other builds
+concurrently when comparing timings. Capture both modes on the same machine.

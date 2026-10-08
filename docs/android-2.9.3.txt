@@ -1,0 +1,79 @@
+Android 2.9.3 development port
+==============================
+
+Baseline: android/celnav-2.9.2-alpha, 5515a38. Desktop features carried from
+c9b1bec and 73abd82. This is a separate Android branch and retains the touch
+workspace, native cards, owned Qt timers, cancellable background workers,
+scoped file import and exact UTC/fractional input adapters.
+
+Bundled Compact 0.2.0 and the corrected lunar solver use the same qualified
+sources/data as desktop 2.9.3. Provider order: appropriate installed DE440s,
+Compact for 1972–2100, Classic when Compact is disabled/unavailable/outside
+coverage. Advanced exposes a persisted default-on Compact switch. Android
+workers read its atomic snapshot, never the GUI configuration object.
+
+Planner includes absolute -1 h/+1 h stepping with vessel advance, separated
+visibility/handling guidance, triads before pairs, optional Polaris, traditional
+lunar companions/all companions and magnitude. Native cards remain authoritative.
+Sparse/Balanced/More plot labels use shared collision placement; touch users
+identify a dot by tapping. Selected bodies have priority and remain plotted
+beyond the brightness filter. Moon paths appear on SHA/Declination; Local sky
+shows the current instant and changes coherently with time steps.
+
+Android's own quick guide describes its touch workflows. The retained general
+numerical reference is updated to 2.9.3; desktop workflow/layout changes do not
+replace the Android workspace.
+
+Checks before tablet installation, 2 October 2026:
+- ARM64 release plugin and Android import package built with NDK 26.1.10909125,
+  API 21 toolchain and retained matching wxQt/Qt 5.12.2 support.
+- 10 host CTest groups passed, including shared Compact, lunar reference and
+  boundary qualification, Android solver adapters and timezone audits.
+- Four Android boundary families passed. Actual Android planner parser tested
+  in UTC, London, New York and Auckland, including fractions, ship-zone offsets,
+  absolute hour steps and refusal of missing/repeated local times.
+- Physical SM-X210 ARM64: all 20 lunar boundary/reference/limb tests passed.
+- 1,407 Compact cross-architecture cases: 67 bodies, seven epochs 1972–2099,
+  three observer locations including polar latitude and DST-labelled epochs.
+  Maximum angular difference 3.01e-9 degrees; maximum range difference 10.7 mm.
+  This checks architecture parity, not an additional independent accuracy claim.
+  Independent accuracy qualification is retained in compact-engine-2.9.3.txt.
+
+The existing org.opencpn.opencpn.dev 5.14.1-pob220-import-fix host (129) is
+compatible and is retained. Before installation, the original library, profile,
+navigation database, complete sights/astronomy directory and install metadata
+were archived; 60 backed-up files verified. Backups remain under ignored
+build-android/tablet-backup. Other plugin library hashes are separately retained.
+
+Installed on the attached SM-X210 through OpenCPN's native Plugin Manager file
+picker. Final binary source commit: cea26de (following a64d1ee and 8b44948).
+Import archive SHA-256:
+34166645a7f8608da4976e6d9f692f27c45723e90a326f6f7531d1596b42f947
+The installed stripped library matches the final archive byte for byte.
+
+Physical UI checks covered portrait and landscape, full-width coordinates and
+fractional UTC fields, forward/reverse hour steps, native body-card selection,
+Create sight enablement, the CSV action, Sparse/Balanced/More labels, touch star
+identification, SHA +/-90 degrees, and 3/6/12-hour Moon tracks. A tablet-only
+local-time/UTC label mismatch was corrected using the existing instant formatter
+for Moon-track labels, observing windows and body-table exports. The corrected
+track labels agree with the UTC controls. Local sky has no Moon track.
+
+The lunar tools' traditional-companion and practical-order controls fit portrait;
+calculated native cards show magnitude and guidance. Advanced's Compact switch
+persists both off and on. An unsaved Aldebaran observation's calculation trail
+confirms the installed plugin uses Compact 0.2.0 and the existing downloaded
+DUT1 table. This observation was cancelled. Compact remains enabled, labels
+Balanced and Moon span 3 hours. Original tablet rotation settings were restored.
+
+Nine protected files match their pre-install hashes: saved sights, navigation
+database, downloaded DUT1 and three astronomy packs with their verification
+markers. The four other imported plugin binaries also match. The OpenCPN host
+was retained; no host APK replacement, data clearing or other plugin upgrade.
+
+After the layout refinements, the focused host UI/planner run passed all nine
+tests, and all four Android boundary families passed again after the UTC display
+correction. Physical numerical qualification is for ARM64; 32-bit ARM has not
+been built or tested for this port. Receipts and selected screen checks are in
+validation/android-v2.9.3. The import archive remains under build-android and in
+the tablet's Downloads. This work is committed locally; it is not published.

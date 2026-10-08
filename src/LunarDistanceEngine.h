@@ -11,6 +11,9 @@ enum class AltitudeLimb { Lower, Center, Upper };
 enum class DistanceContact { Near, Center, Far };
 
 struct Observation {
+  // WGS84 geodetic observer and exact vector parallax. False retains the
+  // historical spherical reduction for independent comparison/tests.
+  bool use_ellipsoid = false;
   double raw_distance_deg = 0.0;
   double moon_altitude_deg = 0.0;
   double body_altitude_deg = 0.0;
@@ -37,6 +40,15 @@ struct Observation {
 };
 
 struct EphemerisSample {
+  // Observer-aware airless centre/semidiameter provider. Inputs are geodetic
+  // latitude/longitude (deg), ellipsoidal height (m), and Moon selection.
+  // False means the observation cannot be evaluated; never silently fall back.
+  std::function<bool(double, double, double, bool, double*, double*, double*)>
+      observer_direction;
+  bool dut1_available = false;
+  bool dut1_from_update = false;
+  double dut1_seconds = 0;
+  char dut1_quality = '?';
   double predicted_distance_deg = 0.0;
   double moon_semidiameter_deg = 0.0;
   double moon_horizontal_parallax_deg = 0.0;
@@ -55,10 +67,26 @@ struct GeographicPoint {
       : latitude_deg(latitude), longitude_deg(longitude) {}
 };
 
+struct PositionGeometry {
+  double moon_azimuth_deg = 0.0;
+  double body_azimuth_deg = 0.0;
+  // The smaller angular separation between the two true azimuths (0..180).
+  double azimuth_separation_deg = 0.0;
+  // The acute crossing angle of the two local altitude constraints (0..90).
+  double effective_crossing_angle_deg = 0.0;
+};
+
+GeographicPoint AdvanceObserver(const GeographicPoint& reference,
+                                const Observation& observation,
+                                double relative_seconds);
+
 struct PositionResult {
   bool valid = false;
   std::string error;
   std::vector<GeographicPoint> candidates;
+  // Aligned with candidates. Kept per branch because the geometry can differ
+  // at the two mathematical intersections.
+  std::vector<PositionGeometry> geometry;
   double circle_crossing_angle_deg = 0.0;
 };
 
@@ -137,13 +165,21 @@ struct TimeCandidate {
   double cleared_distance_deg = 0.0;
   double predicted_distance_deg = 0.0;
   double slope_arcmin_per_hour = 0.0;
+  // A valid root can survive unavailable local diagnostics. Non-finite
+  // diagnostic values must be displayed as unavailable, never as certainty.
+  bool local_slope_available = false;
+  bool used_one_sided_slope = false;
+  bool uncertainty_available = false;
   double angular_uncertainty_arcmin = 0.0;
   double distance_uncertainty_contribution_arcmin = 0.0;
   double moon_altitude_uncertainty_contribution_arcmin = 0.0;
   double body_altitude_uncertainty_contribution_arcmin = 0.0;
   double time_uncertainty_seconds = 0.0;
   std::vector<GeographicPoint> positions;
+  // Aligned with positions.
+  std::vector<PositionGeometry> position_geometry;
   double position_uncertainty_nm = 0.0;
+  double circle_crossing_angle_deg = 0.0;
 };
 
 struct SolveOptions {
@@ -171,8 +207,30 @@ struct PredictedObservation {
   double body_altitude_deg = 0.0;
 };
 
+// Independent sight check, with position and UTC supplied rather than fitted
+// from this observation. Clear the measured distance by subtracting the
+// forward model's net limb/index/refraction/parallax correction at this
+// geometry. This is model-based clearing, not Direct Triangle clearing from
+// the measured altitudes. Positive error means the measured LD is too large.
+struct DistanceCheck {
+  bool valid = false;
+  std::string error;
+  double true_distance_deg = 0.0;
+  double predicted_raw_distance_deg = 0.0;
+  double cleared_distance_deg = 0.0;
+  double lunar_error_arcmin = 0.0;
+};
+
+// Providers must return a consistent sample for a given epoch throughout one
+// solve, including an immutable observer_direction closure. Exact epochs and
+// provider failures are cached within that solve only. Updates take effect on
+// the next solve; provider failure never triggers an implicit fallback.
 using EphemerisFunction = std::function<bool(
     double offset_seconds, EphemerisSample* sample, std::string* error)>;
+
+DistanceCheck CheckDistanceAtPosition(const Observation& observation,
+                                      const EphemerisFunction& ephemeris,
+                                      const GeographicPoint& known_position);
 
 Clearance ClearDistance(const Observation& observation,
                         const EphemerisSample& ephemeris);
@@ -202,6 +260,15 @@ PositionResult IntersectAltitudeCircles(
     double moon_observed_altitude_deg,
     const GeographicPoint& body_geographic_position,
     double body_observed_altitude_deg);
+
+PositionGeometry CalculatePositionGeometry(
+    const GeographicPoint& observer,
+    const GeographicPoint& moon_geographic_position,
+    const GeographicPoint& body_geographic_position);
+
+PositionResult PositionAtTime(const Observation& observation,
+                              const EphemerisFunction& ephemeris,
+                              double correction_seconds);
 
 double GreatCircleDistanceNm(const GeographicPoint& first,
                              const GeographicPoint& second);

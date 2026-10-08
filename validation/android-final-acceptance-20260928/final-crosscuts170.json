@@ -1,0 +1,47 @@
+{
+  "source": "98d612c4a0e092b372eea15e045c61ba6820ac04",
+  "installed_library_sha256": "4e402d95249206288b1554284124581a33d7ff85c9e511eda63cd607f0eff219",
+  "host_pid": 14550,
+  "coastal": {
+    "inputs": {
+      "latitude": 49.99635,
+      "longitude": -5.12052,
+      "angle_deg": 1,
+      "height_m": 30,
+      "water_m": 0,
+      "eye_m": 2,
+      "bearing_enabled": false
+    },
+    "range_nm_display": 0.928,
+    "screen": "finish170-accepted-coastal-chart.png",
+    "saved_viewport": {
+      "latitude": 49.9963,
+      "longitude": -5.1205,
+      "scale_pixels_per_metre": 0.17431,
+      "rotation_deg": 45
+    },
+    "status": "PASS committed build cyan range circle centred; numerical reference158 carried forward; no new pixel-accuracy claim"
+  },
+  "plugin_toggle": {
+    "disabled_config_value": 0,
+    "reenabled_config_value": 1,
+    "reopened_screen": "finish170-reopened-final.png",
+    "pid_continuous": true,
+    "other_enabled": [
+      "xGRIB",
+      "xWeatherRouting"
+    ],
+    "status": "PASS actual saved disable/re-enable and reopen"
+  },
+  "guards": {
+    "five_original_raw_nested_reports": "byte exact",
+    "five_task_fixture_sights": "same attributes ignoring serialization/order",
+    "crash_buffer_latest": "2026-09-28 04:51:54 BST (historical)",
+    "events_am_anr_count": 0,
+    "pss_kib": 499041,
+    "rss_kib": 558600,
+    "swap_pss_kib": 317
+  },
+  "diagnostic": "Temporary private chart tracing build removed; source diff empty; exact committed166 archive restored and hash verified before accepted circle/toggle. Diagnostic screen is not the committed acceptance screen.",
+  "automation": "Old stale chart attempt remains unaccepted. Cold recovery, transient dropdown/IME misses, toolbar reorder and row selection misses retained. Checkbox label activated actual toggle; drawn mark taps selected row. No speculative source fix or shared geometry change."
+}

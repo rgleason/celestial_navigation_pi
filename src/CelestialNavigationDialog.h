@@ -39,12 +39,14 @@
 #include "PlannerDialog.h"
 #include "CoastalNavigationDialog.h"
 #include "LunarToolsDialog.h"
+#include "LunarSolutionRecord.h"
 
 #include <vector>
 #include <wx/timer.h>
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
+class QTimer;
 #endif
 
 class CelestialNavigationDialog : public CelestialNavigationDialogBase {
@@ -56,6 +58,7 @@ public:
   ClockCorrectionDialog* m_ClockCorrectionDialog;
   FixDialog* m_FixDialog;
   double m_pix_per_mm;
+  SightDisplayStyle m_chartStyle;
   std::vector<Sight> m_Sights;
 
   void OnFixClose();
@@ -65,20 +68,56 @@ public:
   void RunPlannerIntegrationScenario();
   celestial_navigation_pi* GetPlugin() const { return m_Plugin; }
   const Sight* GetSelectedSight() const;
-  bool GetLastFix(double* latitude, double* longitude) const;
-  void SetLastFix(double latitude, double longitude);
+  bool GetLastFix(double* latitude, double* longitude,
+                  wxDateTime* calculatedUtc = nullptr,
+                  wxDateTime* epochUtc = nullptr) const;
+  void SetLastFix(double latitude, double longitude,
+                  const wxDateTime& epochUtc = wxDateTime());
   void CreatePlannedSight(const wxString& body, const wxDateTime& utc,
                           double drLat, double drLon);
   int GetClockCorrection() const { return m_ClockCorrection; }
+  // Noninteractive file operations used by the manager and its regression tests.
+  bool BackupSightsTo(const wxString& path, wxString* error);
+  bool ImportSightsFile(const wxString& path, bool replace,
+                        wxString* safetyBackup, wxString* error);
   void ApplyClockCorrection(int correction_seconds);
+  bool SaveLunarSolution(LunarSolutionRecord record);
+  void ShowLunarSolutions(wxWindow* parent);
+  const std::vector<LunarSolutionRecord>& LunarSolutions() const {
+    return m_lunarSolutions;
+  }
   void OpenAlmanacForRoute(const wxString& routeGuid = wxString());
   bool GetMarkedUtc(wxDateTime* utcFields) const;
 
 private:
+  long SelectedSightIndex() const;
+#ifdef __OCPN__ANDROID__
+  void BuildAndroidWorkspace();
+  void RefreshAndroidCards();
+  void SelectAndroidSight(size_t index);
+  wxScrolledWindow* m_androidObservations = nullptr;
+  wxPanel* m_androidCards = nullptr;
+  wxButton* m_androidInclude = nullptr;
+  bool m_androidRefreshPending = false;
+  QTimer* m_androidClockTimer = nullptr;
+#endif
   bool OpenXML(bool reportfailure);
-  void SaveXML();
+  bool ReadSightsXml(const wxString& path, std::vector<Sight>* sights,
+                     int* clockCorrection,
+                     std::vector<LunarSolutionRecord>* lunarSolutions,
+                     wxString* errorOut, bool strict = true);
+  bool SaveXML();
+  std::vector<LunarSolutionRecord> m_lunarSolutions;
 
-  void RebuildList();
+  void RebuildList(bool persist = true);
+  void OnManageSights(wxCommandEvent& event);
+  void OnChartDisplay(wxCommandEvent& event);
+  void BackupSights();
+  void ImportSights(bool replace);
+  bool ApplyImportedSights(std::vector<Sight> incoming, int correction,
+                           std::vector<LunarSolutionRecord> solutions,
+                           bool replace, wxString* safetyBackup,
+                           wxString* error);
   void UpdateButtons();  // Correct button state
   void UpdateFix();
   void BuildTimeIntegrityPanel(bool visible);
@@ -110,6 +149,8 @@ private:
   void OnClockOffset(wxCommandEvent& event);
   void OnDocumentation(wxCommandEvent& event);
   void OnPdfDocumentation(wxCommandEvent& event);
+  void OnPracticalGuide(wxCommandEvent& event);
+  void OnPracticalGuideHtml(wxCommandEvent& event);
   void OnHide(wxCommandEvent& event);
   void OnClose(wxCloseEvent& event);
 
@@ -152,6 +193,10 @@ private:
   wxButton* m_lunarToolsButton;
   wxButton* m_almanacButton;
   wxButton* m_pdfDocumentationButton;
+  wxButton* m_practicalGuideButton;
+  wxButton* m_practicalGuideHtmlButton;
+  wxButton* m_manageSightsButton;
+  wxButton* m_chartDisplayButton;
   EclipseDialog* m_eclipseDialog;
   CoastalNavigationDialog* m_coastalDialog;
   wxTimer m_timeTimer;
@@ -161,6 +206,8 @@ private:
   bool m_hasLastFix;
   double m_lastFixLatitude;
   double m_lastFixLongitude;
+  wxDateTime m_lastFixCalculatedUtc;
+  wxDateTime m_lastFixEpochUtc;
 
   wxPoint m_startPos;
   wxPoint m_startMouse;

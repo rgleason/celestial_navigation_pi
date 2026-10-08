@@ -1,0 +1,18 @@
+mode=classic scenario=ui
+21:15:45: Debug: Adding duplicate image handler for 'PNG file'
+21:15:45: Debug: Adding duplicate image handler for 'JPEG file'
+21:15:45: Debug: Adding duplicate image handler for 'TIFF file'
+21:15:45: Debug: Adding duplicate image handler for 'GIF file'
+21:15:45: Debug: Adding duplicate image handler for 'PNM file'
+21:15:45: Debug: Adding duplicate image handler for 'PCX file'
+21:15:45: Debug: Adding duplicate image handler for 'IFF file'
+21:15:45: Debug: Adding duplicate image handler for 'Windows icon file'
+21:15:45: Debug: Adding duplicate image handler for 'Windows cursor file'
+21:15:45: Debug: Adding duplicate image handler for 'Windows animated cursor file'
+21:15:45: Debug: Adding duplicate image handler for 'TGA file'
+21:15:45: Debug: Adding duplicate image handler for 'XPM file'
+21:15:45: Debug: Using icon path: /home/paul/src/OpenCPN/.worktrees/celnav-fix-2.9.4/data/celestial_navigation_panel.png
+planner_construct ms=263.219 count=1
+switch_now_to_manual ms=894.735 count=1
+latitude_edit ms=682.022 count=1
+21:15:47: Debug: window wxWindow@0x55a3c2d6cdb0 ("panel") lost focus even though it didn't have it

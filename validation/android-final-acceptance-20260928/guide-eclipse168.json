@@ -1,0 +1,16 @@
+{
+  "source": "98d612c",
+  "pid": 10624,
+  "eclipse_year_limit": "Native attempt2160 refused; blur restores prior2026/2036, not clamped. Actual bounded2027 search gives two events; accepted1850..2100full-range case carried forward7f68c9f.",
+  "rotated_plot_degrees": 45,
+  "eclipse": "2027-08-02",
+  "options": {
+    "path_only": "finish168-path-chart.png: blue central line/dots, red limits; no contours",
+    "contours_only": "finish168-contour-chart.png: contour curves; no blue path",
+    "both_off": "finish168-empty-chart.png: eclipse geometry absent",
+    "both_on": "previous7f68c9f plot accepted; separate layer results at45above"
+  },
+  "restored_native_data": "finish168-data-view.png: DE440s/lunar orientation/LOLA all verified; coverage1850..2150 and Search through2100 explicit",
+  "guide": "finish168-guide-update.png: DST/shipzone/LMT/Moon-phase, approximateLOLA2.9s, displayedhundredths/UT1/futureUTC all readable atfont1.3; finalfooter inspected; guide landscape background/foreground retained PID10624",
+  "status": "PASS qualified Android binding, shared terrain approximation remains documented"
+}

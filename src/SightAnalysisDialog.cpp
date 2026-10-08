@@ -1,6 +1,7 @@
 #include "SightAnalysisDialog.h"
 
 #include "CelestialNavigationDialog.h"
+#include "DialogGeometry.h"
 #include "NavigationUIUtils.h"
 #include "NavigationAlgorithms.h"
 #include "Sight.h"
@@ -48,11 +49,10 @@ private:
       return;
     }
     if (size.x < 80 || size.y < 60) return;
-    const int left = 48, right = size.x - 12, top = 12, bottom = size.y - 28;
+    const int left = 48, right = size.x - 12, top = 12, bottom = size.y - 16;
     dc.SetPen(wxPen(wxColour(110, 110, 110)));
     dc.DrawLine(left, top, left, bottom);
     dc.DrawLine(left, bottom, right, bottom);
-    dc.DrawText(_("UTC sequence"), std::max(left, right - 95), bottom + 5);
     wxDateTime first = m_analysis.residuals.front().utc;
     wxDateTime last = first;
     double minimum = m_analysis.residuals.front().interceptMinutes;
@@ -128,9 +128,18 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   root->Add(introduction, 0, wxALL | wxEXPAND, 8);
 
   wxBoxSizer* options = new wxBoxSizer(wxHORIZONTAL);
+  const Sight* selectedSight = m_parent->GetSelectedSight();
+  wxString bodyFilterLabel = _("Only the selected sight's body");
+#ifdef __OCPN__ANDROID__
+  // Pinned wxQt wxCheckBox has no native SetLabel override. Supply its final
+  // caption at creation so the visible text names the actual filter body.
+  if (selectedSight)
+    bodyFilterLabel = wxString::Format(
+        _("Only highlighted body (%s)"), selectedSight->m_Body.c_str());
+#endif
   m_onlySelectedBody =
-      new wxCheckBox(this, wxID_ANY, _("Only the selected sight's body"));
-  if (const Sight* selected = m_parent->GetSelectedSight()) {
+      new wxCheckBox(this, wxID_ANY, bodyFilterLabel);
+  if (const Sight* selected = selectedSight) {
     m_onlySelectedBody->SetLabel(wxString::Format(
         _("Only highlighted body (%s)"), selected->m_Body.c_str()));
   } else {
@@ -178,6 +187,10 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   root->Add(m_summary, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 8);
   m_plot = new ResidualPlotPanel(this);
   root->Add(m_plot, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 8);
+  // Keep the axis caption in a native control, outside the painted plot.
+  // wxDC text at the chart edge was right-aligned and corrupted on Windows.
+  root->Add(new wxStaticText(this, wxID_ANY, _("UTC sequence")), 0, wxLEFT,
+            56);
   m_results = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
                              wxLC_REPORT | wxLC_HRULES);
   m_results->InsertColumn(0, _("UTC"), wxLIST_FORMAT_LEFT, 160);
@@ -187,6 +200,12 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   m_results->InsertColumn(4, _("Ho-Hc"), wxLIST_FORMAT_LEFT, 90);
   m_results->InsertColumn(5, _("Assessment"), wxLIST_FORMAT_LEFT, 220);
   root->Add(m_results, 1, wxALL | wxEXPAND, 8);
+#ifdef __OCPN__ANDROID__
+  m_androidResults = new wxStaticText(this, wxID_ANY, wxEmptyString);
+  root->Replace(m_results, m_androidResults);
+  root->GetItem(m_androidResults)->SetProportion(0);
+  m_results->Hide();
+#endif
   wxStdDialogButtonSizer* buttons = new wxStdDialogButtonSizer();
   buttons->AddButton(new wxButton(this, wxID_CLOSE));
   buttons->Realize();
@@ -231,10 +250,23 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { Close(); }, wxID_CLOSE);
   wxCommandEvent dummy;
   Analyze(dummy);
-  CentreOnParent();
+  SetMinSize(wxSize(700, 480));
+  dialog_geometry::Restore(this, _T("SightAnalysis"), wxSize(820, 540));
+}
+
+SightAnalysisDialog::~SightAnalysisDialog() {
+  dialog_geometry::Save(this, _T("SightAnalysis"));
 }
 
 void SightAnalysisDialog::Analyze(wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+  celestial_android::CommitNumbers(this);
+  m_androidResults->SetLabel(wxEmptyString);
+  struct RefreshLayout {
+    SightAnalysisDialog* dialog;
+    ~RefreshLayout() { celestial_android::LayoutScrolls(dialog); }
+  } refreshLayout{this};
+#endif
   std::vector<FixObservation> observations;
   unsigned liveBoatPositionSights = 0;
   const Sight* selected = m_parent->GetSelectedSight();
@@ -321,10 +353,24 @@ void SightAnalysisDialog::Analyze(wxCommandEvent&) {
     }
   }
   m_summary->SetLabel(summary);
+#ifdef __OCPN__ANDROID__
+  wxString details;
+  for (const auto& residual : analysis.residuals) {
+    details += residual.body + " | " +
+        UtcDateTime::FormatInstant(residual.utc, "%Y-%m-%d %H:%M:%S.%l") +
+        " UTC\n" + _("Ho: ") +
+        FormatNavigationAngle(residual.calculatedAltitude + residual.interceptMinutes / 60.0) +
+        " | " + _("Hc: ") + FormatNavigationAngle(residual.calculatedAltitude) +
+        "\n" + _("Ho minus Hc: ") + wxString::Format("%+.2f'", residual.interceptMinutes) +
+        " | " + (residual.outlier ? _("Possible outlier: inspect") :
+                                  _("Within robust sequence spread")) + "\n\n";
+  }
+  m_androidResults->SetLabel(details);
+#endif
   for (const auto& residual : analysis.residuals) {
     const long row = m_results->InsertItem(
         m_results->GetItemCount(),
-        residual.utc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
+        UtcDateTime::FormatInstant(residual.utc, "%Y-%m-%d %H:%M:%S"));
     m_results->SetItem(row, 1, residual.body);
     m_results->SetItem(row, 2,
                        FormatNavigationAngle(residual.calculatedAltitude +

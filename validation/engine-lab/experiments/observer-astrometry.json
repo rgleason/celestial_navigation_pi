@@ -1,0 +1,17 @@
+{
+  "description": "Opt-in DUT1, isolated diurnal aberration, and observer-specific astrometry experiment",
+  "files": {
+    "driver/runner.cpp": {
+      "baseline": "f9bd490b2dbbd6511d452e6756f6a4aae657c07e017f91a52bec2b02217a2668",
+      "candidate": "1d2b6e592e6cede507e7b69697d850e55a98da3f54a234ac79a4ad60e8d545e0"
+    },
+    "engine/src/LunarDistanceEngine.h": {
+      "baseline": "f9af45ed352c326faa321070062c2bbf6b17e663d599b9f310d0602a3316909b",
+      "candidate": "b0181395dfaf279359689932f946f4aa34b381de942414ac00979080aec553a8"
+    },
+    "engine/src/LunarDistanceEngine.cpp": {
+      "baseline": "1057247c9df09b3bad27b4ad3bcd445021f66eb00419841b9eb54aa5e9e23c15",
+      "candidate": "30eb67ab7e2df86b848b0b11b6a90a095c757e7d346b38839013d38e21f42fc4"
+    }
+  }
+}

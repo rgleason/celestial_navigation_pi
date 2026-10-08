@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<OpenCPNCelestialNavigation version="2.8" creator="Opencpn Celestial Navigation plugin">
+  <ClockError Seconds="0" />
+  <Sight Body="Sun" Type="0" BodyLimb="0" Date="2024-06-10" Time="12:00:00" Milliseconds="0" TimeCertainty="2" Measurement="20" MeasurementCertainty="0.5" Visible="1" EyeHeight="0" Temperature="10" Pressure="1013" IndexError="0" ColourName="Public-Sun" Colour="rgba(111, 71, 93, 0.588)" Transparency="150" DRLat="51.4779" DRLon="0" DRBoatPosition="0" />
+  <Sight Body="Venus" Type="1" BodyLimb="0" Date="2024-06-11" Time="12:00:00" Milliseconds="0" TimeCertainty="2" Measurement="30" MeasurementCertainty="0.5" Visible="0" EyeHeight="0" Temperature="10" Pressure="1013" IndexError="0" ColourName="Public-Venus" Colour="rgba(205, 71, 93, 0.588)" Transparency="150" DRLat="51.4779" DRLon="0" DRBoatPosition="0" />
+  <Sight Body="Mars" Type="0" BodyLimb="0" Date="2024-06-12" Time="12:00:00" Milliseconds="0" TimeCertainty="2" Measurement="10" MeasurementCertainty="0.5" Visible="1" EyeHeight="0" Temperature="10" Pressure="1013" IndexError="0" ColourName="Public-Mars" Colour="rgba(39, 71, 93, 0.588)" Transparency="150" DRLat="51.4779" DRLon="0" DRBoatPosition="0" />
+</OpenCPNCelestialNavigation>

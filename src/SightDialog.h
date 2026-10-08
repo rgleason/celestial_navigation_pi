@@ -32,6 +32,7 @@
 #include "wx/calctrl.h"
 
 #include "CelestialNavigationUI.h"
+#include "DialogTransactionState.h"
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
@@ -41,28 +42,51 @@ class Sight;
 class wxCheckBox;
 class wxStaticBoxSizer;
 class wxTimePickerCtrl;
+class NauticalTimeCtrl;
+class wxCloseEvent;
 
 class SightDialog : public SightDialogBase {
 public:
   enum { ALTITUDE, AZIMUTH, LUNAR };
+  enum class Mode { Create, Edit };
 
   SightDialog(wxWindow* parent, Sight& sight, int clock_offset,
-              const wxDateTime& markedUtc = wxDateTime());
+              const wxDateTime& markedUtc = wxDateTime(),
+              Mode mode = Mode::Edit);
   ~SightDialog();
 
   //    void SetColorScheme(ColorScheme cs);
 
   void OnSetDefaults(wxCommandEvent& event);
-  void Recompute(wxCommandEvent& event) { Recompute(); }
-  void RecomputeCalendar(wxCalendarEvent& event) { Recompute(); }
-  void RecomputeSpin(wxSpinEvent& event) { Recompute(); }
-  //    void RecomputeScroll( wxScrollEvent& event ) { Recompute(); }
+  void Recompute(wxCommandEvent& event) {
+    MarkDirty();
+    Recompute();
+  }
+  void RecomputeCalendar(wxCalendarEvent& event) {
+    MarkDirty();
+    Recompute();
+  }
+  void RecomputeSpin(wxSpinEvent& event) {
+    MarkDirty();
+    Recompute();
+  }
+  void RecomputeScroll(wxScrollEvent& event) {
+    MarkDirty();
+    Recompute();
+  }
   void RecomputeDMM(wxNotebookEvent& event) { RecomputeDMM(); }
-  void RecomputeDMM(wxCommandEvent& event) { RecomputeDMM(); }
+  void RecomputeDMM(wxCommandEvent& event) {
+    MarkDirty();
+    RecomputeDMM();
+  }
 
-  void RecomputeColor(wxColourPickerEvent& event) { Recompute(); }
+  void RecomputeColor(wxColourPickerEvent& event) {
+    MarkDirty();
+    Recompute();
+  }
   void NewBody();
   void NewBody(wxCommandEvent& event) {
+    MarkDirty();
     NewBody();
     Recompute();
   }
@@ -74,32 +98,59 @@ public:
   wxDateTime DateTime();
   void Recompute();
   void RecomputeDMM();
+  bool Accepted() const {
+#ifdef __OCPN__ANDROID__
+    return m_androidAccepted;
+#else
+    return GetReturnCode() == wxID_OK;
+#endif
+  }
   void UpdateLunarTimeControls();
-  int RelativeWatchSeconds(wxTimePickerCtrl* control) const;
+#ifdef __OCPN__ANDROID__
+  double RelativeWatchSeconds(NauticalTimeCtrl* control) const;
+#else
+  int RelativeWatchSeconds(NauticalTimeCtrl* control) const;
+#endif
   void SetClockOffset(int seconds) {
     m_clock_offset = seconds;
     Recompute();
   }
 
 private:
+#ifdef __OCPN__ANDROID__
+  wxSpinCtrlDouble* m_androidSeconds = nullptr;
+  wxSpinCtrlDouble* m_androidTimeCertainty = nullptr;
+  bool m_androidAccepted = false;
+  bool AndroidInputsValid(wxString* error) const;
+  bool CalculateAndroidLunar();
+  wxButton* m_androidCalculateLunar = nullptr;
+#endif
+  void ApplyFindPosition(const Sight& candidate);
+  void MarkDirty();
+  void UpdateColourChoice();
+  void OnWindowClose(wxCloseEvent& event);
   double BodyAltitude(wxString body);
 #ifdef __OCPN__ANDROID__
   void OnEvtPanGesture(wxQT_PanGestureEvent& event);
 #endif
 
   Sight& m_Sight;
+  wxChoice* m_colourPalette = nullptr;
   int m_clock_offset;
   bool m_breadytorecompute;
+  DialogTransactionState m_transaction;
   wxChoice* m_lunarBodyDistanceContact;
   wxTextCtrl* m_lunarMoonAltitudeUncertainty;
   wxTextCtrl* m_lunarBodyAltitudeUncertainty;
   wxStaticBoxSizer* m_lunarTimingBox;
   wxCheckBox* m_lunarSeparateTimes;
-  wxTimePickerCtrl* m_lunarMoonTime;
-  wxTimePickerCtrl* m_lunarBodyTime;
+  NauticalTimeCtrl* m_lunarMoonTime;
+  NauticalTimeCtrl* m_lunarBodyTime;
+  wxChoice* m_lunarTimeBasis;
   wxCheckBox* m_lunarMovingObserver;
   wxTextCtrl* m_lunarCourseTrue;
   wxTextCtrl* m_lunarSpeedKnots;
+  wxTextCtrl* m_remarks = nullptr;
 
   int m_lastPanX;
   int m_lastPanY;

@@ -39,14 +39,21 @@ PairPrediction PredictApparentCenterDistance(const BodySample& first,
 
 struct CheckReading {
   double predicted_deg = 0.0;
+  // Raw angle read from the sextant.  Keep this untouched for provenance.
   double observed_deg = 0.0;
   double uncertainty_arcmin = 0.2;
   std::string note;
+  // Measured index error, using the plugin convention "on the arc +".
+  // The index-corrected apparent angle is observed - index error.
+  double index_error_arcmin = 0.0;
 };
+
+double IndexCorrectedObservedDegrees(const CheckReading& reading);
+double ResidualCorrectionArcmin(const CheckReading& reading);
 
 struct CorrectionPoint {
   double angle_deg = 0.0;
-  // Add this value to a raw sextant reading.
+  // Add this value after applying the independently measured index error.
   double correction_arcmin = 0.0;
   double uncertainty_arcmin = 0.0;
   int reading_count = 0;
@@ -58,6 +65,10 @@ struct Profile {
   std::string created_utc;
   std::vector<CorrectionPoint> points;
   double repeatability_arcmin = 0.0;
+  // False identifies profiles written by versions which folded index error
+  // into a total correction to the raw reading.  Never reinterpret those
+  // saved values as the new residual correction.
+  bool excludes_index_error = false;
 };
 
 Profile BuildProfile(const std::string& name, const std::string& serial,

@@ -70,13 +70,13 @@ set(SHORT_DESCRIPTION
 	"Celestial Navigation Plugin for OpenCPN"
 )
 set(LONG_DESCRIPTION
-	"Offline nautical almanac, sight planning and ranking, time-tagged running fixes, sequence analysis, horizon events, time integrity and a DE440 solar-eclipse planner."
+	"Offline nautical almanac, sight planning and ranking, time-tagged running fixes, sequence analysis, horizon events, time integrity, optional DE440s navigation precision and a solar-eclipse planner."
 )
 set(VERSION_MAJOR "2")
-set(VERSION_MINOR "8")
-set(VERSION_PATCH "4")
+set(VERSION_MINOR "9")
+set(VERSION_PATCH "7")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "07/09/2026" )# DD/MM/YYYY format
+set(VERSION_DATE  "05/10/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -113,7 +113,7 @@ set(XML_DESCRIPTION ${LONG_DESCRIPTION})
 
 option(PLUGIN_USE_SVG "Use SVG graphics" ON)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 # Use local version of GLU library requires libs/glu directory
 set(USE_LOCAL_GLU FALSE)
@@ -186,22 +186,30 @@ SET(SRCS
         src/astrolabe/vsop87d.cpp
         src/geomag/geomag.c
         src/CelestialNavigationDialog.cpp
+        src/AndroidWorkspace.cpp
+        src/DialogGeometry.cpp
         src/AtomicXmlFile.cpp
+        src/Dut1UpdatePanel.cpp
         src/BodyCatalog.cpp
         src/NavigationAlgorithms.cpp
+        src/NavigationEphemerisProvider.cpp
+        src/CompactEphemerisProvider.cpp
         src/PlannerDialog.cpp
         src/WaypointPositionSource.cpp
+        src/WaypointPickerDialog.cpp
         src/SightAnalysisDialog.cpp
         src/HorizonEventDialog.cpp
         src/HtmlHelp.cpp
         src/EclipseDialog.cpp
         src/EclipseDataFiles.cpp
+        src/EclipseVerificationWorker.cpp
         src/TimeStatus.cpp
         src/CelestialNavigationUI.cpp
         src/SightDialog.cpp
         src/Sight.cpp
         src/LunarDistanceEngine.cpp
         src/LunarSessionEngine.cpp
+        src/LunarSessionWorker.cpp
         src/SextantCalibrationEngine.cpp
         src/LunarToolsDialog.cpp
         src/AlmanacGenerator.cpp
@@ -223,21 +231,27 @@ SET(SRCS
 
 SET(HDRS
         src/OcpnApiCompat.h
+        src/DialogGeometry.h
+        src/DialogTransactionState.h
         src/NavigationUIUtils.h
         src/Utf8Translation.h
         src/celestial_navigation_pi.h
         src/CelestialNavigationDialog.h
         src/AtomicXmlFile.h
+        src/Dut1UpdatePanel.h
         src/BodyCatalog.h
         src/NavigationAlgorithms.h
         src/PlannerDialog.h
         src/WaypointPositionSource.h
+        src/WaypointPickerDialog.h
         src/SightAnalysisDialog.h
         src/UtcDateTime.h
         src/HorizonEventDialog.h
+        src/HorizonPosition.h
         src/HtmlHelp.h
         src/EclipseDialog.h
         src/EclipseDataFiles.h
+        src/EclipseVerificationWorker.h
         src/TimeStatus.h
         src/CelestialNavigationUI.h
         src/ClockCorrectionDialog.h
@@ -248,6 +262,7 @@ SET(HDRS
         src/Sight.h
         src/LunarDistanceEngine.h
         src/LunarSessionEngine.h
+        src/LunarSessionWorker.h
         src/SextantCalibrationEngine.h
         src/LunarToolsDialog.h
         src/AlmanacGenerator.h
@@ -291,6 +306,9 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/geomag)
 # ==============================================================
 
 target_sources(${PACKAGE_NAME} PUBLIC ${SRC} )
+if(QT_ANDROID)
+  target_link_options(${PACKAGE_NAME} PRIVATE "-Wl,--exclude-libs,ALL")
+endif()
 
 # The eclipse numerical core is also usable as a standalone library/CLI. The
 # plugin embeds only the network-free runtime library; development tools and
@@ -299,7 +317,8 @@ set(ECLIPSE_BUILD_CLI OFF CACHE BOOL "" FORCE)
 set(ECLIPSE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ECLIPSE_BUILD_LOLA_TOOL OFF CACHE BOOL "" FORCE)
 add_subdirectory(eclipse)
-target_link_libraries(${PACKAGE_NAME} celestial::eclipse_core)
+add_subdirectory(compact)
+target_link_libraries(${PACKAGE_NAME} celestial::eclipse_core celnav::compact)
 option(CELESTIAL_ECLIPSE_INTEGRATION_TEST
        "Open and exercise the 2027 eclipse planner automatically" OFF)
 if(CELESTIAL_ECLIPSE_INTEGRATION_TEST)
@@ -326,6 +345,20 @@ if (NOT OCPN_FLATPAK_CONFIG)
 
   add_subdirectory(opencpn-libs/api-${OCPN_API_VERSION_MINOR})
   target_link_libraries(${PACKAGE_NAME} ocpn::api)
+  # POBsoft (1985-2026): the bundled API import library is Windows x86.
+  # A native x64 host SDK is mandatory for an x64 MSVC plugin.
+  if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(CELESTIAL_WINDOWS_IMPORT_LIBRARY "" CACHE FILEPATH
+        "Import library from the matching native OpenCPN Windows x64 host")
+    if(NOT EXISTS "${CELESTIAL_WINDOWS_IMPORT_LIBRARY}")
+      message(FATAL_ERROR "Windows x64 requires CELESTIAL_WINDOWS_IMPORT_LIBRARY")
+    endif()
+    get_target_property(_celestial_api_target ocpn::api ALIASED_TARGET)
+    set_property(TARGET ${_celestial_api_target} PROPERTY INTERFACE_LINK_LIBRARIES
+        "${CELESTIAL_WINDOWS_IMPORT_LIBRARY}")
+    # Reject conversions which truncate native pointers; desktop maths is unchanged.
+    target_compile_options(${PACKAGE_NAME} PRIVATE /we4302 /we4311 /we4312)
+  endif()
 
   add_subdirectory(opencpn-libs/tinyxml)
   target_link_libraries(${PACKAGE_NAME} ocpn::tinyxml)

@@ -1,0 +1,32 @@
+{
+  "cases": 1407,
+  "bodies": 67,
+  "maximum_difference": {
+    "ra_deg": 9.066525308298878e-10,
+    "declination_deg": 2.4654056574036076e-10,
+    "gha_deg": 9.066525308298878e-10,
+    "aries_gha_deg": 1.6484591469634324e-12,
+    "icrf_ra_deg": 9.043787940754555e-10,
+    "icrf_declination_deg": 2.495710305083776e-10,
+    "observer_icrf_ra_deg": 1.4449597074417397e-09,
+    "observer_icrf_declination_deg": 6.109086569949795e-10,
+    "geometric_hc_deg": 5.71411362670915e-10,
+    "airless_altitude_deg": 1.4183001439960208e-09,
+    "azimuth_deg": 3.0072726531216176e-09,
+    "distance_km": 1.0639429092407227e-05,
+    "horizontal_parallax_deg": 1.5385137608348032e-11,
+    "geocentric_semidiameter_deg": 4.1903702729939596e-12,
+    "observer_semidiameter_deg": 1.0166978370307334e-11,
+    "tt_jd": 0,
+    "tdb_jd": 0,
+    "ut1_jd": 0,
+    "dut1_seconds": 0,
+    "tai_minus_utc": 0
+  },
+  "tolerances": {
+    "angles_deg": 1e-07,
+    "distance_km": 0.001,
+    "time_jd_and_seconds": 1e-09
+  },
+  "passed": true
+}

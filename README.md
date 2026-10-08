@@ -3,6 +3,22 @@ Celestial Navigation Plugin for OpenCPN
 
 Perform sight reductions and plot positions from celestial observations.
 
+Development version **2.9.3** bundles the verified Compact 0.2.0 ephemeris and
+corrected lunar solver 0.1.0. DE440s retains priority for applicable installed
+body centres; Compact is the default offline fallback, including navigation
+stars, for 1972–2100. Disable **Use compact analytical fallback (recommended)**
+in **Lunar Tools → Advanced** to use classic analytical calculations. Classic
+also handles dates outside Compact coverage or unavailable Compact data. Lunar
+geometry corrections remain active with every provider. The engine data adds
+about 3.74 MiB; no download is required. See
+[the integration and validation notes](docs/compact-engine-2.9.3.txt).
+
+
+Version 2.8.9 corrects ambiguous Horizon Event position estimates and removes
+the misleading filled uncertainty disc. The bundled HTML, PDF and editable
+manuals cover the current running-fix and lunar-planning workflows. See the
+[Horizon Event investigation and documentation audit](docs/horizon-events-2.8.9.md).
+
 This contribution adds:
 
 * a time-integrity panel showing local, UTC, GNSS/NMEA and chrony status;
@@ -25,8 +41,11 @@ This contribution adds:
   voyage-specific direct Hc/Zn lookup tables, universal Ageton reduction
   tables, instructions and forms. Optional planning graphs and booklet
   signature imposition are included;
-* a time-tagged numerical running fix which advances each observation through
-  a COG/SOG motion model to a common epoch;
+* a time-tagged numerical running fix which advances each observation to a
+  common epoch using either one COG/SOG model or its individually entered
+  DR Shift, including passages with changes of course;
+* optional per-sight Remarks and a Sights manager for dated XML backups,
+  importing additional sights, and restoring a complete sight log;
 * a sight-sequence analyzer for residuals, scatter, robust outliers, trend and
   personal bias, plus dedicated noon and Polaris helpers;
 * a rebuilt lunar-distance workflow which supports simultaneous or separately
@@ -57,12 +76,17 @@ offline. See
 [eclipse/DATA.md](eclipse/DATA.md) for exact files, provenance, checksums and
 storage sizes.
 
-The ordinary navigation planner is independent of the eclipse data packs. It
-uses the plugin's bundled VSOP87D, ELP2000 and navigational-star data, works
-without DE440 or LOLA, and never requires a network connection. Moon–Sun lunar
-distances use the locally installed DE440s kernel when it is present;
-Moon–planet, Moon–star and installations without DE440s use the bundled
-analytical catalogue. LOLA is never required for lunar-distance work.
+The ordinary navigation planner remains fully offline and usable without any
+optional data pack. When the verified DE440s kernel is installed and its
+1849–2150 coverage includes the sight date (with modern UTC from 1972 onward),
+the Sun, Moon, Mercury and Venus centres use it for supported sight, planner,
+almanac and lunar-distance
+calculations. Stars and other planets remain on the bundled analytical
+catalogue; unavailable or out-of-range DE440s falls back automatically.
+DE440s uses the applicable offline Earth-rotation table, retains fractional
+seconds, and does not require either optional lunar-orientation or LOLA data.
+See the [2.9.0 navigation ephemeris note](docs/de440s-navigation-2.9.md)
+for scope, fallbacks and validation limits.
 See the
 [offline planning and running-fix guide](manual/modules/ROOT/pages/offline-planning.adoc).
 The separate
@@ -70,6 +94,28 @@ The separate
 explains the simultaneous and sequential observation models,
 unknown-watch-offset workflow, genuine position ambiguity, controls and
 limitations.
+
+Version 2.8.5.7 avoids the modern-MSVC `std::mutex` ABI on Windows so the
+plugin can load safely in stock OpenCPN 5.12 and 5.14 installations which
+bundle an older Microsoft runtime. The protected DUT1 and DE440 operations
+remain serialized. See the
+[2.8.5.7 Windows compatibility note](docs/windows-runtime-compatibility-2.8.5.7.md).
+
+Version 2.8.5.6 keeps the Sextant Check prediction engine unchanged while
+separating independently measured index error from the persistent residual
+scale/centering profile. Existing saved profiles remain readable with their
+legacy total-correction meaning. See the
+[2.8.5.6 correction note](docs/sextant-index-error-2.8.5.6.md).
+
+Version 2.8.5.2 promotes the independently tested observer-specific Sun–Moon
+astrometry, with bundled offline Earth-rotation data and optional precision
+updates under **Lunar Tools → Advanced**. Calculations continue beyond data
+coverage with an explicit fallback warning. See the
+[release and validation notes](docs/lunar-release-2.8.5.2.md).
+
+Version 2.8.5.1 adds coherent apparent DE440 Sun–Moon directions, WGS84 lunar
+geometry, immutable saved lunar solutions and scoped fix corrections. See the
+[reference audit and compatibility notes](docs/lunar-review-2.8.5.1.md).
 
 The almanac can now be **calculator-free**: after printing, a navigator can
 reduce and plot supported sights using the document, sextant, accurate watch,
@@ -98,7 +144,7 @@ Compiling
 The three separately distributed eclipse files are:
 
 * [`de440s.bsp`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/de440s.bsp)
-  (required for the eclipse planner);
+  (optional navigation refinement; required for the eclipse planner);
 * [`moon_pa_de440_200625.bpc`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/moon_pa_de440_200625.bpc)
   (optional lunar-orientation refinement); and
 * [`lola64-pa.bin`](https://github.com/pob220/celestial_navigation_pi/releases/download/eclipse-data-2026.1/lola64-pa.bin)
@@ -106,8 +152,9 @@ The three separately distributed eclipse files are:
 
 Their sizes and SHA-256 digests are pinned in the adjacent manifests. The
 normal celestial-navigation, planning and almanac features do not require
-these files. DE440s is required only by the eclipse planner; the orientation
-and LOLA files add optional lunar-limb contact refinement.
+these files. DE440s improves supported Sun/Moon/Mercury/Venus ephemerides when
+available; the orientation and LOLA files add optional eclipse contact
+refinement only.
 
 Under windows, you must find the file "opencpn.lib" (Visual Studio) or "libopencpn.dll.a" (mingw) which is built in the build directory after compiling opencpn.  This file must be copied to the plugin directory.
 
@@ -133,4 +180,4 @@ The standalone eclipse engine retains its own independent regression suite in
 
 License
 =======
-The plugin code is licensed under the terms of the GPL v3 or, at your will, later.
+The plugin code is licensed under the terms of the GPL v3 or, at your will, later. 

@@ -1,4 +1,14 @@
+#include "PlatformMessageBox.h"
+#include "AndroidFileDialog.h"
+#ifdef __OCPN__ANDROID__
+#include "AndroidJob.h"
+#include "AndroidDownloadEvents.h"
+#include <QListWidget>
+#include <QVBoxLayout>
+#include <QtAndroidExtras/QAndroidJniEnvironment>
+#endif
 #include "EclipseDialog.h"
+#include "DialogGeometry.h"
 
 #include "AtomicXmlFile.h"
 #include "NavigationUIUtils.h"
@@ -25,9 +35,7 @@
 #include <wx/utils.h>
 
 #include <algorithm>
-#include <chrono>
 #include <cmath>
-#include <future>
 #include <iomanip>
 #include <sstream>
 
@@ -98,7 +106,13 @@ public:
     root->Add(footer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
     SetSizerAndFit(root);
     SetMinSize(wxSize(700, GetSize().GetHeight()));
-    CentreOnParent();
+    SetEscapeId(wxID_CANCEL);
+    dialog_geometry::Restore(this, _T("OptionalLunarData"),
+                             wxSize(760, GetSize().GetHeight()));
+  }
+
+  ~OptionalLunarDataDialog() override {
+    dialog_geometry::Save(this, _T("OptionalLunarData"));
   }
 
 private:
@@ -110,6 +124,9 @@ private:
     explanation->Wrap(660);
     box->Add(explanation, 0, wxEXPAND | wxALL, 7);
     wxBoxSizer* actions = new wxBoxSizer(wxHORIZONTAL);
+#ifdef __OCPN__ANDROID__
+    actions->SetOrientation(wxVERTICAL);
+#endif
     wxStaticText* status = new wxStaticText(
         this, wxID_ANY, _("Status: ") + OptionalStateLabel(state));
     actions->Add(status, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
@@ -210,6 +227,15 @@ EclipseDialog::EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin)
       m_installed_check_index(0) {
   m_invalid_data[0] = m_invalid_data[1] = m_invalid_data[2] = false;
   BuildInterface();
+  dialog_geometry::Restore(this, _T("Eclipse"), wxSize(960, 720));
+#ifdef __OCPN__ANDROID__
+  m_androidVerificationPoll = new QTimer(GetHandle());
+  QObject::connect(m_androidVerificationPoll, &QTimer::timeout, GetHandle(), [this]() {
+    m_androidDownloadEvents->Drain();
+    if (m_verifying) { wxTimerEvent event(m_verification_timer); OnVerificationTimer(event); }
+  });
+  m_androidVerificationPoll->start(100);
+#endif
   UpdateDataStatus();
   StartInstalledDataCheck();
   wxCommandEvent initial_position;
@@ -217,16 +243,25 @@ EclipseDialog::EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin)
 }
 
 EclipseDialog::~EclipseDialog() {
+#ifdef __OCPN__ANDROID__
+  delete m_androidVerificationPoll;
+  m_androidVerificationPoll = nullptr;
+#endif
+  dialog_geometry::Save(this, _T("Eclipse"));
   m_verification_timer.Stop();
   Unbind(wxEVT_TIMER, &EclipseDialog::OnVerificationTimer, this,
          m_verification_timer.GetId());
+#ifdef __OCPN__ANDROID__
+  m_androidDownloadEvents->Disconnect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
+#else
   Disconnect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
+#endif
              wxEventHandler(EclipseDialog::OnDownloadEvent), NULL, this);
   if (m_download_handle) {
     OCPN_cancelDownloadFileBackground(m_download_handle);
     m_download_handle = 0;
   }
-  if (m_verification_future.valid()) m_verification_future.wait();
+  m_verification_worker.Wait();
   if (!m_download_temp.empty() && wxFileExists(m_download_temp))
     wxRemoveFile(m_download_temp);
 }
@@ -249,15 +284,21 @@ wxString EclipseDialog::LolaPath() const {
 }
 
 void EclipseDialog::BuildInterface() {
+#ifdef __OCPN__ANDROID__
+  BuildAndroidInterface();
+  return;
+#endif
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
   wxStaticBoxSizer* data =
-      new wxStaticBoxSizer(wxVERTICAL, this, _("Eclipse astronomy data"));
+      new wxStaticBoxSizer(wxVERTICAL, this, _("Offline astronomy data"));
   m_data_status = new wxStaticText(this, wxID_ANY, _("Checking data..."));
   data->Add(m_data_status, 0, wxEXPAND | wxALL, 5);
   wxStaticText* data_note = new wxStaticText(
       this, wxID_ANY,
-      _("DE440s is required only for the eclipse planner. Lunar-orientation "
-        "and LOLA terrain files are optional refinements."));
+      _("DE440s improves supported Sun, Moon, Mercury and Venus navigation "
+        "calculations and is required for the eclipse planner. Navigation "
+        "continues analytically without it. Lunar-orientation and LOLA "
+        "terrain files are optional eclipse refinements only."));
   data_note->Wrap(880);
   data->Add(data_note, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
   wxBoxSizer* imports = new wxBoxSizer(wxHORIZONTAL);
@@ -273,6 +314,23 @@ void EclipseDialog::BuildInterface() {
   imports->Add(m_import_de, 0, wxRIGHT, 5);
   imports->Add(m_optional_data, 0);
   data->Add(imports, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
+  auto* folder = new wxButton(this, wxID_ANY, _("Open astronomy data folder"));
+  folder->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    if (!wxFileName::DirExists(DataDirectory()) &&
+        !wxFileName::Mkdir(DataDirectory(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL)) {
+      wxMessageBox(_("Could not open the astronomy data directory."),
+                   _("Offline astronomy data"), wxOK | wxICON_ERROR, this);
+      return;
+    }
+    if (!wxLaunchDefaultApplication(DataDirectory()))
+      wxMessageBox(DataDirectory(), _("Data folder path"), wxOK, this);
+  });
+  data->Add(folder, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
+  auto* paths = new wxStaticText(this, wxID_ANY,
+      _("Data directory: ") + DataDirectory() +
+      "\n" + _("Files: de440s.bsp; moon_pa_de440_200625.bpc; lola64-pa.bin"));
+  paths->Wrap(880);
+  data->Add(paths, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
   data->Add(m_cancel_install, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
   root->Add(data, 0, wxEXPAND | wxALL, 6);
 
@@ -301,6 +359,8 @@ void EclipseDialog::BuildInterface() {
   m_event_list->InsertColumn(1, _("Type"));
   m_event_list->InsertColumn(2, _("Greatest position"));
   m_event_list->InsertColumn(3, _("Magnitude"));
+  for (int column = 0; column < 4; ++column)
+    m_event_list->SetColumnWidth(column, wxLIST_AUTOSIZE_USEHEADER);
   root->Add(m_event_list, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 6);
 
   wxBoxSizer* plot = new wxBoxSizer(wxVERTICAL);
@@ -398,6 +458,198 @@ void EclipseDialog::BuildInterface() {
   Bind(wxEVT_CLOSE_WINDOW, &EclipseDialog::OnWindowClose, this);
 }
 
+#ifdef __OCPN__ANDROID__
+void EclipseDialog::BuildAndroidInterface() {
+  m_androidDownloadEvents.reset(new AndroidDownloadEvents);
+  auto* root = new wxBoxSizer(wxVERTICAL);
+  auto* book = new wxNotebook(this, wxID_ANY);
+  auto* search = new wxPanel(book);
+  auto* local = new wxPanel(book);
+  auto* data = new wxPanel(book);
+  auto* searches = new wxBoxSizer(wxVERTICAL);
+  auto* locals = new wxBoxSizer(wxVERTICAL);
+  auto* datasets = new wxBoxSizer(wxVERTICAL);
+  search->SetSizer(searches);
+  local->SetSizer(locals);
+  data->SetSizer(datasets);
+  book->AddPage(search, _("Search & chart"));
+  book->AddPage(local, _("Local circumstances"));
+  book->AddPage(data, _("Data"));
+
+  auto label = [](wxWindow* parent, wxBoxSizer* sizer, const wxString& text) {
+    auto* control = new wxStaticText(parent, wxID_ANY, text);
+    sizer->Add(control, 0, wxEXPAND | wxALL, 8);
+    return control;
+  };
+  auto button = [](wxWindow* parent, wxBoxSizer* sizer, const wxString& text) {
+    auto* control = new wxButton(parent, wxID_ANY, text);
+    sizer->Add(control, 0, wxEXPAND | wxALL, 8);
+    return control;
+  };
+  const int year = wxDateTime::Now().GetYear();
+  label(search, searches, CN_UTF8_("Starting year (1850–2100)"));
+  m_start_year = new wxSpinCtrl(search, wxID_ANY);
+  m_start_year->SetRange(1850, 2100);
+  m_start_year->SetValue(std::max(1850, std::min(2100, year)));
+  searches->Add(m_start_year, 0, wxEXPAND | wxALL, 8);
+  label(search, searches, _("Ending year (inclusive)"));
+  m_end_year = new wxSpinCtrl(search, wxID_ANY);
+  m_end_year->SetRange(1850, 2100);
+  m_end_year->SetValue(std::max(1850, std::min(2100, year + 10)));
+  searches->Add(m_end_year, 0, wxEXPAND | wxALL, 8);
+  auto* find = button(search, searches, _("Find eclipses"));
+  m_androidSelectedSearch = label(search, searches, _("No eclipse selected."));
+
+  // Keep the shared list model and its selection semantics. Only its Android
+  // presentation changes to multiline cards; desktop retains the report view.
+  m_event_list = new wxListCtrl(this, wxID_ANY, wxDefaultPosition,
+                               wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
+  m_event_list->InsertColumn(0, _("Date and greatest eclipse"));
+  m_event_list->InsertColumn(1, _("Type"));
+  m_event_list->InsertColumn(2, _("Greatest position"));
+  m_event_list->InsertColumn(3, _("Magnitude"));
+  m_event_list->Hide();
+  auto* cards = new wxPanel(search);
+  cards->SetMinSize(wxSize(0, CN_TouchHeight() * 6));
+  auto* cardLayout = new QVBoxLayout(cards->GetHandle());
+  cardLayout->setContentsMargins(0, 0, 0, 0);
+  m_androidEvents = new QListWidget(cards->GetHandle());
+  m_androidEvents->setWordWrap(true);
+  m_androidEvents->setTextElideMode(Qt::ElideNone);
+  m_androidEvents->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  m_androidEvents->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+  m_androidEvents->setSelectionMode(QAbstractItemView::SingleSelection);
+  m_androidEvents->setStyleSheet(QString(
+      "QListWidget { font-size: %1pt; background: #f5f8fa; color: #17313e; } "
+      "QListWidget::item { padding: 12px; border-bottom: 1px solid #afbdc4; } "
+      "QListWidget::item:selected { background: #d1e8f1; color: #102e3b; }")
+      .arg(CN_FontPointSize()));
+  QPointer<QListWidget> eventCards(m_androidEvents);
+  new CN_AndroidButtonDragFilter(m_androidEvents->viewport(),
+      [eventCards](QPoint point) {
+        if (!eventCards) return;
+        const auto index = eventCards->indexAt(point);
+        if (index.isValid()) eventCards->setCurrentRow(index.row());
+      }, m_androidEvents->viewport());
+  cardLayout->addWidget(m_androidEvents);
+  searches->Add(cards, 0, wxEXPAND | wxALL, 8);
+  QObject::connect(m_androidEvents, &QListWidget::currentRowChanged,
+                   GetHandle(), [this](int row) {
+    if (row >= 0 && static_cast<std::size_t>(row) < m_events.size()) {
+      m_event_list->SetItemState(row, wxLIST_STATE_SELECTED,
+                                wxLIST_STATE_SELECTED);
+      UpdateAndroidSelection();
+    }
+  });
+  m_plot_path = new wxCheckBox(search, wxID_ANY,
+      _("Central line and totality/annularity limits"));
+  m_plot_path->SetValue(true);
+  searches->Add(m_plot_path, 0, wxEXPAND | wxALL, 8);
+  m_plot_contours = new wxCheckBox(search, wxID_ANY,
+                                  _("Partial magnitude contours"));
+  m_plot_contours->SetValue(true);
+  searches->Add(m_plot_contours, 0, wxEXPAND | wxALL, 8);
+  m_plot_button = button(search, searches, _("Plot selected on chart"));
+  auto* clear = button(search, searches, _("Clear plot"));
+  label(search, searches, _("Plot centres the chart on the selected eclipse. "
+                            "Reopen this sheet to inspect results or clear the plot."));
+
+  m_androidSelectedLocal = label(local, locals, _("No eclipse selected. "
+      "Choose an event on Search & chart first."));
+  label(local, locals, _("Latitude (degrees/minutes N or S, or signed decimal degrees)"));
+  m_latitude = new wxTextCtrl(local, wxID_ANY,
+      FormatNavigationAngle(0.0, NavigationAngleKind::Latitude, true));
+  locals->Add(m_latitude, 0, wxEXPAND | wxALL, 8);
+  label(local, locals, _("Longitude (degrees/minutes E or W, or signed decimal degrees)"));
+  m_longitude = new wxTextCtrl(local, wxID_ANY,
+      FormatNavigationAngle(0.0, NavigationAngleKind::Longitude, true));
+  locals->Add(m_longitude, 0, wxEXPAND | wxALL, 8);
+  auto* boat = button(local, locals, _("Use boat position"));
+  m_use_lola = new wxCheckBox(local, wxID_ANY,
+                             _("Refine contacts with LOLA limb"));
+  locals->Add(m_use_lola, 0, wxEXPAND | wxALL, 8);
+  m_local_button = button(local, locals, _("Calculate"));
+  m_local_results = new wxTextCtrl(local, wxID_ANY,
+      _("Select an eclipse and calculate local contacts. Times are UT1; "
+        "future UTC can differ because leap seconds are not predictable."),
+      wxDefaultPosition, wxSize(-1, CN_TouchHeight() * 6),
+      wxTE_MULTILINE | wxTE_READONLY);
+  locals->Add(m_local_results, 0, wxEXPAND | wxALL, 8);
+
+  m_data_status = label(data, datasets, _("Checking data..."));
+  label(data, datasets, _("DE440s improves supported Sun, Moon, Mercury and "
+      "Venus navigation calculations and is required for the eclipse planner. "
+      "Navigation continues analytically without it. Lunar orientation and "
+      "LOLA terrain are optional eclipse refinements only."));
+  m_download_de = button(data, datasets,
+      CN_UTF8_("Download and install DE440s… (31.2 MiB)"));
+  m_import_de = button(data, datasets, CN_UTF8_("Import DE440s…"));
+  m_optional_data = button(data, datasets, CN_UTF8_("Optional lunar data…"));
+  m_cancel_install = button(data, datasets, _("Cancel data installation"));
+  m_cancel_install->Hide();
+  label(data, datasets, CN_UTF8_("DE440 coverage: 1850–2150. Planner searches "
+      "are limited to 2100. ΔT is modelled unless a reference event supplies "
+      "it. Imported data must pass the published checksum before installation."));
+  root->Add(book, 1, wxEXPAND);
+  SetSizer(root);
+
+  m_import_de->Bind(wxEVT_BUTTON, &EclipseDialog::OnImportDe440, this);
+  m_download_de->Bind(wxEVT_BUTTON, &EclipseDialog::OnDownloadDe440, this);
+  m_optional_data->Bind(wxEVT_BUTTON, &EclipseDialog::OnOptionalData, this);
+  m_cancel_install->Bind(wxEVT_BUTTON, &EclipseDialog::OnCancelInstall, this);
+  m_androidDownloadEvents->Connect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
+          wxEventHandler(EclipseDialog::OnDownloadEvent), NULL, this);
+  Bind(wxEVT_TIMER, &EclipseDialog::OnVerificationTimer, this,
+       m_verification_timer.GetId());
+  find->Bind(wxEVT_BUTTON, &EclipseDialog::OnFind, this);
+  m_event_list->Bind(wxEVT_LIST_ITEM_SELECTED, &EclipseDialog::OnSelection, this);
+  m_plot_button->Bind(wxEVT_BUTTON, &EclipseDialog::OnPlot, this);
+  clear->Bind(wxEVT_BUTTON, &EclipseDialog::OnClear, this);
+  boat->Bind(wxEVT_BUTTON, &EclipseDialog::OnBoatPosition, this);
+  m_local_button->Bind(wxEVT_BUTTON, &EclipseDialog::OnLocal, this);
+  Bind(wxEVT_CLOSE_WINDOW, &EclipseDialog::OnWindowClose, this);
+}
+
+void EclipseDialog::RefreshAndroidEvents() {
+  m_androidEvents->blockSignals(true);
+  m_androidEvents->clear();
+  for (const auto& event : m_events) {
+    wxString text = FormatDateTime(event.maximum_tt_jd,
+                                    event.delta_t_seconds, true);
+    text << "\n" << wxString::FromUTF8(eclipse::EclipseTypeName(event.type))
+         << wxString::Format(CN_UTF8_(" — magnitude %.4f"), event.magnitude)
+         << "\n" << FormatNavigationAngle(event.greatest_position.latitude_deg,
+                                          NavigationAngleKind::Latitude, true)
+         << "\n" << FormatNavigationAngle(event.greatest_position.longitude_deg,
+                                          NavigationAngleKind::Longitude, true);
+    auto* item = new QListWidgetItem(QString::fromUtf8(text.utf8_str()),
+                                     m_androidEvents);
+    item->setSizeHint(QSize(0, qMax(CN_TouchHeight() * 2,
+        QFontMetrics(m_androidEvents->font()).lineSpacing() * 6 + 32)));
+  }
+  m_androidEvents->setCurrentRow(m_events.empty() ? -1 : 0);
+  m_androidEvents->blockSignals(false);
+  UpdateAndroidSelection();
+  celestial_android::LayoutScrolls(this);
+}
+
+void EclipseDialog::UpdateAndroidSelection() {
+  eclipse::EclipseEvent event;
+  const wxString selected = SelectedEvent(&event)
+      ? _("Selected: ") + FormatDateTime(event.maximum_tt_jd,
+                                          event.delta_t_seconds, true) +
+        "\n" + wxString::FromUTF8(eclipse::EclipseTypeName(event.type))
+      : _("No eclipse selected. Choose an event on Search & chart.");
+  m_androidSelectedSearch->SetLabel(selected);
+  m_androidSelectedLocal->SetLabel(selected);
+  // A different event must not leave contacts from the previous event under
+  // a new selection label. Explicitly recompute after changing selection.
+  m_local_results->ChangeValue(_("Calculate local contacts for the selected "
+      "eclipse. Times are UT1, not a prediction of future UTC."));
+  celestial_android::LayoutScrolls(this);
+}
+#endif
+
 bool EclipseDialog::OpenEngine(bool report_error) {
   if (m_engine_ready) return true;
   std::string error;
@@ -409,7 +661,7 @@ bool EclipseDialog::OpenEngine(bool report_error) {
     return true;
   }
   if (report_error) {
-    wxMessageBox(status.error.empty()
+    CelestialMessageBox(status.error.empty()
                      ? wxString::FromUTF8(error.c_str())
                      : wxString::FromUTF8(status.error.c_str()),
                  _("Eclipse data unavailable"), wxOK | wxICON_ERROR, this);
@@ -435,7 +687,11 @@ void EclipseDialog::UpdateDataStatus() {
       labels[index] = _("not installed");
   }
   m_data_status->SetLabel(wxString::Format(
+#ifdef __OCPN__ANDROID__
+      "DE440s: %s\nLunar orientation: %s\nLOLA limb: %s",
+#else
       "DE440s: %s   |   Lunar orientation: %s   |   LOLA limb: %s",
+#endif
       labels[0].c_str(), labels[1].c_str(), labels[2].c_str()));
   const bool de_ok = DataVerified(EclipseDataKind::De440s);
   const bool pck_ok = DataVerified(EclipseDataKind::LunarOrientation);
@@ -446,6 +702,9 @@ void EclipseDialog::UpdateDataStatus() {
   m_local_button->Enable(de_ok);
   if (!de_ok) m_engine_ready = false;
   SetInstallationControls(m_download_kind >= 0 || m_verifying);
+#ifdef __OCPN__ANDROID__
+  celestial_android::LayoutScrolls(this);
+#endif
   Layout();
 }
 
@@ -470,6 +729,9 @@ void EclipseDialog::SetInstallationControls(bool busy) {
   const bool cancellable = busy && m_verification_purpose != VERIFY_INSTALLED;
   m_cancel_install->Show(cancellable);
   m_cancel_install->Enable(cancellable && !m_cancel_requested);
+#ifdef __OCPN__ANDROID__
+  celestial_android::LayoutScrolls(this);
+#endif
   Layout();
 }
 
@@ -482,13 +744,13 @@ void EclipseDialog::SelectAndImport(EclipseDataKind kind) {
     title = _("Select moon_pa_de440_200625.bpc");
   else
     title = _("Select converted LOLA principal-axes limb pack");
-  wxFileDialog dialog(this, title, wxEmptyString, wxEmptyString,
+  CelestialFileDialog dialog(this, title, wxEmptyString, wxEmptyString,
                       _("All files (*.*)|*.*"),
                       wxFD_OPEN | wxFD_FILE_MUST_EXIST);
   if (dialog.ShowModal() != wxID_OK) return;
   if (!wxFileName::Mkdir(DataDirectory(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL) &&
       !wxFileName::DirExists(DataDirectory())) {
-    wxMessageBox(_("Unable to create the private eclipse-data directory."),
+    CelestialMessageBox(_("Unable to create the private eclipse-data directory."),
                  _("Import failed"), wxOK | wxICON_ERROR, this);
     return;
   }
@@ -497,6 +759,9 @@ void EclipseDialog::SelectAndImport(EclipseDataKind kind) {
   m_cancel_requested = false;
   m_download_kind = static_cast<int>(kind);
   m_download_temp.clear();
+#ifdef __OCPN__ANDROID__
+  m_androidImport = dialog.GetImportLease();
+#endif
   BeginVerification(kind, dialog.GetPath(), VERIFY_LOCAL_IMPORT);
 }
 
@@ -515,7 +780,11 @@ void EclipseDialog::OnOptionalData(wxCommandEvent&) {
           EclipseDataKind::LunarOrientation, PckPath()),
       celestial_navigation::InspectInstalledData(EclipseDataKind::LolaLimb,
                                                  LolaPath()));
+#ifdef __OCPN__ANDROID__
+  const int action = celestial_android::ModalResult(dialog);
+#else
   const int action = dialog.ShowModal();
+#endif
   if (action == ID_DOWNLOAD_PCK)
     BeginInstall(EclipseDataKind::LunarOrientation);
   else if (action == ID_IMPORT_PCK)
@@ -538,7 +807,7 @@ bool EclipseDialog::EnsureInstallationSpace(
   const std::uint64_t required =
       celestial_navigation::RequiredWorkingSpaceBytes(plan);
   if (available >= static_cast<double>(required)) return true;
-  wxMessageBox(
+  CelestialMessageBox(
       wxString::Format(
           _("This verified installation needs approximately %s of free "
             "working space, but only %s is available."),
@@ -551,7 +820,7 @@ bool EclipseDialog::EnsureInstallationSpace(
 void EclipseDialog::BeginInstall(EclipseDataKind requested) {
   if (m_download_kind >= 0 || m_verifying) return;
   if (DataVerified(requested)) {
-    wxMessageBox(_("That astronomy data file is already installed and "
+    CelestialMessageBox(_("That astronomy data file is already installed and "
                    "verified."),
                  _("Astronomy data"), wxOK | wxICON_INFORMATION, this);
     return;
@@ -560,7 +829,7 @@ void EclipseDialog::BeginInstall(EclipseDataKind requested) {
   std::vector<EclipseDataKind> plan =
       celestial_navigation::BuildEclipseDataInstallPlan(requested, pck_ok);
   if (requested == EclipseDataKind::LolaLimb && !pck_ok) {
-    const int answer = wxMessageBox(
+    const int answer = CelestialMessageBox(
         wxString::Format(
             _("LOLA refinement also requires the 12.3 MiB lunar-orientation "
               "file. Download and verify both files?\n\nTotal download: "
@@ -574,7 +843,7 @@ void EclipseDialog::BeginInstall(EclipseDataKind requested) {
   }
   if (!wxFileName::Mkdir(DataDirectory(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL) &&
       !wxFileName::DirExists(DataDirectory())) {
-    wxMessageBox(_("Unable to create the private astronomy-data directory."),
+    CelestialMessageBox(_("Unable to create the private astronomy-data directory."),
                  _("Installation failed"), wxOK | wxICON_ERROR, this);
     return;
   }
@@ -638,12 +907,34 @@ void EclipseDialog::TryCurrentSource() {
                        static_cast<unsigned long>(m_download_sources.size())));
   const OCPN_DLStatus status = OCPN_downloadFileBackground(
       wxString::FromUTF8(m_download_sources[m_source_index].c_str()),
-      m_download_temp, this, &m_download_handle);
+      m_download_temp,
+#ifdef __OCPN__ANDROID__
+      m_androidDownloadEvents.get(),
+#else
+      this,
+#endif
+      &m_download_handle);
   if (status != OCPN_DL_STARTED && status != OCPN_DL_NO_ERROR) {
     m_download_handle = 0;
     ++m_source_index;
     TryCurrentSource();
   }
+#ifdef __OCPN__ANDROID__
+  else {
+    // POBsoft (1985-2026): the host's background API opens a transparent,
+    // non-cancellable native spinner which intercepts Cancel and Close.
+    // This dialog already owns progress; retain the host's completion state.
+    QtAndroid::androidActivity().callObjectMethod("hideBusyCircle", "()Ljava/lang/String;");
+    QAndroidJniEnvironment env;
+    if (env->ExceptionCheck()) {
+      env->ExceptionClear();
+      OCPN_cancelDownloadFileBackground(m_download_handle);
+      m_download_handle = 0;
+      if (wxFileExists(m_download_temp)) wxRemoveFile(m_download_temp);
+      FinishInstallation(false, _("This host cannot show a cancellable astronomy-data download."));
+    }
+  }
+#endif
 }
 
 void EclipseDialog::OnDownloadEvent(wxEvent& raw) {
@@ -694,23 +985,21 @@ void EclipseDialog::BeginVerification(EclipseDataKind kind,
       wxString::FromUTF8(
           celestial_navigation::GetEclipseDataFileSpec(kind).display_name)
           .c_str()));
-  m_verification_future = std::async(std::launch::async, [kind, native_path]() {
-    const eclipse::DataPackStatus status =
-        celestial_navigation::VerifyEclipseDataFile(kind, native_path);
-    VerificationResult result;
-    result.valid = status.valid;
-    result.error = status.error;
-    return result;
-  });
+  wxString worker_error;
+  if (!m_verification_worker.Start(kind, native_path, &worker_error)) {
+    m_verifying = false;
+    m_verification_purpose = VERIFY_NONE;
+    if (purpose == VERIFY_DOWNLOAD && wxFileExists(path)) wxRemoveFile(path);
+    FinishInstallation(false, worker_error);
+    return;
+  }
   m_verification_timer.Start(100);
 }
 
 void EclipseDialog::OnVerificationTimer(wxTimerEvent&) {
-  if (!m_verifying || !m_verification_future.valid()) return;
-  if (m_verification_future.wait_for(std::chrono::milliseconds(0)) !=
-      std::future_status::ready)
-    return;
-  const VerificationResult result = m_verification_future.get();
+  if (!m_verifying) return;
+  celestial_navigation::EclipseVerificationWorker::Result result;
+  if (!m_verification_worker.TryTakeResult(&result)) return;
   m_verification_timer.Stop();
   m_verifying = false;
   if (m_verification_purpose == VERIFY_INSTALLED) {
@@ -764,8 +1053,12 @@ void EclipseDialog::FinishDownloadedVerification(bool valid,
   if (wxFileName(source).GetFullPath() == wxFileName(destination).GetFullPath())
     installed = true;
   else
+#ifdef __OCPN__ANDROID__
+    installed = celestial_android::InstallDocument(this, source, destination, &install_error);
+#else
     installed = celestial_navigation::CopyFileAtomically(source, destination,
                                                          &install_error);
+#endif
   if (purpose == VERIFY_DOWNLOAD && wxFileExists(source)) wxRemoveFile(source);
   if (!installed || !celestial_navigation::RecordVerifiedDataFile(
                         kind, destination, &install_error)) {
@@ -795,9 +1088,22 @@ void EclipseDialog::OnCancelInstall(wxCommandEvent&) {
       CN_UTF8_("Cancelling safely; a verification already in progress may "
                "finish first…"));
   if (m_download_handle) OCPN_cancelDownloadFileBackground(m_download_handle);
+#ifdef __OCPN__ANDROID__
+  // POBsoft (1985-2026): Android cancellation stops the host event timer;
+  // it does not send an END event. Finish here unless verification owns it.
+  m_download_handle = 0;
+  if (!m_verifying) {
+    if (wxFileExists(m_download_temp)) wxRemoveFile(m_download_temp);
+    FinishInstallation(false, _("Astronomy-data installation was cancelled."));
+  }
+#endif
 }
 
 void EclipseDialog::FinishInstallation(bool success, const wxString& message) {
+#ifdef __OCPN__ANDROID__
+  m_androidImport.reset();
+  m_androidDownloadEvents->Discard();
+#endif
   m_download_handle = 0;
   m_download_kind = -1;
   m_download_sources.clear();
@@ -809,7 +1115,7 @@ void EclipseDialog::FinishInstallation(bool success, const wxString& message) {
   UpdateDataStatus();
   SetInstallationControls(false);
   if (!message.empty())
-    wxMessageBox(
+    CelestialMessageBox(
         message,
         success ? _("Astronomy data ready") : _("Astronomy-data installation"),
         wxOK | (success ? wxICON_INFORMATION : wxICON_WARNING), this);
@@ -841,9 +1147,12 @@ void EclipseDialog::StartNextInstalledDataCheck() {
 }
 
 void EclipseDialog::OnFind(wxCommandEvent&) {
+#ifdef __OCPN__ANDROID__
+  celestial_android::CommitNumbers(this);
+#endif
   if (!OpenEngine(true)) return;
   if (m_end_year->GetValue() < m_start_year->GetValue()) {
-    wxMessageBox(_("The ending year must not precede the starting year."),
+    CelestialMessageBox(_("The ending year must not precede the starting year."),
                  _("Invalid search"), wxOK | wxICON_WARNING, this);
     return;
   }
@@ -857,11 +1166,30 @@ void EclipseDialog::OnFind(wxCommandEvent&) {
       !eclipse::CalendarToJulianDate(end, &end_jd, &error))
     return;
   wxBusyCursor busy;
+#ifdef __OCPN__ANDROID__
+  wxString workerError;
+  bool found = false;
+  std::vector<eclipse::EclipseEvent> events;
+  const bool completed = celestial_android::RunJob(this, _("Search eclipses"),
+      [&](celestial_android::JobState& state) {
+        state.Progress("Searching the selected ephemeris date range...");
+        m_engine.SetAndroidCheckpoint([&]() { state.Checkpoint(); });
+        found = m_engine.FindEvents(start_jd, end_jd, &events, &error);
+      }, &workerError);
+  m_engine.SetAndroidCheckpoint({});
+  if (!completed && workerError.empty()) return;
+  if (!workerError.empty()) error = workerError.ToStdString();
+  if (!found) {
+#else
   if (!m_engine.FindEvents(start_jd, end_jd, &m_events, &error)) {
-    wxMessageBox(wxString::FromUTF8(error.c_str()), _("Eclipse search failed"),
+#endif
+    CelestialMessageBox(wxString::FromUTF8(error.c_str()), _("Eclipse search failed"),
                  wxOK | wxICON_ERROR, this);
     return;
   }
+#ifdef __OCPN__ANDROID__
+  m_events = std::move(events);
+#endif
   m_event_list->DeleteAllItems();
   for (std::size_t index = 0; index < m_events.size(); ++index) {
     const eclipse::EclipseEvent& event = m_events[index];
@@ -880,15 +1208,30 @@ void EclipseDialog::OnFind(wxCommandEvent&) {
     m_event_list->SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
     m_event_list->EnsureVisible(0);
   }
+#ifdef __OCPN__ANDROID__
+  RefreshAndroidEvents();
+#endif
 }
 
-void EclipseDialog::OnSelection(wxListEvent&) {}
+void EclipseDialog::OnSelection(wxListEvent&) {
+#ifdef __OCPN__ANDROID__
+  UpdateAndroidSelection();
+#endif
+}
 
 bool EclipseDialog::SelectedEvent(eclipse::EclipseEvent* event) const {
+#ifdef __OCPN__ANDROID__
+  // wxQt's report-list selected-state accessor can retain the previous row
+  // when selection is driven by a separate native card view. The visible
+  // Android selection is the authoritative index into the unchanged model.
+  const long index = m_androidEvents->currentRow();
+  if (!event) return false;
+#else
   const long selected =
       m_event_list->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
   if (selected < 0 || !event) return false;
   const long index = m_event_list->GetItemData(selected);
+#endif
   if (index < 0 || static_cast<std::size_t>(index) >= m_events.size())
     return false;
   *event = m_events[static_cast<std::size_t>(index)];
@@ -898,18 +1241,50 @@ bool EclipseDialog::SelectedEvent(eclipse::EclipseEvent* event) const {
 void EclipseDialog::OnPlot(wxCommandEvent&) {
   eclipse::EclipseEvent event;
   if (!SelectedEvent(&event)) {
-    wxMessageBox(_("Select an eclipse first."), _("Eclipse planner"),
+    CelestialMessageBox(_("Select an eclipse first."), _("Eclipse planner"),
                  wxOK | wxICON_INFORMATION, this);
     return;
   }
   std::string error;
+#ifdef __OCPN__ANDROID__
+  const bool wantPath = m_plot_path->GetValue(), wantContours = m_plot_contours->GetValue();
+  std::vector<eclipse::PathPoint> path;
+  std::vector<eclipse::MagnitudeContour> contours;
+  wxString workerError;
+  const bool completed = celestial_android::RunJob(this, _("Calculate eclipse geometry"),
+      [&](celestial_android::JobState& state) {
+        m_engine.SetAndroidCheckpoint([&]() { state.Checkpoint(); });
+        if (wantPath && event.type != eclipse::kPartialEclipse) {
+          state.Progress("Calculating the central path...");
+          if (!m_engine.BuildCentralPath(event, 120.0, &path, &error)) throw std::runtime_error(error);
+        }
+        if (wantContours) {
+          state.Progress("Calculating magnitude contours...");
+          const double values[] = {0.2, 0.4, 0.6, 0.8, 0.9};
+          if (!m_engine.BuildMagnitudeContours(event, std::vector<double>(values, values + 5), 2.0, 300.0, &contours, &error)) throw std::runtime_error(error);
+        }
+      }, &workerError);
+  m_engine.SetAndroidCheckpoint({});
+  if (!completed) {
+    if (!workerError.empty()) CelestialMessageBox(workerError, _("Eclipse geometry"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+  m_path = std::move(path); m_contours = std::move(contours);
+  m_plotted_delta_t = event.delta_t_seconds;
+  // Explicit Android chart handoff. Keep the sheet alive, retaining its
+  // precise inputs and selection; the desktop chart workflow is unchanged.
+  JumpToPosition(event.greatest_position.latitude_deg,
+                 event.greatest_position.longitude_deg, 5e-4);
+  Hide();
+  m_plugin->OnDialogClose();
+#else
   wxBusyCursor busy;
   m_path.clear();
   m_contours.clear();
   m_plotted_delta_t = event.delta_t_seconds;
   if (m_plot_path->GetValue() && event.type != eclipse::kPartialEclipse &&
       !m_engine.BuildCentralPath(event, 120.0, &m_path, &error)) {
-    wxMessageBox(wxString::FromUTF8(error.c_str()),
+    CelestialMessageBox(wxString::FromUTF8(error.c_str()),
                  _("Path calculation failed"), wxOK | wxICON_ERROR, this);
     return;
   }
@@ -918,11 +1293,12 @@ void EclipseDialog::OnPlot(wxCommandEvent&) {
     if (!m_engine.BuildMagnitudeContours(
             event, std::vector<double>(values, values + 5), 2.0, 300.0,
             &m_contours, &error)) {
-      wxMessageBox(wxString::FromUTF8(error.c_str()),
+      CelestialMessageBox(wxString::FromUTF8(error.c_str()),
                    _("Contour calculation failed"), wxOK | wxICON_ERROR, this);
       return;
     }
   }
+#endif
   RequestRefresh(GetOCPNCanvasWindow());
 }
 
@@ -964,19 +1340,43 @@ void EclipseDialog::OnLocal(wxCommandEvent&) {
   eclipse::EclipseEvent event;
   eclipse::GeoPoint observer;
   if (!SelectedEvent(&event) || !Observer(&observer)) {
-    wxMessageBox(_("Select an eclipse and enter a valid latitude/longitude."),
+    CelestialMessageBox(_("Select an eclipse and enter a valid latitude/longitude."),
                  _("Local circumstances"), wxOK | wxICON_WARNING, this);
     return;
   }
+#ifndef __OCPN__ANDROID__
   m_latitude->ChangeValue(FormatNavigationAngle(
       observer.latitude_deg, NavigationAngleKind::Latitude, true));
   m_longitude->ChangeValue(FormatNavigationAngle(
       observer.longitude_deg, NavigationAngleKind::Longitude, true));
+#endif
   std::string error;
   eclipse::LocalContacts contacts;
+#ifdef __OCPN__ANDROID__
+  const bool terrain = m_use_lola->GetValue();
+  const std::string pckPath = PckPath().ToStdString(), lolaPath = LolaPath().ToStdString();
+  wxString workerError;
+  const bool completed = celestial_android::RunJob(this, _("Calculate local eclipse"),
+      [&](celestial_android::JobState& state) {
+        m_engine.SetAndroidCheckpoint([&]() { state.Checkpoint(); });
+        state.Progress("Solving local contacts...");
+        if (!m_engine.SolveLocalContacts(event, observer, 0.0, &contacts, &error)) throw std::runtime_error(error);
+        if (terrain && contacts.c1.valid) {
+          state.Progress("Refining contacts using verified lunar terrain...");
+          eclipse::PckKernel pck; eclipse::LunarLimbGrid lola;
+          if (!pck.Open(pckPath, &error) || !lola.Open(lolaPath, &error) ||
+              !m_engine.RefineContactsWithLola(event, observer, 0.0, pck, lola, &contacts, &error)) throw std::runtime_error(error);
+        }
+      }, &workerError);
+  m_engine.SetAndroidCheckpoint({});
+  if (!completed) {
+    if (!workerError.empty()) CelestialMessageBox(workerError, _("Local eclipse"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+#else
   wxBusyCursor busy;
   if (!m_engine.SolveLocalContacts(event, observer, 0.0, &contacts, &error)) {
-    wxMessageBox(wxString::FromUTF8(error.c_str()),
+    CelestialMessageBox(wxString::FromUTF8(error.c_str()),
                  _("Local calculation failed"), wxOK | wxICON_ERROR, this);
     return;
   }
@@ -987,11 +1387,12 @@ void EclipseDialog::OnLocal(wxCommandEvent&) {
         !lola.Open(LolaPath().ToStdString(), &error) ||
         !m_engine.RefineContactsWithLola(event, observer, 0.0, pck, lola,
                                          &contacts, &error)) {
-      wxMessageBox(wxString::FromUTF8(error.c_str()),
+      CelestialMessageBox(wxString::FromUTF8(error.c_str()),
                    _("LOLA refinement failed"), wxOK | wxICON_ERROR, this);
       return;
     }
   }
+#endif
   if (!contacts.c1.valid) {
     m_local_results->SetValue(
         _("This eclipse is not visible from the entered position."));
@@ -1039,6 +1440,9 @@ void EclipseDialog::RunIntegrationScenario2027() {
     m_event_list->SetItemState(static_cast<long>(index), wxLIST_STATE_SELECTED,
                                wxLIST_STATE_SELECTED);
     m_event_list->EnsureVisible(static_cast<long>(index));
+#ifdef __OCPN__ANDROID__
+    m_androidEvents->setCurrentRow(static_cast<int>(index));
+#endif
     break;
   }
   OnPlot(command);

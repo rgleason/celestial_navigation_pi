@@ -5,6 +5,7 @@
 #include <cmath>
 #include <limits>
 #include <set>
+#include <map>
 
 namespace lunar_session {
 namespace {
@@ -61,6 +62,7 @@ struct Parameters {
 Evaluation Evaluate(const std::vector<SessionObservation>& observations,
                     const Options& options, const Parameters& parameters) {
   Evaluation result;
+  std::set<std::string> used_readings;
   for (std::size_t index = 0; index < observations.size(); ++index) {
     if (options.cancel_requested && options.cancel_requested()) {
       result.error = "The lunar-sequence calculation was cancelled";
@@ -71,11 +73,17 @@ Evaluation Evaluate(const std::vector<SessionObservation>& observations,
     lunar_distance::GeographicPoint position(parameters.latitude,
                                              parameters.longitude);
     if (options.moving_observer && options.speed_knots != 0.0) {
-      position = Destination(
-          position, options.course_true_deg,
-          options.speed_knots * entry.epoch_offset_seconds / 3600.0);
+      auto motion = entry.settings;
+      motion.moving_observer = true;
+      motion.course_true_deg = options.course_true_deg;
+      motion.speed_knots = options.speed_knots;
+      position = lunar_distance::AdvanceObserver(position, motion,
+                                                 entry.epoch_offset_seconds);
     }
     lunar_distance::Observation settings = entry.settings;
+    settings.moving_observer = options.moving_observer;
+    settings.course_true_deg = options.course_true_deg;
+    settings.speed_knots = options.speed_knots;
     settings.index_error_arcmin += parameters.bias;
     double cached_seconds = std::numeric_limits<double>::quiet_NaN();
     lunar_distance::EphemerisSample cached_sample;
@@ -110,6 +118,9 @@ Evaluation Evaluate(const std::vector<SessionObservation>& observations,
         std::max(0.05, settings.moon_altitude_uncertainty_arcmin),
         std::max(0.05, settings.body_altitude_uncertainty_arcmin)};
     for (int component = 0; component < 3; ++component) {
+      if (!entry.reading_ids[component].empty() &&
+          !used_readings.insert(entry.reading_ids[component]).second)
+        continue;
       ModelResidual residual;
       residual.observation = index;
       residual.component = component;
@@ -227,6 +238,7 @@ Fit Optimise(const std::vector<SessionObservation>& observations,
       Evaluate(observations, options, FromVector(values, options));
   if (!current.valid) return fit;
   double current_cost = Cost(current, options.robust_fit);
+  bool converged = false;
   const std::vector<double> finite_step =
       options.solve_position
           ? (options.estimate_common_index_bias
@@ -257,6 +269,21 @@ Fit Optimise(const std::vector<SessionObservation>& observations,
         jacobian[row][column] = (next.residuals[row].standardized -
                                  current.residuals[row].standardized) /
                                 finite_step[column];
+#ifdef __OCPN__ANDROID__
+      // POBsoft (1985-2026): symmetric derivatives reduce the one-sided
+      // truncation error at a real, noisy observation's stationary fit.
+      perturbed[column] = values[column] - finite_step[column];
+      const Evaluation previous =
+          Evaluate(observations, options, FromVector(perturbed, options));
+      if (!previous.valid || previous.residuals.size() != current.residuals.size()) {
+        derivative_ok = false;
+        break;
+      }
+      for (int row = 0; row < rows; ++row)
+        jacobian[row][column] = (next.residuals[row].standardized -
+                                 previous.residuals[row].standardized) /
+                                (2.0 * finite_step[column]);
+#endif
     }
     if (!derivative_ok) break;
     std::vector<std::vector<double>> normal(columns,
@@ -272,16 +299,42 @@ Fit Optimise(const std::vector<SessionObservation>& observations,
           normal[a][b] += weight * jacobian[row][a] * jacobian[row][b];
       }
     }
+    // A heavily damped/rejected step can be tiny far from a solution. Test
+    // the undamped normal correction instead, at the current accepted point.
+    std::vector<double> undamped;
+    if (!SolveLinear(normal, rhs, &undamped)) break;
+    double correction_norm = 0;
+    for (double value : undamped) correction_norm += value * value;
+    bool correction_small = std::isfinite(correction_norm) && correction_norm < 1e-12;
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): assess the undamped correction in physical units,
+    // above millisecond epoch quantisation, far below observation precision.
+    correction_small = std::isfinite(correction_norm) &&
+                       std::fabs(undamped[0] * 3600.0) < 0.01;
+    int parameter = 1;
+    if (options.solve_position) {
+      const double latitude = undamped[parameter++];
+      const double longitude = undamped[parameter++] *
+          std::cos(values[1] * kDegToRad);
+      correction_small = correction_small &&
+                         std::hypot(latitude, longitude) * 60.0 < 0.0005;
+    }
+    if (options.estimate_common_index_bias)
+      correction_small = correction_small && std::fabs(undamped[parameter]) < 0.0001;
+#endif
+    if (correction_small) {
+      fit.normal = normal;
+      converged = true;
+      break;
+    }
     std::vector<std::vector<double>> damped = normal;
     for (int column = 0; column < columns; ++column)
       damped[column][column] += damping * std::max(1.0, normal[column][column]);
     std::vector<double> increment;
     if (!SolveLinear(damped, rhs, &increment)) break;
-    double step_norm = 0.0;
     std::vector<double> trial = values;
     for (int column = 0; column < columns; ++column) {
       trial[column] += increment[column];
-      step_norm += increment[column] * increment[column];
     }
     Parameters trial_parameters = FromVector(trial, options);
     if (std::fabs(trial_parameters.latitude) > 89.8) {
@@ -299,13 +352,12 @@ Fit Optimise(const std::vector<SessionObservation>& observations,
       current_cost = trial_cost;
       fit.normal = normal;
       damping = std::max(1e-9, damping * 0.3);
-      if (step_norm < 1e-12) break;
     } else {
       damping *= 10.0;
       if (damping > 1e12) break;
     }
   }
-  fit.valid = current.valid;
+  fit.valid = current.valid && converged && std::isfinite(current_cost);
   fit.parameters = FromVector(values, options);
   fit.evaluation = current;
   fit.cost = current_cost;
@@ -364,7 +416,10 @@ Candidate MakeCandidate(const Fit& fit, const Options& options,
       const int degrees_of_freedom =
           std::max(1, static_cast<int>(fit.evaluation.residuals.size()) -
                           static_cast<int>(fit.normal.size()));
-      const double variance_scale = fit.cost / degrees_of_freedom;
+      // Supplied sigmas are measurement errors, not arbitrary fit weights.
+      // An unusually small residual cannot make those errors disappear.
+      const double variance_scale =
+          std::max(1.0, fit.cost / degrees_of_freedom);
       candidate.time_uncertainty_seconds =
           3600.0 * std::sqrt(std::max(0.0, inverse[0][0] * variance_scale));
       if (options.solve_position && inverse.size() >= 3) {
@@ -390,11 +445,53 @@ Result Solve(const std::vector<SessionObservation>& observations,
     return result;
   }
   int enabled = 0;
+  int independent_readings = 0;
+  std::map<std::string, std::vector<double>> readings;
   double earliest_offset = std::numeric_limits<double>::infinity();
   double latest_offset = -std::numeric_limits<double>::infinity();
   for (const auto& observation : observations) {
     if (!observation.enabled) continue;
     ++enabled;
+    const auto& s = observation.settings;
+    const double values[] = {s.raw_distance_deg, s.moon_altitude_deg,
+                             s.body_altitude_deg};
+    const double sigmas[] = {s.distance_uncertainty_arcmin,
+                             s.moon_altitude_uncertainty_arcmin,
+                             s.body_altitude_uncertainty_arcmin};
+    for (int component = 0; component < 3; ++component) {
+      const auto& id = observation.reading_ids[component];
+      if (id.empty()) {
+        ++independent_readings;
+        continue;
+      }
+      const double offsets[] = {0.0, s.moon_time_offset_seconds,
+                                s.body_time_offset_seconds};
+      const std::vector<double> signature = {
+          values[component],
+          sigmas[component],
+          std::round((observation.epoch_offset_seconds + offsets[component]) * 1000.0) / 1000.0,
+          s.index_error_arcmin,
+          s.eye_height_m,
+          s.pressure_hpa,
+          s.temperature_c,
+          double(s.artificial_horizon),
+          double(s.dip_short),
+          s.dip_short_distance_m,
+          double(s.use_ellipsoid),
+          component == 0   ? double(s.moon_contact)
+          : component == 1 ? double(s.moon_altitude_limb)
+                           : double(s.body_altitude_limb),
+          component == 0 ? double(s.body_contact) : 0.0};
+      const auto inserted = readings.emplace(id, signature);
+      if (inserted.second)
+        ++independent_readings;
+      else if (inserted.first->second != signature) {
+        result.error =
+            "A shared reading has conflicting angles, times or reduction "
+            "settings; reconcile its recorded inputs before solving";
+        return result;
+      }
+    }
     earliest_offset =
         std::min(earliest_offset, observation.epoch_offset_seconds);
     latest_offset = std::max(latest_offset, observation.epoch_offset_seconds);
@@ -414,11 +511,15 @@ Result Solve(const std::vector<SessionObservation>& observations,
   }
   const int unknowns = 1 + (options.solve_position ? 2 : 0) +
                        (options.estimate_common_index_bias ? 1 : 0);
-  if (enabled * 3 <= unknowns) {
+  if (independent_readings <= unknowns) {
     result.error =
         "The session is not overdetermined; add another lunar observation";
     return result;
   }
+  if (independent_readings < enabled * 3)
+    result.warnings.push_back(
+        "Shared readings were counted once, not as independent repeated "
+        "measurements");
   if (!(options.start_correction_seconds < options.end_correction_seconds)) {
     result.error = "The watch-correction search interval is invalid";
     return result;

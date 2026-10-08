@@ -1,0 +1,39 @@
+{
+  "declared_before_remaining_physical_checks": true,
+  "runtime_source": "a3c42bf2e63e8897734d31f0d9f2367f0963183e",
+  "selected_time": "2026-03-29T01:30:12.987Z",
+  "computer_local_zone": "Europe/London",
+  "computer_local_time": "2026-03-29T02:30:12.987000+01:00",
+  "fractional_second_tolerance_seconds": 0.001,
+  "polar_summer": {
+    "position": [
+      78,
+      15
+    ],
+    "date": "2024-06-21",
+    "sun": "continuously above horizon",
+    "civil": "continuously above twilight limit",
+    "upper_transit_utc": "11:02",
+    "transit_tolerance_seconds": 300
+  },
+  "polar_winter": {
+    "position": [
+      78,
+      15
+    ],
+    "date": "2024-12-21",
+    "sun": "continuously below horizon",
+    "civil": "continuously below twilight limit"
+  },
+  "southern_noon": {
+    "position": [
+      -35,
+      0
+    ],
+    "date": "2024-06-21",
+    "observed_geometric_altitude_degrees": 31.563161,
+    "expected_latitude_degrees": -35,
+    "latitude_tolerance_arcminutes": 0.1,
+    "polaris": "below horizon; refuse latitude solution"
+  }
+}

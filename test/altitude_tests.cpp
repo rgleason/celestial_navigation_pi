@@ -17,6 +17,8 @@
 #include <gtest/gtest.h>
 #include "OcpnApiCompat.h"
 #include "Sight.h"
+#include "UtcDateTime.h"
+#include "eclipse/dut1.h"
 #include <cmath>
 #include <iomanip>
 #include <sstream>
@@ -39,6 +41,21 @@ static int error_intercept;
 static int error_azimuth;
 static int error_gha;
 static int error_dec;
+
+// Printed Almanac ephemeris rows use UT1, while Sight takes UTC. Keep the
+// inherited reference angles and tolerances untouched; align only the epoch.
+// Measured intercept and inverse-Hs tests below continue to use their UTC.
+static wxDateTime AlmanacUt1ToUtc(const wxDateTime& ut1) {
+    wxDateTime utc = ut1;
+    for (int i = 0; i < 3; ++i) {
+        const auto dated = eclipse::LookupDut1(
+            UtcDateTime::ToInstant(utc).GetJulianDayNumber());
+        EXPECT_TRUE(dated.available);
+        if (!dated.available) return ut1;
+        utc = UtcDateTime::AddSeconds(ut1, -dated.seconds);
+    }
+    return utc;
+}
 
 static void commontest(Sight &sight, wxDateTime &datetime,
                        const char *body, int line, const char *date,
@@ -407,6 +424,7 @@ TEST_F(AltitudeTest, SunMoon) {
 
         wxDateTime datetime;
         ASSERT_TRUE(datetime.ParseDateTime(data.date)) << "Failed to parse datetime";
+        datetime = AlmanacUt1ToUtc(datetime);
 
         Sight sight1(Sight::ALTITUDE, "Sun", Sight::CENTER, datetime, 0, DegMin2DecDeg(42, 42), 1);
         sight1.m_IndexError = 0;
@@ -547,6 +565,7 @@ TEST_F(AltitudeTest, Planet) {
 
         wxDateTime datetime;
         ASSERT_TRUE(datetime.ParseDateTime(data.date)) << "Failed to parse datetime";
+        datetime = AlmanacUt1ToUtc(datetime);
 
         Sight sight1(Sight::ALTITUDE, "Venus", Sight::CENTER, datetime, 0,
                      DegMin2DecDeg(42, 42), 1);
@@ -755,6 +774,7 @@ TEST_F(AltitudeTest, Stars) {
 
         wxDateTime datetime;
         ASSERT_TRUE(datetime.ParseDateTime(data.date)) << "Failed to parse datetime";
+        datetime = AlmanacUt1ToUtc(datetime);
 
         Sight sight(Sight::ALTITUDE, data.body, Sight::CENTER, datetime, 0,
                     DegMin2DecDeg(42, 42), 1);

@@ -1,0 +1,20 @@
+{
+  "C04": {
+    "url": "https://datacenter.iers.org/data/latestVersion/EOP_20u24_C04_one_file_1962-now.txt",
+    "sha256": "1802f8833d58ca3ac1ee668a832368a0a28527ef7a5804ced02f55339c8fd160",
+    "retrieved_utc": "2026-09-09T19:40:18.600545+00:00",
+    "accepted_rows": 19946
+  },
+  "finals": {
+    "url": "https://datacenter.iers.org/data/9/finals2000A.all",
+    "sha256": "80119694522717471744a78b28bc872e998523f8b1e2007424f9cd08af7ac4c6",
+    "retrieved_utc": "2026-09-09T19:40:19.899688+00:00",
+    "accepted_rows": 19976
+  },
+  "generated_utc": "2026-09-09T19:40:19.929177+00:00",
+  "data_sha256": "0f02b2f552df9f2cddcfe6ab791195c99aec64ddfce0aa9bd30c719c01bd69ee",
+  "count": 20343,
+  "start_utc": "1972-01-01",
+  "end_utc": "2027-09-11",
+  "policy": "Final C04 history then Bulletin A rapid/predicted UT1-UTC; no extrapolation"
+}

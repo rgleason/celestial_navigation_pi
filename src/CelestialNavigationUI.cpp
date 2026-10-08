@@ -53,7 +53,7 @@ CelestialNavigationDialogBase::CelestialNavigationDialogBase( wxWindow* parent, 
 	m_bEditSight = new wxButton( this, wxID_ANY, _("Edit"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer24->Add( m_bEditSight, 0, wxALL|wxEXPAND, 5 );
 
-	m_tbHide = new wxToggleButton( this, wxID_ANY, _("Hide"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_tbHide = new wxToggleButton( this, wxID_ANY, _("Hide Sights"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer24->Add( m_tbHide, 0, wxALL|wxEXPAND, 5 );
 
 	m_bDeleteSight = new wxButton( this, wxID_ANY, _("Delete"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -353,7 +353,7 @@ SightDialogBase::SightDialogBase( wxWindow* parent, wxWindowID id, const wxStrin
 	fgSizer12->SetFlexibleDirection( wxBOTH );
 	fgSizer12->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
-	m_sCertaintySeconds = new wxSpinCtrl( sbSizer2->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 10800, 3 );
+	m_sCertaintySeconds = new wxSpinCtrl( sbSizer2->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 172800, 3 );
 	fgSizer12->Add( m_sCertaintySeconds, 0, wxALL, 5 );
 
 	m_staticText13 = new wxStaticText( sbSizer2->GetStaticBox(), wxID_ANY, _("Seconds"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -811,7 +811,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	m_cbTowards = new wxCheckBox( this, wxID_ANY, _("Towards"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_cbTowards->Enable( false );
 
-	bSizer4->Add( m_cbTowards, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	bSizer4->Add( m_cbTowards, 0, wxALL|wxEXPAND, 5 );
 
 
 	m_Body->Add( bSizer4, 1, wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
@@ -822,7 +822,7 @@ FindBodyDialogBase::FindBodyDialogBase( wxWindow* parent, wxWindowID id, const w
 	m_cbAway = new wxCheckBox( this, wxID_ANY, _("Away"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_cbAway->Enable( false );
 
-	bSizer41->Add( m_cbAway, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	bSizer41->Add( m_cbAway, 0, wxALL|wxEXPAND, 5 );
 
 
 	m_Body->Add( bSizer41, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );

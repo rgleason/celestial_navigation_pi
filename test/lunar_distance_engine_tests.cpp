@@ -6,6 +6,60 @@
 
 namespace ld = lunar_distance;
 
+TEST(LunarDistanceEngine, IndependentKnownPositionCheckExposesSightError) {
+  ld::Observation observation;
+  observation.use_ellipsoid = true;
+  observation.moon_contact = ld::DistanceContact::Center;
+  observation.body_contact = ld::DistanceContact::Center;
+  observation.pressure_hpa = 0;
+  observation.raw_distance_deg = 60;
+  ld::EphemerisSample vacuum;
+  vacuum.predicted_distance_deg = 60;
+  vacuum.moon_geographic_longitude_deg = 0;
+  vacuum.body_geographic_longitude_deg = 60;
+  auto provider = [vacuum](double epoch, ld::EphemerisSample* sample, std::string*) {
+    EXPECT_DOUBLE_EQ(0, epoch);  // Never apply the solved lunar watch correction.
+    *sample = vacuum;
+    return true;
+  };
+  for (double error : {-1., 0., 1.}) {
+    observation.raw_distance_deg = 60 + error/60;
+    // Deliberately inconsistent measured altitudes cannot absorb the LD error.
+    observation.moon_altitude_deg = 5;
+    observation.body_altitude_deg = 80;
+    observation.separate_times = true;
+    observation.moon_time_offset_seconds = -300;
+    observation.body_time_offset_seconds = 120;
+    const auto check = ld::CheckDistanceAtPosition(observation, provider, {0, 30});
+    ASSERT_TRUE(check.valid) << check.error;
+    EXPECT_NEAR(60, check.true_distance_deg, 1e-10);
+    EXPECT_NEAR(60, check.predicted_raw_distance_deg, 1e-10);
+    EXPECT_NEAR(60+error/60, check.cleared_distance_deg, 1e-10);
+    EXPECT_NEAR(error, check.lunar_error_arcmin, 1e-8);
+  }
+  EXPECT_FALSE(ld::CheckDistanceAtPosition(observation, provider, {NAN, 30}).valid);
+  EXPECT_FALSE(ld::CheckDistanceAtPosition(observation, provider, {0, 181}).valid);
+  EXPECT_FALSE(ld::CheckDistanceAtPosition(observation, {}, {0, 30}).valid);
+  auto failed = [](double, ld::EphemerisSample*, std::string* error) {
+    *error = "offline data unavailable"; return false;
+  };
+  const auto unavailable = ld::CheckDistanceAtPosition(observation, failed, {0, 30});
+  EXPECT_FALSE(unavailable.valid);
+  EXPECT_EQ("offline data unavailable", unavailable.error);
+}
+
+TEST(LunarDistanceEngine, Wgs84MotionMatchesIndependentGeographicLibExample) {
+  ld::Observation settings;
+  settings.use_ellipsoid = true;
+  settings.moving_observer = true;
+  settings.course_true_deg = 225;
+  settings.speed_knots = 20000000.0 / 1852.0;
+  // https://geographiclib.sourceforge.io/html/python/examples.html
+  const auto endpoint = ld::AdvanceObserver({-32.06, 115.74}, settings, 3600);
+  EXPECT_NEAR(endpoint.latitude_deg, 32.11195529, 1e-7);
+  EXPECT_NEAR(endpoint.longitude_deg, -63.95925278, 1e-7);
+}
+
 namespace {
 
 ld::Observation TypicalObservation() {
@@ -169,6 +223,30 @@ TEST(LunarDistanceEngine, ReportsMultipleTimeCandidates) {
   EXPECT_FALSE(result.warnings.empty());
 }
 
+TEST(LunarDistanceEngine, ExactScanAndMidpointRootsAreNotRefinedAway) {
+  const auto observation = TypicalObservation();
+  const auto base = TypicalSample();
+  const auto clearance = ld::ClearDistance(observation, base);
+  ASSERT_TRUE(clearance.valid);
+  for (double expected : {-20.0, 0.0, 5.0, 20.0}) {
+    for (double slope : {-1.0, 1.0}) {
+      auto ephemeris = [=](double seconds, ld::EphemerisSample* sample, std::string*) {
+        *sample = base;
+        sample->predicted_distance_deg = clearance.cleared_distance_deg + slope * (seconds - expected) / 7200.0;
+        return true;
+      };
+      ld::SolveOptions options;
+      options.start_offset_seconds = -20;
+      options.end_offset_seconds = 20;
+      options.scan_step_seconds = 10;
+      const auto result = ld::SolveTime(observation, ephemeris, options);
+      ASSERT_TRUE(result.valid) << result.error;
+      ASSERT_EQ(1u, result.candidates.size());
+      EXPECT_DOUBLE_EQ(expected, result.candidates[0].offset_seconds);
+    }
+  }
+}
+
 TEST(LunarDistanceEngine, ExplainsNoMatch) {
   const ld::Observation observation = TypicalObservation();
   ld::EphemerisSample base = TypicalSample();
@@ -202,6 +280,31 @@ TEST(LunarDistanceEngine, TwoCorrectedAltitudesRecoverPositionAndLongitude) {
     nearest = std::min(nearest, ld::GreatCircleDistanceNm(candidate, truth));
   EXPECT_LT(nearest, 1e-5);
   EXPECT_GT(result.circle_crossing_angle_deg, 1.0);
+  ASSERT_EQ(result.candidates.size(), result.geometry.size());
+  for (const auto& geometry : result.geometry) {
+    EXPECT_GE(geometry.azimuth_separation_deg, 0.0);
+    EXPECT_LE(geometry.azimuth_separation_deg, 180.0);
+    EXPECT_NEAR(geometry.effective_crossing_angle_deg,
+                std::min(geometry.azimuth_separation_deg,
+                         180.0 - geometry.azimuth_separation_deg),
+                1e-10);
+    EXPECT_NEAR(geometry.effective_crossing_angle_deg,
+                result.circle_crossing_angle_deg, 1e-9);
+  }
+}
+
+TEST(LunarDistanceEngine, ReportsDeltaZnAndAcuteEffectiveCrossing) {
+  const auto geometry = ld::CalculatePositionGeometry(
+      ld::GeographicPoint{12.0, -24.0},
+      ld::GeographicPoint{30.0, 15.0},
+      ld::GeographicPoint{-20.0, 150.0});
+  EXPECT_GE(geometry.azimuth_separation_deg, 0.0);
+  EXPECT_LE(geometry.azimuth_separation_deg, 180.0);
+  EXPECT_NEAR(geometry.effective_crossing_angle_deg,
+              std::min(geometry.azimuth_separation_deg,
+                       180.0 - geometry.azimuth_separation_deg),
+              1e-10);
+  EXPECT_LE(geometry.effective_crossing_angle_deg, 90.0);
 }
 
 TEST(LunarDistanceEngine, InconsistentAltitudesDoNotInventLongitude) {

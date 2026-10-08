@@ -29,15 +29,22 @@
 #define _CELESTIAL_NAVIGATION_SIGHT_H_
 
 #include <list>
+#ifdef __OCPN__ANDROID__
+#include <functional>
+#include <string>
+#endif
+#include <limits>
 #include <vector>
 #include "pidc.h"
 #include "LunarDistanceEngine.h"
+#include "eclipse/dut1.h"
+#include "HorizonPosition.h"
+#include "SightOverlay.h"
 
 #ifdef __MSVC__
 #define _USE_MATH_DEFINES
 #include <float.h>
 #include <iostream>
-#include <limits>
 #include <cmath>
 
 #ifndef NAN
@@ -76,7 +83,9 @@ public:
 
   Sight();
   Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
-        double timecertainty, double measurement, double measurementcertainty);
+        double timecertainty, double measurement, double measurementcertainty
+        , bool calculationOnly = false
+        );
 
   ~Sight();
 
@@ -87,14 +96,19 @@ public:
   bool IsCalculated() const { return m_bCalculated; }
   bool IsSelected() const { return m_bSelected; }
 
-  void Recompute(int clock_offset);
+  void Recompute(double clock_offset);
   void RebuildPolygons();
 
   wxString Alminac(wxDateTime time, double lat, double lon, double ghaast,
                    double rad, double SD, double HP);
   void RecomputeAltitude();
   void RecomputeAzimuth();
-  void RecomputeLunar();
+  void RecomputeLunar(int preferred_candidate = -1
+#ifdef __OCPN__ANDROID__
+                      , bool prepare_only = false
+#endif
+                      );
+  int SelectLunarCandidate(int preferred_candidate = -1) const;
   void RecomputeHorizon();
 
   void RebuildPolygonsAltitude();
@@ -102,8 +116,10 @@ public:
   void RebuildPolygonsHorizon();
 
   double HorizonTrueBearing() const;
+  bool HorizonBearingMatchesEvent() const;
+  std::vector<horizon_position::Position> HorizonPositionCandidates();
   bool HorizonEstimatedPosition(double* lat, double* lon);
-  double HorizonEstimateUncertaintyNm() const;
+  wxString HorizonPositionSummary();
   wxString HorizonEventName() const;
   wxString HorizonMeasurementText() const;
 
@@ -112,6 +128,18 @@ public:
   // and joint solutions cannot drift into different astronomical models.
   lunar_distance::Observation LunarObservation() const;
   const lunar_distance::EphemerisFunction& LunarEphemeris() const {
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): worker/candidate copies retain a callback whose
+    // captured owner must be rebound before the temporary object is reused.
+    if (m_LunarEphemeris && m_androidLunarEphemerisOwner != this) {
+      auto* self = const_cast<Sight*>(this);
+      const bool usesDe440 = m_LunarUsesDe440;
+      const bool dut1Fallback = m_LunarDut1Fallback;
+      self->RecomputeLunar(-1, true);
+      self->m_LunarUsesDe440 = usesDe440;
+      self->m_LunarDut1Fallback = dut1Fallback;
+    }
+#endif
     return m_LunarEphemeris;
   }
 
@@ -127,6 +155,13 @@ public:
 
   wxDateTime m_DateTime;  // Time for the sight
   double m_TimeCertainty;
+#ifdef __OCPN__ANDROID__
+  bool m_androidLunarSearch = false;
+  std::function<void()> m_androidCheckpoint;
+  std::string m_androidLunarInputs;
+  std::string m_androidLunarRetainedInputs;
+  std::string AndroidLunarInputs(double clockOffset) const;
+#endif
 
   double m_Measurement;  // Measurement angle in degrees (NaN is valid for all)
   double m_MeasurementCertainty;
@@ -136,8 +171,14 @@ public:
   double m_LunarMoonAltitudeUncertainty;
   double m_LunarBodyAltitudeUncertainty;
   bool m_LunarSeparateTimes;
+  bool m_LunarTimeIsWatch = false;
+#ifdef __OCPN__ANDROID__
+  double m_LunarMoonTimeOffsetSeconds;
+  double m_LunarBodyTimeOffsetSeconds;
+#else
   int m_LunarMoonTimeOffsetSeconds;
   int m_LunarBodyTimeOffsetSeconds;
+#endif
   bool m_LunarMovingObserver;
   double m_LunarCourseTrue;
   double m_LunarSpeedKnots;
@@ -146,6 +187,12 @@ public:
   double m_Temperature;       // Temperature in degrees celcius
   double m_Pressure;          // Pressure in millibars
   double m_IndexError;        // Error of measurement in degrees
+  // Defaults to production's automatic DE440s/analytical selection.  The
+  // standalone validation lab can disable DE440s for an A/B calculation.
+  bool m_AllowDe440 = true;
+  bool m_AllowCompact = true;
+  bool m_BodyUsesCompact = false;
+  wxString m_EphemerisFallbackReason;
   bool m_DipShort;            // DIP Short ?
   double m_DipShortDistance;  // DIP Short distance
   bool m_ArtificialHorizon;   // Artificial Horizon ?
@@ -155,15 +202,26 @@ public:
   bool m_bMagneticShiftBearing;  // use magnetic or true for shift
 
   wxString m_ColourName;
+  wxString m_Remarks;  // Optional sight-log note; not used in calculations.
   wxColour m_Colour;  // Color of the sight
 
-  virtual void Render(piDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm);
+  virtual void Render(piDC* dc, PlugIn_ViewPort& pVP, double pix_per_mm,
+                      const SightDisplayStyle& style = SightDisplayStyle());
+  std::vector<std::pair<wxPoint, wxPoint>> ScreenSegments(PlugIn_ViewPort& vp);
+  double ChartDistance(PlugIn_ViewPort& vp, const wxPoint& cursor);
 
   void BodyLocation(wxDateTime time, double* lat, double* lon, double* ghaash,
-                    double* rad, double* dist, bool timeIsInstant = false);
+                    double* rad, double* dist, bool timeIsInstant = false,
+                    bool useDe440 = true,
+                    double dut1OverrideSeconds =
+                        std::numeric_limits<double>::quiet_NaN(),
+                    bool* usedDe440 = nullptr, bool* usedCompact = nullptr,
+                    const std::shared_ptr<const eclipse::Dut1Table>* timeData = nullptr);
   void AltitudeAzimuth(double lat1, double lon1, double lat2, double lon2,
                        double* hc, double* zn);
   void EstimateHs(double hc, double* hs, double* error);
+  // Uses the effective sight time, leaving the recorded observation unchanged.
+  void CalculateAtDR(double* hc, double* zn);
   std::list<wxRealPoint> GetPoints();
 
   wxString m_CalcStr;
@@ -187,10 +245,7 @@ public:
   double m_HorizonAltitudeUncertainty;  // arcminutes
   int m_HorizonQuality;                 // 0 clear, 1 hazy, 2 obstructed
   wxString m_HorizonTimeSource;
-  bool m_HorizonEstimateValid;
-  double m_HorizonEstimateLat;
-  double m_HorizonEstimateLon;
-  double m_HorizonEstimateRadiusNm;
+  std::vector<horizon_position::Position> m_HorizonPositions;
 
   /* for lunar */
   long m_TimeCorrection;
@@ -198,10 +253,16 @@ public:
   bool m_LunarSolutionValid;
   wxString m_LunarSolutionError;
   std::vector<lunar_distance::TimeCandidate> m_LunarCandidates;
+  int m_LunarSelectedCandidate = -1;
   lunar_distance::PositionResult m_LunarPositionResult;
   int m_LunarSelectedPosition;
   bool m_LunarUsesDe440;
+  bool m_LunarUsesCompact = false;
+  bool m_LunarDut1Fallback = false;
   lunar_distance::EphemerisFunction m_LunarEphemeris;
+#ifdef __OCPN__ANDROID__
+  const Sight* m_androidLunarEphemerisOwner = nullptr;
+#endif
 
   /* DR info */
   double m_DRLat;

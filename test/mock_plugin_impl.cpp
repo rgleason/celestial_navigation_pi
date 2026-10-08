@@ -22,6 +22,8 @@
 #include <wx/html/winpars.h>
 
 #include "OcpnApiCompat.h"
+PlugIn_Waypoint::PlugIn_Waypoint() : m_lat(0),m_lon(0),m_HyperlinkList(nullptr) {}
+PlugIn_Waypoint::~PlugIn_Waypoint() {}
 
 // API 19 implementations
 

@@ -2,6 +2,7 @@
 #define CELESTIAL_NAVIGATION_LUNAR_TOOLS_DIALOG_H
 
 #include "LunarSessionEngine.h"
+#include "LunarSolutionRecord.h"
 #include "SextantCalibrationEngine.h"
 
 #include <wx/dialog.h>
@@ -18,7 +19,13 @@ class wxPanel;
 class wxSpinCtrlDouble;
 class wxStaticText;
 class wxTextCtrl;
+#ifdef __OCPN__ANDROID__
+#include "NauticalTimeCtrl.h"
+using CelestialTimePicker = NauticalTimeCtrl;
+#else
 class wxTimePickerCtrl;
+using CelestialTimePicker = wxTimePickerCtrl;
+#endif
 
 class LunarToolsDialog : public wxDialog {
 public:
@@ -31,7 +38,7 @@ private:
     wxPanel* dateContainer = nullptr;
     wxPanel* timeContainer = nullptr;
     wxDatePickerCtrl* nativeDate = nullptr;
-    wxTimePickerCtrl* nativeTime = nullptr;
+    CelestialTimePicker* nativeTime = nullptr;
     wxTextCtrl* nauticalDate = nullptr;
     wxTextCtrl* nauticalTime = nullptr;
   };
@@ -56,6 +63,21 @@ private:
   void UpdateProfileCorrection();
   void LoadProfiles();
   void PersistProfiles();
+#ifdef __OCPN__ANDROID__
+  wxString AndroidCalibrationPredictionKey() const;
+  void CheckAndroidCalibrationPrediction();
+  wxString m_androidCalibrationPredictionKey;
+  void RefreshAndroidCalibration();
+  void RefreshAndroidSequence();
+  void InvalidateAndroidSequence();
+  wxPanel* m_androidSequenceCards = nullptr;
+  wxPanel* m_androidSequenceResiduals = nullptr;
+  wxPanel* m_androidPairCards = nullptr;
+  bool m_androidSequencePending = false;
+  wxPanel* m_androidCalReadings = nullptr;
+  long m_androidSelectedReading = -1;
+  bool m_androidCalibrationPending = false;
+#endif
   void ShowCandidate(std::size_t index);
   void CreateUtcEntry(wxWindow* parent, UtcEntryControls* controls,
                       const wxDateTime& utc);
@@ -93,12 +115,15 @@ private:
   wxButton* m_applySequence;
   std::vector<std::size_t> m_lunarIndices;
   lunar_session::Result m_sequenceResult;
+  std::vector<LunarSolutionRecord> m_sequenceRecords;
   bool m_sequencePositionAutomatic;
 
   NavigationAngleCtrl* m_plannerLatitude;
   NavigationAngleCtrl* m_plannerLongitude;
   UtcEntryControls m_plannerUtc;
   wxListCtrl* m_plannerList;
+  wxChoice* m_plannerOrder;
+  wxChoice* m_plannerCompanions;
 
   NavigationAngleCtrl* m_calLatitude;
   NavigationAngleCtrl* m_calLongitude;
@@ -108,6 +133,7 @@ private:
   wxChoice* m_calContact;
   wxSpinCtrlDouble* m_calPressure;
   wxSpinCtrlDouble* m_calTemperature;
+  wxSpinCtrlDouble* m_calIndexError;
   wxStaticText* m_calPrediction;
   NavigationAngleCtrl* m_calObservedAngle;
   wxSpinCtrlDouble* m_calUncertainty;

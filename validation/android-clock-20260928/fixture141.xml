@@ -1,0 +1,5 @@
+<?xml version='1.0' encoding='utf-8'?>
+<OpenCPNCelestialNavigation version="2.8" creator="Opencpn Celestial Navigation plugin">
+  <ClockError Seconds="0" />
+  <Sight Body="Sun" Type="0" BodyLimb="1" Date="2024-06-14" Time="16:58:00" Milliseconds="0" TimeCertainty="2" Measurement="27.333246" MeasurementCertainty="0.5" Visible="1" EyeHeight="0" Temperature="10" Pressure="1010" IndexError="0" ColourName="Public-Clock141" Colour="rgba(111, 71, 93, 0.588)" Transparency="150" DRLat="51.4779" DRLon="0" DRBoatPosition="0" />
+</OpenCPNCelestialNavigation>

@@ -28,6 +28,7 @@
 #define _CELESTIAL_NAVIGATIONPI_H_
 
 #include <wx/wx.h>
+#include <wx/timer.h>
 
 #include "version.h"
 
@@ -104,6 +105,10 @@ private:
   wxWindow* m_parent_window;
   int m_leftclick_tool_id;
   int m_route_almanac_menu_id;
+#ifdef __OCPN__ANDROID__
+  wxMenu* m_androidRouteMenu = nullptr;
+  wxMenuItem* m_androidRouteMenuItem = nullptr;
+#endif
 
   CelestialNavigationDialog* m_pCelestialNavigationDialog;
   GnssTimeMonitor m_gnssTime;
@@ -112,6 +117,7 @@ private:
   bool m_hasCursorPosition;
   double m_cursorLatitude;
   double m_cursorLongitude;
+  wxTimer m_hoverTimer;
 };
 
 extern void celestial_navigation_pi_BoatPos(double& lat, double& lon);

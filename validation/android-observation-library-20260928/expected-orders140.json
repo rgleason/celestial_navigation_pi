@@ -1,0 +1,62 @@
+{
+  "Newest first": [
+    "Mars",
+    "Venus",
+    "Sun"
+  ],
+  "Oldest first": [
+    "Sun",
+    "Venus",
+    "Mars"
+  ],
+  "Body A-Z": [
+    "Mars",
+    "Sun",
+    "Venus"
+  ],
+  "Body Z-A": [
+    "Venus",
+    "Sun",
+    "Mars"
+  ],
+  "Type ascending": [
+    "Mars",
+    "Sun",
+    "Venus"
+  ],
+  "Type descending": [
+    "Venus",
+    "Sun",
+    "Mars"
+  ],
+  "Measurement increasing": [
+    "Mars",
+    "Sun",
+    "Venus"
+  ],
+  "Measurement decreasing": [
+    "Venus",
+    "Sun",
+    "Mars"
+  ],
+  "Excluded first": [
+    "Venus",
+    "Mars",
+    "Sun"
+  ],
+  "Included first": [
+    "Sun",
+    "Mars",
+    "Venus"
+  ],
+  "Colour ascending": [
+    "Sun",
+    "Venus",
+    "Mars"
+  ],
+  "Colour descending": [
+    "Mars",
+    "Venus",
+    "Sun"
+  ]
+}

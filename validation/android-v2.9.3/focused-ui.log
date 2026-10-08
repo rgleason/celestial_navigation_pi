@@ -1,0 +1,71 @@
+Running main() from /usr/src/debug/gtest/googletest-1.18.0/googletest/src/gtest_main.cc
+Note: Google Test filter = LunarUiSmoke.*:PlannerTime.*:PlannerRecommendations.TraditionalSelectionDoesNotChangeCalculatedCandidatesOrTiming:PlannerRecommendations.PracticalLunarOrderDistinguishesBrightnessFromTiming
+[==========] Running 9 tests from 3 test suites.
+[----------] Global test environment set-up.
+[----------] 1 test from LunarUiSmoke
+[ RUN      ] LunarUiSmoke.TimeEntryAndResultModesPreserveRecordedInputs
+16:30:07: Loading toolbar icon: /home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/testdata/data/celestial_navigation.svg
+16:30:07: Loading toolbar icon: /home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/testdata/data/celestial_navigation_rollover.svg
+16:30:07: Loading toolbar icon: /home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/testdata/data/celestial_navigation_toggled.svg
+16:30:07: Debug: Adding duplicate image handler for 'PNG file'
+16:30:07: Debug: Adding duplicate image handler for 'JPEG file'
+16:30:07: Debug: Adding duplicate image handler for 'TIFF file'
+16:30:07: Debug: Adding duplicate image handler for 'GIF file'
+16:30:07: Debug: Adding duplicate image handler for 'PNM file'
+16:30:07: Debug: Adding duplicate image handler for 'PCX file'
+16:30:07: Debug: Adding duplicate image handler for 'IFF file'
+16:30:07: Debug: Adding duplicate image handler for 'Windows icon file'
+16:30:07: Debug: Adding duplicate image handler for 'Windows cursor file'
+16:30:07: Debug: Adding duplicate image handler for 'Windows animated cursor file'
+16:30:07: Debug: Adding duplicate image handler for 'TGA file'
+16:30:07: Debug: Adding duplicate image handler for 'XPM file'
+16:30:07: Debug: Using icon path: /home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/testdata/data/celestial_navigation_panel.png
+16:30:07: Error: can't open file '/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/testdata/data/celestial_navigation_panel.png' (error 2: No such file or directory)
+16:30:07: Debug: Initiating image handlers.
+16:30:07: Debug: Adding duplicate image handler for 'PNG file'
+16:30:07: Debug: Adding duplicate image handler for 'JPEG file'
+16:30:07: Debug: Adding duplicate image handler for 'TIFF file'
+16:30:07: Debug: Adding duplicate image handler for 'GIF file'
+16:30:07: Debug: Adding duplicate image handler for 'PNM file'
+16:30:07: Debug: Adding duplicate image handler for 'PCX file'
+16:30:07: Debug: Adding duplicate image handler for 'IFF file'
+16:30:07: Debug: Adding duplicate image handler for 'Windows icon file'
+16:30:07: Debug: Adding duplicate image handler for 'Windows cursor file'
+16:30:07: Debug: Adding duplicate image handler for 'Windows animated cursor file'
+16:30:07: Debug: Adding duplicate image handler for 'TGA file'
+16:30:07: Debug: Adding duplicate image handler for 'XPM file'
+16:30:07: Error: can't open file '/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/testdata/data/celestial_navigation_panel.png' (error 2: No such file or directory)
+16:30:07: Error: Failed to load image from file "/home/paul/src/OpenCPN/.worktrees/celnav-android-2.9.3/test/testdata/data/celestial_navigation_panel.png".
+16:30:07: Warning: Celestial Navigation Panel icon has NOT been loaded
+
+(celestial-lunar-ui-test:375814): Gtk-CRITICAL **: 16:30:46.664: gtk_widget_event: assertion 'WIDGET_REALIZED_FOR_EVENT (widget, event)' failed
+
+(celestial-lunar-ui-test:375814): Gtk-CRITICAL **: 16:30:46.664: gtk_widget_event: assertion 'WIDGET_REALIZED_FOR_EVENT (widget, event)' failed
+[       OK ] LunarUiSmoke.TimeEntryAndResultModesPreserveRecordedInputs (251408 ms)
+[----------] 1 test from LunarUiSmoke (251408 ms total)
+
+[----------] 6 tests from PlannerTime
+[ RUN      ] PlannerTime.NauticalFormatIsUnambiguousAndStrict
+[       OK ] PlannerTime.NauticalFormatIsUnambiguousAndStrict (0 ms)
+[ RUN      ] PlannerTime.ConvertsEasternZoneTimeAcrossTheDateBoundary
+[       OK ] PlannerTime.ConvertsEasternZoneTimeAcrossTheDateBoundary (0 ms)
+[ RUN      ] PlannerTime.ConvertsWesternAndInternationalDateLineOffsets
+[       OK ] PlannerTime.ConvertsWesternAndInternationalDateLineOffsets (0 ms)
+[ RUN      ] PlannerTime.ConvertsPostDstWesternZoneAcrossMidnight
+[       OK ] PlannerTime.ConvertsPostDstWesternZoneAcrossMidnight (0 ms)
+[ RUN      ] PlannerTime.UtcDayStartUsesUtcDateRatherThanComputerLocalDate
+[       OK ] PlannerTime.UtcDayStartUsesUtcDateRatherThanComputerLocalDate (0 ms)
+[ RUN      ] PlannerTime.SuggestsWholeHourShipZonesFromLongitude
+[       OK ] PlannerTime.SuggestsWholeHourShipZonesFromLongitude (0 ms)
+[----------] 6 tests from PlannerTime (0 ms total)
+
+[----------] 2 tests from PlannerRecommendations
+[ RUN      ] PlannerRecommendations.TraditionalSelectionDoesNotChangeCalculatedCandidatesOrTiming
+[       OK ] PlannerRecommendations.TraditionalSelectionDoesNotChangeCalculatedCandidatesOrTiming (21 ms)
+[ RUN      ] PlannerRecommendations.PracticalLunarOrderDistinguishesBrightnessFromTiming
+[       OK ] PlannerRecommendations.PracticalLunarOrderDistinguishesBrightnessFromTiming (0 ms)
+[----------] 2 tests from PlannerRecommendations (21 ms total)
+
+[----------] Global test environment tear-down
+[==========] 9 tests from 3 test suites ran. (251430 ms total)
+[  PASSED  ] 9 tests.

@@ -1,0 +1,998 @@
+#include <gtest/gtest.h>
+#include <wx/app.h>
+#include <wx/log.h>
+#include <wx/frame.h>
+#include <wx/choice.h>
+#include <wx/button.h>
+#include <cstdlib>
+#include "NauticalTimeCtrl.h"
+#include "LunarResultsDialog.h"
+#include "LunarSolutionRecord.h"
+#include "CelestialNavigationDialog.h"
+#include "LunarToolsDialog.h"
+#include "CompactEphemerisProvider.h"
+#include "FindBodyDialog.h"
+#include "PlannerDialog.h"
+#include "SightDialog.h"
+#include "SightPalette.h"
+#include "pidc.h"
+#include "NavigationAlgorithms.h"
+#include "UtcDateTime.h"
+#include "mock_plugin_api.h"
+#include "eclipse/dut1.h"
+#include <wx/filename.h>
+#include <wx/notebook.h>
+#include <wx/scrolwin.h>
+#include <wx/statbox.h>
+#include <wx/stattext.h>
+#include <wx/dcscreen.h>
+#include <wx/dcmemory.h>
+#include <wx/image.h>
+#include <wx/listctrl.h>
+#include <wx/spinctrl.h>
+#ifdef __WXGTK3__
+#include <gtk/gtk.h>
+#endif
+
+namespace {
+class InspectFindBody : public FindBodyDialog {
+ public:
+  using FindBodyDialog::FindBodyDialog;
+  using FindBodyDialogBase::m_tAltitude;
+  using FindBodyDialogBase::m_tAzimuth;
+  using FindBodyDialogBase::m_tLatitude;
+  using FindBodyDialogBase::m_tLongitude;
+};
+class InspectSightDialog : public SightDialog {
+ public:
+  using SightDialog::SightDialog;
+  using SightDialogBase::m_cLimb;
+  using SightDialogBase::m_cType;
+  using SightDialogBase::m_sCertaintySeconds;
+  using SightDialogBase::m_tMeasurement;
+  using SightDialogBase::m_notebook1;
+  using SightDialogBase::m_ColourPicker;
+};
+class OverlayPreviewSight : public Sight {
+ public:
+  using Sight::Sight;
+  using Sight::lines;
+  using Sight::polygons;
+};
+
+template <typename T, typename Predicate>
+T* FindPlannerControl(wxWindow* root, Predicate match) {
+  for (auto* child : root->GetChildren()) {
+    if (auto* value = dynamic_cast<T*>(child)) if (match(value)) return value;
+    if (auto* nested = FindPlannerControl<T>(child, match)) return nested;
+  }
+  return nullptr;
+}
+
+bool ContainsStaticText(wxWindow* window, const wxString& text) {
+  for (auto* child : window->GetChildren()) {
+    if (auto* label = dynamic_cast<wxStaticText*>(child)) {
+      wxString readable = label->GetLabel();
+      readable.Replace("\n", " ");
+      if (readable.Contains(text)) return true;
+    }
+    if (ContainsStaticText(child, text)) return true;
+  }
+  return false;
+}
+
+void ExpectUnclippedNonOverlappingChildren(wxWindow* page) {
+  auto* scrolled = dynamic_cast<wxScrolledWindow*>(page);
+  const wxSize extent = scrolled ? scrolled->GetVirtualSize()
+                                  : page->GetClientSize();
+  const wxRect client(wxPoint(0, 0), extent);
+  std::vector<wxWindow*> visible;
+  for (auto* child : page->GetChildren()) {
+    if (!child->IsShown() || child->GetSize().x <= 0 ||
+        child->GetSize().y <= 0)
+      continue;
+    // A wxStaticBox is a decorative container whose rectangle deliberately
+    // surrounds and intersects the controls managed by its static-box sizer.
+    if (dynamic_cast<wxStaticBox*>(child)) continue;
+    visible.push_back(child);
+    wxRect bounds = child->GetRect();
+    if (scrolled) {
+      int x = 0, y = 0;
+      scrolled->CalcUnscrolledPosition(bounds.x, bounds.y, &x, &y);
+      bounds.SetPosition(wxPoint(x, y));
+    }
+    EXPECT_TRUE(client.Contains(bounds))
+        << child->GetClassInfo()->GetClassName() << " at "
+        << bounds.GetX() << "," << bounds.GetY()
+        << " in " << extent.x << "x" << extent.y;
+  }
+  for (std::size_t first = 0; first < visible.size(); ++first)
+    for (std::size_t second = first + 1; second < visible.size(); ++second)
+      EXPECT_FALSE(visible[first]->GetRect().Intersects(
+          visible[second]->GetRect()))
+          << visible[first]->GetClassInfo()->GetClassName() << " overlaps "
+          << visible[second]->GetClassInfo()->GetClassName();
+}
+void FindControls(wxWindow* window, wxChoice** mode, wxButton** save) {
+  for (auto* child : window->GetChildren()) {
+    if (auto* choice = dynamic_cast<wxChoice*>(child))
+      if (choice->GetCount() == 2 &&
+          choice->GetString(1).Contains("Check at entered"))
+        *mode = choice;
+    if (auto* button = dynamic_cast<wxButton*>(child))
+      if (button->GetLabel() == "Save lunar solution") *save = button;
+    FindControls(child, mode, save);
+  }
+}
+
+wxSpinCtrlDouble* FindSpinByTooltip(wxWindow* window,
+                                    const wxString& tooltipText) {
+  for (auto* child : window->GetChildren()) {
+    if (auto* spin = dynamic_cast<wxSpinCtrlDouble*>(child))
+      if (spin->GetToolTipText().Contains(tooltipText)) return spin;
+    if (auto* result = FindSpinByTooltip(child, tooltipText)) return result;
+  }
+  return nullptr;
+}
+
+wxListCtrl* FindListWithColumn(wxWindow* window, const wxString& heading) {
+  for (auto* child : window->GetChildren()) {
+    if (auto* list = dynamic_cast<wxListCtrl*>(child)) {
+      for (int column = 0; column < list->GetColumnCount(); ++column) {
+        wxListItem item;
+        item.SetMask(wxLIST_MASK_TEXT);
+        if (list->GetColumn(column, item) && item.GetText() == heading)
+          return list;
+      }
+    }
+    if (auto* result = FindListWithColumn(child, heading)) return result;
+  }
+  return nullptr;
+}
+}  // namespace
+
+TEST(DisplayUi, PaletteChartControlsAndAstronomyPathsFit) {
+  if (!std::getenv("CELESTIAL_RUN_UI_TESTS")) GTEST_SKIP();
+  int argc = 1;
+  char name[] = "celestial-display-ui-test";
+  char* argv[] = {name, nullptr};
+  wxApp::SetInstance(new wxApp);
+  ASSERT_TRUE(wxEntryStart(argc, argv));
+  ASSERT_TRUE(wxTheApp->CallOnInit());
+  wxInitAllImageHandlers();
+  const auto oldHandler = wxSetAssertHandler(
+      [](const wxString&, int line, const wxString&, const wxString& condition,
+         const wxString& message) {
+        ADD_FAILURE() << line << " " << condition.ToStdString() << " "
+                      << message.ToStdString();
+      });
+  delete wxLog::SetActiveTarget(new wxLogStderr);
+  const wxString privatePath = wxFileName::CreateTempFileName("celestial-display-");
+  ASSERT_TRUE(wxRemoveFile(privatePath));
+  ASSERT_TRUE(wxFileName::Mkdir(privatePath + "/plugins/celestial_navigation",
+                               0700, wxPATH_MKDIR_FULL));
+  SetTestPrivateDataPath(privatePath);
+  SetTestPluginDataRoot(wxFileName(__FILE__).GetPath() + "/..");
+  GetOCPNConfigObject()->Write("/PlugIns/CelestialNavigation/ShowTimeIntegrity", false);
+  auto capture = [](wxWindow& window, const wxString& path) {
+    window.Layout();
+    for (int i = 0; i < 6; ++i) { wxTheApp->Yield(); wxMilliSleep(20); }
+#ifdef __WXGTK3__
+    const auto size = window.GetSize();
+    GtkAllocation allocation{0, 0, size.x, size.y};
+    gtk_widget_size_allocate(GTK_WIDGET(window.GetHandle()), &allocation);
+    auto* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.x, size.y);
+    auto* cr = cairo_create(surface);
+    gtk_widget_draw(GTK_WIDGET(window.GetHandle()), cr);
+    EXPECT_EQ(cairo_surface_write_to_png(surface, path.utf8_str()), CAIRO_STATUS_SUCCESS);
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
+#endif
+  };
+  // Exercise the production COP renderer on light and dark backgrounds. The
+  // host shim supplies a deterministic projection; this is not a GL-driver test.
+  for (int scale : {1, 2}) {
+    wxBitmap bitmap(720, 360);
+    wxMemoryDC memory(bitmap);
+    memory.SetBackground(wxBrush(wxColour(245, 241, 224)));
+    memory.Clear();
+    memory.SetPen(*wxTRANSPARENT_PEN);
+    memory.SetBrush(wxBrush(wxColour(24, 34, 44)));
+    memory.DrawRectangle(360, 0, 360, 360);
+    {
+      piDC dc(memory);
+      PlugIn_ViewPort viewport{};
+      viewport.pix_width = 720;
+      viewport.pix_height = 360;
+      dc.SetVP(&viewport);
+      for (size_t index = 0; index < SightPalette().size(); ++index) {
+        OverlayPreviewSight sight(Sight::ALTITUDE, "Sun", Sight::LOWER,
+                                   wxDateTime::Now(), 0, 30, 0.2);
+        sight.m_Colour = SightPalette()[index].Colour(150);
+        const double latitude = 75.0 - double(index) * 20.0;
+        for (int lon = -160; lon <= 160; lon += 20)
+          sight.lines.Append(new wxRealPoint(latitude, lon));
+        for (int lon : {-160, 20}) {
+          auto* band = new wxRealPointList;
+          band->Append(new wxRealPoint(latitude - 4, lon));
+          band->Append(new wxRealPoint(latitude + 4, lon));
+          band->Append(new wxRealPoint(latitude + 4, lon + 140));
+          band->Append(new wxRealPoint(latitude - 4, lon + 140));
+          sight.polygons.push_back(band);
+        }
+        SightDisplayStyle style;
+        style.bandOpacityPercent = 50;
+        sight.Render(&dc, viewport, scale * 96.0 / 25.4, style);
+      }
+    }
+    memory.SelectObject(wxNullBitmap);
+    ASSERT_TRUE(bitmap.SaveFile(wxString::Format(
+        "/tmp/celestial-cop-palette-%dx.png", scale), wxBITMAP_TYPE_PNG));
+  }
+  {
+    wxFrame frame(nullptr, wxID_ANY, "Display UI test");
+    celestial_navigation_pi plugin(nullptr);
+    CelestialNavigationDialog main(&frame, &plugin);
+    main.Show();
+    capture(main, "/tmp/celestial-display-main.png");
+    ExpectUnclippedNonOverlappingChildren(&main);
+    wxButton* display = nullptr;
+    for (auto* child : main.GetChildren())
+      if (auto* button = dynamic_cast<wxButton*>(child))
+        if (button->GetLabel() == "Chart display...") display = button;
+    ASSERT_NE(display, nullptr);
+    wxTheApp->CallAfter([&]() {
+      for (auto* child : main.GetChildren()) {
+        auto* modal = dynamic_cast<wxDialog*>(child);
+        if (!modal || modal->GetTitle() != "Chart sight display") continue;
+        capture(*modal, "/tmp/celestial-display-settings.png");
+        ExpectUnclippedNonOverlappingChildren(modal);
+        for (auto* control : modal->GetChildren()) {
+          if (auto* spin = dynamic_cast<wxSpinCtrlDouble*>(control)) spin->SetValue(0.8);
+          else if (auto* spin = dynamic_cast<wxSpinCtrl*>(control)) spin->SetValue(45);
+        }
+        modal->EndModal(wxID_OK);
+      }
+    });
+    wxCommandEvent click(wxEVT_BUTTON, display->GetId());
+    display->ProcessWindowEvent(click);
+    EXPECT_DOUBLE_EQ(main.m_chartStyle.lineWidthMm, 0.8);
+    EXPECT_EQ(main.m_chartStyle.bandOpacityPercent, 45);
+    main.Hide();
+    {
+      CelestialNavigationDialog reopened(&frame, &plugin);
+      EXPECT_DOUBLE_EQ(reopened.m_chartStyle.lineWidthMm, 0.8);
+      EXPECT_EQ(reopened.m_chartStyle.bandOpacityPercent, 45);
+    }
+    Sight sight(Sight::ALTITUDE, "Sun", Sight::LOWER, wxDateTime::Now(), 0, 30, 0.2);
+    sight.m_Colour = wxColour(18, 171, 239, 150);
+    {
+      InspectSightDialog editor(&frame, sight, 0);
+      editor.Show();
+      int configPage = -1;
+      for (size_t i = 0; i < editor.m_notebook1->GetPageCount(); ++i)
+        if (editor.m_notebook1->GetPageText(i) == "Config") configPage = i;
+      ASSERT_GE(configPage, 0);
+      editor.m_notebook1->SetSelection(configPage);
+      capture(editor, "/tmp/celestial-display-palette.png");
+      auto* page = editor.m_notebook1->GetPage(configPage);
+      ExpectUnclippedNonOverlappingChildren(page);
+      wxChoice* palette = nullptr;
+      for (auto* child : page->GetChildren())
+        if (auto* choice = dynamic_cast<wxChoice*>(child)) palette = choice;
+      ASSERT_NE(palette, nullptr);
+      EXPECT_EQ(palette->GetStringSelection(), "Custom (#12ABEF)");
+      EXPECT_EQ(editor.m_ColourPicker->GetColour().Red(), 18);
+      palette->SetSelection(0);
+      wxCommandEvent changed(wxEVT_CHOICE, palette->GetId());
+      palette->ProcessWindowEvent(changed);
+      EXPECT_EQ(sight.m_ColourName, "Blue");
+      EXPECT_EQ(sight.m_Colour.Blue(), 178);
+      editor.Hide();
+    }
+    {
+      EclipseDialog eclipse(&frame, &plugin);
+      eclipse.Show();
+      capture(eclipse, "/tmp/celestial-display-astronomy.png");
+      ExpectUnclippedNonOverlappingChildren(&eclipse);
+      EXPECT_TRUE(ContainsStaticText(&eclipse, "de440s.bsp"));
+      eclipse.Hide();
+    }
+  }
+  SetTestPrivateDataPath(wxEmptyString);
+  SetTestPluginDataRoot(wxEmptyString);
+  wxFileName::Rmdir(privatePath, wxPATH_RMDIR_RECURSIVE);
+  wxTheApp->OnExit();
+  wxSetAssertHandler(oldHandler);
+  wxEntryCleanup();
+}
+
+// Explicit opt-in: run alone with a display, separate from non-GUI tests.
+TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
+  if (!std::getenv("CELESTIAL_RUN_UI_TESTS"))
+    GTEST_SKIP() << "Set CELESTIAL_RUN_UI_TESTS=1 and run this test alone with "
+                    "a display";
+  int argc = 1;
+  char name[] = "celestial-lunar-ui-test";
+  char* argv[] = {name, nullptr};
+  wxApp::SetInstance(new wxApp);
+  ASSERT_TRUE(wxEntryStart(argc, argv));
+  ASSERT_TRUE(wxTheApp->CallOnInit());
+  SetTestPluginDataRoot(wxFileName(__FILE__).GetPath() + "/..");
+  const auto previousAssertHandler = wxSetAssertHandler(
+      [](const wxString& file, int line, const wxString&,
+         const wxString& condition, const wxString& message) {
+        ADD_FAILURE() << file.ToStdString() << ":" << line << " "
+                      << condition.ToStdString() << " "
+                      << message.ToStdString();
+      });
+  delete wxLog::SetActiveTarget(new wxLogStderr);
+  {
+    wxFrame frame(nullptr, wxID_ANY, "Lunar UI test");
+    {
+      wxDateTime recorded;
+      ASSERT_TRUE(recorded.ParseISOCombined("2026-08-16T23:59:30"));
+      Sight ordinary(Sight::ALTITUDE, "Sun", Sight::LOWER, recorded, 0, 20,
+                     0.2);
+      ordinary.m_DRBoatPosition = false;
+      ordinary.m_DRMagneticAzimuth = false;
+      ordinary.m_DRLat = 35;
+      ordinary.m_DRLon = -120;
+      ordinary.Recompute(120.5);
+      const double savedHo = ordinary.m_ObservedAltitude;
+      InspectFindBody finder(&frame, ordinary);
+      const auto expected = CelestialEphemeris::Evaluate(
+          "Sun",
+          UtcDateTime::ToInstant(recorded) + wxTimeSpan::Milliseconds(120500),
+          35, -120);
+      EXPECT_EQ(toSDMM_PlugIn(0, expected.geometricAltitude, true),
+                finder.m_tAltitude->GetValue());
+      EXPECT_EQ(toSDMM_PlugIn(0, expected.azimuthTrue, true),
+                finder.m_tAzimuth->GetValue());
+      EXPECT_NE("   N/A", finder.m_tEstimatedHs->GetValue());
+      EXPECT_EQ(20, ordinary.m_Measurement);
+      EXPECT_EQ(recorded, ordinary.m_DateTime);
+      EXPECT_EQ(savedHo, ordinary.m_ObservedAltitude);
+      finder.Show();
+      finder.Layout();
+      for (auto* coordinate : {finder.m_tLatitude, finder.m_tLongitude})
+        EXPECT_GE(coordinate->GetClientSize().x,
+                  coordinate->GetTextExtent(coordinate->GetValue()).x + 12);
+      for (int i = 0; i < 4; ++i) {
+        wxTheApp->Yield();
+        wxMilliSleep(30);
+      }
+      for (auto* control :
+           {finder.m_tAltitude, finder.m_tAzimuth, finder.m_tEstimatedHs})
+        EXPECT_TRUE(wxRect(wxPoint(0, 0), finder.GetClientSize())
+                        .Contains(wxRect(
+                            finder.ScreenToClient(control->GetScreenPosition()),
+                            control->GetSize())));
+#ifdef __WXGTK3__
+      const auto size = finder.GetSize();
+      GtkAllocation requested{0, 0, size.x, size.y};
+      gtk_widget_size_allocate(GTK_WIDGET(finder.GetHandle()), &requested);
+      auto* surface =
+          cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.x, size.y);
+      auto* cr = cairo_create(surface);
+      gtk_widget_draw(GTK_WIDGET(finder.GetHandle()), cr);
+      EXPECT_EQ(cairo_surface_write_to_png(surface,
+                                           "/tmp/celestial-audit-findbody.png"),
+                CAIRO_STATUS_SUCCESS);
+      cairo_destroy(cr);
+      cairo_surface_destroy(surface);
+#endif
+      finder.Hide();
+    }
+    wxDateTime time;
+    ASSERT_TRUE(time.ParseISOCombined("2024-06-13T19:26:00"));
+    NauticalTimeCtrl time_control(&frame, wxID_ANY, time);
+    EXPECT_EQ(19, time_control.GetValue().GetHour());
+    EXPECT_EQ(26, time_control.GetValue().GetMinute());
+    Sight sight(Sight::LUNAR, "Sun", Sight::LUNAR_NEAR, time, 7200,
+                85 + 40.3 / 60.0, 0.2);
+    sight.m_LunarMoonAltitude = 34 + 34.0 / 60.0;
+    sight.m_LunarBodyAltitude = 51 + 58.0 / 60.0;
+    sight.m_LunarMoonLimb = Sight::UPPER;
+    sight.m_LunarBodyLimb = Sight::LOWER;
+    sight.m_LunarBodyDistanceLimb = Sight::LUNAR_NEAR;
+    sight.m_LunarSeparateTimes = true;
+    sight.m_LunarBodyTimeOffsetSeconds = 75;
+    sight.m_EyeHeight = 6.1;
+    sight.m_Temperature = 23.9;
+    sight.m_Pressure = 1019.3;
+    sight.m_DRLat = 41 + 22.0 / 60.0;
+    sight.m_DRLon = -(71 + 29.0 / 60.0);
+    sight.Recompute(0);
+    ASSERT_TRUE(sight.m_LunarSolutionValid);
+    const auto snapshot = LunarInputSnapshot(sight);
+    {
+      // Regression for #300: a duplicate lunar converted to Altitude must use
+      // the body's recorded Hs/limb and must not reinterpret the lunar UTC
+      // search span as plot-time uncertainty.
+      Sight converted = sight;
+      converted.m_bVisible = false;
+      InspectSightDialog properties(&frame, converted, 0);
+      properties.m_cType->SetSelection(Sight::ALTITUDE);
+      wxCommandEvent typeEvent(wxEVT_CHOICE, properties.m_cType->GetId());
+      typeEvent.SetEventObject(properties.m_cType);
+      properties.m_cType->ProcessWindowEvent(typeEvent);
+      EXPECT_EQ(Sight::ALTITUDE, converted.m_Type);
+      EXPECT_EQ(0.0, converted.m_TimeCertainty);
+      EXPECT_EQ(sight.m_LunarBodyLimb, converted.m_BodyLimb);
+      EXPECT_NEAR(sight.m_LunarBodyAltitude, converted.m_Measurement, 1e-6);
+      EXPECT_EQ(UtcDateTime::AddSeconds(sight.m_DateTime, 75),
+                converted.m_DateTime);
+      EXPECT_EQ(0, properties.m_sCertaintySeconds->GetValue());
+      EXPECT_EQ(toSDMM_PlugIn(0, sight.m_LunarBodyAltitude, true),
+                properties.m_tMeasurement->GetValue());
+      EXPECT_FALSE(converted.IsCalculated());
+      converted.RebuildPolygons();
+      EXPECT_TRUE(converted.IsCalculated());
+      Sight duplicated = converted;
+      duplicated.Recompute(0);
+      duplicated.RebuildPolygons();
+      EXPECT_TRUE(duplicated.IsCalculated());
+      EXPECT_EQ(0.0, duplicated.m_TimeCertainty);
+    }
+    {
+      Sight boundary = sight;
+      for (auto& candidate : boundary.m_LunarCandidates) {
+        candidate.local_slope_available = false;
+        candidate.uncertainty_available = false;
+        candidate.slope_arcmin_per_hour = NAN;
+        candidate.time_uncertainty_seconds = INFINITY;
+      }
+      LunarResultsDialog dialog(&frame, boundary);
+      auto* candidates = FindListWithColumn(&dialog, "UTC uncertainty");
+      ASSERT_NE(candidates, nullptr);
+      ASSERT_GT(candidates->GetItemCount(), 0);
+      EXPECT_EQ(candidates->GetItemText(0, 3), "Unavailable");
+      EXPECT_EQ(candidates->GetItemText(0, 4), "Indeterminate");
+      EXPECT_FALSE(candidates->GetItemText(0, 0).empty());
+      EXPECT_TRUE(boundary.m_LunarSolutionValid);
+    }
+    {
+      LunarResultsDialog dialog(&frame, sight);
+      wxChoice* mode = nullptr;
+      wxButton* save = nullptr;
+      FindControls(&dialog, &mode, &save);
+      ASSERT_NE(nullptr, mode);
+      ASSERT_NE(nullptr, save);
+      EXPECT_TRUE(save->IsEnabled());
+      EXPECT_TRUE(ContainsStaticText(&dialog, "Saved DR used"));
+      EXPECT_TRUE(ContainsStaticText(&dialog, "ΔZn"));
+      EXPECT_TRUE(ContainsStaticText(&dialog, "effective crossing"));
+      EXPECT_TRUE(ContainsStaticText(&dialog, "not measurements to average"));
+      dialog.Show();
+      dialog.Layout();
+      for (int i = 0; i < 4; ++i) {
+        wxTheApp->Yield();
+        wxMilliSleep(30);
+      }
+      EXPECT_GE(dialog.GetClientSize().x, 740);
+      for (auto* child : dialog.GetChildren())
+        if (auto* notebook = dynamic_cast<wxNotebook*>(child))
+          ExpectUnclippedNonOverlappingChildren(notebook->GetPage(0));
+#ifdef __WXGTK3__
+      const auto resultSize = dialog.GetSize();
+      GtkAllocation resultAllocation{0, 0, resultSize.x, resultSize.y};
+      gtk_widget_size_allocate(GTK_WIDGET(dialog.GetHandle()),
+                               &resultAllocation);
+      auto* resultSurface = cairo_image_surface_create(
+          CAIRO_FORMAT_ARGB32, resultSize.x, resultSize.y);
+      auto* resultCr = cairo_create(resultSurface);
+      gtk_widget_draw(GTK_WIDGET(dialog.GetHandle()), resultCr);
+      EXPECT_EQ(cairo_surface_write_to_png(
+                    resultSurface, "/tmp/celestial-lunar-results-2.8.5.5.png"),
+                CAIRO_STATUS_SUCCESS);
+      cairo_destroy(resultCr);
+      cairo_surface_destroy(resultSurface);
+#endif
+      for (int selection : {1, 0, 1}) {
+        mode->SetSelection(selection);
+        wxCommandEvent event(wxEVT_CHOICE, mode->GetId());
+        event.SetEventObject(mode);
+        mode->ProcessWindowEvent(event);
+        EXPECT_EQ(selection == 0, save->IsEnabled());
+        EXPECT_EQ(snapshot, LunarInputSnapshot(sight));
+        if (selection == 1) {
+          EXPECT_TRUE(ContainsStaticText(&dialog, "True LD:"));
+          EXPECT_TRUE(ContainsStaticText(&dialog, "Cleared LD (model corrected):"));
+          EXPECT_TRUE(ContainsStaticText(&dialog, "Lunar error (cleared - true):"));
+        }
+      }
+#ifdef __WXGTK3__
+      dialog.SetSize(wxSize(1040, 1100)); dialog.Layout(); wxTheApp->Yield();
+      const auto checkSize = dialog.GetSize();
+      GtkAllocation checkAllocation{0, 0, checkSize.x, checkSize.y};
+      gtk_widget_size_allocate(GTK_WIDGET(dialog.GetHandle()), &checkAllocation);
+      auto* checkSurface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, checkSize.x, checkSize.y);
+      auto* checkCr = cairo_create(checkSurface);
+      gtk_widget_draw(GTK_WIDGET(dialog.GetHandle()), checkCr);
+      EXPECT_EQ(cairo_surface_write_to_png(checkSurface, "/tmp/celnav297-lunar-check.png"), CAIRO_STATUS_SUCCESS);
+      cairo_destroy(checkCr); cairo_surface_destroy(checkSurface);
+#endif
+      auto* knownLatitude = dynamic_cast<wxTextCtrl*>(wxWindow::FindWindowByName("LunarKnownLatitude", &dialog));
+      ASSERT_NE(nullptr, knownLatitude);
+      knownLatitude->SetValue("invalid");
+      EXPECT_TRUE(ContainsStaticText(&dialog, "enter a valid known latitude"));
+      EXPECT_EQ(snapshot, LunarInputSnapshot(sight));
+    }
+    // Exercise the actual main and Lunar Tools dialogs, with isolated host
+    // state. No installed sights, configuration or network are touched.
+    const wxString privatePath=wxFileName::CreateTempFileName("celestial-ui-state-");
+    ASSERT_TRUE(wxRemoveFile(privatePath));
+    ASSERT_TRUE(wxFileName::Mkdir(privatePath+"/plugins/celestial_navigation",0777,wxPATH_MKDIR_FULL));
+    SetTestPrivateDataPath(privatePath);
+    SetTestPluginDataRoot(wxFileName(__FILE__).GetPath()+"/..");
+    GetOCPNConfigObject()->Write("/PlugIns/CelestialNavigation/ShowTimeIntegrity",false);
+    wxInitAllImageHandlers();
+    {
+      celestial_navigation_pi plugin(nullptr);
+      CelestialNavigationDialog main(&frame,&plugin);
+      const bool oldCompact=celestial_navigation::CompactEphemerisEnabled();
+      struct RestoreCompact { bool value;
+        ~RestoreCompact(){celestial_navigation::SetCompactEphemerisEnabled(value);} } restoreCompact{oldCompact};
+      GetOCPNConfigObject()->DeleteEntry("/PlugIns/CelestialNavigation/UseCompactEphemeris");
+      LunarToolsDialog dialog(&main);
+      auto* compact=dynamic_cast<wxCheckBox*>(wxWindow::FindWindowByName("UseCompactEphemeris",&dialog));
+      ASSERT_NE(compact,nullptr);
+      EXPECT_TRUE(compact->GetValue());
+      compact->SetValue(false);
+      wxCommandEvent disableCompact(wxEVT_CHECKBOX,compact->GetId());
+      disableCompact.SetEventObject(compact);
+      compact->GetEventHandler()->ProcessEvent(disableCompact);
+      EXPECT_FALSE(celestial_navigation::CompactEphemerisEnabled());
+      compact->SetValue(true);
+      compact->GetEventHandler()->ProcessEvent(disableCompact);
+      EXPECT_TRUE(celestial_navigation::CompactEphemerisEnabled());
+      wxNotebook* notebook=nullptr;
+      for (auto* child:dialog.GetChildren())
+        if (auto* value=dynamic_cast<wxNotebook*>(child)) notebook=value;
+      ASSERT_NE(notebook,nullptr);
+      ASSERT_EQ(notebook->GetPageCount(),4u);
+      EXPECT_EQ(notebook->GetPageText(3),"Advanced");
+      notebook->SetSelection(3);
+      auto* page=dynamic_cast<wxScrolledWindow*>(notebook->GetPage(3));
+      ASSERT_NE(page,nullptr);
+      const int calls=TestDownloadCalls();
+      dialog.Show();
+      for (const wxSize size : {wxSize(1120,780),wxSize(880,650)}) {
+        dialog.SetSize(size); dialog.Centre(); dialog.Layout();
+        for (int i=0;i<8;++i) { wxTheApp->Yield(); wxMilliSleep(30); }
+        EXPECT_EQ(TestDownloadCalls(),calls); // Opening/resizing never downloads.
+        EXPECT_LE(page->GetVirtualSize().x,page->GetClientSize().x);
+        for (auto* child:page->GetChildren()) {
+          if (!child->IsShown() || child->GetSize().y==0) continue;
+          EXPECT_TRUE(wxRect(wxPoint(0,0),page->GetVirtualSize()).Contains(child->GetRect()))
+              << child->GetClassInfo()->GetClassName() << " "
+              << child->GetLabel().ToStdString();
+        }
+#ifdef __WXGTK3__
+        // Wayland intentionally disallows wxScreenDC capture. Render the live
+        // GTK widget tree, including native text and controls, to an image.
+        GtkAllocation requested{0,0,size.x,size.y};
+        gtk_widget_size_allocate(GTK_WIDGET(dialog.GetHandle()),&requested);
+        auto* surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,size.x,size.y);
+        auto* cr=cairo_create(surface);
+        gtk_widget_draw(GTK_WIDGET(dialog.GetHandle()),cr);
+        const auto path=wxString::Format("/tmp/celestial-advanced-%d.png",size.x);
+        EXPECT_EQ(cairo_surface_write_to_png(surface,path.utf8_str()),CAIRO_STATUS_SUCCESS);
+        cairo_destroy(cr); cairo_surface_destroy(surface);
+#else
+        wxScreenDC screen;
+        wxBitmap bitmap(dialog.GetSize());
+        wxMemoryDC memory(bitmap);
+        const auto origin=dialog.GetScreenPosition();
+        ASSERT_TRUE(memory.Blit(0,0,bitmap.GetWidth(),bitmap.GetHeight(),&screen,origin.x,origin.y));
+        memory.SelectObject(wxNullBitmap);
+        ASSERT_TRUE(bitmap.SaveFile(wxString::Format("/tmp/celestial-advanced-%d.png",size.x),wxBITMAP_TYPE_PNG));
+#endif
+      }
+      wxButton* download=nullptr;
+      for (auto* child:page->GetChildren())
+        if (auto* button=dynamic_cast<wxButton*>(child))
+          if (button->GetLabel().StartsWith("Check / download")) download=button;
+      ASSERT_NE(download,nullptr);
+      const auto previous=eclipse::GetDut1Update();
+      wxCommandEvent event(wxEVT_BUTTON,download->GetId());
+      event.SetEventObject(download); download->ProcessWindowEvent(event);
+      EXPECT_EQ(TestDownloadCalls(),calls+1);
+      EXPECT_TRUE(download->IsEnabled());
+      EXPECT_EQ(eclipse::GetDut1Update(),previous);
+      bool failureShown=false;
+      for (auto* child:page->GetChildren())
+        if (child->GetLabel().Contains("failed or was cancelled")) failureShown=true;
+      EXPECT_TRUE(failureShown);
+
+      // The lunar planner reports measurements and a factual geometric
+      // horizon flag, without an undisclosed quality ranking.
+      dialog.SelectPageForIntegration(1);
+      wxWindow* lunarPlannerPage = notebook->GetPage(1);
+      ASSERT_NE(lunarPlannerPage, nullptr);
+      auto* lunarPlannerList =
+          FindListWithColumn(lunarPlannerPage, "Below horizon");
+      ASSERT_NE(lunarPlannerList, nullptr);
+      EXPECT_EQ(lunarPlannerList->GetColumnCount(), 13);
+      EXPECT_NE(FindListWithColumn(lunarPlannerPage, "Ecliptic lat"), nullptr);
+      EXPECT_EQ(FindListWithColumn(lunarPlannerPage, "Quality"), nullptr);
+      EXPECT_EQ(FindListWithColumn(lunarPlannerPage, wxString::FromUTF8("0.1′ time")),
+                lunarPlannerList);
+      ASSERT_GT(lunarPlannerList->GetItemCount(), 0);
+      wxChoice* lunarOrder = nullptr;
+      for (auto* child : lunarPlannerPage->GetChildren())
+        if (auto* choice = dynamic_cast<wxChoice*>(child))
+          if (choice->FindString("Lunar order: timing sensitivity") != wxNOT_FOUND)
+            lunarOrder = choice;
+      ASSERT_NE(lunarOrder, nullptr);
+      EXPECT_EQ(0, lunarOrder->GetSelection());
+      lunarOrder->SetSelection(1);
+      wxCommandEvent orderChanged(wxEVT_CHOICE, lunarOrder->GetId());
+      orderChanged.SetEventObject(lunarOrder);
+      lunarOrder->ProcessWindowEvent(orderChanged);
+      bool sawBelowHorizon = false;
+      double previousTime = -1.0;
+      for (long index = 0; index < lunarPlannerList->GetItemCount(); ++index) {
+        const wxString horizon = lunarPlannerList->GetItemText(index, 1);
+        EXPECT_TRUE(horizon.empty() || horizon == "Moon" ||
+                    horizon == "Body" || horizon == "Both");
+        EXPECT_EQ(lunarPlannerList->GetItemText(index, 5).StartsWith("-"),
+                  horizon == "Moon" || horizon == "Both");
+        EXPECT_EQ(lunarPlannerList->GetItemText(index, 6).StartsWith("-"),
+                  horizon == "Body" || horizon == "Both");
+        if (!horizon.empty()) {
+          sawBelowHorizon = true;
+        } else {
+          EXPECT_FALSE(sawBelowHorizon)
+              << "above-horizon pair sorted below a flagged pair";
+        }
+        const wxString time = lunarPlannerList->GetItemText(index, 4);
+        if (time == wxString::FromUTF8("—")) continue;
+        double seconds = 0.0;
+        ASSERT_TRUE(time.BeforeFirst(' ').ToDouble(&seconds));
+        if (index > 0 &&
+            horizon.empty() == lunarPlannerList->GetItemText(index - 1, 1).empty())
+          EXPECT_GE(seconds, previousTime);
+        previousTime = seconds;
+      }
+      EXPECT_TRUE(sawBelowHorizon);
+      for (const wxSize size : {wxSize(1120, 780), wxSize(880, 650)}) {
+        dialog.SetSize(size);
+        dialog.Centre();
+        dialog.Layout();
+        lunarPlannerPage->Layout();
+        for (int i = 0; i < 8; ++i) {
+          wxTheApp->Yield();
+          wxMilliSleep(30);
+        }
+        ExpectUnclippedNonOverlappingChildren(lunarPlannerPage);
+#ifdef __WXGTK3__
+        GtkAllocation requested{0, 0, size.x, size.y};
+        gtk_widget_size_allocate(GTK_WIDGET(dialog.GetHandle()), &requested);
+        auto* surface =
+            cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.x, size.y);
+        auto* cr = cairo_create(surface);
+        gtk_widget_draw(GTK_WIDGET(dialog.GetHandle()), cr);
+        const auto path =
+            wxString::Format("/tmp/celestial-lunar-planner-%d.png", size.x);
+        EXPECT_EQ(cairo_surface_write_to_png(surface, path.utf8_str()),
+                  CAIRO_STATUS_SUCCESS);
+        cairo_destroy(cr);
+        cairo_surface_destroy(surface);
+#endif
+      }
+
+      // The Sextant Check keeps the prediction engine intact while exposing
+      // an independently measured IE.  Verify the complete provenance table
+      // and the compact layout, since native Windows controls are wider than
+      // their GTK counterparts.
+      dialog.SelectPageForIntegration(2);
+      wxWindow* sextantPage = notebook->GetPage(2);
+      ASSERT_NE(sextantPage, nullptr);
+      EXPECT_TRUE(ContainsStaticText(sextantPage, "Measured IE (on arc +)"));
+      auto* indexError =
+          FindSpinByTooltip(sextantPage, "independently measured index error");
+      ASSERT_NE(indexError, nullptr);
+      auto* readingList =
+          FindListWithColumn(sextantPage, "Predicted apparent");
+      ASSERT_NE(readingList, nullptr);
+      EXPECT_EQ(readingList->GetColumnCount(), 7);
+      for (const wxSize size : {wxSize(1120, 780), wxSize(880, 650)}) {
+        dialog.SetSize(size);
+        dialog.Centre();
+        dialog.Layout();
+        sextantPage->Layout();
+        for (int i = 0; i < 8; ++i) {
+          wxTheApp->Yield();
+          wxMilliSleep(30);
+        }
+        ExpectUnclippedNonOverlappingChildren(sextantPage);
+#ifdef __WXGTK3__
+        GtkAllocation requested{0, 0, size.x, size.y};
+        gtk_widget_size_allocate(GTK_WIDGET(dialog.GetHandle()), &requested);
+        auto* surface =
+            cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.x, size.y);
+        auto* cr = cairo_create(surface);
+        gtk_widget_draw(GTK_WIDGET(dialog.GetHandle()), cr);
+        const auto path =
+            wxString::Format("/tmp/celestial-sextant-check-%d.png", size.x);
+        EXPECT_EQ(cairo_surface_write_to_png(surface, path.utf8_str()),
+                  CAIRO_STATUS_SUCCESS);
+        cairo_destroy(cr);
+        cairo_surface_destroy(surface);
+#endif
+      }
+      dialog.Hide();
+
+      PlannerDialog planner(&main);
+      planner.Show();
+      for (int i = 0; i < 4; ++i) {
+        wxTheApp->Yield();
+        wxMilliSleep(20);
+      }
+      planner.SelectPageForIntegration(1);
+      wxNotebook* plannerNotebook = nullptr;
+      for (auto* child : planner.GetChildren())
+        if (auto* value = dynamic_cast<wxNotebook*>(child))
+          plannerNotebook = value;
+      ASSERT_NE(plannerNotebook, nullptr);
+      ASSERT_EQ(plannerNotebook->GetSelection(), 1);
+      wxWindow* bodiesPage = plannerNotebook->GetPage(1);
+      ASSERT_NE(bodiesPage, nullptr);
+      for (const wxSize size : {wxSize(1370, 820), wxSize(1024, 700),
+                                wxSize(900, 650)}) {
+        planner.SetSize(size);
+        planner.Centre();
+        planner.Layout();
+        bodiesPage->Layout();
+        for (int i = 0; i < 8; ++i) {
+          wxTheApp->Yield();
+          wxMilliSleep(30);
+        }
+        ExpectUnclippedNonOverlappingChildren(bodiesPage);
+        ExpectUnclippedNonOverlappingChildren(&planner);
+        auto text = [&](const wxString& label) {
+          return FindPlannerControl<wxStaticText>(&planner,
+              [&label](wxStaticText* t) { return t->GetLabel() == label; });
+        };
+        ASSERT_NE(text("Latitude"), nullptr); ASSERT_NE(text("Longitude"), nullptr);
+        EXPECT_EQ(text("Latitude")->GetPosition().y, text("Longitude")->GetPosition().y);
+        ASSERT_NE(text("Display event times as"), nullptr); ASSERT_NE(text("Zone offset (h)"), nullptr);
+        EXPECT_EQ(text("Display event times as")->GetPosition().y,
+                  text("Zone offset (h)")->GetPosition().y);
+#ifdef __WXGTK3__
+        GtkAllocation requested{0, 0, size.x, size.y};
+        gtk_widget_size_allocate(GTK_WIDGET(planner.GetHandle()), &requested);
+        auto* surface =
+            cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.x, size.y);
+        auto* cr = cairo_create(surface);
+        gtk_widget_draw(GTK_WIDGET(planner.GetHandle()), cr);
+        const auto path =
+            wxString::Format("/tmp/celestial-planner-bodies-%d.png", size.x);
+        EXPECT_EQ(cairo_surface_write_to_png(surface, path.utf8_str()),
+                  CAIRO_STATUS_SUCCESS);
+        cairo_destroy(cr);
+        cairo_surface_destroy(surface);
+#endif
+      }
+      auto* labels = FindPlannerControl<wxChoice>(bodiesPage,
+          [](wxChoice* c) { return c->FindString("Balanced") != wxNOT_FOUND; });
+      ASSERT_NE(labels, nullptr);
+      EXPECT_EQ(1, labels->GetSelection());
+      for (int density = 0; density < 3; ++density) {
+        labels->SetSelection(density);
+        wxCommandEvent changed(wxEVT_CHOICE, labels->GetId());
+        changed.SetEventObject(labels); labels->ProcessWindowEvent(changed);
+        planner.SetSize(wxSize(1370, 820)); planner.Layout(); bodiesPage->Layout();
+        for (int i = 0; i < 3; ++i) { wxTheApp->Yield(); wxMilliSleep(20); }
+      }
+      // UTC stepping across the London DST transition preserves elapsed time.
+      auto* date = FindPlannerControl<wxTextCtrl>(&planner,
+          [](wxTextCtrl* t) { return t->GetHint() == "YYYY-MM-DD"; });
+      auto* clock = FindPlannerControl<wxTextCtrl>(&planner,
+          [](wxTextCtrl* t) { return t->GetHint() == "HH:MM:SS"; });
+      ASSERT_NE(date, nullptr); ASSERT_NE(clock, nullptr);
+      date->ChangeValue("2026-03-29"); clock->ChangeValue("00:30:00");
+      auto* plus = FindPlannerControl<wxButton>(&planner,
+          [](wxButton* b) { return b->GetLabel() == "+1 h"; });
+      auto* minus = FindPlannerControl<wxButton>(&planner,
+          [](wxButton* b) { return b->GetLabel() == "-1 h"; });
+      ASSERT_NE(plus, nullptr); ASSERT_NE(minus, nullptr);
+      for (auto* step : {plus, minus}) {
+        wxCommandEvent clicked(wxEVT_BUTTON, step->GetId());
+        clicked.SetEventObject(step); step->ProcessWindowEvent(clicked);
+        EXPECT_EQ("2026-03-29", date->GetValue());
+        EXPECT_EQ(step == plus ? "01:30:00" : "00:30:00", clock->GetValue());
+        EXPECT_TRUE(ContainsStaticText(&planner, step == plus
+            ? "2026-03-29 01:30:00 UTC" : "2026-03-29 00:30:00 UTC"));
+      }
+      auto* format = FindPlannerControl<wxChoice>(&planner,
+          [](wxChoice* c) { return c->FindString("OpenCPN / platform format") != wxNOT_FOUND; });
+      ASSERT_NE(format, nullptr);
+      // Native time-only fields must also preserve a valid UTC hour which is
+      // absent from the computer's local calendar on the same date.
+      date->ChangeValue("2026-03-29"); clock->ChangeValue("01:30:00");
+      for (int entry : {1, 0}) {
+        format->SetSelection(entry);
+        wxCommandEvent changed(wxEVT_CHOICE, format->GetId());
+        changed.SetEventObject(format); format->ProcessWindowEvent(changed);
+        wxCommandEvent clicked(wxEVT_BUTTON, plus->GetId());
+        clicked.SetEventObject(plus); plus->ProcessWindowEvent(clicked);
+        EXPECT_TRUE(ContainsStaticText(&planner, entry == 1
+            ? "2026-03-29 02:30:00 UTC" : "2026-03-29 03:30:00 UTC"));
+      }
+      auto* latitude = FindPlannerControl<wxTextCtrl>(&planner,
+          [](wxTextCtrl* t) { return t->GetName() == "PlannerLatitude"; });
+      auto* longitude = FindPlannerControl<wxTextCtrl>(&planner,
+          [](wxTextCtrl* t) { return t->GetName() == "PlannerLongitude"; });
+      ASSERT_NE(latitude, nullptr); ASSERT_NE(longitude, nullptr);
+      latitude->ChangeValue("N 43 16.7061"); longitude->ChangeValue("W 076 58.3941");
+      date->ChangeValue("2026-10-03"); clock->ChangeValue("08:30:00");
+      auto* refresh = FindPlannerControl<wxButton>(&planner,
+          [](wxButton* b) { return b->GetLabel() == "Calculate / refresh"; });
+      ASSERT_NE(refresh, nullptr);
+      wxCommandEvent refreshed(wxEVT_BUTTON, refresh->GetId());
+      refreshed.SetEventObject(refresh); refresh->ProcessWindowEvent(refreshed);
+      wxChoice* planningMode = nullptr;
+      wxCheckBox* showEcliptic = nullptr;
+      wxCheckBox* showMoonPath = nullptr;
+      for (auto* child : bodiesPage->GetChildren()) {
+        if (auto* choice = dynamic_cast<wxChoice*>(child))
+          if (choice->GetCount() == 4 &&
+              choice->GetString(0) == "Practical Fix") planningMode = choice;
+        if (auto* check = dynamic_cast<wxCheckBox*>(child)) {
+          if (check->GetLabel() == "Show ecliptic") showEcliptic = check;
+          if (check->GetLabel() == "Show Moon path") showMoonPath = check;
+        }
+      }
+      ASSERT_NE(planningMode, nullptr);
+      ASSERT_NE(showEcliptic, nullptr);
+      ASSERT_NE(showMoonPath, nullptr);
+      EXPECT_FALSE(showMoonPath->IsEnabled());
+      auto* lunarPairs = FindListWithColumn(bodiesPage, "Moon + body");
+      ASSERT_NE(lunarPairs, nullptr);
+      EXPECT_EQ(8, lunarPairs->GetColumnCount());
+      EXPECT_NE(FindListWithColumn(bodiesPage, "Mag"), nullptr);
+      for (int mode = 0; mode < 4; ++mode) {
+        planningMode->SetSelection(mode);
+        wxCommandEvent changed(wxEVT_CHOICE, planningMode->GetId());
+        changed.SetEventObject(planningMode);
+        planningMode->ProcessWindowEvent(changed);
+        for (const wxSize size : {wxSize(1370, 820), wxSize(900, 650)}) {
+          planner.SetSize(size);
+          planner.Layout();
+          bodiesPage->Layout();
+          for (int i = 0; i < 5; ++i) { wxTheApp->Yield(); wxMilliSleep(20); }
+          ExpectUnclippedNonOverlappingChildren(bodiesPage);
+          // Desktop planning runs asynchronously; wait for the requested
+          // lunar mode rather than inspecting the previous mode's results.
+          if (mode == 2)
+            for (int pending = 0; pending < 250 &&
+                 (!lunarPairs->IsShown() || lunarPairs->GetItemCount() == 0); ++pending) {
+              wxTheApp->Yield(); wxMilliSleep(20);
+            }
+          EXPECT_EQ(mode == 2, lunarPairs->IsShown());
+          if (mode == 2) EXPECT_GT(lunarPairs->GetItemCount(), 0);
+#ifdef __WXGTK3__
+          GtkAllocation allocation{0, 0, size.x, size.y};
+          gtk_widget_size_allocate(GTK_WIDGET(planner.GetHandle()),
+                                   &allocation);
+          auto* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+                                                      size.x, size.y);
+          auto* cr = cairo_create(surface);
+          gtk_widget_draw(GTK_WIDGET(planner.GetHandle()), cr);
+          const auto path = wxString::Format(
+              "/tmp/celestial-planner-mode-%d-%d.png", mode, size.x);
+          EXPECT_EQ(cairo_surface_write_to_png(surface, path.utf8_str()),
+                    CAIRO_STATUS_SUCCESS);
+          cairo_destroy(cr);
+          cairo_surface_destroy(surface);
+#endif
+        }
+      }
+      for (int density = 0; density < 3; ++density) {
+        labels->SetSelection(density);
+        wxCommandEvent changed(wxEVT_CHOICE, labels->GetId());
+        changed.SetEventObject(labels); labels->ProcessWindowEvent(changed);
+        planner.SetSize(wxSize(1370, 820)); planner.Layout(); bodiesPage->Layout();
+        for (int i = 0; i < 4; ++i) { wxTheApp->Yield(); wxMilliSleep(20); }
+#ifdef __WXGTK3__
+        GtkAllocation allocation{0, 0, 1370, 820};
+        gtk_widget_size_allocate(GTK_WIDGET(planner.GetHandle()), &allocation);
+        auto* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1370, 820);
+        auto* cr = cairo_create(surface); gtk_widget_draw(GTK_WIDGET(planner.GetHandle()), cr);
+        const auto path = wxString::Format("/tmp/celestial-planner-labels-%d.png", density);
+        EXPECT_EQ(cairo_surface_write_to_png(surface, path.utf8_str()), CAIRO_STATUS_SUCCESS);
+        cairo_destroy(cr); cairo_surface_destroy(surface);
+#endif
+      }
+      planningMode->SetSelection(2);
+      wxCommandEvent lunarChanged(wxEVT_CHOICE, planningMode->GetId());
+      lunarChanged.SetEventObject(planningMode);
+      planningMode->ProcessWindowEvent(lunarChanged);
+      planner.SetSize(wxSize(1370, 820));
+      planner.Layout();
+      bodiesPage->Layout();
+      wxNotebook* plotNotebook = nullptr;
+      for (auto* child : bodiesPage->GetChildren())
+        if (auto* notebook = dynamic_cast<wxNotebook*>(child))
+          if (notebook->GetPageCount() == 2 &&
+              notebook->GetPageText(0) == "Local sky") plotNotebook = notebook;
+      ASSERT_NE(plotNotebook, nullptr);
+      plotNotebook->SetSelection(1);
+      EXPECT_TRUE(showMoonPath->IsEnabled());
+      for (int i = 0; i < 6; ++i) { wxTheApp->Yield(); wxMilliSleep(20); }
+      for (int mask = 0; mask < 4; ++mask) {
+        showEcliptic->SetValue((mask & 1) != 0);
+        showMoonPath->SetValue((mask & 2) != 0);
+        for (auto* check : {showEcliptic, showMoonPath}) {
+          wxCommandEvent changed(wxEVT_CHECKBOX, check->GetId());
+          changed.SetEventObject(check);
+          check->ProcessWindowEvent(changed);
+        }
+        EXPECT_EQ((mask & 1) != 0, showEcliptic->GetValue());
+        EXPECT_EQ((mask & 2) != 0, showMoonPath->GetValue());
+        plotNotebook->GetCurrentPage()->Refresh();
+        plotNotebook->GetCurrentPage()->Update();
+#ifdef __WXGTK3__
+        for (int i = 0; i < 4; ++i) { wxTheApp->Yield(); wxMilliSleep(20); }
+        GtkAllocation allocation{0, 0, 1370, 820};
+        gtk_widget_size_allocate(GTK_WIDGET(planner.GetHandle()),
+                                 &allocation);
+        auto* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+                                                    1370, 820);
+        auto* cr = cairo_create(surface);
+        gtk_widget_draw(GTK_WIDGET(planner.GetHandle()), cr);
+        const auto path = wxString::Format(
+            "/tmp/celestial-planner-sha-overlays-%d.png", mask);
+        EXPECT_EQ(cairo_surface_write_to_png(surface, path.utf8_str()),
+                  CAIRO_STATUS_SUCCESS);
+        cairo_destroy(cr);
+        cairo_surface_destroy(surface);
+#endif
+      }
+      auto* scroll = dynamic_cast<wxScrolledWindow*>(bodiesPage);
+      ASSERT_NE(scroll, nullptr);
+      planner.SetSize(wxSize(900, 650));
+      planner.Layout();
+      bodiesPage->Layout();
+      scroll->Scroll(0, 38);
+      for (int i = 0; i < 4; ++i) { wxTheApp->Yield(); wxMilliSleep(20); }
+      ExpectUnclippedNonOverlappingChildren(bodiesPage);
+#ifdef __WXGTK3__
+      GtkAllocation narrow{0, 0, 900, 650};
+      gtk_widget_size_allocate(GTK_WIDGET(planner.GetHandle()), &narrow);
+      auto* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+                                                  900, 650);
+      auto* cr = cairo_create(surface);
+      gtk_widget_draw(GTK_WIDGET(planner.GetHandle()), cr);
+      EXPECT_EQ(cairo_surface_write_to_png(surface,
+                   "/tmp/celestial-planner-sha-narrow-scrolled.png"),
+                CAIRO_STATUS_SUCCESS);
+      cairo_destroy(cr);
+      cairo_surface_destroy(surface);
+      scroll->Scroll(0, 65);
+      planner.Refresh();
+      planner.Update();
+      for (int i = 0; i < 8; ++i) { wxTheApp->Yield(); wxMilliSleep(20); }
+      gtk_widget_size_allocate(GTK_WIDGET(planner.GetHandle()), &narrow);
+      surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 900, 650);
+      cr = cairo_create(surface);
+      gtk_widget_draw(GTK_WIDGET(planner.GetHandle()), cr);
+      EXPECT_EQ(cairo_surface_write_to_png(surface,
+                   "/tmp/celestial-planner-sha-narrow-plot.png"),
+                CAIRO_STATUS_SUCCESS);
+      cairo_destroy(cr);
+      cairo_surface_destroy(surface);
+#endif
+      planner.Hide();
+    }
+    SetTestPrivateDataPath(wxEmptyString);
+    SetTestPluginDataRoot(wxEmptyString);
+    wxFileName::Rmdir(privatePath,wxPATH_RMDIR_RECURSIVE);
+  }
+  wxTheApp->OnExit();
+  wxSetAssertHandler(previousAssertHandler);
+  wxEntryCleanup();
+}

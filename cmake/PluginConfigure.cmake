@@ -59,10 +59,10 @@ else ()
     )
     string(FIND ${GIT_STATUS} "..." START_TRACKED)
     if (NOT START_TRACKED EQUAL -1)
-      string(FIND ${GIT_STATUS} "/" END_TRACKED)
       math(EXPR START_TRACKED "${START_TRACKED}+3")
-      math(EXPR END_TRACKED "${END_TRACKED}-${START_TRACKED}")
-      string(SUBSTRING ${GIT_STATUS} ${START_TRACKED} ${END_TRACKED}
+      string(SUBSTRING "${GIT_STATUS}" ${START_TRACKED} -1 TRACKED_SUFFIX)
+      string(FIND "${TRACKED_SUFFIX}" "/" END_TRACKED)
+      string(SUBSTRING "${TRACKED_SUFFIX}" 0 ${END_TRACKED}
                        GIT_REPOSITORY_REMOTE
       )
       message(STATUS "${CMLOC}GIT_REPOSITORY_REMOTE: ${GIT_REPOSITORY_REMOTE}")
@@ -665,7 +665,7 @@ if (QT_ANDROID)
   add_definitions(-DOCPN_USE_WRAPPER)
   add_definitions(-DANDROID)
 
-  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-soname,libgorp.so ")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
 
   # set(CMAKE_POSITION_INDEPENDENT_CODE ON)
   set(CMAKE_CXX_FLAGS "-pthread -fPIC ")
@@ -678,7 +678,7 @@ if (QT_ANDROID)
   )
 
   message(STATUS "${CMLOC}Adding libgorp.o shared library")
-  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-soname,libgorp.so ")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s") # Strip binary
 
   set(QT_LINUX "OFF")
@@ -807,107 +807,70 @@ if (NOT QT_ANDROID)
 
   message(STATUS "${CMLOC} Revised wxWidgets Libraries: ${wxWidgets_LIBRARIES}")
 else (NOT QT_ANDROID)
+  get_filename_component(OCPN_ANDROID_COMMON_ROOT "${OCPN_Android_Common}"
+                         ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
   if (_wx_selected_config MATCHES "androideabi-qt-arm64")
-    message(STATUS "${CMLOC}Processing androideabi-qt-arm64 includes")
-
-    set(qt_android_include
-        ${qt_android_include}
-        "${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/include"
-    )
-    set(qt_android_include
-        ${qt_android_include}
-        "${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/include/QtCore"
-    )
-    set(qt_android_include
-        ${qt_android_include}
-        "${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/include/QtWidgets"
-    )
-    set(qt_android_include
-        ${qt_android_include}
-        "${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/include/QtGui"
-    )
-    set(qt_android_include
-        ${qt_android_include}
-        "${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/include/QtOpenGL"
-    )
-    set(qt_android_include
-        ${qt_android_include}
-        "${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/include/QtTest"
-    )
-
-    set(qt_android_include
-        ${qt_android_include}
-        "${OCPN_Android_Common}/wxWidgets/libarm64/wx/include/arm-linux-androideabi-qt-unicode-static-3.1"
-    )
-    set(qt_android_include ${qt_android_include}
-                           "${OCPN_Android_Common}/wxWidgets/include"
-    )
-
-    set(wxWidgets_LIBRARIES
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5Core.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5OpenGL.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5Widgets.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5Gui.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5AndroidExtras.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/opencpn/API-117/libarm64/libgorp.so
-        -lc++_shared
-        -lz
-        libGLESv2.so
-        libEGL.so
-    )
-
-  else (_wx_selected_config MATCHES "androideabi-qt-arm64")
-    message(STATUS "${CMLOC}Processing androideabi-qt-armhf includes")
-    set(qt_android_include
-        ${qt_android_include}
-        "${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/include"
-    )
-    set(qt_android_include
-        ${qt_android_include}
-        "${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/include/QtCore"
-    )
-    set(qt_android_include
-        ${qt_android_include}
-        "${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/include/QtWidgets"
-    )
-    set(qt_android_include
-        ${qt_android_include}
-        "${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/include/QtGui"
-    )
-    set(qt_android_include
-        ${qt_android_include}
-        "${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/include/QtOpenGL"
-    )
-    set(qt_android_include
-        ${qt_android_include}
-        "${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/include/QtTest"
-    )
-
-    set(qt_android_include
-        ${qt_android_include}
-        "${OCPN_Android_Common}/wxWidgets/libarmhf/wx/include/arm-linux-androideabi-qt-unicode-static-3.1"
-    )
-    set(qt_android_include ${qt_android_include}
-                           "${OCPN_Android_Common}/wxWidgets/include"
-    )
-
+    set(CN_ANDROID_ARCH arm64)
+    set(CN_ANDROID_QT build_arm64_O3)
+  else ()
+    set(CN_ANDROID_ARCH armhf)
+    set(CN_ANDROID_QT build_arm32_19_O3)
     add_definitions(-DOCPN_ARMHF)
-
-    set(wxWidgets_LIBRARIES
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5Core.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5OpenGL.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5Widgets.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5Gui.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5AndroidExtras.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/opencpn/API-117/libarmhf/libgorp.so
-        -lc++_shared
-        -lz
-        libGLESv2.so
-        libEGL.so
+  endif ()
+    if (NOT OCPN_ANDROID_CORE_LIBRARY)
+      message(FATAL_ERROR "Set OCPN_ANDROID_CORE_LIBRARY to the matching-ABI libgorp.so from the target OpenCPN build")
+    endif ()
+    if (NOT EXISTS "${OCPN_ANDROID_CORE_LIBRARY}")
+      message(FATAL_ERROR "Android core library does not exist: ${OCPN_ANDROID_CORE_LIBRARY}")
+    endif ()
+    set(OCPN_ANDROID_WX_SETUP
+        "${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/lib${CN_ANDROID_ARCH}/wx/include/arm-linux-androideabi-qt-unicode-static-3.1")
+    if (NOT EXISTS "${OCPN_ANDROID_WX_SETUP}/wx/setup.h")
+      set(OCPN_ANDROID_WX_SETUP
+          "${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/libs/${CN_ANDROID_ARCH}/lib/wx/include/arm-linux-androideabi-qt-unicode-static-3.1")
+    endif ()
+    if (NOT EXISTS "${OCPN_ANDROID_WX_SETUP}/wx/setup.h")
+      message(FATAL_ERROR "Android wxWidgets setup.h not found under ${OCPN_ANDROID_COMMON_ROOT}")
+    endif ()
+    set(qt_android_include
+        ${qt_android_include}
+        "${OCPN_ANDROID_COMMON_ROOT}/qt5/${CN_ANDROID_QT}/qtbase/include"
+        "${OCPN_ANDROID_COMMON_ROOT}/qt5/${CN_ANDROID_QT}/qtbase/include/QtCore"
+        "${OCPN_ANDROID_COMMON_ROOT}/qt5/${CN_ANDROID_QT}/qtbase/include/QtWidgets"
+        "${OCPN_ANDROID_COMMON_ROOT}/qt5/${CN_ANDROID_QT}/qtbase/include/QtGui"
+        "${OCPN_ANDROID_COMMON_ROOT}/qt5/${CN_ANDROID_QT}/qtbase/include/QtOpenGL"
+        "${OCPN_ANDROID_COMMON_ROOT}/qt5/${CN_ANDROID_QT}/qtbase/include/QtTest"
+        "${OCPN_ANDROID_WX_SETUP}"
+        "${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/include"
     )
 
-  endif (_wx_selected_config MATCHES "androideabi-qt-arm64")
-
+    set(wxWidgets_LIBRARIES
+        ${OCPN_ANDROID_COMMON_ROOT}/qt5/${CN_ANDROID_QT}/qtbase/lib/libQt5Core.so
+        ${OCPN_ANDROID_COMMON_ROOT}/qt5/${CN_ANDROID_QT}/qtbase/lib/libQt5OpenGL.so
+        ${OCPN_ANDROID_COMMON_ROOT}/qt5/${CN_ANDROID_QT}/qtbase/lib/libQt5Widgets.so
+        ${OCPN_ANDROID_COMMON_ROOT}/qt5/${CN_ANDROID_QT}/qtbase/lib/libQt5Gui.so
+        ${OCPN_ANDROID_COMMON_ROOT}/qt5/${CN_ANDROID_QT}/qtbase/lib/libQt5AndroidExtras.so
+        ${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/libs/${CN_ANDROID_ARCH}/lib/libwx_qtu_html-3.1-arm-linux-androideabi.a
+        ${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/libs/${CN_ANDROID_ARCH}/lib/libwx_baseu_xml-3.1-arm-linux-androideabi.a
+        ${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/libs/${CN_ANDROID_ARCH}/lib/libwx_qtu_qa-3.1-arm-linux-androideabi.a
+        ${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/libs/${CN_ANDROID_ARCH}/lib/libwx_qtu_adv-3.1-arm-linux-androideabi.a
+        ${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/libs/${CN_ANDROID_ARCH}/lib/libwx_qtu_core-3.1-arm-linux-androideabi.a
+        ${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/libs/${CN_ANDROID_ARCH}/lib/libwx_baseu-3.1-arm-linux-androideabi.a
+        ${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/libs/${CN_ANDROID_ARCH}/lib/libwx_qtu_aui-3.1-arm-linux-androideabi.a
+        ${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/libs/${CN_ANDROID_ARCH}/lib/libwxexpat-3.1-arm-linux-androideabi.a
+        ${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/libs/${CN_ANDROID_ARCH}/lib/libwxregexu-3.1-arm-linux-androideabi.a
+        ${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/libs/${CN_ANDROID_ARCH}/lib/libwxjpeg-3.1-arm-linux-androideabi.a
+        ${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/libs/${CN_ANDROID_ARCH}/lib/libwxpng-3.1-arm-linux-androideabi.a
+        ${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/libs/${CN_ANDROID_ARCH}/lib/libwx_qtu_gl-3.1-arm-linux-androideabi.a
+        ${OCPN_ANDROID_COMMON_ROOT}/wxWidgets/libs/${CN_ANDROID_ARCH}/lib/libwx_baseu_net-3.1-arm-linux-androideabi.a
+        ${OCPN_ANDROID_CORE_LIBRARY}
+        -lc++_shared
+        -lz
+        libGLESv1_CM.so
+        libGLESv2.so
+        libjnigraphics.so
+        libEGL.so
+    )
   # Needed for android builds
   include_directories(BEFORE ${qt_android_include})
 

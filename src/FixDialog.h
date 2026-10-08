@@ -33,6 +33,10 @@
 #include "NavigationAlgorithms.h"
 
 #include <list>
+#include "FixDrSource.h"
+class NavigationAngleCtrl;
+class wxPanel;
+class wxBoxSizer;
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
@@ -41,13 +45,22 @@
 class Sight;
 class wxChoice;
 class wxDatePickerCtrl;
+#ifdef __OCPN__ANDROID__
+#include "NauticalTimeCtrl.h"
+using CelestialTimePicker = NauticalTimeCtrl;
+#else
 class wxTimePickerCtrl;
+using CelestialTimePicker = wxTimePickerCtrl;
+#endif
+class wxCloseEvent;
 
 class FixDialog : public FixDialogBase {
 public:
   FixDialog(CelestialNavigationDialog* parent);
+  ~FixDialog() override;
   void Update(int clock_offset);
   void RunIntegrationScenario();
+  void FocusStartingDr();
 
   int m_clock_offset;
   double m_fixlat, m_fixlon, m_fixerror;
@@ -56,21 +69,47 @@ private:
   wxDateTime ReadEpochUtc() const;
   void SetEpochControls(const wxDateTime& utc);
   void ChangeEpochTimeBasis(wxCommandEvent& event);
-  void UpdateRunningFix(int clock_offset);
+  void ChangeMotionMode(wxCommandEvent& event);
+  void SetEpochToLatestVisibleSight(double clock_offset);
+  void UpdateRunningFix(double clock_offset);
   void OnRunningControl(wxCommandEvent& event) { Update(m_clock_offset); }
   void OnGo(wxCommandEvent& event);
   void OnClose(wxCommandEvent& event);
+  void OnWindowClose(wxCloseEvent& event);
   void OnUpdate(wxCommandEvent& event) { Update(m_clock_offset); }
   void OnUpdateSpin(wxSpinEvent& event) { Update(m_clock_offset); }
 #ifdef __OCPN__ANDROID__
   void OnEvtPanGesture(wxQT_PanGestureEvent& event);
+  wxStaticText* m_androidResiduals;
 #endif
 
+  void RefreshDrSources();
+  void ChangeDrSource(wxCommandEvent&);
+  void EditDr(wxCommandEvent&);
+  bool ReadDr(double* latitude, double* longitude);
+  wxChoice* m_drSource = nullptr;
+  wxStaticText* m_drExplanation = nullptr;
+  std::vector<fix_dr::DrRecord> m_drRecords;
+  wxString m_drSourceKey;
+  bool m_hasDr = false;
+  bool m_drSourcesReady = false;
+  bool m_changingDr = false;
+  NavigationAngleCtrl* m_initialLatitude;
+  NavigationAngleCtrl* m_initialLongitude;
+  bool IsRunning() const;
+  void UpdateMotionControls();
+  void FillStationaryDetails(double correction);
+  wxPanel* m_moreOptions;
+  wxPanel* m_motionInputs;
+  wxStaticText* m_epochSummary;
+  wxStaticText* m_runningDetails;
   CelestialNavigationDialog* m_Parent;
-  wxCheckBox* m_runningFix;
+  wxChoice* m_motionMode;
+  wxChoice* m_lunarSolution;
+  std::vector<Sight> m_workingSights;
   wxChoice* m_epochTimeBasis;
   wxDatePickerCtrl* m_epochDate;
-  wxTimePickerCtrl* m_epochTime;
+  CelestialTimePicker* m_epochTime;
   wxSpinCtrlDouble* m_courseTrue;
   wxSpinCtrlDouble* m_speedKnots;
   wxStaticText* m_runningSummary;

@@ -16,6 +16,9 @@
 #include <wx/textctrl.h>
 
 #include "OcpnApiCompat.h"
+#ifdef __OCPN__ANDROID__
+#include "AndroidAngleEntry.h"
+#endif
 
 enum class NavigationAngleKind {
   Generic = 0,
@@ -45,7 +48,12 @@ inline bool ParseNavigationAngle(const wxString& text, NavigationAngleKind kind,
     }
   }
   if (!hasDigit) return false;
+#ifdef __OCPN__ANDROID__
+  double value = 0;
+  if (!celestial_android::ParseAngleText(text, &value)) return false;
+#else
   const double value = fromDMM_Plugin(text);
+#endif
   if (!std::isfinite(value) || value < minimum || value > maximum) return false;
   if (kind == NavigationAngleKind::Latitude && std::abs(value) > 90.0)
     return false;
@@ -67,6 +75,9 @@ public:
         m_minimum(minimum),
         m_maximum(maximum) {
     SetAngle(value);
+#ifdef __OCPN__ANDROID__
+    celestial_android::AddAngleEntry(this, static_cast<int>(kind), minimum, maximum);
+#endif
     Bind(wxEVT_KILL_FOCUS, [this](wxFocusEvent& event) {
       Normalize();
       event.Skip();
@@ -76,8 +87,16 @@ public:
 
   using wxTextCtrl::SetValue;
 
+  // FIX can display the preferred coordinates while keeping the same angle parser.
+  void UsePreferredDisplayFormat() { m_preferredDisplay = true; Normalize(); }
+
   void SetAngle(double degrees) {
+#ifdef __OCPN__ANDROID__
+    ChangeValue(m_preferredDisplay ? FormatNavigationAngle(degrees, m_kind)
+                                  : celestial_android::NumberText(degrees));
+#else
     ChangeValue(FormatNavigationAngle(degrees, m_kind));
+#endif
   }
 
   bool GetAngle(double* degrees) const {
@@ -98,6 +117,7 @@ public:
   }
 
 private:
+  bool m_preferredDisplay = false;
   NavigationAngleKind m_kind;
   double m_minimum;
   double m_maximum;

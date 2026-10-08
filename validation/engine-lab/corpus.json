@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "baseline_revision": "85029280f8b224dccb55ee48f779e4373b870b82",
+  "kernel": {
+    "name": "de440s.bsp",
+    "sha256": "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2",
+    "source": "https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/de440s.bsp"
+  },
+  "observations": [
+    {
+      "id": "point-judith-20240613",
+      "kind": "reported_real_observations",
+      "source": "https://github.com/user-attachments/files/31986919/Lunars.Testing.Sept.8.2026.PDF.pdf",
+      "source_sha256": "6d96dc9369b061a901dd0455be64ac3d151d1eac033b68a17868f085733a3805",
+      "source_page": 1,
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [41.36666666666667, -71.48333333333333],
+      "position_role": "published_DR_not_independent_GNSS_truth",
+      "settings": {
+        "ellipsoid": 1, "moon_limb": 2, "sun_limb": 0,
+        "moon_contact": 0, "sun_contact": 0, "index_error": 0,
+        "eye_height": 6.1, "pressure": 1019.3, "temperature": 23.9,
+        "distance_sigma": 0.2, "moon_sigma": 0.2, "sun_sigma": 0.2
+      },
+      "uncertainty_role": "assumed_test_weights_not_measured_instrument_calibration",
+      "motion_role": "stationary_assumption_for_this_fixture",
+      "readings": [
+        {"id": "m1", "kind": "moon_altitude", "utc": "2024-06-13T19:21:00Z", "angle_dm": "33:45"},
+        {"id": "s1", "kind": "sun_altitude", "utc": "2024-06-13T19:22:00Z", "angle_dm": "52:42"},
+        {"id": "d1", "kind": "distance", "utc": "2024-06-13T19:24:30Z", "angle_dm": "85:39.7"},
+        {"id": "d2", "kind": "distance", "utc": "2024-06-13T19:25:30Z", "angle_dm": "85:40.2"},
+        {"id": "d3", "kind": "distance", "utc": "2024-06-13T19:26:30Z", "angle_dm": "85:40.5"},
+        {"id": "d4", "kind": "distance", "utc": "2024-06-13T19:27:30Z", "angle_dm": "85:40.8"},
+        {"id": "s2", "kind": "sun_altitude", "utc": "2024-06-13T19:30:00Z", "angle_dm": "51:15"},
+        {"id": "m2", "kind": "moon_altitude", "utc": "2024-06-13T19:31:00Z", "angle_dm": "35:23"}
+      ],
+      "published_reduced_example": {
+        "kind": "derived_published_inputs_not_additional_raw_readings",
+        "distance_dm": "85:40.3", "moon_alt_dm": "34:34", "sun_alt_dm": "51:58",
+        "note": "Keep the published inputs as printed. The arithmetic mean of the two raw Sun altitudes is 51:58.5, not the printed 51:58. Do not silently change either dataset."
+      }
+    },
+    {
+      "id": "linnman-artificial-horizon-202406",
+      "kind": "reported_real_observations",
+      "status": "intake_only_incomplete_reference_metadata",
+      "source": "https://github.com/alinnman/celestial-navigation/blob/6f029bdfadb8e08ac1cd7e2fc1bca7ccff8643e8/xtras/starfixdata_xtra_home.py",
+      "attribution": "August Linnman, 2025; example published under MIT license",
+      "instrument": "Davis Mark III; artificial horizon; raw measured angles are doubled altitudes",
+      "readings": [
+        {"utc": "2024-06-14T05:57:50Z", "body": "Sun", "angle_dm": "57:8", "limb": "lower"},
+        {"utc": "2024-06-15T14:49:07Z", "body": "Sun", "angle_dm": "70:17", "limb": null}
+      ],
+      "limitations": [
+        "No independent precise observing position is specified in this example; 59N 18E is the iteration seed.",
+        "Graduation calibration is imported from calibration.py and must be resolved at a consistent source revision.",
+        "The second sight omits its limb argument; do not invent an observed limb from a software default.",
+        "Pressure and temperature are omitted; library defaults are not measured weather.",
+        "The chronometer object is defined but its use is commented out.",
+        "These readings are on different days, not one watch. Ordinary altitude/fix extraction is not included in the first Sun-Moon lab."
+      ]
+    }
+  ],
+  "reference_grid": [
+    {"id": "point-judith", "utc": "2024-06-13T19:26:00Z", "position": [41.36666666666667, -71.48333333333333], "height_m": 6.1},
+    {"id": "equatorial", "utc": "2024-06-13T19:26:00Z", "position": [0, -45], "height_m": 0},
+    {"id": "southern", "utc": "2024-06-13T19:26:00Z", "position": [-30, -60], "height_m": 10},
+    {"id": "high-north-elevated", "utc": "2024-06-13T19:26:00Z", "position": [65, -50], "height_m": 400},
+    {"id": "march-2025", "utc": "2025-03-05T15:00:00Z", "position": [20, -45], "height_m": 0}
+  ],
+  "reference_policy": {
+    "kind": "independent_calculated_ephemeris_not_real_sights",
+    "provider": "NASA/JPL Horizons",
+    "documentation": "https://ssd.jpl.nasa.gov/horizons/manual.html",
+    "geocentric_direction_tolerance_arcsec": 0.1,
+    "topocentric_tolerance_arcsec": 1.0,
+    "rationale": "Predeclared comparison budgets, not sextant uncertainties. Horizons apparent RA/Dec uses EOP-corrected IAU76/80 (approximately 53 mas equinox offset from IAU06/00a); the baseline uses ERFA IAU06/00a. Topocentric budget also accommodates omitted DUT1, polar motion and diurnal aberration for these dated cases. Failures must be investigated, not automatically retoleranced.",
+    "limits": "Horizons currently reports DE441 while the baseline uses DE440s: this is an independent implementation check, not wholly independent underlying ephemeris data. It does not certify atmospheric refraction, lunar limb topography or physical local vertical."
+  },
+  "further_sources": [
+    {"source": "https://navlist.net/", "status": "additional_lunar_observation_sessions_to_curate"},
+    {"source": "https://www.starpath.com/ebooksamples/9780914025184_sample.pdf", "status": "underway_data_not_imported; check errata and redistribution rights"},
+    {"source": "https://aa.usno.navy.mil/data/celnav", "status": "additional_navigation_reference_provider_not_yet_integrated"}
+  ]
+}

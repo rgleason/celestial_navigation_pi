@@ -4,8 +4,8 @@
 
 const std::vector<CelestialBodyInfo>& BodyCatalog::All() {
   // Visual magnitudes are representative planning values.  The Sun, Moon and
-  // planets vary; altitude, geometry and twilight carry more weight in the
-  // best-sight score than these approximate brightness values.
+  // planets vary; these are approximate values, not current photometry.
+  // Visibility, sextant handling and fix geometry are assessed separately.
   static const std::vector<CelestialBodyInfo> bodies = {
       {"Sun", CelestialBodyKind::Sun, -26.74},
       {"Moon", CelestialBodyKind::Moon, -12.7},

@@ -1,0 +1,255 @@
+{
+  "source": "Installed147/source3929527; Android body cards inspected from retained screenshots via OCR. First three complete cards for each new key/direction; existing Hc descending result carried forward. Desktop model orders use only Hc>=0, like the Android list.",
+  "orders": {
+    "Body Ascending": {
+      "expected_first_three": [
+        "Adhara",
+        "Aldebaran",
+        "Alioth"
+      ],
+      "observed_first_three": [
+        "Adhara",
+        "Aldebaran",
+        "Alioth"
+      ],
+      "result": "PASS"
+    },
+    "Body Descending": {
+      "expected_first_three": [
+        "Vega",
+        "Sirius",
+        "Schedar"
+      ],
+      "observed_first_three": [
+        "Vega",
+        "Sirius",
+        "Schedar"
+      ],
+      "result": "PASS"
+    },
+    "Hc Ascending": {
+      "expected_first_three": [
+        "Vega",
+        "Denebola",
+        "Adhara"
+      ],
+      "observed_first_three": [
+        "Vega",
+        "Denebola",
+        "Adhara"
+      ],
+      "result": "PASS"
+    },
+    "Zn true Ascending": {
+      "expected_first_three": [
+        "Polaris",
+        "Kochab",
+        "Alkaid"
+      ],
+      "observed_first_three": [
+        "Polaris",
+        "Kochab",
+        "Alkaid"
+      ],
+      "result": "PASS"
+    },
+    "Zn true Descending": {
+      "expected_first_three": [
+        "Eltanin",
+        "Vega",
+        "Deneb"
+      ],
+      "observed_first_three": [
+        "Eltanin",
+        "Vega",
+        "Deneb"
+      ],
+      "result": "PASS"
+    },
+    "GHA Ascending": {
+      "expected_first_three": [
+        "Alnilam",
+        "Elnath",
+        "Bellatrix"
+      ],
+      "observed_first_three": [
+        "Alnilam",
+        "Elnath",
+        "Bellatrix"
+      ],
+      "result": "PASS"
+    },
+    "GHA Descending": {
+      "expected_first_three": [
+        "Polaris",
+        "Betelgeuse",
+        "Sirius"
+      ],
+      "observed_first_three": [
+        "Polaris",
+        "Betelgeuse",
+        "Sirius"
+      ],
+      "result": "PASS"
+    },
+    "Declination Ascending": {
+      "expected_first_three": [
+        "Adhara",
+        "Sirius",
+        "Alphard"
+      ],
+      "observed_first_three": [
+        "Adhara",
+        "Sirius",
+        "Alphard"
+      ],
+      "result": "PASS"
+    },
+    "Declination Descending": {
+      "expected_first_three": [
+        "Polaris",
+        "Kochab",
+        "Dubhe"
+      ],
+      "observed_first_three": [
+        "Polaris",
+        "Kochab",
+        "Dubhe"
+      ],
+      "result": "PASS"
+    },
+    "Magnitude Ascending": {
+      "expected_first_three": [
+        "Sirius",
+        "Vega",
+        "Capella"
+      ],
+      "observed_first_three": [
+        "Sirius",
+        "Vega",
+        "Capella"
+      ],
+      "result": "PASS"
+    },
+    "Magnitude Descending": {
+      "expected_first_three": [
+        "Menkar",
+        "Markab",
+        "Scheat"
+      ],
+      "observed_first_three": [
+        "Menkar",
+        "Markab",
+        "Scheat"
+      ],
+      "result": "PASS"
+    },
+    "Score Ascending": {
+      "expected_first_three": [
+        "Capella",
+        "Denebola",
+        "Markab"
+      ],
+      "observed_first_three": [
+        "Capella",
+        "Denebola",
+        "Markab"
+      ],
+      "result": "PASS"
+    },
+    "Score Descending": {
+      "expected_first_three": [
+        "Procyon",
+        "Alnilam",
+        "Rigel"
+      ],
+      "observed_first_three": [
+        "Procyon",
+        "Alnilam",
+        "Rigel"
+      ],
+      "result": "PASS"
+    },
+    "Reason Ascending": {
+      "expected_first_three": [
+        "Vega",
+        "Markab",
+        "Eltanin"
+      ],
+      "observed_first_three": [
+        "Vega",
+        "Markab",
+        "Eltanin"
+      ],
+      "result": "PASS"
+    },
+    "Reason Descending": {
+      "expected_first_three": [
+        "Alphard",
+        "Capella",
+        "Mirfak"
+      ],
+      "observed_first_three": [
+        "Alphard",
+        "Capella",
+        "Mirfak"
+      ],
+      "result": "PASS"
+    }
+  },
+  "range_30_40": {
+    "observed_pairs": [
+      "Procyon / Menkar",
+      "Kochab / Alpheratz",
+      "Rigel / Alpheratz",
+      "Alnilam / Alpheratz",
+      "Procyon / Kochab"
+    ],
+    "observed_triads": [
+      "Alnilam / Menkar / Alpheratz",
+      "Rigel / Menkar / Alpheratz",
+      "Procyon / Alnilam / Menkar",
+      "Procyon / Rigel / Menkar",
+      "Procyon / Kochab / Menkar"
+    ],
+    "all_observed_members_within_range": true
+  },
+  "reversed_80_75": "Set the minimum recommended Hc below the maximum. No recommendations, independent sky remains available.",
+  "limit_disabled": "Both Hc fields visibly disabled and full recommendations recovered. Restored 10..75 and enabled.",
+  "sky": {
+    "mag1_visible_labels": [
+      "Vega",
+      "Capella",
+      "Aldebaran",
+      "Procyon",
+      "Rigel",
+      "Sirius"
+    ],
+    "mag2_added_visible_labels": [
+      "Deneb",
+      "Alioth",
+      "Dubhe",
+      "Hamal",
+      "Regulus"
+    ],
+    "mag3_added_visible_labels": [
+      "Scheat",
+      "Alpheratz",
+      "Denebola"
+    ],
+    "below_horizon_added": [
+      "Sun",
+      "Moon",
+      "Venus",
+      "Mars",
+      "Jupiter",
+      "Spica",
+      "Fomalhaut",
+      "Peacock",
+      "Achernar",
+      "Canopus",
+      "Rigil"
+    ],
+    "note": "Retained screenshot inspection confirms labels and positions; collision suppression means labels do not enumerate every plotted point. Below-horizon bodies appear as hollow horizon points with normal colours."
+  }
+}

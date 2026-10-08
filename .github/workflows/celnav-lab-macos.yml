@@ -1,0 +1,28 @@
+name: Celestial Navigation Lab macOS DMG
+
+on:
+  push:
+    branches:
+      - feature/celnav-lab-v0.1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos-universal:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Build and verify standalone DMG
+        run: bash ci/build-celestial-lab-macos.sh
+      - name: Save Bob's test installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: Celestial-Navigation-Lab-0.1.0-macOS-universal
+          path: artifacts/celnav-lab/*
+          if-no-files-found: error
+          retention-days: 30

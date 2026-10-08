@@ -1,0 +1,34 @@
+{
+  "profile_count": 2,
+  "name": "RESUME131 – Sextant α",
+  "serial": "ÉTOILE-131",
+  "points": [
+    157.6627181,
+    1.5,
+    0.1414213562,
+    2.0
+  ],
+  "protected_P0_unchanged": true,
+  "sights_sha256": "fba0ee0fdcff99897bd4cb66e3a106c7c1a8de6b3381692c525884e8039ae532",
+  "source_sha": "b236af56be81330e7f43f870bc400eaead6ed74d",
+  "test_scope": "Physical stale prediction rejection, fresh recovery and profile persistence; no independent ephemeris claim",
+  "inputs": {
+    "latitude": 51.4779,
+    "longitude": 0,
+    "utc": "2026-09-28T09:50:22.394Z",
+    "first_body": "Sirius",
+    "second_body": "Vega",
+    "contact": "centre",
+    "pressure_before_hpa": 1013,
+    "pressure_after_hpa": 1012,
+    "IE_arcmin": 1.5,
+    "note": "RESUME134-recovery",
+    "reading_uncertainty_arcmin": 0.2,
+    "repeat_count": 2
+  },
+  "predicted_before_deg": 157.6875494407356,
+  "predicted_after_deg": 157.68771814154385,
+  "cold_profile_subgroup_unchanged": true,
+  "cleanup_original_profile_subgroup_restored": true,
+  "cleanup_other_current_config_bytes_unchanged": true
+}

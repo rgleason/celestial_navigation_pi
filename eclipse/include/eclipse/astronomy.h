@@ -34,8 +34,34 @@ bool AstrometricPosition(const SpkKernel& kernel, std::int32_t target,
                          std::int32_t observer, double reception_et,
                          Vector3* position_km, std::string* error);
 
+// Airless apparent geocentric direction, retaining the light-time range.
+// Adds the observer's barycentric aberration to AstrometricPosition. Solar
+// light deflection is not included (sub-arcsecond away from the solar limb).
+bool ApparentGeocentricPosition(const SpkKernel& kernel, std::int32_t target,
+                                double reception_et, Vector3* position_km,
+                                std::string* error);
+
 Vector3 IcrfToEarthFixed(const Vector3& icrf,
                          const EarthOrientation& orientation);
+
+// WGS84 observer-specific light time followed by combined barycentric
+// aberration. Airless centre direction and geometric angular semidiameter.
+// No solar light deflection, resolved limb or geoid/vertical correction.
+bool ObserverApparentDirection(const SpkKernel& kernel, double reception_et,
+    const EarthOrientation& orientation, double latitude_deg,
+    double longitude_deg, double height_m, bool moon,
+    double* altitude_deg, double* azimuth_deg, double* semidiameter_deg,
+    std::string* error);
+
+// General centre-direction form for a target contained in the loaded SPK.
+// Range is from the actual WGS84 observer at reception to the retarded body;
+// the caller applies target-specific angular radius or phase conventions.
+bool ObserverApparentTargetDirection(const SpkKernel& kernel,
+    std::int32_t target, double reception_et,
+    const EarthOrientation& orientation, double latitude_deg,
+    double longitude_deg, double height_m,
+    double* altitude_deg, double* azimuth_deg, double* range_km,
+    std::string* error, bool venus_centre_of_light = false);
 
 bool ShadowAxisPosition(const SolarLunarState& state,
                         const EarthOrientation& orientation,

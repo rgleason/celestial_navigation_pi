@@ -34,6 +34,7 @@
 #include <list>
 
 class Sight;
+class wxCloseEvent;
 
 class ClockCorrectionDialog : public ClockCorrectionDialogBase {
 public:
@@ -41,8 +42,10 @@ public:
 
 private:
   void OnUpdate(wxSpinEvent& event);
+  void OnWindowClose(wxCloseEvent& event);
 
   CelestialNavigationDialog* m_Parent;
+  int m_initialValue;
 };
 
 #endif

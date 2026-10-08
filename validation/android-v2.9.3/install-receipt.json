@@ -1,0 +1,30 @@
+{
+  "source_commit": "cea26def05d35d94807ac1b52f53da720923ddd0",
+  "device_model": "SM-X210",
+  "abi": "arm64-v8a",
+  "host_version": "5.14.1-pob220-import-fix",
+  "plugin_version": "2.9.3.0",
+  "import_package_sha256": "34166645a7f8608da4976e6d9f692f27c45723e90a326f6f7531d1596b42f947",
+  "installed_library_sha256": "8c9e69f665b84644f860b027d5146d0bbd96c1fd058bdff2b6ea6b7383c6732a",
+  "protected_files_unchanged": 9,
+  "other_plugins_unchanged": 4,
+  "compact_preference_after_test": true,
+  "import_method": "Native Android OpenCPN Plugin Manager scoped file picker",
+  "checked_on": "2026-10-02",
+  "saved_sights_sha256": "525a29fb99931ace47f2ff5d4f633832804f61677ce58b159309afb445f5c0a4",
+  "star_provider_confirmed_in_installed_plugin": "Compact 0.2.0; unsaved Aldebaran sight, cancelled",
+  "physical_ui_checks": [
+    "Portrait full-width position and fractional UTC entry",
+    "Absolute hour forward/reverse preserves milliseconds",
+    "Body-card selection enables correct Create sight; CSV action visible",
+    "Sparse/Balanced/More label choices; touch identifies Polaris",
+    "SHA covers -90 to +90 declination; Moon spans 3/6/12 hours",
+    "Moon path disabled for Local sky; coherent instantaneous plot",
+    "UTC Moon-track labels match entered instant",
+    "Landscape layout settles to full chart surface",
+    "Advanced Compact toggle writes 0 and 1; left enabled",
+    "Traditional lunar companion/order controls fit portrait"
+  ],
+  "final_plot_labels": "Balanced",
+  "final_moon_span_hours": 3
+}

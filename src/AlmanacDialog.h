@@ -23,6 +23,7 @@ class AlmanacDialog : public wxDialog {
 public:
   explicit AlmanacDialog(CelestialNavigationDialog* parent,
                          const wxString& preferredRouteGuid = wxString());
+  ~AlmanacDialog() override;
   void SelectIntegrationPage(int page);
 
 private:
@@ -31,7 +32,7 @@ private:
   void UpdateCoverageControls();
   void ApplyPresetSelection();
   AlmanacRequest ReadRequest(wxString* error, bool includeRoute = true) const;
-  void UpdateSummary();
+  void UpdateSummary(bool calculate = false);
   void OnChanged(wxCommandEvent& event);
   void OnDateChanged(wxDateEvent& event);
   void OnPreset(wxCommandEvent& event);
@@ -63,6 +64,7 @@ private:
   wxCheckBox* m_aries;
   wxCheckBox* m_planets;
   wxCheckBox* m_stars;
+  wxCheckBox* m_monthlyStars;
   wxCheckBox* m_usefulPlanets;
   wxCheckBox* m_events;
   wxCheckBox* m_moonInfo;
@@ -91,7 +93,11 @@ private:
   wxCheckBox* m_compact;
   wxCheckBox* m_booklet;
   wxSpinCtrl* m_signaturePages;
+#ifdef __OCPN__ANDROID__
+  wxTextCtrl* m_output;
+#else
   wxFilePickerCtrl* m_output;
+#endif
   wxScrolledWindow* m_summaryPanel;
   wxStaticText* m_summary;
   wxStaticText* m_warning;

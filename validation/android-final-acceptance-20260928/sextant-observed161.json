@@ -1,0 +1,34 @@
+{
+  "source": "8bc86ec",
+  "host_pid": 443,
+  "input_method": "Actual native touch/typed fields, native calendar; independent retained USNO fixture123 preexists result",
+  "date_UTC": "2024-06-14T17:00:00Z",
+  "position": [
+    51.4779,
+    0
+  ],
+  "pressure_hPa": 1013,
+  "temperature_C": 10,
+  "IE_arcmin": 0,
+  "bodies": [
+    "Moon",
+    "Sun"
+  ],
+  "actual_degree": {
+    "centre": 95.71648711196839,
+    "near": 95.20538395316031,
+    "far": 96.22759027077647
+  },
+  "expected_degree": {
+    "centre": 95.72044352965911,
+    "near": 95.2093055296591,
+    "far": 96.23158152965911
+  },
+  "errors_arcmin": {
+    "centre": 0.23738506144297844,
+    "near": 0.23529458992783248,
+    "far": 0.2394755329581244
+  },
+  "limit_arcmin": 0.5,
+  "result": "PASS"
+}

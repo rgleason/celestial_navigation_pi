@@ -9,19 +9,26 @@
 #include <wx/calctrl.h>
 
 #include "Sight.h"
+#include "DialogTransactionState.h"
 
 class wxCheckBox;
 class wxChoice;
 class wxCalendarEvent;
+class wxCloseEvent;
 class wxScrolledWindow;
 class wxSpinCtrl;
 class wxSpinCtrlDouble;
 class wxStaticText;
+class wxTextCtrl;
 
 class HorizonEventDialog : public wxDialog {
 public:
+  enum class Mode { Create, Edit };
+
   HorizonEventDialog(wxWindow* parent, Sight& sight, int clockOffset,
-                     const wxString& systemTimeSummary);
+                     const wxString& systemTimeSummary,
+                     Mode mode = Mode::Edit);
+  ~HorizonEventDialog() override;
 
 private:
   void OnCaptureNow(wxCommandEvent& event);
@@ -29,6 +36,8 @@ private:
   void OnCalendarChanged(wxCalendarEvent& event);
   void OnQualityChanged(wxCommandEvent& event);
   void OnOK(wxCommandEvent& event);
+  void OnWindowClose(wxCloseEvent& event);
+  void MarkDirty();
   void UpdatePreview();
   void UpdateBearingControls();
   void RelayoutContent();
@@ -37,13 +46,18 @@ private:
   Sight& m_sight;
   int m_clockOffset;
   wxString m_systemTimeSummary;
+  DialogTransactionState m_transaction;
 
   wxScrolledWindow* m_scroller;
   wxChoice* m_event;
   wxCalendarCtrl* m_calendar;
   wxSpinCtrl* m_hours;
   wxSpinCtrl* m_minutes;
+#ifdef __OCPN__ANDROID__
+  wxSpinCtrlDouble* m_seconds;
+#else
   wxSpinCtrl* m_seconds;
+#endif
   wxSpinCtrlDouble* m_timeUncertainty;
   wxChoice* m_timeSource;
   wxCheckBox* m_hasBearing;
@@ -59,6 +73,10 @@ private:
   wxSpinCtrlDouble* m_altitudeUncertainty;
   wxStaticText* m_trueBearing;
   wxStaticText* m_preview;
+  wxTextCtrl* m_remarks;
+#ifdef __OCPN__ANDROID__
+  bool m_androidCapturingTime = false;
+#endif
 };
 
 #endif

@@ -1,0 +1,50 @@
+{
+  "source_sha": "e7e6691",
+  "source_references": [
+    "usno-220000.json",
+    "usno-220500.json"
+  ],
+  "physical_transcription": true,
+  "case": "Vega far / Moon upper, separate recorded watch readings",
+  "reference_UTC": "2024-06-21T22:00:00.000Z",
+  "DR": [
+    51.4779,
+    0
+  ],
+  "Moon_offset_seconds": 300,
+  "body_offset_seconds": 0,
+  "Moon_Hs": 6.070201,
+  "LD": 68.7820392764501,
+  "distance_sigma_arcmin": 1.234567891234123,
+  "Moon_sigma_arcmin": 0.765432198765,
+  "entered_UTC_residual_arcmin": -0.112602,
+  "entered_UTC_nearest_position": [
+    51.46653,
+    -0.002525
+  ],
+  "independent_distance_nm": 0.6891604658613601,
+  "recovered_correction_seconds": -97.485352,
+  "formal_clock_sigma_seconds": 1068.4,
+  "evidence": [
+    "resume123-lunar-sequential-check.png",
+    "resume123-lunar-sequential-results.png"
+  ],
+  "saved_XML_sha256": "9dfb0f55d438fddfccb111d00776620dbe36555bb7515b2e1f847319846cb9a2",
+  "limits": "Entered UTC position <3NM and absolute angular residual <0.5 arcmin. Weak single-Vega clock sensitivity is not precise recovered-clock acceptance.",
+  "moving_observer_case": {
+    "COG_true": 90,
+    "SOG_knots": 10,
+    "Moon_Hs": 6.07574,
+    "source_reference": "usno-220500-motion.json",
+    "entered_UTC_residual_arcmin": -0.112615,
+    "nearest_reference_epoch_position": [
+      51.466544999999996,
+      -0.00252
+    ],
+    "independent_distance_nm": 0.6882427316261808,
+    "recovered_correction_seconds": -97.485352,
+    "formal_clock_sigma_seconds": 1068.4,
+    "evidence": "resume123-lunar-motion-check.png",
+    "saved_XML_sha256": "973bc29e2ec1296db48f1cc1ed322a03ed09c1ebeba87f70c8cd4af7d17b1e4d"
+  }
+}

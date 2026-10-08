@@ -33,7 +33,7 @@ Horizontal ToHorizontal(const BodySample& body,
   const double latitude = environment.observer.latitude_deg * kDegToRad;
   const double declination = body.geographic_latitude_deg * kDegToRad;
   const double hour_angle =
-      (body.geographic_longitude_deg + environment.observer.longitude_deg) *
+      (environment.observer.longitude_deg - body.geographic_longitude_deg) *
       kDegToRad;
   const double sin_altitude =
       std::sin(latitude) * std::sin(declination) +
@@ -97,6 +97,15 @@ PairPrediction PredictApparentCenterDistance(const BodySample& first,
   return result;
 }
 
+double IndexCorrectedObservedDegrees(const CheckReading& reading) {
+  return reading.observed_deg - reading.index_error_arcmin / 60.0;
+}
+
+double ResidualCorrectionArcmin(const CheckReading& reading) {
+  return (reading.predicted_deg - IndexCorrectedObservedDegrees(reading)) *
+         60.0;
+}
+
 Profile BuildProfile(const std::string& name, const std::string& serial,
                      const std::string& created_utc,
                      const std::vector<CheckReading>& readings,
@@ -105,6 +114,7 @@ Profile BuildProfile(const std::string& name, const std::string& serial,
   profile.name = name;
   profile.serial_number = serial;
   profile.created_utc = created_utc;
+  profile.excludes_index_error = true;
   bin_width_deg = std::max(1.0, bin_width_deg);
   std::map<int, std::vector<const CheckReading*>> bins;
   std::vector<double> all_corrections;
@@ -117,8 +127,7 @@ Profile BuildProfile(const std::string& name, const std::string& serial,
     // repeat set into two artificial calibration ranges.
     bins[static_cast<int>(std::floor(reading.predicted_deg / bin_width_deg))]
         .push_back(&reading);
-    all_corrections.push_back((reading.predicted_deg - reading.observed_deg) *
-                              60.0);
+    all_corrections.push_back(ResidualCorrectionArcmin(reading));
   }
   for (const auto& bin : bins) {
     double weighted_angle = 0.0;
@@ -127,9 +136,8 @@ Profile BuildProfile(const std::string& name, const std::string& serial,
     for (const CheckReading* reading : bin.second) {
       const double sigma = std::max(0.05, reading->uncertainty_arcmin);
       const double weight = 1.0 / (sigma * sigma);
-      weighted_angle += weight * reading->observed_deg;
-      weighted_correction +=
-          weight * (reading->predicted_deg - reading->observed_deg) * 60.0;
+      weighted_angle += weight * IndexCorrectedObservedDegrees(*reading);
+      weighted_correction += weight * ResidualCorrectionArcmin(*reading);
       weight_sum += weight;
     }
     CorrectionPoint point;
@@ -138,8 +146,7 @@ Profile BuildProfile(const std::string& name, const std::string& serial,
     point.reading_count = static_cast<int>(bin.second.size());
     double scatter = 0.0;
     for (const CheckReading* reading : bin.second) {
-      const double correction =
-          (reading->predicted_deg - reading->observed_deg) * 60.0;
+      const double correction = ResidualCorrectionArcmin(*reading);
       scatter += (correction - point.correction_arcmin) *
                  (correction - point.correction_arcmin);
     }
@@ -148,6 +155,12 @@ Profile BuildProfile(const std::string& name, const std::string& serial,
             ? std::sqrt(scatter / (bin.second.size() - 1)) /
                   std::sqrt(static_cast<double>(bin.second.size()))
             : bin.second.front()->uncertainty_arcmin;
+#ifdef __OCPN__ANDROID__
+    // POBsoft (1985-2026): entered independent measurement uncertainties
+    // bound the weighted mean even when repeated readings have no scatter.
+    point.uncertainty_arcmin = std::max(
+        point.uncertainty_arcmin, std::sqrt(1.0 / weight_sum));
+#endif
     profile.points.push_back(point);
   }
   if (all_corrections.size() > 1) {

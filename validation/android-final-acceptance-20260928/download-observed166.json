@@ -1,0 +1,16 @@
+{
+  "source": "98d612c",
+  "host_pid": 9674,
+  "archive_sha256": "1938799a9b71e544c31bea47dfba913acabc564f2f1fc293288b83346cb9d0de",
+  "installed_so_sha256": "4e402d95249206288b1554284124581a33d7ff85c9e511eda63cd607f0eff219",
+  "successful_small_optional_download": "native verified/installed success after spinner dismissal",
+  "cancellation": "native active LOLA Cancel touch gives explicit cancelled immediately; PID unchanged; online",
+  "screens": [
+    "finish166-pck-success.png",
+    "finish166-lola-start.png",
+    "finish166-lola-cancel.png",
+    "finish166-idle-after-cancel.png"
+  ],
+  "status": "PASS",
+  "earlier_failures": "164 pending queue failed; 165 native spinner intercepted touches; repaired166; retain history"
+}

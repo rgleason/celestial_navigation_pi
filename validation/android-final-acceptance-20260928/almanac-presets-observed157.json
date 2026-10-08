@@ -1,0 +1,42 @@
+{
+  "installed_source": "8bc86ec",
+  "host_pid": 27701,
+  "result": "PASS",
+  "scope": "Actual native preset content and form controls; no repeated PDF generation",
+  "PassageBrief": {
+    "safety": "Planning reference",
+    "enforce_dependencies": false,
+    "stars": true,
+    "sky_plots": false,
+    "corrections": false,
+    "instructions": true,
+    "lunar_reference": false,
+    "emergency": false,
+    "forms": [
+      2,
+      1,
+      1,
+      0,
+      0
+    ]
+  },
+  "CelestialNavigator": {
+    "safety": "Self-contained: calculator",
+    "enforce_dependencies": true,
+    "useful_planets_only": false,
+    "stars": true,
+    "sky_plots": true,
+    "corrections": true,
+    "instructions": true,
+    "lunar_reference": true,
+    "emergency": true,
+    "forms": [
+      8,
+      4,
+      3,
+      3,
+      2
+    ]
+  },
+  "complete_library_byte_match": true
+}

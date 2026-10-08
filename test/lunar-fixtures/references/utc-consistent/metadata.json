@@ -1,0 +1,12 @@
+{
+  "cases_retimed": [
+    "06-Sirius",
+    "07-Arcturus",
+    "08-Vega"
+  ],
+  "independent_UTC_TT_max_difference_seconds": 4.023313522338867e-05,
+  "calendar_UTC_mapping": "Matches explicit normal-UTC-field callback; leap instant itself remains unsupported",
+  "dut1_policy": "Same fixed supplied DUT1 as original engine callbacks, for controlled consistency test; does not claim physical UT1 continuity across a leap",
+  "reference": "Independent Skyfield/DE440s directions, unchanged catalogue",
+  "discontinuity": "Explicit interpolation break at offset -1 seconds; two adjacent samples retained"
+}

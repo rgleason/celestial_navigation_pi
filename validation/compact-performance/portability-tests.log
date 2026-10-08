@@ -1,0 +1,23 @@
+Running main() from /usr/src/debug/gtest/googletest-1.18.0/googletest/src/gtest_main.cc
+Note: Google Test filter = CompactPerformance.*
+[==========] Running 5 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 5 tests from CompactPerformance
+[ RUN      ] CompactPerformance.FrozenPreOptimizationCoordinatesAreUnchanged
+[       OK ] CompactPerformance.FrozenPreOptimizationCoordinatesAreUnchanged (92 ms)
+[ RUN      ] CompactPerformance.PhaseAndHorizonConventionsMatchPreviousEngine
+/usr/src/debug/wxwidgets/wxWidgets/src/common/stdpbase.cpp(59): assert ""traits"" failed in Get(): create wxApp before calling this
+[       OK ] CompactPerformance.PhaseAndHorizonConventionsMatchPreviousEngine (2758 ms)
+[ RUN      ] CompactPerformance.SharedLunarHarmonicsMatchOriginalSummationAcrossCoverage
+Lunar harmonic reuse: maximum coordinate rounding difference 8.73115e-05 mm over 6192 epochs/both published fits
+[       OK ] CompactPerformance.SharedLunarHarmonicsMatchOriginalSummationAcrossCoverage (2701 ms)
+[ RUN      ] CompactPerformance.CacheKeysRetainObserverAndEarthRotationInputs
+[       OK ] CompactPerformance.CacheKeysRetainObserverAndEarthRotationInputs (113 ms)
+[ RUN      ] CompactPerformance.RepeatedExactRequestsAvoidRecomputingTheModel
+Exact request reuse: 1.3323e-05s cached / 0.17937s uncached
+[       OK ] CompactPerformance.RepeatedExactRequestsAvoidRecomputingTheModel (234 ms)
+[----------] 5 tests from CompactPerformance (5900 ms total)
+
+[----------] Global test environment tear-down
+[==========] 5 tests from 1 test suite ran. (5900 ms total)
+[  PASSED  ] 5 tests.

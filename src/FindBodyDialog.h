@@ -29,16 +29,22 @@
 #define _FINDBODYDIALOG_H_
 
 #include "CelestialNavigationUI.h"
+#include <functional>
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
 #endif
 
 class Sight;
+class CelestialNavigationDialog;
+class wxChoice;
+class wxStaticText;
 
 class FindBodyDialog : public FindBodyDialogBase {
 public:
-  FindBodyDialog(wxWindow* parent, Sight& sight);
+  using CopyHsHandler = std::function<void(const wxString&)>;
+  FindBodyDialog(wxWindow* parent, Sight& sight,
+                 CopyHsHandler copyHs = CopyHsHandler());
   ~FindBodyDialog();
 
   void OnUpdate(wxCommandEvent& event);
@@ -53,6 +59,27 @@ public:
   Sight& m_Sight;
   int m_lastPanX;
   int m_lastPanY;
+
+private:
+  CelestialNavigationDialog* NavigationDialog() const;
+  void ChangePositionSource(wxCommandEvent& event);
+  void ApplyPositionSource();
+  void SetCoordinates(double latitude, double longitude);
+  void ResetPosition();
+  void CopyEstimatedHs();
+  void CloseKeepingPosition();
+  void CancelPosition();
+#ifdef __OCPN__ANDROID__
+  bool ReadAndroidPosition(double* latitude, double* longitude) const;
+#endif
+  CopyHsHandler m_copyHs;
+  wxButton* m_copyHsButton;
+  wxTextCtrl* m_observedAltitude;
+  wxChoice* m_positionSource;
+  wxStaticText* m_positionInfo;
+  int m_appliedPositionSource;
+  double m_initialLatitude, m_initialLongitude;
+  bool m_initialBoatPosition;
 };
 
 #endif

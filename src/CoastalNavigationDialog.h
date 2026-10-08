@@ -6,6 +6,7 @@
 #include <wx/dialog.h>
 
 #include <vector>
+#include <map>
 
 class CelestialNavigationDialog;
 class piDC;
@@ -19,7 +20,7 @@ class wxTextCtrl;
 class CoastalNavigationDialog : public wxDialog {
 public:
   explicit CoastalNavigationDialog(CelestialNavigationDialog* parent);
-  ~CoastalNavigationDialog() override = default;
+  ~CoastalNavigationDialog() override;
 
   bool Render(piDC* dc, PlugIn_ViewPort* viewport);
 
@@ -41,6 +42,22 @@ private:
   void NewObservation(wxCommandEvent& event);
   void ClearPlots(wxCommandEvent& event);
   void RefreshChart();
+#ifdef __OCPN__ANDROID__
+  void ShowAndroidChart(bool vertical);
+  wxButton* m_androidVerticalChart = nullptr;
+  wxButton* m_androidHorizontalChart = nullptr;
+  coastal_navigation::GeoPoint m_androidVerticalTarget;
+  coastal_navigation::GeoPoint m_androidHorizontalCentre;
+  double m_androidRangeNm = 0;
+#endif
+  void SetWrappedLabel(wxStaticText* control, const wxString& text);
+  void Rewrap();
+  void UpdateVerticalGuidance();
+  void AddWaypointPicker(wxSizer* layout, wxWindow* page, const wxString& label,
+                         wxTextCtrl* latitude, wxTextCtrl* longitude);
+  std::map<wxStaticText*,wxString> m_wrappedLabels;
+  bool m_rewrapping = false;
+  wxStaticText* m_verticalGuidance;
 
   CelestialNavigationDialog* m_parent;
   wxChoice* m_verticalMode;

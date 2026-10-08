@@ -14,6 +14,7 @@ class ResidualPlotPanel;
 class SightAnalysisDialog : public wxDialog {
 public:
   explicit SightAnalysisDialog(CelestialNavigationDialog* parent);
+  ~SightAnalysisDialog() override;
 
 private:
   void Analyze(wxCommandEvent& event);
@@ -28,6 +29,9 @@ private:
   wxStaticText* m_summary;
   ResidualPlotPanel* m_plot;
   wxListCtrl* m_results;
+#ifdef __OCPN__ANDROID__
+  wxStaticText* m_androidResults;
+#endif
 };
 
 #endif

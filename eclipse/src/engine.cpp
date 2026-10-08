@@ -121,6 +121,9 @@ bool EclipseEngine::OpenEphemeris(const std::string& path, std::string* error) {
 bool EclipseEngine::State(double tt_jd, double delta_t_seconds,
                           SolarLunarState* state, EarthOrientation* orientation,
                           std::string* error) const {
+#ifdef __OCPN__ANDROID__
+  if (androidCheckpoint_) androidCheckpoint_();
+#endif
   if (!state || !orientation) return false;
   orientation->tt_jd = tt_jd;
   orientation->ut1_jd = tt_jd - delta_t_seconds / 86400.0;

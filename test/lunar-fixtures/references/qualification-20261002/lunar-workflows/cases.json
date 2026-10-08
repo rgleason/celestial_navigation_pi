@@ -1,0 +1,390 @@
+{
+  "reference": "Independent Skyfield/DE440s; 5-second interpolation over +/-600 seconds",
+  "cases": [
+    {
+      "name": "00-Sirius",
+      "utc": "1972-01-01T00:00:00",
+      "body": "Sirius",
+      "latitude": 14.17835762735238,
+      "longitude": 2.1357562233441816,
+      "dut1": -0.0454859,
+      "initial_distance_deg": 41.74662829121926,
+      "table": "references/qualification-20261002/lunar-workflows/00-Sirius.tsv"
+    },
+    {
+      "name": "01-Arcturus",
+      "utc": "1972-01-01T00:00:00",
+      "body": "Arcturus",
+      "latitude": 45.64431614997849,
+      "longitude": 60.15200366141729,
+      "dut1": -0.0454859,
+      "initial_distance_deg": 99.37677545855266,
+      "table": "references/qualification-20261002/lunar-workflows/01-Arcturus.tsv"
+    },
+    {
+      "name": "02-Vega",
+      "utc": "1972-01-01T00:00:00",
+      "body": "Vega",
+      "latitude": 85,
+      "longitude": 25.359227482488794,
+      "dut1": -0.0454859,
+      "initial_distance_deg": 116.11117207730389,
+      "table": "references/qualification-20261002/lunar-workflows/02-Vega.tsv"
+    },
+    {
+      "name": "03-Sirius",
+      "utc": "1979-12-03T17:00:16",
+      "body": "Sirius",
+      "latitude": 10.203734049535836,
+      "longitude": 118.29459536127429,
+      "dut1": -0.2832439249259259,
+      "initial_distance_deg": 45.931275734465544,
+      "table": "references/qualification-20261002/lunar-workflows/03-Sirius.tsv"
+    },
+    {
+      "name": "04-Arcturus",
+      "utc": "1979-12-03T17:00:16",
+      "body": "Arcturus",
+      "latitude": 56.904581503456185,
+      "longitude": 173.4595096442724,
+      "dut1": -0.2832439249259259,
+      "initial_distance_deg": 129.4082011665413,
+      "table": "references/qualification-20261002/lunar-workflows/04-Arcturus.tsv"
+    },
+    {
+      "name": "05-Vega",
+      "utc": "1979-12-03T17:00:16",
+      "body": "Vega",
+      "latitude": 72.70031541559145,
+      "longitude": 48.300399682392914,
+      "dut1": -0.2832439249259259,
+      "initial_distance_deg": 117.65767416352254,
+      "table": "references/qualification-20261002/lunar-workflows/05-Vega.tsv"
+    },
+    {
+      "name": "06-Sirius",
+      "utc": "1992-07-01T00:00:01",
+      "body": "Sirius",
+      "latitude": 12.179711837277587,
+      "longitude": -175.06367776807446,
+      "dut1": 0.44304638383333333,
+      "initial_distance_deg": 38.244052395595105,
+      "table": "references/qualification-20261002/lunar-workflows/06-Sirius.tsv"
+    },
+    {
+      "name": "07-Arcturus",
+      "utc": "1992-07-01T00:00:01",
+      "body": "Arcturus",
+      "latitude": 41.498680048335444,
+      "longitude": -118.25584806804193,
+      "dut1": 0.44304638383333333,
+      "initial_distance_deg": 97.56400397945848,
+      "table": "references/qualification-20261002/lunar-workflows/07-Arcturus.tsv"
+    },
+    {
+      "name": "08-Vega",
+      "utc": "1992-07-01T00:00:01",
+      "body": "Vega",
+      "latitude": 85,
+      "longitude": -137.47849626523873,
+      "dut1": 0.44304638383333333,
+      "initial_distance_deg": 119.67506245018023,
+      "table": "references/qualification-20261002/lunar-workflows/08-Vega.tsv"
+    },
+    {
+      "name": "09-Sirius",
+      "utc": "2003-08-28T10:00:00",
+      "body": "Sirius",
+      "latitude": 6.471352291051951,
+      "longitude": 8.31416316744378,
+      "dut1": -0.34960765,
+      "initial_distance_deg": 70.32289394573489,
+      "table": "references/qualification-20261002/lunar-workflows/09-Sirius.tsv"
+    },
+    {
+      "name": "10-Arcturus",
+      "utc": "2003-08-28T10:00:00",
+      "body": "Arcturus",
+      "latitude": 26.26619914627998,
+      "longitude": 63.67153756369228,
+      "dut1": -0.34960765,
+      "initial_distance_deg": 46.17928035648549,
+      "table": "references/qualification-20261002/lunar-workflows/10-Arcturus.tsv"
+    },
+    {
+      "name": "11-Vega",
+      "utc": "2003-08-28T10:00:00",
+      "body": "Vega",
+      "latitude": 49.30645493372504,
+      "longitude": 87.0456131908642,
+      "dut1": -0.34960765,
+      "initial_distance_deg": 100.10722283642401,
+      "table": "references/qualification-20261002/lunar-workflows/11-Vega.tsv"
+    },
+    {
+      "name": "12-Sun",
+      "utc": "2015-05-11T07:31:19",
+      "body": "Sun",
+      "latitude": 14.442925807950719,
+      "longitude": 21.423173037344334,
+      "dut1": -0.6295114630868055,
+      "initial_distance_deg": 91.67333651257469,
+      "table": "references/qualification-20261002/lunar-workflows/12-Sun.tsv"
+    },
+    {
+      "name": "13-Sirius",
+      "utc": "2015-05-11T07:31:19",
+      "body": "Sirius",
+      "latitude": -27.364078363604946,
+      "longitude": 47.10458734093629,
+      "dut1": -0.6295114630868055,
+      "initial_distance_deg": 132.77535836995372,
+      "table": "references/qualification-20261002/lunar-workflows/13-Sirius.tsv"
+    },
+    {
+      "name": "14-Arcturus",
+      "utc": "2015-05-11T07:31:19",
+      "body": "Arcturus",
+      "latitude": 16.33922622010622,
+      "longitude": -73.26979965561891,
+      "dut1": -0.6295114630868055,
+      "initial_distance_deg": 108.38784298872568,
+      "table": "references/qualification-20261002/lunar-workflows/14-Arcturus.tsv"
+    },
+    {
+      "name": "15-Vega",
+      "utc": "2015-05-11T07:31:19",
+      "body": "Vega",
+      "latitude": 24.535313691471668,
+      "longitude": -39.610998488181096,
+      "dut1": -0.6295114630868055,
+      "initial_distance_deg": 62.778675119519015,
+      "table": "references/qualification-20261002/lunar-workflows/15-Vega.tsv"
+    },
+    {
+      "name": "16-Sun",
+      "utc": "2020-12-21T18:00:00",
+      "body": "Sun",
+      "latitude": -10.113983820604684,
+      "longitude": -43.2784230511319,
+      "dut1": -0.17837645000000002,
+      "initial_distance_deg": 87.37964333602774,
+      "table": "references/qualification-20261002/lunar-workflows/16-Sun.tsv"
+    },
+    {
+      "name": "17-Sirius",
+      "utc": "2020-12-21T18:00:00",
+      "body": "Sirius",
+      "latitude": -7.424765733005874,
+      "longitude": 48.646762112996896,
+      "dut1": -0.17837645000000002,
+      "initial_distance_deg": 99.31421648285131,
+      "table": "references/qualification-20261002/lunar-workflows/17-Sirius.tsv"
+    },
+    {
+      "name": "18-Arcturus",
+      "utc": "2020-12-21T18:00:00",
+      "body": "Arcturus",
+      "latitude": 31.66733046251225,
+      "longitude": -68.90726607180353,
+      "dut1": -0.17837645000000002,
+      "initial_distance_deg": 144.1620877832102,
+      "table": "references/qualification-20261002/lunar-workflows/18-Arcturus.tsv"
+    },
+    {
+      "name": "19-Vega",
+      "utc": "2020-12-21T18:00:00",
+      "body": "Vega",
+      "latitude": 31.175940463001204,
+      "longitude": -35.18192899053213,
+      "dut1": -0.17837645000000002,
+      "initial_distance_deg": 86.30371359981102,
+      "table": "references/qualification-20261002/lunar-workflows/19-Vega.tsv"
+    },
+    {
+      "name": "20-Sirius",
+      "utc": "2025-03-13T07:00:00",
+      "body": "Sirius",
+      "latitude": 5.146609025913356,
+      "longitude": -142.92615999483937,
+      "dut1": 0.043742841666666664,
+      "initial_distance_deg": 66.4811363428113,
+      "table": "references/qualification-20261002/lunar-workflows/20-Sirius.tsv"
+    },
+    {
+      "name": "21-Arcturus",
+      "utc": "2025-03-13T07:00:00",
+      "body": "Arcturus",
+      "latitude": 25.12446976961235,
+      "longitude": -87.77958635467034,
+      "dut1": 0.043742841666666664,
+      "initial_distance_deg": 49.93018833146135,
+      "table": "references/qualification-20261002/lunar-workflows/21-Arcturus.tsv"
+    },
+    {
+      "name": "22-Vega",
+      "utc": "2025-03-13T07:00:00",
+      "body": "Vega",
+      "latitude": 48.902526344101105,
+      "longitude": -65.22953616595606,
+      "dut1": 0.043742841666666664,
+      "initial_distance_deg": 103.99111366770617,
+      "table": "references/qualification-20261002/lunar-workflows/22-Vega.tsv"
+    },
+    {
+      "name": "23-Sun",
+      "utc": "2027-10-26T20:32:56",
+      "body": "Sun",
+      "latitude": 2.0343385904823057,
+      "longitude": -149.74763977370043,
+      "dut1": 0,
+      "initial_distance_deg": 35.63911797458835,
+      "table": "references/qualification-20261002/lunar-workflows/23-Sun.tsv"
+    },
+    {
+      "name": "24-Sirius",
+      "utc": "2027-10-26T20:32:56",
+      "body": "Sirius",
+      "latitude": -2.136870157798773,
+      "longitude": 156.69619452671378,
+      "dut1": 0,
+      "initial_distance_deg": 74.68166390238062,
+      "table": "references/qualification-20261002/lunar-workflows/24-Sirius.tsv"
+    },
+    {
+      "name": "25-Arcturus",
+      "utc": "2027-10-26T20:32:56",
+      "body": "Arcturus",
+      "latitude": 18.65934965857383,
+      "longitude": -148.45588662775174,
+      "dut1": 0,
+      "initial_distance_deg": 43.05305669080454,
+      "table": "references/qualification-20261002/lunar-workflows/25-Arcturus.tsv"
+    },
+    {
+      "name": "26-Vega",
+      "utc": "2027-10-26T20:32:56",
+      "body": "Vega",
+      "latitude": 37.42141514969116,
+      "longitude": -124.1382949796047,
+      "dut1": 0,
+      "initial_distance_deg": 101.82913161743338,
+      "table": "references/qualification-20261002/lunar-workflows/26-Vega.tsv"
+    },
+    {
+      "name": "27-Sun",
+      "utc": "2062-03-14T16:24:06",
+      "body": "Sun",
+      "latitude": 17.90399887744134,
+      "longitude": -44.4013823495816,
+      "dut1": 0,
+      "initial_distance_deg": 43.64185467023748,
+      "table": "references/qualification-20261002/lunar-workflows/27-Sun.tsv"
+    },
+    {
+      "name": "28-Sirius",
+      "utc": "2062-03-14T16:24:06",
+      "body": "Sirius",
+      "latitude": 10.18645270109064,
+      "longitude": 9.661784612903379,
+      "dut1": 0,
+      "initial_distance_deg": 74.61611106255906,
+      "table": "references/qualification-20261002/lunar-workflows/28-Sirius.tsv"
+    },
+    {
+      "name": "29-Arcturus",
+      "utc": "2062-03-14T16:24:06",
+      "body": "Arcturus",
+      "latitude": 85,
+      "longitude": -37.64845517732974,
+      "dut1": 0,
+      "initial_distance_deg": 144.02471196776375,
+      "table": "references/qualification-20261002/lunar-workflows/29-Arcturus.tsv"
+    },
+    {
+      "name": "30-Vega",
+      "utc": "2062-03-14T16:24:06",
+      "body": "Vega",
+      "latitude": 54.21175287731671,
+      "longitude": -72.43392482551448,
+      "dut1": 0,
+      "initial_distance_deg": 97.28940268545526,
+      "table": "references/qualification-20261002/lunar-workflows/30-Vega.tsv"
+    },
+    {
+      "name": "31-Sun",
+      "utc": "2094-02-11T10:53:58",
+      "body": "Sun",
+      "latitude": -10.00113415405104,
+      "longitude": -6.830606039621083,
+      "dut1": 0,
+      "initial_distance_deg": 52.796076241393884,
+      "table": "references/qualification-20261002/lunar-workflows/31-Sun.tsv"
+    },
+    {
+      "name": "32-Sirius",
+      "utc": "2094-02-11T10:53:58",
+      "body": "Sirius",
+      "latitude": -63.50010919669025,
+      "longitude": -127.81532165640843,
+      "dut1": 0,
+      "initial_distance_deg": 139.43927762048494,
+      "table": "references/qualification-20261002/lunar-workflows/32-Sirius.tsv"
+    },
+    {
+      "name": "33-Arcturus",
+      "utc": "2094-02-11T10:53:58",
+      "body": "Arcturus",
+      "latitude": 8.131432674701202,
+      "longitude": -63.1274693569418,
+      "dut1": 0,
+      "initial_distance_deg": 67.81512974522342,
+      "table": "references/qualification-20261002/lunar-workflows/33-Arcturus.tsv"
+    },
+    {
+      "name": "34-Vega",
+      "utc": "2094-02-11T10:53:58",
+      "body": "Vega",
+      "latitude": 18.464353466295798,
+      "longitude": -30.70388939778479,
+      "dut1": 0,
+      "initial_distance_deg": 61.53493020669479,
+      "table": "references/qualification-20261002/lunar-workflows/34-Vega.tsv"
+    }
+  ],
+  "eligible_cases": 32,
+  "coverage_boundary_cases": [
+    {
+      "name": "00-Sirius",
+      "utc": "1972-01-01T00:00:00",
+      "body": "Sirius",
+      "latitude": 14.17835762735238,
+      "longitude": 2.1357562233441816,
+      "dut1": -0.0454859,
+      "initial_distance_deg": 41.74662829121926,
+      "table": "references/qualification-20261002/lunar-workflows/00-Sirius.tsv"
+    },
+    {
+      "name": "01-Arcturus",
+      "utc": "1972-01-01T00:00:00",
+      "body": "Arcturus",
+      "latitude": 45.64431614997849,
+      "longitude": 60.15200366141729,
+      "dut1": -0.0454859,
+      "initial_distance_deg": 99.37677545855266,
+      "table": "references/qualification-20261002/lunar-workflows/01-Arcturus.tsv"
+    },
+    {
+      "name": "02-Vega",
+      "utc": "1972-01-01T00:00:00",
+      "body": "Vega",
+      "latitude": 85,
+      "longitude": 25.359227482488794,
+      "dut1": -0.0454859,
+      "initial_distance_deg": 116.11117207730389,
+      "table": "references/qualification-20261002/lunar-workflows/02-Vega.tsv"
+    }
+  ],
+  "boundary_policy": "Candidate correctly rejects a root-search bracket crossing 1972. Future routing must use the legacy provider for the whole bracket.",
+  "shared_solver": "Unmodified development LunarDistanceEngine.cpp object; common spherical clearing isolates ephemeris error"
+}

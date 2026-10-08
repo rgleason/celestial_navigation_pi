@@ -32,6 +32,11 @@ struct RangeResult {
   double corrected_angle_deg = 0.0;
   double effective_height_m = 0.0;
   double range_nm = 0.0;
+  bool visibility_available = false;
+  double observer_horizon_nm = 0.0;
+  double geographic_range_nm = 0.0;
+  double waterline_transition_angle_deg = 0.0;
+  double dip_arcmin = 0.0;
 };
 
 struct HorizontalAngleObservation {

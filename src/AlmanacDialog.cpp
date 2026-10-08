@@ -1,4 +1,12 @@
+#include "PlatformMessageBox.h"
+#include "AndroidFileDialog.h"
 #include "AlmanacDialog.h"
+#ifdef __OCPN__ANDROID__
+#include "AndroidDocument.h"
+#include "AndroidPdf.h"
+#include "AndroidJob.h"
+#endif
+#include "DialogGeometry.h"
 
 #include "CelestialNavigationDialog.h"
 #include "NavigationUIUtils.h"
@@ -35,6 +43,9 @@ wxSpinCtrlDouble* Coordinate(wxWindow* parent, double minimum, double maximum,
       parent, wxID_ANY, wxString::Format("%.4f", value), wxDefaultPosition,
       wxDefaultSize, wxSP_ARROW_KEYS, minimum, maximum, value, 0.01);
   result->SetDigits(4);
+#ifdef __OCPN__ANDROID__
+  result->SetDigits(15); result->SetValue(value);
+#endif
   return result;
 }
 
@@ -60,8 +71,8 @@ AlmanacDialog::AlmanacDialog(CelestialNavigationDialog* parent,
   // A date picker represents calendar fields in the computer's local zone.
   // Copy the UTC fields rather than converting the instant, which could move
   // the selected date at either side of midnight or in a non-UTC timezone.
-  m_from->SetValue(UtcDateTime::CopyFields(now));
-  m_to->SetValue(UtcDateTime::CopyFields(now) + wxTimeSpan::Days(14));
+  m_from->SetValue(UtcDateTime::CalendarDate(now));
+  m_to->SetValue(UtcDateTime::CalendarDate(now) + wxTimeSpan::Days(14));
   double lat = 0.0, lon = 0.0;
   if (parent && parent->GetPlugin() &&
       parent->GetPlugin()->GetBoatPosition(&lat, &lon)) {
@@ -84,7 +95,12 @@ AlmanacDialog::AlmanacDialog(CelestialNavigationDialog* parent,
   }
   UpdateCoverageControls();
   UpdateSummary();
-  CentreOnParent();
+  SetMinSize(wxSize(760, 560));
+  dialog_geometry::Restore(this, _T("Almanac"), wxSize(1080, 760));
+}
+
+AlmanacDialog::~AlmanacDialog() {
+  dialog_geometry::Save(this, _T("Almanac"));
 }
 
 void AlmanacDialog::BuildInterface() {
@@ -102,6 +118,7 @@ void AlmanacDialog::BuildInterface() {
   m_preset->Append(_("Celestial Navigator"));
   m_preset->Append(_("Full Global Annual"));
   m_preset->Append(_("Custom"));
+  m_preset->Append(_("Compact astronavigation tables"));
   AddLabelled(setupSizer, setup, _("Preset"), m_preset);
   m_voyageName = new wxTextCtrl(setup, wxID_ANY, _("OpenCPN Voyage Almanac"));
   AddLabelled(setupSizer, setup, _("Document title"), m_voyageName);
@@ -119,10 +136,14 @@ void AlmanacDialog::BuildInterface() {
   m_route = new wxChoice(setup, wxID_ANY);
   AddLabelled(setupSizer, setup, _("Saved OpenCPN route"), m_route);
   m_corridor = Coordinate(setup, 0, 2000, 150);
+#ifndef __OCPN__ANDROID__
   m_corridor->SetDigits(0);
+#endif
   AddLabelled(setupSizer, setup, _("Route corridor (NM)"), m_corridor);
   m_speed = Coordinate(setup, 0.1, 100, 6);
+#ifndef __OCPN__ANDROID__
   m_speed->SetDigits(1);
+#endif
   AddLabelled(setupSizer, setup, _("Fallback speed (kn)"), m_speed);
   m_latitude = new NavigationAngleCtrl(setup, NavigationAngleKind::Latitude,
                                        0.0, -90.0, 90.0);
@@ -137,14 +158,22 @@ void AlmanacDialog::BuildInterface() {
   AddLabelled(setupSizer, setup, _("Latitude-band south"), m_latSouth);
   AddLabelled(setupSizer, setup, _("Latitude-band north"), m_latNorth);
   m_dut1Known = new wxCheckBox(setup, wxID_ANY,
-      _("Use the following current DUT1 (UT1 - UTC) value"));
+      _("Use one DUT1 value for the whole document"));
   setupSizer->Add(m_dut1Known, 0, wxTOP | wxBOTTOM, 5);
   m_dut1 = Coordinate(setup, -0.9, 0.9, 0.0);
+#ifndef __OCPN__ANDROID__
   m_dut1->SetDigits(3);
+#endif
   AddLabelled(setupSizer, setup, _("DUT1 (seconds)"), m_dut1);
-  setupSizer->Add(new wxStaticText(setup, wxID_ANY,
-      _("No network access is used. Leave unchecked to document the explicit 0.000 s assumption.")),
-      0, wxTOP | wxBOTTOM, 6);
+  wxStaticText* sources = new wxStaticText(setup, wxID_ANY,
+      _("Automatic offline ephemeris: DE440s where installed and supported; "
+        "Compact fallback otherwise (classic when disabled or outside coverage). Leave DUT1 unchecked to use dated "
+        "offline IERS data, with UT1=UTC on uncovered dates. "
+        "The PDF reports the sources actually used."));
+#ifndef __OCPN__ANDROID__
+  sources->Wrap(340);
+#endif
+  setupSizer->Add(sources, 0, wxEXPAND | wxTOP | wxBOTTOM, 6);
   setup->SetSizer(setupSizer);
   m_notebook->AddPage(setup, _("Voyage && coverage"));
 
@@ -153,12 +182,12 @@ void AlmanacDialog::BuildInterface() {
   wxBoxSizer* contentSizer = new wxBoxSizer(wxVERTICAL);
   m_safety = new wxChoice(content, wxID_ANY);
   m_safety->Append(_("Planning reference"));
-  m_safety->Append(_("Self-contained with scientific calculator"));
-  m_safety->Append(_("Self-contained calculator-free paper backup"));
+  m_safety->Append(_("Scientific calculator"));
+  m_safety->Append(_("Paper only: Ageton"));
   m_safety->SetSelection(1);
-  AddLabelled(contentSizer, content, _("Safety level"), m_safety);
+  AddLabelled(contentSizer, content, _("Reduction method"), m_safety);
   m_selfContained = Check(content, contentSizer,
-      _("Enforce all dependencies for the selected safety level"));
+      _("Include required reference pages"));
   wxStaticBoxSizer* ephemeris =
       new wxStaticBoxSizer(wxVERTICAL, content, _("Daily ephemeris"));
   m_aries = Check(content, ephemeris, _("Aries"));
@@ -166,6 +195,8 @@ void AlmanacDialog::BuildInterface() {
   m_moon = Check(content, ephemeris, _("Moon"));
   m_planets = Check(content, ephemeris, _("Venus, Mars, Jupiter and Saturn"));
   m_stars = Check(content, ephemeris, _("Navigational stars"));
+  m_monthlyStars = Check(content, ephemeris,
+      _("Monthly star data (otherwise voyage midpoint)"));
   m_usefulPlanets = Check(content, ephemeris,
       _("Prefer useful/observable planets in planning lists"));
   contentSizer->Add(ephemeris, 0, wxEXPAND | wxTOP, 8);
@@ -239,10 +270,24 @@ void AlmanacDialog::BuildInterface() {
   m_signaturePages->SetIncrement(4);
 #endif
   AddLabelled(formSizer, forms, _("Booklet signature pages"), m_signaturePages);
+#ifdef __OCPN__ANDROID__
+  const wxString outputFolder = *GetpPrivateApplicationDataLocation() + "/celestial-reports";
+  wxFileName::Mkdir(outputFolder, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+  m_output = new wxTextCtrl(forms, wxID_ANY, outputFolder + "/voyage-almanac.pdf");
+  auto* selectOutput = new wxButton(forms, wxID_ANY, _("Choose output PDF"));
+  AddLabelled(formSizer, forms, _("Output folder"), selectOutput);
+  selectOutput->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    const wxFileName current(m_output->GetValue());
+    CelestialFileDialog picker(this, _("Save voyage PDF"), current.GetPath(), current.GetFullName(),
+        _("PDF files (*.pdf)|*.pdf"), wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+    if (picker.ShowModal() == wxID_OK) m_output->ChangeValue(picker.GetPath());
+  });
+#else
   m_output = new wxFilePickerCtrl(
       forms, wxID_ANY, wxEmptyString, _("Choose output PDF"),
       _("PDF files (*.pdf)|*.pdf"), wxDefaultPosition, wxDefaultSize,
       wxFLP_SAVE | wxFLP_OVERWRITE_PROMPT | wxFLP_USE_TEXTCTRL);
+#endif
   AddLabelled(formSizer, forms, _("Output PDF"), m_output);
   forms->SetSizer(formSizer);
   m_notebook->AddPage(forms, _("Forms && output"));
@@ -257,24 +302,49 @@ void AlmanacDialog::BuildInterface() {
   wxBoxSizer* summaryContent = new wxBoxSizer(wxVERTICAL);
   m_summary = new wxStaticText(m_summaryPanel, wxID_ANY, "",
                                wxDefaultPosition, wxSize(275, -1));
+#ifndef __OCPN__ANDROID__
   m_summary->Wrap(275);
+#endif
   summaryContent->Add(m_summary, 0, wxEXPAND | wxALL, 8);
   m_warning = new wxStaticText(m_summaryPanel, wxID_ANY, "",
                                wxDefaultPosition, wxSize(275, -1));
   m_warning->SetForegroundColour(wxColour(160, 80, 0));
+#ifndef __OCPN__ANDROID__
   m_warning->Wrap(275);
+#endif
   summaryContent->Add(m_warning, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
   m_summaryPanel->SetSizer(summaryContent);
   summaryBox->Add(m_summaryPanel, 1, wxEXPAND | wxALL, 2);
   wxButton* preview = new wxButton(this, wxID_ANY, _("Preview first pages"));
   summaryBox->Add(preview, 0, wxEXPAND | wxALL, 8);
+#ifdef __OCPN__ANDROID__
+  // Output size and dependencies belong to their own readable task page.
+  auto* summaryPage = new wxPanel(m_notebook, wxID_ANY);
+  auto* summaryLayout = new wxBoxSizer(wxVERTICAL);
+  summaryBox->Detach(m_summaryPanel); summaryBox->Detach(preview);
+  m_summaryPanel->Reparent(summaryPage); preview->Reparent(summaryPage);
+  m_summaryPanel->SetMinSize(wxSize(0, 420));
+  summaryLayout->Add(m_summaryPanel, 0, wxEXPAND | wxALL, 8);
+  auto* estimate = new wxButton(summaryPage, wxID_ANY, _("Estimate output size and dependencies"));
+  estimate->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { celestial_android::CommitNumbers(this); UpdateSummary(true); });
+  summaryLayout->Add(estimate, 0, wxEXPAND | wxALL, 8);
+  summaryLayout->Add(preview, 0, wxEXPAND | wxALL, 8);
+  summaryPage->SetSizer(summaryLayout);
+  m_notebook->AddPage(summaryPage, _("Output summary"));
+  summaryBox->GetStaticBox()->Hide();
+  delete summaryBox;
+#else
   body->Add(summaryBox, 0, wxEXPAND | wxTOP | wxBOTTOM | wxRIGHT, 8);
+#endif
   root->Add(body, 1, wxEXPAND);
 
   wxBoxSizer* buttons = new wxBoxSizer(wxHORIZONTAL);
   buttons->AddStretchSpacer();
   wxButton* cancel = new wxButton(this, wxID_CANCEL, _("Cancel"));
   wxButton* generate = new wxButton(this, wxID_OK, _("Generate PDF"));
+#ifdef __OCPN__ANDROID__
+  generate->GetHandle()->setProperty("cnActionText", QString::fromUtf8("Generate PDF"));
+#endif
   buttons->Add(cancel, 0, wxALL, 8);
   buttons->Add(generate, 0, wxALL, 8);
   root->Add(buttons, 0, wxEXPAND);
@@ -344,6 +414,7 @@ void AlmanacDialog::ApplyPresetSelection() {
   m_aries->SetValue(request.includeAries);
   m_planets->SetValue(request.includePlanets);
   m_stars->SetValue(request.includeStars);
+  m_monthlyStars->SetValue(request.monthlyStarData);
   m_usefulPlanets->SetValue(request.usefulPlanetsOnly);
   m_events->SetValue(request.includeEvents);
   m_moonInfo->SetValue(request.includeMoonInformation);
@@ -380,6 +451,10 @@ void AlmanacDialog::ApplyPresetSelection() {
     m_coverage->SetSelection(static_cast<int>(AlmanacCoverage::Global));
     UpdateCoverageControls();
   }
+  if (request.preset == AlmanacPreset::CompactAstronavigation) {
+    m_coverage->SetSelection(static_cast<int>(AlmanacCoverage::Global));
+    UpdateCoverageControls();
+  }
   m_applyingPreset = false;
 }
 
@@ -388,8 +463,13 @@ AlmanacRequest AlmanacDialog::ReadRequest(wxString* error,
   AlmanacRequest request;
   request.preset = static_cast<AlmanacPreset>(std::max(0, m_preset->GetSelection()));
   request.voyageName = m_voyageName->GetValue();
+#ifdef __OCPN__ANDROID__
+  request.fromUtc = UtcDateTime::FromCalendar(m_from->GetValue());
+  request.toUtc = UtcDateTime::FromCalendar(m_to->GetValue());
+#else
   request.fromUtc = UtcDateTime::CopyFields(m_from->GetValue());
   request.toUtc = UtcDateTime::CopyFields(m_to->GetValue());
+#endif
   request.coverage = static_cast<AlmanacCoverage>(std::max(0, m_coverage->GetSelection()));
   request.routeName = m_route->GetStringSelection();
   if (!m_latitude->GetAngle(&request.latitude) ||
@@ -436,7 +516,7 @@ AlmanacRequest AlmanacDialog::ReadRequest(wxString* error,
   const unsigned intervals[] = {0, 1, 2, 7, 14, 30};
   request.planningIntervalDays = intervals[std::min(5,
       std::max(0, m_planningInterval->GetSelection()))];
-  request.monthlyStarData = request.preset == AlmanacPreset::FullGlobalAlmanac;
+  request.monthlyStarData = m_monthlyStars->GetValue();
   request.sightForms = m_sightForms->GetValue();
   request.runningFixForms = m_runningForms->GetValue();
   request.noonPolarisForms = m_noonForms->GetValue();
@@ -477,7 +557,7 @@ AlmanacRequest AlmanacDialog::ReadRequest(wxString* error,
   return request;
 }
 
-void AlmanacDialog::UpdateSummary() {
+void AlmanacDialog::UpdateSummary(bool calculate) {
   wxString error;
   AlmanacRequest request = ReadRequest(&error);
   if (!error.empty()) {
@@ -487,8 +567,29 @@ void AlmanacDialog::UpdateSummary() {
     m_summaryPanel->FitInside();
     return;
   }
+#ifdef __OCPN__ANDROID__
+  if (!calculate) {
+    m_summary->SetLabel(_("Inputs changed. Choose Estimate output size and dependencies to refresh this summary, or Preview first pages to calculate the output."));
+    m_warning->SetLabel(wxEmptyString);
+    celestial_android::LayoutScrolls(this);
+    return;
+  }
+  AlmanacDocument document;
+  const bool completed = celestial_android::RunJob(this, _("Estimate voyage almanac"),
+      [&](celestial_android::JobState& state) {
+        request.androidProgress = [&](unsigned, unsigned, const char* stage) { state.Progress(stage); };
+        document = AlmanacGenerator::Estimate(request);
+      }, &error);
+  if (!completed) {
+    m_warning->SetLabel(error.empty() ? _("Estimate cancelled.") : error);
+    celestial_android::LayoutScrolls(this);
+    return;
+  }
+#else
+  (void)calculate;
   wxBusyCursor busy;
   const AlmanacDocument document = AlmanacGenerator::Estimate(request);
+#endif
   const double mb = static_cast<double>(document.estimatedBytes) / (1024.0 * 1024.0);
   m_summary->SetLabel(wxString::Format(
       _("%u days\n%u logical pages\n%u PDF pages\n%u printed sheets%s\nEstimated PDF: %.2f MB\nEstimated generation: %s\n\n%s\n\nIncludes:\n%s%s%s%s%s%s\nPlanning may be route-filtered; ephemeris and paper reduction data remain universal."),
@@ -507,15 +608,32 @@ void AlmanacDialog::UpdateSummary() {
       request.includeCorrections ? _("Corrections and formulae\n") : "",
       request.includeLunar ? _("Lunar reference/opportunities\n") : "",
       request.includeCompactReductionTables ? _("Calculator-free paper tables\n") : ""));
+#ifndef __OCPN__ANDROID__
   m_summary->Wrap(275);
+#endif
   m_warning->SetLabel(document.warnings.empty() ? wxString() : document.warnings.front());
+#ifndef __OCPN__ANDROID__
   m_warning->Wrap(275);
+#endif
   m_summaryPanel->Layout();
   m_summaryPanel->FitInside();
   Layout();
+#ifdef __OCPN__ANDROID__
+  celestial_android::LayoutScrolls(this);
+#endif
 }
 
 void AlmanacDialog::OnChanged(wxCommandEvent& event) {
+  if (!m_applyingPreset && event.GetEventObject() == m_safety &&
+      m_safety->GetSelection() ==
+          static_cast<int>(AlmanacSafety::CalculatorComplete)) {
+    m_selfContained->SetValue(true);
+    m_incrementTables->SetValue(false);
+    m_reductionTables->SetValue(false);
+    m_directTables->SetValue(false);
+    m_fullDirectTables->SetValue(false);
+    m_altitudeTables->SetValue(false);
+  }
   if (!m_applyingPreset && event.GetEventObject() == m_safety &&
       m_safety->GetSelection() ==
           static_cast<int>(AlmanacSafety::CalculatorFree)) {
@@ -568,10 +686,34 @@ void AlmanacDialog::OnPreview(wxCommandEvent&) {
   wxString error;
   AlmanacRequest request = ReadRequest(&error);
   if (!error.empty()) {
-    wxMessageBox(error, _("Generate Almanac"), wxOK | wxICON_WARNING, this);
+    CelestialMessageBox(error, _("Generate Almanac"), wxOK | wxICON_WARNING, this);
     return;
   }
+#ifdef __OCPN__ANDROID__
+  AlmanacDocument document;
+  const bool completed = celestial_android::RunJob(this, _("Calculate voyage almanac"),
+      [&](celestial_android::JobState& state) {
+        request.androidProgress = [&](unsigned index, unsigned total, const char* stage) {
+          state.Progress(std::string(stage) + (total ? " " + std::to_string(index + 1) + "/" + std::to_string(total) : ""));
+        };
+        const auto estimate = AlmanacGenerator::Estimate(request);
+        wxString memoryError;
+        if (!celestial_android::CheckHeadroom(std::max<std::uint64_t>(64ULL * 1024 * 1024, estimate.estimatedBytes * 8ULL), &memoryError))
+          throw std::runtime_error(memoryError.ToStdString());
+        document = AlmanacGenerator::Build(request);
+        request.androidProgress = {};
+      }, &error);
+  request.androidProgress = {};
+  if (!completed) {
+    if (!error.empty()) CelestialMessageBox(error, _("Almanac calculation"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+#else
   const AlmanacDocument document = AlmanacGenerator::Build(request);
+#endif
+#ifdef __OCPN__ANDROID__
+  celestial_android::ShowDocument(this, _("Voyage Almanac - first pages"), AlmanacGenerator::PreviewText(document, 4));
+#else
   wxDialog preview(this, wxID_ANY, _("Voyage Almanac - first pages"),
                    wxDefaultPosition, wxSize(820, 680),
                    wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
@@ -582,33 +724,97 @@ void AlmanacDialog::OnPreview(wxCommandEvent&) {
       wxTE_MULTILINE | wxTE_READONLY | wxTE_RICH2 | wxHSCROLL);
   text->SetFont(wxFontInfo(9).Family(wxFONTFAMILY_TELETYPE));
   sizer->Add(text, 1, wxEXPAND | wxALL, 8);
-  sizer->Add(preview.CreateButtonSizer(wxOK), 0, wxEXPAND | wxALL, 8);
+  wxStdDialogButtonSizer* buttons = new wxStdDialogButtonSizer();
+  wxButton* close = new wxButton(&preview, wxID_CLOSE, _("Close"));
+  buttons->AddButton(close);
+  buttons->Realize();
+  sizer->Add(buttons, 0, wxEXPAND | wxALL, 8);
   preview.SetSizer(sizer);
+  preview.SetMinSize(wxSize(650, 480));
+  preview.SetEscapeId(wxID_CLOSE);
+  preview.Bind(wxEVT_BUTTON,
+               [&preview](wxCommandEvent&) { preview.EndModal(wxID_CLOSE); },
+               wxID_CLOSE);
+  preview.Bind(wxEVT_CLOSE_WINDOW,
+               [&preview](wxCloseEvent&) { preview.EndModal(wxID_CLOSE); });
+  dialog_geometry::Restore(&preview, _T("AlmanacPreview"), wxSize(820, 680));
   preview.ShowModal();
+  dialog_geometry::Save(&preview, _T("AlmanacPreview"));
+#endif
 }
 
 void AlmanacDialog::OnGenerate(wxCommandEvent&) {
   wxString error;
   AlmanacRequest request = ReadRequest(&error);
   if (!error.empty()) {
-    wxMessageBox(error, _("Generate Almanac"), wxOK | wxICON_WARNING, this);
+    CelestialMessageBox(error, _("Generate Almanac"), wxOK | wxICON_WARNING, this);
     return;
   }
+#ifdef __OCPN__ANDROID__
+  wxString output = m_output->GetValue();
+#else
   wxString output = m_output->GetPath();
+#endif
   if (output.empty()) {
-    wxMessageBox(_("Choose an output PDF first."), _("Generate Almanac"),
+    CelestialMessageBox(_("Choose an output PDF first."), _("Generate Almanac"),
                  wxOK | wxICON_WARNING, this);
     return;
   }
   if (!output.Lower().EndsWith(".pdf")) output += ".pdf";
+#ifdef __OCPN__ANDROID__
+  if (wxFileExists(output) && CelestialMessageBox(_("Replace the existing PDF?"), _("Output already exists"),
+      wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION, this) != wxYES) return;
+#endif
   wxBusyCursor busy;
-  const AlmanacDocument document = AlmanacGenerator::Build(request);
-  if (!AlmanacPdfWriter::Write(document, request, output, &error)) {
-    wxMessageBox(error, _("Generate Almanac"), wxOK | wxICON_ERROR, this);
+#ifdef __OCPN__ANDROID__
+  AlmanacDocument document;
+  const bool completed = celestial_android::RunJob(this, _("Calculate voyage almanac"),
+      [&](celestial_android::JobState& state) {
+        request.androidProgress = [&](unsigned index, unsigned total, const char* stage) {
+          state.Progress(std::string(stage) + (total ? " " + std::to_string(index + 1) + "/" + std::to_string(total) : ""));
+        };
+        const auto estimate = AlmanacGenerator::Estimate(request);
+        wxString memoryError;
+        if (!celestial_android::CheckHeadroom(std::max<std::uint64_t>(64ULL * 1024 * 1024, estimate.estimatedBytes * 8ULL), &memoryError))
+          throw std::runtime_error(memoryError.ToStdString());
+        document = AlmanacGenerator::Build(request);
+        request.androidProgress = {};
+      }, &error);
+  request.androidProgress = {};
+  if (!completed) {
+    if (!error.empty()) CelestialMessageBox(error, _("Almanac calculation"), wxOK | wxICON_ERROR, this);
     return;
   }
-  wxMessageBox(wxString::Format(
+#else
+  const AlmanacDocument document = AlmanacGenerator::Build(request);
+#endif
+#ifdef __OCPN__ANDROID__
+
+  bool written = false;
+  const bool outputCompleted = celestial_android::RunJob(this, _("Write voyage PDF"),
+      [&](celestial_android::JobState& state) {
+        request.androidProgress = [&](unsigned index, unsigned total, const char* stage) {
+          state.Progress(std::string(stage) + " " + std::to_string(index + 1) + "/" + std::to_string(total));
+        };
+        request.androidCommit = [&](const std::function<bool()>& operation) { return state.Commit(operation); };
+        written = AlmanacPdfWriter::Write(document, request, output, &error);
+      }, &error);
+  request.androidProgress = {};
+  request.androidCommit = {};
+  if (!outputCompleted && error.empty()) return;
+  if (!written) {
+#else
+  if (!AlmanacPdfWriter::Write(document, request, output, &error)) {
+#endif
+    CelestialMessageBox(error, _("Generate Almanac"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+#ifdef __OCPN__ANDROID__
+  celestial_android::ShowPdf(this, _("Voyage almanac"), output);
+#else
+  CelestialMessageBox(wxString::Format(
                    _("Created %u-page voyage almanac:\n%s"),
                    static_cast<unsigned>(document.pages.size()), output),
                _("Generate Almanac"), wxOK | wxICON_INFORMATION, this);
+#endif
 }

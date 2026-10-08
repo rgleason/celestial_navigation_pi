@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "original_sights_byte_exact": true,
+  "original_sights": 12,
+  "original_nested_reports": 5,
+  "original_plugin_data_files_verified": 2429,
+  "other_private_libraries_verified": 4,
+  "astronomy_files_and_markers_verified": 6,
+  "navigation_database": "all rows of all eight original tables identical; SQLite physical bytes differ",
+  "font_scale": 1.15,
+  "auto_rotation": true,
+  "viewport_centre_scale_heading": "original exact after corrected final cold restart",
+  "canvas_dimensions": "host adapts to current screen",
+  "other_profile_keys": "preserved from latest stopped profile",
+  "protected_plugins_enabled": [
+    "xgrib",
+    "xweather_routing"
+  ],
+  "host_pid": 19445,
+  "installed_plugin": "final CI8 package",
+  "historical_latest_fatal": "2026-09-28 04:51:54 BST",
+  "new_ANR": false,
+  "publication": "HOLD"
+}

@@ -1,0 +1,53 @@
+Android FIX starting DR and desktop regression: issue 361
+=======================================================
+
+Releases: production 2.8.18; development 2.9.6. 5 October 2026.
+Issue: https://github.com/rgleason/celestial_navigation_pi/issues/361
+
+Bob's Capella/Schedar example has saved DR 07 degrees 20 minutes N,
+100 degrees 40 minutes E. Using the current boat position near Greenland
+instead selects the remote solution. The Android fix now starts from the latest
+included eligible sight's valid saved DR, selected by UTC rather than row order.
+That DR and its source are visible above the results. Users can select another
+saved sight, enter a DR, or explicitly choose the current boat position.
+Missing/invalid saved DR leaves the inputs blank and blocks plotting until the
+user supplies a valid position. Absent XML DR attributes remain missing on
+Android; a genuinely saved 0,0 position remains valid. Explicit/manual choices
+survive reopening when the eligible saved DR inputs have not changed.
+
+The changes to non-Android FIX introduced in 2.8.17/2.9.4 are reverted: the
+compact inline DR controls, short Go button, existing algorithm selector,
+running-fix table and normal dialog layout are restored. Desktop FIX again
+closes by destroying the form. A separate FixDesktop geometry key prevents an
+oversized saved regression layout from carrying forward. Existing desktop DR
+initialization and calculation behavior are retained.
+
+The mandatory two-candidate selection UI, added sphere-intersection path and
+running-fix multi-root search are removed on all platforms. The existing
+stationary algorithms and running-fix solver calculate using the displayed DR.
+The Android saved-DR correction applies to both paths. The development branch's
+2.9.5 ephemeris/performance changes are retained. Android help describes this
+workflow without candidate-selection instructions.
+
+Validation
+----------
+Both desktop and Android ARM64 plugins build. All 11 CTest groups passed on each
+branch; explicit desktop GUI tests also passed at normal and 150 percent font
+scaling after the final layout changes. Tests cover chronology, row order,
+excluded/invalid/missing saved DR, legitimate zero coordinates, stable timestamp
+ties, desktop layout/geometry/lifecycle, original running-fix inputs and Bob's
+example using the restored Sphere algorithm.
+
+Physical SM-X210 Android testing of both versions confirms that Bob's saved DR
+is selected even with the boat near Greenland. The computed fix is approximately
+03 degrees 17.08 minutes N, 099 degrees 19.53 minutes E. Explicit boat-position
+selection gives the Greenland solution. Closing/reopening preserves that explicit
+choice. Missing saved DR gives blank inputs and disables plotting; manual DR
+entry restores calculation. The development result was also plotted on the chart.
+Temporary raw-library swaps were used for these UI comparisons, with the host APK
+retained. They are separate from Plugin Manager import-package validation.
+
+Native Windows UI verification remains outstanding. The non-Android source
+restoration and Linux GUI checks support the desktop correction, but do not
+replace testing Bob's Windows setup. No catalogue change or release publication
+is made by these commits.

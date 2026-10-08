@@ -1,0 +1,12 @@
+{
+  "source": "session-sights.xml and retained independent USNO responses",
+  "imposed_bias_arcmin": 0.85,
+  "operation": "Add exactly +0.85/60 degrees to each raw LD, Moon altitude and body altitude; leave configured IE zero. Positive on-arc IE subtracts from all three readings. Do not generate readings using plugin ephemerides.",
+  "expected_bias_arcmin": 0.85,
+  "bias_tolerance_arcmin": 0.5,
+  "expected_clock_seconds": 0,
+  "clock_tolerance_seconds": 10,
+  "RMS_limit_arcmin": 0.5,
+  "scope": "Known-position public historical approximate frame/refraction fixture. Tolerances fixed before physical calculation; not general accuracy.",
+  "fixture_sha256": "be291075cddc79b790bcf66cee5d650ebb8683ba5546c8574d2944aaa7ca45dd"
+}
