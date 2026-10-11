@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 #include <wx/calctrl.h>
 #include <wx/button.h>
@@ -15,6 +16,7 @@
 #include <wx/display.h>
 #include <wx/fileconf.h>
 #include <wx/msgdlg.h>
+#include <wx/numformatter.h>
 #include <wx/scrolwin.h>
 #include <wx/sizer.h>
 #include <wx/spinctrl.h>
@@ -35,6 +37,22 @@
 
 namespace {
 
+#ifndef __OCPN__ANDROID__
+void SizeNumber(wxControl* control, const std::vector<wxString>& samples) {
+  int textWidth = 0;
+  for (const auto& sample : samples)
+    textWidth = std::max(textWidth, control->GetTextExtent(sample).x);
+  // GetSizeFromTextSize accounts for each port's native spin buttons and
+  // borders; a fixed pixel width leaves too little room at larger fonts/DPI.
+  control->SetMinSize(control->GetSizeFromTextSize(textWidth + control->FromDIP(8)));
+}
+
+void SizeChoice(wxChoice* control) {
+  control->InvalidateBestSize();
+  control->SetMinSize(control->GetBestSize());
+}
+#endif
+
 wxSpinCtrlDouble* AddNumber(wxWindow* parent, wxFlexGridSizer* grid,
                             const wxString& label, double value, double min,
                             double max, double increment, int digits,
@@ -44,12 +62,23 @@ wxSpinCtrlDouble* AddNumber(wxWindow* parent, wxFlexGridSizer* grid,
   wxBoxSizer* row = new wxBoxSizer(wxHORIZONTAL);
   wxSpinCtrlDouble* control = new wxSpinCtrlDouble(
       parent, wxID_ANY, wxString::Format("%.*f", digits, value),
-      wxDefaultPosition, wxSize(145, -1), wxSP_ARROW_KEYS, min, max, value,
+      wxDefaultPosition,
+#ifdef __OCPN__ANDROID__
+      wxSize(145, -1),
+#else
+      wxDefaultSize,
+#endif
+      wxSP_ARROW_KEYS, min, max, value,
       increment);
   control->SetDigits(digits);
 #ifdef __OCPN__ANDROID__
   control->SetDigits(15);
   control->SetValue(value);
+#else
+  SizeNumber(control, {
+      wxNumberFormatter::ToString(min, digits, wxNumberFormatter::Style_WithThousandsSep),
+      wxNumberFormatter::ToString(max, digits, wxNumberFormatter::Style_WithThousandsSep),
+      wxNumberFormatter::ToString(value, digits, wxNumberFormatter::Style_WithThousandsSep)});
 #endif
   row->Add(control, 0);
   if (!units.empty())
@@ -95,11 +124,23 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
 
   obsGrid->Add(new wxStaticText(formParent, wxID_ANY, _("Event")), 0,
                wxALIGN_CENTER_VERTICAL);
+#ifdef __OCPN__ANDROID__
   m_event = new wxChoice(formParent, wxID_ANY, wxDefaultPosition, wxSize(310, -1));
+#else
+  m_event = new wxChoice(formParent, wxID_ANY);
+#endif
   m_event->Append(CN_UTF8_("Sunrise — first upper limb"));
   m_event->Append(CN_UTF8_("Sunset — last upper limb"));
   m_event->SetSelection(static_cast<int>(sight.m_HorizonEvent));
-  obsGrid->Add(m_event, 0);
+#ifndef __OCPN__ANDROID__
+  SizeChoice(m_event);
+#endif
+  obsGrid->Add(m_event, 0,
+#ifdef __OCPN__ANDROID__
+               0);
+#else
+               wxEXPAND);
+#endif
 
   obsGrid->Add(new wxStaticText(formParent, wxID_ANY, _("UTC date")), 0,
                wxALIGN_CENTER_VERTICAL);
@@ -109,11 +150,17 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   obsGrid->Add(new wxStaticText(formParent, wxID_ANY, _("UTC time (24-hour)")), 0,
                wxALIGN_CENTER_VERTICAL);
   wxBoxSizer* timeRow = new wxBoxSizer(wxHORIZONTAL);
+  const wxSize timeSize =
+#ifdef __OCPN__ANDROID__
+      wxSize(65, -1);
+#else
+      wxDefaultSize;
+#endif
   m_hours = new wxSpinCtrl(formParent, wxID_ANY, wxEmptyString, wxDefaultPosition,
-                           wxSize(65, -1), wxSP_ARROW_KEYS, 0, 23,
+                           timeSize, wxSP_ARROW_KEYS, 0, 23,
                            UtcDateTime::Fields(sight.m_DateTime).hour);
   m_minutes = new wxSpinCtrl(formParent, wxID_ANY, wxEmptyString, wxDefaultPosition,
-                             wxSize(65, -1), wxSP_ARROW_KEYS, 0, 59,
+                             timeSize, wxSP_ARROW_KEYS, 0, 59,
                              UtcDateTime::Fields(sight.m_DateTime).min);
 #ifdef __OCPN__ANDROID__
   m_seconds = new wxSpinCtrlDouble(formParent, wxID_ANY);
@@ -123,8 +170,10 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   m_seconds->SetValue(UtcDateTime::Fields(sight.m_DateTime).sec + sight.m_DateTime.GetMillisecond() / 1000.0);
 #else
   m_seconds = new wxSpinCtrl(formParent, wxID_ANY, wxEmptyString, wxDefaultPosition,
-                             wxSize(65, -1), wxSP_ARROW_KEYS, 0, 59,
+                             wxDefaultSize, wxSP_ARROW_KEYS, 0, 59,
                              UtcDateTime::Fields(sight.m_DateTime).sec);
+  for (auto* control : {m_hours, m_minutes, m_seconds})
+    SizeNumber(control, {"00", "23", "59"});
 #endif
   timeRow->Add(m_hours);
   timeRow->Add(new wxStaticText(formParent, wxID_ANY, ":"), 0,
@@ -144,7 +193,11 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   obsGrid->Add(new wxStaticText(formParent, wxID_ANY, _("Time source")), 0,
                wxALIGN_CENTER_VERTICAL);
   m_timeSource =
+#ifdef __OCPN__ANDROID__
       new wxChoice(formParent, wxID_ANY, wxDefaultPosition, wxSize(310, -1));
+#else
+      new wxChoice(formParent, wxID_ANY);
+#endif
   m_timeSource->Append(_("System UTC capture"));
   m_timeSource->Append(_("Synchronised watch / manual entry"));
   m_timeSource->Append(_("Other manual entry"));
@@ -152,7 +205,15 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
       sight.m_HorizonTimeSource.StartsWith("System")         ? 0
       : sight.m_HorizonTimeSource.StartsWith("Synchronised") ? 1
                                                              : 2);
-  obsGrid->Add(m_timeSource, 0);
+#ifndef __OCPN__ANDROID__
+  SizeChoice(m_timeSource);
+#endif
+  obsGrid->Add(m_timeSource, 0,
+#ifdef __OCPN__ANDROID__
+               0);
+#else
+               wxEXPAND);
+#endif
   observation->Add(obsGrid, 0, wxEXPAND | wxALL, 6);
   wxStaticText* clock = new wxStaticText(
       formParent, wxID_ANY, _("Current system timing: ") + m_systemTimeSummary);
@@ -282,7 +343,12 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
   dialogRoot->Add(buttons, 0, wxEXPAND | wxALL, 8);
 
   SetSizer(dialogRoot);
+#ifdef __OCPN__ANDROID__
   SetMinSize(wxSize(600, 540));
+#else
+  const int minimumWidth = std::max(FromDIP(600), observation->CalcMin().x + FromDIP(16));
+  SetMinSize(wxSize(minimumWidth, FromDIP(540)));
+#endif
   wxRect displayArea(0, 0, 700, 760);
   const int displayIndex = wxDisplay::GetFromWindow(parent);
   if (displayIndex != wxNOT_FOUND)

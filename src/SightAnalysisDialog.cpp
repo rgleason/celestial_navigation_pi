@@ -2,6 +2,7 @@
 
 #include "CelestialNavigationDialog.h"
 #include "DialogGeometry.h"
+#include "ReportListLayout.h"
 #include "NavigationUIUtils.h"
 #include "NavigationAlgorithms.h"
 #include "Sight.h"
@@ -11,6 +12,9 @@
 
 #include <wx/checkbox.h>
 #include <wx/dcbuffer.h>
+#ifndef __OCPN__ANDROID__
+#include <wx/dcgraph.h>
+#endif
 #include <wx/listctrl.h>
 #include <wx/settings.h>
 #include <wx/spinctrl.h>
@@ -22,7 +26,7 @@
 class ResidualPlotPanel : public wxPanel {
 public:
   explicit ResidualPlotPanel(wxWindow* parent)
-      : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(-1, 150)) {
+      : wxPanel(parent, wxID_ANY, wxDefaultPosition, parent->FromDIP(wxSize(-1, 180))) {
     SetBackgroundStyle(wxBG_STYLE_PAINT);
     SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
     Bind(wxEVT_PAINT, &ResidualPlotPanel::OnPaint, this);
@@ -34,7 +38,17 @@ public:
 
 private:
   void OnPaint(wxPaintEvent&) {
-    wxAutoBufferedPaintDC dc(this);
+    wxAutoBufferedPaintDC buffer(this);
+#ifndef __OCPN__ANDROID__
+    // Render text and paths in a fresh graphics context, independently of
+    // native DC text alignment/current-position state.
+    wxGCDC dc(buffer);
+#else
+    wxDC& dc = buffer;
+#endif
+    dc.SetFont(GetFont());
+    dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+    dc.SetBackgroundMode(wxTRANSPARENT);
     dc.SetBackground(wxBrush(GetBackgroundColour()));
     dc.Clear();
     const wxSize size = GetClientSize();
@@ -49,10 +63,6 @@ private:
       return;
     }
     if (size.x < 80 || size.y < 60) return;
-    const int left = 48, right = size.x - 12, top = 12, bottom = size.y - 16;
-    dc.SetPen(wxPen(wxColour(110, 110, 110)));
-    dc.DrawLine(left, top, left, bottom);
-    dc.DrawLine(left, bottom, right, bottom);
     wxDateTime first = m_analysis.residuals.front().utc;
     wxDateTime last = first;
     double minimum = m_analysis.residuals.front().interceptMinutes;
@@ -73,6 +83,19 @@ private:
       minimum -= padding;
       maximum += padding;
     }
+    const auto number = [](double value) { return wxString::Format("%+.1f'", value); };
+    const wxString upper = number(maximum), lower = number(minimum);
+    const int textHeight = dc.GetTextExtent(upper).y;
+    const int margin = FromDIP(8);
+    const int left = std::max(dc.GetTextExtent(upper).x,
+                              dc.GetTextExtent(lower).x) + 2 * margin;
+    const int right = size.x - margin;
+    const int top = textHeight / 2 + margin;
+    const int bottom = size.y - 2 * textHeight - 2 * margin;
+    if (right <= left || bottom <= top) return;
+    dc.SetPen(wxPen(wxColour(110, 110, 110)));
+    dc.DrawLine(left, top, left, bottom);
+    dc.DrawLine(left, bottom, right, bottom);
     const double seconds = std::max(
         1.0, static_cast<double>((last - first).GetMilliseconds().GetValue()) /
                  1000.0);
@@ -92,8 +115,23 @@ private:
       dc.SetPen(wxPen(wxColour(160, 160, 160), 1, wxPENSTYLE_DOT));
       dc.DrawLine(left, zero, right, zero);
     }
-    dc.DrawText(wxString::Format("%+.1f'", maximum), 2, top - 3);
-    dc.DrawText(wxString::Format("%+.1f'", minimum), 2, bottom - 10);
+    dc.DrawText(upper, margin, top - textHeight / 2);
+    dc.DrawText(lower, margin, bottom - textHeight / 2);
+    const auto timeLabel = [&](const wxDateTime& utc, bool atEnd) {
+      const wxString date = UtcDateTime::FormatInstant(utc, "%Y-%m-%d");
+      const wxString time = UtcDateTime::FormatInstant(utc, "%H:%M:%S");
+      for (int line = 0; line < 2; ++line) {
+        const wxString& label = line == 0 ? date : time;
+        const int width = dc.GetTextExtent(label).x;
+        dc.DrawText(label, atEnd ? right - width : left,
+                    bottom + margin + line * textHeight);
+      }
+    };
+    timeLabel(first, false);
+    // Avoid overlapping endpoint labels on a small/touch plot.
+    if (right - left > 2 * dc.GetTextExtent("2000-12-31").x + margin)
+      timeLabel(last, true);
+    dc.SetClippingRegion(left, top, right - left + 1, bottom - top + 1);
     wxPoint previous;
     bool havePrevious = false;
     for (const auto& residual : m_analysis.residuals) {
@@ -109,6 +147,7 @@ private:
       previous = p;
       havePrevious = true;
     }
+    dc.DestroyClippingRegion();
   }
   SequenceStatistics m_analysis;
 };
@@ -162,6 +201,17 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
                 wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
   m_longitude = new NavigationAngleCtrl(this, NavigationAngleKind::Longitude,
                                         0.0, -180.0, 180.0, wxSize(165, -1));
+#ifndef __OCPN__ANDROID__
+  for (auto* control : {m_latitude, m_longitude}) {
+    const auto kind = control == m_latitude ? NavigationAngleKind::Latitude
+                                            : NavigationAngleKind::Longitude;
+    const double limit = control == m_latitude ? 90.0 : 180.0;
+    const int textWidth = std::max(
+        control->GetTextExtent(FormatNavigationAngle(limit, kind)).x,
+        control->GetTextExtent(FormatNavigationAngle(-limit, kind)).x);
+    control->SetMinSize(control->GetSizeFromTextSize(textWidth + FromDIP(8)));
+  }
+#endif
   position->Add(m_longitude, 0, wxALIGN_CENTER_VERTICAL);
   root->Add(position, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 8);
 
@@ -179,6 +229,13 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
       new wxSpinCtrlDouble(this, wxID_ANY, "0", wxDefaultPosition,
                            wxSize(110, -1), wxSP_ARROW_KEYS, 0, 100, 0, 0.1);
   m_speed->SetDigits(1);
+#ifndef __OCPN__ANDROID__
+  for (auto* control : {m_course, m_speed}) {
+    const wxString sample = wxString::Format("%.1f", control->GetMax());
+    control->SetMinSize(control->GetSizeFromTextSize(
+        control->GetTextExtent(sample).x + FromDIP(8)));
+  }
+#endif
   motion->Add(m_speed, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 18);
   wxButton* analyze = new wxButton(this, wxID_ANY, _("Analyze visible sights"));
   motion->Add(analyze, 0, wxALIGN_CENTER_VERTICAL);
@@ -189,16 +246,25 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   root->Add(m_plot, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 8);
   // Keep the axis caption in a native control, outside the painted plot.
   // wxDC text at the chart edge was right-aligned and corrupted on Windows.
-  root->Add(new wxStaticText(this, wxID_ANY, _("UTC sequence")), 0, wxLEFT,
-            56);
+  root->Add(new wxStaticText(this, wxID_ANY,
+      _("Residual Ho - Hc (arcminutes) versus UTC")), 0, wxLEFT, 8);
   m_results = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
                              wxLC_REPORT | wxLC_HRULES);
+#ifdef __OCPN__ANDROID__
   m_results->InsertColumn(0, _("UTC"), wxLIST_FORMAT_LEFT, 160);
   m_results->InsertColumn(1, _("Body"), wxLIST_FORMAT_LEFT, 110);
   m_results->InsertColumn(2, _("Ho"), wxLIST_FORMAT_LEFT, 115);
   m_results->InsertColumn(3, _("Hc"), wxLIST_FORMAT_LEFT, 115);
   m_results->InsertColumn(4, _("Ho-Hc"), wxLIST_FORMAT_LEFT, 90);
   m_results->InsertColumn(5, _("Assessment"), wxLIST_FORMAT_LEFT, 220);
+#else
+  for (const auto& heading : {_("UTC"), _("Body"), _("Ho"), _("Hc"),
+                               _("Ho-Hc"), _("Assessment")})
+    m_results->InsertColumn(m_results->GetColumnCount(), heading);
+  m_columns = std::make_unique<ReportListLayout>(m_results, "SightAnalysis");
+  m_columns->FitContents({"2000-12-31 23:59:59", "", "", "", "",
+                          _("Within robust sequence spread")});
+#endif
   root->Add(m_results, 1, wxALL | wxEXPAND, 8);
 #ifdef __OCPN__ANDROID__
   m_androidResults = new wxStaticText(this, wxID_ANY, wxEmptyString);
@@ -250,11 +316,19 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { Close(); }, wxID_CLOSE);
   wxCommandEvent dummy;
   Analyze(dummy);
+#ifdef __OCPN__ANDROID__
   SetMinSize(wxSize(700, 480));
+#else
+  SetMinSize(wxSize(std::max(FromDIP(700), root->CalcMin().x),
+                    std::max(FromDIP(480), root->CalcMin().y)));
+#endif
   dialog_geometry::Restore(this, _T("SightAnalysis"), wxSize(820, 540));
 }
 
 SightAnalysisDialog::~SightAnalysisDialog() {
+#ifndef __OCPN__ANDROID__
+  m_columns.reset();
+#endif
   dialog_geometry::Save(this, _T("SightAnalysis"));
 }
 
@@ -353,6 +427,7 @@ void SightAnalysisDialog::Analyze(wxCommandEvent&) {
     }
   }
   m_summary->SetLabel(summary);
+  m_summary->Wrap(std::max(FromDIP(300), GetClientSize().x - FromDIP(16)));
 #ifdef __OCPN__ANDROID__
   wxString details;
   for (const auto& residual : analysis.residuals) {
@@ -385,4 +460,9 @@ void SightAnalysisDialog::Analyze(wxCommandEvent&) {
     if (residual.outlier)
       m_results->SetItemBackgroundColour(row, wxColour(255, 225, 210));
   }
+#ifndef __OCPN__ANDROID__
+  m_columns->FitContents({"2000-12-31 23:59:59", "", "", "", "",
+                          _("Within robust sequence spread")});
+#endif
+  Layout();
 }

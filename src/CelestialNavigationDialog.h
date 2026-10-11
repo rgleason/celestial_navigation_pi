@@ -50,6 +50,7 @@
 class QTimer;
 #else
 class DialogFocusController;
+class ReportListLayout;
 #endif
 
 class CelestialNavigationDialog : public CelestialNavigationDialogBase {
@@ -97,6 +98,7 @@ public:
 private:
 #ifndef __OCPN__ANDROID__
   std::unique_ptr<DialogFocusController> m_dialogFocus;
+  std::unique_ptr<ReportListLayout> m_sightColumns;
 #endif
   long SelectedSightIndex() const;
 #ifdef __OCPN__ANDROID__

@@ -2,6 +2,7 @@
 #define CELESTIAL_NAVIGATION_SIGHT_ANALYSIS_DIALOG_H
 
 #include <wx/dialog.h>
+#include <memory>
 
 class CelestialNavigationDialog;
 class wxCheckBox;
@@ -10,6 +11,7 @@ class NavigationAngleCtrl;
 class wxSpinCtrlDouble;
 class wxStaticText;
 class ResidualPlotPanel;
+class ReportListLayout;
 
 class SightAnalysisDialog : public wxDialog {
 public:
@@ -29,6 +31,9 @@ private:
   wxStaticText* m_summary;
   ResidualPlotPanel* m_plot;
   wxListCtrl* m_results;
+#ifndef __OCPN__ANDROID__
+  std::unique_ptr<ReportListLayout> m_columns;
+#endif
 #ifdef __OCPN__ANDROID__
   wxStaticText* m_androidResults;
 #endif

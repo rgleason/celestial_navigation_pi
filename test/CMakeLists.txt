@@ -33,6 +33,7 @@ set(SRC
     android_planner_worker_tests.cpp
     dialog_geometry_tests.cpp
     dialog_focus_ui_tests.cpp
+    desktop_formatting_ui_tests.cpp
     dialog_transaction_state_tests.cpp
     sight_search_span_ui_tests.cpp
     eclipse_data_files_tests.cpp
@@ -82,6 +83,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/SightLogCsv.cpp
     ${CMAKE_SOURCE_DIR}/src/Dut1UpdatePanel.cpp
     ${CMAKE_SOURCE_DIR}/src/DialogGeometry.cpp
+    ${CMAKE_SOURCE_DIR}/src/ReportListLayout.cpp
     ${CMAKE_SOURCE_DIR}/src/DialogFocus.cpp
     ${CMAKE_SOURCE_DIR}/src/EclipseDataFiles.cpp
     ${CMAKE_SOURCE_DIR}/src/EclipseVerificationWorker.cpp

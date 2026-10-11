@@ -48,6 +48,7 @@
 #include "AndroidFileDialog.h"
 #include "DialogGeometry.h"
 #include "DialogFocus.h"
+#include "ReportListLayout.h"
 #include "OcpnApiCompat.h"
 
 #include "celestial_navigation_pi.h"
@@ -279,10 +280,17 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   for (int i = 1; i < rmMAX; i++) {
     m_lSights->InsertColumn(i, columns[i]);
   }
+#ifdef __OCPN__ANDROID__
   m_lSights->SetColumnWidth(rmREMARKS, m_lSights->GetTextExtent(wxString('n', 50)).x + 20);
   for (int column = 0; column < rmREMARKS; ++column)
     m_lSights->SetColumnWidth(column, column == rmVISIBLE
         ? 28 : wxLIST_AUTOSIZE_USEHEADER);
+#else
+  m_lSights->SetColumnWidth(rmVISIBLE, m_lSights->FromDIP(28));
+  m_sightColumns = std::make_unique<ReportListLayout>(m_lSights, "Sights", 1);
+  m_sightColumns->FitContents({"", "", "", "2000-12-31 23:59:59",
+                              "", "", wxString('n', 50)});
+#endif
 
   m_sights_path = celestial_navigation_pi::StandardPath() + _T("Sights.xml");
 
@@ -379,6 +387,7 @@ void CelestialNavigationDialog::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
 CelestialNavigationDialog::~CelestialNavigationDialog() {
 #ifndef __OCPN__ANDROID__
   m_dialogFocus.reset();
+  m_sightColumns.reset();
 #endif
 #ifdef __OCPN__ANDROID__
   // wxQt can retain the native widget after the wx dialog is deleted. Stop
@@ -1004,11 +1013,13 @@ bool CelestialNavigationDialog::OpenXML(bool reportfailure) {
   m_lunarSolutions = std::move(solutions);
   m_ClockCorrection = correction;
   RebuildList();
+#ifdef __OCPN__ANDROID__
   m_lSights->SetColumnWidth(0, 28);
   for (int i = 1; i < rmMAX; i++) {
     m_lSights->SetColumnWidth(i, wxLIST_AUTOSIZE_USEHEADER);
   }
   m_lSights->SetColumnWidth(rmREMARKS, m_lSights->GetTextExtent(wxString('n', 50)).x + 20);
+#endif
   if (m_lSights->GetItemCount() > 0) {
     m_Sights[0].SetSelected(true);
     m_lSights->SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
@@ -1516,6 +1527,11 @@ void CelestialNavigationDialog::RebuildList(bool persist) {
     }
   }
 
+#ifndef __OCPN__ANDROID__
+  if (m_sightColumns)
+    m_sightColumns->FitContents({"", "", "", "2000-12-31 23:59:59",
+                                "", "", wxString('n', 50)});
+#endif
   UpdateButtons();
   UpdateFix();
   if (persist) SaveXML();

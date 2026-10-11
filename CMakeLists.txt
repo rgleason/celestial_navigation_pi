@@ -188,6 +188,7 @@ SET(SRCS
         src/CelestialNavigationDialog.cpp
         src/AndroidWorkspace.cpp
         src/DialogGeometry.cpp
+        src/ReportListLayout.cpp
         src/DialogFocus.cpp
         src/AtomicXmlFile.cpp
         src/SightLogCsv.cpp

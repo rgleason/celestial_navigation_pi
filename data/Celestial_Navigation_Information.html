@@ -413,6 +413,10 @@ for azimuth to preserve the correct quadrant.</p>
 body, UTC time, measurement, colour and remarks. The eye symbol controls whether a
 sight is plotted and included where a workflow uses visible sights.</p>
 
+<p>On desktop, column widths initially fit their headings and contents. Drag a
+column boundary to adjust its width; the plugin remembers manually adjusted
+widths when the Sights window is reopened.</p>
+
 <table>
 <tr><th>Control</th><th>Purpose</th></tr>
 <tr><td>New</td><td>Create an altitude, azimuth or lunar observation.</td></tr>
@@ -852,6 +856,12 @@ moving observer model. The analyzer reports residuals, scatter, trend,
 possible outliers and estimated personal bias. A trend can indicate changing
 conditions, vessel motion, a systematic timing error or poor technique; it is
 not automatically a sextant error.</p>
+
+<p>The graph shows <strong>Ho − Hc in arcminutes</strong> against UTC, with
+full UTC dates and times at its endpoints. The vertical range follows the
+selected residuals. On desktop, result columns initially fit their contents;
+drag their boundaries to adjust them. These widths are retained during
+recalculation and when the analyzer is reopened.</p>
 
 <p>In stationary mode each sight retains its own saved DR position. In moving
 observer mode one COG/SOG track is fitted across the selected observations.

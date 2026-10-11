@@ -156,12 +156,15 @@ TEST(DialogFocusUi, RecoversNestedFindWithoutChangingEditsOrModalTransactions) {
         // plugin toolbar callback is invoked programmatically.
         auto outerAction = hook.action;
         hook.action = [&](wxDialog* other) {
+          // Native window managers may reposition the owner when another
+          // modal is shown. Recovery itself must leave that position alone.
+          const wxPoint positionBeforeRecovery = finder->GetPosition();
           EXPECT_TRUE(finder->IsModal());
           EXPECT_FALSE(main->BringToFront());
           plugin.OnToolbarToolCallback(0);
           Activate(wxTheApp, wxEVT_ACTIVATE_APP);
           DrainRecovery();
-          EXPECT_EQ(wxPoint(-10000, -10000), finder->GetPosition());
+          EXPECT_EQ(positionBeforeRecovery, finder->GetPosition());
           other->EndModal(wxID_CANCEL);
         };
         wxDialog unrelated(&frame, wxID_ANY, "Other plugin modal");
