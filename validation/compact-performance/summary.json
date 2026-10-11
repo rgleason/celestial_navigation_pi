@@ -1,0 +1,25 @@
+{
+  "base_commit": "6083bae141d1f64b8e7e4082ff619a09ee7cde70",
+  "version": "2.9.5.0",
+  "frozen_states": 1584,
+  "maximum_rounding_differences": {
+    "gha_deg": 0.0,
+    "declination_deg": 0.0,
+    "distance_km": 0.0,
+    "airless_altitude_deg": 0.0,
+    "azimuth_deg": 0.0,
+    "geometric_hc_deg": 0.0,
+    "observer_semidiameter_deg": 0.0
+  },
+  "lunar_original_summation_samples": 6192,
+  "maximum_lunar_coordinate_rounding_mm": 8.73114913702e-05,
+  "independent_lunar_cases": 32,
+  "independent_lunar_maximum_utc_error_seconds": 1.7431640625,
+  "ctest_groups_passed": 11,
+  "celestial_unit_tests_passed": 286,
+  "ui_tests_run_separately": [
+    "CompactPerformanceUi",
+    "DisplayUi",
+    "FindBodyUi"
+  ]
+}

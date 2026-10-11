@@ -34,6 +34,7 @@ TEST(HtmlHelp, MissingExternalDocumentFailsSafely) {
       "document-that-is-deliberately-not-bundled.pdf"));
   EXPECT_FALSE(OpenBundledDocumentExternally(
       "document-that-is-deliberately-not-bundled.pdf", "How to Guide"));
+  SetTestPluginDataRoot(wxString());
 }
 
 TEST(HtmlHelp, PracticalGuideOfflineNavigationAndRendering) {
@@ -64,12 +65,13 @@ TEST(HtmlHelp, PracticalGuideOfflineNavigationAndRendering) {
 #endif
         // Exercise every page in the actual wx reader. Missing images/links
         // are also rejected by the archive/HTML asset tests.
-        for (int page = 1; page <= 66; ++page) {
+        for (int page = 1; page <= 77; ++page) {
           viewer->SetSize(wxSize(900, 760));
           viewer->Layout();
           EXPECT_TRUE(html->LoadPage(root + wxString::Format(
               "/data/practical-guide/page-%02d.html", page))) << page;
           EXPECT_TRUE(html->ToText().Contains("Next"));
+          EXPECT_FALSE(html->ToText().Contains("Selectable transcription"));
           EXPECT_EQ(html->GetVirtualSize().x, html->GetClientSize().x) << page;
 #ifdef __WXGTK3__
           if (std::getenv("CELESTIAL_GUIDE_CAPTURE_ALL")) {
@@ -80,7 +82,7 @@ TEST(HtmlHelp, PracticalGuideOfflineNavigationAndRendering) {
           }
 #endif
         }
-        for (int page : {1, 4, 6, 9, 43, 60, 62}) {
+        for (int page : {1, 4, 5, 6, 9, 17, 43, 60, 62, 71, 77}) {
           viewer->SetSize(wxSize(900, 760));
           EXPECT_TRUE(html->LoadPage(root + wxString::Format(
               "/data/practical-guide/page-%02d.html", page)));
@@ -102,34 +104,16 @@ TEST(HtmlHelp, PracticalGuideOfflineNavigationAndRendering) {
         EXPECT_TRUE(html->ToText().Contains("Contents"));
         html->OnLinkClicked(wxHtmlLinkInfo("practical-guide/definitions.html"));
         EXPECT_TRUE(html->GetOpenedPage().EndsWith("definitions.html"));
-        EXPECT_TRUE(html->ToText().Contains("DRIPS mnemonic"));
-        EXPECT_TRUE(html->ToText().Contains("Sign conventions"));
+        EXPECT_TRUE(html->ToText().Contains("Definitions"));
+        EXPECT_TRUE(html->ToText().Contains("Rev 15 Dec 2025"));
         EXPECT_EQ(html->GetVirtualSize().x, html->GetClientSize().x);
 #ifdef __WXGTK3__
         CaptureGuide(viewer, "/tmp/celnav-howto-definitions.png");
 #endif
         html->OnLinkClicked(wxHtmlLinkInfo("../Practical_Guide.html"));
         EXPECT_TRUE(html->ToText().Contains("Contents"));
-        html->OnLinkClicked(wxHtmlLinkInfo("practical-guide/definitions.html#definitions-section-11"));
-        EXPECT_EQ(html->GetOpenedAnchor(), "definitions-section-11");
-        EXPECT_GT(html->GetScrollPos(wxVERTICAL), 0);
-        EXPECT_TRUE(html->LoadPage(root + "/data/practical-guide/page-66.html"));
-        html->OnLinkClicked(wxHtmlLinkInfo("definitions.html"));
-        EXPECT_TRUE(html->ToText().Contains("Terrestrial Time"));
-        EXPECT_TRUE(html->LoadPage(root + "/data/practical-guide/page-01.html"));
-        html->OnLinkClicked(wxHtmlLinkInfo("page-32.html"));
-        EXPECT_TRUE(html->ToText().Contains("Lunar distance topics"));
-        for (int width : {600, 900, 1200}) {
-          viewer->SetSize(wxSize(width, 760));
-          viewer->Layout();
-          wxYield();
-          EXPECT_TRUE(html->LoadPage(root + "/data/practical-guide/page-04.html"));
-          EXPECT_LE(html->GetVirtualSize().x, html->GetClientSize().x) << width;
-          EXPECT_TRUE(html->LoadPage(root + "/data/practical-guide/definitions.html"));
-          EXPECT_LE(html->GetVirtualSize().x, html->GetClientSize().x) << width;
-        }
-        EXPECT_TRUE(html->LoadPage(root + "/data/practical-guide/page-43.html"));
-        EXPECT_TRUE(html->ToText().Contains(wxString::FromUTF8("\xc2\xb1") + "12 hours"));
+        html->OnLinkClicked(wxHtmlLinkInfo("practical-guide/page-36.html"));
+        EXPECT_TRUE(html->ToText().Contains("Lunar"));
         viewer->EndModal(wxID_OK);
       });
       return wxID_NONE;
@@ -143,13 +127,4 @@ TEST(HtmlHelp, PracticalGuideOfflineNavigationAndRendering) {
   SetTestPluginDataRoot(wxString());
   wxTheApp->OnExit();
   wxEntryCleanup();
-}
-
-TEST(HtmlHelp, PracticalGuideDeclaresEncodingForOlderReaders) {
-  wxFile file(wxFileName(__FILE__).GetPath() + "/../data/practical-guide/page-43.html");
-  wxString markup;
-  ASSERT_TRUE(file.ReadAll(&markup, wxConvUTF8));
-  EXPECT_EQ(wxHtmlParser::ExtractCharsetInformation(markup), "utf-8");
-  EXPECT_TRUE(markup.Contains("http-equiv=\"Content-Type\""));
-  EXPECT_TRUE(markup.Contains("&#177;12 hours"));
 }

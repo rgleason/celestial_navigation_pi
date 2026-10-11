@@ -1,0 +1,5 @@
+UTC: actual Android planner parser preserves UTC/zone fractions and absolute hour steps
+Europe/London: actual Android planner parser preserves UTC/zone fractions and absolute hour steps
+America/New_York: actual Android planner parser preserves UTC/zone fractions and absolute hour steps
+Pacific/Auckland: actual Android planner parser preserves UTC/zone fractions and absolute hour steps
+Local gaps/overlaps refused; valid local fractional instant preserved

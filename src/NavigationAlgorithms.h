@@ -49,6 +49,7 @@ struct ObserverMotion {
 
 struct BodyState {
   bool valid = false;
+  bool usedCompact = false;
   bool usedDe440 = false;  // Actual source of the geocentric ephemeris.
   wxString body;
   wxDateTime utc;
@@ -128,6 +129,10 @@ struct MoonInformation {
   double ageDays = 0.0;
   bool waxing = false;
   wxString phaseName;
+
+  // Planning cutoff requested in #354; actual visibility also depends on sky
+  // conditions. Compare the unrounded fraction, not the displayed percentage.
+  bool IsSightCandidate() const { return illuminatedFraction >= 0.01; }
 };
 
 MoonInformation CalculateMoonInformation(const wxDateTime& utc,
@@ -147,6 +152,19 @@ struct RankedBody {
   BodyState state;
   double score = 0.0;
   wxString reason;
+  double visibilityScore = 0.0;  // Heuristic preference, not a detection probability.
+  wxString visibilityGuidance;
+  wxString handlingGuidance;
+  bool visibilityUnavailable = false;
+  double eclipticLatitude = 0.0;
+  double lunarDistance = 0.0;
+  double lunarRateArcminHour = 0.0;
+  double lunarTimingSeconds = 0.0;
+  int lunarConstraints = 0;  // Count of explicitly reported planning cautions.
+  bool lunarBelowHorizon = false;
+  bool lunarVisibilityUnavailable = false;  // Moon illumination below 1%.
+  bool lunarValid = false;
+  wxString lunarReason;
 };
 
 struct RankedCombination {
@@ -157,6 +175,7 @@ struct RankedCombination {
 
 class SightRanker {
 public:
+  static RankedBody AssessBody(const BodyState& body, const BodyState& sun);
   static std::vector<RankedBody> VisibleBodies(const wxDateTime& utc,
                                                double lat, double lon,
                                                double minAltitude = 10.0,
@@ -167,9 +186,58 @@ public:
       unsigned maximumResults = 10);
   static std::vector<RankedBody> RecommendationCandidates(
       const std::vector<RankedBody>& bodies, bool limitAltitude,
-      double minimumAltitude, double maximumAltitude);
+      double minimumAltitude, double maximumAltitude,
+      bool includePolaris = true);
   static std::vector<size_t> SkyLabelPriority(
       const std::vector<RankedBody>& bodies);
+};
+
+enum class PlanningMode { PracticalFix, BrightBodies, LunarCandidates, ShowAll };
+
+struct PlannerSkyPoint {
+  PlannerSkyPoint() = default;
+  PlannerSkyPoint(const wxDateTime& time, double hc, double zn, double shaDeg,
+                  double decDeg)
+      : utc(time), altitude(hc), azimuth(zn), sha(shaDeg),
+        declination(decDeg) {}
+  wxDateTime utc;
+  double altitude = 0.0;
+  double azimuth = 0.0;
+  double sha = 0.0;
+  double declination = 0.0;
+};
+
+struct PlanningResult {
+  std::vector<RankedBody> bodies;
+  MoonInformation moon;
+};
+
+struct LunarObservingWindow {
+  wxDateTime startUtc, endUtc, bestUtc;
+  RankedBody best;
+  double moonAltitude = 0.0;
+};
+
+class PlannerRecommendations {
+public:
+  static PlanningResult Calculate(const wxDateTime& utc, double lat,
+                                  double lon);
+  static std::vector<RankedBody> Order(const PlanningResult& result,
+                                       PlanningMode mode,
+                                       bool includeBelowHorizon,
+                                       bool lunarTimingFirst = false,
+                                       bool traditionalLunarOnly = false);
+  static bool IsTraditionalLunarCompanion(const wxString& body);
+  static RankedBody LunarPair(const wxString& body, const wxDateTime& utc,
+                              double lat, double lon);
+  static std::vector<LunarObservingWindow> ObservingWindows(
+      const wxString& body, const ObserverMotion& observer,
+      unsigned hours = 24, unsigned stepMinutes = 10);
+  static double EclipticLatitude(const BodyState& body, const wxDateTime& utc);
+  static std::vector<PlannerSkyPoint> Ecliptic(const wxDateTime& utc,
+                                               double lat, double lon);
+  static std::vector<PlannerSkyPoint> MoonPath(const ObserverMotion& observer,
+                                               int halfSpanHours = 3);
 };
 
 enum class PlannerTimeBasis {
@@ -192,6 +260,10 @@ wxDateTime UtcDayStart(const wxDateTime& utc);
 double SuggestedZoneOffsetHours(double longitude);
 wxString FormatNauticalPlannerDate(const wxDateTime& fields);
 wxString FormatNauticalPlannerTime(const wxDateTime& fields);
+// Preferred boundary for planner UTC/ship-zone entry, including computer DST gaps.
+bool ParseNauticalPlannerInstant(const wxString& dateText, const wxString& timeText,
+                                 PlannerTimeBasis basis, double zoneOffsetHours,
+                                 wxDateTime* utc);
 bool ParseNauticalPlannerDateTime(const wxString& dateText,
                                   const wxString& timeText, wxDateTime* fields);
 

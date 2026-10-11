@@ -1,0 +1,41 @@
+{
+  "issue": "https://github.com/rgleason/celestial_navigation_pi/issues/354",
+  "version": "2.9.3.0",
+  "platform": "Linux x86_64, GCC, wxGTK3",
+  "ctest_groups": {
+    "passed": 8,
+    "failed": 0
+  },
+  "focused_cases": {
+    "passed": 16,
+    "failed": 0
+  },
+  "time_zones": [
+    "UTC",
+    "Europe/London",
+    "America/New_York",
+    "Asia/Kolkata"
+  ],
+  "manual": {
+    "rendered_pages": 44,
+    "all_pages_visually_reviewed": true,
+    "embedded_figures": 10,
+    "abbreviations": 57,
+    "glossary_terms": 77
+  },
+  "package": {
+    "name": "celestial_navigation_pi-2.9.3.0-arch-x86_64-rolling.tar.gz",
+    "sha256": "80160b4f82ce2cf1a4130fc0e19669aa7d438ce74fe3d574a28c9dc281d6765c",
+    "bytes": 7156076
+  },
+  "limits": [
+    "Visibility and handling are planning heuristics, not measured probabilities.",
+    "Windows, macOS and Android native qualification remains required.",
+    "Four-body recommendations remain deferred."
+  ],
+  "native_ui": {
+    "passed": 1,
+    "failed": 0,
+    "seconds": 120.858
+  }
+}

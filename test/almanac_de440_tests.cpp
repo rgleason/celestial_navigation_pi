@@ -149,17 +149,17 @@ TEST(AlmanacDocument, SourcesReportActualKernelAndFallbackAndManualDut1) {
     EXPECT_NE(page.paragraphs.at(0).Find("+0.123"), wxNOT_FOUND);
     std::map<wxString, wxString> sources;
     for (const auto& row : page.tables.at(0).rows) sources[row[0]] = row[1];
-    EXPECT_EQ(sources["Sun"], kernel ? "DE440s" : "Analytical");
-    EXPECT_EQ(sources["Moon"], kernel ? "DE440s" : "Analytical");
-    EXPECT_EQ(sources["Venus"], kernel ? "DE440s" : "Analytical");
-    EXPECT_EQ(sources["Mars"], "Analytical");
-    EXPECT_EQ(sources["Jupiter"], "Analytical");
-    EXPECT_EQ(sources["Saturn"], "Analytical");
+    EXPECT_EQ(sources["Sun"], kernel ? "DE440s" : "Classic analytical");
+    EXPECT_EQ(sources["Moon"], kernel ? "DE440s" : "Classic analytical");
+    EXPECT_EQ(sources["Venus"], kernel ? "DE440s" : "Classic analytical");
+    EXPECT_EQ(sources["Mars"], "Classic analytical");
+    EXPECT_EQ(sources["Jupiter"], "Classic analytical");
+    EXPECT_EQ(sources["Saturn"], "Classic analytical");
   }
   request.fromUtc = request.toUtc = Fields("2200-01-01T00:00:00");
   request.dut1Known = false;
   const auto outside = AlmanacGenerator::Build(request);
   EXPECT_FALSE(outside.warnings.empty());
   for (const auto& row : outside.pages.at(2).tables.at(0).rows)
-    if (row[0] == "Sun" || row[0] == "Moon") EXPECT_EQ(row[1], "Analytical");
+    if (row[0] == "Sun" || row[0] == "Moon") EXPECT_EQ(row[1], "Classic analytical");
 }

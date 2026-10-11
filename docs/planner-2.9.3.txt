@@ -1,0 +1,54 @@
+Planner follow-up for 2.9.3 -- issue #354
+=======================================
+
+Review: https://github.com/rgleason/celestial_navigation_pi/issues/354
+
+The header wraps complete related groups, keeping latitude/longitude and
+event display/zone offset together. Hour-step buttons advance the entire
+sky by an elapsed UTC hour and propagate a moving observer's position.
+UTC and fixed-zone entry no longer passes through a possibly nonexistent
+computer-local hour at a daylight-saving transition. Native date and clock
+pickers are independent, preserving the same instant when presentation changes.
+
+Sky names use a remembered Sparse/Balanced/More choice independent of the
+magnitude filter. Balanced is the default. Brighter bodies and the selected
+body take priority; alternative placements and short leaders avoid names and
+markers. Hover identifies an unnamed dot. A selected above-horizon body stays
+on the plot even outside the magnitude filter. SHA/declination includes the
+polar regions. Moon motion is shown relative to stars only on SHA/declination;
+the misleading time-varying trail against a fixed local sky is removed.
+
+Sight preference separates visibility, sextant handling and fix geometry.
+The preference weights visibility 75% and altitude handling 25%, keeping a
+bright high star useful with a preset sextant. Twilight penalises faint stars
+more strongly. Guidance replaces the unexplained observability number;
+brightness values for planets/Sun/Moon are representative, not current
+photometry. Geometry is unchanged. Three-body suggestions precede pairs;
+Polaris remains in the body list and latitude helper and can optionally be
+included in fixes. Daylight stars are excluded from recommended fixes.
+
+Both lunar planners offer Traditional lunar companions (default) or All
+calculated companions. Traditional means Sun, Venus, Mars, Jupiter, Saturn,
+Hamal, Aldebaran, Pollux, Regulus, Spica, Antares, Altair, Fomalhaut and Markab.
+The historical nine-star list is also given in Bob's Practical Guide and
+the Nautical Almanac tables reproduced at https://reednavigation.com/lunars/na.html.
+Magnitude is visible in both tables. Practical order prefers fewer cautions,
+then brighter companions, then timing; timing-first remains available.
+Ecliptic latitude is context, without an extra penalty on the actual distance
+rate. The full body list and numerical lunar calculations remain available.
+
+The HTML, editable DOCX and bundled PDF manual describe these controls and
+the Compact policy already committed for 2.9.3. The cover now states 2.9.3.
+
+Validation evidence: validation/planner-v2.9.3. Eight CTest groups pass,
+including numerical audits in four time zones; 16 focused cases pass.
+The native temporary-profile UI check covers wide/narrow headers, all planning
+modes and label densities, lunar columns, overlay availability, UTC stepping
+and both time-entry formats across the London spring DST gap. Manual validation
+checks offline images, abbreviations, glossary and PDF; all 44 rendered pages
+were visually reviewed. Package data hashes, runtime licences and the stripped
+production library were checked before installation.
+
+These preferences are transparent planning heuristics, not visibility
+probabilities or accuracy estimates. Four-body recommendations are deferred.
+Linux desktop checks do not replace Windows/macOS/Android qualification.

@@ -29,6 +29,7 @@
 #define _CelestialNavigationDialog_h_
 
 #include <list>
+#include <memory>
 
 #include "celestial_navigation_pi.h"
 #include "geodesic.h"
@@ -47,17 +48,22 @@
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
 class QTimer;
+#else
+class DialogFocusController;
+class ReportListLayout;
 #endif
 
 class CelestialNavigationDialog : public CelestialNavigationDialogBase {
 public:
   CelestialNavigationDialog(wxWindow* parent, celestial_navigation_pi* ppi);
   ~CelestialNavigationDialog();
+  bool BringToFront();
   void UpdateSights();
 
   ClockCorrectionDialog* m_ClockCorrectionDialog;
   FixDialog* m_FixDialog;
   double m_pix_per_mm;
+  SightDisplayStyle m_chartStyle;
   std::vector<Sight> m_Sights;
 
   void OnFixClose();
@@ -75,6 +81,11 @@ public:
   void CreatePlannedSight(const wxString& body, const wxDateTime& utc,
                           double drLat, double drLon);
   int GetClockCorrection() const { return m_ClockCorrection; }
+  // Noninteractive file operations used by the manager and its regression tests.
+  bool BackupSightsTo(const wxString& path, wxString* error);
+  bool ExportSightsCsvTo(const wxString& path, wxString* error);
+  bool ImportSightsFile(const wxString& path, bool replace,
+                        wxString* safetyBackup, wxString* error);
   void ApplyClockCorrection(int correction_seconds);
   bool SaveLunarSolution(LunarSolutionRecord record);
   void ShowLunarSolutions(wxWindow* parent);
@@ -85,6 +96,10 @@ public:
   bool GetMarkedUtc(wxDateTime* utcFields) const;
 
 private:
+#ifndef __OCPN__ANDROID__
+  std::unique_ptr<DialogFocusController> m_dialogFocus;
+  std::unique_ptr<ReportListLayout> m_sightColumns;
+#endif
   long SelectedSightIndex() const;
 #ifdef __OCPN__ANDROID__
   void BuildAndroidWorkspace();
@@ -97,10 +112,23 @@ private:
   QTimer* m_androidClockTimer = nullptr;
 #endif
   bool OpenXML(bool reportfailure);
+  bool ReadSightsXml(const wxString& path, std::vector<Sight>* sights,
+                     int* clockCorrection,
+                     std::vector<LunarSolutionRecord>* lunarSolutions,
+                     wxString* errorOut, bool strict = true);
   bool SaveXML();
   std::vector<LunarSolutionRecord> m_lunarSolutions;
 
-  void RebuildList();
+  void RebuildList(bool persist = true);
+  void OnManageSights(wxCommandEvent& event);
+  void OnChartDisplay(wxCommandEvent& event);
+  void BackupSights();
+  void ExportSightsCsv();
+  void ImportSights(bool replace);
+  bool ApplyImportedSights(std::vector<Sight> incoming, int correction,
+                           std::vector<LunarSolutionRecord> solutions,
+                           bool replace, wxString* safetyBackup,
+                           wxString* error);
   void UpdateButtons();  // Correct button state
   void UpdateFix();
   void BuildTimeIntegrityPanel(bool visible);
@@ -178,6 +206,8 @@ private:
   wxButton* m_pdfDocumentationButton;
   wxButton* m_practicalGuideButton;
   wxButton* m_practicalGuideHtmlButton;
+  wxButton* m_manageSightsButton;
+  wxButton* m_chartDisplayButton;
   EclipseDialog* m_eclipseDialog;
   CoastalNavigationDialog* m_coastalDialog;
   wxTimer m_timeTimer;

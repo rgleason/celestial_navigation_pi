@@ -1,6 +1,8 @@
+#include "CompactEphemerisProvider.h"
 #include <gtest/gtest.h>
 #include "eclipse/dut1.h"
 #include "eclipse/time.h"
+#include "NavigationEphemerisProvider.h"
 #include "Dut1UpdatePanel.h"
 #include "AtomicXmlFile.h"
 #include <wx/file.h>
@@ -61,6 +63,29 @@ TEST(Dut1Update, ParsesHistoryAndFutureLeapWithoutSmearing) {
     EXPECT_EQ(actual->Lookup(2457754.5).tai_minus_utc,37);
     EXPECT_NEAR(actual->Lookup(2457754.5).seconds,0.59122,0.001);
   }
+}
+TEST(Dut1Update, AnalyticalEpochUsesUpdateAndRetainsLastKnownLeapAfterCoverage) {
+  const auto previous = eclipse::GetDut1Update();
+  struct Restore {
+    std::shared_ptr<const eclipse::Dut1Table> previous;
+    ~Restore() { eclipse::SetDut1Update(previous); }
+  } restore{previous};
+  std::string error;
+  const auto table = eclipse::ParseDut1Update(Fixture(), &error);
+  ASSERT_TRUE(table) << error;
+  eclipse::SetDut1Update(table);
+  celestial_navigation::AnalyticalNavigationEpoch epoch;
+  ASSERT_TRUE(celestial_navigation::ResolveAnalyticalNavigationEpoch(
+      wxDateTime(1, wxDateTime::Jan, 2030, 0, 0, 0), &epoch));
+  EXPECT_TRUE(epoch.dut1_available);
+  EXPECT_TRUE(epoch.dut1_from_update);
+  EXPECT_NEAR(epoch.dut1_seconds, 0.4, 1e-6);
+  EXPECT_NEAR((epoch.tt_jd - epoch.utc_jd) * 86400.0, 70.184, 0.00005);
+  ASSERT_TRUE(celestial_navigation::ResolveAnalyticalNavigationEpoch(
+      wxDateTime(1, wxDateTime::Jan, 2040, 0, 0, 0), &epoch));
+  EXPECT_FALSE(epoch.dut1_available);
+  EXPECT_DOUBLE_EQ(epoch.dut1_seconds, 0.0);
+  EXPECT_NEAR((epoch.tt_jd - epoch.utc_jd) * 86400.0, 70.184, 0.00005);
 }
 TEST(Dut1Update, RejectsTruncationGarbageAndDamagedEpochs) {
   const auto valid=Fixture();
@@ -155,4 +180,33 @@ TEST(Dut1Update, PublishesUpdatesSafelyAcrossThreads) {
   for (auto& reader : readers) reader.join();
   EXPECT_EQ(failures.load(),0);
   eclipse::SetDut1Update(nullptr);
+}
+
+TEST(Dut1Update, CompactUsesImportedLeapHistoryAndFreezesLunarTimeData) {
+  const auto previous=eclipse::GetDut1Update();
+  struct Restore { std::shared_ptr<const eclipse::Dut1Table> value;
+    ~Restore(){eclipse::SetDut1Update(value);} } restore{previous};
+  std::string error;
+  const auto update=eclipse::ParseDut1Update(Fixture(),&error);
+  ASSERT_TRUE(update) << error;
+  eclipse::SetDut1Update(update);
+  const wxDateTime utc(1,wxDateTime::Jan,2030,12,0,0);
+  const auto request=celestial_navigation::CompactRequest("Moon",utc,NAN,update);
+  EXPECT_DOUBLE_EQ(request.tai_minus_utc,38.0);
+  EXPECT_NEAR(request.dut1_seconds,.4,1e-6);
+  const auto later=celestial_navigation::CompactRequest("Moon",
+      wxDateTime(1,wxDateTime::Jan,2040,12,0,0),NAN,update);
+  EXPECT_DOUBLE_EQ(later.tai_minus_utc,38.0);
+  EXPECT_DOUBLE_EQ(later.dut1_seconds,0.0);
+  const auto session=celestial_navigation::SelectEnhancedLunarProvider(
+      "Sun",utc,-60,60,false,true,update);
+  ASSERT_TRUE(session.used_compact); ASSERT_TRUE(session.ephemeris);
+  lunar_distance::EphemerisSample a,b;
+  ASSERT_TRUE(session.ephemeris(0,&a,&error));
+  eclipse::SetDut1Update(nullptr);
+  ASSERT_TRUE(session.ephemeris(0,&b,&error));
+  EXPECT_DOUBLE_EQ(a.predicted_distance_deg,b.predicted_distance_deg);
+  EXPECT_DOUBLE_EQ(a.moon_geographic_longitude_deg,b.moon_geographic_longitude_deg);
+  EXPECT_DOUBLE_EQ(a.dut1_seconds,b.dut1_seconds);
+  EXPECT_TRUE(b.dut1_from_update);
 }

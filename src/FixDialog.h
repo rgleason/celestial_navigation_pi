@@ -33,11 +33,13 @@
 #include "NavigationAlgorithms.h"
 
 #include <list>
+#include "FixDrSource.h"
+class NavigationAngleCtrl;
+class wxPanel;
+class wxBoxSizer;
 
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
-#include "FixDrSource.h"
-class NavigationAngleCtrl;
 #endif
 
 class Sight;
@@ -58,9 +60,7 @@ public:
   ~FixDialog() override;
   void Update(int clock_offset);
   void RunIntegrationScenario();
-#ifdef __OCPN__ANDROID__
   void FocusStartingDr();
-#endif
 
   int m_clock_offset;
   double m_fixlat, m_fixlon, m_fixerror;
@@ -80,6 +80,9 @@ private:
   void OnUpdateSpin(wxSpinEvent& event) { Update(m_clock_offset); }
 #ifdef __OCPN__ANDROID__
   void OnEvtPanGesture(wxQT_PanGestureEvent& event);
+  wxStaticText* m_androidResiduals;
+#endif
+
   void RefreshDrSources();
   void ChangeDrSource(wxCommandEvent&);
   void EditDr(wxCommandEvent&);
@@ -91,13 +94,16 @@ private:
   bool m_hasDr = false;
   bool m_drSourcesReady = false;
   bool m_changingDr = false;
-  NavigationAngleCtrl* m_androidInitialLatitude;
-  NavigationAngleCtrl* m_androidInitialLongitude;
-  wxStaticText* m_androidResiduals;
-#endif
-
+  NavigationAngleCtrl* m_initialLatitude;
+  NavigationAngleCtrl* m_initialLongitude;
+  bool IsRunning() const;
+  void UpdateMotionControls();
+  void FillStationaryDetails(double correction);
+  wxPanel* m_moreOptions;
+  wxPanel* m_motionInputs;
+  wxStaticText* m_epochSummary;
+  wxStaticText* m_runningDetails;
   CelestialNavigationDialog* m_Parent;
-  wxCheckBox* m_runningFix;
   wxChoice* m_motionMode;
   wxChoice* m_lunarSolution;
   std::vector<Sight> m_workingSights;

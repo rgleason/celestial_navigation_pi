@@ -14,8 +14,8 @@ Result SolveAndroid(const std::vector<SessionObservation>& observations,
 // ephemerides rather than generating observations with the model under test.
 TEST(LunarUsnoSession, PublicGreenwichClockAndJointReference) {
   TiXmlDocument xml(
-      CMAKE_BINARY_DIR
-      "/../validation/android-usno-greenwich-20240621/session-sights.xml");
+      TESTDATA
+      "/../../validation/android-usno-greenwich-20240621/session-sights.xml");
   ASSERT_TRUE(xml.LoadFile());
   std::vector<std::shared_ptr<Sight>> retained;
   std::vector<lunar_session::SessionObservation> entries;

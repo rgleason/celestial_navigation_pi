@@ -2,6 +2,7 @@
 #include "AndroidPlannerWorker.h"
 #include <future>
 #include "UtcDateTime.h"
+#include <wx/init.h>
 
 TEST(AndroidPlannerWorker, CancellationScopeIsIsolatedAndRestored) {
   std::atomic<bool> cancelled{true};
@@ -16,6 +17,10 @@ TEST(AndroidPlannerWorker, CancellationScopeIsIsolatedAndRestored) {
 }
 
 TEST(AndroidPlannerWorker, ReplacedContextPublishesOnlyLatestPreciseEpoch) {
+#ifndef __OCPN__ANDROID__
+  wxInitializer wx;
+  ASSERT_TRUE(wx.IsOk());
+#endif
   // Existing independent worksheet fixture, tolerance 0.1 arcminute.
   ObserverMotion motion;
   motion.referenceUtc = UtcDateTime::ToInstant(wxDateTime(20, wxDateTime::Jul,
@@ -43,4 +48,9 @@ TEST(AndroidPlannerWorker, ReplacedContextPublishesOnlyLatestPreciseEpoch) {
   EXPECT_NEAR(20.5129, result.sun.declination, 0.1 / 60);
   EXPECT_EQ(4u, result.phases.size());
   EXPECT_FALSE(result.events.events.empty());
+  EXPECT_EQ(result.planning.bodies.size(), result.allBodies.size());
+  EXPECT_FALSE(result.planning.bodies.empty());
+  EXPECT_EQ(121u, result.ecliptic.size());
+  EXPECT_LT(result.moonPaths[0].size(), result.moonPaths[1].size());
+  EXPECT_LT(result.moonPaths[1].size(), result.moonPaths[2].size());
 }

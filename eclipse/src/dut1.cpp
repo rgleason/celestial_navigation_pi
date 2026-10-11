@@ -53,11 +53,14 @@ void SetDut1Update(std::shared_ptr<const Dut1Table> table) {
   update_table=std::move(table);
 }
 Dut1Result LookupDut1(double utc_jd) {
+  return LookupDut1(utc_jd, GetDut1Update());
+}
+Dut1Result LookupDut1(double utc_jd,
+                      const std::shared_ptr<const Dut1Table>& update) {
   auto bundled=LookupBundledDut1(utc_jd);
   // Preserve the final C04 historical solution. Updates replace rapid and
   // predicted values, and extend coverage; they do not erase bundled history.
   if (bundled.available && bundled.quality=='C') return bundled;
-  const auto update=GetDut1Update();
   if (update) {
     const auto value=update->Lookup(utc_jd);
     if (value.available) return value;

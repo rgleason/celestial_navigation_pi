@@ -1,0 +1,39 @@
+Celestial Navigation 2.9.8 development fixes
+==========================================
+
+Moon visibility in planning (#354)
+---------------------------------
+Bob's report:
+https://github.com/rgleason/celestial_navigation_pi/issues/354#issuecomment-6098100618
+
+The shared planner applies a 1% Moon illumination cutoff to sight
+recommendations. This is a planning rule; actual visibility also depends on
+sky conditions. The comparison uses the unrounded illuminated fraction.
+
+Below 1%, the Moon remains in the body table with grey text and its illumination
+percentage and explanation in Why. It is excluded from recommended two- and
+three-body fixes. Lunar pairs remain listed in both the Sun, Moon and Sight
+Planner and Lunar Distance and Sextant Tools, with grey text and an explicit
+low-illumination caution. The caution also prevents unsuitable observing
+windows. Normal visibility and eligibility return at or above 1%.
+
+Both planners display Moon illumination to one decimal place, including the
+Android summaries and the body-table CSV. The phase calculation is unchanged.
+
+Validation
+----------
+The regression tests cover the unrounded cutoff, Moon assessment, pair/triad
+exclusion, Bob's 2026-10-10 13:05:16 and 13:05:26 UTC timestamps, both sides of
+new Moon, retained lunar pairs, observing-window cautions, and recovery on
+2026-10-12. The focused planning selection passes 15 tests.
+
+A task-only desktop probe exercises the real controls with Classic and Compact
+calculations, checking grey text, recovery, retained rows, matching percentage
+precision, and exclusion from fix recommendations. Both runs pass. The probe
+and screenshots are in output/celnav-2.9.8-moon in the parent OpenCPN workspace.
+
+The plugin and test executable build with CMake/Ninja. Optional DE440s data and
+the existing public validation fixtures are linked locally for the wider tests.
+The UTC, Europe/London, America/New_York and Asia/Kolkata numerical checks pass.
+The complete CTest run passes all 12 checks, including the main regression
+executable, metadata, package integrity, bundled guides and UTF-8 UI literals.

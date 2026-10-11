@@ -1,0 +1,16 @@
+mode=compact scenario=components
+sun_valid=1 usedCompact=1 usedDe440=0
+cold_sun ms=30.4311 count=1
+moonCompact=1 moonDe440=0 starCompact=1
+run0_daily_events ms=711.222 count=12
+run0_moon_phases ms=219.344 count=4
+run0_moon_info ms=0.07692 count=20.5153
+run0_rank ms=6.85932 count=66
+run0_almanac ms=72.7185 count=175
+run0_duplicate_noon_events ms=47.0833 count=12
+run1_daily_events ms=244.721 count=12
+run1_moon_phases ms=2.80716 count=4
+run1_moon_info ms=0.038425 count=20.5153
+run1_rank ms=4.45082 count=66
+run1_almanac ms=30.2819 count=175
+run1_duplicate_noon_events ms=28.2444 count=12

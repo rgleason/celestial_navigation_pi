@@ -19,6 +19,7 @@
 #include "CelestialNavigationDialog.h"
 #include "FixDialog.h"
 #include "NavigationUIUtils.h"
+#include <wx/combobox.h>
 #include "celestial_navigation_pi.h"
 #include "mock_plugin_api.h"
 
@@ -40,8 +41,8 @@ T* Find(wxWindow* root, const wxString& label) {
 wxChoice* MotionChoice(wxWindow* root) {
   for (auto* child : root->GetChildren()) {
     if (auto* choice = dynamic_cast<wxChoice*>(child))
-      if (choice->GetCount() == 2 &&
-          choice->GetString(1) == "Each sight's DR Shift")
+      if (choice->GetCount() == 3 &&
+          choice->GetString(2) == "Each sight's DR Shift")
         return choice;
     if (auto* choice = MotionChoice(child)) return choice;
   }
@@ -71,6 +72,20 @@ void CheckMotionControlsDisabled(wxWindow* root, int* count) {
     CheckMotionControlsDisabled(child, count);
   }
 }
+
+#ifdef __WXGTK3__
+void CaptureFix(wxWindow& window, const char* path) {
+  window.Show(); window.Layout(); wxTheApp->Yield(true);
+  const auto size = window.GetSize();
+  GtkAllocation allocation{0, 0, size.x, size.y};
+  gtk_widget_size_allocate(GTK_WIDGET(window.GetHandle()), &allocation);
+  auto* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.x, size.y);
+  auto* cr = cairo_create(surface);
+  gtk_widget_draw(GTK_WIDGET(window.GetHandle()), cr);
+  EXPECT_EQ(cairo_surface_write_to_png(surface, path), CAIRO_STATUS_SUCCESS);
+  cairo_destroy(cr); cairo_surface_destroy(surface);
+}
+#endif
 }  // namespace
 
 TEST(FixUi, SavedVisibleDrShiftsSelectRunningFixAndShowInputs) {
@@ -82,6 +97,10 @@ TEST(FixUi, SavedVisibleDrShiftsSelectRunningFixAndShowInputs) {
   wxApp::SetInstance(new wxApp);
   ASSERT_TRUE(wxEntryStart(argc, argv));
   ASSERT_TRUE(wxTheApp->CallOnInit());
+#ifdef __WXGTK3__
+  if (std::getenv("CELESTIAL_FIX_LARGE_FONT"))
+    g_object_set(gtk_settings_get_default(), "gtk-font-name", "Sans 15", nullptr);
+#endif
   const auto oldAssert = wxSetAssertHandler(
       [](const wxString& file, int line, const wxString&,
          const wxString& condition, const wxString& message) {
@@ -140,10 +159,7 @@ TEST(FixUi, SavedVisibleDrShiftsSelectRunningFixAndShowInputs) {
     auto* motion = MotionChoice(&fix);
     ASSERT_NE(nullptr, motion);
     EXPECT_TRUE(motion->IsShown());
-    EXPECT_EQ(1, motion->GetSelection());
-    EXPECT_TRUE(Find<wxCheckBox>(
-                    &fix, "Propagate every sight to a common epoch")
-                    ->GetValue());
+    EXPECT_EQ(2, motion->GetSelection());
     auto* results = ShiftResults(&fix);
     ASSERT_NE(nullptr, results);
     ASSERT_EQ(3, results->GetItemCount());
@@ -187,11 +203,10 @@ TEST(FixUi, SavedVisibleDrShiftsSelectRunningFixAndShowInputs) {
     for (Sight& sight : main.m_Sights) sight.m_ShiftNm = 0.0;
     FixDialog unshifted(&main);
     unshifted.Update(0);
+    unshifted.Show(); unshifted.Layout();
     auto* unshiftedMode = MotionChoice(&unshifted);
     ASSERT_NE(nullptr, unshiftedMode);
     EXPECT_EQ(0, unshiftedMode->GetSelection());
-    EXPECT_FALSE(Find<wxCheckBox>(
-        &unshifted, "Propagate every sight to a common epoch")->GetValue());
     main.m_Sights.front().m_ShiftNm = 1.4;
     main.m_Sights.front().SetVisible(false);
     FixDialog hiddenShift(&main);
@@ -200,22 +215,26 @@ TEST(FixUi, SavedVisibleDrShiftsSelectRunningFixAndShowInputs) {
     ASSERT_NE(nullptr, hiddenMode);
     EXPECT_EQ(0, hiddenMode->GetSelection());
 
-    // Desktop retains the established inline DR, short Go caption and
-    // algorithm workflow. Android source controls must not leak into this UI.
-    EXPECT_EQ(nullptr, wxWindow::FindWindowByName("FixDrSource", &unshifted));
-    EXPECT_EQ(nullptr, wxWindow::FindWindowByName("FixCandidate0", &unshifted));
-    auto* go = Find<wxButton>(&unshifted, " Go ");
-    ASSERT_NE(nullptr, go);
-    EXPECT_NE(nullptr, dynamic_cast<wxStaticBox*>(go->GetParent()));
+    auto* source = dynamic_cast<wxChoice*>(wxWindow::FindWindowByName("FixDrSource", &unshifted));
+    auto* go = Find<wxButton>(&unshifted, "Show fix on chart");
+    ASSERT_NE(nullptr, source); ASSERT_NE(nullptr, go);
+    EXPECT_NE(nullptr, Find<wxButton>(&unshifted, "Calculate"));
+    EXPECT_GE(source->GetSelection(), 2);
     EXPECT_GE(unshifted.GetSize().x, unshifted.GetSizer()->GetMinSize().x);
-    std::vector<int> inlineDrRanges;
-    for (auto* child : go->GetParent()->GetChildren())
-      if (auto* spin = dynamic_cast<wxSpinCtrl*>(child)) {
-        EXPECT_TRUE(spin->IsShown());
-        inlineDrRanges.push_back(spin->GetMax());
-      }
-    std::sort(inlineDrRanges.begin(), inlineDrRanges.end());
-    EXPECT_EQ((std::vector<int>{90, 180}), inlineDrRanges);
+    EXPECT_EQ(nullptr, wxWindow::FindWindowByName("FixCandidate0", &unshifted));
+    auto* algorithm = dynamic_cast<wxComboBox*>(wxWindow::FindWindowByName("FixAlgorithm", &unshifted));
+    ASSERT_NE(nullptr, algorithm); EXPECT_TRUE(algorithm->IsEnabled());
+    auto setChoice = [](wxChoice* choice, int value) {
+      choice->SetSelection(value);
+      wxCommandEvent command(wxEVT_CHOICE, choice->GetId()); command.SetEventObject(choice);
+      choice->GetEventHandler()->ProcessEvent(command);
+    };
+    setChoice(unshiftedMode, 1);
+    EXPECT_FALSE(algorithm->IsEnabled());
+    auto* course = wxWindow::FindWindowByName("FixCourse", &unshifted);
+    ASSERT_NE(nullptr, course); EXPECT_TRUE(course->GetParent()->IsShown());
+    setChoice(unshiftedMode, 0); EXPECT_TRUE(algorithm->IsEnabled());
+    EXPECT_FALSE(course->GetParent()->IsShown());
 
     // Bob's observations still calculate through the ordinary desktop path
     // once the visible inline DR is set to his estimate. No candidate gate.
@@ -235,22 +254,67 @@ TEST(FixUi, SavedVisibleDrShiftsSelectRunningFixAndShowInputs) {
       sight.Recompute(0); bob.m_Sights.push_back(sight);
     }
     FixDialog bobFix(&bob);
-    auto* bobGo = Find<wxButton>(&bobFix, " Go ");
-    ASSERT_NE(nullptr, bobGo);
-    for (auto* child : bobGo->GetParent()->GetChildren())
-      if (auto* spin = dynamic_cast<wxSpinCtrl*>(child)) {
-        EXPECT_EQ(spin->GetMax() == 90 ? 64 : -41, spin->GetValue());
-        spin->SetValue(spin->GetMax() == 90 ? 7 : 101);
-      }
+    auto* bobGo = Find<wxButton>(&bobFix, "Show fix on chart");
+    auto* bobSource = dynamic_cast<wxChoice*>(wxWindow::FindWindowByName("FixDrSource", &bobFix));
+    auto* lat = dynamic_cast<NavigationAngleCtrl*>(wxWindow::FindWindowByName("FixDrLatitude", &bobFix));
+    auto* lon = dynamic_cast<NavigationAngleCtrl*>(wxWindow::FindWindowByName("FixDrLongitude", &bobFix));
+    ASSERT_NE(nullptr, bobGo); ASSERT_NE(nullptr, bobSource);
+    ASSERT_NE(nullptr, lat); ASSERT_NE(nullptr, lon);
+    EXPECT_TRUE(bobSource->GetStringSelection().Contains("Schedar"));
     bobFix.Update(0);
     EXPECT_TRUE(bobGo->IsEnabled());
-    EXPECT_NEAR(3+17.1/60, bobFix.m_fixlat, 0.03);
-    EXPECT_NEAR(99+19.5/60, bobFix.m_fixlon, 0.03);
-    EXPECT_EQ(nullptr, wxWindow::FindWindowByName("FixDrSource", &bobFix));
-    EXPECT_EQ(nullptr, wxWindow::FindWindowByName("FixCandidate0", &bobFix));
-    // The desktop Close route destroys the form, so opening creates it anew.
+    EXPECT_NEAR(3+17.1/60, bobFix.m_fixlat, 0.003);
+    EXPECT_NEAR(99+19.5/60, bobFix.m_fixlon, 0.003);
+    setChoice(bobSource, 1); EXPECT_NEAR(64+1.42/60, bobFix.m_fixlat, .03);
+    bobFix.Update(0); EXPECT_EQ(1, bobSource->GetSelection());
+    lat->SetValue("7 20 N"); lon->SetValue("100 40 E");
+    EXPECT_EQ(0, bobSource->GetSelection());
+    bobFix.Update(0); EXPECT_EQ(0, bobSource->GetSelection());
+    EXPECT_NEAR(3+17.1/60, bobFix.m_fixlat, .003);
+    lat->SetValue("invalid");
+    EXPECT_FALSE(bobGo->IsEnabled()); EXPECT_FALSE(std::isfinite(bobFix.m_fixlat));
+    EXPECT_EQ("N/A", dynamic_cast<wxTextCtrl*>(wxWindow::FindWindowByName("FixLatitude", &bobFix))->GetValue());
+    lat->SetValue("7 20 N"); EXPECT_TRUE(bobGo->IsEnabled());
+    for (auto& sight : bob.m_Sights) { sight.m_DRLat = NAN; sight.m_DRLon = NAN; }
+    bobFix.Update(0); EXPECT_TRUE(lat->GetValue().empty()); EXPECT_TRUE(lon->GetValue().empty());
+    EXPECT_FALSE(bobGo->IsEnabled());
+    auto* bobMotion = MotionChoice(&bobFix); setChoice(bobMotion, 1);
+    EXPECT_FALSE(bobGo->IsEnabled());
+    lat->SetValue("7 20 N"); lon->SetValue("100 40 E");
+    bobFix.Update(0); EXPECT_TRUE(bobGo->IsEnabled());
+    setChoice(bobMotion, 0);
+
     auto* openFixButton = Find<wxButton>(&bob, "Fix...");
     ASSERT_NE(nullptr, openFixButton);
+    // The guide uses Bob's own three-star running-fix example (issue 370).
+    CelestialNavigationDialog hawaii(&frame, &plugin);
+    hawaii.m_Sights.clear();
+    for (const auto& data : {
+        std::make_tuple("Vega", "2025-07-16T06:30:15", 37+50./60, 18+51.6/60, -168-45.9/60, 1.5),
+        std::make_tuple("Menkent", "2025-07-16T06:35:50", 33+28.8/60, 18+51.4/60, -168-46.6/60, .78),
+        std::make_tuple("Dubhe", "2025-07-16T06:43:44", 30+39./60, 18+51.2/60, -168-47.4/60, 0.)}) {
+      wxDateTime utc; ASSERT_TRUE(utc.ParseISOCombined(std::get<1>(data)));
+      Sight sight(Sight::ALTITUDE, std::get<0>(data), Sight::CENTER, utc, 0, std::get<2>(data), .2);
+      sight.m_DRLat=std::get<3>(data); sight.m_DRLon=std::get<4>(data);
+      sight.m_ShiftNm=std::get<5>(data); sight.m_ShiftBearing=255;
+      sight.m_bMagneticShiftBearing=false; sight.m_EyeHeight=3;
+      sight.m_IndexError=1.5; sight.m_Temperature=25; sight.m_Pressure=1015;
+      sight.Recompute(0); hawaii.m_Sights.push_back(sight);
+    }
+    FixDialog guideFix(&hawaii); guideFix.Update(0);
+    EXPECT_NEAR(18+52.6604/60, guideFix.m_fixlat, .005);
+    EXPECT_NEAR(-168-46.7496/60, guideFix.m_fixlon, .005);
+#ifdef __WXGTK3__
+    CaptureFix(guideFix, "/tmp/celnav297-guide-fix.png");
+    hawaii.SetSize(wxSize(1200,800));
+    CaptureFix(hawaii, "/tmp/celnav297-guide-menu.png");
+    auto* more=Find<wxButton>(&guideFix,"More options...");
+    ASSERT_NE(nullptr,more);
+    wxCommandEvent expand(wxEVT_BUTTON,more->GetId()); expand.SetEventObject(more);
+    more->GetEventHandler()->ProcessEvent(expand);
+    CaptureFix(guideFix,"/tmp/celnav297-guide-options.png");
+#endif
+
     wxCommandEvent openFix(wxEVT_BUTTON, openFixButton->GetId());
     openFix.SetEventObject(openFixButton);
     openFixButton->GetEventHandler()->ProcessEvent(openFix);

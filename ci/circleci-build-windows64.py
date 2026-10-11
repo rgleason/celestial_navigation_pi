@@ -18,7 +18,6 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 from windows64_pe import verify
-from plugin_version import plugin_version
 
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT / '.windows64'
@@ -83,6 +82,31 @@ def prepare_sdk():
     return sdk, wx, wxlib
 
 
+def project_versions(cmake_file=ROOT / 'CMakeLists.txt'):
+    """Read the release and API versions independently of generated metadata."""
+    source = cmake_file.read_text(encoding='utf-8')
+    def version(prefix, components):
+        values = []
+        for component in components:
+            name = prefix + '_' + component
+            matches = re.findall(r'^\s*set\(\s*' + name +
+                                 r'\s+"?([0-9]+)"?\s*\)', source, re.MULTILINE)
+            if len(matches) != 1:
+                raise RuntimeError('Expected one numeric CMake setting: ' + name)
+            values.append(matches[0])
+        return '.'.join(values)
+    return (version('VERSION', ('MAJOR', 'MINOR', 'PATCH', 'TWEAK')),
+            version('OCPN_API_VERSION', ('MAJOR', 'MINOR')))
+
+
+def verify_metadata(xml, plugin_version, api_version):
+    values = [(xml.findtext(k) or '').strip() for k in
+              ('target', 'target-version', 'target-arch', 'version', 'api-version')]
+    if values != ['msvc-wx32-x64', '10', 'x86_64', plugin_version, api_version]:
+        raise RuntimeError('Incorrect Windows x64 metadata: ' + repr(values))
+    return values
+
+
 def main():
     if sys.platform != 'win32':
         raise SystemExit('Use a native Windows x64 MSVC environment')
@@ -124,12 +148,10 @@ def main():
     if len(archives) != 1 or len(metadata) != 1:
         raise RuntimeError('Expected exactly one archive and metadata pair')
     xml = ET.parse(metadata[0]).getroot()
-    values = [(xml.findtext(k) or '').strip() for k in ('target', 'target-version', 'target-arch', 'version', 'api-version')]
-    version = plugin_version(ROOT)
-    if values != ['msvc-wx32-x64', '10', 'x86_64', version, '1.18']:
-        raise RuntimeError('Incorrect Windows x64 metadata: ' + repr(values))
+    plugin_version, api_version = project_versions()
+    values = verify_metadata(xml, plugin_version, api_version)
     xml.find('source').text = 'https://github.com/pob220/celestial_navigation_pi/tree/' + revision
-    xml.find('tarball-url').text = 'https://github.com/pob220/celestial_navigation_pi/releases/download/v' + version + '/' + archives[0].name
+    xml.find('tarball-url').text = 'https://github.com/pob220/celestial_navigation_pi/releases/download/v' + plugin_version + '-alpha1/' + archives[0].name
     raw_xml = ET.tostring(xml, encoding='utf-8', xml_declaration=True)
     metadata[0].write_bytes(raw_xml)
     with tempfile.TemporaryDirectory() as temporary:
@@ -143,7 +165,7 @@ def main():
         architecture = verify(extracted)
         if len(architecture) != 1 or not any(Path(p).name == 'celestial_navigation_pi.dll' for p in architecture):
             raise RuntimeError('Unexpected packaged native images')
-        for asset in ('vsop87d.txt', 'Android_Quick_Guide.html', 'Celestial_Navigation_Manual_v2.pdf', 'Practical_Guide.pdf'):
+        for asset in ('vsop87d.txt', 'Android_Quick_Guide.html', 'Celestial_Navigation_Manual_v2.pdf'):
             # Compare the actual source bytes for the selected bundled filename.
             originals = list((ROOT / 'data').rglob(asset))
             if not originals:

@@ -7,7 +7,7 @@ parameters:
         default: false
     run_workflow_deploy:
         type: boolean
-        default: true
+        default: false
 
 std-filters: &std-filters
     filters:
@@ -15,6 +15,7 @@ std-filters: &std-filters
             ignore:
             - devel
             - tmp
+            - feature/celnav-lab-v0.1
         tags:
             only: /.*/
 
@@ -65,7 +66,6 @@ workflows:
               <<: *std-filters
           - build-macos-universal:
               <<: *std-filters
-
 ## -------------------------------------------
 ## OpenCPN 5.6.2 Plugins  Frozen - 28/05/2023
 ## ------------------------------------------

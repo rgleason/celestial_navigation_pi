@@ -49,6 +49,7 @@ class AndroidImportPackage(unittest.TestCase):
             ET.SubElement(root, key).text = value
         metadata.write_bytes(ET.tostring(root))
         assets = {'package/lib/opencpn/libcelestial_navigation_pi.so': library.read_bytes(),
+                  'package/share/opencpn/plugins/celestial_navigation_pi/data/compact/manifest.json': b'fixture',
                   'package/share/opencpn/plugins/celestial_navigation_pi/data/vsop87d.txt': b'fixture'}
         for name in ANDROID_GUIDES:
             if name != exclude:

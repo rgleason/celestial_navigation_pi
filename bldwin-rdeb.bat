@@ -45,8 +45,8 @@ REM 4. Copy plugin DLL + PDB into OpenCPN plugin folder
 REM ------------------------------------------------------------
 echo Deploying plugin DLL and PDB into OpenCPN plugin directory...
 
-copy /Y "%PLUGIN_BUILD%\celestial_navigation_pi.dll" "%OCPN_BUILD%\plugins\"
-copy /Y "%PLUGIN_BUILD%\celestial_navigation_pi.pdb" "%OCPN_BUILD%\plugins\"
+copy /Y "%PLUGIN_BUILD%\*_pi.dll" "%OCPN_BUILD%\plugins\"
+copy /Y "%PLUGIN_BUILD%\*_pi.pdb" "%OCPN_BUILD%\plugins\"
 
 echo Plugin deployed successfully.
 

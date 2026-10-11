@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="49" failures="0" disabled="0" errors="0" time="35.315" timestamp="2026-10-02T14:18:49.329" name="AllTests">
+  <testsuite name="AnalyticalEpoch" tests="10" failures="0" disabled="0" skipped="0" errors="0" time="0.016" timestamp="2026-10-02T14:18:49.329">
+    <testcase name="DatedDut1AndModernTtRemainSeparate" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/analytical_epoch_tests.cpp" line="29" status="run" result="completed" time="0." timestamp="2026-10-02T14:18:49.329" classname="AnalyticalEpoch" />
+    <testcase name="MoonEphemerisDoesNotMoveWithDut1Override" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/analytical_epoch_tests.cpp" line="50" status="run" result="completed" time="0.011" timestamp="2026-10-02T14:18:49.329" classname="AnalyticalEpoch" />
+    <testcase name="OrdinarySightPlannerAndExplicitTableValueAgree" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/analytical_epoch_tests.cpp" line="63" status="run" result="completed" time="0.002" timestamp="2026-10-02T14:18:49.341" classname="AnalyticalEpoch" />
+    <testcase name="KernelInstalledStillCorrectsAnalyticalOnlyBodies" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/analytical_epoch_tests.cpp" line="88" status="run" result="completed" time="0.001" timestamp="2026-10-02T14:18:49.343" classname="AnalyticalEpoch" />
+    <testcase name="PreviouslyMisalignedUtcCasesMatchArchivedUsno" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/analytical_epoch_tests.cpp" line="104" status="run" result="completed" time="0." timestamp="2026-10-02T14:18:49.344" classname="AnalyticalEpoch" />
+    <testcase name="FractionalSecondsAndLeapBoundaryArePreserved" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/analytical_epoch_tests.cpp" line="137" status="run" result="completed" time="0." timestamp="2026-10-02T14:18:49.345" classname="AnalyticalEpoch" />
+    <testcase name="RealInstantAvoidsLocalDstFieldReconstruction" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/analytical_epoch_tests.cpp" line="153" status="run" result="completed" time="0." timestamp="2026-10-02T14:18:49.345" classname="AnalyticalEpoch" />
+    <testcase name="NoCoverageFallsBackWithoutExpiryOrExtrapolation" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/analytical_epoch_tests.cpp" line="168" status="run" result="completed" time="0." timestamp="2026-10-02T14:18:49.345" classname="AnalyticalEpoch" />
+    <testcase name="HistoricalDeltaTIsRetainedAndInvalidInputIsAtomic" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/analytical_epoch_tests.cpp" line="184" status="run" result="completed" time="0." timestamp="2026-10-02T14:18:49.345" classname="AnalyticalEpoch" />
+    <testcase name="CalculationTrailReportsTableAndUnavailableFallback" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/analytical_epoch_tests.cpp" line="197" status="run" result="completed" time="0." timestamp="2026-10-02T14:18:49.345" classname="AnalyticalEpoch" />
+  </testsuite>
+  <testsuite name="CompactNavigation" tests="10" failures="0" disabled="0" skipped="0" errors="0" time="29.909" timestamp="2026-10-02T14:18:49.345">
+    <testcase name="DefaultEnabledAndDisableRetainsClassic" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/compact_navigation_tests.cpp" line="51" status="run" result="completed" time="0.024" timestamp="2026-10-02T14:18:49.345" classname="CompactNavigation" />
+    <testcase name="AllSupportedBodiesShareSightAndPlannerCoordinates" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/compact_navigation_tests.cpp" line="67" status="run" result="completed" time="0.057" timestamp="2026-10-02T14:18:49.370" classname="CompactNavigation" />
+    <testcase name="MissingDataFallsBackAndRecovers" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/compact_navigation_tests.cpp" line="93" status="run" result="completed" time="0.023" timestamp="2026-10-02T14:18:49.427" classname="CompactNavigation" />
+    <testcase name="WholeIntervalCoverageAndFrozenSetting" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/compact_navigation_tests.cpp" line="105" status="run" result="completed" time="0.005" timestamp="2026-10-02T14:18:49.450" classname="CompactNavigation" />
+    <testcase name="KernelRetainsPriorityAndStarsUseCompact" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/compact_navigation_tests.cpp" line="126" status="run" result="completed" time="0.189" timestamp="2026-10-02T14:18:49.455" classname="CompactNavigation" />
+    <testcase name="DatesOutsideCoverageRetainClassic" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/compact_navigation_tests.cpp" line="150" status="run" result="completed" time="0." timestamp="2026-10-02T14:18:49.644" classname="CompactNavigation" />
+    <testcase name="IndependentLunarReferencesThroughProductionSight" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/compact_navigation_tests.cpp" line="159" status="run" result="completed" time="29.547" timestamp="2026-10-02T14:18:49.645" classname="CompactNavigation" />
+    <testcase name="SavedUnavailableUncertaintyRoundTrips" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/compact_navigation_tests.cpp" line="236" status="run" result="completed" time="0." timestamp="2026-10-02T14:19:19.192" classname="CompactNavigation" />
+    <testcase name="RealInstantPreservesUtcAtDstTransitions" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/compact_navigation_tests.cpp" line="249" status="run" result="completed" time="0.052" timestamp="2026-10-02T14:19:19.192" classname="CompactNavigation" />
+    <testcase name="LunarCallbackKeepsUtcAcrossLocalDstGap" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/compact_navigation_tests.cpp" line="290" status="run" result="completed" time="0.009" timestamp="2026-10-02T14:19:19.245" classname="CompactNavigation" />
+  </testsuite>
+  <testsuite name="LunarBoundary" tests="12" failures="0" disabled="0" skipped="0" errors="0" time="0.023" timestamp="2026-10-02T14:19:19.254">
+    <testcase name="RefinesInvalidToValidBoundaryWithoutChangingCoarseStep" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_boundary_tests.cpp" line="79" status="run" result="completed" time="0.001" timestamp="2026-10-02T14:19:19.254" classname="LunarBoundary" />
+    <testcase name="EndpointsUseOneSidedDiagnosticsInsideSearchBounds" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_boundary_tests.cpp" line="100" status="run" result="completed" time="0.001" timestamp="2026-10-02T14:19:19.256" classname="LunarBoundary" />
+    <testcase name="ValidRootSurvivesUnavailableDiagnostics" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_boundary_tests.cpp" line="124" status="run" result="completed" time="0." timestamp="2026-10-02T14:19:19.258" classname="LunarBoundary" />
+    <testcase name="InvalidGapDoesNotManufactureAZeroCrossing" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_boundary_tests.cpp" line="141" status="run" result="completed" time="0." timestamp="2026-10-02T14:19:19.258" classname="LunarBoundary" />
+    <testcase name="ValidButDiscontinuousProviderDoesNotManufactureARoot" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_boundary_tests.cpp" line="157" status="run" result="completed" time="0." timestamp="2026-10-02T14:19:19.258" classname="LunarBoundary" />
+    <testcase name="FindsTwoRootsOnOppositeSidesOfAnInvalidGap" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_boundary_tests.cpp" line="170" status="run" result="completed" time="0." timestamp="2026-10-02T14:19:19.258" classname="LunarBoundary" />
+    <testcase name="BoundedProbeDiscoversInteriorFeasibleIsland" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_boundary_tests.cpp" line="190" status="run" result="completed" time="0." timestamp="2026-10-02T14:19:19.259" classname="LunarBoundary" />
+    <testcase name="ProviderFailureAndNonfiniteForwardDirectionsNeverFallBack" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_boundary_tests.cpp" line="201" status="run" result="completed" time="0." timestamp="2026-10-02T14:19:19.260" classname="LunarBoundary" />
+    <testcase name="InvalidAndExcessiveSearchInputsStopBeforeCallingProvider" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_boundary_tests.cpp" line="222" status="run" result="completed" time="0." timestamp="2026-10-02T14:19:19.260" classname="LunarBoundary" />
+    <testcase name="ExactEpochCacheIsLocalToOneSolve" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_boundary_tests.cpp" line="239" status="run" result="completed" time="0.001" timestamp="2026-10-02T14:19:19.260" classname="LunarBoundary" />
+    <testcase name="ConcurrentSolvesHaveIndependentCachesAndResults" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_boundary_tests.cpp" line="257" status="run" result="completed" time="0.016" timestamp="2026-10-02T14:19:19.261" classname="LunarBoundary" />
+    <testcase name="DirectScanTerminatesWhenStepIsBelowEpochPrecision" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_boundary_tests.cpp" line="335" status="run" result="completed" time="0." timestamp="2026-10-02T14:19:19.278" classname="LunarBoundary" />
+  </testsuite>
+  <testsuite name="LunarSphericalConvention" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.001" timestamp="2026-10-02T14:19:19.278">
+    <testcase name="EveryLimbAndDistanceContactRoundTrips" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_boundary_tests.cpp" line="274" status="run" result="completed" time="0.001" timestamp="2026-10-02T14:19:19.278" classname="LunarSphericalConvention" />
+    <testcase name="DirectEndpointRootDoesNotRequireEphemerisOutsideBracket" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_boundary_tests.cpp" line="314" status="run" result="completed" time="0." timestamp="2026-10-02T14:19:19.279" classname="LunarSphericalConvention" />
+  </testsuite>
+  <testsuite name="LunarReference" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="4.49" timestamp="2026-10-02T14:19:19.279">
+    <testcase name="All32CasesRecoverAcrossStepsAndObserverCallbacks" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_reference_tests.cpp" line="3" status="run" result="completed" time="0.772" timestamp="2026-10-02T14:19:19.279" classname="LunarReference" />
+    <testcase name="OriginalArcturusBoundaryAndNeighboursRecover" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_reference_tests.cpp" line="20" status="run" result="completed" time="0.75" timestamp="2026-10-02T14:19:20.051" classname="LunarReference" />
+    <testcase name="ReturnedNoisySolutionsReproduceAllThreeObservedAngles" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_reference_tests.cpp" line="41" status="run" result="completed" time="0.397" timestamp="2026-10-02T14:19:20.802" classname="LunarReference">
+      <properties>
+        <property name="noisy_solutions" value="256"/>
+        <property name="noisy_rejections" value="0"/>
+      </properties>
+    </testcase>
+    <testcase name="LosingFirstIntersectionDoesNotRelabelSecondBranch" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_reference_tests.cpp" line="78" status="run" result="completed" time="0.001" timestamp="2026-10-02T14:19:21.200" classname="LunarReference" />
+    <testcase name="RealisticNoiseReturnsConsistentSolutionsOrExplicitRejections" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_reference_tests.cpp" line="128" status="run" result="completed" time="2.49" timestamp="2026-10-02T14:19:21.202" classname="LunarReference">
+      <properties>
+        <property name="realistic_noise_solutions" value="251"/>
+        <property name="realistic_noise_rejections" value="5"/>
+      </properties>
+    </testcase>
+    <testcase name="Wgs84SolutionsBeyondSphericalSeedBoundaryAreRecovered" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_reference_tests.cpp" line="179" status="run" result="completed" time="0.077" timestamp="2026-10-02T14:19:23.692" classname="LunarReference" />
+  </testsuite>
+  <testsuite name="LunarObserver" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.591" timestamp="2026-10-02T14:19:23.769">
+    <testcase name="FailureDoesNotFallBackToOtherGeometry" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_observer_tests.cpp" line="44" status="run" result="completed" time="0." timestamp="2026-10-02T14:19:23.769" classname="LunarObserver" />
+    <testcase name="BadKernelAndCoordinatesFailWithoutThrowing" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_observer_tests.cpp" line="57" status="run" result="completed" time="0." timestamp="2026-10-02T14:19:23.769" classname="LunarObserver" />
+    <testcase name="FarFutureSightsStillSolveOfflineWithWarning" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_observer_tests.cpp" line="70" status="run" result="completed" time="0.591" timestamp="2026-10-02T14:19:23.769" classname="LunarObserver" />
+  </testsuite>
+  <testsuite name="Dut1Update" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.282" timestamp="2026-10-02T14:19:24.361">
+    <testcase name="ParsesHistoryAndFutureLeapWithoutSmearing" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/dut1_update_tests.cpp" line="42" status="run" result="completed" time="0.034" timestamp="2026-10-02T14:19:24.361" classname="Dut1Update" />
+    <testcase name="AnalyticalEpochUsesUpdateAndRetainsLastKnownLeapAfterCoverage" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/dut1_update_tests.cpp" line="67" status="run" result="completed" time="0.032" timestamp="2026-10-02T14:19:24.395" classname="Dut1Update" />
+    <testcase name="RejectsTruncationGarbageAndDamagedEpochs" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/dut1_update_tests.cpp" line="90" status="run" result="completed" time="0.013" timestamp="2026-10-02T14:19:24.427" classname="Dut1Update" />
+    <testcase name="InstallIsAtomicAndPreservesBundleAndLastGoodUpdate" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/dut1_update_tests.cpp" line="106" status="run" result="completed" time="0.123" timestamp="2026-10-02T14:19:24.441" classname="Dut1Update" />
+    <testcase name="PublishesUpdatesSafelyAcrossThreads" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/dut1_update_tests.cpp" line="153" status="run" result="completed" time="0.037" timestamp="2026-10-02T14:19:24.564" classname="Dut1Update" />
+    <testcase name="CompactUsesImportedLeapHistoryAndFreezesLunarTimeData" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/dut1_update_tests.cpp" line="185" status="run" result="completed" time="0.042" timestamp="2026-10-02T14:19:24.601" classname="Dut1Update" />
+  </testsuite>
+</testsuites>

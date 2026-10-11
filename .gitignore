@@ -10,6 +10,7 @@ build-test/
 build-implementation/
 
 build-android/
+build-android-armhf/
 build-android-boundaries/
 ci/__pycache__/
 build-desktop/
@@ -22,3 +23,4 @@ eclipse/data/moon_pa_de440_200625.bpc
 eclipse/data/lola64-pa.bin
 
 .windows64/
+build-compact*/

@@ -99,6 +99,8 @@ Sight Fixture(Sight::Type type, double span) {
   sight.m_LunarMoonAltitude = 13 + 8.0 / 60;
   sight.m_LunarBodyAltitude = 11.55;
   sight.m_bVisible = false;
+  sight.m_Colour = wxColour(199, 21, 133, 150);
+  sight.m_ColourName = "medium violet red";
   return sight;
 }
 }  // namespace
@@ -166,7 +168,9 @@ TEST(SightSearchSpanUi, DefaultsEditXmlReloadAndCancelPreserveValues) {
         Edit(&main);
         EXPECT_EQ(1, visits);
         EXPECT_DOUBLE_EQ(editedSpan, main.m_Sights[0].m_TimeCertainty);
+        EXPECT_EQ("medium violet red", main.m_Sights[0].m_ColourName);
         ExpectSavedSpan(xml, editedSpan);
+        EXPECT_TRUE(XmlContents(xml).Contains("ColourName=\"medium violet red\""));
         const wxString beforeCancel = XmlContents(xml);
         hook.edit = [&](SightDialog* dialog) {
           ++visits;
@@ -187,6 +191,7 @@ TEST(SightSearchSpanUi, DefaultsEditXmlReloadAndCancelPreserveValues) {
           Main reloaded(&frame, &plugin);
           ASSERT_EQ(1u, reloaded.m_Sights.size());
           EXPECT_DOUBLE_EQ(editedSpan, reloaded.m_Sights[0].m_TimeCertainty);
+          EXPECT_EQ("medium violet red", reloaded.m_Sights[0].m_ColourName);
           SightDialog dialog(&frame, reloaded.m_Sights[0], 0);
           ASSERT_NE(nullptr, SearchSpan(&dialog));
           EXPECT_EQ(editedSpan, SearchSpan(&dialog)->GetValue());

@@ -46,6 +46,7 @@
 
 #include "celestial_navigation_pi.h"
 #include "Sight.h"
+#include "SightPalette.h"
 #include "LunarCandidateSelection.h"
 #include "UtcDateTime.h"
 #ifdef __OCPN__ANDROID__
@@ -55,6 +56,7 @@
 #include <stdexcept>
 #endif
 #include "NavigationEphemerisProvider.h"
+#include "CompactEphemerisProvider.h"
 #include "transform_star.hpp"
 #include "moon.h"
 #include "eclipse/astronomy.h"
@@ -66,15 +68,7 @@
 #include "eclipse/dut1.h"
 #include <memory>
 #include <atomic>
-
-namespace {
-// Samples can outlive their originating call/thread. Keep the kernel alive
-// and serialize its mutable file stream if a sample is consumed elsewhere.
-struct LunarKernelContext {
-  eclipse::SpkKernel kernel;
-  eclipse::Mutex mutex;
-};
-}
+#include <mutex>
 
 WX_DEFINE_LIST(wxRealPointList);
 
@@ -100,9 +94,7 @@ Sight::Sight()
 Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
              double timecertainty, double measurement,
              double measurementcertainty
-#ifdef __OCPN__ANDROID__
              , bool calculationOnly
-#endif
              )
     : m_bVisible(true),
       m_Type(type),
@@ -148,7 +140,6 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
       m_DRLon(0),
       m_DRBoatPosition(true),
       m_DRMagneticAzimuth(false) {
-#ifdef __OCPN__ANDROID__
   // Temporary ephemeris objects must not access GUI preferences or advance the
   // observation colour cycle from a worker. BodyLocation/Azimuth use neither.
   if (calculationOnly) {
@@ -157,7 +148,6 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
     m_bCalculated = m_bSelected = false;
     return;
   }
-#endif
   wxFileConfig* pConf = GetOCPNConfigObject();
   pConf->SetPath(_T("/PlugIns/CelestialNavigation"));
 
@@ -169,57 +159,11 @@ Sight::Sight(Type type, wxString body, BodyLimb bodylimb, wxDateTime datetime,
   pConf->Read(_T("DefaultDIPShortDistance"), &m_DipShortDistance, 0);
   pConf->Read(_T("DefaultArtificialHorizon"), &m_ArtificialHorizon, 0);
 
-  const wxString sightcolornames[] = {_T("MEDIUM VIOLET RED"),
-                                      _T("MIDNIGHT BLUE"),
-                                      _T("ORANGE"),
-                                      _T("PLUM"),
-                                      _T("PURPLE"),
-                                      _T("RED"),
-                                      _T("SALMON"),
-                                      _T("SLATE BLUE"),
-                                      _T("SPRING GREEN"),
-                                      _T("ORANGE RED"),
-                                      _T("ORCHID"),
-                                      _T("PALE GREEN"),
-                                      _T("PINK"),
-                                      _T("BROWN"),
-                                      _T("BLUE"),
-                                      _T("GREEN YELLOW"),
-                                      _T("GOLDENROD"),
-                                      _T("BLUE VIOLET"),
-                                      _T("AQUAMARINE"),
-                                      _T("CADET BLUE"),
-                                      _T("CORAL"),
-                                      _T("CORNFLOWER BLUE"),
-                                      _T("FOREST GREEN"),
-                                      _T("GOLD"),
-                                      _T("THISTLE"),
-                                      _T("TURQUOISE"),
-                                      _T("VIOLET"),
-                                      _T("SEA GREEN"),
-                                      _T("SKY BLUE"),
-                                      _T("YELLOW GREEN"),
-                                      _T("INDIAN RED"),
-                                      _T("LIGHT BLUE"),
-                                      _T("LIME GREEN"),
-                                      _T("MAGENTA"),
-                                      _T("MAROON"),
-                                      _T("MEDIUM GOLDENROD"),
-                                      _T("MEDIUM ORCHID"),
-                                      _T("MEDIUM SEA GREEN"),
-                                      _T("VIOLET RED"),
-                                      _T("YELLOW")};
-
-  m_ColourName = sightcolornames[s_lastsightcolor].Lower();
-  m_Colour = wxColour(m_ColourName);
-  if (m_Colour.IsOk())
-    m_Colour.Set(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(), 150);
-  else
-    m_Colour.Set(25, 25, 112, 150);  // headless unit-test fallback
-
-  if (++s_lastsightcolor ==
-      (sizeof sightcolornames) / (sizeof *sightcolornames))
-    s_lastsightcolor = 0;
+  const auto& defaultPalette = DefaultSightPaletteIndices();
+  const auto& entry = SightPalette()[defaultPalette[s_lastsightcolor]];
+  m_Colour = entry.Colour(150);
+  m_ColourName = wxGetTranslation(entry.name);
+  s_lastsightcolor = (s_lastsightcolor + 1) % defaultPalette.size();
   m_bCalculated = false;
   m_bSelected = false;
 }
@@ -247,13 +191,19 @@ using astrolabe::util::ecl_to_equ;
 void Sight::BodyLocation(wxDateTime time, double* lat, double* lon,
                          double* ghaast, double* rad, double* dist,
                          bool timeIsInstant, bool useDe440,
-                         double dut1OverrideSeconds, bool* usedDe440) {
+                         double dut1OverrideSeconds, bool* usedDe440, bool* usedCompact,
+                         const std::shared_ptr<const eclipse::Dut1Table>* timeData) {
+  if (lat) *lat = NAN;
+  if (lon) *lon = NAN;
+  if (rad) *rad = NAN;
+  if (dist) *dist = 0.0;
+  if (usedCompact) *usedCompact = false;
+  m_BodyUsesCompact = false;
+  m_EphemerisFallbackReason.clear();
   if (usedDe440) *usedDe440 = false;
-  const wxDateTime utc_fields =
-      timeIsInstant ? UtcDateTime::FromInstant(time) : time;
   celestial_navigation::De440NavigationSample de;
-  if (useDe440 && celestial_navigation::TryDe440NavigationSample(
-          m_Body, utc_fields, &de, nullptr, dut1OverrideSeconds)) {
+  if (useDe440 && m_AllowDe440 && celestial_navigation::TryDe440NavigationSample(
+          m_Body, time, &de, nullptr, dut1OverrideSeconds, timeIsInstant)) {
     if (usedDe440) *usedDe440 = true;
     m_IsStar = false;
     m_IsPlanet = m_Body == "Mercury" || m_Body == "Venus";
@@ -265,20 +215,34 @@ void Sight::BodyLocation(wxDateTime time, double* lat, double* lon,
     return;
   }
 
-  if (std::isfinite(dut1OverrideSeconds)) {
-    // The analytical fallback models UT1 by shifting its legacy input epoch.
-    // The DE440s branch above instead keeps UTC, TT and UT1 distinct.
-    if (timeIsInstant)
-      time += wxTimeSpan::Milliseconds(static_cast<long long>(
-          std::llround(dut1OverrideSeconds * 1000.0)));
-    else
-      time = UtcDateTime::AddSeconds(time, dut1OverrideSeconds);
+  if (m_AllowCompact && celestial_navigation::CompactEphemerisEnabled()) {
+    std::string reason;
+    if (celestial_navigation::TryCompactNavigationSample(
+            m_Body, time, &de, &reason, dut1OverrideSeconds, nullptr, 0, 0, 0, timeIsInstant)) {
+      m_BodyUsesCompact = true;
+      if (usedCompact) *usedCompact = true;
+      m_IsPlanet = m_Body == "Mercury" || m_Body == "Venus" ||
+                   m_Body == "Mars" || m_Body == "Jupiter" || m_Body == "Saturn";
+      m_IsStar = !m_IsPlanet && m_Body != "Sun" && m_Body != "Moon" && m_Body != "Aries";
+      if (lat) *lat = de.declination_deg;
+      if (lon) *lon = resolve_heading(-de.gha_deg);
+      if (ghaast) *ghaast = de.aries_gha_deg;
+      if (rad) *rad = m_Body == "Moon" ? de.range_km : de.sun_range_au;
+      if (dist) *dist = m_IsPlanet ? de.range_km : 0.0;
+      return;
+    }
+    m_EphemerisFallbackReason = wxString::FromUTF8(reason.c_str());
   }
+
+  celestial_navigation::AnalyticalNavigationEpoch epoch;
+  if (!celestial_navigation::ResolveAnalyticalNavigationEpoch(
+          time, &epoch, dut1OverrideSeconds, timeIsInstant, timeData)) return;
 #ifdef __OCPN__ANDROID__
   // Workers and chart callbacks share the immutable analytical database path.
   static std::once_flag analyticalPath;
   std::call_once(analyticalPath, []() {
-    astrolabe::globals::vsop87d_text_path = celestial_navigation_pi_DataDir() + "/data/vsop87d.txt";
+    astrolabe::globals::vsop87d_text_path =
+        celestial_navigation_pi_DataDir() + "/data/vsop87d.txt";
   });
 #else
   astrolabe::globals::vsop87d_text_path = celestial_navigation_pi_DataDir();
@@ -286,16 +250,8 @@ void Sight::BodyLocation(wxDateTime time, double* lat, double* lon,
   astrolabe::globals::vsop87d_text_path.append("vsop87d.txt");
 #endif
 
-  if (!timeIsInstant) {
-#ifdef __OCPN__ANDROID__
-    time = UtcDateTime::ToInstant(time);
-#else
-    time.MakeFromUTC();
-#endif
-  }
-  double jdu = time.GetJulianDayNumber();
-  // julian day dynamic
-  double jdd = ut_to_dt(jdu);
+  const double jdu = epoch.ut1_jd;
+  const double jdd = epoch.tt_jd;
 
   double l, b, r;
   double ra, dec, dra = 0., ddec = 0., radvel = 0., parallax = 0.;
@@ -616,13 +572,47 @@ double Sight::ComputeStepSize(double certainty, double stepsize, double min,
 }
 
 /* render the area of position for this sight */
-void Sight::Render(piDC* dc, PlugIn_ViewPort& VP, double pix_per_mm) {
+std::vector<std::pair<wxPoint, wxPoint>> Sight::ScreenSegments(PlugIn_ViewPort& vp) {
+  std::vector<std::pair<wxPoint, wxPoint>> segments;
+  wxPoint previous;
+  double previousLon = 0;
+  bool havePrevious = false;
+  for (auto* point : lines) {
+    if (!std::isfinite(point->x) || !std::isfinite(point->y)) {
+      havePrevious = false;
+      continue;
+    }
+    wxPoint pixel;
+    GetCanvasPixLL(&vp, &pixel, point->x, resolve_heading(point->y));
+    const double lon = resolve_heading(point->y - vp.clon);
+    if (havePrevious && std::abs(lon - previousLon) <= 180)
+      segments.emplace_back(previous, pixel);
+    previous = pixel;
+    previousLon = lon;
+    havePrevious = true;
+  }
+  return segments;
+}
+
+double Sight::ChartDistance(PlugIn_ViewPort& vp, const wxPoint& cursor) {
+  double distance = std::numeric_limits<double>::infinity();
+  if (!m_bVisible) return distance;
+  for (const auto& segment : ScreenSegments(vp))
+    distance = std::min(distance, SightSegmentDistance(cursor, segment.first,
+                                                       segment.second));
+  return distance;
+}
+
+void Sight::Render(piDC* dc, PlugIn_ViewPort& VP, double pix_per_mm,
+                   const SightDisplayStyle& style) {
   if (!m_bVisible) return;
 
   m_dc = dc;
 
   dc->SetPen(wxPen(m_Colour, 0, wxPENSTYLE_TRANSPARENT));
-  dc->SetBrush(wxBrush(m_Colour));
+  wxColour band(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue(),
+                m_Colour.Alpha() * std::max(0, std::min(100, style.bandOpacityPercent)) / 100);
+  dc->SetBrush(wxBrush(band));
 
   std::list<wxRealPointList*>::iterator it = polygons.begin();
   while (it != polygons.end()) {
@@ -630,8 +620,22 @@ void Sight::Render(piDC* dc, PlugIn_ViewPort& VP, double pix_per_mm) {
     ++it;
   }
 
-  dc->SetPen(wxPen(m_Colour, (int)(0.5 * pix_per_mm)));
-  DrawPolygon(VP, lines, false);
+  const wxColour nominal(m_Colour.Red(), m_Colour.Green(), m_Colour.Blue());
+  const int width = std::max(1, int(std::lround(style.lineWidthMm * pix_per_mm)));
+  const auto segments = ScreenSegments(VP);
+  auto stroke = [&](const wxColour& colour, int thickness) {
+    dc->SetPen(wxPen(colour, thickness));
+    for (const auto& segment : segments)
+      dc->StrokeLine(segment.first.x, segment.first.y,
+                     segment.second.x, segment.second.y);
+  };
+  if (style.contrastHalo) {
+    const int luminance = 299 * nominal.Red() + 587 * nominal.Green() +
+                          114 * nominal.Blue();
+    stroke(luminance >= 140000 ? *wxBLACK : *wxWHITE,
+           width + std::max(2, int(std::lround(0.6 * pix_per_mm))));
+  }
+  stroke(nominal, width);
 
   for (const auto& position : m_HorizonPositions) {
     wxPoint centre;
@@ -767,9 +771,8 @@ void Sight::RebuildPolygons() {
     }
   }
 
-  // Keep the horizon centreline and markers at the same epoch as its band.
-  if (m_Type == HORIZON)
-    for (auto* point : lines) *point = shiftedPoint(point->x, point->y);
+  // Keep every nominal line at the same shifted epoch as its uncertainty band.
+  for (auto* point : lines) *point = shiftedPoint(point->x, point->y);
   for (auto& position : m_HorizonPositions) {
     const wxRealPoint shifted =
         shiftedPoint(position.latitude, position.longitude);
@@ -790,20 +793,23 @@ wxString Sight::Alminac(wxDateTime time, double lat, double lon, double ghaast,
   double dec = lat;
 
   celestial_navigation::De440NavigationSample de;
-  const bool uses_de440 = celestial_navigation::TryDe440NavigationSample(
+  const bool uses_de440 = m_AllowDe440 && celestial_navigation::TryDe440NavigationSample(
       m_Body, time, &de);
 
+  celestial_navigation::AnalyticalNavigationEpoch epoch;
+  if (!celestial_navigation::ResolveAnalyticalNavigationEpoch(time, &epoch))
+    return _("Almanac time scales could not be resolved.\n");
 #ifdef __OCPN__ANDROID__
   time = UtcDateTime::ToInstant(time);
 #else
   time.MakeFromUTC();
 #endif
-  double jdu = time.GetJulianDayNumber();
-  double jdd = ut_to_dt(jdu);
-  double deltaT = deltaT_seconds(jdu);
+  double jdu = epoch.utc_jd;
+  double jdd = epoch.tt_jd;
+  double deltaT = epoch.delta_t_seconds;
   if (uses_de440) {
     deltaT = de.tai_minus_utc_seconds + 32.184 - de.dut1_seconds;
-    // jdu still labels UTC here, not UT1. TT-UTC includes TAI-UTC + 32.184.
+    // jdu labels UTC, not UT1. TT-UTC includes TAI-UTC + 32.184.
     jdd = jdu + (de.tai_minus_utc_seconds + 32.184) / 86400.0;
   }
 
@@ -824,13 +830,20 @@ SD = %.4f'\n\
 HP = %.4f'\n\n"),
                           UtcDateTime::FormatInstant(time, "%Y-%m-%d %H:%M:%S"),
                           uses_de440 ? _T("DE440s (verified; analytical fallback outside coverage)")
-                                     : _T("Analytical"),
+                                     : (m_BodyUsesCompact ? _T("Compact 0.2.0 (VSOP2013 / ELP-MPP02 / ERFA)")
+                                                          : _T("Classic analytical")),
                           uses_de440 ?
                               (de.dut1_available ?
                                    wxString::Format("%+.3f s (offline table)",
                                                     de.dut1_seconds) :
                                    _T("0 s (UT1=UTC fallback; table unavailable)")) :
-                              _T("analytical time model"),
+                              (epoch.modern_utc ?
+                                   (epoch.dut1_available ?
+                                        wxString::Format("%+.3f s (%s offline table)",
+                                            epoch.dut1_seconds,
+                                            epoch.dut1_from_update ? _T("downloaded") : _T("bundled")) :
+                                        _T("0 s (UT1=UTC fallback; table unavailable)")) :
+                                   _T("historical UT/DeltaT model (before 1972)")),
                           jdu,
                           deltaT, jdd, lat, 0x00B0, lon, 0x00B0,
                           toSDMM_PlugIn(1, lat, true),
@@ -846,7 +859,7 @@ void Sight::RecomputeAltitude() {
   double planet_dist;
   bool usedDe440 = false;
   BodyLocation(m_CorrectedDateTime, 0, 0, 0, &rad, &planet_dist,
-               false, true, std::numeric_limits<double>::quiet_NaN(),
+               false, m_AllowDe440, std::numeric_limits<double>::quiet_NaN(),
                &usedDe440);
 
   m_CalcStr += _("Formulas used to calculate sight\n\n");
@@ -1315,223 +1328,105 @@ void Sight::RecomputeLunar(int preferred_candidate
 
   const wxString selected_body = m_Body;
   m_LunarUsesDe440 = false;
+  m_LunarUsesCompact = false;
   m_LunarDut1Fallback = false;
   const auto unavailable_dut1 = std::make_shared<std::atomic_bool>(false);
-  auto ephemeris = [this, selected_body, unavailable_dut1](
-                       double offset_seconds,
-                       lunar_distance::EphemerisSample* sample,
-                       std::string* error) {
-#ifdef __OCPN__ANDROID__
-    if (m_androidCheckpoint) m_androidCheckpoint();
-#endif
-    const wxDateTime time =
-        UtcDateTime::AddSeconds(m_CorrectedDateTime, offset_seconds);
-    if (!time.IsValid()) {
-      if (error) *error = "The candidate UTC is outside the supported range";
-      return false;
-    }
-
-    *sample = lunar_distance::EphemerisSample();
-
-    double body_dec = 0.0, body_hour_angle = 0.0, body_rad = 0.0;
-    double body_distance = 0.0;
-    m_Body = selected_body;
-    BodyLocation(time, &body_dec, &body_hour_angle, nullptr, &body_rad,
-                 &body_distance, false, false);
-    const bool body_is_planet = m_IsPlanet;
-    const bool body_is_star = m_IsStar;
-
-    double moon_dec = 0.0, moon_hour_angle = 0.0, moon_rad = 0.0;
-    m_Body = _T("Moon");
-    BodyLocation(time, &moon_dec, &moon_hour_angle, nullptr, &moon_rad,
-                 nullptr, false, false);
-    m_Body = selected_body;
-
-    const double delta_hour_angle =
-        resolve_heading(moon_hour_angle - body_hour_angle);
-    const double cosine = sin(d_to_r(moon_dec)) * sin(d_to_r(body_dec)) +
-                          cos(d_to_r(moon_dec)) * cos(d_to_r(body_dec)) *
-                              cos(d_to_r(delta_hour_angle));
-    sample->predicted_distance_deg =
-        r_to_d(acos(std::max(-1.0, std::min(1.0, cosine))));
-    sample->body_geographic_latitude_deg = body_dec;
-    sample->body_geographic_longitude_deg = body_hour_angle;
-    sample->moon_geographic_latitude_deg = moon_dec;
-    sample->moon_geographic_longitude_deg = moon_hour_angle;
-    bool used_de440 = false;
-
-    const int de_body_target = selected_body == "Sun" ? 10 :
-                               selected_body == "Mercury" ? 199 :
-                               selected_body == "Venus" ? 299 : 0;
-    if (de_body_target != 0) {
-      static thread_local std::shared_ptr<LunarKernelContext> context;
-      static thread_local wxString opened_path;
-      static thread_local time_t opened_mtime = 0;
-      static thread_local bool verified = false;
-#ifdef UNIT_TESTS
-      // wxStandardPaths requires a running wxApp.  The sight tests are
-      // deliberately headless, so exercise the same kernel against the
-      // source-tree test fixture instead of consulting the GUI profile.
-      const wxString path = wxString::FromUTF8(ECLIPSE_DE440_TEST_PATH);
-#else
-      const wxString path = celestial_navigation_pi::StandardPath() +
-                            _T("eclipse") + wxFileName::GetPathSeparator() +
-                            _T("de440s.bsp");
-#endif
-      const wxDateTime path_mtime = wxFileName(path).GetModificationTime();
-      const time_t modified = path_mtime.IsValid() ?
-          path_mtime.GetTicks() : 0;
-      if (!context || opened_path != path || opened_mtime != modified) {
-        // Prior observer callbacks retain their original verified kernel.
-        // Replacing a pack never changes an in-flight lunar solution's data.
-        context.reset(new LunarKernelContext);
-        opened_path = path;
-        opened_mtime = modified;
-        verified = eclipse::VerifyDe440s(path.ToStdString()).valid;
-        std::string open_error;
-        if (verified)
-          verified = context->kernel.Open(path.ToStdString(), &open_error);
-      }
-      if (verified && context->kernel.IsOpen()) {
-        eclipse::MutexGuard lock(context->mutex);
-        eclipse::SpkKernel& kernel = context->kernel;
-        eclipse::CalendarDateTime utc;
-        utc.year = UtcDateTime::Fields(time).year;
-        utc.month = static_cast<int>(UtcDateTime::Fields(time).mon) + 1;
-        utc.day = UtcDateTime::Fields(time).mday;
-        utc.hour = UtcDateTime::Fields(time).hour;
-        utc.minute = UtcDateTime::Fields(time).min;
-        utc.second = UtcDateTime::Fields(time).sec + time.GetMillisecond() / 1000.0;
-        double utc_jd = 0.0;
-        std::string time_error;
-        if (utc.year >= 1972 &&
-            eclipse::CalendarToJulianDate(utc, &utc_jd, &time_error)) {
-          const auto dut1 = eclipse::LookupDut1(utc_jd);
-          double tai_minus_utc = std::isfinite(dut1.tai_minus_utc) ? dut1.tai_minus_utc
-                                               : eclipse::TaiMinusUtcSeconds(utc);
-          if (!std::isfinite(tai_minus_utc)) tai_minus_utc = 37.0;
-          const double tt_jd = utc_jd + (tai_minus_utc + 32.184) / 86400.0;
-          const double tdb_jd =
-              tt_jd + eclipse::TdbMinusTtSeconds(tt_jd, utc_jd) / 86400.0;
-          const double et = (tdb_jd - 2451545.0) * 86400.0;
-          eclipse::Vector3 moon_vector;
-          eclipse::Vector3 sun_vector;
-          std::string de_error;
-          if (eclipse::ApparentNavigationPosition(kernel, 301, et, &moon_vector,
-                                                  &de_error) &&
-              eclipse::ApparentNavigationPosition(kernel, de_body_target, et,
-                                                   &sun_vector,
-                                                  &de_error)) {
-            const double denominator = moon_vector.Norm() * sun_vector.Norm();
-            if (denominator > 0.0) {
-              sample->predicted_distance_deg = r_to_d(acos(std::max(
-                  -1.0, std::min(1.0, eclipse::Dot(moon_vector, sun_vector) /
-                                          denominator))));
-              sample->moon_horizontal_parallax_deg =
-                  r_to_d(asin(6378.137 / moon_vector.Norm()));
-              sample->moon_semidiameter_deg =
-                  r_to_d(asin(1737.4 / moon_vector.Norm()));
-              sample->body_horizontal_parallax_deg =
-                  r_to_d(asin(6378.137 / sun_vector.Norm()));
-              sample->body_semidiameter_deg = de_body_target == 10 ?
-                  r_to_d(asin(695700.0 / sun_vector.Norm())) : 0.0;
-              // The separation and the altitude constraints must use the
-              // same apparent vectors. Mixing DE440 distances with analytical
-              // GPs made simultaneous and time-tagged solutions disagree.
-              eclipse::EarthOrientation orientation;
-              orientation.tt_jd = tt_jd;
-              if (!dut1.available) {
-                unavailable_dut1->store(true);
-                m_LunarDut1Fallback = true;
-              }
-              orientation.ut1_jd = utc_jd + dut1.seconds / 86400.0;
-              sample->dut1_available = dut1.available;
-              sample->dut1_seconds = dut1.seconds;
-              sample->dut1_quality = dut1.quality;
-              sample->dut1_from_update = dut1.from_update;
-              // Freeze this epoch, not the trial observer. The provider uses
-              // the same model for individual, sequential and watch solves.
-              const auto retained_context = context;
-              sample->observer_direction = [retained_context, et, orientation,
-                                            de_body_target](
-                  double lat, double lon, double height, bool moon,
-                  double* alt, double* az, double* sd) {
-                eclipse::MutexGuard guard(retained_context->mutex);
-                std::string error;
-                if (moon || de_body_target == 10)
-                  return eclipse::ObserverApparentDirection(
-                      retained_context->kernel, et, orientation, lat, lon,
-                      height, moon, alt, az, sd, &error);
-                double range = 0.0;
-                *sd = 0.0;
-                return eclipse::ObserverApparentTargetDirection(
-                    retained_context->kernel, de_body_target, et, orientation,
-                    lat, lon, height, alt, az, &range, &error,
-                    de_body_target == 299);
-              };
-              const auto moon_fixed =
-                  eclipse::IcrfToEarthFixed(moon_vector, orientation);
-              const auto sun_fixed =
-                  eclipse::IcrfToEarthFixed(sun_vector, orientation);
-              sample->moon_geographic_latitude_deg = r_to_d(
-                  atan2(moon_fixed.z, hypot(moon_fixed.x, moon_fixed.y)));
-              sample->moon_geographic_longitude_deg =
-                  r_to_d(atan2(moon_fixed.y, moon_fixed.x));
-              sample->body_geographic_latitude_deg =
-                  r_to_d(atan2(sun_fixed.z, hypot(sun_fixed.x, sun_fixed.y)));
-              sample->body_geographic_longitude_deg =
-                  r_to_d(atan2(sun_fixed.y, sun_fixed.x));
-              m_LunarUsesDe440 = true;
-              used_de440 = true;
-            }
-          }
-        }
-      }
-    }
-
-    if (!used_de440) {
-      wxDateTime instant = UtcDateTime::ToInstant(time);
-      const double moon_distance_km =
-          moon_distance(ut_to_dt(instant.GetJulianDayNumber()));
-      sample->moon_horizontal_parallax_deg =
-          r_to_d(asin(6378.137 / moon_distance_km));
-      sample->moon_semidiameter_deg = r_to_d(
-          asin(K_MOON * sin(d_to_r(sample->moon_horizontal_parallax_deg))));
-
-      sample->body_semidiameter_deg = 0.0;
-      sample->body_horizontal_parallax_deg = 0.0;
-      if (!selected_body.Cmp(_T("Sun"))) {
-        if (!(body_rad > 0.0)) {
-          if (error)
-            *error = "The solar ephemeris returned an invalid distance";
-          return false;
-        }
-        sample->body_semidiameter_deg = 0.266564 / body_rad;
-        sample->body_horizontal_parallax_deg = 0.002442 / body_rad;
-      } else if (body_is_planet && body_distance > EARTH_RADIUS) {
-        sample->body_horizontal_parallax_deg =
-            r_to_d(asin(6378.137 / body_distance));
-      }
-    }
-    m_IsPlanet = body_is_planet;
-    m_IsStar = body_is_star;
-    return std::isfinite(sample->predicted_distance_deg);
-  };
-  m_LunarEphemeris = ephemeris;
-#ifdef __OCPN__ANDROID__
-  m_androidLunarEphemerisOwner = this;
-  // POBsoft (1985-2026): cold-loaded session snapshots need their own forward
-  // model even when the individual watch search has deliberately been deferred.
-  // The session worker owns the search; preparing this callback does no scan.
-  if (prepare_only) return;
-#endif
-
   lunar_distance::SolveOptions options;
   const double search_span = m_TimeCertainty > 0.0 ? m_TimeCertainty : 86400.0;
   options.start_offset_seconds = -search_span / 2.0;
   options.end_offset_seconds = search_span / 2.0;
-  options.scan_step_seconds =
-      std::min(300.0, std::max(30.0, search_span / 288.0));
+  options.scan_step_seconds = std::min(300.0, std::max(30.0, search_span / 288.0));
+  const auto time_data = eclipse::GetDut1Update();
+  // Include separately timed altitudes, reference diagnostics and forward
+  // prediction margins before selecting one provider for the entire solve.
+  const double minimum_offset = std::min({0.0, observation.moon_time_offset_seconds,
+                                         observation.body_time_offset_seconds});
+  const double maximum_offset = std::max({0.0, observation.moon_time_offset_seconds,
+                                         observation.body_time_offset_seconds});
+  auto enhanced = celestial_navigation::SelectEnhancedLunarProvider(
+      selected_body, m_CorrectedDateTime,
+      options.start_offset_seconds + minimum_offset - 60.0,
+      options.end_offset_seconds + maximum_offset + 60.0,
+      m_AllowDe440, m_AllowCompact && celestial_navigation::CompactEphemerisEnabled(),
+      time_data);
+  m_LunarUsesDe440 = enhanced.used_de440;
+  m_LunarUsesCompact = enhanced.used_compact;
+  m_EphemerisFallbackReason = wxString::FromUTF8(enhanced.fallback_reason.c_str());
+  lunar_distance::EphemerisFunction provider = enhanced.ephemeris;
+  if (!provider) {
+    // Retained callbacks must not mutate a live sight or depend on later UI
+    // edits. The classic provider is also selected for the whole interval.
+    const auto snapshot = std::make_shared<Sight>(*this);
+    snapshot->m_LunarEphemeris = {};
+    snapshot->m_LunarCandidates.clear();
+    const auto classic_mutex = std::make_shared<eclipse::Mutex>();
+    snapshot->m_AllowDe440 = false;
+    snapshot->m_AllowCompact = false;
+    const auto classic_reference=UtcDateTime::ToInstant(snapshot->m_CorrectedDateTime);
+    provider = [snapshot, selected_body, time_data, classic_mutex, classic_reference](double offset,
+                            lunar_distance::EphemerisSample* sample,
+                            std::string* error) {
+      eclipse::MutexGuard lock(*classic_mutex);
+      const auto time = classic_reference + wxTimeSpan::Milliseconds(
+          static_cast<long long>(std::llround(offset*1000.0)));
+      if (!sample || !time.IsValid()) { if(error)*error="Invalid lunar UTC"; return false; }
+      celestial_navigation::AnalyticalNavigationEpoch epoch;
+      if (!celestial_navigation::ResolveAnalyticalNavigationEpoch(
+              time, &epoch, NAN, true, &time_data)) {
+        if(error)*error="Classic analytical time scales could not be resolved";
+        return false;
+      }
+      const auto dated = eclipse::LookupDut1(epoch.utc_jd, time_data);
+      double body_dec=NAN, body_lon=NAN, body_radius=NAN, distance=NAN;
+      snapshot->m_Body=selected_body;
+      snapshot->BodyLocation(time,&body_dec,&body_lon,nullptr,&body_radius,&distance,
+                             true,false,epoch.dut1_seconds,nullptr,nullptr,&time_data);
+      const bool planet=snapshot->m_IsPlanet;
+      double moon_dec=NAN,moon_lon=NAN,moon_radius=NAN;
+      snapshot->m_Body="Moon";
+      snapshot->BodyLocation(time,&moon_dec,&moon_lon,nullptr,&moon_radius,nullptr,
+                             true,false,epoch.dut1_seconds,nullptr,nullptr,&time_data);
+      snapshot->m_Body=selected_body;
+      *sample={};
+      sample->predicted_distance_deg=lunar_distance::GreatCircleDistanceNm(
+          {moon_dec,moon_lon},{body_dec,body_lon})/60.0;
+      sample->moon_geographic_latitude_deg=moon_dec;
+      sample->moon_geographic_longitude_deg=moon_lon;
+      sample->body_geographic_latitude_deg=body_dec;
+      sample->body_geographic_longitude_deg=body_lon;
+      sample->moon_horizontal_parallax_deg=r_to_d(asin(6378.137/moon_radius));
+      sample->moon_semidiameter_deg=r_to_d(asin(K_MOON*sin(d_to_r(sample->moon_horizontal_parallax_deg))));
+      if(selected_body=="Sun") {
+        sample->body_semidiameter_deg=.266564/body_radius;
+        sample->body_horizontal_parallax_deg=.002442/body_radius;
+      } else if(planet && distance>EARTH_RADIUS)
+        sample->body_horizontal_parallax_deg=r_to_d(asin(6378.137/distance));
+      sample->dut1_available=epoch.dut1_available;
+      sample->dut1_seconds=epoch.dut1_seconds;
+      sample->dut1_quality=dated.quality;
+      sample->dut1_from_update=epoch.dut1_from_update;
+      return std::isfinite(sample->predicted_distance_deg);
+    };
+  }
+  lunar_distance::EphemerisFunction ephemeris = [provider, unavailable_dut1
+#ifdef __OCPN__ANDROID__
+      , checkpoint = m_androidCheckpoint
+#endif
+      ](
+      double seconds, lunar_distance::EphemerisSample* sample, std::string* error) {
+#ifdef __OCPN__ANDROID__
+    if (checkpoint) checkpoint();
+#endif
+    if (!provider(seconds,sample,error)) return false;
+    if (!sample->dut1_available) unavailable_dut1->store(true);
+    return true;
+  };
+  m_LunarEphemeris = ephemeris;
+#ifdef __OCPN__ANDROID__
+  m_androidLunarEphemerisOwner = this;
+  if (prepare_only) return;
+#endif
+
   const lunar_distance::SolveResult solution =
       observation.separate_times
           ? lunar_distance::SolveTimeTagged(observation, ephemeris, options)
@@ -1588,8 +1483,11 @@ void Sight::RecomputeLunar(int preferred_candidate
       m_LunarUsesDe440
           ? _("Ephemeris                     = local JPL DE440s apparent "
               "directions (offline)\n")
-          : _("Ephemeris                     = bundled analytical fallback "
-              "(offline; high navigational accuracy)\n");
+          : (m_LunarUsesCompact
+              ? _("Ephemeris                     = bundled Compact 0.2.0 (offline)\n")
+              : _("Ephemeris                     = classic analytical (offline)\n"));
+  if (!m_EphemerisFallbackReason.empty())
+    m_CalcStr += _("Provider selection: ") + m_EphemerisFallbackReason + "\n";
   m_CalcStr +=
       _("Earth model                   = WGS84 ellipsoid; geodetic observer "
         "latitude\n"
@@ -1602,7 +1500,7 @@ void Sight::RecomputeLunar(int preferred_candidate
         "Dip corrects horizon altitudes, never the inter-body distance.\n"
         "Formal uncertainties exclude ephemeris, horizon and common instrument "
         "biases.\n");
-  if (m_LunarUsesDe440) {
+  {
     lunar_distance::EphemerisSample orientation_sample;
     std::string orientation_error;
     if (ephemeris(0, &orientation_sample, &orientation_error) &&
@@ -1616,17 +1514,18 @@ void Sight::RecomputeLunar(int preferred_candidate
             "DUT1 is looked up at each trial epoch; no extrapolation.\n"),
           orientation_sample.dut1_from_update ? _("downloaded") : _("bundled"),
           orientation_sample.dut1_seconds, quality);
+    } else if (m_CorrectedDateTime.GetYear() < 1972) {
+      m_CalcStr += _("Earth rotation                = historical UT/DeltaT model (before 1972)\n");
     } else {
       m_CalcStr += _("WARNING: DUT1 unavailable at reference UTC; UT1=UTC fallback, reduced accuracy.\n");
     }
-    m_CalcStr += _("Moon-body astrometry          = observer-specific light time and combined annual/diurnal aberration\n"
+    if (m_LunarUsesDe440)
+      m_CalcStr += _("Moon-body astrometry          = observer-specific light time and combined annual/diurnal aberration\n"
                   "Polar motion and geoid/local vertical are not modelled.\n");
     if (unavailable_dut1->load())
       m_CalcStr += _("WARNING: part of this search is outside available DUT1 coverage; those trials use UT1=UTC with reduced accuracy.\n");
     m_CalcStr += wxString::Format(_("Lunar engine version          = %d.%d.%d.%d\n"),
         PLUGIN_VERSION_MAJOR, PLUGIN_VERSION_MINOR, PLUGIN_VERSION_PATCH, PLUGIN_VERSION_TWEAK);
-  } else {
-    m_CalcStr += _("Earth rotation                = analytical fallback; no dated DUT1 applied\n");
   }
   m_CalcStr += wxString::Format(
       _("Raw lunar distance LDs        = %.8f deg  (%s)\n"
@@ -1965,6 +1864,16 @@ void Sight::RecomputeLunar(int preferred_candidate
     const lunar_distance::TimeCandidate& candidate = solution.candidates[index];
     const wxDateTime candidate_time =
         UtcDateTime::AddSeconds(m_CorrectedDateTime, candidate.offset_seconds);
+    if (!candidate.local_slope_available || !candidate.uncertainty_available) {
+      m_CalcStr += wxString::Format(_("%s%s\n    watch correction = %+.3f s\n"),
+          index == selected ? "* " : "  ",
+          UtcDateTime::FormatUtc(candidate_time, "%Y-%m-%d %H:%M:%S.%l"),
+          candidate.offset_seconds);
+      m_CalcStr += _("    Local rate or formal uncertainty unavailable at this geometry boundary.\n");
+      continue;
+    }
+    if (candidate.used_one_sided_slope)
+      m_CalcStr += _("    Local rate uses a one-sided estimate at the geometry boundary.\n");
     if (observation.separate_times || observation.use_ellipsoid) {
       m_CalcStr += wxString::Format(
           _("%s%s\n"
@@ -2243,15 +2152,13 @@ RefractionCorrectionMoon = %.4f%c = %s\n"),
       0x00B0, 0x00B0, m_Pressure, m_Temperature, RefractionCorrectionMoon,
       0x00B0, toSDMM_PlugIn(0, RefractionCorrectionMoon, true));
 
-  wxDateTime time = m_CorrectedDateTime;
-#ifdef __OCPN__ANDROID__
-  time = UtcDateTime::ToInstant(time);
-#else
-  time.MakeFromUTC();
-#endif
-  double jdu = time.GetJulianDayNumber();
-  double jdd = ut_to_dt(jdu);
-  double moon_dist = moon_distance(jdd);
+  celestial_navigation::AnalyticalNavigationEpoch lunar_epoch;
+  if (!celestial_navigation::ResolveAnalyticalNavigationEpoch(
+          m_CorrectedDateTime, &lunar_epoch)) {
+    m_CalcStr += _("Lunar time scales could not be resolved.\n");
+    return;
+  }
+  double moon_dist = moon_distance(lunar_epoch.tt_jd);
   double lunar_HP = r_to_d(asin(EARTH_RADIUS / moon_dist));
   double lunar_SD = r_to_d(asin(K_MOON * sin(d_to_r(lunar_HP))));
   // convert to topocentric SD, see Meeus (chapter 55)
@@ -2704,6 +2611,13 @@ void Sight::RebuildPolygonsAltitude() {
   timestep = wxMax(2 * m_TimeCertainty, 1);
   BuildAltitudeLineOfPosition(1, altitudemin, altitudemax, altitudestep,
                               timemin, timemax, timestep);
+  // The nominal COP is evaluated at the corrected observation, not averaged
+  // between uncertainty extrema (nor joined between different time samples).
+  double lat = 0, lon = 0;
+  BodyLocation(m_CorrectedDateTime, &lat, &lon, nullptr, nullptr, nullptr);
+  if (std::isfinite(m_ObservedAltitude) && std::abs(m_ObservedAltitude) <= 90)
+    for (int trace = -180; trace <= 180; ++trace)
+      lines.Append(new wxRealPoint(DistancePoint(m_ObservedAltitude, trace, lat, lon)));
 }
 
 void Sight::RebuildPolygonsHorizon() {
@@ -2775,21 +2689,14 @@ void Sight::BuildAltitudeLineOfPosition(double tracestep, double altitudemin,
     wxRealPointList *p, *l = new wxRealPointList;
     for (double trace = -180; trace <= 180; trace += tracestep) {
       p = new wxRealPointList;
-      double mx = 0;
-      double my = 0;
-      int mc = 0;
       for (double altitude = altitudemin;
            altitude <= altitudemax && fabs(altitude) <= 90;
            altitude += altitudestep) {
         wxRealPoint* point =
             new wxRealPoint(DistancePoint(altitude, trace, lat, lon));
         p->Append(point);
-        mx += point->x;
-        my += point->y;
-        mc++;
         if (altitudestep == 0) break;
       }
-      if (mc > 0) lines.Append(new wxRealPoint(mx / mc, my / mc));
       wxRealPointList* m = MergePoints(l, p);
       wxRealPointList* n = ReduceToConvexPolygon(m);
       polygons.push_back(n);

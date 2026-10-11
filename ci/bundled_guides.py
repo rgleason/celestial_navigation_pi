@@ -19,7 +19,7 @@ def check_guides(archive_path, root, target=None):
                                    sorted((Path(root) / 'data/practical-guide').glob('*'))
                                    if p.is_file()])
         members = archive.getmembers()
-        if android and any(m.isfile() and (Path(m.name).name in GUIDES[:2] or
+        if android and any(m.isfile() and (Path(m.name).name in GUIDES[:2] + DESKTOP_REFERENCES or
                                            '/practical-guide/' in m.name) for m in members):
             raise ValueError('Desktop practical guide must not be bundled for Android')
         for filename in filenames:

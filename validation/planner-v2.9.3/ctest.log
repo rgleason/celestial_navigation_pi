@@ -1,0 +1,21 @@
+Test project /home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/build-linux
+    Start 1: ci_apt_settings
+1/8 Test #1: ci_apt_settings ....................   Passed    0.01 sec
+    Start 2: compact_package_integrity
+2/8 Test #2: compact_package_integrity ..........   Passed    0.07 sec
+    Start 3: celestial_tests
+3/8 Test #3: celestial_tests ....................   Passed   72.34 sec
+    Start 4: numerical_audit_UTC
+4/8 Test #4: numerical_audit_UTC ................   Passed    2.16 sec
+    Start 5: numerical_audit_Europe_London
+5/8 Test #5: numerical_audit_Europe_London ......   Passed    2.13 sec
+    Start 6: numerical_audit_America_New_York
+6/8 Test #6: numerical_audit_America_New_York ...   Passed    2.11 sec
+    Start 7: numerical_audit_Asia_Kolkata
+7/8 Test #7: numerical_audit_Asia_Kolkata .......   Passed    2.11 sec
+    Start 8: ui_utf8_literals
+8/8 Test #8: ui_utf8_literals ...................   Passed    0.12 sec
+
+100% tests passed out of 8
+
+Total Test time (real) =  81.06 sec

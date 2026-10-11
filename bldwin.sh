@@ -17,8 +17,8 @@ OCPN_BUILD="$OCPN_ROOT/build/RelWithDebInfo"
 OCPN_SOLUTION="$OCPN_ROOT/build/OpenCPN.sln"
 
 # wxWidgets (used by CMake)
-wxDIR="/c/Users/fcgle/source/ocpn_wxWidgets"
-wxWIN="/c/Users/fcgle/source/ocpn_wxWidgets"
+export wxDIR="/c/Users/fcgle/source/ocpn_wxWidgets"
+export wxWIN="/c/Users/fcgle/source/ocpn_wxWidgets"
 export wxWidgets_ROOT_DIR="$wxWIN"
 export wxWidgets_LIB_DIR="$wxWIN/lib/vc_dll"
 
@@ -58,8 +58,8 @@ cmake --build . --config RelWithDebInfo --target package
 # ------------------------------------------------------------
 echo "Deploying plugin DLL and PDB into OpenCPN plugin directory..."
 
-cp -f "$PLUGIN_BUILD/celestial_navigation_pi.dll" "$OCPN_BUILD/plugins/"
-cp -f "$PLUGIN_BUILD/celestial_navigation_pi.pdb" "$OCPN_BUILD/plugins/"
+cp -f "$PLUGIN_BUILD/*_pi.dll" "$OCPN_BUILD/plugins/"
+cp -f "$PLUGIN_BUILD/*_pi.pdb" "$OCPN_BUILD/plugins/"
 
 echo "Plugin deployed successfully."
 

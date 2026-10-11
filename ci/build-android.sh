@@ -105,6 +105,18 @@ elif new not in source:
     raise SystemExit(f'Unexpected OpenCPN Android archiver in {path}')
 source = source.replace('set(CMAKE_AR ${tool_base}/bin/arm-linux-androideabi-ar)', new)
 path.write_text(source)
+
+# The core overrides CMAKE_SHARED_LINKER_FLAGS, so set both native page
+# layout flags at that assignment instead of relying on caller cache flags.
+path = Path(sys.argv[1]).parent.parent / 'CMakeLists.txt'
+source = path.read_text()
+old = 'set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-soname,libgorp.so -Wl,--build-id")'
+new = 'set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-soname,libgorp.so -Wl,--build-id -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384")'
+if old in source:
+    source = source.replace(old, new, 1)
+elif new not in source:
+    raise SystemExit('Unexpected Android core linker flags')
+path.write_text(source)
 PY
 
 cmake -S "$core_source" -B "$core_build" \
@@ -154,7 +166,6 @@ metadata=("$plugin_build"/"$package_name"-*-android-$abi.xml)
 test "${#packages[@]}" -eq 1
 test "${#metadata[@]}" -eq 1
 filename=$(basename "${packages[0]}")
-version=$(python3 "$source_dir/ci/plugin_version.py")
 plugin_version=$(python3 -c 'import sys, xml.etree.ElementTree as E; print(E.parse(sys.argv[1]).findtext("version"))' "${metadata[0]}")
 base_url=${CELESTIAL_ANDROID_TARBALL_BASE_URL:-https://github.com/pob220/celestial_navigation_pi/releases/download/android-v${plugin_version}-alpha1}
 python3 "$source_dir/ci/package-android-import.py" "${packages[0]}" "${metadata[0]}" \
@@ -164,3 +175,7 @@ cp "$plugin_build/lib${package_name}.so" "$artifacts/lib${package_name}-unstripp
 "$tool_base/bin/llvm-readelf" -h "$plugin_build/lib${package_name}.so" | grep -E "Machine:.*$machine"
 "$tool_base/bin/llvm-readelf" -d "$plugin_build/lib${package_name}.so" | tee "$artifacts/library-dependencies.txt"
 (cd "$artifacts/package" && sha256sum ./*.tar.gz ./*.xml > SHA256SUMS)
+
+if [[ "$abi" == arm64 ]]; then
+  python3 "$source_dir/ci/verify-android-pages.py" "$artifacts/package/"*.tar.gz --report "$artifacts/android-pages.json"
+fi

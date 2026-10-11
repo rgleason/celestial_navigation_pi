@@ -9,13 +9,27 @@
 #include "Sight.h"
 #include "UtcDateTime.h"
 
+#include <algorithm>
 #include <cmath>
-#include <wx/filename.h>
+#include <tuple>
 #include <wx/utils.h>
+#include <wx/filename.h>
+#include <wx/init.h>
 
 namespace {
 double CircularDifference(double a, double b) {
   return std::remainder(a - b, 360.0);
+}
+
+double Separation(const celestial_navigation::De440NavigationSample& a,
+                  const celestial_navigation::De440NavigationSample& b) {
+  constexpr double radians = 3.14159265358979323846 / 180.0;
+  const double da = a.declination_deg * radians;
+  const double db = b.declination_deg * radians;
+  const double gha = CircularDifference(a.gha_deg, b.gha_deg) * radians;
+  const double cosine = std::sin(da) * std::sin(db) +
+                        std::cos(da) * std::cos(db) * std::cos(gha);
+  return std::acos(std::max(-1.0, std::min(1.0, cosine))) / radians;
 }
 
 eclipse::CalendarDateTime PointJudithUtc() {
@@ -28,6 +42,63 @@ eclipse::CalendarDateTime PointJudithUtc() {
   return utc;
 }
 }  // namespace
+
+TEST(NavigationDe440, MissingOrInvalidKernelFallsBackAndRecovers) {
+  const wxString invalid = wxFileName::CreateTempFileName("celnav-invalid-kernel-");
+  ASSERT_FALSE(invalid.empty());
+  struct Cleanup {
+    wxString path;
+    ~Cleanup() {
+      wxUnsetEnv("CELNAV_TEST_DE440_PATH");
+      wxUnsetEnv("CELNAV_TEST_DE440_ENABLE");
+      wxRemoveFile(path);
+    }
+  } cleanup{invalid};
+  wxSetEnv("CELNAV_TEST_DE440_ENABLE", "1");
+  const wxDateTime utc(13, wxDateTime::Jun, 2024, 19, 26, 0);
+  const wxDateTime instant = UtcDateTime::ToInstant(utc);
+  // An earlier test may already have cached a valid kernel. Neither a
+  // missing replacement nor an invalid replacement may reuse it silently.
+  for (const wxString& path : {invalid + ".missing", invalid}) {
+    wxSetEnv("CELNAV_TEST_DE440_PATH", path);
+    celestial_navigation::De440NavigationSample sample;
+    std::string reason;
+    EXPECT_FALSE(celestial_navigation::TryDe440NavigationSample(
+        "Moon", utc, &sample, &reason));
+    EXPECT_FALSE(reason.empty());
+    const auto fallback = CelestialEphemeris::Evaluate("Moon", instant, 0, 0);
+    EXPECT_TRUE(fallback.valid);
+    EXPECT_FALSE(fallback.usedDe440);
+    EXPECT_TRUE(std::isfinite(fallback.gha));
+  }
+  wxUnsetEnv("CELNAV_TEST_DE440_PATH");
+  const auto restored = CelestialEphemeris::Evaluate("Moon", instant, 0, 0);
+  EXPECT_TRUE(restored.valid);
+  EXPECT_TRUE(restored.usedDe440);
+}
+
+TEST(NavigationDe440, OfficialAirAlmanacMoonRoundingBoundaries) {
+  eclipse::SpkKernel kernel;
+  std::string error;
+  ASSERT_TRUE(kernel.Open(ECLIPSE_DE440_TEST_PATH, &error)) << error;
+  // Official USNO 2026 Air Almanac p. 5 (PDF physical p. 7).
+  // https://aa.usno.navy.mil/downloads/publications/aira26_all.pdf
+  // Preface specifies DeltaT=69.0 s. Calendar below is UT1, not UTC;
+  // the effective TAI argument is only a test adapter for that convention.
+  struct Row { int hour, minute; double gha_arcmin; };
+  for (const auto& row : {Row{1,0,19*60+20}, Row{3,20,52*60+48},
+                          Row{5,10,79*60+6}}) {
+    eclipse::CalendarDateTime time;
+    time.year=2026; time.month=1; time.day=3;
+    time.hour=row.hour; time.minute=row.minute;
+    eclipse::NavigationEpoch epoch;
+    ASSERT_TRUE(eclipse::MakeNavigationEpoch(time, 0, 69.0-32.184,
+                                             0, 0, &epoch, &error));
+    eclipse::NavigationGeocentricState state;
+    ASSERT_TRUE(eclipse::GeocentricNavigationState(kernel,301,epoch,&state,&error));
+    EXPECT_EQ(std::round(state.gha_deg*60), row.gha_arcmin);
+  }
+}
 
 TEST(NavigationDe440, PluginProviderIsOptInAndDoesNotTouchStars) {
   wxUnsetEnv("CELNAV_TEST_DE440_ENABLE");
@@ -42,6 +113,50 @@ TEST(NavigationDe440, PluginProviderIsOptInAndDoesNotTouchStars) {
       "Sirius", utc, &sample, &reason));
   EXPECT_EQ(reason, "Target centre is not in compact DE440s");
   wxUnsetEnv("CELNAV_TEST_DE440_ENABLE");
+}
+
+TEST(NavigationDe440, BobPlannerLunarValuesAgreeWithIndependentKernel) {
+  wxInitializer initializer;
+  ASSERT_TRUE(initializer.IsOk());
+  wxUnsetEnv("CELNAV_TEST_DE440_ENABLE");
+  for (const auto& sample : {
+           std::make_tuple("2025-12-14T10:00:00", 43.0 + 10.0 / 60.0, -77.5),
+           std::make_tuple("2025-12-14T16:00:00", -31.0, 172.0)}) {
+    wxDateTime fields;
+    ASSERT_TRUE(fields.ParseISOCombined(std::get<0>(sample)));
+    const auto plan = PlannerRecommendations::Calculate(
+        UtcDateTime::ToInstant(fields), std::get<1>(sample),
+        std::get<2>(sample));
+    wxSetEnv("CELNAV_TEST_DE440_ENABLE", "1");
+    celestial_navigation::De440NavigationSample moon, laterMoon;
+    std::string reason;
+    const wxDateTime later = fields + wxTimeSpan::Minutes(5);
+    const bool moonOk = celestial_navigation::TryDe440NavigationSample(
+        "Moon", fields, &moon, &reason);
+    const bool laterMoonOk = celestial_navigation::TryDe440NavigationSample(
+        "Moon", later, &laterMoon, &reason);
+    for (const wxString bodyName : {wxString("Sun"), wxString("Venus")}) {
+      celestial_navigation::De440NavigationSample body, laterBody;
+      const bool bodyOk = celestial_navigation::TryDe440NavigationSample(
+          bodyName, fields, &body, &reason);
+      const bool laterBodyOk = celestial_navigation::TryDe440NavigationSample(
+          bodyName, later, &laterBody, &reason);
+      wxUnsetEnv("CELNAV_TEST_DE440_ENABLE");
+      ASSERT_TRUE(moonOk && laterMoonOk && bodyOk && laterBodyOk) << reason;
+      const auto match = std::find_if(plan.bodies.begin(), plan.bodies.end(),
+          [&bodyName](const RankedBody& item) {
+            return item.state.body == bodyName;
+          });
+      ASSERT_NE(match, plan.bodies.end());
+      const double referenceDistance = Separation(moon, body);
+      const double referenceRate =
+          (Separation(laterMoon, laterBody) - referenceDistance) * 720.0;
+      EXPECT_NEAR(referenceDistance, match->lunarDistance, 0.15);
+      EXPECT_NEAR(referenceRate, match->lunarRateArcminHour, 3.0);
+      wxSetEnv("CELNAV_TEST_DE440_ENABLE", "1");
+    }
+    wxUnsetEnv("CELNAV_TEST_DE440_ENABLE");
+  }
 }
 
 TEST(NavigationDe440, PluginBodyLocationUsesVerifiedKernelAndFractionalUtc) {
@@ -125,40 +240,6 @@ TEST(NavigationDe440, OutsideCompactKernelCoverageFallsBackCleanly) {
   wxUnsetEnv("CELNAV_TEST_DE440_ENABLE");
 }
 
-TEST(NavigationDe440, MissingOrInvalidKernelFallsBackAndRecovers) {
-  const wxString invalid = wxFileName::CreateTempFileName("celnav-invalid-kernel-");
-  ASSERT_FALSE(invalid.empty());
-  struct Cleanup {
-    wxString path;
-    ~Cleanup() {
-      wxUnsetEnv("CELNAV_TEST_DE440_PATH");
-      wxUnsetEnv("CELNAV_TEST_DE440_ENABLE");
-      wxRemoveFile(path);
-    }
-  } cleanup{invalid};
-  wxSetEnv("CELNAV_TEST_DE440_ENABLE", "1");
-  const wxDateTime utc(13, wxDateTime::Jun, 2024, 19, 26, 0);
-  const wxDateTime instant = UtcDateTime::ToInstant(utc);
-  // An earlier test may already have cached a valid kernel. Neither a
-  // missing replacement nor an invalid replacement may reuse it silently.
-  for (const wxString& path : {invalid + ".missing", invalid}) {
-    wxSetEnv("CELNAV_TEST_DE440_PATH", path);
-    celestial_navigation::De440NavigationSample sample;
-    std::string reason;
-    EXPECT_FALSE(celestial_navigation::TryDe440NavigationSample(
-        "Moon", utc, &sample, &reason));
-    EXPECT_FALSE(reason.empty());
-    const auto fallback = CelestialEphemeris::Evaluate("Moon", instant, 0, 0);
-    EXPECT_TRUE(fallback.valid);
-    EXPECT_FALSE(fallback.usedDe440);
-    EXPECT_TRUE(std::isfinite(fallback.gha));
-  }
-  wxUnsetEnv("CELNAV_TEST_DE440_PATH");
-  const auto restored = CelestialEphemeris::Evaluate("Moon", instant, 0, 0);
-  EXPECT_TRUE(restored.valid);
-  EXPECT_TRUE(restored.usedDe440);
-}
-
 TEST(NavigationDe440, RejectsUnsupportedPlanetCentre) {
   EXPECT_TRUE(eclipse::De440sNavigationTarget(10));
   EXPECT_TRUE(eclipse::De440sNavigationTarget(301));
@@ -193,7 +274,7 @@ TEST(NavigationDe440, MatchesUsnoPublishedPrecisionAtPointJudith) {
   // 41.3667 N, 71.4833 W, accessed 2026-09-18:
   // https://aa.usno.navy.mil/api/celnav?date=2024-6-13&time=19:26&coords=41.3666667,-71.4833333
   // This is a printed-value comparison, not a sub-arcsecond reference. The
-  // endpoint accepts UT1 while our caller's time is UTC.
+  // endpoint accepts UT1 while our caller's time is UTC. At this epoch its
   // The service's Moon value differs from the DE440s/JPL result by roughly
   // 4" GHA and 2" Dec at matched UT1. An inferred ~8.83 s difference in
   // its TT argument explains both coordinates; never apply that fitted offset
@@ -244,29 +325,6 @@ TEST(NavigationDe440, ArchivedUsnoMoonDifferenceIsTimeArgument) {
             0.01);
   EXPECT_LT(std::fabs(b.declination_deg - kUsnoMoonDec) * 3600.0, 0.01);
   EXPECT_NEAR(a.gha_aries_deg, b.gha_aries_deg, 1e-8);
-}
-
-TEST(NavigationDe440, OfficialAirAlmanacMoonRoundingBoundaries) {
-  eclipse::SpkKernel kernel;
-  std::string error;
-  ASSERT_TRUE(kernel.Open(ECLIPSE_DE440_TEST_PATH, &error)) << error;
-  // Official USNO 2026 Air Almanac p. 5 (PDF physical p. 7).
-  // https://aa.usno.navy.mil/downloads/publications/aira26_all.pdf
-  // Preface specifies DeltaT=69.0 s. Calendar below is UT1, not UTC;
-  // the effective TAI argument is only a test adapter for that convention.
-  struct Row { int hour, minute; double gha_arcmin; };
-  for (const auto& row : {Row{1,0,19*60+20}, Row{3,20,52*60+48},
-                          Row{5,10,79*60+6}}) {
-    eclipse::CalendarDateTime time;
-    time.year=2026; time.month=1; time.day=3;
-    time.hour=row.hour; time.minute=row.minute;
-    eclipse::NavigationEpoch epoch;
-    ASSERT_TRUE(eclipse::MakeNavigationEpoch(time, 0, 69.0-32.184,
-                                             0, 0, &epoch, &error));
-    eclipse::NavigationGeocentricState state;
-    ASSERT_TRUE(eclipse::GeocentricNavigationState(kernel,301,epoch,&state,&error));
-    EXPECT_EQ(std::round(state.gha_deg*60), row.gha_arcmin);
-  }
 }
 
 TEST(NavigationDe440, GeneralObserverDirectionPreservesSunMoonPath) {

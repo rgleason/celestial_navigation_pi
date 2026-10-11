@@ -47,7 +47,13 @@ bool GetGlobalColor(wxString colorName, wxColour* pcolour) { return true; }
 static wxFileConfig* s_config = NULL;
 wxFileConfig* GetOCPNConfigObject(void) {
   if (!s_config) {
-    s_config = new wxFileConfig();
+    // Each test process owns a temporary configuration, never the user profile.
+    s_config = new wxFileConfig("CelestialNavigationTest", "OpenCPN",
+        wxFileName::CreateTempFileName("celnav-test-config-"), wxEmptyString,
+        wxCONFIG_USE_LOCAL_FILE);
+    // Preserve classic-provider recorded-value regressions. Compact tests
+    // remove/override this key and exercise the production default separately.
+    s_config->Write("/PlugIns/CelestialNavigation/UseCompactEphemeris", false);
     // Add test defaults
     s_config->Write(_T("/PlugIns/CelestialNavigation/DefaultEyeHeight"), 2.0);
     s_config->Write(_T("/PlugIns/CelestialNavigation/DefaultTemperature"),
@@ -58,7 +64,8 @@ wxFileConfig* GetOCPNConfigObject(void) {
   return s_config;
 }
 wxAuiManager* GetFrameAuiManager(void) { return 0; }
-wxWindow* GetOCPNCanvasWindow() { return 0; }
+static wxWindow* s_canvasWindow = nullptr;
+wxWindow* GetOCPNCanvasWindow() { return s_canvasWindow; }
 
 DECL_EXP void PushNMEABuffer(wxString str) {}
 
@@ -66,6 +73,8 @@ int AddCanvasMenuItem(wxMenuItem*, opencpn_plugin*, const char*) { return 73; }
 void RemoveCanvasMenuItem(int, const char*) {}
 
 }  // extern "C"
+
+void SetTestCanvasWindow(wxWindow* window) { s_canvasWindow = window; }
 
 wxString GetSelectedRouteGUID_Plugin() { return wxString(); }
 

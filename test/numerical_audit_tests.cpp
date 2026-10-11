@@ -280,3 +280,21 @@ TEST(NumericalAudit, AlmanacRowsAndCurvesUseLabelledUtcEpoch) {
   }
 }
 }  // namespace
+
+
+TEST(NumericalAudit, PlannerUtcAndShipZoneEntrySurviveComputerDaylightSavingGaps) {
+  wxDateTime utc, ship;
+  ASSERT_TRUE(ParseNauticalPlannerInstant("2026-03-29", "01:30:00",
+      PlannerTimeBasis::Utc, 0, &utc));
+  EXPECT_EQ("2026-03-29 01:30:00", utc.Format("%Y-%m-%d %H:%M:%S", wxDateTime::UTC));
+  ASSERT_TRUE(ParseNauticalPlannerInstant("2026-03-29", "11:30:00",
+      PlannerTimeBasis::ZoneTime, 10, &ship));
+  EXPECT_EQ(utc, ship);
+  ASSERT_TRUE(ParseNauticalPlannerInstant("2026-03-28", "20:30:00",
+      PlannerTimeBasis::ZoneTime, -5, &ship));
+  EXPECT_EQ(utc, ship);
+  EXPECT_FALSE(ParseNauticalPlannerInstant("2026-02-29", "01:30:00",
+      PlannerTimeBasis::Utc, 0, &ship));
+  EXPECT_FALSE(ParseNauticalPlannerInstant("2026-03-29", "24:00:00",
+      PlannerTimeBasis::Utc, 0, &ship));
+}

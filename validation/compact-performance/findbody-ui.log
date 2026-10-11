@@ -1,0 +1,28 @@
+Running main() from /usr/src/debug/gtest/googletest-1.18.0/googletest/src/gtest_main.cc
+Note: Google Test filter = FindBodyUi.*
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from FindBodyUi
+[ RUN      ] FindBodyUi.IndependentActionsThroughAllThreeSightRoutes
+21:14:33: Loading toolbar icon: /home/paul/src/OpenCPN/.worktrees/celnav-fix-2.9.4/test/../data/celestial_navigation.svg
+21:14:33: Loading toolbar icon: /home/paul/src/OpenCPN/.worktrees/celnav-fix-2.9.4/test/../data/celestial_navigation_rollover.svg
+21:14:33: Loading toolbar icon: /home/paul/src/OpenCPN/.worktrees/celnav-fix-2.9.4/test/../data/celestial_navigation_toggled.svg
+21:14:33: Debug: Adding duplicate image handler for 'PNG file'
+21:14:33: Debug: Adding duplicate image handler for 'JPEG file'
+21:14:33: Debug: Adding duplicate image handler for 'TIFF file'
+21:14:33: Debug: Adding duplicate image handler for 'GIF file'
+21:14:33: Debug: Adding duplicate image handler for 'PNM file'
+21:14:33: Debug: Adding duplicate image handler for 'PCX file'
+21:14:33: Debug: Adding duplicate image handler for 'IFF file'
+21:14:33: Debug: Adding duplicate image handler for 'Windows icon file'
+21:14:33: Debug: Adding duplicate image handler for 'Windows cursor file'
+21:14:33: Debug: Adding duplicate image handler for 'Windows animated cursor file'
+21:14:33: Debug: Adding duplicate image handler for 'TGA file'
+21:14:33: Debug: Adding duplicate image handler for 'XPM file'
+21:14:33: Debug: Using icon path: /home/paul/src/OpenCPN/.worktrees/celnav-fix-2.9.4/test/../data/celestial_navigation_panel.png
+[       OK ] FindBodyUi.IndependentActionsThroughAllThreeSightRoutes (55962 ms)
+[----------] 1 test from FindBodyUi (55962 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (55963 ms total)
+[  PASSED  ] 1 test.

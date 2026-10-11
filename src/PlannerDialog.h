@@ -6,6 +6,8 @@
 
 #include <wx/dialog.h>
 #include <wx/timer.h>
+#include "AndroidPlannerWorker.h"
+#include <memory>
 
 class CelestialNavigationDialog;
 class NavigationAngleCtrl;
@@ -22,8 +24,6 @@ class wxStaticText;
 class wxTextCtrl;
 #ifdef __OCPN__ANDROID__
 #include "NauticalTimeCtrl.h"
-#include "AndroidPlannerWorker.h"
-#include <memory>
 class QListWidget;
 class wxButton;
 using CelestialTimePicker = NauticalTimeCtrl;
@@ -44,8 +44,8 @@ public:
 private:
   ObserverMotion ReadMotion(bool showErrors);
   wxDateTime ReadUtc(bool showErrors);
-  wxDateTime ReadEntryFields(int format, bool showErrors);
   void SetUtcControls(const wxDateTime& utc);
+  void StepPlanningTime(int hours);
   void ChangeInputTimeBasis(wxCommandEvent& event);
   void ChangeEntryFormat(wxCommandEvent& event);
   void UpdateInputTimeLabels();
@@ -74,12 +74,24 @@ private:
   void RefreshBodies();
   void RebuildBodyList();
   void RefreshSkyPlot();
+  void ExportBodyTable(wxCommandEvent& event);
   void SortBodies(wxListEvent& event);
   void RefreshAlmanac();
   void RefreshSpecial();
   void ExportAlmanac(wxCommandEvent& event);
   void CreateSelectedSight(wxCommandEvent& event);
+  void FindLunarWindows(wxCommandEvent& event);
   void SolveSpecialLatitude(wxCommandEvent& event);
+#ifndef __OCPN__ANDROID__
+  void StartDesktopCalculation(const ObserverMotion& motion);
+  void PollDesktopCalculation(wxTimerEvent& event);
+  std::unique_ptr<celestial_android::PlannerWorker> m_desktopWorker;
+  celestial_android::PlannerResults m_desktopResults;
+  unsigned m_desktopGeneration = 0;
+  bool m_desktopReady = false, m_desktopPending = false;
+  int m_desktopMoonPathSpan = -1;
+  wxTimer m_calculationPoll;
+#endif
 #ifdef CELESTIAL_PLANNER_INTEGRATION_TEST
   bool SelectWaypointForIntegration(const wxString& name);
   void OnWaypointIntegrationTimer(wxTimerEvent& event);
@@ -137,11 +149,25 @@ private:
   wxStaticText* m_moonSummary;
   wxListCtrl* m_bodies;
   wxListCtrl* m_combinations;
+  wxListCtrl* m_lunarPairs;
+  wxChoice* m_lunarOrder;
+  wxChoice* m_lunarCompanions;
+  wxCheckBox* m_includePolarisRecommendations;
+  wxNotebook* m_resultsNotebook;
+  wxStaticText* m_noRecommendations;
+  wxChoice* m_planningMode;
+  wxCheckBox* m_tableBelowHorizon;
   wxCheckBox* m_limitRecommendationAltitude;
   wxSpinCtrlDouble* m_recommendationMinAltitude;
   wxSpinCtrlDouble* m_recommendationMaxAltitude;
   SkyPlotPanel* m_skyPlot;
+  SkyPlotPanel* m_equatorialPlot;
+  wxNotebook* m_plotNotebook;
+  wxCheckBox* m_showEcliptic;
+  wxCheckBox* m_showMoonPath;
+  wxChoice* m_moonSpan;
   wxChoice* m_plotMagnitude;
+  wxChoice* m_plotLabels;
   wxCheckBox* m_plotBelowHorizon;
   wxListCtrl* m_almanac;
   wxChoice* m_specialBody;
@@ -155,6 +181,8 @@ private:
   double m_lastValidZoneOffset;
   bool m_zoneOffsetTextValid;
   bool m_updatingZoneOffset;
+  bool m_compactLayout = false;
+  bool m_reflowingLayout = false;
   wxString m_waypointGuid;
   wxString m_waypointName;
   wxTimer m_cursorTimer;
@@ -165,7 +193,9 @@ private:
   int m_waypointIntegrationAttempts;
 #endif
   std::vector<RankedBody> m_rankedBodies;
+  PlanningResult m_planningResult;
   std::vector<AlmanacRow> m_almanacRows;
+  DailyEventsResult m_dailyEvents;
 };
 
 #endif

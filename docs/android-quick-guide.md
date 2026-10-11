@@ -1,4 +1,4 @@
-# Celestial Navigation 2.8.13 — Android quick guide
+# Celestial Navigation 2.9.8 — Android quick guide
 
 Tap the stock Celestial Navigation icon in OpenCPN to open the workspace.
 Four task buttons take you to **Observe**, **Fix**, **Plan** and **Tools**.
@@ -37,6 +37,11 @@ observation's saved DR. Choose another observation, enter a DR manually, or
 explicitly select the current boat position. Boat position is never an implicit
 replacement for missing saved DR.
 
+Choose **Stationary**, **One COG and SOG**, or **Each sight's DR Shift** in the
+vessel-motion selector. A running fix shows its reference UTC time;
+**More options** lets you change that time and the fix's clock correction.
+**Calculate** refreshes the result, and **Show fix on chart** plots it.
+
 Two observations can give two valid intersections far apart. The starting DR
 guides the calculation toward the nearby solution. Check that the shown DR
 belongs to these observations, then use **Show fix on chart** to plot the result.
@@ -60,7 +65,24 @@ approximate: the shared method found the June 2024 Full Moon about ten minutes
 earlier than USNO. Use an authoritative almanac when an exact phase time matters.
 **Bodies & Best Sights** has Sort and Direction above a scrollable list; select
 a card to enable **Create sight**. The separate **Recommendations & sky** page
-has visibility limits, suggested combinations and the sky plot. **Almanac**
+has visibility limits, suggested combinations and the sky plot. Choose **Sparse**, **Balanced** or **More** star labels on that page. Names
+fit without overlap, brightest first; tap a plot dot to identify the body or
+select its body card. The selected body has label priority. Use **-1 h / +1 h**
+in Context to move the whole sky by one UTC hour; a moving observer advances
+with the entered course and speed. The Moon path belongs to **SHA / Declination**;
+the Local sky plot shows the current instant. Visibility guidance describes
+brightness and twilight separately from altitude handling and fix geometry.
+Suggested triads precede pairs; Polaris is optional for recommendations.
+Lunar Candidates uses traditional companions by default; choose **All calculated
+companions** to compare other bodies. Magnitude and cautions help assess a pair;
+a planning preference is not a probability of seeing or measuring it.
+
+Below 1% illumination, the Moon remains visible in the planning cards with
+grey text and an explicit caution, but is excluded from recommended fixes.
+Lunar pairs remain listed with the same caution. Illumination is displayed to
+one decimal place; the planning cutoff uses the unrounded value.
+
+**Almanac**
 shows 25 hourly epochs for seven bodies and can export a CSV; its UTC column
 keeps fractional seconds. Review the chosen folder and confirm before replacing
 an existing file. **Noon & Polaris** takes corrected observed altitude, not the
@@ -72,11 +94,26 @@ found differences of up to 2.9 seconds from a full terrain scan. Displayed
 hundredths of a second do not establish timing accuracy. Eclipse times use UT1;
 future UTC also depends on Earth rotation.
 
+## Offline ephemeris choice
+
+For supported bodies and dates, an installed verified DE440s pack takes priority.
+Otherwise the bundled Compact 0.2.0 engine supplies the Sun, Moon, planets and
+navigation stars for 1972–2100. No large download is needed. In **Tools > Lunar
+Tools > Advanced**, disable **Use compact analytical fallback (recommended)**
+to use Classic Analytical instead. Classic also covers dates outside Compact's
+range or unavailable Compact data. The corrected lunar solver applies to every
+provider; inspect the calculation trail for the source and DUT1 availability.
+
 ## Specialized tools and documents
 
 For a lunar observation, **Results** calculates the UTC candidates and opens
 the result pages. **Check at entered UTC** checks the recorded instant; it does
-not apply a recovered clock correction. On **Time**, choose whether the readings
+not apply a recovered clock correction. For sight accuracy, confirm an independently
+known position at the distance-reading time. Results show True LD, model-corrected
+Cleared LD and signed lunar error (cleared minus true, in arcminutes). A positive
+error means the distance reading is too large. The correction uses the same
+WGS84 forward model as the solver; measured altitudes do not fit this check.
+Wrong UTC, position or environmental inputs also affect the error. On **Time**, choose whether the readings
 are UTC or watch readings. If the distance and altitudes were measured at
 different times, enable separate times and enter all three readings on the same
 basis. Enable vessel advance only when the entered true COG and speed describe
@@ -87,6 +124,21 @@ large clock uncertainty even when the position check is close to the DR.
 **Tools** opens lunar sessions, pairs and sextant checks, coastal sextant work,
 clock correction, this guide and the full offline HTML/PDF manuals. Use the
 section selector inside each tool for its different tasks.
+
+In **Lunar Tools > Lunar planner**, choose **Sort pairs by** and **Sort direction**
+to reorder the existing pair cards by body, distance, timing, magnitude or other
+shown values. **Planning order** restores the selected lunar ranking. Sorting
+does not recalculate, and the choice survives calculation and companion-filter
+changes. The shared Moon altitude, azimuth and illumination are identical for
+every pair and therefore have no separate sort choices.
+
+In **Tools > Manage sights and backups**, choose **Export sight log CSV...**.
+Select a writable OpenCPN folder and save the dated report. It includes all
+sights, their observed readings, UTC, observing parameters, saved DR and remarks;
+angles follow your OpenCPN preference. Lunar rows use the Moon bearing and Near
+or Far contact. Event rows identify Sunrise or Sunset. Magnetic bearings end in
+M; true bearings have no suffix. UTC includes clock correction; unresolved lunar
+watch readings leave UTC blank. Use XML backups when you need to restore sights.
 
 Coastal calculations keep vertical and horizontal plot layers separately.
 **Show plotted range/fix on chart** hides the editor and centres the calculated

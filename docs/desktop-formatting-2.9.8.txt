@@ -1,0 +1,60 @@
+Celestial Navigation 2.9.8 desktop formatting (#381)
+==================================================
+https://github.com/rgleason/celestial_navigation_pi/issues/381
+
+Bob's Windows and macOS report identifies clipped Horizon Event controls,
+cramped Sight Sequence Analyzer columns, lost manual column widths and an
+unreadable residual graph. Linux reproduces the control-width and persistence
+problems: the former 65-pixel time fields need 116 pixels with the local native
+spin buttons; resized analyzer UTC and main Sights measurement columns revert
+to 160 and 119 pixels on reopening.
+
+Horizon Event desktop choices now use their native best sizes. Numeric fields
+measure their permitted values with the current font and ask the native port
+for the space needed by its text, buttons and borders. The observation section
+sets the minimum dialog width. The lower section remains scrollable. Analyzer
+coordinates and course/speed fields also use native text-aware sizing.
+
+Desktop Sights and analyzer columns initially fit headings and contents. A
+manual column drag marks that column as user-sized, preserving it across list
+refresh and analyzer recalculation. Destruction saves those widths in DIP in
+separate ListColumns/Sights and ListColumns/SightAnalysis configuration groups.
+Reopening restores them. Long remarks have a bounded automatic width and can
+still be expanded manually. Existing user sight files are unchanged.
+
+The residual graph measures its axis labels, sets explicit font/foreground
+state and uses a fresh desktop graphics context. Full UTC date/time endpoints
+and a Ho - Hc (arcminutes) caption identify both axes, including multi-day
+sequences. Data strokes are clipped to the plot. Residual mathematics and the
+existing long-track warning are unchanged. Android native touch controls and
+cards are excluded from desktop column persistence and native sizing.
+
+Validation
+----------
+The new opt-in DesktopFormattingUi regression fails on the previous desktop
+layout and passes after these changes with normal and 150% GTK fonts. It
+checks native numeric/choice sizing, full result-cell widths, manually resized
+columns through recalculation and reopening, and main sight-list persistence.
+Captured Linux Horizon Event and three-sight, forty-day analyzer views were
+visually reviewed. SightLogUi, HorizonEventUi and DialogFocusUi also pass.
+
+The focus test now compares the owner position immediately before plugin
+recovery in the unrelated-modal case. KDE can move the owner when that modal
+is shown; assuming its earlier offscreen position remains unchanged tested
+window-manager placement rather than plugin recovery. Production focus code
+is unchanged.
+
+The installed-host smoke test also found that a newly opened Horizon Event
+used wxDateTime::UNow() directly as saved UTC calendar fields on desktop. In
+British Summer Time this initially displayed the local hour, while Capture
+current UTC used the correct adapter. Creation now uses UtcDateTime::Now(),
+matching capture and the default Sight constructor. The GUI regression opens
+the real Horizon Event action, checks its initial UTC hour and cancels without
+adding a sight. Android's instant representation is unchanged by this adapter.
+
+Full CTest: 12/12 groups pass. Native Windows/macOS runtime verification is
+still required; these Linux checks do not establish their final rendering.
+
+Run each GUI suite in a separate process with CELESTIAL_RUN_UI_TESTS=1 and a
+display. Use GDK_DPI_SCALE=1.5 for enlarged-font verification on GTK; window
+position tests use GDK_BACKEND=x11 to match the working laptop host.

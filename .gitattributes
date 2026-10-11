@@ -1,0 +1,6 @@
+# Preserve the qualified imported sources, coefficient packs and notices byte
+# for byte, including upstream line endings/whitespace, on every platform.
+compact/** -text -whitespace
+data/compact/** -text -whitespace
+src/LunarDistanceEngine.cpp -text
+src/LunarDistanceEngine.h -text

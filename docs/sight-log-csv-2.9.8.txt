@@ -1,0 +1,59 @@
+Celestial Navigation 2.9.8 development fixes
+==========================================
+
+Sight-log CSV report (#359)
+--------------------------
+https://github.com/rgleason/celestial_navigation_pi/issues/359
+
+Manage Sights now offers Export sight log CSV. The desktop save dialog defaults
+to Downloads with a dated filename and the normal overwrite confirmation.
+The Android Manage Sights sheet also exposes the export through the existing
+app-accessible file browser.
+
+The report includes every sight, including hidden ones, in the current log
+order. Its 17 columns follow Bob's requested sight number, UTC date/time, type,
+body or pair, limb, observed Hs/uncleared LD, bearing, horizon, height of eye,
+index error, temperature, pressure, saved DR position, zone and remarks.
+Angles use the OpenCPN display preference. Index error is converted from the
+internal degrees to arcminutes. Numeric fields use a decimal point, independent
+of locale. CSV headers and type labels are stable English.
+
+Lunar rows identify Moon / companion and Near / Far. Their bearing is the
+Moon's true bearing at the saved DR position and report UTC; the other
+observing parameters are shared in the existing sight model. Sunrise/sunset
+rows have zero Hs and retain any entered bearing. Magnetic azimuth/event
+bearings retain the recorded magnetic value and have an M suffix; true
+bearings have no suffix. Zone is round(saved east-positive longitude / 15),
+labelled UTC+/-hours, rather than a civil time zone.
+
+UTC includes the existing global clock correction. Lunar records explicitly
+entered as watch time additionally use the selected valid lunar UTC candidate.
+Their UTC and computed bearing are blank until that solution is available.
+Unavailable values are blank; fractional seconds are retained.
+
+The UTF-8 file includes a BOM for spreadsheet compatibility. Fields are quoted
+and quotes escaped, preserving commas, Unicode and multi-line remarks.
+Export uses the existing atomic-file writer and refuses the active Sights.xml
+path. It leaves sight records, calculated results and XML storage unchanged.
+CSV is a report; XML backups remain the restore format. The source and bundled
+HTML manual describe the new action and column semantics.
+
+Validation
+----------
+The plugin and test executable build successfully. Six SightLogCsv regressions
+cover CSV parsing and Unicode remarks, all sight types, hidden sights, UTC date
+rollover/fractional seconds, units, preferred-angle formatting, Moon bearings,
+lunar watch-time resolution, missing values, longitude zones and decimal-comma
+locales. They also run in the four timezone audit processes.
+
+The isolated SightLogUi regression passes real-dialog CSV file writing,
+unchanged XML/remarks, refusal to overwrite the active log, and a failed-write
+case, alongside existing backup/import/restore checks. An independent Python
+CSV reader verifies the actual file's UTF-8 BOM, 17 fields and Unicode remarks.
+The complete CTest run passes all 12 checks, including all four timezone
+audits, bundled guides, metadata, package integrity and UTF-8 UI literals.
+git diff --check passes.
+
+Build/test logs and XML results are in output/celnav-2.9.8-moon in the parent
+OpenCPN workspace. GUI verification uses Linux/wxGTK; native macOS, Windows
+and Android file-browser interactions still need release testing.

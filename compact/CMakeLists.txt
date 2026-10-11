@@ -1,0 +1,25 @@
+# Embedded runtime from qualified standalone compact 0.2.0; no SDK/CLI install.
+find_package(Threads REQUIRED)
+file(GLOB ERFA_SOURCES CONFIGURE_DEPENDS third_party/erfa/src/*.c)
+list(FILTER ERFA_SOURCES EXCLUDE REGEX "/(t_erfa_c(_extra)?|erfaversion)\\.c$")
+add_library(compact_erfa OBJECT ${ERFA_SOURCES})
+set_target_properties(compact_erfa PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(compact_erfa PRIVATE third_party/erfa/src)
+add_library(compact_engine STATIC src/engine.cpp src/planet.cpp src/moon.cpp
+  third_party/elp/ElpMpp02.cpp $<TARGET_OBJECTS:compact_erfa>)
+add_library(celnav::compact ALIAS compact_engine)
+set_target_properties(compact_engine PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_compile_features(compact_engine PUBLIC cxx_std_17)
+target_include_directories(compact_engine PUBLIC include PRIVATE
+  src third_party/elp third_party/erfa/src
+  # Reuse the plugin's header-only Windows runtime-compatible lock.
+  ${CMAKE_CURRENT_SOURCE_DIR}/../eclipse/include)
+target_compile_definitions(compact_engine PUBLIC COMPACT_WITH_BASELINE=0)
+target_link_libraries(compact_engine PRIVATE Threads::Threads)
+foreach(target compact_erfa compact_engine)
+  if(MSVC)
+    target_compile_options(${target} PRIVATE /FI${CMAKE_CURRENT_SOURCE_DIR}/src/vendor_prefix.hpp)
+  else()
+    target_compile_options(${target} PRIVATE -include ${CMAKE_CURRENT_SOURCE_DIR}/src/vendor_prefix.hpp)
+  endif()
+endforeach()

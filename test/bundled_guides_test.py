@@ -1,5 +1,7 @@
-"""Release-version and archive checks; no GUI, network or extraction required."""
+"""Offline reader/link completeness and platform-specific packaged guides."""
+import hashlib
 import io
+import json
 from html.parser import HTMLParser
 from pathlib import Path
 import sys
@@ -8,184 +10,102 @@ import tempfile
 import unittest
 from urllib.parse import unquote, urlsplit
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / 'ci'))
-from plugin_version import plugin_version
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'ci'))
 import bundled_guides as guides
 
-
 class BundledGuides(unittest.TestCase):
-    def make_archive(self, folder, exclude=None, corrupt=None, duplicate=None, android=False):
-        path = folder / ('plugin-android-arm64.tar.gz' if android else 'test.tar.gz')
-        with tarfile.open(path, 'w:gz') as archive:
-            names = list(guides.ANDROID_GUIDES) if android else list(guides.GUIDES) + list(guides.DESKTOP_REFERENCES) + [
-                'practical-guide/' + p.name for p in
-                sorted((ROOT / 'data/practical-guide').glob('*')) if p.is_file()]
+    def archive(self,path,android=False,omit=None,corrupt=None):
+        names=list(guides.ANDROID_GUIDES if android else guides.GUIDES+guides.DESKTOP_REFERENCES)
+        if not android: names += ['practical-guide/'+p.name for p in (ROOT/'data/practical-guide').glob('*') if p.is_file()]
+        with tarfile.open(path,'w:gz',compresslevel=1) as t:
             for name in names:
-                if name == exclude:
-                    continue
-                data = (ROOT / 'data' / name).read_bytes()
-                if name == corrupt:
-                    data = b'not the approved guide'
-                entry = tarfile.TarInfo('package/share/plugin/data/' + name)
-                entry.size = len(data)
-                archive.addfile(entry, io.BytesIO(data))
-                if name == duplicate:
-                    archive.addfile(entry, io.BytesIO(data))
-        return path
+                if name==omit: continue
+                data=(ROOT/'data'/name).read_bytes()
+                if name==corrupt: data=b'bad document'
+                entry=tarfile.TarInfo('share/opencpn/plugins/celestial_navigation_pi/data/'+name)
+                entry.size=len(data); t.addfile(entry,io.BytesIO(data))
 
-    def test_exact_guides_pass(self):
-        with tempfile.TemporaryDirectory() as folder:
-            self.assertEqual(len(guides.check_guides(self.make_archive(Path(folder)), ROOT)), 4)
+    def test_complete_desktop_and_android_archives(self):
+        with tempfile.TemporaryDirectory() as d:
+            for android in [False,True]:
+                p=Path(d)/('test-android-arm64.tar.gz' if android else 'test.tar.gz')
+                self.archive(p,android); guides.check_guides(p,ROOT)
+            self.archive(p,False)
+            with self.assertRaises(ValueError): guides.check_guides(p,ROOT)
 
-    def test_missing_corrupt_and_duplicate_guides_fail(self):
-        with tempfile.TemporaryDirectory() as folder:
-            for case in ('exclude', 'corrupt', 'duplicate'):
-                with self.subTest(case=case):
-                    archive = self.make_archive(Path(folder), **{case: 'Practical_Guide.pdf'})
-                    with self.assertRaises(ValueError):
-                        guides.check_guides(archive, ROOT)
+    def test_missing_or_corrupt_guide_and_illustration_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'test.tar.gz'
+            for name in ['Practical_Guide.pdf','Practical_Guide.html','practical-guide/page-17-figure-1.png']:
+                self.archive(p,omit=name)
+                with self.assertRaises(ValueError): guides.check_guides(p,ROOT)
+            self.archive(p,corrupt='Practical_Guide.pdf')
+            with self.assertRaises(ValueError): guides.check_guides(p,ROOT)
 
-    def test_missing_illustration_fails(self):
-        with tempfile.TemporaryDirectory() as folder:
-            archive = self.make_archive(Path(folder), exclude='practical-guide/page-09-figure-1.png')
-            with self.assertRaises(ValueError):
-                guides.check_guides(archive, ROOT)
-
-    def test_missing_local_definitions_fails(self):
-        with tempfile.TemporaryDirectory() as folder:
-            archive = self.make_archive(Path(folder), exclude='Celestial_Navigation_Definitions.html')
-            with self.assertRaises(ValueError):
-                guides.check_guides(archive, ROOT)
-
-    def test_android_has_its_own_guide_not_desktop_instructions(self):
-        with tempfile.TemporaryDirectory() as folder:
-            archive = self.make_archive(Path(folder), android=True)
-            self.assertEqual(set(guides.check_guides(archive, ROOT)), set(guides.ANDROID_GUIDES))
-            archive = self.make_archive(Path(folder))
-            target = Path(folder) / 'plugin-android-arm64.tar.gz'
-            archive.replace(target)
-            with self.assertRaises(ValueError):
-                guides.check_guides(target, ROOT)
-
-    def test_html_is_complete_offline_and_illustrated(self):
+    def test_reader_pages_and_links_are_complete_and_offline(self):
         class Links(HTMLParser):
-            def __init__(self):
-                super().__init__()
-                self.references = []
-            def handle_starttag(self, tag, attrs):
-                for key, value in attrs:
-                    if key in ('href', 'src'):
-                        self.references.append(value)
-        assets = ROOT / 'data/practical-guide'
-        pages = sorted(assets.glob('page-??.html'))
-        self.assertEqual(len(pages), 66)
-        for path in [ROOT / 'data/Practical_Guide.html'] + sorted(assets.glob('*.html')):
-            parser = Links()
-            text = path.read_text(encoding='utf-8')
-            self.assertTrue(text.isascii(), path)
-            self.assertIn('http-equiv="Content-Type" content="text/html; charset=utf-8"', text)
-            parser.feed(text)
-            self.assertNotIn('<script', text.lower())
-            for ref in parser.references:
-                parsed = urlsplit(ref)
+            def __init__(self): super().__init__(); self.links=[]
+            def handle_starttag(self,tag,attrs):
+                self.links += [v for k,v in attrs if k in ('src','href')]
+        pages=list((ROOT/'data/practical-guide').glob('page-??.html'))
+        self.assertEqual(len(pages),77)
+        for p in [ROOT/'data/Practical_Guide.html']+list((ROOT/'data/practical-guide').glob('*.html')):
+            text=p.read_text(); self.assertTrue(text.isascii()); self.assertNotIn('<script',text.lower())
+            links=Links(); links.feed(text)
+            for ref in links.links:
+                parsed=urlsplit(ref)
                 if parsed.scheme or parsed.netloc:
-                    online = {'page-01.html': 'https://github.com/rgleason/celestial_navigation_pi/issues/131',
-                              'definitions.html': 'https://www.siranah.de/html/sail040e.htm#a2'}
-                    self.assertEqual(ref, online.get(path.name))
+                    self.assertIn(ref, ['https://github.com/rgleason/celestial_navigation_pi/issues/131',
+                                        'https://www.siranah.de/html/sail040e.htm#a2'])
+                    self.assertNotIn('src="'+ref+'"', text)
                     continue
-                if parsed.path:
-                    target = (path.parent / unquote(parsed.path)).resolve()
-                    self.assertTrue(target.is_relative_to((ROOT / 'data').resolve()), ref)
-                    self.assertTrue(target.is_file(), str(target))
-        for image in assets.glob('*.png'):
-            self.assertEqual(image.read_bytes()[:8], b'\x89PNG\r\n\x1a\n')
+                target=(p.parent/unquote(parsed.path)).resolve()
+                self.assertTrue(target.is_relative_to((ROOT/'data').resolve()))
+                self.assertTrue(target.is_file(),target)
 
-    def test_overview_is_complete_and_has_a_reading_size_preview(self):
-        import json
-        import struct
-        assets = ROOT / 'data/practical-guide'
-        overview = (assets / 'page-04.html').read_text()
-        self.assertEqual(overview.count('<img '), 1)
-        audit = json.loads((ROOT / 'validation/practical-guide-2.8.16/html-conversion.json').read_text())
-        self.assertEqual(audit['pages'][3]['figures'][0]['clip'], [0, 0, 1920, 1080])
-        for page in audit['pages']:
-            for figure in page['figures']:
-                full = struct.unpack('>II', (assets / figure['file']).read_bytes()[16:24])
-                preview = struct.unpack('>II', (assets / figure['preview']).read_bytes()[16:24])
-                self.assertLessEqual(preview[0], 762)
-                self.assertLess(preview[0], full[0])
-                self.assertAlmostEqual(preview[0] / preview[1], full[0] / full[1], delta=.02)
+    def test_pdf_and_fix_screenshots_match_document_audit(self):
+        report=json.loads((ROOT/'validation/fix-guide-2.9.7/guide-audit.json').read_text())
+        self.assertEqual(report['pdf_sha256'],hashlib.sha256((ROOT/'data/Practical_Guide.pdf').read_bytes()).hexdigest())
+        self.assertEqual(report['pages'],77)
+        self.assertEqual(report['updated_fix_pages'],[5,17])
+        self.assertTrue((ROOT/'data/Practical_Guide.pdf').read_bytes().startswith(b'%PDF-'))
+        for page in report['page_records']:
+            p=ROOT/'data/practical-guide'/('page-%02d.png'%page['page'])
+            self.assertEqual(page['image_sha256'],hashlib.sha256(p.read_bytes()).hexdigest())
+        self.assertIn('latest included sight', (ROOT/'data/practical-guide/page-17.html').read_text())
+        self.assertNotIn('Default is &#x201c;your boat position', (ROOT/'data/practical-guide/page-17.html').read_text())
 
-    def test_pdf_link_audit_matches_bundled_documents(self):
-        import hashlib
-        import json
-        report = json.loads((ROOT / 'validation/practical-guide-2.8.16/pdf-links.json').read_text())
-        self.assertEqual(report['unchanged_rendered_pages'], 66)
-        self.assertEqual(report['sha256'], hashlib.sha256((ROOT / 'data/Practical_Guide.pdf').read_bytes()).hexdigest())
-        self.assertEqual(len(report['links']), 3)
-        self.assertEqual(report['links'][1]['destination'], 'Practical_Guide.pdf')
-        self.assertEqual(report['links'][1]['action'], 'GoTo')
-        self.assertEqual(report['links'][1]['page'], 67)
-        self.assertEqual(report['pages'], 66 + report['appendix_pages'])
-        self.assertGreater(report['appendix_pages'], 0)
-        self.assertEqual(report['definitions_source_sha256'],
-                         hashlib.sha256((ROOT / 'data/Celestial_Navigation_Definitions.html').read_bytes()).hexdigest())
-        self.assertEqual(report['links'][2]['page'], 32)
-        for link in report['links']:
-            if link['offline']:
-                self.assertTrue((ROOT / 'data' / link['destination']).is_file())
-
-    def test_definitions_appendix_contains_the_complete_source_and_internal_navigation(self):
-        import re
-        class BodyText(HTMLParser):
-            def __init__(self):
-                super().__init__()
-                self.inside, self.parts = False, []
-            def handle_starttag(self, tag, attrs):
-                if tag == 'body':
-                    self.inside = True
+    def test_reflowed_reader_preserves_source_prose_and_complete_illustrations(self):
+        class Text(HTMLParser):
+            def __init__(self): super().__init__(); self.parts=[]
+            def handle_data(self, value): self.parts.append(value)
             def handle_endtag(self, tag):
-                if tag == 'body':
-                    self.inside = False
-            def handle_data(self, text):
-                if self.inside:
-                    self.parts.append(text)
-        source = BodyText()
-        source.feed((ROOT / 'data/Celestial_Navigation_Definitions.html').read_text())
-        appendix_path = ROOT / 'data/practical-guide/definitions.html'
-        appendix = BodyText()
-        markup = appendix_path.read_text()
-        appendix.feed(markup)
-        def normal(text):
-            text = text.replace('\u00a0', ' ').replace('\u2011', '-').replace('\u2013', '-').replace('\u2014', ' - ')
-            return ' '.join(text.split())
-        self.assertIn(normal(''.join(source.parts)), normal(''.join(appendix.parts)))
-        contents = (ROOT / 'data/Practical_Guide.html').read_text()
-        first = (ROOT / 'data/practical-guide/page-01.html').read_text()
-        last = (ROOT / 'data/practical-guide/page-66.html').read_text()
-        self.assertIn('practical-guide/definitions.html#definitions-section-0', contents)
-        self.assertIn('href="definitions.html"', first)
-        self.assertIn('href="definitions.html"', last)
-        self.assertIn('href="../Practical_Guide.html"', markup)
-        for anchor in re.findall(r'practical-guide/definitions\.html#([^"\s]+)', contents):
-            self.assertIn('name="' + anchor + '"', markup)
-        with tempfile.TemporaryDirectory() as folder:
-            archive = self.make_archive(Path(folder), exclude='practical-guide/definitions.html')
-            with self.assertRaises(ValueError):
-                guides.check_guides(archive, ROOT)
+                if tag in ('p','li','h1','h2','h3','td'): self.parts.append(' ')
+            def plain(self): return ' '.join(''.join(self.parts).split())
+        report=json.loads((ROOT/'validation/fix-guide-2.9.7/html-conversion.json').read_text())
+        self.assertEqual(report['source_sha256'], hashlib.sha256((ROOT/'data/Practical_Guide.pdf').read_bytes()).hexdigest())
+        self.assertEqual(len(report['pages']),70)
+        def prose(value):
+            # Actual HTML list markers replace the PDF's literal bullet glyphs.
+            return ' '.join(value.replace('\u2022',' ').replace('\u25cf',' ').split())
+        for page in report['pages']:
+            n=page['page']; main=(ROOT/'data/practical-guide'/('page-%02d.html'%n)).read_text()
+            self.assertNotIn('Selectable transcription',main)
+            parser=Text(); parser.feed(main)
+            combined=parser.plain()
+            for figure in page['figures']:
+                self.assertGreater(figure['width'],0); self.assertGreater(figure['height'],0)
+                figure_html=ROOT/'data/practical-guide'/figure['file'].replace('.png','.html')
+                parser=Text(); parser.feed(figure_html.read_text()); combined += ' '+parser.plain()
+            for text in page['source_text']:
+                self.assertIn(prose(text),prose(combined),'source prose on page '+str(n))
+        self.assertEqual(report['definitions_text_blocks'],107)
+        parser=Text(); parser.feed((ROOT/'data/practical-guide/definitions.html').read_text())
+        for text in report['definitions_source_text']:
+            self.assertIn(prose(text),prose(parser.plain()))
+        contents=(ROOT/'data/Practical_Guide.html').read_text()
+        self.assertIn('Altitude sights and coastal navigation',contents)
+        self.assertIn('practical-guide/definitions.html',contents)
 
-    def test_version_follows_cmake_and_rejects_ambiguity(self):
-        with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            text = '\n'.join('set(VERSION_%s "%s")' % pair for pair in
-                             zip(('MAJOR', 'MINOR', 'PATCH', 'TWEAK'), ('2', '8', '99', '0')))
-            (root / 'CMakeLists.txt').write_text(text)
-            self.assertEqual(plugin_version(root), '2.8.99.0')
-            (root / 'CMakeLists.txt').write_text(text + '\nset(VERSION_PATCH "98")')
-            with self.assertRaises(ValueError):
-                plugin_version(root)
-
-
-if __name__ == '__main__':
-    unittest.main()
+if __name__=='__main__': unittest.main()

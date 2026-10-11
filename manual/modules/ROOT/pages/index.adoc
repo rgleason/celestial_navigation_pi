@@ -136,9 +136,28 @@ image::sight-3-configuration.png["Sight 3 Configuration",width=550,link="_images
 
 === 6. Sight Properties - Parameters Tab
 
-Enter Eye Height, Temperature, Pressure and Index Error.
+Enter Eye Height, Temperature, Pressure and Index Error. The optional
+*Remarks* field records a short note with this sight; it does not affect the
+calculation. Remarks also appear in the Sights list. Sunrise and sunset
+observations have the same field in their Horizon Event editor.
 
 image::sight-4-parameters.png["Sight 4 Parameters",width=550,link="_images/sight-4-parameters.png"]
+
+=== Backing up and importing sights
+
+The plugin saves the current log automatically in `Sights.xml`. Use *Manage
+Sights…* on the Sights window to save a dated copy; the save dialog starts in
+Downloads, but you can choose another location. *Import sights (add to current
+log)…* adds all sights and saved lunar solutions from another Celestial
+Navigation XML file. It requires the same global clock correction so imported
+sight times retain their meaning. *Restore sights (replace current log)…*
+replaces the log and its clock correction with those from the chosen file.
+Both import actions validate the file and save a dated safety backup of the
+current log before changing it.
+
+Older `Sights.xml` files without Remarks still open with empty Remarks fields.
+Older plugin versions may discard Remarks if they subsequently rewrite a new
+file, so keep a backup before going back to an older version.
 
 === 7. Sight Properties - Calculations Tab
 

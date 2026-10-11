@@ -1,0 +1,2 @@
+# Preserve the official API responses byte-for-byte for manifest SHA-256 checks.
+*.json whitespace=-blank-at-eol

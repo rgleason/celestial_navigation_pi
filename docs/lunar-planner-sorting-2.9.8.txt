@@ -1,0 +1,43 @@
+Celestial Navigation 2.9.8 development fixes
+==========================================
+
+Lunar planner column sorting (#368)
+----------------------------------
+Bob's request:
+https://github.com/rgleason/celestial_navigation_pi/issues/368#issuecomment-6098346986
+
+The desktop Lunar planner in Lunar Distance and Sextant Tools now supports
+sorting all 13 columns. Clicking a heading sorts ascending; clicking the same
+heading again reverses the direction. An arrow identifies the active sort.
+Numeric columns use the underlying values, including signed rates, altitudes,
+magnitudes and ecliptic latitudes. Text columns sort without regard to case.
+Unavailable numeric values remain last in either direction. Equal values retain
+the original planning order, including the three columns shared by every row:
+Moon altitude, Moon azimuth and Moon illumination.
+
+Sorting rearranges the existing results and preserves selected and focused row
+identities. It does not recalculate or depend on the current input fields.
+The chosen column and direction persist when calculating new pairs or changing
+the companion filter. Reset column sort restores the original planning order;
+choosing a lunar ordering also clears column sorting.
+
+This change implements the sorting request in #368. Instrument-range limits
+and planning guidance discussed in that issue are unchanged. Android continues
+to use its existing pair cards rather than a desktop table.
+
+Validation
+----------
+The plugin and regression executable build successfully. A task-only desktop
+probe exercises the real Lunar planner controls with both Classic and Compact
+calculations, using Bob's 2025-12-09 04:30 UTC location and time. Both runs pass.
+It checks every column in both directions, the indicator, numeric and text
+ordering, unchanged row contents, retained selection, reset with invalid input,
+ordering-choice reset, recalculation and filter persistence, unavailable values
+last, and retained grey low-illumination rows. The screenshots also confirm the
+sort indicator and reset control layout. The probe and artifacts are in
+output/celnav-2.9.8-moon in the parent OpenCPN workspace.
+
+The focused CTest run passes all four checks: UTC numerical audit, UTF-8 UI
+literals, Compact package integrity and Windows metadata validation.
+git diff --check passes. These UI runs use Linux/wxGTK; native macOS and Windows
+have not been exercised for column sorting.

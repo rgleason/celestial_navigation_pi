@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Create and verify a manual-import Android archive with its exact download URL."""
+from bundled_guides import check_guides
 import argparse
 import hashlib
 import io
@@ -12,7 +13,6 @@ import urllib.parse
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from plugin_version import plugin_version
-from bundled_guides import check_guides
 
 
 def allocated_sections(binary: bytes) -> dict:
@@ -48,8 +48,9 @@ def package(source: Path, metadata: Path, output: Path, url: str, sha: str,
         raise ValueError('An exact HTTPS URL ending in the final archive filename is required')
     root = ET.fromstring(metadata.read_bytes())
     values = {child.tag: (child.text or '').strip() for child in root}
-    if values.get('name') != 'Celestial Navigation' or values.get('version') != plugin_version(Path(__file__).resolve().parents[1]):
-        raise ValueError('Unexpected plugin identity/version')
+    expected_version = plugin_version(Path(__file__).resolve().parents[1])
+    if values.get('name') != 'Celestial Navigation' or values.get('version') != expected_version:
+        raise ValueError('Unexpected plugin identity/version; expected ' + expected_version)
     if values.get('target') not in ('android-arm64', 'android-armhf') or values.get('api-version') != '1.18':
         raise ValueError('Unexpected Android target/plugin API')
     root.find('tarball-url').text = url
@@ -80,19 +81,17 @@ def package(source: Path, metadata: Path, output: Path, url: str, sha: str,
             result.addfile(info, io.BytesIO(xml))
         if sum(name.endswith('/lib/opencpn/libcelestial_navigation_pi.so') for name in names) != 1:
             raise ValueError('Exactly one plugin library is required')
+        if not any(name.endswith('/data/compact/manifest.json') for name in names):
+            raise ValueError('Required bundled Compact ephemeris absent')
         if not any(name.endswith('/data/vsop87d.txt') for name in names):
             raise ValueError('Required analytical ephemeris absent')
-        # Use the same platform-specific policy as retained-archive validation.
-        # Android must contain its own guide/reference manuals, NOT the
-        # deliberately excluded desktop practical PDF/HTML/illustrations.
-        check_guides(staged, Path(__file__).resolve().parents[1],
-                     target=values['target'])
         with tarfile.open(staged, 'r:gz') as check:
             if check.getnames().count('metadata.xml') != 1:
                 raise ValueError('Exactly one root metadata.xml is required')
             embedded = ET.fromstring(check.extractfile('metadata.xml').read())
             if embedded.findtext('tarball-url') != url:
                 raise ValueError('Embedded URL mismatch')
+        check_guides(staged, Path(__file__).resolve().parents[1], target=values['target'])
         os.replace(staged, output)
     finally:
         staged.unlink(missing_ok=True)

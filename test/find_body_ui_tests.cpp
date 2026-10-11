@@ -28,8 +28,13 @@ namespace {
 template <class T>
 T* Find(wxWindow* root, const wxString& label) {
   for (auto* child : root->GetChildren()) {
-    if (auto* value = dynamic_cast<T*>(child))
-      if (value->GetLabel() == label) return value;
+    if (auto* value = dynamic_cast<T*>(child)) {
+      wxString text = value->GetLabel();
+      // wxStaticText::Wrap inserts line breaks according to the native font.
+      // Verify the complete label independently of its visual line layout.
+      if (dynamic_cast<wxStaticText*>(value)) text.Replace("\n", " ");
+      if (text == label) return value;
+    }
     if (auto* value = Find<T>(child, label)) return value;
   }
   return nullptr;
@@ -172,7 +177,7 @@ TEST(FindBodyUi, IndependentActionsThroughAllThreeSightRoutes) {
       EXPECT_GE(button->GetSize().x, button->GetBestSize().x) << label;
       EXPECT_GE(button->GetSize().y, button->GetBestSize().y) << label;
     }
-    auto* hideSights = Find<wxToggleButton>(&main, "Hide Sights");
+    auto* hideSights = Find<wxToggleButton>(&main, "Hide sight log");
     ASSERT_NE(nullptr, hideSights);
     EXPECT_TRUE(sightWindow.Contains(hideSights->GetRect()));
     EXPECT_NE(nullptr, Find<wxToggleButton>(&main, "Hide Time"));

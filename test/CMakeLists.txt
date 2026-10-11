@@ -23,8 +23,7 @@ endif()
 find_package(GTest REQUIRED)
 find_package(wxWidgets COMPONENTS core base net html REQUIRED)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
-add_test(NAME bundled_guides COMMAND ${Python3_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/bundled_guides_test.py)
+add_test(NAME bundled_guides COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/bundled_guides_test.py)
 add_test(NAME android_import_package COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/android_import_package_test.py)
 
@@ -35,6 +34,8 @@ set(SRC
     android_almanac_csv_tests.cpp
     android_planner_worker_tests.cpp
     dialog_geometry_tests.cpp
+    dialog_focus_ui_tests.cpp
+    desktop_formatting_ui_tests.cpp
     dialog_transaction_state_tests.cpp
     sight_search_span_ui_tests.cpp
     eclipse_data_files_tests.cpp
@@ -48,6 +49,8 @@ set(SRC
     find_body_ui_tests.cpp
     fix_ui_smoke_tests.cpp
     fix_dr_tests.cpp
+    sight_log_ui_tests.cpp
+    sight_log_csv_tests.cpp
     lunar_distance_engine_tests.cpp
     lunar_session_engine_tests.cpp
     lunar_usno_session_tests.cpp
@@ -55,6 +58,11 @@ set(SRC
     sextant_calibration_engine_tests.cpp
     lunar_de440_tests.cpp
     navigation_de440_tests.cpp
+    analytical_epoch_tests.cpp
+    compact_navigation_tests.cpp
+    compact_performance_tests.cpp
+    lunar_boundary_tests.cpp
+    lunar_reference_tests.cpp
     lunar_observer_tests.cpp
     dut1_update_tests.cpp
     coastal_navigation_tests.cpp
@@ -65,7 +73,7 @@ set(SRC
     numerical_audit_tests.cpp
     waypoint_position_source_tests.cpp
     almanac_generator_tests.cpp
-    almanac_de440_tests.cpp
+    almanac_reference_audit_tests.cpp
     almanac_ui_tests.cpp
     time_status_tests.cpp
     utf8_translation_tests.cpp
@@ -74,8 +82,11 @@ set(SRC
     mock_plugin_impl.cpp
     ${CMAKE_SOURCE_DIR}/src/Sight.cpp
     ${CMAKE_SOURCE_DIR}/src/AtomicXmlFile.cpp
+    ${CMAKE_SOURCE_DIR}/src/SightLogCsv.cpp
     ${CMAKE_SOURCE_DIR}/src/Dut1UpdatePanel.cpp
     ${CMAKE_SOURCE_DIR}/src/DialogGeometry.cpp
+    ${CMAKE_SOURCE_DIR}/src/ReportListLayout.cpp
+    ${CMAKE_SOURCE_DIR}/src/DialogFocus.cpp
     ${CMAKE_SOURCE_DIR}/src/EclipseDataFiles.cpp
     ${CMAKE_SOURCE_DIR}/src/EclipseVerificationWorker.cpp
     ${CMAKE_SOURCE_DIR}/src/LunarDistanceEngine.cpp
@@ -88,6 +99,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/BodyCatalog.cpp
     ${CMAKE_SOURCE_DIR}/src/NavigationAlgorithms.cpp
     ${CMAKE_SOURCE_DIR}/src/NavigationEphemerisProvider.cpp
+    ${CMAKE_SOURCE_DIR}/src/CompactEphemerisProvider.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacGenerator.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacPaperTables.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacDialog.cpp
@@ -143,6 +155,8 @@ endif()
 
 target_compile_definitions(celestial_tests
     PUBLIC
+        CELNAV_COMPACT_TEST_DATA="${CMAKE_SOURCE_DIR}/data/compact"
+        LUNAR_REFERENCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/lunar-fixtures/references"
         USE_MOCK_DEFS
         CMAKE_BINARY_DIR="${CMAKE_BINARY_DIR}"
         TESTDATA="${CMAKE_CURRENT_LIST_DIR}/testdata"
@@ -174,12 +188,71 @@ target_link_libraries(celestial_tests
         ocpn::wxjson
         ocpn::plugin-dc
         celestial::eclipse_core
+        celnav::compact
 )
+
+# The first standalone validation application deliberately compiles the same
+# numerical source and test host shim as celestial_tests.  It does not load an
+# OpenCPN plugin or require a running OpenCPN instance.
+option(CELESTIAL_BUILD_LAB "Build Celestial Navigation Lab" OFF)
+if(CELESTIAL_BUILD_LAB)
+    set(LAB_SRC ${SRC})
+    list(FILTER LAB_SRC EXCLUDE REGEX "(^|/)[A-Za-z0-9_]+_tests\\.cpp$")
+    list(FILTER LAB_SRC EXCLUDE REGEX "(^|/)common\\.cpp$")
+    add_executable(celestial_navigation_lab MACOSX_BUNDLE
+        ${LAB_SRC}
+        ${CMAKE_SOURCE_DIR}/lab/Main.cpp)
+    target_compile_definitions(celestial_navigation_lab PRIVATE
+        USE_MOCK_DEFS UNIT_TESTS CELESTIAL_LAB
+        CELNAV_LAB_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+        TESTDATA="${CMAKE_CURRENT_LIST_DIR}/testdata"
+        ECLIPSE_DE440_TEST_PATH=""
+        TIXML_USE_STL)
+    target_include_directories(celestial_navigation_lab PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/test
+        ${CMAKE_SOURCE_DIR}/opencpn-libs/${PKG_API_LIB}/include
+        ${CMAKE_SOURCE_DIR}/opencpn-libs/tinyxml/include
+        ${CMAKE_SOURCE_DIR}/opencpn-libs/wxJSON/include
+        ${CMAKE_SOURCE_DIR}/src/plugin_dc/dc_utils/include
+        ${wxWidgets_INCLUDE_DIRS})
+    target_link_libraries(celestial_navigation_lab PRIVATE
+        ${wxWidgets_LIBRARIES} ocpn::api ocpn::tinyxml ocpn::wxjson
+        ocpn::plugin-dc celestial::eclipse_core celnav::compact)
+    if(GTK3_LIBRARIES)
+        target_link_libraries(celestial_navigation_lab PRIVATE ${GTK3_LIBRARIES})
+    endif()
+    set_target_properties(celestial_navigation_lab PROPERTIES
+        OUTPUT_NAME "Celestial Navigation Lab"
+        MACOSX_BUNDLE_BUNDLE_NAME "Celestial Navigation Lab"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "org.opencpn.celestial-navigation-lab"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
+        MACOSX_BUNDLE_BUNDLE_VERSION "0.1.0")
+    if(APPLE)
+        set(LAB_VSOP "${CMAKE_SOURCE_DIR}/data/vsop87d.txt")
+        set_source_files_properties(${LAB_VSOP} PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources/data")
+        target_sources(celestial_navigation_lab PRIVATE ${LAB_VSOP})
+        if(LAB_ICON_ICNS)
+            set_source_files_properties(${LAB_ICON_ICNS} PROPERTIES
+                MACOSX_PACKAGE_LOCATION "Resources")
+            target_sources(celestial_navigation_lab PRIVATE ${LAB_ICON_ICNS})
+            set_target_properties(celestial_navigation_lab PROPERTIES
+                MACOSX_BUNDLE_ICON_FILE "CelestialNavigationLab.icns")
+        endif()
+    endif()
+endif()
 
 # Set optimization level for debug builds
 if (NOT MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(celestial_tests PUBLIC "-O0")
 endif()
+
+add_test(NAME windows64_metadata_validation
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/windows64_metadata_test.py ${CMAKE_SOURCE_DIR})
+
+add_test(NAME compact_package_integrity
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/compact_package_test.py ${CMAKE_SOURCE_DIR})
 
 # Add the test
 add_test(NAME celestial_tests COMMAND celestial_tests)
@@ -228,7 +301,7 @@ if(UNIX)
         string(REPLACE "/" "_" test_zone "${zone}")
         add_test(NAME numerical_audit_${test_zone}
             COMMAND ${CMAKE_COMMAND} -E env "TZ=${zone}"
-                $<TARGET_FILE:celestial_tests> --gtest_filter=NumericalAudit.*)
+                $<TARGET_FILE:celestial_tests> --gtest_filter=NumericalAudit.*:SightLogCsv.*:CompactNavigation.RealInstantPreservesUtcAtDstTransitions:CompactNavigation.LunarCallbackKeepsUtcAcrossLocalDstGap)
     endforeach()
 endif()
 add_test(

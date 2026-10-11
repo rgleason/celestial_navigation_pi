@@ -165,6 +165,11 @@ struct TimeCandidate {
   double cleared_distance_deg = 0.0;
   double predicted_distance_deg = 0.0;
   double slope_arcmin_per_hour = 0.0;
+  // A valid root can survive unavailable local diagnostics. Non-finite
+  // diagnostic values must be displayed as unavailable, never as certainty.
+  bool local_slope_available = false;
+  bool used_one_sided_slope = false;
+  bool uncertainty_available = false;
   double angular_uncertainty_arcmin = 0.0;
   double distance_uncertainty_contribution_arcmin = 0.0;
   double moon_altitude_uncertainty_contribution_arcmin = 0.0;
@@ -202,8 +207,30 @@ struct PredictedObservation {
   double body_altitude_deg = 0.0;
 };
 
+// Independent sight check, with position and UTC supplied rather than fitted
+// from this observation. Clear the measured distance by subtracting the
+// forward model's net limb/index/refraction/parallax correction at this
+// geometry. This is model-based clearing, not Direct Triangle clearing from
+// the measured altitudes. Positive error means the measured LD is too large.
+struct DistanceCheck {
+  bool valid = false;
+  std::string error;
+  double true_distance_deg = 0.0;
+  double predicted_raw_distance_deg = 0.0;
+  double cleared_distance_deg = 0.0;
+  double lunar_error_arcmin = 0.0;
+};
+
+// Providers must return a consistent sample for a given epoch throughout one
+// solve, including an immutable observer_direction closure. Exact epochs and
+// provider failures are cached within that solve only. Updates take effect on
+// the next solve; provider failure never triggers an implicit fallback.
 using EphemerisFunction = std::function<bool(
     double offset_seconds, EphemerisSample* sample, std::string* error)>;
+
+DistanceCheck CheckDistanceAtPosition(const Observation& observation,
+                                      const EphemerisFunction& ephemeris,
+                                      const GeographicPoint& known_position);
 
 Clearance ClearDistance(const Observation& observation,
                         const EphemerisSample& ephemeris);

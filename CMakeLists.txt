@@ -70,13 +70,13 @@ set(SHORT_DESCRIPTION
 	"Celestial Navigation Plugin for OpenCPN"
 )
 set(LONG_DESCRIPTION
-	"Offline nautical almanac and navigation with optional DE440s accuracy, analytical fallback, sight planning, running fixes, sequence analysis, horizon events, time integrity and a solar-eclipse planner."
+	"Offline nautical almanac, sight planning and ranking, time-tagged running fixes, sequence analysis, horizon events, time integrity, optional DE440s navigation precision and a solar-eclipse planner."
 )
 set(VERSION_MAJOR "2")
-set(VERSION_MINOR "8")
-set(VERSION_PATCH "18")
-set(VERSION_TWEAK "1")
-set(VERSION_DATE  "10/08/2026" )# DD/MM/YYYY format
+set(VERSION_MINOR "9")
+set(VERSION_PATCH "8")
+set(VERSION_TWEAK "0")
+set(VERSION_DATE  "11/10/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -113,7 +113,7 @@ set(XML_DESCRIPTION ${LONG_DESCRIPTION})
 
 option(PLUGIN_USE_SVG "Use SVG graphics" ON)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 # Use local version of GLU library requires libs/glu directory
 set(USE_LOCAL_GLU FALSE)
@@ -188,11 +188,15 @@ SET(SRCS
         src/CelestialNavigationDialog.cpp
         src/AndroidWorkspace.cpp
         src/DialogGeometry.cpp
+        src/ReportListLayout.cpp
+        src/DialogFocus.cpp
         src/AtomicXmlFile.cpp
+        src/SightLogCsv.cpp
         src/Dut1UpdatePanel.cpp
         src/BodyCatalog.cpp
         src/NavigationAlgorithms.cpp
         src/NavigationEphemerisProvider.cpp
+        src/CompactEphemerisProvider.cpp
         src/PlannerDialog.cpp
         src/WaypointPositionSource.cpp
         src/WaypointPickerDialog.cpp
@@ -231,12 +235,14 @@ SET(SRCS
 SET(HDRS
         src/OcpnApiCompat.h
         src/DialogGeometry.h
+        src/DialogFocus.h
         src/DialogTransactionState.h
         src/NavigationUIUtils.h
         src/Utf8Translation.h
         src/celestial_navigation_pi.h
         src/CelestialNavigationDialog.h
         src/AtomicXmlFile.h
+        src/SightLogCsv.h
         src/Dut1UpdatePanel.h
         src/BodyCatalog.h
         src/NavigationAlgorithms.h
@@ -307,6 +313,8 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/geomag)
 target_sources(${PACKAGE_NAME} PUBLIC ${SRC} )
 if(QT_ANDROID)
   target_link_options(${PACKAGE_NAME} PRIVATE "-Wl,--exclude-libs,ALL")
+  target_link_options(${PACKAGE_NAME} PRIVATE
+    "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384")
 endif()
 
 # The eclipse numerical core is also usable as a standalone library/CLI. The
@@ -316,7 +324,8 @@ set(ECLIPSE_BUILD_CLI OFF CACHE BOOL "" FORCE)
 set(ECLIPSE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ECLIPSE_BUILD_LOLA_TOOL OFF CACHE BOOL "" FORCE)
 add_subdirectory(eclipse)
-target_link_libraries(${PACKAGE_NAME} celestial::eclipse_core)
+add_subdirectory(compact)
+target_link_libraries(${PACKAGE_NAME} celestial::eclipse_core celnav::compact)
 option(CELESTIAL_ECLIPSE_INTEGRATION_TEST
        "Open and exercise the 2027 eclipse planner automatically" OFF)
 if(CELESTIAL_ECLIPSE_INTEGRATION_TEST)
@@ -329,6 +338,7 @@ if(CELESTIAL_PLANNER_INTEGRATION_TEST)
   target_compile_definitions(${PACKAGE_NAME} PRIVATE
     CELESTIAL_PLANNER_INTEGRATION_TEST=1)
 endif()
+
 
 if (NOT OCPN_FLATPAK_CONFIG)
   # Build environment not available when flatpak is being configured so

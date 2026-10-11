@@ -1,0 +1,731 @@
+{
+  "schema_version": 1,
+  "kind": "independent_calculated_reference",
+  "corpus_sha256": "5947284e88724dd05d713fbdb538187237e7a4a9bb09f5df944c8165ecea90c0",
+  "policy": {
+    "kind": "independent_calculated_ephemeris_not_real_sights",
+    "provider": "NASA/JPL Horizons",
+    "documentation": "https://ssd.jpl.nasa.gov/horizons/manual.html",
+    "geocentric_direction_tolerance_arcsec": 0.1,
+    "topocentric_tolerance_arcsec": 1.0,
+    "rationale": "Predeclared comparison budgets, not sextant uncertainties. Horizons apparent RA/Dec uses EOP-corrected IAU76/80 (approximately 53 mas equinox offset from IAU06/00a); the baseline uses ERFA IAU06/00a. Topocentric budget also accommodates omitted DUT1, polar motion and diurnal aberration for these dated cases. Failures must be investigated, not automatically retoleranced.",
+    "limits": "Horizons currently reports DE441 while the baseline uses DE440s: this is an independent implementation check, not wholly independent underlying ephemeris data. It does not certify atmospheric refraction, lunar limb topography or physical local vertical."
+  },
+  "cases": [
+    {
+      "id": "point-judith",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        41.36666666666667,
+        -71.48333333333333
+      ],
+      "height_m": 6.1,
+      "expected": {
+        "mercury_ra_deg": 81.419228051,
+        "mercury_dec_deg": 24.021025797,
+        "mercury_alt_deg": 51.706330755,
+        "venus_ra_deg": 85.365295419,
+        "venus_dec_deg": 23.672932005,
+        "venus_alt_deg": 54.339944885
+      },
+      "provenance": [
+        {
+          "file": "point-judith-mercury-geocentric.json",
+          "sha256": "b477a854f020242dc9693983814dc464d0a77f0dc257f3357a6f4c04b219e230",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27199%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'199'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:46.820909+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Mercury (199)                   {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "point-judith-mercury-topocentric.json",
+          "sha256": "8dfd89d061deaaf13d32fe9596df982b929d5f9af6d3cc66bec91349ba28ed56",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27199%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-71.48333333333333%2C41.36666666666667%2C0.0060999999999999995%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'199'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-71.48333333333333,41.36666666666667,0.0060999999999999995'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:47.809807+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Mercury (199)                   {source: DE441}",
+            "Center geodetic : 288.5166667, 41.3666667, .0061  {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "point-judith-venus-geocentric.json",
+          "sha256": "106dba0dbfdd40c8905b0f4e8f9335e49091450ec6affee471388249e1501a45",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27299%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'299'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:48.741558+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Venus (299)                     {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "point-judith-venus-topocentric.json",
+          "sha256": "22b67ee749065a5c56cc29578884985b8131d374502f4b9d6320bc0548eb411b",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27299%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-71.48333333333333%2C41.36666666666667%2C0.0060999999999999995%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'299'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-71.48333333333333,41.36666666666667,0.0060999999999999995'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:49.612058+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Venus (299)                     {source: DE441}",
+            "Center geodetic : 288.5166667, 41.3666667, .0061  {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "equatorial",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        0,
+        -45
+      ],
+      "height_m": 0,
+      "expected": {
+        "mercury_ra_deg": 81.419228051,
+        "mercury_dec_deg": 24.021025797,
+        "mercury_alt_deg": 20.298460601,
+        "venus_ra_deg": 85.365295419,
+        "venus_dec_deg": 23.672932005,
+        "venus_alt_deg": 23.911786704
+      },
+      "provenance": [
+        {
+          "file": "point-judith-mercury-geocentric.json",
+          "sha256": "b477a854f020242dc9693983814dc464d0a77f0dc257f3357a6f4c04b219e230",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27199%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'199'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:46.820909+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Mercury (199)                   {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "equatorial-mercury-topocentric.json",
+          "sha256": "3a676657644fbab1759d4e6806fa403c04e21149e3b9f02c68bb7c8f565bd867",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27199%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-45%2C0%2C0.0%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'199'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-45,0,0.0'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:50.606743+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Mercury (199)                   {source: DE441}",
+            "Center geodetic : 315.0, 0.0, 0.0                 {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "point-judith-venus-geocentric.json",
+          "sha256": "106dba0dbfdd40c8905b0f4e8f9335e49091450ec6affee471388249e1501a45",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27299%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'299'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:48.741558+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Venus (299)                     {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "equatorial-venus-topocentric.json",
+          "sha256": "2eeb62482a884dec9ef398859a5415f70f5d13cec9d41705864397cc900dd61c",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27299%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-45%2C0%2C0.0%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'299'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-45,0,0.0'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:51.740606+00:00",
+          "api_signature": {
+            "version": "1.2",
+            "source": "NASA/JPL Horizons API"
+          },
+          "model_header": [
+            "Target body name: Venus (299)                     {source: DE441}",
+            "Center geodetic : 315.0, 0.0, 0.0                 {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "southern",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        -30,
+        -60
+      ],
+      "height_m": 10,
+      "expected": {
+        "mercury_ra_deg": 81.419228051,
+        "mercury_dec_deg": 24.021025797,
+        "mercury_alt_deg": 16.02417954,
+        "venus_ra_deg": 85.365295419,
+        "venus_dec_deg": 23.672932005,
+        "venus_alt_deg": 18.80717943
+      },
+      "provenance": [
+        {
+          "file": "point-judith-mercury-geocentric.json",
+          "sha256": "b477a854f020242dc9693983814dc464d0a77f0dc257f3357a6f4c04b219e230",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27199%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'199'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:46.820909+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Mercury (199)                   {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "southern-mercury-topocentric.json",
+          "sha256": "31325b6d6c4e45ecd413d76d8743299078996cf59958488aabc020fbe3bf53a4",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27199%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-60%2C-30%2C0.01%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'199'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-60,-30,0.01'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:52.657344+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Mercury (199)                   {source: DE441}",
+            "Center geodetic : 300.0, -30.0, .010              {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "point-judith-venus-geocentric.json",
+          "sha256": "106dba0dbfdd40c8905b0f4e8f9335e49091450ec6affee471388249e1501a45",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27299%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'299'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:48.741558+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Venus (299)                     {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "southern-venus-topocentric.json",
+          "sha256": "9e12d20f57067227baecff2ccfa33f9f80a95a26d07109d2d8ad316b8a549754",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27299%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-60%2C-30%2C0.01%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'299'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-60,-30,0.01'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:53.579953+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Venus (299)                     {source: DE441}",
+            "Center geodetic : 300.0, -30.0, .010              {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "high-north-elevated",
+      "utc": "2024-06-13T19:26:00Z",
+      "position": [
+        65,
+        -50
+      ],
+      "height_m": 400,
+      "expected": {
+        "mercury_ra_deg": 81.419228051,
+        "mercury_dec_deg": 24.021025797,
+        "mercury_alt_deg": 33.099591686,
+        "venus_ra_deg": 85.365295419,
+        "venus_dec_deg": 23.672932005,
+        "venus_alt_deg": 34.38739629
+      },
+      "provenance": [
+        {
+          "file": "point-judith-mercury-geocentric.json",
+          "sha256": "b477a854f020242dc9693983814dc464d0a77f0dc257f3357a6f4c04b219e230",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27199%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'199'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:46.820909+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Mercury (199)                   {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "high-north-elevated-mercury-topocentric.json",
+          "sha256": "6b54d0bfada0392a8e0e5a6a5d5b1b00feeba43d70401a3a4bbcb0fb332ae460",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27199%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-50%2C65%2C0.4%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'199'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-50,65,0.4'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:54.500172+00:00",
+          "api_signature": {
+            "version": "1.2",
+            "source": "NASA/JPL Horizons API"
+          },
+          "model_header": [
+            "Target body name: Mercury (199)                   {source: DE441}",
+            "Center geodetic : 310.0, 65.0, .400               {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "point-judith-venus-geocentric.json",
+          "sha256": "106dba0dbfdd40c8905b0f4e8f9335e49091450ec6affee471388249e1501a45",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27299%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'299'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:48.741558+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Venus (299)                     {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "high-north-elevated-venus-topocentric.json",
+          "sha256": "f9ea9fb5f9d7b366c40729e68e21ac6c190d7d2230e2280e0fedf7646a6e9f59",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27299%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272024-06-13+19%3A26%3A00%27&STOP_TIME=%272024-06-13+19%3A27%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-50%2C65%2C0.4%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'299'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2024-06-13 19:26:00'",
+            "STOP_TIME": "'2024-06-13 19:27:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-50,65,0.4'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:55.555979+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Venus (299)                     {source: DE441}",
+            "Center geodetic : 310.0, 65.0, .400               {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "march-2025",
+      "utc": "2025-03-05T15:00:00Z",
+      "position": [
+        20,
+        -45
+      ],
+      "height_m": 0,
+      "expected": {
+        "mercury_ra_deg": 2.339307515,
+        "mercury_dec_deg": 2.399773377,
+        "mercury_alt_deg": 64.618560587,
+        "venus_ra_deg": 6.743014765,
+        "venus_dec_deg": 11.03092457,
+        "venus_alt_deg": 66.007976753
+      },
+      "provenance": [
+        {
+          "file": "march-2025-mercury-geocentric.json",
+          "sha256": "9ed170d5642d016cb7ac69f6207424a4cc107f0d7a236616a913584ddde78b9a",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27199%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272025-03-05+15%3A00%3A00%27&STOP_TIME=%272025-03-05+15%3A01%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'199'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2025-03-05 15:00:00'",
+            "STOP_TIME": "'2025-03-05 15:01:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:56.759138+00:00",
+          "api_signature": {
+            "version": "1.2",
+            "source": "NASA/JPL Horizons API"
+          },
+          "model_header": [
+            "Target body name: Mercury (199)                   {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "march-2025-mercury-topocentric.json",
+          "sha256": "a2823b78046055ec540147859b48345142d80277254d7bf1f1fc30f3336579d8",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27199%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272025-03-05+15%3A00%3A00%27&STOP_TIME=%272025-03-05+15%3A01%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-45%2C20%2C0.0%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'199'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2025-03-05 15:00:00'",
+            "STOP_TIME": "'2025-03-05 15:01:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-45,20,0.0'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:57.985094+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Mercury (199)                   {source: DE441}",
+            "Center geodetic : 315.0, 20.0, 0.0                {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "march-2025-venus-geocentric.json",
+          "sha256": "26b93038d71cd859cbceaa8c10007942e2e996e7666e848b5839eed6adf5577d",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27299%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500%40399%27&START_TIME=%272025-03-05+15%3A00%3A00%27&STOP_TIME=%272025-03-05+15%3A01%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'299'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'500@399'",
+            "START_TIME": "'2025-03-05 15:00:00'",
+            "STOP_TIME": "'2025-03-05 15:01:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'"
+          },
+          "retrieved_utc": "2026-09-17T23:52:59.331861+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Venus (299)                     {source: DE441}",
+            "Center geodetic : 0.0, 0.0, -6378.137             {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        },
+        {
+          "file": "march-2025-venus-topocentric.json",
+          "sha256": "a967b534ed255b8aad83cf0124afd250fad5d0e8b88e23dbd1d46ae5bcac6b11",
+          "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27299%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40399%27&START_TIME=%272025-03-05+15%3A00%3A00%27&STOP_TIME=%272025-03-05+15%3A01%3A00%27&STEP_SIZE=%271m%27&QUANTITIES=%272%2C4%2C13%27&APPARENT=%27AIRLESS%27&ANG_FORMAT=%27DEG%27&EXTRA_PREC=%27YES%27&CSV_FORMAT=%27YES%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-45%2C20%2C0.0%27",
+          "parameters": {
+            "format": "json",
+            "COMMAND": "'299'",
+            "EPHEM_TYPE": "'OBSERVER'",
+            "CENTER": "'coord@399'",
+            "START_TIME": "'2025-03-05 15:00:00'",
+            "STOP_TIME": "'2025-03-05 15:01:00'",
+            "STEP_SIZE": "'1m'",
+            "QUANTITIES": "'2,4,13'",
+            "APPARENT": "'AIRLESS'",
+            "ANG_FORMAT": "'DEG'",
+            "EXTRA_PREC": "'YES'",
+            "CSV_FORMAT": "'YES'",
+            "COORD_TYPE": "'GEODETIC'",
+            "SITE_COORD": "'-45,20,0.0'"
+          },
+          "retrieved_utc": "2026-09-17T23:53:01.053834+00:00",
+          "api_signature": {
+            "source": "NASA/JPL Horizons API",
+            "version": "1.2"
+          },
+          "model_header": [
+            "Target body name: Venus (299)                     {source: DE441}",
+            "Center geodetic : 315.0, 20.0, 0.0                {E-lon(deg),Lat(deg),Alt(km)}",
+            "Atmos refraction: NO (AIRLESS)",
+            "EOP file        : eop.260917.p261214"
+          ]
+        }
+      ]
+    }
+  ]
+}

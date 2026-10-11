@@ -1,0 +1,156 @@
+Celestial Navigation 2.9.7 development review
+===========================================
+
+Scope: development branch only, following the 2.9.6 DR fix (PR #373).
+Production 2.8.x is unchanged. Related issues: #369, #370, #351 and #341.
+
+FIX form
+--------
+Starting DR and its source are visible above Calculate. Choose a saved sight,
+manual coordinates, or explicitly choose current boat position. The latest
+included eligible sight with a valid saved DR supplies the default; no usable
+saved DR leaves blank entries and blocks calculation/chart navigation. Old XML
+without DR attributes also leaves DR unavailable. Manual and explicit choices
+survive ordinary recalculation. Inputs accept the existing OpenCPN angle formats
+and readouts follow its preferred coordinate format.
+
+FIX latitude, longitude and angular RMS sit above the algorithm selector and
+Show fix on chart. Vessel motion offers Stationary, One COG and SOG, and Each
+sight's DR Shift. Included shifted sights select the last option by default;
+otherwise Stationary is the default. The stationary algorithm is disabled for
+running fixes, which use the existing running-fix solver. Running fixes show
+UTC reference time, initially the latest included sight. More options retains
+UTC/local epoch override, Latest sight, clock-correction selection and solver
+diagnostics. The stationary and running solvers are unchanged. Stationary Hc
+and Ho-Hc/RMS are additional display diagnostics.
+
+Desktop keeps a compact horizontal layout; Android uses full-width touch
+controls, scrolling and vertical sight details. The form ignores old oversized
+desktop geometry by saving a separate Fix297 setting. Invalid inputs clear old
+results and chart navigation instead of allowing a stale result to be plotted.
+
+Remarks (#351)
+--------------
+The Parameters editor spans the notebook page. The sight-list Remarks column
+starts at approximately 50 average characters, adapting to the actual font;
+the list can scroll horizontally and the user can resize the column. No stored
+remarks are shortened. A 140+ character UTF-8 remark with XML-sensitive symbols
+is covered by save, backup and import round-trip validation.
+
+Lunar accuracy (#341)
+--------------------
+Choose Check at entered UTC in Lunar Results. Enter an independently known
+position at the distance-reading epoch and use reliable entered UTC (including
+the existing manual clock correction). Saved DR pre-fills the fields but must
+be confirmed; no boat position or fitted lunar position/time is substituted.
+Changing these check-only fields does not edit the saved sight or apply a lunar
+clock correction. Invalid position leaves True LD visible when available and
+reports cleared distance/error unavailable.
+
+The existing WGS84 forward model predicts the raw sextant distance, including
+index error, limb contact, refraction/disc flattening and parallax. Its net
+correction at the independently supplied geometry is subtracted from the
+measured distance:
+  Cleared LD (model corrected) = observed LD + True LD - predicted raw LD
+  Lunar error (arcmin) = 60 * (Cleared LD - True LD)
+Positive error means the observed distance is too large. This is explicitly
+labelled model-based clearing, not Direct Triangle clearing from measured
+altitudes. It works at the distance epoch for simultaneous and sequential
+observations, without fitting away the distance error using their altitudes.
+Known-position, UTC, atmosphere and instrument errors also affect this check;
+it is not solely an estimate of sight-taking skill. The existing joint
+UTC/position solution, branch residuals and uncertainties remain separate.
+
+Guide and packaging
+-------------------
+Desktop adds How to Guide... (internal HTML reader) and How to Guide (PDF)...
+(system PDF reader), alongside the Reference Manual buttons, in the same
+arrangement as production 2.8.17. Existing development tools are retained.
+
+Bob's issue-370 PDFs contain 35 altitude/coastal pages and 35 lunar pages.
+The merged PDF adds the approved seven-page definitions appendix: 77 pages.
+Both FIX illustrations (pages 5 and 17) use the actual 2.9.7 three-star Hawaii
+fixture. Page 17 instructions explain saved DR, the three motion choices,
+Calculate versus chart navigation and the epoch override. The old result-field
+outline is removed. Every other page retains the source rendering and text.
+The HTML reader includes every page, full-size illustrations, selectable text,
+chapter navigation and the definitions appendix, all available offline.
+
+Android has no desktop How To PDF, HTML, illustration folder or buttons in its
+workspace. Its Android quick guide and offline reference manuals are retained.
+CMake excludes the desktop assets from Android install/package operations.
+Package validation rejects missing/corrupt desktop guide assets and rejects
+any desktop guide assets in Android packages. CI checks all retained tarballs.
+
+Source documents (SHA-256 recorded in validation/fix-guide-2.9.7/guide-audit.json):
+https://github.com/rgleason/celestial_navigation_pi/issues/370
+https://github.com/user-attachments/files/33041420/Celestial.Navigation.Plugin.Altitude.and.coastal.sight.Training.04.Oct.2026.PDF.pdf
+https://github.com/user-attachments/files/33041422/Lunar.Distance.Use.Case.1.Sun-Moon.Sodus.Bay.version.4.Oct.2026.v2.9x.release.PDF.pdf
+Definitions appendix: data/Practical_Guide.pdf from production 2.8.17.
+
+Regeneration (PyMuPDF):
+python tools/build_practical_guide.py --altitude altitude-coastal.pdf \
+  --lunar lunar-distance.pdf --production-guide production-2.8.17-guide.pdf \
+  --fix-screenshot validation/fix-guide-2.9.7/fix-form.png \
+  --menu-screenshot validation/fix-guide-2.9.7/main-menu.png
+The report records input/output hashes, page count and refreshed FIX pages.
+source-preservation.json records the 75 unchanged pages verified by rendering
+and text comparison. Review PNGs include FIX, More options, large-font FIX,
+Remarks and the new lunar accuracy check.
+
+Validation
+----------
+Release builds: Linux wxGTK and Android arm64 wxQt/OpenCPN API 1.18.
+CTest: all 12 groups pass, including independent lunar check, qualified-source
+integrity, numerical/time-zone checks, Android boundaries and packaged guides.
+Native desktop opt-in checks: normal and large-font FIX; Remarks XML round
+trip; all 77 HTML pages and navigation; main-menu sight routes; lunar Results
+input preservation, check mode, invalid known position and display geometry.
+The pre-existing planning UI fixture now waits for asynchronous lunar-mode
+results and loads the real plugin data root for its entire test.
+PDF structural check: qpdf. Visual review: original documents plus changed
+pages and reader captures. Source render/text equivalence: 75 unchanged pages.
+Desktop package contains exact guide/assets. Android package excludes them.
+Native Windows/macOS visual review remains for platform testers.
+
+Native Android tablet checks: saved-sight DR near Thailand, explicit boat
+position, invalid-DR clearing/chart blocking, portrait motion choices,
+full-width Remarks and independent entered-UTC lunar readouts. Review images
+are in validation/fix-guide-2.9.7. After native review, the lunar known-position
+labels were expanded for wxQt; their final appearance remains for tablet review.
+The original tablet plugin and sights were restored with SHA-256 verification.
+Only two temporary configuration values were restored; all other current
+settings, preferences and databases were retained for concurrent xGRIB work.
+
+HTML presentation correction (same 2.9.7 development PR)
+------------------------------------------------------
+The initial 2.9.7 HTML used page images followed by line-by-line extracted text
+labelled "Selectable transcription". That label was an authoring choice, not
+missing content, but the approach omitted the reader improvements already
+recorded in production docs/practical-guide.md for 2.8.15/2.8.16.
+
+tools/build_practical_html.py now adopts that established conversion, adapting
+it to Bob's 70 development pages and the seven-page definitions appendix.
+Content and source-page order follow the bundled PDF; the PDF itself is
+unchanged. Grouped contents, descriptive page headings, joined paragraphs,
+actual bullet lists, compact source captions and consistent Previous/Contents/
+Next navigation replace the scan-and-transcription presentation. The 57
+complete illustrated compositions retain screenshots, arrows and annotations
+together. Reading-size previews fit the native reader; full-size lossless
+views retain small labels and selectable illustration text.
+
+The complete definitions source is reflowed into definitions.html with section
+anchors, original credits/revision and reference link, matching later 2.8.x.
+The first-page definitions, lunar and historical accuracy references work.
+Windows-compatible UTF-8 metadata/numeric entities and the established native
+12-point reader font are retained. No script, remote image/font or desktop
+guide asset is introduced into Android.
+
+Rebuild only HTML without re-exporting the PDF:
+  python tools/build_practical_html.py
+The full PDF merge builder delegates its HTML conversion to the same tool,
+so regeneration retains this presentation. html-conversion.json records all
+70 page titles, source prose and figure bounds plus all 107 definitions blocks.
+Validation compares those blocks with the generated HTML, checks links and
+packaged assets, and renders all 77 pages in the native wx reader without
+horizontal overflow.

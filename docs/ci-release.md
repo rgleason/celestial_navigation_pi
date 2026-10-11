@@ -54,10 +54,14 @@ reviewed workflow at the official alpha repository when they are ready.
 
 ## Maintainer hand-off to the official Alpha catalogue
 
-The current official Celestial Navigation release has 19 catalogue targets.
-This branch builds the same target set: Android arm64/armhf, Debian 11--13 on
+For 2.9.3, all 2.9.x builds remain experimental and belong in the Alpha
+catalogue, including Linux and macOS. The production/master catalogue retains
+2.8.x. Building the full suite does not authorize promotion or publication.
+
+This branch runs 20 build jobs: Android arm64/armhf, Debian 11--13 on
 arm64/armhf/x86_64, Flatpak 22.08/24.08 on aarch64/x86_64, Ubuntu 22.04,
-macOS universal, and two Windows/MSVC variants.
+macOS universal, and three Windows/MSVC variants (wx3.2 x86, wx3.2 x64 and
+the legacy wx3.1 build). The approval gate requires all 20 jobs.
 
 For an official alpha candidate:
 
@@ -67,7 +71,7 @@ For an official alpha candidate:
    `celestial-navigation-deployment` with `CLOUDSMITH_API_KEY` and
    `CELESTIAL_CLOUDSMITH_REPO=opencpn/celestial-navigation-alpha`.
 3. Trigger that exact revision with the pipeline parameter
-   `run_workflow_deploy=true`. This deliberately performs a fresh 19-target
+   `run_workflow_deploy=true`. This deliberately performs a fresh 20-job
    build rather than reusing artifacts from an older validation run.
 4. Inspect the retained archives, XML and `SHA256SUMS`, then approve
    `approve-publication`. The final job embeds the exact Cloudsmith URLs in
@@ -77,8 +81,8 @@ For an official alpha candidate:
    the published metadata using its normal frontend2 helper:
 
    ```sh
-   ./download_xml_bash.sh celestial-navigation 2.8.13.0 opencpn alpha
-   ./validate_xml.sh celestial_navigation_pi 2.8.13.0
+   ./download_xml_bash.sh celestial-navigation 2.9.3.0 opencpn alpha
+   ./validate_xml.sh celestial_navigation_pi 2.9.3.0
    ```
 
    If the release version changes, use that version in both commands.

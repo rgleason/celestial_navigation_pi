@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="1" failures="0" disabled="0" errors="0" time="29.112" timestamp="2026-10-02T14:22:29.003" name="AllTests">
+  <testsuite name="LunarUiSmoke" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="29.112" timestamp="2026-10-02T14:22:29.003">
+    <testcase name="TimeEntryAndResultModesPreserveRecordedInputs" file="/home/paul/src/OpenCPN/.worktrees/celnav-2.9-sights/test/lunar_ui_smoke_tests.cpp" line="302" status="run" result="completed" time="29.112" timestamp="2026-10-02T14:22:29.003" classname="LunarUiSmoke" />
+  </testsuite>
+</testsuites>
