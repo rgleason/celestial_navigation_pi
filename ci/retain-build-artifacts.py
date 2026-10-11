@@ -21,6 +21,8 @@ for folder in ('build', 'artifacts'):
         if not p.is_file():
             continue
         if p.name.startswith('celestial_navigation_pi-') and (p.name.endswith('.tar.gz') or p.suffix in ('.xml','.json','.exe','.dmg','.deb')):
+            if p.name.endswith('.tar.gz'):
+                check_guides(p, root)
             target = out / p.name
             if target.exists() and target.read_bytes() != p.read_bytes():
                 # A packaged archive with root metadata supersedes raw CPack.

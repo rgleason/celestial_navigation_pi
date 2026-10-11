@@ -1,0 +1,1091 @@
+{
+  "source_sha256": "a8d24f988829f92db587ace741f21d94d372634d0dc7fe32440aa444561db6a3",
+  "pages": [
+    {
+      "page": 1,
+      "title": "Introduction",
+      "text_blocks": 5,
+      "figures": []
+    },
+    {
+      "page": 2,
+      "title": "Altitude and coastal navigation topics",
+      "text_blocks": 2,
+      "figures": []
+    },
+    {
+      "page": 3,
+      "title": "Working with the plugin",
+      "text_blocks": 9,
+      "figures": [
+        {
+          "file": "page-03-figure-1.png",
+          "width": 2616,
+          "height": 929,
+          "preview": "page-03-figure-1-preview.png",
+          "clip": [
+            77.74073028564453,
+            441.65081787109375,
+            1821.332763671875,
+            1060.5430908203125
+          ]
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "title": "Plugin overview",
+      "text_blocks": 19,
+      "figures": [
+        {
+          "file": "page-04-figure-1.png",
+          "width": 2880,
+          "height": 1620,
+          "preview": "page-04-figure-1-preview.png",
+          "clip": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      ]
+    },
+    {
+      "page": 5,
+      "title": "The Hawaii worked example",
+      "text_blocks": 7,
+      "figures": []
+    },
+    {
+      "page": 6,
+      "title": "Create an altitude sight",
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-06-figure-1.png",
+          "width": 1625,
+          "height": 575,
+          "preview": "page-06-figure-1-preview.png",
+          "clip": [
+            462.4637145996094,
+            150.30291748046875,
+            1544.924560546875,
+            533.3029174804688
+          ]
+        }
+      ]
+    },
+    {
+      "page": 7,
+      "title": "Enter the sight time",
+      "text_blocks": 11,
+      "figures": [
+        {
+          "file": "page-07-figure-1.png",
+          "width": 930,
+          "height": 486,
+          "preview": "page-07-figure-1-preview.png",
+          "clip": [
+            48.38145065307617,
+            153.49717712402344,
+            667.3814697265625,
+            477.13330078125
+          ]
+        }
+      ]
+    },
+    {
+      "page": 8,
+      "title": "Set sight parameters",
+      "text_blocks": 7,
+      "figures": [
+        {
+          "file": "page-08-figure-1.png",
+          "width": 924,
+          "height": 557,
+          "preview": "page-08-figure-1-preview.png",
+          "clip": [
+            91.52999877929688,
+            185.63381958007812,
+            707.0732421875,
+            556.2744750976562
+          ]
+        }
+      ]
+    },
+    {
+      "page": 9,
+      "title": "Find a celestial body",
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-09-figure-1.png",
+          "width": 2566,
+          "height": 1552,
+          "preview": "page-09-figure-1-preview.png",
+          "clip": [
+            92.82019805908203,
+            19.5,
+            1802.798095703125,
+            1053.8798828125
+          ]
+        }
+      ]
+    },
+    {
+      "page": 10,
+      "title": "Interpret the calculated altitude",
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-10-figure-1.png",
+          "width": 1732,
+          "height": 646,
+          "preview": "page-10-figure-1-preview.png",
+          "clip": [
+            86.29324340820312,
+            95.84820556640625,
+            1240.443115234375,
+            525.5528564453125
+          ]
+        }
+      ]
+    },
+    {
+      "page": 11,
+      "title": "Save the sight",
+      "text_blocks": 4,
+      "figures": [
+        {
+          "file": "page-11-figure-1.png",
+          "width": 928,
+          "height": 484,
+          "preview": "page-11-figure-1-preview.png",
+          "clip": [
+            74.49202728271484,
+            123.76171875,
+            692.4920043945312,
+            445.3938903808594
+          ]
+        }
+      ]
+    },
+    {
+      "page": 12,
+      "title": "Duplicate and edit sights",
+      "text_blocks": 16,
+      "figures": [
+        {
+          "file": "page-12-figure-1.png",
+          "width": 2696,
+          "height": 878,
+          "preview": "page-12-figure-1-preview.png",
+          "clip": [
+            69.23229217529297,
+            221.6962890625,
+            1865.3436279296875,
+            806.564208984375
+          ]
+        }
+      ]
+    },
+    {
+      "page": 13,
+      "title": "Prepare a running fix",
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-13-figure-1.png",
+          "width": 2712,
+          "height": 928,
+          "preview": "page-13-figure-1-preview.png",
+          "clip": [
+            91.50499725341797,
+            383.17156982421875,
+            1898.748046875,
+            1001.079345703125
+          ]
+        }
+      ]
+    },
+    {
+      "page": 14,
+      "title": "Advance the position circles",
+      "text_blocks": 10,
+      "figures": [
+        {
+          "file": "page-14-figure-1.png",
+          "width": 2745,
+          "height": 1283,
+          "preview": "page-14-figure-1-preview.png",
+          "clip": [
+            82.03379821777344,
+            188.877685546875,
+            1911.97802734375,
+            1043.765380859375
+          ]
+        }
+      ]
+    },
+    {
+      "page": 15,
+      "title": "Calculate the fix",
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-15-figure-1.png",
+          "width": 1690,
+          "height": 795,
+          "preview": "page-15-figure-1-preview.png",
+          "clip": [
+            132.06080627441406,
+            246.095947265625,
+            1258.2467041015625,
+            775.5107421875
+          ]
+        }
+      ]
+    },
+    {
+      "page": 16,
+      "title": "Read the plotted fix",
+      "text_blocks": 4,
+      "figures": [
+        {
+          "file": "page-16-figure-1.png",
+          "width": 2542,
+          "height": 1052,
+          "preview": "page-16-figure-1-preview.png",
+          "clip": [
+            85.09683227539062,
+            156.92169189453125,
+            1778.6865234375,
+            857.3516845703125
+          ]
+        }
+      ]
+    },
+    {
+      "page": 17,
+      "title": "Mark and copy UTC time",
+      "text_blocks": 7,
+      "figures": [
+        {
+          "file": "page-17-figure-1.png",
+          "width": 2548,
+          "height": 1088,
+          "preview": "page-17-figure-1-preview.png",
+          "clip": [
+            81.0288314819336,
+            257.2901306152344,
+            1778.9019775390625,
+            981.9085083007812
+          ]
+        }
+      ]
+    },
+    {
+      "page": 18,
+      "title": "Analyze a sequence of sights",
+      "text_blocks": 2,
+      "figures": [
+        {
+          "file": "page-18-figure-1.png",
+          "width": 1684,
+          "height": 785,
+          "preview": "page-18-figure-1-preview.png",
+          "clip": [
+            83.98906707763672,
+            319.0361328125,
+            1205.622314453125,
+            841.6851196289062
+          ]
+        }
+      ]
+    },
+    {
+      "page": 19,
+      "title": "Plan celestial sights",
+      "text_blocks": 7,
+      "figures": [
+        {
+          "file": "page-19-figure-1.png",
+          "width": 2565,
+          "height": 1039,
+          "preview": "page-19-figure-1-preview.png",
+          "clip": [
+            73.56659698486328,
+            378.84613037109375,
+            1782.9097900390625,
+            1070.829833984375
+          ]
+        }
+      ]
+    },
+    {
+      "page": 20,
+      "title": "Plan sunrise and meridian transit",
+      "text_blocks": 3,
+      "figures": [
+        {
+          "file": "page-20-figure-1.png",
+          "width": 2275,
+          "height": 1021,
+          "preview": "page-20-figure-1-preview.png",
+          "clip": [
+            263.13360595703125,
+            245.80517578125,
+            1779.017822265625,
+            925.80517578125
+          ]
+        }
+      ]
+    },
+    {
+      "page": 21,
+      "title": "Enter the planning position and course",
+      "text_blocks": 10,
+      "figures": [
+        {
+          "file": "page-21-figure-1.png",
+          "width": 2775,
+          "height": 1346,
+          "preview": "page-21-figure-1-preview.png",
+          "clip": [
+            30.948619842529297,
+            128.219970703125,
+            1880.2679443359375,
+            1024.791259765625
+          ]
+        }
+      ]
+    },
+    {
+      "page": 22,
+      "title": "Read the sunrise plan",
+      "text_blocks": 3,
+      "figures": [
+        {
+          "file": "page-22-figure-1.png",
+          "width": 1520,
+          "height": 1264,
+          "preview": "page-22-figure-1-preview.png",
+          "clip": [
+            387.3370056152344,
+            144.44732666015625,
+            1400.3370361328125,
+            986.4473266601562
+          ]
+        }
+      ]
+    },
+    {
+      "page": 23,
+      "title": "Position from a horizon event",
+      "text_blocks": 3,
+      "figures": [
+        {
+          "file": "page-23-figure-1.png",
+          "width": 1716,
+          "height": 1288,
+          "preview": "page-23-figure-1-preview.png",
+          "clip": [
+            468.1828918457031,
+            111.027099609375,
+            1611.7119140625,
+            968.972900390625
+          ]
+        }
+      ]
+    },
+    {
+      "page": 24,
+      "title": "Record a sunrise observation",
+      "text_blocks": 5,
+      "figures": [
+        {
+          "file": "page-24-figure-1.png",
+          "width": 2624,
+          "height": 1456,
+          "preview": "page-24-figure-1-preview.png",
+          "clip": [
+            94.87079620361328,
+            80.24281311035156,
+            1843.63427734375,
+            1050.122314453125
+          ]
+        }
+      ]
+    },
+    {
+      "page": 25,
+      "title": "Compare the horizon-event position",
+      "text_blocks": 2,
+      "figures": [
+        {
+          "file": "page-25-figure-1.png",
+          "width": 2696,
+          "height": 942,
+          "preview": "page-25-figure-1-preview.png",
+          "clip": [
+            38.60834884643555,
+            170.515869140625,
+            1834.69775390625,
+            797.515869140625
+          ]
+        }
+      ]
+    },
+    {
+      "page": 26,
+      "title": "Horizontal coastal sights",
+      "text_blocks": 2,
+      "figures": [
+        {
+          "file": "page-26-figure-1.png",
+          "width": 1271,
+          "height": 839,
+          "preview": "page-26-figure-1-preview.png",
+          "clip": [
+            142.2465057373047,
+            492.14422607421875,
+            989.0574340820312,
+            1050.9969482421875
+          ]
+        }
+      ]
+    },
+    {
+      "page": 27,
+      "title": "Select the coastal landmarks",
+      "text_blocks": 2,
+      "figures": [
+        {
+          "file": "page-27-figure-1.png",
+          "width": 2024,
+          "height": 1599,
+          "preview": "page-27-figure-1-preview.png",
+          "clip": [
+            14.129219055175781,
+            14.337966918945312,
+            1363.2174072265625,
+            1080.0
+          ]
+        }
+      ]
+    },
+    {
+      "page": 28,
+      "title": "Enter horizontal angles",
+      "text_blocks": 9,
+      "figures": [
+        {
+          "file": "page-28-figure-1.png",
+          "width": 2846,
+          "height": 1581,
+          "preview": "page-28-figure-1-preview.png",
+          "clip": [
+            17.554670333862305,
+            26.472000122070312,
+            1914.3170166015625,
+            1080.0
+          ]
+        }
+      ]
+    },
+    {
+      "page": 29,
+      "title": "Plot the coastal fix",
+      "text_blocks": 2,
+      "figures": [
+        {
+          "file": "page-29-figure-1.png",
+          "width": 1665,
+          "height": 1006,
+          "preview": "page-29-figure-1-preview.png",
+          "clip": [
+            159.9333953857422,
+            155.377685546875,
+            1268.933349609375,
+            825.377685546875
+          ]
+        }
+      ]
+    },
+    {
+      "page": 30,
+      "title": "Vertical coastal sights",
+      "text_blocks": 2,
+      "figures": [
+        {
+          "file": "page-30-figure-1.png",
+          "width": 2184,
+          "height": 1160,
+          "preview": "page-30-figure-1-preview.png",
+          "clip": [
+            222.26780700683594,
+            213.95541381835938,
+            1677.7783203125,
+            986.4494018554688
+          ]
+        }
+      ]
+    },
+    {
+      "page": 31,
+      "title": "Plot a vertical coastal sight",
+      "text_blocks": 5,
+      "figures": [
+        {
+          "file": "page-31-figure-1.png",
+          "width": 2739,
+          "height": 1554,
+          "preview": "page-31-figure-1-preview.png",
+          "clip": [
+            40.41400909423828,
+            4.495944976806641,
+            1865.899658203125,
+            1039.4207763671875
+          ]
+        }
+      ]
+    },
+    {
+      "page": 32,
+      "title": "Lunar distance topics",
+      "text_blocks": 4,
+      "figures": []
+    },
+    {
+      "page": 33,
+      "title": "Lunar distancing: objective and background",
+      "text_blocks": 7,
+      "figures": []
+    },
+    {
+      "page": 34,
+      "title": "Lunar distancing and chronometers",
+      "text_blocks": 1,
+      "figures": []
+    },
+    {
+      "page": 35,
+      "title": "Accuracy and relevance of lunars",
+      "text_blocks": 4,
+      "figures": []
+    },
+    {
+      "page": 36,
+      "title": "Observe lunars aboard ship",
+      "text_blocks": 11,
+      "figures": []
+    },
+    {
+      "page": 37,
+      "title": "Practice lunars on land",
+      "text_blocks": 5,
+      "figures": []
+    },
+    {
+      "page": 38,
+      "title": "The Sun-Moon worked example",
+      "text_blocks": 13,
+      "figures": [
+        {
+          "file": "page-38-figure-1.png",
+          "width": 2514,
+          "height": 1186,
+          "preview": "page-38-figure-1-preview.png",
+          "clip": [
+            62.866241455078125,
+            229.41778564453125,
+            1738.13232421875,
+            1019.939453125
+          ]
+        }
+      ]
+    },
+    {
+      "page": 39,
+      "title": "Create a lunar sight",
+      "text_blocks": 5,
+      "figures": [
+        {
+          "file": "page-39-figure-1.png",
+          "width": 1500,
+          "height": 874,
+          "preview": "page-39-figure-1-preview.png",
+          "clip": [
+            227.8332977294922,
+            254.6015625,
+            1226.9935302734375,
+            836.0510864257812
+          ]
+        }
+      ]
+    },
+    {
+      "page": 40,
+      "title": "Enter the three measured angles",
+      "text_blocks": 5,
+      "figures": [
+        {
+          "file": "page-40-figure-1.png",
+          "width": 1109,
+          "height": 806,
+          "preview": "page-40-figure-1-preview.png",
+          "clip": [
+            89.57610321044922,
+            338.8157958984375,
+            828.5761108398438,
+            875.8157958984375
+          ]
+        }
+      ]
+    },
+    {
+      "page": 41,
+      "title": "Near and far limbs",
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-41-figure-1.png",
+          "width": 2685,
+          "height": 1098,
+          "preview": "page-41-figure-1-preview.png",
+          "clip": [
+            111.79859924316406,
+            258.6409912109375,
+            1900.696533203125,
+            989.6951904296875
+          ]
+        }
+      ]
+    },
+    {
+      "page": 42,
+      "title": "Enter the observer position",
+      "text_blocks": 9,
+      "figures": [
+        {
+          "file": "page-42-figure-1.png",
+          "width": 1635,
+          "height": 1074,
+          "preview": "page-42-figure-1-preview.png",
+          "clip": [
+            8.549440383911133,
+            205.18878173828125,
+            1097.4227294921875,
+            920.59228515625
+          ]
+        }
+      ]
+    },
+    {
+      "page": 43,
+      "title": "UTC search span",
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-43-figure-1.png",
+          "width": 1021,
+          "height": 800,
+          "preview": "page-43-figure-1-preview.png",
+          "clip": [
+            18.666669845581055,
+            206.54461669921875,
+            698.7301025390625,
+            739.1077880859375
+          ]
+        }
+      ]
+    },
+    {
+      "page": 44,
+      "title": "Separately timed observations",
+      "text_blocks": 7,
+      "figures": [
+        {
+          "file": "page-44-figure-1.png",
+          "width": 990,
+          "height": 777,
+          "preview": "page-44-figure-1-preview.png",
+          "clip": [
+            31.469139099121094,
+            215.5,
+            691.0848999023438,
+            733.0781860351562
+          ]
+        }
+      ]
+    },
+    {
+      "page": 45,
+      "title": "Read the lunar results",
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-45-figure-1.png",
+          "width": 2715,
+          "height": 1343,
+          "preview": "page-45-figure-1-preview.png",
+          "clip": [
+            71.90924072265625,
+            126.32000732421875,
+            1880.9056396484375,
+            1021.0197143554688
+          ]
+        }
+      ]
+    },
+    {
+      "page": 46,
+      "title": "Interpret UTC and position candidates",
+      "text_blocks": 6,
+      "figures": [
+        {
+          "file": "page-46-figure-1.png",
+          "width": 2731,
+          "height": 1298,
+          "preview": "page-46-figure-1-preview.png",
+          "clip": [
+            55.20029067993164,
+            153.7086181640625,
+            1875.0899658203125,
+            1018.1729125976562
+          ]
+        }
+      ]
+    },
+    {
+      "page": 47,
+      "title": "Explore time sensitivity",
+      "text_blocks": 5,
+      "figures": [
+        {
+          "file": "page-47-figure-1.png",
+          "width": 2754,
+          "height": 869,
+          "preview": "page-47-figure-1-preview.png",
+          "clip": [
+            55.5,
+            442.1478271484375,
+            1891.1668701171875,
+            1021.247314453125
+          ]
+        }
+      ]
+    },
+    {
+      "page": 48,
+      "title": "Plot the lunar altitude circles",
+      "text_blocks": 10,
+      "figures": [
+        {
+          "file": "page-48-figure-1.png",
+          "width": 2592,
+          "height": 817,
+          "preview": "page-48-figure-1-preview.png",
+          "clip": [
+            72.5128173828125,
+            492.31829833984375,
+            1799.487060546875,
+            1036.5955810546875
+          ]
+        }
+      ]
+    },
+    {
+      "page": 49,
+      "title": "Compare the corrected position",
+      "text_blocks": 12,
+      "figures": [
+        {
+          "file": "page-49-figure-1.png",
+          "width": 2679,
+          "height": 1320,
+          "preview": "page-49-figure-1-preview.png",
+          "clip": [
+            46.164520263671875,
+            157.8709716796875,
+            1831.65380859375,
+            1037.0611572265625
+          ]
+        }
+      ]
+    },
+    {
+      "page": 50,
+      "title": "Choose a lunar pair",
+      "text_blocks": 11,
+      "figures": [
+        {
+          "file": "page-50-figure-1.png",
+          "width": 1341,
+          "height": 425,
+          "preview": "page-50-figure-1-preview.png",
+          "clip": [
+            358.7594909667969,
+            729.18017578125,
+            1252.0557861328125,
+            1011.7424926757812
+          ]
+        }
+      ]
+    },
+    {
+      "page": 51,
+      "title": "Lunar pair geometry",
+      "text_blocks": 9,
+      "figures": []
+    },
+    {
+      "page": 52,
+      "title": "Plan a Jupiter-Moon lunar",
+      "text_blocks": 10,
+      "figures": [
+        {
+          "file": "page-52-figure-1.png",
+          "width": 1926,
+          "height": 1295,
+          "preview": "page-52-figure-1-preview.png",
+          "clip": [
+            312.2153015136719,
+            161.81329345703125,
+            1595.91845703125,
+            1024.333251953125
+          ]
+        }
+      ]
+    },
+    {
+      "page": 53,
+      "title": "Use the lunar planner",
+      "text_blocks": 8,
+      "figures": [
+        {
+          "file": "page-53-figure-1.png",
+          "width": 2799,
+          "height": 1517,
+          "preview": "page-53-figure-1-preview.png",
+          "clip": [
+            30.66666030883789,
+            31.88800048828125,
+            1896.1357421875,
+            1042.6353759765625
+          ]
+        }
+      ]
+    },
+    {
+      "page": 54,
+      "title": "The Jupiter-Moon worked example",
+      "text_blocks": 25,
+      "figures": [
+        {
+          "file": "page-54-figure-1.png",
+          "width": 2655,
+          "height": 1416,
+          "preview": "page-54-figure-1-preview.png",
+          "clip": [
+            64.18675231933594,
+            136.6160888671875,
+            1833.572265625,
+            1080.0
+          ]
+        }
+      ]
+    },
+    {
+      "page": 55,
+      "title": "Preset the sextant",
+      "text_blocks": 5,
+      "figures": [
+        {
+          "file": "page-55-figure-1.png",
+          "width": 2187,
+          "height": 1357,
+          "preview": "page-55-figure-1-preview.png",
+          "clip": [
+            76.40733337402344,
+            151.79779052734375,
+            1534.0,
+            1055.5643310546875
+          ]
+        }
+      ]
+    },
+    {
+      "page": 56,
+      "title": "Backyard lunars",
+      "text_blocks": 9,
+      "figures": [
+        {
+          "file": "page-56-figure-1.png",
+          "width": 2187,
+          "height": 1357,
+          "preview": "page-56-figure-1-preview.png",
+          "clip": [
+            76.40733337402344,
+            151.79779052734375,
+            1534.0,
+            1055.5643310546875
+          ]
+        }
+      ]
+    },
+    {
+      "page": 57,
+      "title": "Improve lunar observations",
+      "text_blocks": 9,
+      "figures": []
+    },
+    {
+      "page": 58,
+      "title": "Reduce measurement errors",
+      "text_blocks": 1,
+      "figures": []
+    },
+    {
+      "page": 59,
+      "title": "Analyze repeated observations",
+      "text_blocks": 11,
+      "figures": [
+        {
+          "file": "page-59-figure-1.png",
+          "width": 1094,
+          "height": 448,
+          "preview": "page-59-figure-1-preview.png",
+          "clip": [
+            161.5316925048828,
+            738.1911010742188,
+            890.3800048828125,
+            1036.0438232421875
+          ]
+        }
+      ]
+    },
+    {
+      "page": 60,
+      "title": "Direct Triangle: example observations",
+      "text_blocks": 12,
+      "figures": [
+        {
+          "file": "page-60-figure-1.png",
+          "width": 2356,
+          "height": 1120,
+          "preview": "page-60-figure-1-preview.png",
+          "clip": [
+            168.53469848632812,
+            273.7729797363281,
+            1738.13232421875,
+            1019.939453125
+          ]
+        }
+      ]
+    },
+    {
+      "page": 61,
+      "title": "Direct Triangle: reference calculation",
+      "text_blocks": 8,
+      "figures": [
+        {
+          "file": "page-61-figure-1.png",
+          "width": 2501,
+          "height": 1369,
+          "preview": "page-61-figure-1-preview.png",
+          "clip": [
+            116.71640014648438,
+            120.09521484375,
+            1783.8837890625,
+            1032.6011962890625
+          ]
+        }
+      ]
+    },
+    {
+      "page": 62,
+      "title": "Direct Triangle: apparent distance and bearing",
+      "text_blocks": 47,
+      "figures": [
+        {
+          "file": "page-62-figure-1.png",
+          "width": 2542,
+          "height": 1554,
+          "preview": "page-62-figure-1-preview.png",
+          "clip": [
+            70.6583480834961,
+            12.947998046875,
+            1764.656005859375,
+            1048.2493896484375
+          ]
+        }
+      ]
+    },
+    {
+      "page": 63,
+      "title": "Direct Triangle: clear the distance",
+      "text_blocks": 61,
+      "figures": [
+        {
+          "file": "page-63-figure-1.png",
+          "width": 2557,
+          "height": 1505,
+          "preview": "page-63-figure-1-preview.png",
+          "clip": [
+            61.66987991333008,
+            12.947998046875,
+            1765.656005859375,
+            1015.4158325195312
+          ]
+        }
+      ]
+    },
+    {
+      "page": 64,
+      "title": "Compare the Direct Triangle working",
+      "text_blocks": 4,
+      "figures": [
+        {
+          "file": "page-64-figure-1.png",
+          "width": 2732,
+          "height": 1388,
+          "preview": "page-64-figure-1-preview.png",
+          "clip": [
+            70.6583480834961,
+            12.947998046875,
+            1890.7703857421875,
+            937.6932983398438
+          ]
+        }
+      ]
+    },
+    {
+      "page": 65,
+      "title": "UTC and position solver working",
+      "text_blocks": 2,
+      "figures": [
+        {
+          "file": "page-65-figure-1.png",
+          "width": 2285,
+          "height": 1253,
+          "preview": "page-65-figure-1-preview.png",
+          "clip": [
+            81.33334350585938,
+            92.85011291503906,
+            1604.3651123046875,
+            927.7770385742188
+          ]
+        }
+      ]
+    },
+    {
+      "page": 66,
+      "title": "Try it yourself",
+      "text_blocks": 2,
+      "figures": []
+    }
+  ],
+  "format": "reflowable HTML with complete annotated illustrations"
+}

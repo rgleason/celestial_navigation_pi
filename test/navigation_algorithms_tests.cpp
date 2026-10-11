@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <wx/init.h>
 
 #include "BodyCatalog.h"
 #include "SkyLabelLayout.h"

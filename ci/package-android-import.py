@@ -6,13 +6,13 @@ import hashlib
 import io
 import json
 import os
-import re
 import struct
 import tempfile
 import tarfile
 import urllib.parse
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from plugin_version import plugin_version
 
 
 def allocated_sections(binary: bytes) -> dict:
@@ -48,14 +48,7 @@ def package(source: Path, metadata: Path, output: Path, url: str, sha: str,
         raise ValueError('An exact HTTPS URL ending in the final archive filename is required')
     root = ET.fromstring(metadata.read_bytes())
     values = {child.tag: (child.text or '').strip() for child in root}
-    cmake = (Path(__file__).resolve().parents[1] / 'CMakeLists.txt').read_text()
-    components = []
-    for component in ('MAJOR', 'MINOR', 'PATCH', 'TWEAK'):
-        matches = re.findall(r'set\(VERSION_' + component + r'\s+"(\d+)"\)', cmake)
-        if len(matches) != 1:
-            raise ValueError('Missing or ambiguous CMake version: ' + component)
-        components.append(matches[0])
-    expected_version = '.'.join(components)
+    expected_version = plugin_version(Path(__file__).resolve().parents[1])
     if values.get('name') != 'Celestial Navigation' or values.get('version') != expected_version:
         raise ValueError('Unexpected plugin identity/version; expected ' + expected_version)
     if values.get('target') not in ('android-arm64', 'android-armhf') or values.get('api-version') != '1.18':

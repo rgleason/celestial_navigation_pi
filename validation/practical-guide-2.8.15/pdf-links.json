@@ -1,0 +1,24 @@
+{
+  "pages": 66,
+  "unchanged_rendered_pages": 66,
+  "sha256": "a8d24f988829f92db587ace741f21d94d372634d0dc7fe32440aa444561db6a3",
+  "links": [
+    {
+      "label": "Accuracy, Goals, Precision and Testing",
+      "destination": "https://github.com/rgleason/celestial_navigation_pi/issues/131",
+      "offline": false
+    },
+    {
+      "label": "Celestial Navigation Definitions",
+      "destination": "Celestial_Navigation_Definitions.html",
+      "action": "Launch",
+      "offline": true
+    },
+    {
+      "label": "Lunar Distance Use Case",
+      "destination": "Practical_Guide.pdf",
+      "page": 32,
+      "offline": true
+    }
+  ]
+}
