@@ -28,8 +28,13 @@ namespace {
 template <class T>
 T* Find(wxWindow* root, const wxString& label) {
   for (auto* child : root->GetChildren()) {
-    if (auto* value = dynamic_cast<T*>(child))
-      if (value->GetLabel() == label) return value;
+    if (auto* value = dynamic_cast<T*>(child)) {
+      wxString text = value->GetLabel();
+      // wxStaticText::Wrap inserts line breaks according to the native font.
+      // Verify the complete label independently of its visual line layout.
+      if (dynamic_cast<wxStaticText*>(value)) text.Replace("\n", " ");
+      if (text == label) return value;
+    }
     if (auto* value = Find<T>(child, label)) return value;
   }
   return nullptr;
