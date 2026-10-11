@@ -296,8 +296,7 @@ void celestial_navigation_pi::OnContextMenuItemCallback(int id) {
   if (!m_pCelestialNavigationDialog)
     OnToolbarToolCallback(m_leftclick_tool_id);
   if (!m_pCelestialNavigationDialog) return;
-  m_pCelestialNavigationDialog->Show();
-  m_pCelestialNavigationDialog->Raise();
+  if (!m_pCelestialNavigationDialog->BringToFront()) return;
   m_pCelestialNavigationDialog->OpenAlmanacForRoute(routeGuid);
 }
 
@@ -396,8 +395,7 @@ void celestial_navigation_pi::OnToolbarToolCallback(int id) {
     wxLogMessage("Celestial: CelestialNavigationDialog constructed at %p", (void*)m_pCelestialNavigationDialog);
   }
 
-  m_pCelestialNavigationDialog->Show();
-  m_pCelestialNavigationDialog->Raise();
+  m_pCelestialNavigationDialog->BringToFront();
 }
 
 int celestial_navigation_pi::GetToolbarToolCount(void) { return 1; }

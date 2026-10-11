@@ -29,6 +29,7 @@
 #define _CelestialNavigationDialog_h_
 
 #include <list>
+#include <memory>
 
 #include "celestial_navigation_pi.h"
 #include "geodesic.h"
@@ -47,12 +48,15 @@
 #ifdef __OCPN__ANDROID__
 #include <wx/qt/private/wxQtGesture.h>
 class QTimer;
+#else
+class DialogFocusController;
 #endif
 
 class CelestialNavigationDialog : public CelestialNavigationDialogBase {
 public:
   CelestialNavigationDialog(wxWindow* parent, celestial_navigation_pi* ppi);
   ~CelestialNavigationDialog();
+  bool BringToFront();
   void UpdateSights();
 
   ClockCorrectionDialog* m_ClockCorrectionDialog;
@@ -78,6 +82,7 @@ public:
   int GetClockCorrection() const { return m_ClockCorrection; }
   // Noninteractive file operations used by the manager and its regression tests.
   bool BackupSightsTo(const wxString& path, wxString* error);
+  bool ExportSightsCsvTo(const wxString& path, wxString* error);
   bool ImportSightsFile(const wxString& path, bool replace,
                         wxString* safetyBackup, wxString* error);
   void ApplyClockCorrection(int correction_seconds);
@@ -90,6 +95,9 @@ public:
   bool GetMarkedUtc(wxDateTime* utcFields) const;
 
 private:
+#ifndef __OCPN__ANDROID__
+  std::unique_ptr<DialogFocusController> m_dialogFocus;
+#endif
   long SelectedSightIndex() const;
 #ifdef __OCPN__ANDROID__
   void BuildAndroidWorkspace();
@@ -113,6 +121,7 @@ private:
   void OnManageSights(wxCommandEvent& event);
   void OnChartDisplay(wxCommandEvent& event);
   void BackupSights();
+  void ExportSightsCsv();
   void ImportSights(bool replace);
   bool ApplyImportedSights(std::vector<Sight> incoming, int correction,
                            std::vector<LunarSolutionRecord> solutions,

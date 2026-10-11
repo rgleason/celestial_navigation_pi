@@ -1,4 +1,4 @@
-# Celestial Navigation 2.9.7 — Android quick guide
+# Celestial Navigation 2.9.8 — Android quick guide
 
 Tap the stock Celestial Navigation icon in OpenCPN to open the workspace.
 Four task buttons take you to **Observe**, **Fix**, **Plan** and **Tools**.
@@ -77,6 +77,11 @@ Lunar Candidates uses traditional companions by default; choose **All calculated
 companions** to compare other bodies. Magnitude and cautions help assess a pair;
 a planning preference is not a probability of seeing or measuring it.
 
+Below 1% illumination, the Moon remains visible in the planning cards with
+grey text and an explicit caution, but is excluded from recommended fixes.
+Lunar pairs remain listed with the same caution. Illumination is displayed to
+one decimal place; the planning cutoff uses the unrounded value.
+
 **Almanac**
 shows 25 hourly epochs for seven bodies and can export a CSV; its UTC column
 keeps fractional seconds. Review the chosen folder and confirm before replacing
@@ -119,6 +124,21 @@ large clock uncertainty even when the position check is close to the DR.
 **Tools** opens lunar sessions, pairs and sextant checks, coastal sextant work,
 clock correction, this guide and the full offline HTML/PDF manuals. Use the
 section selector inside each tool for its different tasks.
+
+In **Lunar Tools > Lunar planner**, choose **Sort pairs by** and **Sort direction**
+to reorder the existing pair cards by body, distance, timing, magnitude or other
+shown values. **Planning order** restores the selected lunar ranking. Sorting
+does not recalculate, and the choice survives calculation and companion-filter
+changes. The shared Moon altitude, azimuth and illumination are identical for
+every pair and therefore have no separate sort choices.
+
+In **Tools > Manage sights and backups**, choose **Export sight log CSV...**.
+Select a writable OpenCPN folder and save the dated report. It includes all
+sights, their observed readings, UTC, observing parameters, saved DR and remarks;
+angles follow your OpenCPN preference. Lunar rows use the Moon bearing and Near
+or Far contact. Event rows identify Sunrise or Sunset. Magnetic bearings end in
+M; true bearings have no suffix. UTC includes clock correction; unresolved lunar
+watch readings leave UTC blank. Use XML backups when you need to restore sights.
 
 Coastal calculations keep vertical and horizontal plot layers separately.
 **Show plotted range/fix on chart** hides the editor and centres the calculated

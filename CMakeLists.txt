@@ -74,9 +74,9 @@ set(LONG_DESCRIPTION
 )
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "9")
-set(VERSION_PATCH "7")
+set(VERSION_PATCH "8")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "05/10/2026" )# DD/MM/YYYY format
+set(VERSION_DATE  "11/10/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -189,6 +189,8 @@ SET(SRCS
         src/AndroidWorkspace.cpp
         src/DialogGeometry.cpp
         src/AtomicXmlFile.cpp
+        src/SightLogCsv.cpp
+        src/DialogFocus.cpp
         src/Dut1UpdatePanel.cpp
         src/BodyCatalog.cpp
         src/NavigationAlgorithms.cpp
@@ -238,6 +240,8 @@ SET(HDRS
         src/celestial_navigation_pi.h
         src/CelestialNavigationDialog.h
         src/AtomicXmlFile.h
+        src/SightLogCsv.h
+        src/DialogFocus.h
         src/Dut1UpdatePanel.h
         src/BodyCatalog.h
         src/NavigationAlgorithms.h

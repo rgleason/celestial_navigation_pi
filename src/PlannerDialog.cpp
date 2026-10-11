@@ -2312,18 +2312,20 @@ void PlannerDialog::RefreshBodies() {
       m_lunarPairs->SetItem(
           row, 7,
           wxString::Format("Moon %.0f%c/%.0f%c; body %.0f%c/%.0f%c; "
-                           "illum %.0f%%; %s",
+                           "illum %.1f%%; %s",
                            moon.geometricAltitude, 0x00b0,
                            moon.azimuthTrue, 0x00b0,
                            body.state.geometricAltitude, 0x00b0,
                            body.state.azimuthTrue, 0x00b0,
                            m_planningResult.moon.illuminatedFraction * 100.0,
                            body.lunarReason.c_str()));
+      if (body.lunarVisibilityUnavailable)
+        m_lunarPairs->SetItemTextColour(row, wxColour(150, 150, 150));
 #ifdef __OCPN__ANDROID__
       combinations += wxString::Format(
           _("Moon + %s\nLD: %.2f degrees; rate: %+.1f arcmin/hour; 0.1' time: %s\n"
             "Moon Hc/Zn: %.0f/%.0f degrees; body Hc/Zn: %.0f/%.0f degrees\n"
-            "Magnitude: %.1f; illumination: %.0f%%; ecliptic latitude: %+.1f degrees; cautions: %d\n%s\n\n"),
+            "Magnitude: %.1f; illumination: %.1f%%; ecliptic latitude: %+.1f degrees; cautions: %d\n%s\n\n"),
           body.state.body.c_str(), body.lunarDistance, body.lunarRateArcminHour,
           (std::isfinite(body.lunarTimingSeconds)
                ? wxString::Format("%.1f s", body.lunarTimingSeconds)
@@ -2395,6 +2397,14 @@ void PlannerDialog::RefreshBodies() {
           ? (lunar ? _("No lunar candidates for this context.")
                    : _("No pairs or triads meet these recommendation limits."))
           : combinations);
+  m_androidCombinations->GetHandle()->setProperty("cnPreserveColour", false);
+  CN_ApplyAndroidTheme(m_androidCombinations);
+  if (lunar && !m_planningResult.moon.IsSightCandidate()) {
+    m_androidCombinations->SetForegroundColour(wxColour(150, 150, 150));
+    auto* label = m_androidCombinations->GetHandle();
+    label->setStyleSheet(label->styleSheet() + " QLabel { color: #969696; }");
+    label->setProperty("cnPreserveColour", true);
+  }
   celestial_android::LayoutScrolls(this);
 #endif
 #ifndef __OCPN__ANDROID__
@@ -2479,6 +2489,8 @@ void PlannerDialog::RebuildBodyList() {
   const bool daylight = sun.valid && sun.geometricAltitude >= 0.0;
   for (const size_t index : order) {
     const RankedBody& body = m_rankedBodies[index];
+    const bool unavailable = body.visibilityUnavailable ||
+        (m_planningMode->GetSelection() == 2 && body.lunarVisibilityUnavailable);
 #ifndef __OCPN__ANDROID__
     const long row =
         m_bodies->InsertItem(m_bodies->GetItemCount(), body.state.body);
@@ -2519,7 +2531,7 @@ void PlannerDialog::RebuildBodyList() {
       reason += _("; below horizon");
 #ifndef __OCPN__ANDROID__
     m_bodies->SetItem(row, 8, reason);
-    if (daylight && body.state.isStar)
+    if (unavailable)
       m_bodies->SetItemTextColour(row, wxColour(150, 150, 150));
 #endif
 #ifdef __OCPN__ANDROID__
@@ -2542,6 +2554,7 @@ void PlannerDialog::RebuildBodyList() {
     card->setData(Qt::UserRole, static_cast<int>(index));
     const QString name = QString::fromUtf8(body.state.body.utf8_str());
     card->setData(Qt::UserRole + 1, name);
+    if (unavailable) card->setForeground(QColor(150, 150, 150));
     if (!selectedName.isEmpty() && selectedName == name)
       m_androidBodies->setCurrentItem(card);
 #endif

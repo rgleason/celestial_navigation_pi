@@ -254,6 +254,103 @@ TEST(MoonPlanning, ReturnsTheNextFourPrincipalPhasesChronologically) {
   }
 }
 
+TEST(MoonPlanning, SightCutoffUsesUnroundedIllumination) {
+  MoonInformation moon;
+  for (double fraction : {0.0, 0.001, 0.0099, 0.009999}) {
+    moon.illuminatedFraction = fraction;
+    EXPECT_FALSE(moon.IsSightCandidate()) << fraction;
+  }
+  for (double fraction : {0.01, 0.010001, 0.5, 1.0}) {
+    moon.illuminatedFraction = fraction;
+    EXPECT_TRUE(moon.IsSightCandidate()) << fraction;
+  }
+}
+
+TEST(MoonPlanning, AssessmentExplainsPhaseAndExcludesDimMoonFromFixes) {
+  BodyState sun, moon;
+  sun.body = "Sun";
+  moon.body = "Moon";
+  moon.geometricAltitude = 40.0;
+  moon.azimuthTrue = 90.0;
+  moon.visualMagnitude = -12.0;
+  RankedBody north, south;
+  north.state.body = "North";
+  north.state.geometricAltitude = 40.0;
+  north.state.azimuthTrue = 0.0;
+  south.state.body = "South";
+  south.state.geometricAltitude = 40.0;
+  south.state.azimuthTrue = 180.0;
+  for (double fraction : {0.001, 0.0099, 0.0101, 0.5}) {
+    moon.longitude = std::acos(1.0 - 2.0 * fraction) * 180.0 / std::acos(-1.0);
+    const auto assessed = SightRanker::AssessBody(moon, sun);
+    const bool unavailable = fraction < 0.01;
+    EXPECT_EQ(unavailable, assessed.visibilityUnavailable);
+    EXPECT_EQ(unavailable ? 0.0 : 100.0, assessed.visibilityScore);
+    EXPECT_EQ(unavailable ? 0.0 : 100.0, assessed.score);
+    EXPECT_TRUE(assessed.reason.Contains(
+        wxString::Format("Moon illumination %.1f%%", fraction * 100.0)));
+    EXPECT_EQ(unavailable, assessed.reason.Contains("below 1%"));
+    const auto candidates = SightRanker::RecommendationCandidates(
+        {north, assessed, south}, false, 10, 75);
+    EXPECT_EQ(unavailable ? 2u : 3u, candidates.size());
+    const auto pairs = SightRanker::BestCombinations(candidates, 2, 10);
+    const auto triads = SightRanker::BestCombinations(candidates, 3, 10);
+    EXPECT_EQ(unavailable ? 1u : 3u, pairs.size());
+    EXPECT_EQ(unavailable ? 0u : 1u, triads.size());
+    if (unavailable) {
+      for (const auto& body : pairs.front().bodies)
+        EXPECT_NE("Moon", body.state.body);
+    }
+  }
+}
+
+TEST(MoonPlanning, BobNewMoonReportRetainsPairsWithSharedVisibilityCaution) {
+  wxInitializer initializer;
+  ASSERT_TRUE(initializer.IsOk());
+  struct Case {
+    const char* date;
+    bool unavailable;
+  };
+  for (const Case sample : {Case{"2026-10-10T00:05:16", true},
+                            Case{"2026-10-10T13:05:16", true},
+                            Case{"2026-10-10T13:05:26", true},
+                            Case{"2026-10-11T00:05:16", true},
+                            Case{"2026-10-12T13:05:16", false}}) {
+    const wxDateTime utc = Utc(sample.date);
+    const auto plan = PlannerRecommendations::Calculate(utc, 43.0, -77.5);
+    ASSERT_FALSE(plan.bodies.empty());
+    const bool unavailable = !plan.moon.IsSightCandidate();
+    EXPECT_EQ(sample.unavailable, unavailable) << sample.date;
+    const auto lunar = PlannerRecommendations::Order(
+        plan, PlanningMode::LunarCandidates, true);
+    EXPECT_EQ(plan.bodies.size(), lunar.size());
+    bool foundMoon = false;
+    for (const auto& body : lunar) {
+      if (body.state.body == "Moon") {
+        foundMoon = true;
+        EXPECT_EQ(unavailable, body.visibilityUnavailable);
+        EXPECT_TRUE(body.reason.Contains("Moon illumination"));
+        continue;
+      }
+      ASSERT_TRUE(body.lunarValid) << body.state.body;
+      EXPECT_EQ(unavailable, body.lunarVisibilityUnavailable);
+      EXPECT_EQ(unavailable, body.lunarReason.Contains("below 1%"));
+    }
+    EXPECT_TRUE(foundMoon);
+    const auto pair = PlannerRecommendations::LunarPair("Aldebaran", utc, 43, -77.5);
+    EXPECT_EQ(unavailable, pair.lunarVisibilityUnavailable);
+    EXPECT_EQ(unavailable, pair.lunarReason.Contains("below 1%"));
+    if (unavailable) {
+      ObserverMotion observer;
+      observer.referenceUtc = utc;
+      observer.latitude = 43;
+      observer.longitude = -77.5;
+      EXPECT_TRUE(PlannerRecommendations::ObservingWindows(
+          "Aldebaran", observer, 1).empty());
+    }
+  }
+}
+
 TEST(HorizonEvents, GivesChronologicalOfflineTwilightAndRiseSetTable) {
   ObserverMotion observer;
   observer.referenceUtc = Utc("2026-08-13T00:00:00");

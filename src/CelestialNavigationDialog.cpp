@@ -47,10 +47,12 @@
 #include "AtomicXmlFile.h"
 #include "AndroidFileDialog.h"
 #include "DialogGeometry.h"
+#include "DialogFocus.h"
 #include "OcpnApiCompat.h"
 
 #include "celestial_navigation_pi.h"
 #include "Sight.h"
+#include "SightLogCsv.h"
 #include "SightPalette.h"
 #include "SightDialog.h"
 #include "HorizonEventDialog.h"
@@ -245,7 +247,7 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   m_practicalGuideHtmlButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnPracticalGuideHtml, this);
   m_manageSightsButton = new wxButton(this, wxID_ANY, _("Manage Sights..."));
   m_manageSightsButton->SetToolTip(
-      _("Back up, import or restore your sight log"));
+      _("Export CSV, back up, import or restore your sight log"));
   m_manageSightsButton->Bind(wxEVT_BUTTON,
                              &CelestialNavigationDialog::OnManageSights, this);
 
@@ -337,6 +339,19 @@ CelestialNavigationDialog::CelestialNavigationDialog(
           std::max(GetSize().y, minimum.y));
 #endif
   dialog_geometry::EnsureVisible(this);
+#ifndef __OCPN__ANDROID__
+  m_dialogFocus = std::make_unique<DialogFocusController>(this);
+#endif
+}
+
+bool CelestialNavigationDialog::BringToFront() {
+#ifdef __OCPN__ANDROID__
+  Show();
+  Raise();
+  return true;
+#else
+  return m_dialogFocus->BringToFront();
+#endif
 }
 
 #ifdef __OCPN__ANDROID__
@@ -362,6 +377,9 @@ void CelestialNavigationDialog::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
 #endif
 
 CelestialNavigationDialog::~CelestialNavigationDialog() {
+#ifndef __OCPN__ANDROID__
+  m_dialogFocus.reset();
+#endif
 #ifdef __OCPN__ANDROID__
   // wxQt can retain the native widget after the wx dialog is deleted. Stop
   // its clock before deleting any labels or unloading the plugin library.
@@ -1143,9 +1161,11 @@ void CelestialNavigationDialog::OnManageSights(wxCommandEvent&) {
     actions->Add(button, 0, wxEXPAND | wxALL, 8);
   };
   const int backupId = wxWindow::NewControlId();
+  const int exportId = wxWindow::NewControlId();
   const int addId = wxWindow::NewControlId();
   const int restoreId = wxWindow::NewControlId();
   addAction(backupId, _("Save backup of all sights..."));
+  addAction(exportId, _("Export sight log CSV..."));
   addAction(addId, _("Import sights (add to current log)..."));
   addAction(restoreId, _("Restore sights (replace current log)..."));
   sheet.SetSizer(actions);
@@ -1153,9 +1173,12 @@ void CelestialNavigationDialog::OnManageSights(wxCommandEvent&) {
 #else
   wxMenu menu;
   const int backupId = wxWindow::NewControlId();
+  const int exportId = wxWindow::NewControlId();
   const int addId = wxWindow::NewControlId();
   const int restoreId = wxWindow::NewControlId();
   menu.Append(backupId, _("Save backup of all sights..."));
+  menu.Append(exportId, _("Export sight log CSV..."));
+  menu.Enable(exportId, !m_Sights.empty());
   menu.AppendSeparator();
   menu.Append(addId, _("Import sights (add to current log)..."));
   menu.Append(restoreId, _("Restore sights (replace current log)..."));
@@ -1165,10 +1188,56 @@ void CelestialNavigationDialog::OnManageSights(wxCommandEvent&) {
 #endif
   if (selection == backupId)
     BackupSights();
+  else if (selection == exportId)
+    ExportSightsCsv();
   else if (selection == addId)
     ImportSights(false);
   else if (selection == restoreId)
     ImportSights(true);
+}
+
+void CelestialNavigationDialog::ExportSightsCsv() {
+#ifdef __OCPN__ANDROID__
+  wxString directory = *GetpPrivateApplicationDataLocation();
+#elif wxCHECK_VERSION(3, 1, 0)
+  wxString directory =
+      wxStandardPaths::Get().GetUserDir(wxStandardPaths::Dir_Downloads);
+#else
+  wxString directory = wxStandardPaths::Get().GetDocumentsDir();
+#endif
+  if (!wxFileName::DirExists(directory)) directory = wxGetHomeDir();
+  const wxString filename =
+      "Sight-log-" + wxDateTime::Now().Format("%Y%m%d-%H%M%S") + ".csv";
+  CelestialFileDialog dialog(this, _("Export sight log"), directory, filename,
+                             _("CSV files (*.csv)|*.csv"),
+                             wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+  if (dialog.ShowModal() != wxID_OK) return;
+  wxString error;
+  if (!ExportSightsCsvTo(dialog.GetPath(), &error)) {
+    CelestialMessageBox(error, _("Export failed"), wxOK | wxICON_ERROR, this);
+    return;
+  }
+  CelestialMessageBox(_("Sight log exported to:") + "\n" + dialog.GetPath(),
+                       _("Export complete"), wxOK | wxICON_INFORMATION, this);
+}
+
+bool CelestialNavigationDialog::ExportSightsCsvTo(const wxString& path,
+                                                wxString* error) {
+  wxFileName destination(path), current(m_sights_path);
+  destination.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_ABSOLUTE);
+  current.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_ABSOLUTE);
+  if (destination.SameAs(current)) {
+    if (error) *error = _("Choose a different filename for the export.");
+    return false;
+  }
+  const wxString csv = SightLogCsv(m_Sights, m_ClockCorrection);
+  return celestial_navigation::ReplaceFileAtomically(
+      path, [&csv](wxTempFile& file) {
+        // A UTF-8 BOM lets spreadsheet applications recognise degree signs,
+        // hemisphere labels and Unicode remarks on every desktop platform.
+        const auto utf8 = csv.utf8_str();
+        return file.Write("\xef\xbb\xbf", 3) && file.Write(utf8.data(), utf8.length());
+      }, error);
 }
 
 void CelestialNavigationDialog::BackupSights() {

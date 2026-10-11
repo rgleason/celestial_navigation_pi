@@ -1,0 +1,52 @@
+Celestial Navigation 2.9.8 development fixes
+==========================================
+
+Hidden modal dialogs (#325)
+--------------------------
+https://github.com/rgleason/celestial_navigation_pi/issues/325
+
+Bob reports Find and other child dialogs being covered by the chart or another
+plugin window while they still block the parent. The toolbar previously showed
+and raised the main Sights window unconditionally, even when it could not
+accept input. Rick's window-switching suggestions are useful workarounds, but
+the plugin can improve recovery itself.
+
+The toolbar now brings the current owned modal child forward; otherwise it
+shows the main Sights window. Recovery restores an iconized dialog and clamps
+its position to the display work area. App activation and activation of an
+ancestor window also bring forward the owned modal which needs attention.
+Existing keyboard focus and text selections are preserved when possible.
+
+Modal order is tracked through wxWidgets' ShowModal hooks. This matters on
+macOS, where native modality need not disable the other wx windows. An unrelated
+OpenCPN modal retains attention, and sibling tools do not trigger recovery.
+The route-almanac entry point brings forward the pending dialog instead of
+opening another tool while a modal is active.
+
+Recovery does not change ShowModal lifetimes, Save/Cancel semantics, or Android
+sheet behavior. It uses activation events rather than a polling timer or
+always-on-top flags. Deferred callbacks belong to the controller and are
+discarded before destruction, so none survive plugin shutdown.
+
+Validation
+----------
+The gated DialogFocusUi regression exercises the actual toolbar, Sights,
+Sight Properties and Find dialogs in an isolated test profile. It covers
+nested-modal targeting, recovery after child dismissal, offscreen recovery,
+retained text/selection, application and ancestor activation, deactivation,
+sibling and unrelated-modal behavior, Cancel, dismissal before queued recovery,
+controller destruction and synchronous plugin shutdown.
+
+The plugin and test executable build successfully. DialogFocusUi passes, and
+the existing FindBodyUi regression passes all its altitude, bearing and lunar
+action scenarios, including Save, Cancel, Escape, Reset and copy-altitude.
+The complete CTest run passes all 12 checks. UI tests remain opt-in; run each
+suite in a separate process with CELESTIAL_RUN_UI_TESTS=1 and a display:
+
+  celestial_tests --gtest_filter=DialogFocusUi.*
+  celestial_tests --gtest_filter=FindBodyUi.*
+
+Native macOS and Windows window ordering still needs release-candidate testing.
+Linux GUI tests can verify the event handling and real modal workflow, but do
+not establish that Cocoa or Windows will emit an activation event for every
+click on a blocked window. Native beeps are not intercepted by this change.

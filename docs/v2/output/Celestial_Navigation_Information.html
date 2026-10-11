@@ -425,7 +425,7 @@ sight is plotted and included where a workflow uses visible sights.</p>
 <tr><td>Eclipses…</td><td>Search, plot and calculate offline solar-eclipse circumstances.</td></tr>
 <tr><td>Coastal Sextant…</td><td>Use vertical-angle ranging or horizontal-sextant-angle fixing.</td></tr>
 <tr><td>Duplicate / Edit / Delete</td><td>Manage a selected stored sight. Duplicate is useful for a run of sights.</td></tr>
-<tr><td>Manage Sights…</td><td>Save a dated XML backup, add sights from another log, or restore a complete log.</td></tr>
+<tr><td>Manage Sights…</td><td>Export the sight log as CSV, save a dated XML backup, add sights from another log, or restore a complete log.</td></tr>
 <tr><td>Clock Offset</td><td>Apply a common correction to stored sight times.</td></tr>
 <tr><td>Hide sight log / Show sight log</td><td>Collapse or restore the sight list; this does not hide its chart plots.</td></tr>
 <tr><td>Chart display…</td><td>Adjust nominal line width, contrasting outline, uncertainty shading and hover labels for all sights.</td></tr>
@@ -473,6 +473,27 @@ and its clock correction. Both operations validate the file and save a dated
 safety backup before changing the current log. Older files open with empty
 Remarks; older plugin versions may discard remarks when rewriting a newer
 file, so retain a backup before returning to an older version.</p>
+
+<p><strong>Manage Sights… → Export sight log CSV...</strong> saves a spreadsheet
+report of every sight, including hidden sights, in the current log order. The
+save dialog starts in Downloads and offers a dated filename. Columns contain
+sight number, UTC date and time, type, body or lunar pair, limb, observed Hs or
+uncleared lunar distance, bearing, horizon, height of eye in metres, index error
+in arcminutes, temperature in Celsius, pressure in millibars, saved DR latitude
+and longitude, longitude-based zone, and Remarks. Angles use your OpenCPN
+display preference. Lunar rows use the Moon bearing and shared observing
+parameters; the limb is Near or Far. Event rows identify Sunrise or Sunset,
+have zero Hs and retain any entered bearing. Magnetic bearings end in M; true
+bearings have no suffix.</p>
+
+<p>Report UTC includes the existing clock correction. A lunar sight entered as
+watch time uses its selected valid lunar UTC solution; unresolved watch times
+leave UTC and calculated bearing blank. Altitude and lunar bearings are
+calculated at the saved DR position and report UTC. Zone is the rounded saved
+longitude divided by 15, labelled UTC+ or UTC−; it is not a civil time zone.
+Unavailable values remain blank. The UTF-8 CSV retains Unicode and multi-line
+remarks and does not change the current log. Use XML backup for restoring
+sights; CSV is a report.</p>
 
 <h2>7.2 Time integrity panel</h2>
 <p>The panel displays computer local time with time zone, UTC, GNSS/NMEA UTC
