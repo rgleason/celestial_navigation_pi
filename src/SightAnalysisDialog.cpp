@@ -23,10 +23,24 @@
 #include <algorithm>
 #include <cmath>
 
+namespace {
+template <typename T>
+T AnalysisSizeFromDIP(wxWindow* window, T size) {
+#ifdef __OCPN__ANDROID__
+  // Pinned wxQt predates FromDIP; the Android surface handles touch scaling.
+  (void)window;
+  return size;
+#else
+  return window->FromDIP(size);
+#endif
+}
+}  // namespace
+
 class ResidualPlotPanel : public wxPanel {
 public:
   explicit ResidualPlotPanel(wxWindow* parent)
-      : wxPanel(parent, wxID_ANY, wxDefaultPosition, parent->FromDIP(wxSize(-1, 180))) {
+      : wxPanel(parent, wxID_ANY, wxDefaultPosition,
+                AnalysisSizeFromDIP(parent, wxSize(-1, 180))) {
     SetBackgroundStyle(wxBG_STYLE_PAINT);
     SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
     Bind(wxEVT_PAINT, &ResidualPlotPanel::OnPaint, this);
@@ -86,7 +100,7 @@ private:
     const auto number = [](double value) { return wxString::Format("%+.1f'", value); };
     const wxString upper = number(maximum), lower = number(minimum);
     const int textHeight = dc.GetTextExtent(upper).y;
-    const int margin = FromDIP(8);
+    const int margin = AnalysisSizeFromDIP(this, 8);
     const int left = std::max(dc.GetTextExtent(upper).x,
                               dc.GetTextExtent(lower).x) + 2 * margin;
     const int right = size.x - margin;
@@ -427,7 +441,8 @@ void SightAnalysisDialog::Analyze(wxCommandEvent&) {
     }
   }
   m_summary->SetLabel(summary);
-  m_summary->Wrap(std::max(FromDIP(300), GetClientSize().x - FromDIP(16)));
+  m_summary->Wrap(std::max(AnalysisSizeFromDIP(this, 300),
+                          GetClientSize().x - AnalysisSizeFromDIP(this, 16)));
 #ifdef __OCPN__ANDROID__
   wxString details;
   for (const auto& residual : analysis.residuals) {
