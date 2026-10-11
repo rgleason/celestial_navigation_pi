@@ -129,6 +129,10 @@ struct MoonInformation {
   double ageDays = 0.0;
   bool waxing = false;
   wxString phaseName;
+
+  // Planning cutoff requested in #354; actual visibility also depends on sky
+  // conditions. Compare the unrounded fraction, not the displayed percentage.
+  bool IsSightCandidate() const { return illuminatedFraction >= 0.01; }
 };
 
 MoonInformation CalculateMoonInformation(const wxDateTime& utc,
@@ -158,6 +162,7 @@ struct RankedBody {
   double lunarTimingSeconds = 0.0;
   int lunarConstraints = 0;  // Count of explicitly reported planning cautions.
   bool lunarBelowHorizon = false;
+  bool lunarVisibilityUnavailable = false;  // Moon illumination below 1%.
   bool lunarValid = false;
   wxString lunarReason;
 };

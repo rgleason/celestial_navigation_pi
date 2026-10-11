@@ -32,6 +32,7 @@ set(SRC
     android_almanac_csv_tests.cpp
     android_planner_worker_tests.cpp
     dialog_geometry_tests.cpp
+    dialog_focus_ui_tests.cpp
     dialog_transaction_state_tests.cpp
     sight_search_span_ui_tests.cpp
     eclipse_data_files_tests.cpp
@@ -46,6 +47,7 @@ set(SRC
     fix_ui_smoke_tests.cpp
     fix_dr_tests.cpp
     sight_log_ui_tests.cpp
+    sight_log_csv_tests.cpp
     lunar_distance_engine_tests.cpp
     lunar_session_engine_tests.cpp
     lunar_usno_session_tests.cpp
@@ -77,8 +79,10 @@ set(SRC
     mock_plugin_impl.cpp
     ${CMAKE_SOURCE_DIR}/src/Sight.cpp
     ${CMAKE_SOURCE_DIR}/src/AtomicXmlFile.cpp
+    ${CMAKE_SOURCE_DIR}/src/SightLogCsv.cpp
     ${CMAKE_SOURCE_DIR}/src/Dut1UpdatePanel.cpp
     ${CMAKE_SOURCE_DIR}/src/DialogGeometry.cpp
+    ${CMAKE_SOURCE_DIR}/src/DialogFocus.cpp
     ${CMAKE_SOURCE_DIR}/src/EclipseDataFiles.cpp
     ${CMAKE_SOURCE_DIR}/src/EclipseVerificationWorker.cpp
     ${CMAKE_SOURCE_DIR}/src/LunarDistanceEngine.cpp
@@ -293,7 +297,7 @@ if(UNIX)
         string(REPLACE "/" "_" test_zone "${zone}")
         add_test(NAME numerical_audit_${test_zone}
             COMMAND ${CMAKE_COMMAND} -E env "TZ=${zone}"
-                $<TARGET_FILE:celestial_tests> --gtest_filter=NumericalAudit.*:CompactNavigation.RealInstantPreservesUtcAtDstTransitions:CompactNavigation.LunarCallbackKeepsUtcAcrossLocalDstGap)
+                $<TARGET_FILE:celestial_tests> --gtest_filter=NumericalAudit.*:SightLogCsv.*:CompactNavigation.RealInstantPreservesUtcAtDstTransitions:CompactNavigation.LunarCallbackKeepsUtcAcrossLocalDstGap)
     endforeach()
 endif()
 add_test(

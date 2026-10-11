@@ -6,6 +6,7 @@
 #include "SextantCalibrationEngine.h"
 
 #include <wx/dialog.h>
+#include <vector>
 
 class CelestialNavigationDialog;
 class NavigationAngleCtrl;
@@ -15,6 +16,8 @@ class wxCheckListBox;
 class wxChoice;
 class wxDatePickerCtrl;
 class wxListCtrl;
+class wxListEvent;
+struct RankedBody;
 class wxPanel;
 class wxSpinCtrlDouble;
 class wxStaticText;
@@ -55,6 +58,12 @@ private:
   void SelectCandidate(wxCommandEvent& event);
   void ApplySequenceCorrection(wxCommandEvent& event);
   void CalculatePlanner(wxCommandEvent& event);
+#ifndef __OCPN__ANDROID__
+  void SortPlanner(wxListEvent& event);
+  void ApplyPlannerSort();
+  static int wxCALLBACK ComparePlannerRows(wxIntPtr left, wxIntPtr right,
+                                           wxIntPtr context);
+#endif
   void PredictCalibrationPair(wxCommandEvent& event);
   void AddCalibrationReading(wxCommandEvent& event);
   void RemoveCalibrationReading(wxCommandEvent& event);
@@ -124,6 +133,13 @@ private:
   wxListCtrl* m_plannerList;
   wxChoice* m_plannerOrder;
   wxChoice* m_plannerCompanions;
+#ifndef __OCPN__ANDROID__
+  wxButton* m_plannerResetSort = nullptr;
+  std::vector<RankedBody> m_plannerRows;
+  bool m_plannerMoonBelowHorizon = false;
+  int m_plannerSortColumn = -1;
+  bool m_plannerSortAscending = true;
+#endif
 
   NavigationAngleCtrl* m_calLatitude;
   NavigationAngleCtrl* m_calLongitude;

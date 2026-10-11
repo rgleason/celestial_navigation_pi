@@ -54,6 +54,22 @@ double AngularSeparation(double lat1, double lon1, double lat2, double lon2) {
          kDeg;
 }
 
+MoonInformation MoonIllumination(const BodyState& sun, const BodyState& moon) {
+  MoonInformation result;
+  result.elongationDegrees = AngularSeparation(
+      sun.latitude, sun.longitude, moon.latitude, moon.longitude);
+  result.illuminatedFraction =
+      (1.0 - std::cos(result.elongationDegrees * kDeg)) / 2.0;
+  return result;
+}
+
+wxString MoonIlluminationGuidance(const MoonInformation& moon) {
+  return wxString::Format(_("Moon illumination %.1f%%"),
+                         moon.illuminatedFraction * 100.0) +
+      (moon.IsSightCandidate() ? _("; check phase and glare")
+                              : _("; below 1%: not recommended for sights"));
+}
+
 double DateObliquity(const wxDateTime& utc) {
   const double tt = astrolabe::dynamical::ut_to_dt(utc.GetJulianDayNumber());
   return astrolabe::nutation::obliquity(tt) +
@@ -574,11 +590,7 @@ MoonInformation CalculateMoonInformation(const wxDateTime& utc,
       CelestialEphemeris::Evaluate("Sun", later, observerLat, observerLon);
   const BodyState laterMoon =
       CelestialEphemeris::Evaluate("Moon", later, observerLat, observerLon);
-  MoonInformation result;
-  result.elongationDegrees = AngularSeparation(sun.latitude, sun.longitude,
-                                               moon.latitude, moon.longitude);
-  result.illuminatedFraction =
-      (1.0 - std::cos(result.elongationDegrees * kDeg)) / 2.0;
+  MoonInformation result = MoonIllumination(sun, moon);
   const double laterElongation =
       AngularSeparation(laterSun.latitude, laterSun.longitude,
                         laterMoon.latitude, laterMoon.longitude);
@@ -731,8 +743,10 @@ RankedBody SightRanker::AssessBody(const BodyState& state, const BodyState& sun)
     visibility = 1.0;
     candidate.visibilityGuidance = _("Use solar filters");
   } else if (state.body == "Moon") {
-    visibility = 1.0;
-    candidate.visibilityGuidance = _("Check phase and glare");
+    const MoonInformation moon = MoonIllumination(sun, state);
+    candidate.visibilityUnavailable = !moon.IsSightCandidate();
+    visibility = candidate.visibilityUnavailable ? 0.0 : 1.0;
+    candidate.visibilityGuidance = MoonIlluminationGuidance(moon);
   } else {
     // Planet magnitudes are representative, not date-specific photometry.
     const double separation = AngularSeparation(state.declination, -state.gha,
@@ -932,6 +946,10 @@ void LunarDetails(RankedBody& body, const BodyState& moon,
     body.lunarReason += text;
     ++body.lunarConstraints;
   };
+  const MoonInformation illumination = MoonIllumination(sun, moon);
+  body.lunarVisibilityUnavailable = !illumination.IsSightCandidate();
+  if (body.lunarVisibilityUnavailable)
+    caution(MoonIlluminationGuidance(illumination));
   if (body.lunarBelowHorizon) caution(_("Moon or companion below horizon"));
   else if (std::min(moon.geometricAltitude, body.state.geometricAltitude) < 10 ||
            std::max(moon.geometricAltitude, body.state.geometricAltitude) > 75)

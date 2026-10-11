@@ -580,7 +580,13 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
   m_plannerOrder->Append(_("Lunar order: cautions, brightness, timing"));
   m_plannerOrder->Append(_("Lunar order: timing sensitivity"));
   m_plannerOrder->SetSelection(0);
-  m_plannerOrder->Bind(wxEVT_CHOICE, &LunarToolsDialog::CalculatePlanner, this);
+  m_plannerOrder->Bind(wxEVT_CHOICE, [this](wxCommandEvent& event) {
+#ifndef __OCPN__ANDROID__
+    m_plannerSortColumn = -1;
+    ApplyPlannerSort();
+#endif
+    CalculatePlanner(event);
+  });
   auto* companionControls = new wxWrapSizer(wxHORIZONTAL);
   m_plannerCompanions = new wxChoice(page, wxID_ANY);
   m_plannerCompanions->Append(_("Traditional lunar companions"));
@@ -593,6 +599,15 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
   m_plannerCompanions->Bind(wxEVT_CHOICE, &LunarToolsDialog::CalculatePlanner, this);
   companionControls->Add(m_plannerCompanions, 0, wxRIGHT | wxBOTTOM, 8);
   companionControls->Add(m_plannerOrder, 0, wxBOTTOM, 4);
+#ifndef __OCPN__ANDROID__
+  m_plannerResetSort = new wxButton(page, wxID_ANY, _("Reset column sort"));
+  m_plannerResetSort->Enable(false);
+  m_plannerResetSort->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    m_plannerSortColumn = -1;
+    ApplyPlannerSort();
+  });
+  companionControls->Add(m_plannerResetSort, 0, wxLEFT | wxBOTTOM, 8);
+#endif
   top->Add(companionControls, 0, wxALL | wxEXPAND, 6);
   m_plannerList = new wxListCtrl(page, wxID_ANY, wxDefaultPosition,
                                  wxDefaultSize, wxLC_REPORT | wxBORDER_SUNKEN);
@@ -622,6 +637,10 @@ void LunarToolsDialog::BuildPlannerPage(wxWindow* page) {
       item->SetBorder(8);
     }
 #else
+  m_plannerList->Bind(wxEVT_LIST_COL_CLICK, &LunarToolsDialog::SortPlanner, this);
+  m_plannerList->SetToolTip(
+      _("Click a column heading to sort; click again to reverse the order. "
+        "Reset column sort restores planning order."));
   top->Add(m_plannerList, 1, wxEXPAND | wxALL, 6);
 #endif
   page->SetSizer(top);
@@ -1251,6 +1270,9 @@ void LunarToolsDialog::ApplySequenceCorrection(wxCommandEvent&) {
 }
 
 void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
+#ifndef __OCPN__ANDROID__
+  m_plannerRows.clear();
+#endif
 #ifdef __OCPN__ANDROID__
   m_androidPairCards->GetSizer()->Clear(true);
   celestial_android::LayoutScrolls(this);
@@ -1279,6 +1301,10 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
       m_plannerOrder->GetSelection() == 1, m_plannerCompanions->GetSelection() == 0);
   rows.erase(std::remove_if(rows.begin(), rows.end(),
       [](const RankedBody& b) { return !b.lunarValid; }), rows.end());
+#ifndef __OCPN__ANDROID__
+  m_plannerRows = rows;
+  m_plannerMoonBelowHorizon = moon.geometricAltitude < 0.0;
+#endif
   for (std::size_t index = 0; index < rows.size(); ++index) {
     const RankedBody& row = rows[index];
 #ifdef __OCPN__ANDROID__
@@ -1303,11 +1329,15 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
         plan.moon.illuminatedFraction * 100.0,
         row.state.visualMagnitude, row.eclipticLatitude);
     if (!row.lunarReason.empty()) caption += "\n" + row.lunarReason;
-    m_androidPairCards->GetSizer()->Add(
-        new wxStaticText(m_androidPairCards, wxID_ANY, caption),
-        0, wxEXPAND | wxALL, 12);
+    auto* card = new wxStaticText(m_androidPairCards, wxID_ANY, caption);
+    if (row.lunarVisibilityUnavailable) {
+      card->SetForegroundColour(wxColour(150, 150, 150));
+      card->GetHandle()->setProperty("cnPreserveColour", true);
+    }
+    m_androidPairCards->GetSizer()->Add(card, 0, wxEXPAND | wxALL, 12);
 #else
     const long item = m_plannerList->InsertItem(index, row.state.body);
+    m_plannerList->SetItemData(item, index);
     if (moon.geometricAltitude < 0.0 && row.state.geometricAltitude < 0.0)
       m_plannerList->SetItem(item, 1, _("Both"));
     else if (moon.geometricAltitude < 0.0)
@@ -1344,13 +1374,128 @@ void LunarToolsDialog::CalculatePlanner(wxCommandEvent&) {
                            wxString::Format(CN_UTF8_("%+.1f°"),
                                             row.eclipticLatitude));
     m_plannerList->SetItem(item, 12, row.lunarReason);
+    if (row.lunarVisibilityUnavailable)
+      m_plannerList->SetItemTextColour(item, wxColour(150, 150, 150));
 #endif
   }
 #ifdef __OCPN__ANDROID__
   CN_StyleAndroidControls(m_androidPairCards);
   celestial_android::LayoutScrolls(this);
+#else
+  ApplyPlannerSort();
 #endif
 }
+
+#ifndef __OCPN__ANDROID__
+int wxCALLBACK LunarToolsDialog::ComparePlannerRows(wxIntPtr left,
+                                                    wxIntPtr right,
+                                                    wxIntPtr context) {
+  const auto* dialog = reinterpret_cast<const LunarToolsDialog*>(context);
+  const RankedBody& a = dialog->m_plannerRows[left];
+  const RankedBody& b = dialog->m_plannerRows[right];
+  int comparison = 0;
+  const int column = dialog->m_plannerSortColumn;
+  if (column == 0) {
+    comparison = a.state.body.CmpNoCase(b.state.body);
+  } else if (column == 1) {
+    const auto label = [dialog](const RankedBody& row) -> wxString {
+      if (dialog->m_plannerMoonBelowHorizon)
+        return row.state.geometricAltitude < 0.0 ? _("Both") : _("Moon");
+      return row.state.geometricAltitude < 0.0 ? _("Body") : wxString();
+    };
+    comparison = label(a).CmpNoCase(label(b));
+  } else if (column == 12) {
+    comparison = a.lunarReason.CmpNoCase(b.lunarReason);
+  } else {
+    const auto value = [column](const RankedBody& row) {
+      switch (column) {
+        case 2:
+          return row.lunarDistance;
+        case 3:
+          return row.lunarRateArcminHour;
+        case 4:
+          return row.lunarTimingSeconds;
+        case 6:
+          return row.state.geometricAltitude;
+        case 8:
+          return row.state.azimuthTrue;
+        case 10:
+          return row.state.visualMagnitude;
+        case 11:
+          return row.eclipticLatitude;
+        // Moon altitude, azimuth and illumination are shared by every row.
+        default:
+          return 0.0;
+      }
+    };
+    const double av = value(a), bv = value(b);
+    // Keep unavailable values (displayed as a dash) last in either direction.
+    if (std::isfinite(av) != std::isfinite(bv))
+      return std::isfinite(av) ? -1 : 1;
+    comparison = av < bv ? -1 : av > bv ? 1 : 0;
+  }
+  // Preserve the original planning order for equal values, even when reversing.
+  if (comparison == 0) return left < right ? -1 : left > right ? 1 : 0;
+  return dialog->m_plannerSortAscending ? comparison : -comparison;
+}
+
+void LunarToolsDialog::ApplyPlannerSort() {
+  if (m_plannerList->GetItemCount() > 1) {
+    // wxListCtrl sorting can discard selection/focus on some platforms.
+    // Keep the row identities rather than the positions which are changing.
+    std::vector<wxUIntPtr> selected;
+    for (long item = m_plannerList->GetNextItem(-1, wxLIST_NEXT_ALL,
+                                                wxLIST_STATE_SELECTED);
+         item != -1; item = m_plannerList->GetNextItem(item, wxLIST_NEXT_ALL,
+                                                       wxLIST_STATE_SELECTED))
+      selected.push_back(m_plannerList->GetItemData(item));
+    const long focused =
+        m_plannerList->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_FOCUSED);
+    const wxIntPtr focusedData =
+        focused >= 0 ? m_plannerList->GetItemData(focused) : -1;
+    m_plannerList->SortItems(&LunarToolsDialog::ComparePlannerRows,
+                             reinterpret_cast<wxIntPtr>(this));
+    for (long item = 0; item < m_plannerList->GetItemCount(); ++item) {
+      const auto data = m_plannerList->GetItemData(item);
+      long state =
+          std::find(selected.begin(), selected.end(), data) != selected.end()
+              ? wxLIST_STATE_SELECTED
+              : 0;
+      if (focusedData >= 0 && data == static_cast<wxUIntPtr>(focusedData))
+        state |= wxLIST_STATE_FOCUSED;
+      m_plannerList->SetItemState(item, state,
+                                  wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED);
+    }
+  }
+  m_plannerResetSort->Enable(m_plannerSortColumn >= 0);
+#if wxCHECK_VERSION(3, 1, 6)
+  m_plannerList->ShowSortIndicator(m_plannerSortColumn, m_plannerSortAscending);
+#else
+  for (int column = 0; column < m_plannerList->GetColumnCount(); ++column) {
+    wxListItem item;
+    m_plannerList->GetColumn(column, item);
+    wxString label = item.GetText();
+    if (label.EndsWith(" ^") || label.EndsWith(" v")) label.RemoveLast(2);
+    if (column == m_plannerSortColumn)
+      label += m_plannerSortAscending ? " ^" : " v";
+    item.SetText(label);
+    m_plannerList->SetColumn(column, item);
+  }
+#endif
+}
+
+void LunarToolsDialog::SortPlanner(wxListEvent& event) {
+  const int column = event.GetColumn();
+  if (column < 0 || column >= m_plannerList->GetColumnCount()) return;
+  if (m_plannerSortColumn == column)
+    m_plannerSortAscending = !m_plannerSortAscending;
+  else {
+    m_plannerSortColumn = column;
+    m_plannerSortAscending = true;
+  }
+  ApplyPlannerSort();
+}
+#endif
 
 wxDateTime LunarToolsDialog::CalibrationUtc() const {
   return ReadUtcEntry(m_calUtc, m_entryFormat->GetSelection(), true,

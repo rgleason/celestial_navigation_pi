@@ -14,6 +14,7 @@
 #include "CelestialNavigationDialog.h"
 #include "HorizonEventDialog.h"
 #include "SightDialog.h"
+#include "SightLogCsv.h"
 #include "mock_plugin_api.h"
 
 #ifdef __WXGTK3__
@@ -169,6 +170,18 @@ TEST(SightLogUi, RemarksAndManagerRoundTripOldAndNewXml) {
     EXPECT_TRUE(HasTextValue(&eventEditor, remark));
 
     wxString error;
+    const wxString csvPath = root + "/sight-log.csv";
+    const wxString beforeExport = ReadFile(active);
+    EXPECT_TRUE(main.ExportSightsCsvTo(csvPath, &error)) << error;
+    wxString exported = ReadFile(csvPath);
+    if (exported.StartsWith(wxString(wxUniChar(0xfeff)))) exported.Remove(0, 1);
+    EXPECT_EQ(SightLogCsv(main.m_Sights, main.GetClockCorrection()), exported);
+    EXPECT_EQ(beforeExport, ReadFile(active));
+    EXPECT_EQ(remark, main.m_Sights[0].m_Remarks);
+    EXPECT_FALSE(main.ExportSightsCsvTo(active, &error));
+    EXPECT_EQ(beforeExport, ReadFile(active));
+    EXPECT_FALSE(main.ExportSightsCsvTo(root + "/invalid.xml/report.csv", &error));
+    EXPECT_EQ(beforeExport, ReadFile(active));
     EXPECT_TRUE(main.BackupSightsTo(backup, &error)) << error;
     EXPECT_EQ(ReadFile(active), ReadFile(backup));
     wxString safety;

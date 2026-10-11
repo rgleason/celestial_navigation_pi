@@ -64,7 +64,8 @@ wxFileConfig* GetOCPNConfigObject(void) {
   return s_config;
 }
 wxAuiManager* GetFrameAuiManager(void) { return 0; }
-wxWindow* GetOCPNCanvasWindow() { return 0; }
+static wxWindow* s_canvasWindow = nullptr;
+wxWindow* GetOCPNCanvasWindow() { return s_canvasWindow; }
 
 DECL_EXP void PushNMEABuffer(wxString str) {}
 
@@ -72,6 +73,8 @@ int AddCanvasMenuItem(wxMenuItem*, opencpn_plugin*, const char*) { return 73; }
 void RemoveCanvasMenuItem(int, const char*) {}
 
 }  // extern "C"
+
+void SetTestCanvasWindow(wxWindow* window) { s_canvasWindow = window; }
 
 wxString GetSelectedRouteGUID_Plugin() { return wxString(); }
 

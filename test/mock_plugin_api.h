@@ -28,6 +28,7 @@
 void SetTestWaypoints(const std::vector<WaypointPosition>& points);
 void SetTestPluginDataRoot(const wxString& path);
 void SetTestPrivateDataPath(const wxString& path);
+void SetTestCanvasWindow(wxWindow* window);
 int TestDownloadCalls();
 void SetTestCanvasRecording(bool enabled);
 std::vector<std::pair<double,double>> TestCanvasPoints();
