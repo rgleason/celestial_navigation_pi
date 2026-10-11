@@ -3,6 +3,7 @@
 #include "CelestialNavigationDialog.h"
 #include "DialogGeometry.h"
 #include "ReportListLayout.h"
+#include "WxDpiCompat.h"
 #include "NavigationUIUtils.h"
 #include "NavigationAlgorithms.h"
 #include "Sight.h"
@@ -23,24 +24,11 @@
 #include <algorithm>
 #include <cmath>
 
-namespace {
-template <typename T>
-T AnalysisSizeFromDIP(wxWindow* window, T size) {
-#ifdef __OCPN__ANDROID__
-  // Pinned wxQt predates FromDIP; the Android surface handles touch scaling.
-  (void)window;
-  return size;
-#else
-  return window->FromDIP(size);
-#endif
-}
-}  // namespace
-
 class ResidualPlotPanel : public wxPanel {
 public:
   explicit ResidualPlotPanel(wxWindow* parent)
       : wxPanel(parent, wxID_ANY, wxDefaultPosition,
-                AnalysisSizeFromDIP(parent, wxSize(-1, 180))) {
+                celestial_ui::FromDIP(parent, wxSize(-1, 180))) {
     SetBackgroundStyle(wxBG_STYLE_PAINT);
     SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
     Bind(wxEVT_PAINT, &ResidualPlotPanel::OnPaint, this);
@@ -100,7 +88,7 @@ private:
     const auto number = [](double value) { return wxString::Format("%+.1f'", value); };
     const wxString upper = number(maximum), lower = number(minimum);
     const int textHeight = dc.GetTextExtent(upper).y;
-    const int margin = AnalysisSizeFromDIP(this, 8);
+    const int margin = celestial_ui::FromDIP(this, 8);
     const int left = std::max(dc.GetTextExtent(upper).x,
                               dc.GetTextExtent(lower).x) + 2 * margin;
     const int right = size.x - margin;
@@ -223,7 +211,7 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
     const int textWidth = std::max(
         control->GetTextExtent(FormatNavigationAngle(limit, kind)).x,
         control->GetTextExtent(FormatNavigationAngle(-limit, kind)).x);
-    control->SetMinSize(control->GetSizeFromTextSize(textWidth + FromDIP(8)));
+    control->SetMinSize(control->GetSizeFromTextSize(textWidth + celestial_ui::FromDIP(this, 8)));
   }
 #endif
   position->Add(m_longitude, 0, wxALIGN_CENTER_VERTICAL);
@@ -247,7 +235,7 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
   for (auto* control : {m_course, m_speed}) {
     const wxString sample = wxString::Format("%.1f", control->GetMax());
     control->SetMinSize(control->GetSizeFromTextSize(
-        control->GetTextExtent(sample).x + FromDIP(8)));
+        control->GetTextExtent(sample).x + celestial_ui::FromDIP(this, 8)));
   }
 #endif
   motion->Add(m_speed, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 18);
@@ -333,8 +321,8 @@ SightAnalysisDialog::SightAnalysisDialog(CelestialNavigationDialog* parent)
 #ifdef __OCPN__ANDROID__
   SetMinSize(wxSize(700, 480));
 #else
-  SetMinSize(wxSize(std::max(FromDIP(700), root->CalcMin().x),
-                    std::max(FromDIP(480), root->CalcMin().y)));
+  SetMinSize(wxSize(std::max(celestial_ui::FromDIP(this, 700), root->CalcMin().x),
+                    std::max(celestial_ui::FromDIP(this, 480), root->CalcMin().y)));
 #endif
   dialog_geometry::Restore(this, _T("SightAnalysis"), wxSize(820, 540));
 }
@@ -441,8 +429,8 @@ void SightAnalysisDialog::Analyze(wxCommandEvent&) {
     }
   }
   m_summary->SetLabel(summary);
-  m_summary->Wrap(std::max(AnalysisSizeFromDIP(this, 300),
-                          GetClientSize().x - AnalysisSizeFromDIP(this, 16)));
+  m_summary->Wrap(std::max(celestial_ui::FromDIP(this, 300),
+                          GetClientSize().x - celestial_ui::FromDIP(this, 16)));
 #ifdef __OCPN__ANDROID__
   wxString details;
   for (const auto& residual : analysis.residuals) {

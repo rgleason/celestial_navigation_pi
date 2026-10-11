@@ -27,6 +27,7 @@
 #include "OcpnApiCompat.h"
 #include "DialogGeometry.h"
 #include "UtcDateTime.h"
+#include "WxDpiCompat.h"
 #include "Utf8Translation.h"
 #ifdef __OCPN__ANDROID__
 #include "AndroidTouch.h"
@@ -44,7 +45,7 @@ void SizeNumber(wxControl* control, const std::vector<wxString>& samples) {
     textWidth = std::max(textWidth, control->GetTextExtent(sample).x);
   // GetSizeFromTextSize accounts for each port's native spin buttons and
   // borders; a fixed pixel width leaves too little room at larger fonts/DPI.
-  control->SetMinSize(control->GetSizeFromTextSize(textWidth + control->FromDIP(8)));
+  control->SetMinSize(control->GetSizeFromTextSize(textWidth + celestial_ui::FromDIP(control, 8)));
 }
 
 void SizeChoice(wxChoice* control) {
@@ -346,8 +347,9 @@ HorizonEventDialog::HorizonEventDialog(wxWindow* parent, Sight& sight,
 #ifdef __OCPN__ANDROID__
   SetMinSize(wxSize(600, 540));
 #else
-  const int minimumWidth = std::max(FromDIP(600), observation->CalcMin().x + FromDIP(16));
-  SetMinSize(wxSize(minimumWidth, FromDIP(540)));
+  const int minimumWidth = std::max(celestial_ui::FromDIP(this, 600),
+                                     observation->CalcMin().x + celestial_ui::FromDIP(this, 16));
+  SetMinSize(wxSize(minimumWidth, celestial_ui::FromDIP(this, 540)));
 #endif
   wxRect displayArea(0, 0, 700, 760);
   const int displayIndex = wxDisplay::GetFromWindow(parent);

@@ -1,4 +1,5 @@
 #include "ReportListLayout.h"
+#include "WxDpiCompat.h"
 
 #ifndef __OCPN__ANDROID__
 #include <algorithm>
@@ -23,7 +24,7 @@ ReportListLayout::ReportListLayout(wxListCtrl* list, const wxString& key,
     for (int column = m_firstColumn; column < m_list->GetColumnCount(); ++column) {
       long width = 0;
       if (config->Read(WidthKey(column), &width) && width >= 16 && width <= 4096) {
-        m_list->SetColumnWidth(column, m_list->FromDIP(static_cast<int>(width)));
+        m_list->SetColumnWidth(column, celestial_ui::FromDIP(m_list, static_cast<int>(width)));
         m_manualWidths[column] = true;
       }
     }
@@ -44,7 +45,7 @@ void ReportListLayout::OnColumnResized(wxListEvent& event) {
 }
 
 void ReportListLayout::FitContents(const std::vector<wxString>& samples) {
-  const int padding = m_list->FromDIP(24);  // cell edges and sort indicator
+  const int padding = celestial_ui::FromDIP(m_list, 24);  // cell edges and sort indicator
   for (int column = m_firstColumn; column < m_list->GetColumnCount(); ++column) {
     if (m_manualWidths[column]) continue;
     wxListItem header;
@@ -59,7 +60,7 @@ void ReportListLayout::FitContents(const std::vector<wxString>& samples) {
     // Long remarks can be expanded manually without giving every initial
     // report an enormous horizontal scroll range.
     const int width = std::max(minimum + padding,
-        std::min(content + padding, m_list->FromDIP(600)));
+        std::min(content + padding, celestial_ui::FromDIP(m_list, 600)));
     m_list->SetColumnWidth(column, width);
   }
 }
@@ -69,7 +70,7 @@ void ReportListLayout::Save() const {
     wxConfigPathChanger path(config, m_path + "/");
     for (int column = m_firstColumn; column < m_list->GetColumnCount(); ++column)
       if (m_manualWidths[column])
-        config->Write(WidthKey(column), m_list->ToDIP(m_list->GetColumnWidth(column)));
+        config->Write(WidthKey(column), celestial_ui::ToDIP(m_list, m_list->GetColumnWidth(column)));
   }
 }
 #endif

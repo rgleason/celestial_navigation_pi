@@ -49,6 +49,7 @@
 #include "DialogGeometry.h"
 #include "DialogFocus.h"
 #include "ReportListLayout.h"
+#include "WxDpiCompat.h"
 #include "OcpnApiCompat.h"
 
 #include "celestial_navigation_pi.h"
@@ -286,7 +287,7 @@ CelestialNavigationDialog::CelestialNavigationDialog(
     m_lSights->SetColumnWidth(column, column == rmVISIBLE
         ? 28 : wxLIST_AUTOSIZE_USEHEADER);
 #else
-  m_lSights->SetColumnWidth(rmVISIBLE, m_lSights->FromDIP(28));
+  m_lSights->SetColumnWidth(rmVISIBLE, celestial_ui::FromDIP(m_lSights, 28));
   m_sightColumns = std::make_unique<ReportListLayout>(m_lSights, "Sights", 1);
   m_sightColumns->FitContents({"", "", "", "2000-12-31 23:59:59",
                               "", "", wxString('n', 50)});
