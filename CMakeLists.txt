@@ -76,7 +76,7 @@ set(VERSION_MAJOR "2")
 set(VERSION_MINOR "9")
 set(VERSION_PATCH "8")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "10/10/2026" )# DD/MM/YYYY format
+set(VERSION_DATE  "11/10/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -313,6 +313,8 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src/geomag)
 target_sources(${PACKAGE_NAME} PUBLIC ${SRC} )
 if(QT_ANDROID)
   target_link_options(${PACKAGE_NAME} PRIVATE "-Wl,--exclude-libs,ALL")
+  target_link_options(${PACKAGE_NAME} PRIVATE
+    "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384")
 endif()
 
 # The eclipse numerical core is also usable as a standalone library/CLI. The

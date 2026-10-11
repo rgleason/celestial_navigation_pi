@@ -1,0 +1,37 @@
+Celestial Navigation 2.9.8 Android port
+=====================================
+
+Base: bc8a5c0cc6afcd7108b8f3a298252cbda0bfd411 (Android 2.9.7,
+fix/android-16k-pages). The attached SM-X210's installed plugin matches the
+retained package from this base byte for byte. Keep the existing native touch
+workspace, file browser, UTC adapters and 16 KB ELF alignment settings.
+
+Ported behavior:
+- Use unrounded Moon illumination for the 1% planning cutoff. Keep unavailable
+  Moon entries and lunar pairs grey with explicit guidance, exclude them from
+  recommended fix sets, and reject their observing windows. Show illumination
+  with one decimal place in both planners.
+- Sort lunar pair cards with native "Sort pairs by" and "Sort direction"
+  choices. Numeric sorts use raw values, unavailable values stay last in either
+  direction and ties retain the chosen planning order. "Planning order"
+  restores the original ranking. Recalculation and companion filtering retain
+  a field sort; choosing a different planning strategy clears it. Omit the
+  three Moon columns because their values are identical for every pair.
+- Add "Export sight log CSV..." to Manage Sights using the existing touch file
+  browser and app-writable starting directory. Reuse the desktop serializer,
+  preferred angle format and UTC/clock corrections. Exporting does not change
+  sights or the XML log. Include hidden sights and quote Unicode/multiline
+  remarks. Refuse the active Sights.xml path.
+- Retain the existing known-position lunar check (#341), already present in
+  this Android base. Desktop window-stacking recovery is compiled out on
+  Android, whose navigation is a single full-screen touch workspace.
+
+Build: NDK 26.1.10909125, pinned Android wxQt 3.1 / Qt 5.12.2 and the same
+OpenCPN 5.14.1 support library as the installed tablet. Plugin API remains 1.18.
+Use wxString::FromUTF8(text.c_str()) for compatibility with this pinned wxQt.
+The host Android UTC, angle, download and planner-time boundary suites pass.
+ARM64 release build and CPack package creation pass. Final import package must
+pass the allocated ELF section comparison and ci/verify-android-pages.py.
+
+Bundled Android Quick Guide is updated. The shared HTML reference describes
+CSV export; the existing PDF manuals are retained from the Android base.

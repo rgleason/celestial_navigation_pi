@@ -1208,7 +1208,9 @@ void CelestialNavigationDialog::OnManageSights(wxCommandEvent&) {
 }
 
 void CelestialNavigationDialog::ExportSightsCsv() {
-#if wxCHECK_VERSION(3, 1, 0)
+#ifdef __OCPN__ANDROID__
+  wxString directory = *GetpPrivateApplicationDataLocation();
+#elif wxCHECK_VERSION(3, 1, 0)
   wxString directory =
       wxStandardPaths::Get().GetUserDir(wxStandardPaths::Dir_Downloads);
 #else
