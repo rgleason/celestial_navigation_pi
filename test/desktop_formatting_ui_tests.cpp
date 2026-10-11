@@ -4,6 +4,7 @@
 #include <wx/fileconf.h>
 #include <wx/filename.h>
 #include <wx/listctrl.h>
+#include <wx/modalhook.h>
 #include <wx/spinctrl.h>
 #include <cstdlib>
 #include <vector>
@@ -12,6 +13,7 @@
 #include "HorizonEventDialog.h"
 #include "SightAnalysisDialog.h"
 #include "mock_plugin_api.h"
+#include "UtcDateTime.h"
 
 #ifdef __WXGTK3__
 #include <gtk/gtk.h>
@@ -76,6 +78,25 @@ void Analyze(wxWindow* dialog) {
       }
   ADD_FAILURE() << "Analyze button missing";
 }
+
+class HorizonUtcCheck : public wxModalDialogHook {
+public:
+  bool visited = false;
+  int Enter(wxDialog* dialog) override {
+    if (!dynamic_cast<HorizonEventDialog*>(dialog)) return wxID_NONE;
+    visited = true;
+    const auto before = UtcDateTime::Fields(UtcDateTime::Now());
+    wxSpinCtrl* hours = nullptr;
+    for (auto* child : Descendants(dialog))
+      if (auto* spin = dynamic_cast<wxSpinCtrl*>(child))
+        if (spin->GetMax() == 23) hours = spin;
+    EXPECT_NE(nullptr, hours);
+    if (hours) {
+      EXPECT_EQ(before.hour, hours->GetValue());
+    }
+    return wxID_CANCEL;
+  }
+};
 }  // namespace
 
 TEST(DesktopFormattingUi, ReadableControlsAndPersistentReportColumns) {
@@ -132,6 +153,18 @@ TEST(DesktopFormattingUi, ReadableControlsAndPersistentReportColumns) {
     int customSightWidth = 0;
     {
       CelestialNavigationDialog main(&frame, &plugin);
+      HorizonUtcCheck utcCheck;
+      utcCheck.Register();
+      for (auto* child : Descendants(&main))
+        if (auto* button = dynamic_cast<wxButton*>(child))
+          if (button->GetLabel() == "Horizon Event...") {
+            wxCommandEvent event(wxEVT_BUTTON, button->GetId());
+            event.SetEventObject(button);
+            button->GetEventHandler()->ProcessEvent(event);
+          }
+      utcCheck.Unregister();
+      EXPECT_TRUE(utcCheck.visited);
+      EXPECT_TRUE(main.m_Sights.empty());
       for (const char* time : {"2026-09-01T08:00:00", "2026-09-01T09:00:00", "2026-10-11T08:00:00"}) {
         ASSERT_TRUE(utc.ParseISOCombined(time));
         Sight sight(Sight::ALTITUDE, "Sun", Sight::LOWER, utc, 1, 2, .2);

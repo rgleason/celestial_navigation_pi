@@ -44,6 +44,14 @@ is shown; assuming its earlier offscreen position remains unchanged tested
 window-manager placement rather than plugin recovery. Production focus code
 is unchanged.
 
+The installed-host smoke test also found that a newly opened Horizon Event
+used wxDateTime::UNow() directly as saved UTC calendar fields on desktop. In
+British Summer Time this initially displayed the local hour, while Capture
+current UTC used the correct adapter. Creation now uses UtcDateTime::Now(),
+matching capture and the default Sight constructor. The GUI regression opens
+the real Horizon Event action, checks its initial UTC hour and cancels without
+adding a sight. Android's instant representation is unchanged by this adapter.
+
 Full CTest: 12/12 groups pass. Native Windows/macOS runtime verification is
 still required; these Linux checks do not establish their final rendering.
 

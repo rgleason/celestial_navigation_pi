@@ -1630,7 +1630,7 @@ wxString CelestialNavigationDialog::CurrentTimeCaptureSummary() {
 }
 
 void CelestialNavigationDialog::OnHorizonEvent(wxCommandEvent& event) {
-  const wxDateTime now = wxDateTime::UNow();
+  const wxDateTime now = UtcDateTime::Now();
   const wxDateTime localNow = wxDateTime::Now();
   Sight sight(Sight::HORIZON, _T("Sun"), Sight::UPPER, now, 2, 0, 10);
   sight.m_HorizonEvent =
