@@ -846,19 +846,15 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       ASSERT_NE(refresh, nullptr);
       wxCommandEvent refreshed(wxEVT_BUTTON, refresh->GetId());
       refreshed.SetEventObject(refresh); refresh->ProcessWindowEvent(refreshed);
-      wxChoice* planningMode = nullptr;
-      wxCheckBox* showEcliptic = nullptr;
-      wxCheckBox* showMoonPath = nullptr;
-      for (auto* child : bodiesPage->GetChildren()) {
-        if (auto* choice = dynamic_cast<wxChoice*>(child))
-          if (choice->GetCount() == 4 &&
-              choice->GetString(0) == "Practical Fix") planningMode = choice;
-        if (auto* check = dynamic_cast<wxCheckBox*>(child)) {
-          if (check->GetLabel() == "Show ecliptic") showEcliptic = check;
-          if (check->GetLabel() == "Show Moon path") showMoonPath = check;
-        }
-      }
+      auto* planningMode = FindPlannerControl<wxChoice>(bodiesPage,
+          [](wxChoice* c) { return c->GetName() == "PlannerRecommendationMode"; });
+      auto* showEcliptic = FindPlannerControl<wxCheckBox>(bodiesPage,
+          [](wxCheckBox* c) { return c->GetLabel() == "Show ecliptic"; });
+      auto* showMoonPath = FindPlannerControl<wxCheckBox>(bodiesPage,
+          [](wxCheckBox* c) { return c->GetLabel() == "Show Moon path"; });
       ASSERT_NE(planningMode, nullptr);
+      EXPECT_EQ(3, planningMode->GetCount());
+      EXPECT_EQ(wxNOT_FOUND, planningMode->FindString("Show All"));
       ASSERT_NE(showEcliptic, nullptr);
       ASSERT_NE(showMoonPath, nullptr);
       EXPECT_FALSE(showMoonPath->IsEnabled());
@@ -866,7 +862,7 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       ASSERT_NE(lunarPairs, nullptr);
       EXPECT_EQ(8, lunarPairs->GetColumnCount());
       EXPECT_NE(FindListWithColumn(bodiesPage, "Mag"), nullptr);
-      for (int mode = 0; mode < 4; ++mode) {
+      for (unsigned mode = 0; mode < planningMode->GetCount(); ++mode) {
         planningMode->SetSelection(mode);
         wxCommandEvent changed(wxEVT_CHOICE, planningMode->GetId());
         changed.SetEventObject(planningMode);
@@ -885,7 +881,7 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
               wxTheApp->Yield(); wxMilliSleep(20);
             }
           EXPECT_EQ(mode == 2, lunarPairs->IsShown());
-          if (mode == 2) EXPECT_GT(lunarPairs->GetItemCount(), 0);
+          if (mode == 2) { EXPECT_GT(lunarPairs->GetItemCount(), 0); }
 #ifdef __WXGTK3__
           GtkAllocation allocation{0, 0, size.x, size.y};
           gtk_widget_size_allocate(GTK_WIDGET(planner.GetHandle()),
