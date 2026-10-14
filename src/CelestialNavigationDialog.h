@@ -144,6 +144,7 @@ private:
   void OnNew(wxCommandEvent& event);
   void OnHorizonEvent(wxCommandEvent& event);
   void OnEclipse(wxCommandEvent& event);
+  void OnAccuracyAddons(wxCommandEvent& event);
   void OnPlanner(wxCommandEvent& event);
   void OnAnalyze(wxCommandEvent& event);
   void OnCoastal(wxCommandEvent& event);
@@ -204,6 +205,7 @@ private:
   wxButton* m_lunarToolsButton;
   wxButton* m_almanacButton;
   wxButton* m_pdfDocumentationButton;
+  wxButton* m_accuracyAddonsButton;
   wxButton* m_practicalGuideButton;
   wxButton* m_practicalGuideHtmlButton;
   wxButton* m_manageSightsButton;

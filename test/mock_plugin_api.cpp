@@ -363,6 +363,7 @@ OCPN_DLStatus OCPN_downloadFile(const wxString&, const wxString&, const wxString
 
 OCPN_DLStatus OCPN_downloadFileBackground(const wxString&, const wxString&,
                                            wxEvtHandler*, long* handle) {
+  ++s_downloadCalls;
   if (handle) *handle = 0;
   return OCPN_DL_FAILED;
 }

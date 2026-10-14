@@ -39,6 +39,7 @@ set(SRC
     dialog_transaction_state_tests.cpp
     sight_search_span_ui_tests.cpp
     eclipse_data_files_tests.cpp
+    accuracy_addons_ui_tests.cpp
     eclipse_verification_worker_tests.cpp
     altitude_tests.cpp
     azimuth_tests.cpp

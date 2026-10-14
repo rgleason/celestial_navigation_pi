@@ -6,6 +6,47 @@ Worktree: /home/paul/src/OpenCPN/.worktrees/celnav-2.9.10
 Base: combined 2.9.8, 635832960cea65406e3536a07a84b7c35f157c60.
 Local only. No push, tag, catalogue update or publication.
 
+Enhanced Accuracy Add-ons (issue 379)
+------------------------------------
+DE440s / DUT1... appears directly below Reference Manual (PDF)... on desktop.
+Android has the same entry below PDF manual on the main Tools page. The
+Enhanced Accuracy Add-ons window combines DE440s installation/verification
+status, verified download (31.2 MiB), offline import and explicit re-verification
+with DUT1 bundled/installed coverage, validation status, IERS installation or
+update (about 4 MB), offline import and cancellable progress. Opening the
+window performs local status checks only. Original Eclipse and Lunar Tools
+entry points remain available. DUT1 explanations now cover ordinary sights
+and lunars, rather than suggesting the data is restricted to Lunar Tools.
+
+The add-ons view reuses the Eclipse installation controller and DUT1 updater;
+there is no second installer or astronomy calculation change. Installed files
+without a current verification record are checked in the existing worker.
+A running installation in the retained Eclipse window must finish before
+opening the additional view. Reopening Eclipse refreshes shared data status.
+The DUT1 content panel is shared between both windows, with one scrolling
+viewport per host. Android preserves source text while wrapping after rotation,
+has touch-sized actions, and uses its normal Close/Back surface.
+
+Linux AccuracyAddonsUi passed: main entry and position, no network on opening,
+failed downloads, valid DE440s import, rejected damaged replacement, explicit
+verification, damaged installed-file status and recovery, smaller/larger layouts,
+unchanged Compact setting and retained original entry points. LunarUiSmoke
+passed with the shared panel. All 13 CTest groups passed again (107.40 seconds).
+Linux and Android archives match current compiled runtime sections and bundled
+guides; the Android package passes the 16 KB ELF alignment gate.
+
+On the attached SM-X210, portrait/landscape wrapping and touch scrolling,
+DE440s re-verification, native import-picker opening/cancellation, Close/Back,
+live DUT1 download/validation, cancellation with the installed table unchanged,
+and shared updated coverage in Lunar Tools Advanced passed. The live download
+reported coverage through 2027-10-04; the original DUT1 file was restored after
+testing. The final local Android build is installed; host APK is unchanged.
+Fresh backup and qualification evidence: output/celnav-2.9.10/addons-tablet.
+Existing sights/astronomy files and other imported libraries were byte-identical
+after restoration, navigation schema/rows were unchanged, and original CelNav
+preferences, plugin enable flags and Android rotation/accessibility settings
+were restored. No new crash entries. macOS/Windows runtime review is pending.
+
 Planner
 -------
 Best Sights and the body catalogue are visible together in a resizable

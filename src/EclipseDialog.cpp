@@ -9,6 +9,10 @@
 #endif
 #include "EclipseDialog.h"
 #include "DialogGeometry.h"
+#include "Dut1UpdatePanel.h"
+#ifdef __OCPN__ANDROID__
+#include "AndroidSurface.h"
+#endif
 
 #include "AtomicXmlFile.h"
 #include "NavigationUIUtils.h"
@@ -27,6 +31,7 @@
 #include <wx/filename.h>
 #include <wx/listctrl.h>
 #include <wx/msgdlg.h>
+#include <wx/scrolwin.h>
 #include <wx/sizer.h>
 #include <wx/spinctrl.h>
 #include <wx/statbox.h>
@@ -192,11 +197,14 @@ void DrawPolyline(piDC* dc, PlugIn_ViewPort* viewport,
 
 }  // namespace
 
-EclipseDialog::EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin)
-    : wxDialog(parent, wxID_ANY, _("Offline Solar Eclipse Planner"),
+EclipseDialog::EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin,
+                             View view)
+    : wxDialog(parent, wxID_ANY, view == View::AccuracyAddons
+                   ? _("Enhanced Accuracy Add-ons") : _("Offline Solar Eclipse Planner"),
                wxDefaultPosition, wxSize(960, 720),
                wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
       m_plugin(plugin),
+      m_view(view),
       m_engine_ready(false),
       m_plotted_delta_t(0.0),
       m_data_status(NULL),
@@ -227,7 +235,9 @@ EclipseDialog::EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin)
       m_installed_check_index(0) {
   m_invalid_data[0] = m_invalid_data[1] = m_invalid_data[2] = false;
   BuildInterface();
-  dialog_geometry::Restore(this, _T("Eclipse"), wxSize(960, 720));
+  dialog_geometry::Restore(this, m_view == View::AccuracyAddons
+      ? _T("AccuracyAddons") : _T("Eclipse"),
+      m_view == View::AccuracyAddons ? wxSize(780, 780) : wxSize(960, 720));
 #ifdef __OCPN__ANDROID__
   m_androidVerificationPoll = new QTimer(GetHandle());
   QObject::connect(m_androidVerificationPoll, &QTimer::timeout, GetHandle(), [this]() {
@@ -238,8 +248,10 @@ EclipseDialog::EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin)
 #endif
   UpdateDataStatus();
   StartInstalledDataCheck();
-  wxCommandEvent initial_position;
-  OnBoatPosition(initial_position);
+  if (m_view == View::EclipsePlanner) {
+    wxCommandEvent initial_position;
+    OnBoatPosition(initial_position);
+  } else LayoutAccuracyAddons();
 }
 
 EclipseDialog::~EclipseDialog() {
@@ -247,7 +259,8 @@ EclipseDialog::~EclipseDialog() {
   delete m_androidVerificationPoll;
   m_androidVerificationPoll = nullptr;
 #endif
-  dialog_geometry::Save(this, _T("Eclipse"));
+  dialog_geometry::Save(this, m_view == View::AccuracyAddons
+      ? _T("AccuracyAddons") : _T("Eclipse"));
   m_verification_timer.Stop();
   Unbind(wxEVT_TIMER, &EclipseDialog::OnVerificationTimer, this,
          m_verification_timer.GetId());
@@ -284,6 +297,10 @@ wxString EclipseDialog::LolaPath() const {
 }
 
 void EclipseDialog::BuildInterface() {
+  if (m_view == View::AccuracyAddons) {
+    BuildAccuracyAddonsInterface();
+    return;
+  }
 #ifdef __OCPN__ANDROID__
   BuildAndroidInterface();
   return;
@@ -456,6 +473,129 @@ void EclipseDialog::BuildInterface() {
   m_local_button->Bind(wxEVT_BUTTON, &EclipseDialog::OnLocal, this);
   close->Bind(wxEVT_BUTTON, &EclipseDialog::OnCloseButton, this);
   Bind(wxEVT_CLOSE_WINDOW, &EclipseDialog::OnWindowClose, this);
+}
+
+void EclipseDialog::BuildAccuracyAddonsInterface() {
+#ifdef __OCPN__ANDROID__
+  GetHandle()->setProperty("cnDocumentSurface", true);
+  m_androidDownloadEvents.reset(new AndroidDownloadEvents);
+#endif
+  auto* root = new wxBoxSizer(wxVERTICAL);
+  m_addons_scroll = new wxScrolledWindow(this);
+  m_addons_scroll->SetMinSize(wxSize(0, 0));
+  m_addons_scroll->SetScrollRate(0, 10);
+  auto* content = new wxBoxSizer(wxVERTICAL);
+  auto text = [&](const wxString& value, bool bold = false) {
+    auto* label = new wxStaticText(m_addons_scroll, wxID_ANY, value);
+    if (bold) label->SetFont(label->GetFont().Bold());
+    m_addons_text.push_back({label, value});
+    content->Add(label, 0, wxEXPAND | wxALL, 12);
+    return label;
+  };
+  text(_("Optional precision data. Install once, then use offline. Downloads start "
+         "only when you choose an install or update button."));
+  text(CN_UTF8_("DE440s astronomy data (1850–2150)"), true);
+  m_data_status = text(_("Checking installed DE440s..."));
+  m_data_status->SetName("De440DataStatus");
+  text(_("Precision positions for the Sun, Moon, Mercury and Venus; required "
+         "for eclipse planning. Optional for ordinary navigation."));
+#ifdef __OCPN__ANDROID__
+  auto* buttons = new wxBoxSizer(wxVERTICAL);
+#else
+  auto* buttons = new wxBoxSizer(wxHORIZONTAL);
+#endif
+  m_download_de = new wxButton(m_addons_scroll, wxID_ANY,
+      CN_UTF8_("Download and install DE440s… (31.2 MiB)"));
+  m_download_de->SetName("De440Download");
+  m_import_de = new wxButton(m_addons_scroll, wxID_ANY, CN_UTF8_("Import DE440s file…"));
+  m_import_de->SetName("De440Import");
+  for (auto* button : {m_download_de, m_import_de}) buttons->Add(button, 0,
+#ifdef __OCPN__ANDROID__
+      wxEXPAND | wxBOTTOM,
+#else
+      wxRIGHT,
+#endif
+      12);
+  content->Add(buttons, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+  m_verify_de = new wxButton(m_addons_scroll, wxID_ANY, _("Verify installed DE440s"));
+  m_verify_de->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    if (IsInstallingData() || !wxFileExists(De440Path())) return;
+    m_installed_check_queue.assign(1, EclipseDataKind::De440s);
+    m_installed_check_index = 0;
+    StartNextInstalledDataCheck();
+  });
+  content->Add(m_verify_de, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+  m_cancel_install = new wxButton(m_addons_scroll, wxID_ANY, _("Cancel data installation"));
+  m_cancel_install->Hide();
+  content->Add(m_cancel_install, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+  text(_("Downloads and imports are verified before installation. Import an "
+         "official de440s.bsp copied from another computer for offline installation."));
+  content->Add(celestial_navigation::CreateDut1UpdatePanel(m_addons_scroll,
+      celestial_navigation::Dut1PanelMode::AccuracyAddons), 0, wxEXPAND);
+  text(_("Ordinary navigation remains available without these downloads. "
+      "Each calculation uses Earth-rotation data for its UTC date. Outside all "
+      "available DUT1 dates, UT1 = UTC is used with reduced accuracy."));
+  m_addons_scroll->SetSizer(content);
+  root->Add(m_addons_scroll, 1, wxEXPAND);
+  auto* close = new wxButton(this, wxID_CANCEL, _("Close"));
+  root->Add(close, 0, wxALIGN_RIGHT | wxALL, 12);
+#ifdef __OCPN__ANDROID__
+  close->Hide();  // The touch surface supplies Close and native Back.
+#endif
+  SetSizer(root);
+  SetMinSize(wxSize(660, 460));
+  m_import_de->Bind(wxEVT_BUTTON, &EclipseDialog::OnImportDe440, this);
+  m_download_de->Bind(wxEVT_BUTTON, &EclipseDialog::OnDownloadDe440, this);
+  m_cancel_install->Bind(wxEVT_BUTTON, &EclipseDialog::OnCancelInstall, this);
+#ifdef __OCPN__ANDROID__
+  m_androidDownloadEvents->Connect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
+#else
+  Connect(wxID_ANY, wxEVT_DOWNLOAD_EVENT,
+#endif
+      wxEventHandler(EclipseDialog::OnDownloadEvent), nullptr, this);
+  Bind(wxEVT_TIMER, &EclipseDialog::OnVerificationTimer, this,
+       m_verification_timer.GetId());
+  m_addons_scroll->Bind(wxEVT_SIZE, [this](wxSizeEvent& event) {
+    event.Skip(); LayoutAccuracyAddons();
+  });
+  Bind(wxEVT_SHOW, [this](wxShowEvent& event) {
+    event.Skip();
+#ifdef __OCPN__ANDROID__
+    if (event.IsShown()) QTimer::singleShot(0, GetHandle(), [this]() { LayoutAccuracyAddons(); });
+#else
+    if (event.IsShown()) LayoutAccuracyAddons();
+#endif
+  });
+}
+
+void EclipseDialog::LayoutAccuracyAddons() {
+  if (!m_addons_scroll || m_addons_layout) return;
+  m_addons_layout = true;
+  const int width = std::max(160, m_addons_scroll->GetClientSize().x - 40);
+  for (auto& item : m_addons_text) {
+    const auto& value = item.second;
+#ifdef __OCPN__ANDROID__
+    CN_WrapAndroidText(item.first, value, width);
+#else
+    item.first->SetLabel(value); item.first->Wrap(width);
+#endif
+  }
+  Layout(); m_addons_scroll->Layout(); m_addons_scroll->FitInside();
+  m_addons_layout = false;
+}
+
+void EclipseDialog::RefreshInstalledData() {
+  if (IsInstallingData()) return;
+  m_invalid_data[0] = m_invalid_data[1] = m_invalid_data[2] = false;
+  UpdateDataStatus();
+  StartInstalledDataCheck();
+}
+
+void EclipseDialog::SetDataStatus(const wxString& text) {
+  m_data_status->SetLabel(text);
+  for (auto& item : m_addons_text)
+    if (item.first == m_data_status) item.second = text;
+  LayoutAccuracyAddons();
 }
 
 #ifdef __OCPN__ANDROID__
@@ -686,7 +826,13 @@ void EclipseDialog::UpdateDataStatus() {
     else
       labels[index] = _("not installed");
   }
-  m_data_status->SetLabel(wxString::Format(
+  if (m_view == View::AccuracyAddons) {
+    const auto state = celestial_navigation::InspectInstalledData(
+        EclipseDataKind::De440s, De440Path());
+    SetDataStatus(m_invalid_data[0]
+        ? _("DE440s: installed file failed verification; reinstall or import a valid file.")
+        : _("DE440s: ") + OptionalStateLabel(state));
+  } else SetDataStatus(wxString::Format(
 #ifdef __OCPN__ANDROID__
       "DE440s: %s\nLunar orientation: %s\nLOLA limb: %s",
 #else
@@ -696,16 +842,19 @@ void EclipseDialog::UpdateDataStatus() {
   const bool de_ok = DataVerified(EclipseDataKind::De440s);
   const bool pck_ok = DataVerified(EclipseDataKind::LunarOrientation);
   const bool lola_ok = DataVerified(EclipseDataKind::LolaLimb);
-  m_use_lola->Enable(pck_ok && lola_ok);
-  if (!(pck_ok && lola_ok)) m_use_lola->SetValue(false);
-  m_plot_button->Enable(de_ok);
-  m_local_button->Enable(de_ok);
+  if (m_use_lola) {
+    m_use_lola->Enable(pck_ok && lola_ok);
+    if (!(pck_ok && lola_ok)) m_use_lola->SetValue(false);
+  }
+  if (m_plot_button) m_plot_button->Enable(de_ok);
+  if (m_local_button) m_local_button->Enable(de_ok);
   if (!de_ok) m_engine_ready = false;
   SetInstallationControls(m_download_kind >= 0 || m_verifying);
 #ifdef __OCPN__ANDROID__
   celestial_android::LayoutScrolls(this);
 #endif
   Layout();
+  LayoutAccuracyAddons();
 }
 
 wxString EclipseDialog::DataPath(EclipseDataKind kind) const {
@@ -725,7 +874,8 @@ void EclipseDialog::SetInstallationControls(bool busy) {
   if (!m_download_de) return;
   m_download_de->Enable(!busy && !DataVerified(EclipseDataKind::De440s));
   m_import_de->Enable(!busy);
-  m_optional_data->Enable(!busy);
+  if (m_optional_data) m_optional_data->Enable(!busy);
+  if (m_verify_de) m_verify_de->Enable(!busy && wxFileExists(De440Path()));
   const bool cancellable = busy && m_verification_purpose != VERIFY_INSTALLED;
   m_cancel_install->Show(cancellable);
   m_cancel_install->Enable(cancellable && !m_cancel_requested);
@@ -900,7 +1050,7 @@ void EclipseDialog::TryCurrentSource() {
   m_download_temp = DataPath(kind) + ".download";
   if (wxFileExists(m_download_temp)) wxRemoveFile(m_download_temp);
   celestial_navigation::ForgetVerifiedDataFile(m_download_temp);
-  m_data_status->SetLabel(
+  SetDataStatus(
       wxString::Format(CN_UTF8_("Downloading %s: source %lu of %lu…"),
                        wxString::FromUTF8(spec.display_name).c_str(),
                        static_cast<unsigned long>(m_source_index + 1),
@@ -946,7 +1096,7 @@ void EclipseDialog::OnDownloadEvent(wxEvent& raw) {
         total > 0 ? static_cast<int>(100.0 * event.getTransferred() / total)
                   : 0;
     const EclipseDataKind kind = static_cast<EclipseDataKind>(m_download_kind);
-    m_data_status->SetLabel(wxString::Format(
+    SetDataStatus(wxString::Format(
         CN_UTF8_("Downloading %s: %d%% (source %lu of %lu)…"),
         wxString::FromUTF8(
             celestial_navigation::GetEclipseDataFileSpec(kind).display_name)
@@ -980,7 +1130,7 @@ void EclipseDialog::BeginVerification(EclipseDataKind kind,
   m_verification_purpose = purpose;
   SetInstallationControls(true);
   const std::string native_path = path.ToStdString();
-  m_data_status->SetLabel(wxString::Format(
+  SetDataStatus(wxString::Format(
       CN_UTF8_("Verifying %s size, SHA-256 and file structure…"),
       wxString::FromUTF8(
           celestial_navigation::GetEclipseDataFileSpec(kind).display_name)
@@ -1084,7 +1234,7 @@ void EclipseDialog::OnCancelInstall(wxCommandEvent&) {
   if (m_download_kind < 0 && !m_verifying) return;
   m_cancel_requested = true;
   m_cancel_install->Disable();
-  m_data_status->SetLabel(
+  SetDataStatus(
       CN_UTF8_("Cancelling safely; a verification already in progress may "
                "finish first…"));
   if (m_download_handle) OCPN_cancelDownloadFileBackground(m_download_handle);
@@ -1126,7 +1276,7 @@ void EclipseDialog::StartInstalledDataCheck() {
   const EclipseDataKind kinds[] = {EclipseDataKind::De440s,
                                    EclipseDataKind::LunarOrientation,
                                    EclipseDataKind::LolaLimb};
-  for (int index = 0; index < 3; ++index) {
+  for (int index = 0; index < (m_view == View::AccuracyAddons ? 1 : 3); ++index) {
     if (celestial_navigation::InspectInstalledData(kinds[index],
                                                    DataPath(kinds[index])) ==
         InstalledDataState::VerificationRequired)

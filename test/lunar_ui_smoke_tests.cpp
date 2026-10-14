@@ -598,10 +598,9 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
         ASSERT_TRUE(bitmap.SaveFile(wxString::Format("/tmp/celestial-advanced-%d.png",size.x),wxBITMAP_TYPE_PNG));
 #endif
       }
-      wxButton* download=nullptr;
-      for (auto* child:page->GetChildren())
-        if (auto* button=dynamic_cast<wxButton*>(child))
-          if (button->GetLabel().StartsWith("Check / download")) download=button;
+      auto* download=FindPlannerControl<wxButton>(page,[](wxButton* button) {
+        return button->GetName()=="Dut1Download";
+      });
       ASSERT_NE(download,nullptr);
       const auto previous=eclipse::GetDut1Update();
       wxCommandEvent event(wxEVT_BUTTON,download->GetId());
@@ -609,10 +608,7 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       EXPECT_EQ(TestDownloadCalls(),calls+1);
       EXPECT_TRUE(download->IsEnabled());
       EXPECT_EQ(eclipse::GetDut1Update(),previous);
-      bool failureShown=false;
-      for (auto* child:page->GetChildren())
-        if (child->GetLabel().Contains("failed or was cancelled")) failureShown=true;
-      EXPECT_TRUE(failureShown);
+      EXPECT_TRUE(ContainsStaticText(page,"failed or was cancelled"));
 
       // The lunar planner reports measurements and a factual geometric
       // horizon flag, without an undisclosed quality ranking.
