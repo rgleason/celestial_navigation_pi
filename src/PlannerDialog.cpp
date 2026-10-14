@@ -1049,7 +1049,9 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
       bodiesPage, wxID_ANY,
       _("Ecliptic amber; Moon path blue (SHA/Dec). "
         "Sun yellow; planets red; grey unavailable; hollow below horizon."));
+#ifndef __OCPN__ANDROID__
   plotLegend->Wrap(340);
+#endif
   plotSizer->Add(plotLegend, 0, wxLEFT | wxRIGHT | wxBOTTOM, 8);
   bodiesRoot->Add(plotSizer, 0, wxEXPAND);
 #ifdef __OCPN__ANDROID__
@@ -1165,38 +1167,60 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
     sizer->Add(label, 0, wxEXPAND | wxALL, 8);
     return label;
   };
-  add(bodiesPage, bodiesRoot, _("Sort bodies"));
+  // Keep the expanding card list visible at either orientation. Secondary
+  // display/export controls belong to a collapsible panel, not a tall header.
+  m_notebook->SetPageText(1, _("Bodies"));
+  auto* bodyOptions = new wxPanel(bodiesPage);
+  auto* bodyOptionsRoot = new wxBoxSizer(wxVERTICAL);
   auto* sort = m_bodyOrder;
   displayControls->Detach(m_bodyOrder);
   displayControls->Detach(m_bodyDirection);
   displayControls->Detach(m_tableBelowHorizon);
-  sort->Reparent(bodiesPage);
-  m_bodyDirection->Reparent(bodiesPage);
-  m_planningMode->Reparent(bodiesPage);
-  m_tableBelowHorizon->Reparent(bodiesPage);
-  add(bodiesPage, bodiesRoot, _("Planning mode"));
-  bodiesRoot->Add(m_planningMode, 0, wxEXPAND | wxALL, 8);
-  bodiesRoot->Add(m_bodySet, 0, wxEXPAND | wxALL, 8);
-  bodiesRoot->Add(m_customBodies, 0, wxEXPAND | wxALL, 8);
-  bodiesRoot->Add(m_tableBelowHorizon, 0, wxEXPAND | wxALL, 8);
+  sort->Reparent(bodyOptions);
+  m_bodyDirection->Reparent(bodyOptions);
+  m_tableBelowHorizon->Reparent(bodyOptions);
+  auto* bodySelection = new wxBoxSizer(wxHORIZONTAL);
+  bodySelection->Add(m_bodySet, 1, wxEXPAND | wxALL, 8);
+  bodySelection->Add(m_customBodies, 1, wxEXPAND | wxALL, 8);
+  bodiesRoot->Add(bodySelection, 0, wxEXPAND);
+  auto* navigation = new wxBoxSizer(wxHORIZONTAL);
+  auto* bestSights = new wxButton(bodiesPage, wxID_ANY, _("Best Sights / sky"));
+  auto* options = new wxButton(bodiesPage, wxID_ANY, _("Body options..."));
+  bestSights->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    m_notebook->SetSelection(3);
+    celestial_android::LayoutScrolls(this);
+  });
+  options->Bind(wxEVT_BUTTON, [this, bodiesPage, bodyOptions, options](wxCommandEvent&) {
+    const bool show = !bodyOptions->IsShown();
+    bodyOptions->Show(show);
+    options->SetLabel(show ? _("Hide body options") : _("Body options..."));
+    celestial_android::LayoutScrolls(bodiesPage);
+  });
+  navigation->Add(bestSights, 1, wxEXPAND | wxALL, 8);
+  navigation->Add(options, 1, wxEXPAND | wxALL, 8);
+  bodiesRoot->Add(navigation, 0, wxEXPAND);
+  bodyOptionsRoot->Add(m_tableBelowHorizon, 0, wxEXPAND | wxALL, 8);
+  add(bodyOptions, bodyOptionsRoot, _("Body order"));
   auto* sortRow = new wxBoxSizer(wxHORIZONTAL);
   sortRow->Add(sort, 1, wxEXPAND | wxALL, 8);
   auto* direction = m_bodyDirection;
   sortRow->Add(direction, 1, wxEXPAND | wxALL, 8);
-  bodiesRoot->Add(sortRow, 0, wxEXPAND);
+  bodyOptionsRoot->Add(sortRow, 0, wxEXPAND);
   auto* selectionRow = new wxBoxSizer(wxHORIZONTAL);
   m_androidSelectedBody = new wxStaticText(bodiesPage, wxID_ANY, _("Select a body card"));
   bodiesRoot->Add(m_androidSelectedBody, 0, wxEXPAND | wxALL, 8);
   createSight->Reparent(bodiesPage);
-  exportBodies->Reparent(bodiesPage);
+  exportBodies->Reparent(bodyOptions);
   createSight->SetLabel(_("Create sight"));
   if (auto* native = qobject_cast<QAbstractButton*>(createSight->GetHandle()))
     native->setText(QString::fromUtf8(_("Create sight").utf8_str()));
   selectionRow->Add(createSight, 1, wxEXPAND | wxALL, 8);
-  selectionRow->Add(exportBodies, 1, wxEXPAND | wxALL, 8);
   bodiesRoot->Add(selectionRow, 0, wxEXPAND);
-  windows->Reparent(bodiesPage);
-  bodiesRoot->Add(windows, 0, wxEXPAND | wxALL, 8);
+  bodyOptionsRoot->Add(exportBodies, 0, wxEXPAND | wxALL, 8);
+  windows->Reparent(bodyOptions);
+  bodyOptionsRoot->Add(windows, 0, wxEXPAND | wxALL, 8);
+  bodyOptions->SetSizer(bodyOptionsRoot);
+  bodiesRoot->Add(bodyOptions, 0, wxEXPAND);
   m_androidCreateSight = createSight;
   createSight->Enable(false);
   m_androidBodies = PlannerCards(bodiesPage, bodiesRoot, true);
@@ -1204,13 +1228,23 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
                    GetHandle(), [this](int) { UpdateAndroidBodySelection(); });
   bodiesPage->GetHandle()->setProperty("cnNoPageScroll", true);
   bodiesRoot->ShowItems(true);
+  bodyOptions->Hide();
   auto* recommendationPage = new wxPanel(m_notebook);
   auto* recommendationRoot = new wxBoxSizer(wxVERTICAL);
+  m_androidFixOptions = new wxPanel(recommendationPage);
+  auto* fixOptions = new wxBoxSizer(wxVERTICAL);
+  auto transfer = [](wxWindow* child, wxWindow* parent) {
+    if (auto* sizer = child->GetContainingSizer()) sizer->Detach(child);
+    child->Reparent(parent);
+  };
   for (auto* child : {static_cast<wxWindow*>(m_limitRecommendationAltitude),
                      static_cast<wxWindow*>(m_recommendationMinAltitude),
                      static_cast<wxWindow*>(m_recommendationMaxAltitude),
                      static_cast<wxWindow*>(recommendationNote),
-                     static_cast<wxWindow*>(m_plotMagnitude),
+                     static_cast<wxWindow*>(m_includePolarisRecommendations)})
+    transfer(child, m_androidFixOptions);
+  transfer(m_planningMode, recommendationPage);
+  for (auto* child : {static_cast<wxWindow*>(m_plotMagnitude),
                      static_cast<wxWindow*>(m_plotBelowHorizon),
                      static_cast<wxWindow*>(m_showEcliptic),
                      static_cast<wxWindow*>(m_showMoonPath),
@@ -1218,7 +1252,6 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
                      static_cast<wxWindow*>(m_plotNotebook),
                      static_cast<wxWindow*>(m_lunarOrder),
                      static_cast<wxWindow*>(m_lunarCompanions),
-                     static_cast<wxWindow*>(m_includePolarisRecommendations),
                      static_cast<wxWindow*>(m_plotLabels),
                      static_cast<wxWindow*>(m_recommendationSummary),
                      static_cast<wxWindow*>(m_recommendationTitle),
@@ -1231,15 +1264,26 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
     if (auto* child = item->GetWindow()) child->Reparent(recommendationPage);
   for (auto* item : magnitudeControls->GetChildren())
     if (auto* child = item->GetWindow()) child->Reparent(recommendationPage);
-  recommendationRoot->Add(m_limitRecommendationAltitude, 0, wxEXPAND | wxALL, 8);
-  add(recommendationPage, recommendationRoot, _("Minimum recommended Hc (degrees)"));
-  recommendationRoot->Add(m_recommendationMinAltitude, 0, wxEXPAND | wxALL, 8);
-  add(recommendationPage, recommendationRoot, _("Maximum recommended Hc (degrees)"));
-  recommendationRoot->Add(m_recommendationMaxAltitude, 0, wxEXPAND | wxALL, 8);
-  recommendationRoot->Add(recommendationNote, 0, wxEXPAND | wxALL, 8);
-  recommendationRoot->Add(m_includePolarisRecommendations, 0, wxEXPAND | wxALL, 8);
+  recommendationRoot->Add(m_planningMode, 0, wxEXPAND | wxALL, 8);
   recommendationRoot->Add(m_recommendationTitle, 0, wxEXPAND | wxALL, 8);
   recommendationRoot->Add(m_recommendationSummary, 0, wxEXPAND | wxALL, 8);
+  m_androidFixSettings = new wxButton(recommendationPage, wxID_ANY, _("Fix settings..."));
+  m_androidFixSettings->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    m_androidShowFixSettings = !m_androidShowFixSettings;
+    m_androidFixSettings->SetLabel(m_androidShowFixSettings
+        ? _("Hide fix settings") : _("Fix settings..."));
+    RefreshBodies();
+  });
+  recommendationRoot->Add(m_androidFixSettings, 0, wxEXPAND | wxALL, 8);
+  fixOptions->Add(m_limitRecommendationAltitude, 0, wxEXPAND | wxALL, 8);
+  add(m_androidFixOptions, fixOptions, _("Minimum recommended Hc (degrees)"));
+  fixOptions->Add(m_recommendationMinAltitude, 0, wxEXPAND | wxALL, 8);
+  add(m_androidFixOptions, fixOptions, _("Maximum recommended Hc (degrees)"));
+  fixOptions->Add(m_recommendationMaxAltitude, 0, wxEXPAND | wxALL, 8);
+  fixOptions->Add(recommendationNote, 0, wxEXPAND | wxALL, 8);
+  fixOptions->Add(m_includePolarisRecommendations, 0, wxEXPAND | wxALL, 8);
+  m_androidFixOptions->SetSizer(fixOptions);
+  recommendationRoot->Add(m_androidFixOptions, 0, wxEXPAND);
   recommendationRoot->Add(m_lunarCompanions, 0, wxEXPAND | wxALL, 8);
   recommendationRoot->Add(m_lunarOrder, 0, wxEXPAND | wxALL, 8);
   m_androidCombinations = add(recommendationPage, recommendationRoot, wxEmptyString);
@@ -1248,6 +1292,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   recommendationRoot->Add(m_plotNotebook, 0, wxEXPAND | wxALL, 8);
   recommendationRoot->Add(plotLegend, 0, wxEXPAND | wxALL, 8);
   recommendationRoot->ShowItems(true);
+  m_androidFixOptions->Hide();
   // Reparenting the native Qt controls can restore their enabled state.
   m_showMoonPath->Enable(m_plotNotebook->GetSelection() == 1);
   m_moonSpan->Enable(m_plotNotebook->GetSelection() == 1 && m_showMoonPath->GetValue());
@@ -2439,6 +2484,8 @@ void PlannerDialog::RefreshBodies() {
   m_includePolarisRecommendations->Show(!lunar);
 #ifdef __OCPN__ANDROID__
   m_androidCombinations->Show(true);
+  m_androidFixSettings->Show(!lunar);
+  m_androidFixOptions->Show(!lunar && m_androidShowFixSettings);
 #else
   m_combinations->GetParent()->GetSizer()->Show(m_fixControls, !lunar && m_showFixSettings);
   m_fixSettings->Show(!lunar);
@@ -2603,8 +2650,13 @@ void PlannerDialog::RefreshBodies() {
     }
   }
   m_recommendationSummary->SetLabel(m_recommendationText);
+#ifdef __OCPN__ANDROID__
+  CN_WrapAndroidText(m_recommendationSummary, m_recommendationText,
+      std::max(300, m_recommendationSummary->GetParent()->GetClientSize().x - 32));
+#else
   m_recommendationSummary->Wrap(std::max(300,
       m_recommendationSummary->GetParent()->GetClientSize().x - 12));
+#endif
   m_recommendationSummary->SetToolTip(counts + "\n" + _("Excluded: ") + allExclusions +
       "\n" + _("Hc and visibility limits affect recommendations only. Body order never disables recommendations."));
 #ifdef __OCPN__ANDROID__

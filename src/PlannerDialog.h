@@ -142,6 +142,9 @@ private:
   wxStaticText* m_androidAlmanacStatus = nullptr;
   wxButton* m_androidCreateSight = nullptr;
   wxButton* m_androidExport = nullptr;
+  wxPanel* m_androidFixOptions = nullptr;
+  wxButton* m_androidFixSettings = nullptr;
+  bool m_androidShowFixSettings = false;
   void UpdateAndroidBodySelection();
   void StartAndroidCalculation(const ObserverMotion& motion);
   void PollAndroidCalculation();

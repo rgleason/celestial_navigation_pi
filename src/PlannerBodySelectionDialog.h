@@ -5,6 +5,7 @@
 #include <vector>
 
 class wxCheckBox;
+class wxTextCtrl;
 class wxSearchCtrl;
 class wxScrolledWindow;
 class wxStaticBoxSizer;
@@ -20,9 +21,17 @@ private:
   void UpdateSearch();
   void UpdateCount();
   void SelectAll(bool checked);
+  void Reflow();
+#ifdef __OCPN__ANDROID__
+  wxTextCtrl* m_search;
+#else
   wxSearchCtrl* m_search;
+#endif
   wxScrolledWindow* m_list;
   wxStaticText* m_count;
+  wxStaticText* m_note;
+  wxStaticText* m_lunarNote;
+  bool m_reflowing = false;
   struct Entry { wxString body; wxCheckBox* checkbox; unsigned group; };
   std::vector<Entry> m_entries;
   std::vector<wxStaticBoxSizer*> m_groups;

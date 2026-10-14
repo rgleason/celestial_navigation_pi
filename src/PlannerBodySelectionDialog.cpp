@@ -1,5 +1,6 @@
 #include "PlannerBodySelectionDialog.h"
 #include "BodyCatalog.h"
+#include "AndroidTouch.h"
 
 #include <wx/button.h>
 #include <wx/checkbox.h>
@@ -8,6 +9,7 @@
 #include <wx/srchctrl.h>
 #include <wx/statbox.h>
 #include <wx/stattext.h>
+#include <wx/textctrl.h>
 #include <algorithm>
 
 PlannerBodySelectionDialog::PlannerBodySelectionDialog(
@@ -16,16 +18,29 @@ PlannerBodySelectionDialog::PlannerBodySelectionDialog(
                wxDefaultPosition, wxSize(650, 650),
                wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER) {
   auto* root = new wxBoxSizer(wxVERTICAL);
-  auto* note = new wxStaticText(this, wxID_ANY,
+  m_note = new wxStaticText(this, wxID_ANY,
       _("Choose bodies for the table, both sky plots and recommendations. "
         "Custom choices override the plot magnitude limit. Below-horizon "
         "switches still apply; visibility and Hc affect recommendations only."));
-  note->Wrap(600);
-  root->Add(note, 0, wxEXPAND | wxALL, 10);
-  m_search = new wxSearchCtrl(this, wxID_ANY);
+#ifndef __OCPN__ANDROID__
+  m_note->Wrap(600);
+#endif
+  root->Add(m_note, 0, wxEXPAND | wxALL, 10);
+#ifdef __OCPN__ANDROID__
+  // Keep the checklist as the sole scrolling viewport. The generic Android
+  // form wrapper would give this expanding list only its tiny best height.
+  GetHandle()->setProperty("cnDocumentSurface", true);
+  m_search = new wxTextCtrl(this, wxID_ANY);
+  m_search->SetHint(_("Search bodies"));
+#else
+  auto* search = new wxSearchCtrl(this, wxID_ANY);
+  search->SetDescriptiveText(_("Search bodies"));
+  search->ShowCancelButton(true);
+  search->Bind(wxEVT_SEARCHCTRL_CANCEL_BTN,
+      [search](wxCommandEvent&) { search->SetValue(""); });
+  m_search = search;
+#endif
   m_search->SetName("PlannerBodySearch");
-  m_search->SetDescriptiveText(_("Search bodies"));
-  m_search->ShowCancelButton(true);
   root->Add(m_search, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
   m_list = new wxScrolledWindow(this);
   m_list->SetName("PlannerBodyList");
@@ -60,22 +75,62 @@ PlannerBodySelectionDialog::PlannerBodySelectionDialog(
   selectionRow->Add(all, 0, wxRIGHT, 8);
   selectionRow->Add(none, 0, wxRIGHT, 12);
   m_count = new wxStaticText(this, wxID_ANY, wxEmptyString);
+#ifndef __OCPN__ANDROID__
   selectionRow->Add(m_count, 1, wxALIGN_CENTER_VERTICAL);
+#endif
   root->Add(selectionRow, 0, wxEXPAND | wxALL, 10);
-  auto* lunarNote = new wxStaticText(this, wxID_ANY,
+#ifdef __OCPN__ANDROID__
+  root->Add(m_count, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+#endif
+  m_lunarNote = new wxStaticText(this, wxID_ANY,
       _("Lunar distances always use the Moon as their reference. Your selected "
         "companions replace the traditional lunar list."));
-  lunarNote->Wrap(600);
-  root->Add(lunarNote, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+#ifndef __OCPN__ANDROID__
+  m_lunarNote->Wrap(600);
+#endif
+  root->Add(m_lunarNote, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
   root->Add(CreateSeparatedButtonSizer(wxOK | wxCANCEL), 0, wxEXPAND | wxALL, 10);
   SetSizer(root);
   SetMinSize(wxSize(560, 430));
   m_search->Bind(wxEVT_TEXT, [this](wxCommandEvent&) { UpdateSearch(); });
-  m_search->Bind(wxEVT_SEARCHCTRL_CANCEL_BTN, [this](wxCommandEvent&) { m_search->SetValue(""); });
+#ifdef __OCPN__ANDROID__
+  CN_EnableAndroidScrolling(m_list);
+  Bind(wxEVT_SIZE, [this](wxSizeEvent& event) { event.Skip(); Reflow(); });
+  m_list->Bind(wxEVT_SIZE,
+      [this](wxSizeEvent& event) { event.Skip(); Reflow(); });
+  Bind(wxEVT_SHOW, [this](wxShowEvent& event) {
+    event.Skip();
+    if (event.IsShown()) CallAfter([this] { Reflow(); });
+  });
+  Reflow();
+#endif
   UpdateCount();
   Layout();
   m_list->FitInside();
   CentreOnParent();
+}
+
+void PlannerBodySelectionDialog::Reflow() {
+#ifdef __OCPN__ANDROID__
+  if (m_reflowing) return;
+  m_reflowing = true;
+  const int width = std::max(160, GetClientSize().x - 24);
+  CN_WrapAndroidText(m_note, m_note->GetLabel(), width);
+  CN_WrapAndroidText(m_lunarNote, m_lunarNote->GetLabel(), width);
+  int cellWidth = 180;
+  for (const auto& entry : m_entries)
+    cellWidth = std::max(cellWidth, entry.checkbox->GetBestSize().x + 16);
+  const int columns = std::max(1, std::min(3,
+      (m_list->GetClientSize().x - 32) / cellWidth));
+  for (auto* group : m_groups) {
+    auto* grid = static_cast<wxFlexGridSizer*>(group->GetItem(size_t(0))->GetSizer());
+    grid->SetCols(columns);
+  }
+  Layout();
+  m_list->Layout();
+  m_list->FitInside();
+  m_reflowing = false;
+#endif
 }
 
 std::vector<wxString> PlannerBodySelectionDialog::Selection() const {
