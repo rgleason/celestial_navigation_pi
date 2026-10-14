@@ -173,6 +173,27 @@ struct RankedCombination {
   wxString reason;
 };
 
+struct PlannerBodySelection {
+  bool custom = false;
+  std::vector<wxString> selected;
+  bool Includes(const wxString& body) const;
+  std::vector<RankedBody> Filter(const std::vector<RankedBody>& bodies) const;
+  std::vector<RankedBody> ForPlot(const std::vector<RankedBody>& bodies,
+      bool includeBelowHorizon, double maximumMagnitude,
+      const wxString& highlighted = wxString()) const;
+};
+
+struct RecommendationAssessment {
+  std::vector<RankedBody> candidates;
+  unsigned belowHorizon = 0;
+  unsigned unavailableStars = 0;
+  unsigned unavailableMoon = 0;
+  unsigned unavailableOther = 0;
+  unsigned polarisExcluded = 0;
+  unsigned altitudeExcluded = 0;
+  bool invalidAltitudeLimits = false;
+};
+
 class SightRanker {
 public:
   static RankedBody AssessBody(const BodyState& body, const BodyState& sun);
@@ -185,6 +206,10 @@ public:
       const std::vector<RankedBody>& bodies, unsigned count,
       unsigned maximumResults = 10);
   static std::vector<RankedBody> RecommendationCandidates(
+      const std::vector<RankedBody>& bodies, bool limitAltitude,
+      double minimumAltitude, double maximumAltitude,
+      bool includePolaris = true);
+  static RecommendationAssessment AssessRecommendations(
       const std::vector<RankedBody>& bodies, bool limitAltitude,
       double minimumAltitude, double maximumAltitude,
       bool includePolaris = true);

@@ -24,6 +24,7 @@ src/NavigationAlgorithms.cpp
 src/NavigationEphemerisProvider.cpp
 src/CompactEphemerisProvider.cpp
 src/PlannerDialog.cpp
+src/PlannerBodySelectionDialog.cpp
 src/WaypointPositionSource.cpp
 src/WaypointPickerDialog.cpp
 src/SightAnalysisDialog.cpp
@@ -70,6 +71,7 @@ src/Dut1UpdatePanel.h
 src/BodyCatalog.h
 src/NavigationAlgorithms.h
 src/PlannerDialog.h
+src/PlannerBodySelectionDialog.h
 src/WaypointPositionSource.h
 src/WaypointPickerDialog.h
 src/SightAnalysisDialog.h

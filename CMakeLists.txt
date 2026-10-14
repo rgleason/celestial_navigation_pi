@@ -74,9 +74,9 @@ set(LONG_DESCRIPTION
 )
 set(VERSION_MAJOR "2")
 set(VERSION_MINOR "9")
-set(VERSION_PATCH "8")
+set(VERSION_PATCH "10")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "11/10/2026" )# DD/MM/YYYY format
+set(VERSION_DATE  "14/10/2026" )# DD/MM/YYYY format
 set(OCPN_MIN_VERSION "improve")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -198,6 +198,7 @@ SET(SRCS
         src/NavigationEphemerisProvider.cpp
         src/CompactEphemerisProvider.cpp
         src/PlannerDialog.cpp
+        src/PlannerBodySelectionDialog.cpp
         src/WaypointPositionSource.cpp
         src/WaypointPickerDialog.cpp
         src/SightAnalysisDialog.cpp
@@ -247,6 +248,7 @@ SET(HDRS
         src/BodyCatalog.h
         src/NavigationAlgorithms.h
         src/PlannerDialog.h
+        src/PlannerBodySelectionDialog.h
         src/WaypointPositionSource.h
         src/WaypointPickerDialog.h
         src/SightAnalysisDialog.h

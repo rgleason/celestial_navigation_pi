@@ -1056,6 +1056,89 @@ TEST(SightRanking, PolarisIsOptionalWithoutRemovingItsLatitudeLine) {
   EXPECT_EQ(2u, table.size());
 }
 
+TEST(PlannerBodySelection, CustomDisplayRetainsUnavailableBodiesAndOverridesMagnitude) {
+  RankedBody moon, dimStar, below, sun;
+  moon.state.body = "Moon"; moon.state.geometricAltitude = 16;
+  moon.visibilityUnavailable = true;
+  dimStar.state.body = "Hamal"; dimStar.state.isStar = true;
+  dimStar.state.visualMagnitude = 2; dimStar.state.geometricAltitude = 30;
+  below.state.body = "Antares"; below.state.isStar = true;
+  below.state.visualMagnitude = 1; below.state.geometricAltitude = -10;
+  sun.state.body = "Sun"; sun.state.geometricAltitude = 20;
+  const std::vector<RankedBody> bodies = {moon, dimStar, below, sun};
+  PlannerBodySelection selection;
+  selection.selected = {"moon", "Hamal", "Antares"};
+  EXPECT_EQ(4u, selection.Filter(bodies).size());
+  EXPECT_EQ(2u, selection.ForPlot(bodies, false, 1).size());
+  selection.custom = true;
+  const auto table = selection.Filter(bodies);
+  ASSERT_EQ(3u, table.size());
+  EXPECT_TRUE(table.front().visibilityUnavailable);
+  EXPECT_EQ(2u, selection.ForPlot(bodies, false, 1).size());
+  EXPECT_EQ(3u, selection.ForPlot(bodies, true, 1).size());
+  // Highlighting a deselected body must not bring it back onto the plot.
+  EXPECT_EQ(2u, selection.ForPlot(bodies, false, 1, "Sun").size());
+  selection.selected.clear();
+  EXPECT_TRUE(selection.Filter(bodies).empty());
+  EXPECT_TRUE(selection.ForPlot(bodies, true, 3, "Sun").empty());
+  selection.custom = false;
+  EXPECT_EQ(4u, selection.Filter(bodies).size());
+}
+
+TEST(PlannerRecommendations, GreyMoonRemainsEasyToFindWithoutBecomingAFixCandidate) {
+  PlanningResult plan;
+  RankedBody moon, star;
+  moon.state.body = "Moon"; moon.state.visualMagnitude = -12.7;
+  star.state.body = "Sirius"; star.state.visualMagnitude = -1.46;
+  moon.state.geometricAltitude = star.state.geometricAltitude = 20;
+  moon.visibilityUnavailable = star.visibilityUnavailable = true;
+  plan.bodies = {star, moon};
+  const auto table = PlannerRecommendations::Order(plan, PlanningMode::PracticalFix, false);
+  ASSERT_EQ(2u, table.size());
+  EXPECT_EQ("Moon", table[0].state.body);
+  EXPECT_TRUE(SightRanker::RecommendationCandidates(table, false, 0, 90).empty());
+}
+
+TEST(SightRanking, RecommendationExclusionsExplainEveryRejectedBodyOnce) {
+  RankedBody sun, planet, moon, daylight, polaris, high, below;
+  sun.state.body = "Sun"; sun.state.geometricAltitude = 17;
+  planet.state.body = "Mars"; planet.state.geometricAltitude = 65;
+  moon.state.body = "Moon"; moon.state.geometricAltitude = 16;
+  moon.visibilityUnavailable = true;
+  daylight.state.body = "Sirius"; daylight.state.isStar = true;
+  daylight.state.geometricAltitude = 25; daylight.visibilityUnavailable = true;
+  polaris.state.body = "Polaris"; polaris.state.geometricAltitude = 44;
+  high.state.body = "Capella"; high.state.geometricAltitude = 80;
+  below.state.body = "Venus"; below.state.geometricAltitude = -2;
+  const std::vector<RankedBody> bodies = {sun, planet, moon, daylight, polaris, high, below};
+  const auto result = SightRanker::AssessRecommendations(bodies, true, 10, 75, false);
+  ASSERT_EQ(2u, result.candidates.size());
+  EXPECT_EQ("Sun", result.candidates[0].state.body);
+  EXPECT_EQ("Mars", result.candidates[1].state.body);
+  EXPECT_EQ(1u, result.belowHorizon);
+  EXPECT_EQ(1u, result.unavailableStars);
+  EXPECT_EQ(1u, result.unavailableMoon);
+  EXPECT_EQ(1u, result.polarisExcluded);
+  EXPECT_EQ(1u, result.altitudeExcluded);
+  EXPECT_FALSE(result.invalidAltitudeLimits);
+  const auto restricted = SightRanker::AssessRecommendations(bodies, true, 10, 44, false);
+  EXPECT_EQ(1u, restricted.candidates.size());
+  EXPECT_EQ(2u, restricted.altitudeExcluded);
+  const auto unrestricted = SightRanker::AssessRecommendations(bodies, false, 75, 10, true);
+  EXPECT_EQ(4u, unrestricted.candidates.size());
+  EXPECT_FALSE(unrestricted.invalidAltitudeLimits);
+  const auto invalid = SightRanker::AssessRecommendations(bodies, true, 75, 10, false);
+  EXPECT_TRUE(invalid.invalidAltitudeLimits);
+  EXPECT_TRUE(invalid.candidates.empty());
+  sun.state.geometricAltitude = std::numeric_limits<double>::quiet_NaN();
+  planet.state.geometricAltitude = std::numeric_limits<double>::infinity();
+  const auto nonfinite = SightRanker::AssessRecommendations({sun, planet}, false, 0, 90);
+  EXPECT_TRUE(nonfinite.candidates.empty());
+  EXPECT_EQ(2u, nonfinite.unavailableOther);
+  PlannerBodySelection display;
+  EXPECT_TRUE(display.ForPlot({sun, planet}, true, 3).empty());
+}
+
 TEST(PlannerRecommendations, TraditionalSelectionDoesNotChangeCalculatedCandidatesOrTiming) {
   const auto plan = PlannerRecommendations::Calculate(Utc("2026-10-03T08:30:00"),
       43 + 16.7061 / 60, -(76 + 58.3941 / 60));
