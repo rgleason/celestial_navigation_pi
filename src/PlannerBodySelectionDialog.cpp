@@ -96,6 +96,9 @@ PlannerBodySelectionDialog::PlannerBodySelectionDialog(
   SetMinSize(wxSize(560, 430));
   m_search->Bind(wxEVT_TEXT, [this](wxCommandEvent&) { UpdateSearch(); });
 #ifdef __OCPN__ANDROID__
+  if (auto* line = qobject_cast<QLineEdit*>(m_search->GetHandle()))
+    QObject::connect(line, &QLineEdit::textChanged, GetHandle(),
+                     [this](const QString&) { UpdateSearch(); });
   CN_EnableAndroidScrolling(m_list);
   Bind(wxEVT_SIZE, [this](wxSizeEvent& event) { event.Skip(); Reflow(); });
   m_list->Bind(wxEVT_SIZE,
@@ -158,10 +161,18 @@ void PlannerBodySelectionDialog::UpdateSearch() {
   for (const auto& entry : m_entries) {
     const bool show = entry.body.Lower().Contains(query);
     entry.checkbox->Show(show);
+#ifdef __OCPN__ANDROID__
+    // The pinned wxQt visibility bit can differ from the native child's
+    // state after modal decoration. Apply the search to the actual widget too.
+    entry.checkbox->GetHandle()->setVisible(show);
+#endif
     visible[entry.group] = visible[entry.group] || show;
   }
   for (size_t i = 0; i < m_groups.size(); ++i) {
     m_groups[i]->GetStaticBox()->Show(visible[i]);
+#ifdef __OCPN__ANDROID__
+    m_groups[i]->GetStaticBox()->GetHandle()->setVisible(visible[i]);
+#endif
     m_groups[i]->Layout();
   }
   m_list->Layout();
