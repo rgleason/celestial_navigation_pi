@@ -64,6 +64,26 @@ the latter was run at normal and 150% GTK font scale, at 1080 and 900 pixel
 dialog widths. The existing LunarUiSmoke workflow test passed as well.
 Its planner-label check now tests that the labels occupy the same visual row,
 allowing native font-metric offsets instead of identical pixel origins.
-The ARM64 library passed the 16 KB ELF alignment gate. Physical Android
-runtime review is pending a connected tablet. Windows/macOS native review
-and remote CI are outside this local-only development pass.
+The ARM64 library and final import archive passed the 16 KB ELF alignment
+gate. Physical Android review passed on the SM-X210 tablet with OpenCPN
+5.14.1-pob220-16k-test (version code 132). The local 2.9.9 plugin is installed.
+The saved Moon-Saturn observation opened successfully; A/B selection updated
+the report without repeating the search. Invalid reference input cleared the
+cleared-distance/error values; changing latitude updated the independent
+check, and restoring it recovered the original error. Results position cards
+and all four Calculations sections were reviewed with touch scrolling in
+portrait, followed by Results/Calculations landscape and return to portrait.
+
+That review exposed Android text retaining a narrow initial wrapping width,
+and recreated calculation cards missing the surface's touch styling. Android
+now keeps label source text intact, reflows after native section changes and
+styles replacement cards. The corrected build was installed and rechecked.
+
+The loaded library was verified against the final package after a fresh host
+start. The original sights, private CelNav data and all other imported plugin
+libraries remained byte-identical. Navigation database schema and every row
+were unchanged; plugin enable flags and rotation/accessibility settings were
+preserved. No new entries appeared in Android's crash buffer. Backups,
+installation receipts and actual tablet captures are in the local output
+directory. Windows/macOS native review and remote CI remain outside this
+local-only development pass.
