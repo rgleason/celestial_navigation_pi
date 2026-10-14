@@ -224,6 +224,7 @@ SET(SRCS
         src/icons.cpp
         src/FindBodyDialog.cpp
         src/LunarResultsDialog.cpp
+        src/LunarPresentation.cpp
         src/FixDialog.cpp
         src/ClockCorrectionDialog.cpp
         src/geodesic.c

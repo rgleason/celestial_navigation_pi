@@ -45,6 +45,8 @@ set(SRC
     lunar_tests.cpp
     lunar_fiji_tests.cpp
     lunar_solution_record_tests.cpp
+    lunar_presentation_tests.cpp
+    lunar_results_ui_tests.cpp
     lunar_ui_smoke_tests.cpp
     planner_ui_tests.cpp
     find_body_ui_tests.cpp
@@ -131,6 +133,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/epv00.cpp
     ${CMAKE_SOURCE_DIR}/src/FixDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/LunarResultsDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/LunarPresentation.cpp
     ${CMAKE_SOURCE_DIR}/src/SightDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/geodesic.c
     ${CMAKE_SOURCE_DIR}/src/geomag/geomag.c

@@ -1,0 +1,89 @@
+Local development: Lunar Results and Calculations, 2.9.9.0
+=======================================================
+
+Branch: development/celnav-2.9.9
+Base: 635832960cea65406e3536a07a84b7c35f157c60 (combined 2.9.8)
+Related discussions: #341 (Results) and #318 (Calculations).
+This branch is local. The separate 2.9.10 star-finder work is not included.
+
+Results
+-------
+The selected lunar-derived UTC, additional correction and formal UTC
+uncertainty are shown first. Solution letters identify the same candidates
+throughout Results and Calculations. All mathematical alternatives remain
+available. Results rounds UTC to 0.1 second, including carries across midnight;
+the numerical result and detailed trail retain full precision.
+
+The accuracy check is visible on the same page. Its UTC is the entered time
+plus the existing clock correction, without the additional lunar-derived
+correction. Its reference coordinates start from saved DR when available and
+can be edited. Uncertain DR or UTC contributes to the discrepancy; it cannot
+be treated as sextant error alone. The signed error is model-corrected observed
+LD minus true LD, in arcminutes. Positive means the observation is too large.
+
+Positions from the measured altitudes are labelled by time basis: entered UTC
+and the selected lunar-derived UTC. Changing reference coordinates updates
+the independent distance check, without fitting those coordinates or changing
+the derived positions. A near-zero fitted residual at the derived solution is
+not an independent accuracy check.
+
+Calculations
+------------
+Overview: original readings and times, existing clock correction, forward
+check of all three observations at the selected solution.
+Almanac and corrections: provider and exact epoch, Moon/body GHA, declination,
+HP and SD, decimal degrees and navigation notation, instrument/atmosphere,
+and Hs through Ho for the simultaneous Direct Triangle comparison. Raw,
+apparent, spherical-cleared and WGS84 geocentric distances have distinct labels.
+Separately timed observations show their individual corrected epochs rather
+than an invalid simultaneous reduction.
+UTC search: search interval, scan spacing, tolerance, nearby coarse evaluations,
+actual refinement brackets and the link from correction to the Results UTC.
+Detailed trail: complete existing arithmetic and evaluations, followed by the
+independent accuracy check. Copy report and Save lunar solution retain it.
+
+Selecting a completed candidate rebuilds its report from the retained solve
+and immutable ephemeris. It does not rerun the UTC search. In particular it no
+longer enters an Android worker modal loop while constructing Results.
+
+Android uses direct candidate data and vertical touch cards, rather than
+reading values back from hidden desktop list controls. Calculations has its
+own section picker, with independently scrolling content pages. The recorded
+sight, global clock correction, input uncertainties and solver are unchanged.
+
+Validation results and review captures are kept locally under
+output/celnav-2.9.9, outside this source worktree.
+
+Local qualification
+-------------------
+Linux wxGTK Release and pinned Android ARM64 wxQt Release builds passed.
+All 13 CTest groups passed, including numerical audits in four time zones,
+Android numerical branches, package metadata and bundled-guide checks.
+The focused LunarPresentation tests and native LunarResultsUi tests passed;
+the latter was run at normal and 150% GTK font scale, at 1080 and 900 pixel
+dialog widths. The existing LunarUiSmoke workflow test passed as well.
+Its planner-label check now tests that the labels occupy the same visual row,
+allowing native font-metric offsets instead of identical pixel origins.
+The ARM64 library and final import archive passed the 16 KB ELF alignment
+gate. Physical Android review passed on the SM-X210 tablet with OpenCPN
+5.14.1-pob220-16k-test (version code 132). The local 2.9.9 plugin is installed.
+The saved Moon-Saturn observation opened successfully; A/B selection updated
+the report without repeating the search. Invalid reference input cleared the
+cleared-distance/error values; changing latitude updated the independent
+check, and restoring it recovered the original error. Results position cards
+and all four Calculations sections were reviewed with touch scrolling in
+portrait, followed by Results/Calculations landscape and return to portrait.
+
+That review exposed Android text retaining a narrow initial wrapping width,
+and recreated calculation cards missing the surface's touch styling. Android
+now keeps label source text intact, reflows after native section changes and
+styles replacement cards. The corrected build was installed and rechecked.
+
+The loaded library was verified against the final package after a fresh host
+start. The original sights, private CelNav data and all other imported plugin
+libraries remained byte-identical. Navigation database schema and every row
+were unchanged; plugin enable flags and rotation/accessibility settings were
+preserved. No new entries appeared in Android's crash buffer. Backups,
+installation receipts and actual tablet captures are in the local output
+directory. Windows/macOS native review and remote CI remain outside this
+local-only development pass.
