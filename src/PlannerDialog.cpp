@@ -1188,6 +1188,13 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   auto* options = new wxButton(bodiesPage, wxID_ANY, _("Body options..."));
   bestSights->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
     m_notebook->SetSelection(3);
+    // The touch section picker is created later by the Android surface.
+    // Keep its caption aligned with this explicit navigation action.
+    for (auto* child : GetChildren())
+      if (auto* picker = wxDynamicCast(child, wxChoice))
+        if (picker->GetCount() == m_notebook->GetPageCount() &&
+            picker->FindString(_("Context")) != wxNOT_FOUND)
+          picker->SetSelection(3);
     celestial_android::LayoutScrolls(this);
   });
   options->Bind(wxEVT_BUTTON, [this, bodiesPage, bodyOptions, options](wxCommandEvent&) {
