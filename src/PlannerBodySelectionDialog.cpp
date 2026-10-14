@@ -30,6 +30,8 @@ PlannerBodySelectionDialog::PlannerBodySelectionDialog(
   // Keep the checklist as the sole scrolling viewport. The generic Android
   // form wrapper would give this expanding list only its tiny best height.
   GetHandle()->setProperty("cnDocumentSurface", true);
+  root->Add(new wxStaticText(this, wxID_ANY, _("Search bodies")),
+      0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
   m_search = new wxTextCtrl(this, wxID_ANY);
   m_search->SetHint(_("Search bodies"));
 #else

@@ -1169,7 +1169,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   };
   // Keep the expanding card list visible at either orientation. Secondary
   // display/export controls belong to a collapsible panel, not a tall header.
-  m_notebook->SetPageText(1, _("Bodies"));
+  m_notebook->SetPageText(2, _("Bodies"));
   auto* bodyOptions = new wxPanel(bodiesPage);
   auto* bodyOptionsRoot = new wxBoxSizer(wxVERTICAL);
   auto* sort = m_bodyOrder;
@@ -1330,6 +1330,15 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
     PollAndroidCalculation();
   });
   m_androidPoll->start(80);
+  // Android's section picker uses SetSelection without a wx page event.
+  // Reflow after Qt lays out the newly visible viewport, as in lunar reports.
+  if (auto* native = qobject_cast<QTabWidget*>(m_notebook->GetHandle()))
+    QObject::connect(native, &QTabWidget::currentChanged, GetHandle(),
+                     [this](int) {
+                       QTimer::singleShot(0, GetHandle(), [this] {
+                         celestial_android::LayoutScrolls(this);
+                       });
+                     });
 #endif
 #ifndef __OCPN__ANDROID__
   const int wideContextWidth = 1120;
