@@ -34,6 +34,7 @@
 #include <string>
 #endif
 #include <limits>
+#include <memory>
 #include <vector>
 #include "pidc.h"
 #include "LunarDistanceEngine.h"
@@ -109,6 +110,8 @@ public:
 #endif
                       );
   int SelectLunarCandidate(int preferred_candidate = -1) const;
+  // Rebuild the working for an already solved candidate without another search.
+  void UpdateLunarReport(int preferred_candidate = -1);
   void RecomputeHorizon();
 
   void RebuildPolygonsAltitude();
@@ -253,6 +256,8 @@ public:
   bool m_LunarSolutionValid;
   wxString m_LunarSolutionError;
   std::vector<lunar_distance::TimeCandidate> m_LunarCandidates;
+  std::shared_ptr<const lunar_distance::SolveResult> m_LunarCalculation;
+  lunar_distance::SolveOptions m_LunarSolveOptions;
   int m_LunarSelectedCandidate = -1;
   lunar_distance::PositionResult m_LunarPositionResult;
   int m_LunarSelectedPosition;

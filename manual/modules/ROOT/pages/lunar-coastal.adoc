@@ -85,11 +85,29 @@ estimate. These estimates describe the entered random angle uncertainties,
 not unmodelled systematic effects such as an incorrect index correction,
 abnormal refraction or COG/SOG error.
 
-Choose *Check at entered UTC* to hold UTC fixed (including the existing manual
-correction) and examine position candidates and model-minus-observed lunar
-distance residuals. This mode does not solve or save an additional clock
-correction. Compare a published position at its stated UTC, not automatically
-with a position at a different recovered UTC.
+The *Results* page shows the lunar-derived UTC and an *Accuracy check at
+entered UTC* together. The check holds the entered UTC fixed, including the
+existing manual clock correction, and uses an editable reference position
+initially filled from saved DR. True LD, model-corrected cleared LD and signed
+lunar error (cleared minus true, in arcminutes) appear together. Positive error
+means the observed distance is too large. UTC and position must be independently
+known to interpret the discrepancy as sight error; uncertain DR also contributes.
+The check does not fit or save another clock correction.
+
+The accompanying position rows identify whether they use entered UTC or the
+selected lunar-derived UTC. Compare a published position at its stated epoch.
+All mathematical branches remain available under consistent solution letters.
+The fitted residual at lunar-derived UTC is near zero by construction and is
+not an independent sight-accuracy measurement.
+
+*Calculations* has *Overview*, *Almanac and corrections*, *UTC search* and
+*Detailed trail* sections. These show the original observations, selected-epoch
+Moon/body GHA, declination, HP and SD, the simultaneous Hs-to-Ho Direct Triangle
+comparison, the actual search/refinement working and the complete audit trail.
+Separately timed readings retain their individual corrected epochs instead of
+using a simultaneous triangle. Raw LD, spherical-cleared LD and the geocentric
+distance at derived UTC have distinct labels. Results displays time to 0.1
+second; Calculations retains numerical precision and the formal uncertainties.
 
 The Sun/Moon calculation uses the local JPL DE440s kernel when it has already
 been installed for the eclipse module. Its separation and geographic positions

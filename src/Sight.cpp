@@ -685,6 +685,7 @@ void Sight::Recompute(double clock_offset) {
     m_CorrectedDateTime = UtcDateTime::AddSeconds(m_DateTime, clock_offset);
     m_LunarSolutionValid = false;
     m_LunarCandidates.clear();
+    m_LunarCalculation.reset();
     m_LunarSelectedCandidate = m_LunarSelectedPosition = -1;
     m_LunarPositionResult = lunar_distance::PositionResult();
     m_LunarEphemeris = {};
@@ -1359,6 +1360,7 @@ void Sight::RecomputeLunar(int preferred_candidate
     const auto snapshot = std::make_shared<Sight>(*this);
     snapshot->m_LunarEphemeris = {};
     snapshot->m_LunarCandidates.clear();
+    snapshot->m_LunarCalculation.reset();
     const auto classic_mutex = std::make_shared<eclipse::Mutex>();
     snapshot->m_AllowDe440 = false;
     snapshot->m_AllowCompact = false;
@@ -1436,6 +1438,18 @@ void Sight::RecomputeLunar(int preferred_candidate
   m_LunarDut1Fallback = unavailable_dut1->load();
   m_LunarSolutionValid = solution.valid;
   m_LunarSolutionError = wxString::FromUTF8(solution.error.c_str());
+  m_LunarCalculation =
+      std::make_shared<const lunar_distance::SolveResult>(solution);
+  m_LunarSolveOptions = options;
+  UpdateLunarReport(preferred_candidate);
+}
+
+void Sight::UpdateLunarReport(int preferred_candidate) {
+  if (!m_LunarCalculation || !LunarEphemeris()) return;
+  const auto observation = LunarObservation();
+  const auto ephemeris = LunarEphemeris();
+  const auto& solution = *m_LunarCalculation;
+  const auto& options = m_LunarSolveOptions;
   m_LunarPositionResult = lunar_distance::PositionResult();
   m_LunarSelectedPosition = -1;
   m_TimeCorrection = 0;
@@ -1522,7 +1536,7 @@ void Sight::RecomputeLunar(int preferred_candidate
     if (m_LunarUsesDe440)
       m_CalcStr += _("Moon-body astrometry          = observer-specific light time and combined annual/diurnal aberration\n"
                   "Polar motion and geoid/local vertical are not modelled.\n");
-    if (unavailable_dut1->load())
+    if (m_LunarDut1Fallback)
       m_CalcStr += _("WARNING: part of this search is outside available DUT1 coverage; those trials use UT1=UTC with reduced accuracy.\n");
     m_CalcStr += wxString::Format(_("Lunar engine version          = %d.%d.%d.%d\n"),
         PLUGIN_VERSION_MAJOR, PLUGIN_VERSION_MINOR, PLUGIN_VERSION_PATCH, PLUGIN_VERSION_TWEAK);
