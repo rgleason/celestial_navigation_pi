@@ -4,7 +4,11 @@ Local development: Celestial Navigation 2.9.10.0
 Branch: development/celnav-2.9.10
 Worktree: /home/paul/src/OpenCPN/.worktrees/celnav-2.9.10
 Base: combined 2.9.8, 635832960cea65406e3536a07a84b7c35f157c60.
-Local only. No push, tag, catalogue update or publication.
+Release candidate for review against Rick's master. Publication of development
+branches and installable test tarballs is authorized; official catalogue
+promotion remains a separate maintainer step. Rick's public 2.9.9 is the
+publication bump of our 2.9.8, while the local 2.9.9 report changes below are
+additional development incorporated in 2.9.10.
 
 Enhanced Accuracy Add-ons (issue 379)
 ------------------------------------
@@ -76,6 +80,12 @@ Search reads the native QLineEdit text because the pinned wxQt getter retained
 an empty value during editing on the tablet. Desktop search remains unchanged.
 Astronomical calculations and scoring weights are unchanged.
 
+The whole desktop planner page scrolls vertically only, so focus on a wide
+toolbar control cannot scroll headings and table edges off the left. Tables
+retain their own horizontal scrolling. The Moon-path checkbox explicitly says
+SHA/Dec: it shows orbital motion relative to stars in that view. Local sky uses
+the -1 h / +1 h context controls to advance the entire horizon-relative sky.
+
 Local 2.9.9 integration
 ----------------------
 Merged development/celnav-2.9.9 through 26ea7a2, including 051c4df's revised
@@ -101,7 +111,8 @@ ARM64 library and manual-import archive pass the 16 KB ELF alignment gate.
 
 Local build logs, isolated native OpenCPN review captures and import packages
 are under /home/paul/src/OpenCPN/output/celnav-2.9.10. The laptop's normal
-installation remains unchanged. At the user's request, the SM-X210 tablet's
+installation was subsequently updated at the user's request, with navigation
+data, sights and other plugins preserved. At the user's request, the SM-X210 tablet's
 CelNav plugin was updated to the final 2.9.10 build on its existing OpenCPN
 5.14.1-pob220-16k-test host; the host APK was not changed.
 

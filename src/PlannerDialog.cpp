@@ -720,7 +720,10 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_notebook->AddPage(eventsPage, _("Events"), true);
 
   wxScrolledWindow* bodiesPage = new wxScrolledWindow(m_notebook);
-  bodiesPage->SetScrollRate(10, 10);
+  bodiesPage->SetName("PlannerBodiesPage");
+  // Report tables own their horizontal scrolling. Focusing a toolbar control
+  // must not shift the entire page, including its headings, off the left.
+  bodiesPage->SetScrollRate(0, 10);
   wxBoxSizer* bodiesRoot = new wxBoxSizer(wxHORIZONTAL);
   wxBoxSizer* bodiesLeft = new wxBoxSizer(wxVERTICAL);
   bodiesLeft->SetMinSize(wxSize(380, 420));
@@ -972,7 +975,8 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
 #endif
   m_showEcliptic = new wxCheckBox(bodiesPage, wxID_ANY, _("Show ecliptic"));
   m_showEcliptic->SetValue(true);
-  m_showMoonPath = new wxCheckBox(bodiesPage, wxID_ANY, _("Show Moon path"));
+  m_showMoonPath = new wxCheckBox(bodiesPage, wxID_ANY, _("Show Moon path (SHA/Dec)"));
+  m_showMoonPath->SetName("PlannerShowMoonPath");
   wxBoxSizer* overlayRow = new wxBoxSizer(wxHORIZONTAL);
 #ifndef __OCPN__ANDROID__
   overlayRow->Add(m_plotBelowHorizon, 0, wxRIGHT | wxALIGN_CENTER_VERTICAL, 9);
@@ -999,6 +1003,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   plotSizer->Add(plotControls, 0, wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 8);
   m_plotNotebook = new wxNotebook(bodiesPage, wxID_ANY, wxDefaultPosition,
                                    wxSize(340, 350));
+  m_plotNotebook->SetName("PlannerSkyViews");
   m_plotNotebook->SetMinSize(wxSize(320, 260));
   m_skyPlot = new SkyPlotPanel(m_plotNotebook);
   m_equatorialPlot = new SkyPlotPanel(m_plotNotebook, true);

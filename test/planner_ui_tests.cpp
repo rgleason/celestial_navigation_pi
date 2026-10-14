@@ -5,6 +5,8 @@
 #include <wx/filename.h>
 #include <wx/listctrl.h>
 #include <wx/modalhook.h>
+#include <wx/notebook.h>
+#include <wx/scrolwin.h>
 #include <wx/spinctrl.h>
 #include <wx/splitter.h>
 #include <wx/srchctrl.h>
@@ -159,6 +161,37 @@ TEST(PlannerUi, VisibleBestSightsSortingCustomBodiesAndSavedChoices) {
       EXPECT_TRUE(planner.GetScreenRect().Contains(best->GetScreenRect()));
       EXPECT_TRUE(planner.GetScreenRect().Contains(bodies->GetScreenRect()));
       Capture(&planner, "best-sights-and-bodies");
+      auto* page = Named<wxScrolledWindow>(&planner, "PlannerBodiesPage");
+      auto* skyViews = Named<wxNotebook>(&planner, "PlannerSkyViews");
+      auto* moonPath = Named<wxCheckBox>(&planner, "PlannerShowMoonPath");
+      ASSERT_NE(nullptr, page); ASSERT_NE(nullptr, skyViews); ASSERT_NE(nullptr, moonPath);
+      planner.SetSize(wxSize(1185, 960));
+      EXPECT_TRUE(Wait([&] { return page->GetClientSize().x > 1000; }));
+      int scrollX = 0, scrollY = 0;
+      page->GetScrollPixelsPerUnit(&scrollX, &scrollY);
+      EXPECT_EQ(0, scrollX);
+      order->SetFocus(); page->Scroll(20, 0);
+      wxTheApp->Yield(true);
+      EXPECT_EQ(0, page->GetViewStart().x);
+      EXPECT_TRUE(page->GetScreenRect().Contains(best->GetScreenRect().GetTopLeft()));
+      EXPECT_TRUE(page->GetScreenRect().Contains(bodies->GetScreenRect().GetTopLeft()));
+      EXPECT_FALSE(moonPath->IsEnabled());
+      EXPECT_TRUE(moonPath->GetLabel().Contains("SHA/Dec"));
+      skyViews->SetSelection(1);
+      wxBookCtrlEvent skyChanged(wxEVT_NOTEBOOK_PAGE_CHANGED, skyViews->GetId(), 1, 0);
+      skyChanged.SetEventObject(skyViews); skyViews->ProcessWindowEvent(skyChanged);
+      EXPECT_TRUE(moonPath->IsEnabled());
+      moonPath->SetValue(true); Command(moonPath, wxEVT_CHECKBOX);
+      EXPECT_TRUE(Wait([&] { return best->GetItemCount() == 0; }));
+      EXPECT_TRUE(Wait([&] { return best->GetItemCount() == 4; }));
+      Capture(&planner, "moon-path-sha-declination");
+      skyViews->SetSelection(0);
+      wxBookCtrlEvent localChanged(wxEVT_NOTEBOOK_PAGE_CHANGED, skyViews->GetId(), 0, 1);
+      localChanged.SetEventObject(skyViews); skyViews->ProcessWindowEvent(localChanged);
+      EXPECT_FALSE(moonPath->IsEnabled());
+      EXPECT_EQ(0, page->GetViewStart().x);
+      Capture(&planner, "planner-1185-local-sky");
+      planner.SetSize(wxSize(1370, 950));
       Choice(order, 0);
       EXPECT_EQ(3, bodies->FindItem(-1, "Moon"));
       auto* settings = Named<wxButton>(&planner, "Fix settings...");
