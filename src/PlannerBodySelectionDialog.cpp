@@ -156,14 +156,20 @@ void PlannerBodySelectionDialog::SelectAll(bool checked) {
 }
 
 void PlannerBodySelectionDialog::UpdateSearch() {
-  const wxString query = m_search->GetValue().Lower().Trim().Trim(false);
+  wxString text = m_search->GetValue();
+#ifdef __OCPN__ANDROID__
+  // The pinned wxQt getter can retain an empty value while the native field
+  // is being edited. Its signal and visible text are the search authority.
+  if (auto* line = qobject_cast<QLineEdit*>(m_search->GetHandle()))
+    text = wxString::FromUTF8(line->text().toUtf8().constData());
+#endif
+  const wxString query = text.Lower().Trim().Trim(false);
   std::vector<bool> visible(m_groups.size(), false);
   for (const auto& entry : m_entries) {
     const bool show = entry.body.Lower().Contains(query);
     entry.checkbox->Show(show);
 #ifdef __OCPN__ANDROID__
-    // The pinned wxQt visibility bit can differ from the native child's
-    // state after modal decoration. Apply the search to the actual widget too.
+    // Keep the native checkbox visibility aligned with the search too.
     entry.checkbox->GetHandle()->setVisible(show);
 #endif
     visible[entry.group] = visible[entry.group] || show;
