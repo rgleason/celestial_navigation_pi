@@ -37,8 +37,14 @@ public:
   }
   void Reflow(int width) {
     m_wrapping = true;
+#ifdef __OCPN__ANDROID__
+    // Keep the source text intact. wx Wrap inserts hard line breaks, which
+    // the Android surface cannot undo when its initial viewport expands.
+    CN_WrapAndroidText(this, m_original, width);
+#else
     wxStaticText::SetLabel(m_original);
     Wrap(width);
+#endif
     m_wrapping = false;
   }
 
@@ -48,8 +54,15 @@ private:
 };
 void ReflowLabels(wxWindow* window) {
   for (auto* child : window->GetChildren()) {
-    if (auto* label = dynamic_cast<ReportLabel*>(child))
+    if (auto* label = dynamic_cast<ReportLabel*>(child)) {
+#ifdef __OCPN__ANDROID__
+      // A previous native wrap can cap the label's own width; the containing
+      // panel is the authority after rotation and initial surface sizing.
+      label->Reflow(std::max(160, window->GetClientSize().x - 32));
+#else
       if (label->GetSize().x >= 80) label->Reflow(label->GetSize().x - 2);
+#endif
+    }
     ReflowLabels(child);
   }
 }
@@ -146,6 +159,10 @@ void RenderTables(wxScrolledWindow* page, const wxString& heading,
     if (!table.note.empty())
       layout->Add(Label(page, table.note), 0, wxALL | wxEXPAND, 10);
   }
+#ifdef __OCPN__ANDROID__
+  // Candidate changes replace these controls after the surface is decorated.
+  CN_StyleAndroidControls(page);
+#endif
   page->Layout();
   page->FitInside();
   page->Thaw();
@@ -376,6 +393,18 @@ LunarResultsDialog::LunarResultsDialog(wxWindow* parent, Sight& sight)
   close->Hide();
   celestial_android::Decorate(this, GetTitle(),
                               [this]() { EndModal(wxID_CLOSE); });
+  // The Android section pickers use SetSelection, which does not emit the wx
+  // page-change event. Reflow after Qt has made the selected viewport visible.
+  wxWeakRef<LunarResultsDialog> weak(this);
+  for (auto* book : {m_pages, m_calculationPages})
+    if (auto* native = qobject_cast<QTabWidget*>(book->GetHandle()))
+      QObject::connect(native, &QTabWidget::currentChanged, GetHandle(),
+                       [weak](int) {
+                         if (!weak) return;
+                         QTimer::singleShot(0, weak->GetHandle(), [weak]() {
+                           if (weak) weak->Relayout();
+                         });
+                       });
 #endif
   Relayout();
 }
