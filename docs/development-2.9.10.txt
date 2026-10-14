@@ -1,0 +1,63 @@
+Local development: Celestial Navigation 2.9.10.0
+===============================================
+
+Branch: development/celnav-2.9.10
+Worktree: /home/paul/src/OpenCPN/.worktrees/celnav-2.9.10
+Base: combined 2.9.8, 635832960cea65406e3536a07a84b7c35f157c60.
+Local only. No push, tag, catalogue update or publication.
+
+Planner
+-------
+Best Sights and the body catalogue are visible together in a resizable
+desktop split view. Body sorting is independent of recommendation mode.
+Practical Fix, Bright Bodies and Lunar Candidates remain available; old
+Show All preferences migrate to alphabetical display with Practical Fix.
+Active Hc limits and the Polaris preference are reported even while the
+optional settings are collapsed. Empty recommendations explain exclusions.
+
+Full catalogue and Custom are separate display choices. The searchable,
+grouped checklist offers all 66 Sun, Moon, planet and star catalogue bodies.
+Selections apply to both sky plots, the body table and recommendation pool.
+Custom overrides the plot magnitude limit; below-horizon switches retain
+their individual display scopes. Empty custom selections persist. Cancel
+retains the previous selection. Lunar companions can use any selected body;
+the Moon remains the calculation reference even when unchecked for display.
+Unavailable bodies remain grey, including the thin Moon. Planning order
+keeps the daytime Moon near other bright bodies so it remains discoverable.
+
+The Android planner retains its existing touch cards and page workflow.
+Its selection model, sorting and recommendation explanations share the
+same changes. Astronomical calculations and scoring weights are unchanged.
+
+Local 2.9.9 integration
+----------------------
+Merged development/celnav-2.9.9 through 26ea7a2, including 051c4df's revised
+Results/Calculations and independent accuracy check, and 44a9efe's Android
+wrapping and replacement-card touch styling fixes. These production files
+are identical to that local branch. The combined version remains 2.9.10.0.
+This includes the local development changes, not merely the public 2.9.9
+publication version bump. The historical 2.9.9 qualification is retained in
+docs/lunar-results-2.9.9.txt.
+
+Combined validation
+-------------------
+Linux wxGTK Release and pinned Android ARM64 wxQt Release builds passed.
+All 13 CTest groups passed, including four time-zone numerical audits,
+Android numerical branches, package/guide checks and UTF-8 validation.
+PlannerUi passed, including persisted preferences, legacy Show All migration,
+ordering, Custom/Cancel/empty choices and nontraditional lunar companions.
+LunarResultsUi passed at normal and 150% GTK fonts at 1080 and 900 px widths.
+Reference edits and candidate changes preserve the recorded input and fit.
+The broader LunarUiSmoke workflow passed after its planner checks were
+adapted to the three recommendation modes and the controls' new containers.
+ARM64 library and manual-import archive pass the 16 KB ELF alignment gate.
+
+Local build logs, isolated native OpenCPN review captures and import packages
+are under /home/paul/src/OpenCPN/output/celnav-2.9.10. Normal installations,
+saved sights/navigation data and other plugins were not modified by this
+development pass. The previous 2.9.9 tablet qualification remains historical;
+physical portrait/landscape smoke testing has not been repeated for the
+combined 2.9.10 build. Native macOS/Windows review and remote CI remain pending.
+Bob's complete absence of recommendations on iMac was not reproduced on
+Linux; the shared visibility/filter problems are addressed, but the iMac
+needs confirmation using this version.
