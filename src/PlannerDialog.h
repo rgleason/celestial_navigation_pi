@@ -22,6 +22,9 @@ class wxPanel;
 class wxSpinCtrlDouble;
 class wxStaticText;
 class wxTextCtrl;
+class wxButton;
+class wxSizer;
+class wxSplitterWindow;
 #ifdef __OCPN__ANDROID__
 #include "NauticalTimeCtrl.h"
 class QListWidget;
@@ -74,6 +77,8 @@ private:
   void RefreshBodies();
   void RebuildBodyList();
   void RefreshSkyPlot();
+  void ChooseCustomBodies();
+  void UpdateBodySelectionControls();
   void ExportBodyTable(wxCommandEvent& event);
   void SortBodies(wxListEvent& event);
   void RefreshAlmanac();
@@ -83,6 +88,10 @@ private:
   void FindLunarWindows(wxCommandEvent& event);
   void SolveSpecialLatitude(wxCommandEvent& event);
 #ifndef __OCPN__ANDROID__
+  wxSplitterWindow* m_resultsSplitter = nullptr;
+  wxButton* m_fixSettings = nullptr;
+  bool m_showFixSettings = false;
+  int m_fixSettingsSash = 210;
   void StartDesktopCalculation(const ObserverMotion& motion);
   void PollDesktopCalculation(wxTimerEvent& event);
   std::unique_ptr<celestial_android::PlannerWorker> m_desktopWorker;
@@ -133,6 +142,9 @@ private:
   wxStaticText* m_androidAlmanacStatus = nullptr;
   wxButton* m_androidCreateSight = nullptr;
   wxButton* m_androidExport = nullptr;
+  wxPanel* m_androidFixOptions = nullptr;
+  wxButton* m_androidFixSettings = nullptr;
+  bool m_androidShowFixSettings = false;
   void UpdateAndroidBodySelection();
   void StartAndroidCalculation(const ObserverMotion& motion);
   void PollAndroidCalculation();
@@ -153,9 +165,16 @@ private:
   wxChoice* m_lunarOrder;
   wxChoice* m_lunarCompanions;
   wxCheckBox* m_includePolarisRecommendations;
-  wxNotebook* m_resultsNotebook;
-  wxStaticText* m_noRecommendations;
+  wxStaticText* m_recommendationSummary;
+  wxStaticText* m_recommendationTitle;
+  wxString m_recommendationText;
+  wxSizer* m_fixControls;
   wxChoice* m_planningMode;
+  wxChoice* m_bodySet;
+  wxButton* m_customBodies;
+  wxChoice* m_bodyOrder;
+  wxChoice* m_bodyDirection;
+  PlannerBodySelection m_bodySelection;
   wxCheckBox* m_tableBelowHorizon;
   wxCheckBox* m_limitRecommendationAltitude;
   wxSpinCtrlDouble* m_recommendationMinAltitude;

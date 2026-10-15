@@ -5,6 +5,8 @@
 #include "AndroidPlannerCancellation.h"
 #endif
 #include "PlannerDialog.h"
+#include "PlannerBodySelectionDialog.h"
+#include "BodyCatalog.h"
 #include "WaypointPickerDialog.h"
 
 #include "CelestialNavigationDialog.h"
@@ -29,10 +31,14 @@
 #include <wx/srchctrl.h>
 #include <wx/scrolwin.h>
 #include <wx/spinctrl.h>
+#ifndef __OCPN__ANDROID__
+#include <wx/splitter.h>
+#endif
 #include <wx/statline.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 #include <wx/timectrl.h>
+#include <wx/tokenzr.h>
 #include <wx/wrapsizer.h>
 
 #include <algorithm>
@@ -163,6 +169,7 @@ public:
           tooltip = wxString::Format(_("%s; mag %.1f; Hc %.1f; Zn true %.1f"),
               state.body.c_str(), state.visualMagnitude,
               state.geometricAltitude, state.azimuthTrue);
+          tooltip += "; " + m_bodies[hit.index].reason;
           break;
         }
       }
@@ -352,7 +359,8 @@ private:
       const PlannerSkyPoint position{body.state.utc, 0, 0, body.state.sha,
                                       body.state.declination};
       const wxPoint p = xy(position);
-      const wxColour colour = body.state.body == "Moon"
+      const wxColour colour = body.visibilityUnavailable ? wxColour(150, 150, 150)
+                                  : body.state.body == "Moon"
                                   ? wxColour(38, 100, 210)
                                   : body.state.body == "Sun"
                                         ? wxColour(220, 160, 0)
@@ -419,6 +427,7 @@ private:
         colour = wxColour(205, 55, 45);
       else if (m_daylight)
         colour = wxColour(150, 150, 150);
+      if (body.visibilityUnavailable) colour = wxColour(150, 150, 150);
       dc.SetPen(wxPen(colour));
       dc.SetBrush(belowHorizon ? *wxTRANSPARENT_BRUSH : wxBrush(colour));
       dc.DrawCircle(p, belowHorizon ? 4 : 3);
@@ -469,7 +478,7 @@ void PlannerDialog::SelectPageForIntegration(unsigned page) {
 
 PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
     : wxDialog(parent, wxID_ANY, _("Sun, Moon and Sight Planner"),
-               wxDefaultPosition, wxSize(1370, 820),
+               wxDefaultPosition, wxSize(1370, 950),
                wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
       m_parent(parent),
       m_bodySortColumn(-1),
@@ -477,6 +486,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
       m_lastValidZoneOffset(0.0),
       m_zoneOffsetTextValid(true),
       m_updatingZoneOffset(false) {
+  for (const auto& body : BodyCatalog::All()) m_bodySelection.selected.push_back(body.name);
   const CelestialNavigationDefaults defaults =
       LoadCelestialNavigationDefaults();
   wxBoxSizer* root = new wxBoxSizer(wxVERTICAL);
@@ -503,6 +513,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
             NavigationAngleKind::Longitude, true)).x + 24), -1));
 
   m_timeSource = new wxChoice(this, wxID_ANY);
+  m_timeSource->SetName("PlannerTimeSource");
   m_timeSource->Append(_("Now"));
   m_timeSource->Append(_("Selected sight"));
   m_timeSource->Append(_("Manual date/time"));
@@ -709,74 +720,83 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_notebook->AddPage(eventsPage, _("Events"), true);
 
   wxScrolledWindow* bodiesPage = new wxScrolledWindow(m_notebook);
-  bodiesPage->SetScrollRate(10, 10);
+  bodiesPage->SetName("PlannerBodiesPage");
+  // Report tables own their horizontal scrolling. Focusing a toolbar control
+  // must not shift the entire page, including its headings, off the left.
+  bodiesPage->SetScrollRate(0, 10);
   wxBoxSizer* bodiesRoot = new wxBoxSizer(wxHORIZONTAL);
   wxBoxSizer* bodiesLeft = new wxBoxSizer(wxVERTICAL);
-  bodiesLeft->SetMinSize(wxSize(380, 390));
-  wxBoxSizer* modeControls = new wxBoxSizer(wxHORIZONTAL);
-  modeControls->Add(new wxStaticText(bodiesPage, wxID_ANY, _("Planning mode")),
+  bodiesLeft->SetMinSize(wxSize(380, 420));
+  auto* modeControls = new wxWrapSizer(wxHORIZONTAL);
+  modeControls->Add(new wxStaticText(bodiesPage, wxID_ANY, _("Recommendations")),
                     0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
   m_planningMode = new wxChoice(bodiesPage, wxID_ANY);
   for (const wxString& name : {_("Practical Fix"), _("Bright Bodies"),
-                               _("Lunar Candidates"), _("Show All")})
+                               _("Lunar Candidates")})
     m_planningMode->Append(name);
+  m_planningMode->SetName("PlannerRecommendationMode");
   m_planningMode->SetSelection(0);
-  modeControls->Add(m_planningMode, 0, wxRIGHT, 14);
-  m_tableBelowHorizon =
-      new wxCheckBox(bodiesPage, wxID_ANY, _("Include below-horizon bodies"));
-  modeControls->Add(m_tableBelowHorizon, 0, wxALIGN_CENTER_VERTICAL);
+  modeControls->Add(m_planningMode, 0, wxRIGHT | wxBOTTOM, 12);
+  modeControls->Add(new wxStaticText(bodiesPage, wxID_ANY, _("Body set")),
+                    0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
+  m_bodySet = new wxChoice(bodiesPage, wxID_ANY);
+  m_bodySet->Append(_("Full catalogue"));
+  m_bodySet->Append(_("Custom"));
+  m_bodySet->SetName("PlannerBodySet");
+  m_bodySet->SetSelection(0);
+  modeControls->Add(m_bodySet, 0, wxRIGHT | wxBOTTOM, 8);
+  m_customBodies = new wxButton(bodiesPage, wxID_ANY, _("Choose bodies..."));
+  modeControls->Add(m_customBodies, 0, wxBOTTOM, 4);
+#ifdef __OCPN__ANDROID__
   bodiesLeft->Add(modeControls, 0, wxALL | wxEXPAND, 6);
-  wxWrapSizer* recommendationControls = new wxWrapSizer(wxHORIZONTAL);
-  m_limitRecommendationAltitude =
-      new wxCheckBox(bodiesPage, wxID_ANY, _("Limit recommendations by Hc"));
-  m_limitRecommendationAltitude->SetValue(true);
-  recommendationControls->Add(m_limitRecommendationAltitude, 0,
-                              wxRIGHT | wxALIGN_CENTER_VERTICAL, 10);
-  auto* altitudeLimits = new wxBoxSizer(wxHORIZONTAL);
-  altitudeLimits->Add(
-      new wxStaticText(bodiesPage, wxID_ANY, _("Minimum")), 0,
-      wxRIGHT | wxALIGN_CENTER_VERTICAL, 4);
-  m_recommendationMinAltitude = new wxSpinCtrlDouble(
-      bodiesPage, wxID_ANY, "10", wxDefaultPosition, wxSize(80, -1),
-      wxSP_ARROW_KEYS, 0.0, 90.0, 10.0, 1.0);
-  m_recommendationMinAltitude->SetDigits(1);
-  altitudeLimits->Add(m_recommendationMinAltitude, 0,
-                              wxRIGHT | wxALIGN_CENTER_VERTICAL, 8);
-  altitudeLimits->Add(
-      new wxStaticText(bodiesPage, wxID_ANY, _("Maximum")), 0,
-      wxRIGHT | wxALIGN_CENTER_VERTICAL, 4);
-  m_recommendationMaxAltitude = new wxSpinCtrlDouble(
-      bodiesPage, wxID_ANY, "75", wxDefaultPosition, wxSize(80, -1),
-      wxSP_ARROW_KEYS, 0.0, 90.0, 75.0, 1.0);
-  m_recommendationMaxAltitude->SetDigits(1);
-  altitudeLimits->Add(m_recommendationMaxAltitude, 0,
-                              wxRIGHT | wxALIGN_CENTER_VERTICAL, 4);
-  altitudeLimits->Add(
-      new wxStaticText(bodiesPage, wxID_ANY, CN_UTF8_("°")), 0,
-      wxALIGN_CENTER_VERTICAL);
-  recommendationControls->Add(altitudeLimits, 0, wxALIGN_CENTER_VERTICAL);
-  m_includePolarisRecommendations = new wxCheckBox(bodiesPage, wxID_ANY,
-      _("Include Polaris in fixes"));
-  m_includePolarisRecommendations->SetToolTip(_("Optional latitude constraint for a fix with other suitable bearings. Polaris remains in the body list and latitude helper."));
-  recommendationControls->Add(m_includePolarisRecommendations, 0,
-                              wxLEFT | wxALIGN_CENTER_VERTICAL, 12);
-  bodiesLeft->Add(recommendationControls, 0,
-                  wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 6);
-  wxStaticText* recommendationNote = new wxStaticText(
-      bodiesPage, wxID_ANY,
-      _("All catalogued bodies above the horizon remain listed; these limits "
-        "affect recommended pairs and triads only. Three-body fixes are listed first."));
-  recommendationNote->Wrap(650);
-  bodiesLeft->Add(recommendationNote, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND,
-                  6);
-  m_resultsNotebook = new wxNotebook(bodiesPage, wxID_ANY, wxDefaultPosition,
-                                      wxSize(560, 320));
-  m_resultsNotebook->SetMinSize(wxSize(400, 290));
-  wxPanel* allBodiesPage = new wxPanel(m_resultsNotebook);
+#endif
+
+#ifdef __OCPN__ANDROID__
+  wxWindow* resultsParent = bodiesPage;
+#else
+  auto* results = new wxSplitterWindow(bodiesPage, wxID_ANY, wxDefaultPosition,
+      wxDefaultSize, wxSP_LIVE_UPDATE | wxSP_3D);
+  m_resultsSplitter = results;
+  results->SetName("PlannerResults");
+  results->SetMinimumPaneSize(175);
+  // Give additional window height to the catalogue; keep the preview compact.
+  results->SetSashGravity(0.0);
+  results->SetMinSize(wxSize(400, 365));
+  wxWindow* resultsParent = results;
+#endif
+  wxPanel* allBodiesPage = new wxPanel(resultsParent);
   wxBoxSizer* allBodiesSizer = new wxBoxSizer(wxVERTICAL);
-  m_bodies =
-      new wxListCtrl(allBodiesPage, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-                     wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES);
+  auto* displayControls = new wxWrapSizer(wxHORIZONTAL);
+  displayControls->Add(new wxStaticText(allBodiesPage, wxID_ANY, _("Body order")),
+      0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
+  m_bodyOrder = new wxChoice(allBodiesPage, wxID_ANY);
+  for (const auto& name : {_("Planning order"), _("Body name"), _("Hc"),
+      _("Zn true"), _("GHA"), _("Declination"), _("Magnitude"),
+      _("Visibility / cautions"), _("Ecliptic latitude"), _("Reason")})
+    m_bodyOrder->Append(name);
+  m_bodyOrder->SetName("PlannerBodyOrder");
+  m_bodyOrder->SetSelection(0);
+  displayControls->Add(m_bodyOrder, 0, wxRIGHT | wxBOTTOM, 8);
+  m_bodyDirection = new wxChoice(allBodiesPage, wxID_ANY);
+  m_bodyDirection->Append(_("Ascending"));
+  m_bodyDirection->Append(_("Descending"));
+  m_bodyDirection->SetSelection(0);
+  displayControls->Add(m_bodyDirection, 0, wxRIGHT | wxBOTTOM, 12);
+  m_tableBelowHorizon = new wxCheckBox(allBodiesPage, wxID_ANY,
+      _("Include below-horizon bodies"));
+  displayControls->Add(m_tableBelowHorizon, 0, wxALIGN_CENTER_VERTICAL | wxBOTTOM, 4);
+#ifdef __OCPN__ANDROID__
+  allBodiesSizer->Add(displayControls, 0, wxALL | wxEXPAND, 5);
+#else
+  // A single full-width toolbar leaves the catalogue more vertical space.
+  displayControls->Detach(m_bodyDirection);
+  m_bodyDirection->Hide(); // Desktop headings reverse the chosen column order.
+  for (auto* item : displayControls->GetChildren())
+    if (auto* child = item->GetWindow()) child->Reparent(bodiesPage);
+  modeControls->Add(displayControls, 0, wxLEFT, 14);
+#endif
+  m_bodies = new wxListCtrl(allBodiesPage, wxID_ANY, wxDefaultPosition,
+      wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES);
   m_bodies->SetName("PlannerBodies");
   AddColumn(m_bodies, 0, _("Body"), 115);
   AddColumn(m_bodies, 1, _("Hc"), 115);
@@ -787,53 +807,99 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   AddColumn(m_bodies, 6, _("Visibility"), 205);
   AddColumn(m_bodies, 7, _("Ecliptic lat"), 100);
   AddColumn(m_bodies, 8, _("Why"), 290);
-  m_bodies->SetMinSize(wxSize(400, 180));
-  allBodiesSizer->Add(m_bodies, 1, wxALL | wxEXPAND, 5);
-  wxButton* createSight =
-      new wxButton(allBodiesPage, wxID_ANY, _("Create selected sight..."));
-  wxButton* exportBodies =
-      new wxButton(allBodiesPage, wxID_ANY,
-                   _("Export planning table CSV..."));
-  wxBoxSizer* bodyActions = new wxBoxSizer(wxHORIZONTAL);
-  bodyActions->Add(createSight, 0, wxRIGHT, 8);
-  bodyActions->Add(exportBodies, 0);
-  allBodiesSizer->Add(bodyActions, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
-  auto* windows = new wxButton(allBodiesPage, wxID_ANY,
-                               _("Lunar windows for selected body..."));
+  m_bodies->SetMinSize(wxSize(400, 85));
+  allBodiesSizer->Add(m_bodies, 1, wxLEFT | wxRIGHT | wxEXPAND, 5);
+  wxButton* createSight = new wxButton(allBodiesPage, wxID_ANY, _("Create selected sight..."));
+  wxButton* exportBodies = new wxButton(allBodiesPage, wxID_ANY, _("Export planning CSV..."));
+  auto* windows = new wxButton(allBodiesPage, wxID_ANY, _("Lunar windows..."));
   windows->Bind(wxEVT_BUTTON, &PlannerDialog::FindLunarWindows, this);
-  allBodiesSizer->Add(windows, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
+  auto* bodyActions = new wxWrapSizer(wxHORIZONTAL);
+  for (auto* button : {createSight, exportBodies, windows})
+    bodyActions->Add(button, 0, wxRIGHT | wxBOTTOM, 8);
+  allBodiesSizer->Add(bodyActions, 0, wxALL | wxEXPAND, 5);
   allBodiesPage->SetSizer(allBodiesSizer);
-  m_resultsNotebook->AddPage(allBodiesPage, _("All bodies"), true);
-  wxPanel* recommendationsPage = new wxPanel(m_resultsNotebook);
-  wxBoxSizer* recommendationSizer = new wxBoxSizer(wxVERTICAL);
-  m_lunarOrder = new wxChoice(recommendationsPage, wxID_ANY);
-  m_lunarOrder->Append(_("Lunar order: cautions, brightness, timing"));
-  m_lunarOrder->Append(_("Lunar order: timing sensitivity"));
-  m_lunarOrder->SetSelection(0);
-  m_lunarOrder->SetToolTip(_("Both lunar planners use the same ordering. Below-horizon pairs come last. Practical order prefers fewer cautions and brighter companions, then timing. Ecliptic latitude is context, not a second timing score."));
+
+  wxPanel* recommendationsPage = new wxPanel(resultsParent);
+  auto* recommendationSizer = new wxBoxSizer(wxVERTICAL);
+  m_recommendationTitle = new wxStaticText(recommendationsPage, wxID_ANY, _("Best Sights"));
+  wxFont recommendationFont = m_recommendationTitle->GetFont();
+  recommendationFont.SetWeight(wxFONTWEIGHT_BOLD);
+  m_recommendationTitle->SetFont(recommendationFont);
+  auto* recommendationHeading = new wxBoxSizer(wxHORIZONTAL);
+  recommendationHeading->Add(m_recommendationTitle, 1, wxALIGN_CENTER_VERTICAL);
+#ifndef __OCPN__ANDROID__
+  m_fixSettings = new wxButton(recommendationsPage, wxID_ANY, _("Fix settings..."));
+  recommendationHeading->Add(m_fixSettings, 0);
+  m_fixSettings->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    if (!m_showFixSettings) m_fixSettingsSash = m_resultsSplitter->GetSashPosition();
+    m_showFixSettings = !m_showFixSettings;
+    m_fixSettings->SetLabel(m_showFixSettings ? _("Hide fix settings") : _("Fix settings..."));
+    RefreshBodies();
+    if (!m_showFixSettings) m_resultsSplitter->SetSashPosition(m_fixSettingsSash);
+  });
+#endif
+  recommendationSizer->Add(recommendationHeading, 0, wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 5);
+  auto* recommendationControls = new wxWrapSizer(wxHORIZONTAL);
+  m_fixControls = recommendationControls;
+  m_limitRecommendationAltitude = new wxCheckBox(recommendationsPage, wxID_ANY,
+      _("Limit recommendations by Hc"));
+  m_limitRecommendationAltitude->SetValue(true);
+  recommendationControls->Add(m_limitRecommendationAltitude, 0,
+      wxRIGHT | wxALIGN_CENTER_VERTICAL, 8);
+  auto* altitudeLimits = new wxBoxSizer(wxHORIZONTAL);
+  m_recommendationMinAltitude = new wxSpinCtrlDouble(recommendationsPage,
+      wxID_ANY, "10", wxDefaultPosition, wxSize(75, -1), wxSP_ARROW_KEYS,
+      0.0, 90.0, 10.0, 1.0);
+  m_recommendationMinAltitude->SetDigits(1);
+  m_recommendationMinAltitude->SetName("PlannerMinHc");
+  altitudeLimits->Add(m_recommendationMinAltitude, 0, wxRIGHT, 4);
+  altitudeLimits->Add(new wxStaticText(recommendationsPage, wxID_ANY, _("to")),
+      0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 4);
+  m_recommendationMaxAltitude = new wxSpinCtrlDouble(recommendationsPage,
+      wxID_ANY, "75", wxDefaultPosition, wxSize(75, -1), wxSP_ARROW_KEYS,
+      0.0, 90.0, 75.0, 1.0);
+  m_recommendationMaxAltitude->SetDigits(1);
+  m_recommendationMaxAltitude->SetName("PlannerMaxHc");
+  altitudeLimits->Add(m_recommendationMaxAltitude, 0, wxRIGHT, 4);
+  altitudeLimits->Add(new wxStaticText(recommendationsPage, wxID_ANY, CN_UTF8_("°")),
+      0, wxALIGN_CENTER_VERTICAL);
+  recommendationControls->Add(altitudeLimits, 0, wxRIGHT, 10);
+  m_includePolarisRecommendations = new wxCheckBox(recommendationsPage,
+      wxID_ANY, _("Include Polaris in fixes"));
+  m_includePolarisRecommendations->SetToolTip(_("Optional latitude constraint. Polaris remains available in the body list and latitude helper."));
+  recommendationControls->Add(m_includePolarisRecommendations, 0, wxALIGN_CENTER_VERTICAL);
+  recommendationSizer->Add(recommendationControls, 0, wxALL | wxEXPAND, 5);
+  // Keep this label available for the Android layout's existing reparenting.
+  wxStaticText* recommendationNote = new wxStaticText(recommendationsPage,
+      wxID_ANY, _("Hc limits affect recommendations only; the body list and plots have their own display controls."));
+  recommendationNote->Hide();
+  m_recommendationSummary = new wxStaticText(recommendationsPage, wxID_ANY, _("Calculating Best Sights..."));
+  m_recommendationSummary->SetName("PlannerRecommendationSummary");
+  recommendationSizer->Add(m_recommendationSummary, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
   m_lunarCompanions = new wxChoice(recommendationsPage, wxID_ANY);
   m_lunarCompanions->Append(_("Traditional lunar companions"));
   m_lunarCompanions->Append(_("All calculated companions"));
   m_lunarCompanions->SetSelection(0);
-  m_lunarCompanions->SetToolTip(_("Sun, Venus, Mars, Jupiter, Saturn and the nine traditional lunar stars. Other bodies remain in All bodies; select All calculated companions to compare them."));
-  recommendationSizer->Add(m_lunarCompanions, 0, wxALL, 5);
+  m_lunarCompanions->SetToolTip(_("Sun, Venus, Mars, Jupiter, Saturn and nine traditional lunar stars. Custom bodies replace this list."));
+  m_lunarOrder = new wxChoice(recommendationsPage, wxID_ANY);
+  m_lunarOrder->Append(_("Lunar order: cautions, brightness, timing"));
+  m_lunarOrder->Append(_("Lunar order: timing sensitivity"));
+  m_lunarOrder->SetSelection(0);
+  recommendationSizer->Add(m_lunarCompanions, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
   recommendationSizer->Add(m_lunarOrder, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
   m_lunarCompanions->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) { RefreshBodies(); });
-  m_lunarOrder->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
-    m_bodySortColumn = -1;
-    RefreshBodies();
-  });
+  m_lunarOrder->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) { RefreshBodies(); });
   m_combinations = new wxListCtrl(recommendationsPage, wxID_ANY,
-                                  wxDefaultPosition, wxDefaultSize,
-                                  wxLC_REPORT | wxLC_HRULES);
+      wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_HRULES);
+  m_combinations->SetName("PlannerBestSights");
   AddColumn(m_combinations, 0, _("Recommended pair / triad"), 300);
   AddColumn(m_combinations, 1, _("Score"), 70);
   AddColumn(m_combinations, 2, _("Geometry"), 270);
-  m_combinations->SetMinSize(wxSize(400, 180));
-  recommendationSizer->Add(m_combinations, 1, wxALL | wxEXPAND, 5);
+  m_combinations->SetMinSize(wxSize(400, 100));
+  recommendationSizer->Add(m_combinations, 1, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
   m_lunarPairs = new wxListCtrl(recommendationsPage, wxID_ANY,
-                                wxDefaultPosition, wxDefaultSize,
-                                wxLC_REPORT | wxLC_HRULES);
+      wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_HRULES);
+  m_lunarPairs->SetName("PlannerLunarPairs");
   AddColumn(m_lunarPairs, 0, _("Moon + body"), 155);
   AddColumn(m_lunarPairs, 1, _("LD"), 85);
   AddColumn(m_lunarPairs, 2, _("Rate '/h"), 90);
@@ -842,24 +908,35 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   AddColumn(m_lunarPairs, 5, _("Ecliptic lat"), 95);
   AddColumn(m_lunarPairs, 6, _("Cautions"), 80);
   AddColumn(m_lunarPairs, 7, _("Moon/body Hc, Zn; guidance"), 440);
-  m_lunarPairs->SetMinSize(wxSize(400, 180));
-  recommendationSizer->Add(m_lunarPairs, 1, wxALL | wxEXPAND, 5);
+  m_lunarPairs->SetMinSize(wxSize(400, 100));
+  recommendationSizer->Add(m_lunarPairs, 1, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
   m_lunarPairs->Hide();
-  m_noRecommendations = new wxStaticText(
-      recommendationsPage, wxID_ANY,
-      _("Show All lists every calculated body without recommendation ranking."));
-  recommendationSizer->Add(m_noRecommendations, 0, wxALL, 8);
-  m_noRecommendations->Hide();
   recommendationsPage->SetSizer(recommendationSizer);
-  m_resultsNotebook->AddPage(recommendationsPage, _("Recommendations"), false);
-  bodiesLeft->Add(m_resultsNotebook, 1, wxALL | wxEXPAND, 5);
+#ifndef __OCPN__ANDROID__
+  recommendationsPage->Bind(wxEVT_SIZE, [this](wxSizeEvent& event) {
+    event.Skip();
+    m_recommendationSummary->SetLabel(m_recommendationText);
+    m_recommendationSummary->Wrap(std::max(300, event.GetSize().x - 12));
+    m_recommendationSummary->GetParent()->Layout();
+  });
+#endif
+#ifndef __OCPN__ANDROID__
+  results->SplitHorizontally(recommendationsPage, allBodiesPage, 210);
+  bodiesLeft->Add(results, 1, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+#endif
   bodiesRoot->Add(bodiesLeft, 1, wxEXPAND);
   wxBoxSizer* plotSizer = new wxBoxSizer(wxVERTICAL);
-  plotSizer->SetMinSize(wxSize(340, 390));
+  plotSizer->SetMinSize(wxSize(390, 390));
   wxBoxSizer* plotControls = new wxBoxSizer(wxVERTICAL);
   wxBoxSizer* magnitudeControls = new wxBoxSizer(wxHORIZONTAL);
   magnitudeControls->Add(
-      new wxStaticText(bodiesPage, wxID_ANY, _("Sky plot magnitude")), 0,
+      new wxStaticText(bodiesPage, wxID_ANY,
+#ifdef __OCPN__ANDROID__
+                       _("Sky plot magnitude")
+#else
+                       _("Mag")
+#endif
+                       ), 0,
       wxRIGHT | wxALIGN_CENTER_VERTICAL, 4);
   m_plotMagnitude = new wxChoice(bodiesPage, wxID_ANY);
   m_plotMagnitude->Append(_("1 or brighter"));
@@ -868,7 +945,13 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_plotMagnitude->SetSelection(2);
   magnitudeControls->Add(m_plotMagnitude, 0);
   auto* labelControls = new wxBoxSizer(wxHORIZONTAL);
-  labelControls->Add(new wxStaticText(bodiesPage, wxID_ANY, _("Star labels")), 0,
+  labelControls->Add(new wxStaticText(bodiesPage, wxID_ANY,
+#ifdef __OCPN__ANDROID__
+                       _("Star labels")
+#else
+                       _("Labels")
+#endif
+                       ), 0,
                      wxRIGHT | wxALIGN_CENTER_VERTICAL, 6);
   m_plotLabels = new wxChoice(bodiesPage, wxID_ANY);
   for (const auto& label : {_("Sparse"), _("Balanced"), _("More")})
@@ -876,18 +959,36 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_plotLabels->SetSelection(1);
   m_plotLabels->SetToolTip(_("Show as many names as fit at this density, brightest first. The selected body is labelled first; hover over any dot for its name."));
   labelControls->Add(m_plotLabels);
+#ifdef __OCPN__ANDROID__
   plotControls->Add(labelControls, 0, wxEXPAND | wxBOTTOM, 4);
   plotControls->Add(magnitudeControls, 0, wxEXPAND | wxBOTTOM, 4);
+#else
+  auto* plotDisplayControls = new wxBoxSizer(wxHORIZONTAL);
+  plotDisplayControls->Add(labelControls, 0, wxRIGHT, 8);
+  plotDisplayControls->Add(magnitudeControls, 0);
+  plotControls->Add(plotDisplayControls, 0, wxBOTTOM, 4);
+#endif
   m_plotBelowHorizon =
       new wxCheckBox(bodiesPage, wxID_ANY, _("Show below horizon"));
+#ifdef __OCPN__ANDROID__
   plotControls->Add(m_plotBelowHorizon, 0, wxTOP, 3);
+#endif
   m_showEcliptic = new wxCheckBox(bodiesPage, wxID_ANY, _("Show ecliptic"));
   m_showEcliptic->SetValue(true);
-  m_showMoonPath = new wxCheckBox(bodiesPage, wxID_ANY, _("Show Moon path"));
+  m_showMoonPath = new wxCheckBox(bodiesPage, wxID_ANY, _("Show Moon path (SHA/Dec)"));
+  m_showMoonPath->SetName("PlannerShowMoonPath");
   wxBoxSizer* overlayRow = new wxBoxSizer(wxHORIZONTAL);
+#ifndef __OCPN__ANDROID__
+  overlayRow->Add(m_plotBelowHorizon, 0, wxRIGHT | wxALIGN_CENTER_VERTICAL, 9);
+#endif
   overlayRow->Add(m_showEcliptic, 0, wxRIGHT | wxALIGN_CENTER_VERTICAL, 9);
+#ifdef __OCPN__ANDROID__
   overlayRow->Add(m_showMoonPath, 0, wxALIGN_CENTER_VERTICAL);
+#endif
   plotControls->Add(overlayRow, 0, wxTOP, 4);
+#ifndef __OCPN__ANDROID__
+  plotControls->Add(m_showMoonPath, 0, wxTOP, 4);
+#endif
   wxBoxSizer* spanRow = new wxBoxSizer(wxHORIZONTAL);
   spanRow->Add(new wxStaticText(bodiesPage, wxID_ANY,
                                 CN_UTF8_("Moon path ±")),
@@ -902,6 +1003,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   plotSizer->Add(plotControls, 0, wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 8);
   m_plotNotebook = new wxNotebook(bodiesPage, wxID_ANY, wxDefaultPosition,
                                    wxSize(340, 350));
+  m_plotNotebook->SetName("PlannerSkyViews");
   m_plotNotebook->SetMinSize(wxSize(320, 260));
   m_skyPlot = new SkyPlotPanel(m_plotNotebook);
   m_equatorialPlot = new SkyPlotPanel(m_plotNotebook, true);
@@ -950,12 +1052,21 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   plotSizer->Add(m_plotNotebook, 1, wxALL | wxEXPAND, 8);
   wxStaticText* plotLegend = new wxStaticText(
       bodiesPage, wxID_ANY,
-      _("Ecliptic amber; Moon track blue on SHA / Declination only. "
-        "Sun yellow; planets red; hollow = below horizon."));
+      _("Ecliptic amber; Moon path blue (SHA/Dec). "
+        "Sun yellow; planets red; grey unavailable; hollow below horizon."));
+#ifndef __OCPN__ANDROID__
   plotLegend->Wrap(340);
+#endif
   plotSizer->Add(plotLegend, 0, wxLEFT | wxRIGHT | wxBOTTOM, 8);
   bodiesRoot->Add(plotSizer, 0, wxEXPAND);
+#ifdef __OCPN__ANDROID__
   bodiesPage->SetSizer(bodiesRoot);
+#else
+  auto* bodiesPageSizer = new wxBoxSizer(wxVERTICAL);
+  bodiesPageSizer->Add(modeControls, 0, wxALL | wxEXPAND, 6);
+  bodiesPageSizer->Add(bodiesRoot, 1, wxEXPAND);
+  bodiesPage->SetSizer(bodiesPageSizer);
+#endif
   bodiesPage->FitInside();
   bodiesPage->Layout();
   m_notebook->AddPage(bodiesPage, _("Bodies && Best Sights"), false);
@@ -1061,45 +1172,67 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
     sizer->Add(label, 0, wxEXPAND | wxALL, 8);
     return label;
   };
-  add(bodiesPage, bodiesRoot, _("Sort bodies"));
-  auto* sort = new wxChoice(bodiesPage, wxID_ANY);
-  for (const auto& name : {_("Body"), _("Hc"), _("Zn true"), _("GHA"),
-                           _("Declination"), _("Magnitude"), _("Visibility / cautions"),
-                           _("Ecliptic latitude"), _("Reason")}) sort->Append(name);
-  sort->Insert(_("Planning order"), 0);
-  sort->SetSelection(m_bodySortColumn + 1);
-  m_planningMode->Reparent(bodiesPage);
-  m_tableBelowHorizon->Reparent(bodiesPage);
-  add(bodiesPage, bodiesRoot, _("Planning mode"));
-  bodiesRoot->Add(m_planningMode, 0, wxEXPAND | wxALL, 8);
-  bodiesRoot->Add(m_tableBelowHorizon, 0, wxEXPAND | wxALL, 8);
+  // Keep the expanding card list visible at either orientation. Secondary
+  // display/export controls belong to a collapsible panel, not a tall header.
+  m_notebook->SetPageText(2, _("Bodies"));
+  auto* bodyOptions = new wxPanel(bodiesPage);
+  auto* bodyOptionsRoot = new wxBoxSizer(wxVERTICAL);
+  auto* sort = m_bodyOrder;
+  displayControls->Detach(m_bodyOrder);
+  displayControls->Detach(m_bodyDirection);
+  displayControls->Detach(m_tableBelowHorizon);
+  sort->Reparent(bodyOptions);
+  m_bodyDirection->Reparent(bodyOptions);
+  m_tableBelowHorizon->Reparent(bodyOptions);
+  auto* bodySelection = new wxBoxSizer(wxHORIZONTAL);
+  bodySelection->Add(m_bodySet, 1, wxEXPAND | wxALL, 8);
+  bodySelection->Add(m_customBodies, 1, wxEXPAND | wxALL, 8);
+  bodiesRoot->Add(bodySelection, 0, wxEXPAND);
+  auto* navigation = new wxBoxSizer(wxHORIZONTAL);
+  auto* bestSights = new wxButton(bodiesPage, wxID_ANY, _("Best Sights / sky"));
+  auto* options = new wxButton(bodiesPage, wxID_ANY, _("Body options..."));
+  bestSights->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    m_notebook->SetSelection(3);
+    // The touch section picker is created later by the Android surface.
+    // Keep its caption aligned with this explicit navigation action.
+    for (auto* child : GetChildren())
+      if (auto* picker = wxDynamicCast(child, wxChoice))
+        if (picker->GetCount() == m_notebook->GetPageCount() &&
+            picker->FindString(_("Context")) != wxNOT_FOUND)
+          picker->SetSelection(3);
+    celestial_android::LayoutScrolls(this);
+  });
+  options->Bind(wxEVT_BUTTON, [this, bodiesPage, bodyOptions, options](wxCommandEvent&) {
+    const bool show = !bodyOptions->IsShown();
+    bodyOptions->Show(show);
+    options->SetLabel(show ? _("Hide body options") : _("Body options..."));
+    celestial_android::LayoutScrolls(bodiesPage);
+  });
+  navigation->Add(bestSights, 1, wxEXPAND | wxALL, 8);
+  navigation->Add(options, 1, wxEXPAND | wxALL, 8);
+  bodiesRoot->Add(navigation, 0, wxEXPAND);
+  bodyOptionsRoot->Add(m_tableBelowHorizon, 0, wxEXPAND | wxALL, 8);
+  add(bodyOptions, bodyOptionsRoot, _("Body order"));
   auto* sortRow = new wxBoxSizer(wxHORIZONTAL);
   sortRow->Add(sort, 1, wxEXPAND | wxALL, 8);
-  auto* direction = new wxChoice(bodiesPage, wxID_ANY);
-  direction->Append(_("Ascending"));
-  direction->Append(_("Descending"));
-  direction->SetSelection(m_bodySortAscending ? 0 : 1);
+  auto* direction = m_bodyDirection;
   sortRow->Add(direction, 1, wxEXPAND | wxALL, 8);
-  bodiesRoot->Add(sortRow, 0, wxEXPAND);
-  sort->Bind(wxEVT_CHOICE, [this, sort](wxCommandEvent&) {
-    m_bodySortColumn = sort->GetSelection() - 1; RebuildBodyList();
-  });
-  direction->Bind(wxEVT_CHOICE, [this, direction](wxCommandEvent&) {
-    m_bodySortAscending = direction->GetSelection() == 0; RebuildBodyList();
-  });
+  bodyOptionsRoot->Add(sortRow, 0, wxEXPAND);
   auto* selectionRow = new wxBoxSizer(wxHORIZONTAL);
   m_androidSelectedBody = new wxStaticText(bodiesPage, wxID_ANY, _("Select a body card"));
   bodiesRoot->Add(m_androidSelectedBody, 0, wxEXPAND | wxALL, 8);
   createSight->Reparent(bodiesPage);
-  exportBodies->Reparent(bodiesPage);
+  exportBodies->Reparent(bodyOptions);
   createSight->SetLabel(_("Create sight"));
   if (auto* native = qobject_cast<QAbstractButton*>(createSight->GetHandle()))
     native->setText(QString::fromUtf8(_("Create sight").utf8_str()));
   selectionRow->Add(createSight, 1, wxEXPAND | wxALL, 8);
-  selectionRow->Add(exportBodies, 1, wxEXPAND | wxALL, 8);
   bodiesRoot->Add(selectionRow, 0, wxEXPAND);
-  windows->Reparent(bodiesPage);
-  bodiesRoot->Add(windows, 0, wxEXPAND | wxALL, 8);
+  bodyOptionsRoot->Add(exportBodies, 0, wxEXPAND | wxALL, 8);
+  windows->Reparent(bodyOptions);
+  bodyOptionsRoot->Add(windows, 0, wxEXPAND | wxALL, 8);
+  bodyOptions->SetSizer(bodyOptionsRoot);
+  bodiesRoot->Add(bodyOptions, 0, wxEXPAND);
   m_androidCreateSight = createSight;
   createSight->Enable(false);
   m_androidBodies = PlannerCards(bodiesPage, bodiesRoot, true);
@@ -1107,13 +1240,23 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
                    GetHandle(), [this](int) { UpdateAndroidBodySelection(); });
   bodiesPage->GetHandle()->setProperty("cnNoPageScroll", true);
   bodiesRoot->ShowItems(true);
+  bodyOptions->Hide();
   auto* recommendationPage = new wxPanel(m_notebook);
   auto* recommendationRoot = new wxBoxSizer(wxVERTICAL);
+  m_androidFixOptions = new wxPanel(recommendationPage);
+  auto* fixOptions = new wxBoxSizer(wxVERTICAL);
+  auto transfer = [](wxWindow* child, wxWindow* parent) {
+    if (auto* sizer = child->GetContainingSizer()) sizer->Detach(child);
+    child->Reparent(parent);
+  };
   for (auto* child : {static_cast<wxWindow*>(m_limitRecommendationAltitude),
                      static_cast<wxWindow*>(m_recommendationMinAltitude),
                      static_cast<wxWindow*>(m_recommendationMaxAltitude),
                      static_cast<wxWindow*>(recommendationNote),
-                     static_cast<wxWindow*>(m_plotMagnitude),
+                     static_cast<wxWindow*>(m_includePolarisRecommendations)})
+    transfer(child, m_androidFixOptions);
+  transfer(m_planningMode, recommendationPage);
+  for (auto* child : {static_cast<wxWindow*>(m_plotMagnitude),
                      static_cast<wxWindow*>(m_plotBelowHorizon),
                      static_cast<wxWindow*>(m_showEcliptic),
                      static_cast<wxWindow*>(m_showMoonPath),
@@ -1121,8 +1264,9 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
                      static_cast<wxWindow*>(m_plotNotebook),
                      static_cast<wxWindow*>(m_lunarOrder),
                      static_cast<wxWindow*>(m_lunarCompanions),
-                     static_cast<wxWindow*>(m_includePolarisRecommendations),
                      static_cast<wxWindow*>(m_plotLabels),
+                     static_cast<wxWindow*>(m_recommendationSummary),
+                     static_cast<wxWindow*>(m_recommendationTitle),
                      static_cast<wxWindow*>(plotLegend)})
     child->Reparent(recommendationPage);
   // The magnitude caption belongs to the retained controls' nested sizer.
@@ -1132,13 +1276,26 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
     if (auto* child = item->GetWindow()) child->Reparent(recommendationPage);
   for (auto* item : magnitudeControls->GetChildren())
     if (auto* child = item->GetWindow()) child->Reparent(recommendationPage);
-  recommendationRoot->Add(m_limitRecommendationAltitude, 0, wxEXPAND | wxALL, 8);
-  add(recommendationPage, recommendationRoot, _("Minimum recommended Hc (degrees)"));
-  recommendationRoot->Add(m_recommendationMinAltitude, 0, wxEXPAND | wxALL, 8);
-  add(recommendationPage, recommendationRoot, _("Maximum recommended Hc (degrees)"));
-  recommendationRoot->Add(m_recommendationMaxAltitude, 0, wxEXPAND | wxALL, 8);
-  recommendationRoot->Add(recommendationNote, 0, wxEXPAND | wxALL, 8);
-  recommendationRoot->Add(m_includePolarisRecommendations, 0, wxEXPAND | wxALL, 8);
+  recommendationRoot->Add(m_planningMode, 0, wxEXPAND | wxALL, 8);
+  recommendationRoot->Add(m_recommendationTitle, 0, wxEXPAND | wxALL, 8);
+  recommendationRoot->Add(m_recommendationSummary, 0, wxEXPAND | wxALL, 8);
+  m_androidFixSettings = new wxButton(recommendationPage, wxID_ANY, _("Fix settings..."));
+  m_androidFixSettings->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+    m_androidShowFixSettings = !m_androidShowFixSettings;
+    m_androidFixSettings->SetLabel(m_androidShowFixSettings
+        ? _("Hide fix settings") : _("Fix settings..."));
+    RefreshBodies();
+  });
+  recommendationRoot->Add(m_androidFixSettings, 0, wxEXPAND | wxALL, 8);
+  fixOptions->Add(m_limitRecommendationAltitude, 0, wxEXPAND | wxALL, 8);
+  add(m_androidFixOptions, fixOptions, _("Minimum recommended Hc (degrees)"));
+  fixOptions->Add(m_recommendationMinAltitude, 0, wxEXPAND | wxALL, 8);
+  add(m_androidFixOptions, fixOptions, _("Maximum recommended Hc (degrees)"));
+  fixOptions->Add(m_recommendationMaxAltitude, 0, wxEXPAND | wxALL, 8);
+  fixOptions->Add(recommendationNote, 0, wxEXPAND | wxALL, 8);
+  fixOptions->Add(m_includePolarisRecommendations, 0, wxEXPAND | wxALL, 8);
+  m_androidFixOptions->SetSizer(fixOptions);
+  recommendationRoot->Add(m_androidFixOptions, 0, wxEXPAND);
   recommendationRoot->Add(m_lunarCompanions, 0, wxEXPAND | wxALL, 8);
   recommendationRoot->Add(m_lunarOrder, 0, wxEXPAND | wxALL, 8);
   m_androidCombinations = add(recommendationPage, recommendationRoot, wxEmptyString);
@@ -1147,6 +1304,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   recommendationRoot->Add(m_plotNotebook, 0, wxEXPAND | wxALL, 8);
   recommendationRoot->Add(plotLegend, 0, wxEXPAND | wxALL, 8);
   recommendationRoot->ShowItems(true);
+  m_androidFixOptions->Hide();
   // Reparenting the native Qt controls can restore their enabled state.
   m_showMoonPath->Enable(m_plotNotebook->GetSelection() == 1);
   m_moonSpan->Enable(m_plotNotebook->GetSelection() == 1 && m_showMoonPath->GetValue());
@@ -1184,6 +1342,15 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
     PollAndroidCalculation();
   });
   m_androidPoll->start(80);
+  // Android's section picker uses SetSelection without a wx page event.
+  // Reflow after Qt lays out the newly visible viewport, as in lunar reports.
+  if (auto* native = qobject_cast<QTabWidget*>(m_notebook->GetHandle()))
+    QObject::connect(native, &QTabWidget::currentChanged, GetHandle(),
+                     [this](int) {
+                       QTimer::singleShot(0, GetHandle(), [this] {
+                         celestial_android::LayoutScrolls(this);
+                       });
+                     });
 #endif
 #ifndef __OCPN__ANDROID__
   const int wideContextWidth = 1120;
@@ -1304,16 +1471,34 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
     const bool enabled = m_limitRecommendationAltitude->GetValue();
     m_recommendationMinAltitude->Enable(enabled);
     m_recommendationMaxAltitude->Enable(enabled);
-    ScheduleRefresh();
+    RefreshBodies();
   });
   m_recommendationMinAltitude->Bind(
-      wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) { ScheduleRefresh(); });
+      wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) { RefreshBodies(); });
   m_recommendationMaxAltitude->Bind(
-      wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) { ScheduleRefresh(); });
+      wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) { RefreshBodies(); });
   m_planningMode->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
-    m_bodySortColumn = -1;
-    m_resultsNotebook->SetSelection(m_planningMode->GetSelection() == 2 ? 1 : 0);
     RefreshBodies();
+  });
+  m_bodySet->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
+    if (m_bodySet->GetSelection() == 1) ChooseCustomBodies();
+    else {
+      m_bodySelection.custom = false;
+      UpdateBodySelectionControls();
+      RefreshBodies();
+    }
+  });
+  m_customBodies->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { ChooseCustomBodies(); });
+  m_bodyOrder->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
+    m_bodySortColumn = m_bodyOrder->GetSelection() - 1;
+    m_bodySortAscending = true;
+    m_bodyDirection->SetSelection(0);
+    m_bodyDirection->Enable(m_bodySortColumn >= 0);
+    RebuildBodyList();
+  });
+  m_bodyDirection->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
+    m_bodySortAscending = m_bodyDirection->GetSelection() == 0;
+    RebuildBodyList();
   });
   m_tableBelowHorizon->Bind(wxEVT_CHECKBOX,
                              [this](wxCommandEvent&) { RefreshBodies(); });
@@ -1357,12 +1542,15 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   });
   // Typed wxQt spin values need native notifications as well as arrow events.
   // The existing owned refresh timer coalesces edits after callbacks return.
-  for (auto* control : {m_course, m_speed, m_eyeHeight,
-                       m_recommendationMinAltitude,
-                       m_recommendationMaxAltitude}) {
+  for (auto* control : {m_course, m_speed, m_eyeHeight}) {
     if (auto* spin = qobject_cast<QDoubleSpinBox*>(control->GetHandle()))
       QObject::connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
                        GetHandle(), [this](double) { ScheduleRefresh(); });
+  }
+  for (auto* control : {m_recommendationMinAltitude, m_recommendationMaxAltitude}) {
+    if (auto* spin = qobject_cast<QDoubleSpinBox*>(control->GetHandle()))
+      QObject::connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                       GetHandle(), [this](double) { RefreshBodies(); });
   }
   if (auto* spin = qobject_cast<QDoubleSpinBox*>(m_fixedOffset->GetHandle()))
     QObject::connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
@@ -1414,6 +1602,30 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   config->Read(_T("RecommendationMaxAltitude"), &recommendationMaxAltitude,
                75.0);
   config->Read(_T("PlanningMode"), &planningMode, 0L);
+  long bodySortColumn = -1, plotMagnitude = 2;
+  config->Read(_T("BodySortColumn"), &bodySortColumn, -1L);
+  config->Read(_T("BodySortAscending"), &m_bodySortAscending, true);
+  // Migrate the old Show All mode to alphabetical display with active fixes.
+  if (planningMode == 3 && !config->HasEntry(_T("BodySortColumn"))) {
+    bodySortColumn = 0;
+    m_bodySortAscending = true;
+  }
+  if (planningMode == 3) planningMode = 0;
+  config->Read(_T("CustomBodySet"), &m_bodySelection.custom, false);
+  wxString customBodies;
+  if (config->Read(_T("CustomBodies"), &customBodies)) {
+    m_bodySelection.selected.clear();
+    wxStringTokenizer tokens(customBodies, ";");
+    while (tokens.HasMoreTokens()) {
+      const auto* body = BodyCatalog::Find(tokens.GetNextToken());
+      if (body && std::find(m_bodySelection.selected.begin(),
+          m_bodySelection.selected.end(), body->name) == m_bodySelection.selected.end())
+        m_bodySelection.selected.push_back(body->name);
+    }
+  }
+  config->Read(_T("PlotMagnitude"), &plotMagnitude, 2L);
+  bool plotBelow = false;
+  config->Read(_T("PlotBelowHorizon"), &plotBelow, false);
   config->Read(_T("IncludeBelowHorizonBodies"), &tableBelow, false);
   config->Read(_T("ShowEcliptic"), &showEcliptic, true);
   config->Read(_T("ShowMoonPath"), &showMoonPath, false);
@@ -1455,8 +1667,14 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   m_recommendationMaxAltitude->SetValue(recommendationMaxAltitude);
   m_recommendationMinAltitude->Enable(limitRecommendationAltitude);
   m_recommendationMaxAltitude->Enable(limitRecommendationAltitude);
-  m_planningMode->SetSelection(std::max(0L, std::min(planningMode, 3L)));
-  m_resultsNotebook->SetSelection(m_planningMode->GetSelection() == 2 ? 1 : 0);
+  m_planningMode->SetSelection(std::max(0L, std::min(planningMode, 2L)));
+  m_bodySortColumn = std::max(-1L, std::min(bodySortColumn, 8L));
+  m_bodyOrder->SetSelection(m_bodySortColumn + 1);
+  m_bodyDirection->SetSelection(m_bodySortAscending ? 0 : 1);
+  m_bodyDirection->Enable(m_bodySortColumn >= 0);
+  m_plotMagnitude->SetSelection(std::max(0L, std::min(plotMagnitude, 2L)));
+  m_plotBelowHorizon->SetValue(plotBelow);
+  UpdateBodySelectionControls();
   m_tableBelowHorizon->SetValue(tableBelow);
   m_showEcliptic->SetValue(showEcliptic);
   m_showMoonPath->SetValue(showMoonPath);
@@ -1473,7 +1691,7 @@ PlannerDialog::PlannerDialog(CelestialNavigationDialog* parent)
   wxCommandEvent dummy;
   RefreshAll(dummy);
   SetMinSize(wxSize(760, 560));
-  dialog_geometry::Restore(this, _T("Planner"), wxSize(1370, 820));
+  dialog_geometry::Restore(this, _T("Planner"), wxSize(1370, 950));
   for (size_t page = 0; page < m_notebook->GetPageCount(); ++page)
     m_notebook->GetPage(page)->Layout();
   m_notebook->Layout();
@@ -1522,6 +1740,17 @@ PlannerDialog::~PlannerDialog() {
                 m_recommendationMaxAltitude->GetValue());
   config->Write(_T("PlanningMode"),
                 static_cast<long>(m_planningMode->GetSelection()));
+  config->Write(_T("BodySortColumn"), static_cast<long>(m_bodySortColumn));
+  config->Write(_T("BodySortAscending"), m_bodySortAscending);
+  config->Write(_T("CustomBodySet"), m_bodySelection.custom);
+  wxString customBodies;
+  for (const auto& body : m_bodySelection.selected) {
+    if (!customBodies.empty()) customBodies += ";";
+    customBodies += body;
+  }
+  config->Write(_T("CustomBodies"), customBodies);
+  config->Write(_T("PlotMagnitude"), static_cast<long>(m_plotMagnitude->GetSelection()));
+  config->Write(_T("PlotBelowHorizon"), m_plotBelowHorizon->GetValue());
   config->Write(_T("IncludeBelowHorizonBodies"),
                 m_tableBelowHorizon->GetValue());
   config->Write(_T("ShowEcliptic"), m_showEcliptic->GetValue());
@@ -2105,6 +2334,8 @@ void PlannerDialog::RefreshAll(wxCommandEvent&) {
 }
 
 void PlannerDialog::ClearCalculatedResults(const wxString& status) {
+  m_recommendationText = status;
+  m_recommendationSummary->SetLabel(status);
 #ifndef __OCPN__ANDROID__
   if (m_desktopWorker) m_desktopWorker->Cancel();
   m_desktopReady = m_desktopPending = false;
@@ -2265,16 +2496,21 @@ void PlannerDialog::RefreshBodies() {
   m_rankedBodies = PlannerRecommendations::Order(
       m_planningResult, mode, m_tableBelowHorizon->GetValue(),
       m_lunarOrder->GetSelection() == 1);
+  m_rankedBodies = m_bodySelection.Filter(m_rankedBodies);
   const bool lunar = mode == PlanningMode::LunarCandidates;
   m_lunarPairs->Show(lunar);
   m_lunarOrder->Show(lunar);
-  m_lunarCompanions->Show(lunar);
-  m_includePolarisRecommendations->Show(!lunar && mode != PlanningMode::ShowAll);
+  m_lunarCompanions->Show(lunar && !m_bodySelection.custom);
+  m_recommendationTitle->SetLabel(lunar ? _("Lunar Candidates") : _("Best Sights"));
+  m_includePolarisRecommendations->Show(!lunar);
 #ifdef __OCPN__ANDROID__
-  m_androidCombinations->Show(mode != PlanningMode::ShowAll);
+  m_androidCombinations->Show(true);
+  m_androidFixSettings->Show(!lunar);
+  m_androidFixOptions->Show(!lunar && m_androidShowFixSettings);
 #else
-  m_combinations->Show(!lunar && mode != PlanningMode::ShowAll);
-  m_noRecommendations->Show(mode == PlanningMode::ShowAll);
+  m_combinations->GetParent()->GetSizer()->Show(m_fixControls, !lunar && m_showFixSettings);
+  m_fixSettings->Show(!lunar);
+  m_combinations->Show(!lunar);
   m_lunarPairs->GetParent()->Layout();
 #endif
   wxListItem scoreColumn;
@@ -2290,7 +2526,7 @@ void PlannerDialog::RefreshBodies() {
 #endif
     for (const auto& body : m_rankedBodies) {
       if (body.state.body == "Moon" ||
-          (m_lunarCompanions->GetSelection() == 0 &&
+          (!m_bodySelection.custom && m_lunarCompanions->GetSelection() == 0 &&
            !PlannerRecommendations::IsTraditionalLunarCompanion(body.state.body))) continue;
       const long row = m_lunarPairs->InsertItem(
           m_lunarPairs->GetItemCount(), _("Moon + ") + body.state.body);
@@ -2341,26 +2577,17 @@ void PlannerDialog::RefreshBodies() {
   const bool limitAltitude = m_limitRecommendationAltitude->GetValue();
   const double minimumAltitude = m_recommendationMinAltitude->GetValue();
   const double maximumAltitude = m_recommendationMaxAltitude->GetValue();
-  const std::vector<RankedBody> candidates =
-      SightRanker::RecommendationCandidates(m_rankedBodies, limitAltitude,
-                                            minimumAltitude, maximumAltitude,
-                                            m_includePolarisRecommendations->GetValue());
+  const auto selectedBodies = m_bodySelection.Filter(m_planningResult.bodies);
+  const auto assessment = SightRanker::AssessRecommendations(selectedBodies,
+      limitAltitude, minimumAltitude, maximumAltitude,
+      m_includePolarisRecommendations->GetValue());
+  const auto& candidates = assessment.candidates;
+  unsigned pairCount = 0, triadCount = 0;
   if (limitAltitude && minimumAltitude >= maximumAltitude &&
       (mode == PlanningMode::PracticalFix || mode == PlanningMode::BrightBodies)) {
-#ifndef __OCPN__ANDROID__
-    m_combinations->InsertItem(
-        0, _("Set the minimum recommended Hc below the maximum."));
-#endif
-#ifdef __OCPN__ANDROID__
-    m_androidCombinations->SetLabel(
-        _("Set the minimum recommended Hc below the maximum."));
-    celestial_android::LayoutScrolls(this);
-#endif
-    RefreshSkyPlot();
-    return;
+    m_recommendationText = _("No recommendations: set the minimum Hc below the maximum.");
   }
-  if (mode == PlanningMode::PracticalFix ||
-      mode == PlanningMode::BrightBodies) {
+  else if (!lunar) {
   std::vector<RankedBody> recommendationBodies = candidates;
   if (mode == PlanningMode::BrightBodies) {
     for (auto& body : recommendationBodies) {
@@ -2371,6 +2598,8 @@ void PlannerDialog::RefreshBodies() {
   }
   auto pairs = SightRanker::BestCombinations(recommendationBodies, 2, 5);
   auto triads = SightRanker::BestCombinations(recommendationBodies, 3, 5);
+  pairCount = pairs.size();
+  triadCount = triads.size();
   triads.insert(triads.end(), pairs.begin(), pairs.end());
   for (const auto& combination : triads) {
     wxString names;
@@ -2391,12 +2620,69 @@ void PlannerDialog::RefreshBodies() {
 #endif
   }
   }
+  const unsigned selectedCount = selectedBodies.size();
+  const unsigned aboveCount = selectedCount - assessment.belowHorizon;
+  wxString exclusions;
+  auto addExclusion = [&exclusions](unsigned count, const wxString& reason) {
+    if (!count) return;
+    if (!exclusions.empty()) exclusions += "; ";
+    exclusions += wxString::Format("%u %s", count, reason.c_str());
+  };
+  addExclusion(assessment.unavailableStars, _("daylight stars"));
+  addExclusion(assessment.unavailableMoon, _("Moon below 1% illumination"));
+  addExclusion(assessment.unavailableOther, _("unavailable"));
+  addExclusion(assessment.polarisExcluded, _("Polaris excluded"));
+  addExclusion(assessment.altitudeExcluded,
+      wxString::Format(_("outside Hc %.1f to %.1f degrees"), minimumAltitude, maximumAltitude));
+  wxString allExclusions = exclusions;
+  if (assessment.belowHorizon) {
+    if (!allExclusions.empty()) allExclusions += "; ";
+    allExclusions += wxString::Format(_("%u below horizon"), assessment.belowHorizon);
+  }
+  const wxString counts = wxString::Format(
+      _("%u selected; %u above horizon; %u eligible. Triads: %u; pairs: %u."),
+      selectedCount, aboveCount, unsigned(candidates.size()), triadCount, pairCount);
+  if (lunar) {
+    const unsigned lunarCount = m_lunarPairs->GetItemCount();
+    m_recommendationText = lunarCount
+        ? wxString::Format(_("%u lunar companions; Moon illumination %.1f%%."),
+            lunarCount, m_planningResult.moon.illuminatedFraction * 100.0)
+        : _("No lunar companions in this display. Choose bodies, include below-horizon bodies, or change UTC/position.");
+    if (m_bodySelection.custom && lunarCount)
+      m_recommendationText += _(" Custom companions selected.");
+    if (!m_planningResult.moon.IsSightCandidate() && lunarCount)
+      m_recommendationText += _(" Below 1%: pairs shown grey, not recommended for sights.");
+  } else if (!assessment.invalidAltitudeLimits) {
+    m_recommendationText = counts;
+    if (selectedCount == 0)
+      m_recommendationText = _("No bodies selected. Choose bodies or use Full catalogue.");
+    else if (candidates.size() < 2) {
+      m_recommendationText = wxString::Format(
+          _("No pairs or triads: %u selected; %u above horizon; %u eligible (at least two needed)."),
+          selectedCount, aboveCount, unsigned(candidates.size()));
+      const auto& reason = aboveCount ? exclusions : allExclusions;
+      if (!reason.empty()) m_recommendationText += "\n" + _("Excluded: ") + reason + ".";
+    } else {
+      m_recommendationText += limitAltitude
+          ? wxString::Format(_(" Hc %.1f to %.1f degrees."), minimumAltitude, maximumAltitude)
+          : _(" Hc limits off.");
+      m_recommendationText += m_includePolarisRecommendations->GetValue()
+          ? _(" Polaris included.") : _(" Polaris off.");
+    }
+  }
+  m_recommendationSummary->SetLabel(m_recommendationText);
+#ifdef __OCPN__ANDROID__
+  CN_WrapAndroidText(m_recommendationSummary, m_recommendationText,
+      std::max(300, m_recommendationSummary->GetParent()->GetClientSize().x - 32));
+#else
+  m_recommendationSummary->Wrap(std::max(300,
+      m_recommendationSummary->GetParent()->GetClientSize().x - 12));
+#endif
+  m_recommendationSummary->SetToolTip(counts + "\n" + _("Excluded: ") + allExclusions +
+      "\n" + _("Hc and visibility limits affect recommendations only. Body order never disables recommendations."));
 #ifdef __OCPN__ANDROID__
   m_androidCombinations->SetLabel(
-      combinations.empty()
-          ? (lunar ? _("No lunar candidates for this context.")
-                   : _("No pairs or triads meet these recommendation limits."))
-          : combinations);
+      combinations.empty() ? m_recommendationText : combinations);
   m_androidCombinations->GetHandle()->setProperty("cnPreserveColour", false);
   CN_ApplyAndroidTheme(m_androidCombinations);
   if (lunar && !m_planningResult.moon.IsSightCandidate()) {
@@ -2408,6 +2694,11 @@ void PlannerDialog::RefreshBodies() {
   celestial_android::LayoutScrolls(this);
 #endif
 #ifndef __OCPN__ANDROID__
+  const int recommendationHeight = m_combinations->GetParent()->GetSizer()->GetMinSize().y + 5;
+  const int bodyHeight = m_bodies->GetParent()->GetSizer()->GetMinSize().y;
+  m_resultsSplitter->SetMinSize(wxSize(400, std::max(365, recommendationHeight + bodyHeight + 6)));
+  if (m_resultsSplitter->GetSashPosition() < recommendationHeight)
+    m_resultsSplitter->SetSashPosition(recommendationHeight);
   m_notebook->GetPage(1)->Layout();
   if (auto* scroll =
           dynamic_cast<wxScrolledWindow*>(m_notebook->GetPage(1)))
@@ -2662,6 +2953,29 @@ void PlannerDialog::UpdateAndroidBodySelection() {
 }
 #endif
 
+void PlannerDialog::ChooseCustomBodies() {
+  PlannerBodySelectionDialog dialog(this, m_bodySelection.selected);
+#ifdef __OCPN__ANDROID__
+  const int result = celestial_android::ModalResult(dialog);
+#else
+  const int result = dialog.ShowModal();
+#endif
+  if (result == wxID_OK) {
+    m_bodySelection.selected = dialog.Selection();
+    m_bodySelection.custom = true;
+  }
+  UpdateBodySelectionControls();
+  RefreshBodies();
+}
+
+void PlannerDialog::UpdateBodySelectionControls() {
+  m_bodySet->SetSelection(m_bodySelection.custom ? 1 : 0);
+  m_plotMagnitude->Enable(!m_bodySelection.custom);
+  m_plotMagnitude->SetToolTip(m_bodySelection.custom
+      ? _("Custom body selection controls the plot; selected bodies are shown regardless of magnitude.")
+      : _("Magnitude limit for sky plots only; the body table and recommendations retain all catalogue bodies."));
+}
+
 void PlannerDialog::RefreshSkyPlot() {
 #ifndef __OCPN__ANDROID__
   if (m_desktopPending) return;
@@ -2675,41 +2989,24 @@ void PlannerDialog::RefreshSkyPlot() {
   if (!motion.referenceUtc.IsValid()) return;
   const double magnitude =
       static_cast<double>(m_plotMagnitude->GetSelection() + 1);
-  const double minimumAltitude = m_plotBelowHorizon->GetValue() ? -90.0 : 0.0;
 #ifdef __OCPN__ANDROID__
   if (!m_androidReady) return;
-  std::vector<RankedBody> plotBodies;
-  for (const auto& body : m_androidResults.allBodies)
-    if (body.state.geometricAltitude >= minimumAltitude &&
-        (!body.state.isStar && !body.state.isPlanet ||
-         body.state.visualMagnitude <= magnitude || body.state.body == m_skyPlot->SelectedBody())) plotBodies.push_back(body);
+  const auto& allBodies = m_androidResults.allBodies;
   const auto& sun = m_androidResults.sun;
 #else
-  std::vector<RankedBody> plotBodies;
-  if (m_desktopReady) {
-    for (const auto& body : m_desktopResults.allBodies)
-      if (body.state.geometricAltitude >= minimumAltitude &&
-          (!(body.state.isStar || body.state.isPlanet) ||
-           body.state.visualMagnitude <= magnitude ||
-           body.state.body == m_skyPlot->SelectedBody())) plotBodies.push_back(body);
-  } else {
-    plotBodies = SightRanker::VisibleBodies(motion.referenceUtc, motion.latitude,
-        motion.longitude, minimumAltitude, 90.0, magnitude);
-  }
+  const auto allBodies = m_desktopReady ? m_desktopResults.allBodies
+      : SightRanker::VisibleBodies(motion.referenceUtc, motion.latitude,
+          motion.longitude, -90, 90, std::numeric_limits<double>::infinity());
   const BodyState sun = m_desktopReady ? m_desktopResults.sun
       : CelestialEphemeris::Evaluate("Sun", motion.referenceUtc, motion.latitude, motion.longitude);
 #endif
   const bool daylight = sun.valid && sun.geometricAltitude >= 0.0;
-#ifndef __OCPN__ANDROID__
-  const wxString selectedBody = m_skyPlot->SelectedBody();
-  if (!selectedBody.empty() && std::none_of(plotBodies.begin(), plotBodies.end(),
-          [&selectedBody](const RankedBody& body) { return body.state.body == selectedBody; })) {
-    const auto state = CelestialEphemeris::Evaluate(selectedBody, motion.referenceUtc,
-                                                   motion.latitude, motion.longitude);
-    if (state.valid && state.geometricAltitude >= minimumAltitude)
-      plotBodies.push_back(SightRanker::AssessBody(state, sun));
+  if (!m_bodySelection.Includes(m_skyPlot->SelectedBody())) {
+    m_skyPlot->SetSelectedBody(wxEmptyString);
+    m_equatorialPlot->SetSelectedBody(wxEmptyString);
   }
-#endif
+  const auto plotBodies = m_bodySelection.ForPlot(allBodies,
+      m_plotBelowHorizon->GetValue(), magnitude, m_skyPlot->SelectedBody());
   m_skyPlot->SetBodies(plotBodies, daylight);
   m_equatorialPlot->SetBodies(plotBodies, daylight);
 #ifdef __OCPN__ANDROID__
@@ -2748,6 +3045,9 @@ void PlannerDialog::SortBodies(wxListEvent& event) {
     m_bodySortColumn = event.GetColumn();
     m_bodySortAscending = true;
   }
+  m_bodyOrder->SetSelection(m_bodySortColumn + 1);
+  m_bodyDirection->SetSelection(m_bodySortAscending ? 0 : 1);
+  m_bodyDirection->Enable(m_bodySortColumn >= 0);
   RebuildBodyList();
 }
 

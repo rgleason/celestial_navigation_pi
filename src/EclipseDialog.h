@@ -24,6 +24,7 @@ class wxListCtrl;
 class wxListEvent;
 class wxSpinCtrl;
 class wxStaticText;
+class wxScrolledWindow;
 class wxTextCtrl;
 class celestial_navigation_pi;
 #ifdef __OCPN__ANDROID__
@@ -34,14 +35,21 @@ class AndroidDownloadEvents;
 
 class EclipseDialog : public wxDialog {
 public:
-  EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin);
+  // Both views use the same verified astronomy-data installation controller.
+  enum class View { EclipsePlanner, AccuracyAddons };
+  EclipseDialog(wxWindow* parent, celestial_navigation_pi* plugin,
+                View view = View::EclipsePlanner);
   ~EclipseDialog() override;
+  bool IsInstallingData() const { return m_download_kind >= 0 || m_verifying; }
+  void RefreshInstalledData();
   bool Render(piDC* dc, PlugIn_ViewPort* viewport);
   bool HasPlot() const { return !m_path.empty() || !m_contours.empty(); }
   void RunIntegrationScenario2027();
 
 private:
   void BuildInterface();
+  void BuildAccuracyAddonsInterface();
+  void LayoutAccuracyAddons();
 #ifdef __OCPN__ANDROID__
   void BuildAndroidInterface();
   void RefreshAndroidEvents();
@@ -51,6 +59,7 @@ private:
   wxStaticText* m_androidSelectedLocal = nullptr;
 #endif
   void UpdateDataStatus();
+  void SetDataStatus(const wxString& text);
   bool OpenEngine(bool report_error);
   void OnImportDe440(wxCommandEvent& event);
   void OnDownloadDe440(wxCommandEvent& event);
@@ -89,6 +98,11 @@ private:
   bool DataVerified(celestial_navigation::EclipseDataKind kind) const;
 
   celestial_navigation_pi* m_plugin;
+  View m_view;
+  wxScrolledWindow* m_addons_scroll = nullptr;
+  wxButton* m_verify_de = nullptr;
+  std::vector<std::pair<wxStaticText*, wxString>> m_addons_text;
+  bool m_addons_layout = false;
   eclipse::EclipseEngine m_engine;
   bool m_engine_ready;
   std::vector<eclipse::EclipseEvent> m_events;

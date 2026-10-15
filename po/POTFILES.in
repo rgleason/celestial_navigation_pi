@@ -24,6 +24,7 @@ src/NavigationAlgorithms.cpp
 src/NavigationEphemerisProvider.cpp
 src/CompactEphemerisProvider.cpp
 src/PlannerDialog.cpp
+src/PlannerBodySelectionDialog.cpp
 src/WaypointPositionSource.cpp
 src/WaypointPickerDialog.cpp
 src/SightAnalysisDialog.cpp
@@ -49,6 +50,7 @@ src/CoastalNavigationDialog.cpp
 src/icons.cpp
 src/FindBodyDialog.cpp
 src/LunarResultsDialog.cpp
+src/LunarPresentation.cpp
 src/FixDialog.cpp
 src/ClockCorrectionDialog.cpp
 src/geodesic.c
@@ -70,6 +72,7 @@ src/Dut1UpdatePanel.h
 src/BodyCatalog.h
 src/NavigationAlgorithms.h
 src/PlannerDialog.h
+src/PlannerBodySelectionDialog.h
 src/WaypointPositionSource.h
 src/WaypointPickerDialog.h
 src/SightAnalysisDialog.h

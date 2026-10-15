@@ -12,6 +12,7 @@
 #include <wx/filedlg.h>
 #include <wx/filename.h>
 #include <wx/log.h>
+#include <wx/panel.h>
 #include <wx/scrolwin.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
@@ -82,41 +83,44 @@ std::shared_ptr<const eclipse::Dut1Table> ReadTable(const wxString& path, wxStri
   else if (validated) *validated=std::move(bytes);
   return result;
 }
-class UpdatePanel : public wxScrolledWindow {
+class UpdatePanel : public wxPanel {
  public:
-  explicit UpdatePanel(wxWindow* parent) : wxScrolledWindow(parent) {
-    SetScrollRate(0,10);
+  explicit UpdatePanel(wxWindow* parent, Dut1PanelMode mode)
+      : wxPanel(parent), embedded_(mode == Dut1PanelMode::AccuracyAddons) {
     auto* layout=new wxBoxSizer(wxVERTICAL);
     layout->AddSpacer(18);
-    auto* compactTitle=new wxStaticText(this,wxID_ANY,_("Navigation ephemeris"));
-    compactTitle->SetFont(compactTitle->GetFont().Bold());
-    AddText(layout,compactTitle);
-    auto* compact=new wxCheckBox(this,wxID_ANY,_("Use compact analytical fallback (recommended)"));
-    compact->SetValue(CompactEphemerisEnabled());
-    compact->SetName("UseCompactEphemeris");
-    layout->Add(compact,0,wxEXPAND|wxLEFT|wxRIGHT|wxBOTTOM,18);
-    AddText(layout,new wxStaticText(this,wxID_ANY,
-        _("DE440s retains priority where installed and applicable. Otherwise the bundled "
-          "Compact engine supplies Sun, Moon, planets and navigation stars for 1972-2100. "
-          "Disable it to use classic analytical calculations. The corrected lunar solver "
-          "remains active with either provider. This setting applies to new calculations.")));
-    compact->Bind(wxEVT_CHECKBOX,[compact](wxCommandEvent&) {
-      SetCompactEphemerisEnabled(compact->GetValue());
-    });
+    if (!embedded_) {
+      auto* compactTitle=new wxStaticText(this,wxID_ANY,_("Navigation ephemeris"));
+      compactTitle->SetFont(compactTitle->GetFont().Bold());
+      AddText(layout,compactTitle);
+      auto* compact=new wxCheckBox(this,wxID_ANY,_("Use compact analytical fallback (recommended)"));
+      compact->SetValue(CompactEphemerisEnabled());
+      compact->SetName("UseCompactEphemeris");
+      layout->Add(compact,0,wxEXPAND|wxLEFT|wxRIGHT|wxBOTTOM,18);
+      AddText(layout,new wxStaticText(this,wxID_ANY,
+          _("DE440s retains priority where installed and applicable. Otherwise the bundled "
+            "Compact engine supplies Sun, Moon, planets and navigation stars for 1972-2100. "
+            "Disable it to use classic analytical calculations. The corrected lunar solver "
+            "remains active with either provider. This setting applies to new calculations.")));
+      compact->Bind(wxEVT_CHECKBOX,[compact](wxCommandEvent&) {
+        SetCompactEphemerisEnabled(compact->GetValue());
+      });
+    }
 
     auto* title=new wxStaticText(this,wxID_ANY,CN_UTF8_("Earth-rotation data (DUT1) — precision updates"));
     title->SetFont(title->GetFont().Bold());
     AddText(layout,title);
-    AddText(layout,new wxStaticText(this,wxID_ANY,
-        CN_UTF8_("Celestial Navigation works offline. Bundled data already supports high-accuracy "
-          "Sun–Moon lunar calculations; downloading an update is optional.")));
-    AddText(layout,new wxStaticText(this,wxID_ANY,
-        _("DUT1 is the small difference between Earth's rotation time (UT1) and UTC. "
-          "IERS measurements and predictions refine the enhanced lunar solver. "
-          "This is not a chart, weather or ephemeris download.")));
     status_=new wxStaticText(this,wxID_ANY,wxEmptyString);
+    status_->SetName("Dut1DataStatus");
     AddText(layout,status_);
     AddText(layout,new wxStaticText(this,wxID_ANY,
+        _("Bundled Earth-rotation data is ready for offline use. An IERS update "
+          "extends coverage with newer measurements and predictions.")));
+    AddText(layout,new wxStaticText(this,wxID_ANY,
+        _("DUT1 is the small difference between Earth's rotation time (UT1) and UTC. "
+          "It is used by navigation calculations, including ordinary sights and lunars; "
+          "it is not restricted to Lunar Tools.")));
+    if (!embedded_) AddText(layout,new wxStaticText(this,wxID_ANY,
         _("There is no data-expiry lockout. Outside all available dates the plugin "
           "still calculates using UT1 = UTC and reports reduced accuracy. "
           "No internet connection is required for sights or solving.")));
@@ -125,8 +129,13 @@ class UpdatePanel : public wxScrolledWindow {
 #else
     auto* buttons=new wxBoxSizer(wxHORIZONTAL);
 #endif
-    download_=new wxButton(this,wxID_ANY,CN_UTF8_("Check / download update…"));
-    import_=new wxButton(this,wxID_ANY,CN_UTF8_("Import local file…"));
+    download_=new wxButton(this,wxID_ANY,embedded_
+        ? CN_UTF8_("Install / update DUT1… (about 4 MB)")
+        : CN_UTF8_("Check / download update…"));
+    import_=new wxButton(this,wxID_ANY,embedded_
+        ? CN_UTF8_("Import DUT1 file…") : CN_UTF8_("Import local file…"));
+    download_->SetName("Dut1Download");
+    import_->SetName("Dut1Import");
 #ifdef __OCPN__ANDROID__
     buttons->Add(download_,0,wxEXPAND|wxBOTTOM,12);
     buttons->Add(import_,0,wxEXPAND|wxBOTTOM,12);
@@ -196,10 +205,11 @@ class UpdatePanel : public wxScrolledWindow {
     Rewrap();
   }
   void Rewrap() {
+    if (rewrapping_) return;
+    rewrapping_=true;
 #ifdef __OCPN__ANDROID__
-    // POBsoft (1985-2026): AndroidSurface reparents these labels into a
-    // content panel. Recompute native font heights and lay out that owner
-    // before updating the viewport, including dynamically changed messages.
+    // Preserve source labels while recomputing native heights after rotation
+    // or a download-status change.
     const int width=std::max(160,GetClientSize().x-64);
     for (auto& item:texts_) CN_WrapAndroidText(item.first,item.second,width);
     if (!texts_.empty() && texts_.front().first->GetParent()!=this) {
@@ -211,15 +221,27 @@ class UpdatePanel : public wxScrolledWindow {
     const int width=std::max(200,std::min(780,GetClientSize().x-40));
     for (auto& item:texts_) { item.first->SetLabel(item.second); item.first->Wrap(width); }
 #endif
-    Layout(); FitInside();
+    Layout();
+    SetMinSize(wxSize(0,GetSizer()->GetMinSize().y));
+    // Either host owns the single scrolling viewport. A plain content panel
+    // also lets Android drags reach that viewport without a nested scroll target.
+    for (auto* owner=GetParent();owner;owner=owner->GetParent()) {
+      owner->Layout();
+      if (auto* scroll=wxDynamicCast(owner,wxScrolledWindow)) {
+        scroll->FitInside(); break;
+      }
+    }
+    rewrapping_=false;
   }
   void RefreshCoverage() {
     wxString status=wxString::Format(_("Bundled coverage: %s to %s UTC (includes predictions)."),
         Date(eclipse::Dut1FirstUtcJd()),Date(eclipse::Dut1LastUtcJd()));
     const auto update=eclipse::GetDut1Update();
-    status+=update ? wxString::Format(_("\nInstalled update: through %s UTC (includes predictions)."),
+    status+=update ? wxString::Format(_("\nInstalled update: validated; through %s UTC (includes predictions)."),
                                      Date(update->LastUtcJd()))
-                   : _("\nNo downloaded update installed; the bundled data is ready to use.");
+                   : wxFileExists(UpdatePath())
+                       ? _("\nLocal update failed validation; using bundled data.")
+                       : _("\nNo downloaded update installed; using bundled data.");
     status+=_("\nEach sight uses data for its own UTC date, not today's date.");
     SetText(status_,status);
   }
@@ -320,6 +342,8 @@ class UpdatePanel : public wxScrolledWindow {
 #endif
   wxStaticText *status_,*message_;
   wxButton *download_,*import_;
+  bool embedded_;
+  bool rewrapping_=false;
   std::vector<std::pair<wxStaticText*,wxString>> texts_;
 };
 }
@@ -357,5 +381,13 @@ void LoadInstalledDut1Update() {
   if (table) eclipse::SetDut1Update(table);
   else wxLogWarning("Celestial Navigation: Earth-rotation update ignored: %s; using bundled data",error);
 }
-wxWindow* CreateDut1UpdatePanel(wxWindow* parent) { return new UpdatePanel(parent); }
+wxWindow* CreateDut1UpdatePanel(wxWindow* parent,Dut1PanelMode mode) {
+  if (mode==Dut1PanelMode::AccuracyAddons) return new UpdatePanel(parent,mode);
+  auto* viewport=new wxScrolledWindow(parent);
+  viewport->SetScrollRate(0,10);
+  auto* layout=new wxBoxSizer(wxVERTICAL);
+  layout->Add(new UpdatePanel(viewport,mode),0,wxEXPAND);
+  viewport->SetSizer(layout);
+  return viewport;
+}
 }

@@ -39,13 +39,17 @@ set(SRC
     dialog_transaction_state_tests.cpp
     sight_search_span_ui_tests.cpp
     eclipse_data_files_tests.cpp
+    accuracy_addons_ui_tests.cpp
     eclipse_verification_worker_tests.cpp
     altitude_tests.cpp
     azimuth_tests.cpp
     lunar_tests.cpp
     lunar_fiji_tests.cpp
     lunar_solution_record_tests.cpp
+    lunar_presentation_tests.cpp
+    lunar_results_ui_tests.cpp
     lunar_ui_smoke_tests.cpp
+    planner_ui_tests.cpp
     find_body_ui_tests.cpp
     fix_ui_smoke_tests.cpp
     fix_dr_tests.cpp
@@ -104,6 +108,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/AlmanacPaperTables.cpp
     ${CMAKE_SOURCE_DIR}/src/AlmanacDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/PlannerDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/PlannerBodySelectionDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/WaypointPositionSource.cpp
     ${CMAKE_SOURCE_DIR}/src/WaypointPickerDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/SightAnalysisDialog.cpp
@@ -129,6 +134,7 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/epv00.cpp
     ${CMAKE_SOURCE_DIR}/src/FixDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/LunarResultsDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/LunarPresentation.cpp
     ${CMAKE_SOURCE_DIR}/src/SightDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/geodesic.c
     ${CMAKE_SOURCE_DIR}/src/geomag/geomag.c

@@ -153,6 +153,7 @@ CelestialNavigationDialog::CelestialNavigationDialog(
       m_coastalButton(NULL),
       m_almanacButton(NULL),
       m_pdfDocumentationButton(NULL),
+      m_accuracyAddonsButton(NULL),
       m_practicalGuideButton(NULL),
       m_practicalGuideHtmlButton(NULL),
       m_manageSightsButton(NULL),
@@ -243,6 +244,11 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   m_pdfDocumentationButton->Bind(
       wxEVT_BUTTON, &CelestialNavigationDialog::OnPdfDocumentation, this);
   m_bDocumentation->SetLabel(_("Reference Manual..."));
+  m_accuracyAddonsButton = new wxButton(this, wxID_ANY, _("DE440s / DUT1..."));
+  m_accuracyAddonsButton->SetToolTip(
+      _("Enhanced Accuracy Add-ons: status, verified installation and Earth-rotation updates"));
+  m_accuracyAddonsButton->Bind(wxEVT_BUTTON,
+      &CelestialNavigationDialog::OnAccuracyAddons, this);
   m_practicalGuideButton = new wxButton(this, wxID_ANY, _("How to Guide (PDF)..."));
   m_practicalGuideButton->Bind(wxEVT_BUTTON, &CelestialNavigationDialog::OnPracticalGuide, this);
   m_practicalGuideHtmlButton = new wxButton(this, wxID_ANY, _("How to Guide..."));
@@ -269,7 +275,7 @@ CelestialNavigationDialog::CelestialNavigationDialog(
   addAction(m_horizonEventButton);  addAction(m_practicalGuideButton);
   addAction(m_coastalButton);       addAction(m_bDocumentation);
   addAction(m_plannerButton);       addAction(m_pdfDocumentationButton);
-  addAction(m_lunarToolsButton);    actionButtons->AddSpacer(0);
+  addAction(m_lunarToolsButton);    addAction(m_accuracyAddonsButton);
   addAction(m_analyzeButton);
   m_chartDisplayButton = new wxButton(this, wxID_ANY, _("Chart display..."));
   m_chartDisplayButton->SetToolTip(_("Set chart-wide line, outline, shading and hover defaults. "
@@ -1671,8 +1677,28 @@ void CelestialNavigationDialog::OnHorizonEvent(wxCommandEvent& event) {
 
 void CelestialNavigationDialog::OnEclipse(wxCommandEvent&) {
   if (!m_eclipseDialog) m_eclipseDialog = new EclipseDialog(this, m_Plugin);
+  else m_eclipseDialog->RefreshInstalledData();
   m_eclipseDialog->Show();
   m_eclipseDialog->Raise();
+}
+
+void CelestialNavigationDialog::OnAccuracyAddons(wxCommandEvent&) {
+  // The retained modeless eclipse window can have a background installation
+  // running. Keep its staging files under one controller until it finishes.
+  if (m_eclipseDialog && m_eclipseDialog->IsInstallingData()) {
+    m_eclipseDialog->Show(); m_eclipseDialog->Raise();
+    CelestialMessageBox(_("Astronomy data is being checked or installed in Eclipses. "
+        "Wait for it to finish, or cancel the installation there, then open DE440s / DUT1."),
+        _("Enhanced Accuracy Add-ons"), wxOK | wxICON_INFORMATION, this);
+    return;
+  }
+  EclipseDialog dialog(this, m_Plugin, EclipseDialog::View::AccuracyAddons);
+#ifdef __OCPN__ANDROID__
+  celestial_android::ModalResult(dialog);
+#else
+  dialog.ShowModal();
+#endif
+  if (m_eclipseDialog) m_eclipseDialog->RefreshInstalledData();
 }
 
 void CelestialNavigationDialog::OnCoastal(wxCommandEvent&) {

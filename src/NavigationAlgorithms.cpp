@@ -876,21 +876,61 @@ std::vector<RankedCombination> SightRanker::BestCombinations(
   return combinations;
 }
 
+bool PlannerBodySelection::Includes(const wxString& body) const {
+  return !custom || std::any_of(selected.begin(), selected.end(),
+      [&body](const wxString& name) { return name.CmpNoCase(body) == 0; });
+}
+
+std::vector<RankedBody> PlannerBodySelection::Filter(
+    const std::vector<RankedBody>& bodies) const {
+  std::vector<RankedBody> result;
+  std::copy_if(bodies.begin(), bodies.end(), std::back_inserter(result),
+      [this](const RankedBody& body) { return Includes(body.state.body); });
+  return result;
+}
+
+std::vector<RankedBody> PlannerBodySelection::ForPlot(
+    const std::vector<RankedBody>& bodies, bool includeBelowHorizon,
+    double maximumMagnitude, const wxString& highlighted) const {
+  std::vector<RankedBody> result;
+  for (const auto& body : bodies) {
+    if (!std::isfinite(body.state.geometricAltitude) || !Includes(body.state.body) ||
+        (!includeBelowHorizon && body.state.geometricAltitude < 0)) continue;
+    if (custom || !(body.state.isStar || body.state.isPlanet) ||
+        body.state.visualMagnitude <= maximumMagnitude ||
+        body.state.body == highlighted) result.push_back(body);
+  }
+  return result;
+}
+
+RecommendationAssessment SightRanker::AssessRecommendations(
+    const std::vector<RankedBody>& bodies, bool limitAltitude,
+    double minimumAltitude, double maximumAltitude, bool includePolaris) {
+  RecommendationAssessment result;
+  result.invalidAltitudeLimits = limitAltitude && minimumAltitude >= maximumAltitude;
+  // Count each exclusion once, in the same order as candidate selection.
+  for (const auto& body : bodies) {
+    if (!std::isfinite(body.state.geometricAltitude)) ++result.unavailableOther;
+    else if (body.state.geometricAltitude < 0) ++result.belowHorizon;
+    else if (body.visibilityUnavailable) {
+      if (body.state.isStar) ++result.unavailableStars;
+      else if (body.state.body == "Moon") ++result.unavailableMoon;
+      else ++result.unavailableOther;
+    } else if (!includePolaris && body.state.body == "Polaris") ++result.polarisExcluded;
+    else if (result.invalidAltitudeLimits ||
+        (limitAltitude && (body.state.geometricAltitude < minimumAltitude ||
+                           body.state.geometricAltitude > maximumAltitude)))
+      ++result.altitudeExcluded;
+    else result.candidates.push_back(body);
+  }
+  return result;
+}
+
 std::vector<RankedBody> SightRanker::RecommendationCandidates(
     const std::vector<RankedBody>& bodies, bool limitAltitude,
     double minimumAltitude, double maximumAltitude, bool includePolaris) {
-  std::vector<RankedBody> candidates;
-  if (limitAltitude && minimumAltitude >= maximumAltitude) return candidates;
-  std::copy_if(bodies.begin(), bodies.end(), std::back_inserter(candidates),
-               [limitAltitude, minimumAltitude, maximumAltitude, includePolaris](const RankedBody& body) {
-                 return !body.visibilityUnavailable &&
-                        (includePolaris || body.state.body != "Polaris") &&
-                        body.state.geometricAltitude >= 0 &&
-                        (!limitAltitude ||
-                         (body.state.geometricAltitude >= minimumAltitude &&
-                          body.state.geometricAltitude <= maximumAltitude));
-               });
-  return candidates;
+  return AssessRecommendations(bodies, limitAltitude, minimumAltitude,
+                              maximumAltitude, includePolaris).candidates;
 }
 
 std::vector<size_t> SightRanker::SkyLabelPriority(
@@ -1037,6 +1077,11 @@ std::vector<RankedBody> PlannerRecommendations::Order(
           a.state.visualMagnitude != b.state.visualMagnitude)
         return a.state.visualMagnitude < b.state.visualMagnitude;
       if (a.score != b.score) return a.score > b.score;
+      // Keep a grey Moon easy to find among grey daylight stars. This only
+      // orders the catalogue; unavailable bodies still cannot enter a fix.
+      if (a.visibilityUnavailable && b.visibilityUnavailable &&
+          a.state.visualMagnitude != b.state.visualMagnitude)
+        return a.state.visualMagnitude < b.state.visualMagnitude;
     }
     return a.state.body.CmpNoCase(b.state.body) < 0;
   });

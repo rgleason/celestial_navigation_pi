@@ -113,17 +113,6 @@ void ExpectUnclippedNonOverlappingChildren(wxWindow* page) {
           << visible[first]->GetClassInfo()->GetClassName() << " overlaps "
           << visible[second]->GetClassInfo()->GetClassName();
 }
-void FindControls(wxWindow* window, wxChoice** mode, wxButton** save) {
-  for (auto* child : window->GetChildren()) {
-    if (auto* choice = dynamic_cast<wxChoice*>(child))
-      if (choice->GetCount() == 2 &&
-          choice->GetString(1).Contains("Check at entered"))
-        *mode = choice;
-    if (auto* button = dynamic_cast<wxButton*>(child))
-      if (button->GetLabel() == "Save lunar solution") *save = button;
-    FindControls(child, mode, save);
-  }
-}
 
 wxSpinCtrlDouble* FindSpinByTooltip(wxWindow* window,
                                     const wxString& tooltipText) {
@@ -447,23 +436,22 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       auto* candidates = FindListWithColumn(&dialog, "UTC uncertainty");
       ASSERT_NE(candidates, nullptr);
       ASSERT_GT(candidates->GetItemCount(), 0);
-      EXPECT_EQ(candidates->GetItemText(0, 3), "Unavailable");
-      EXPECT_EQ(candidates->GetItemText(0, 4), "Indeterminate");
+      EXPECT_EQ(candidates->GetItemText(0, 3), "Indeterminate");
       EXPECT_FALSE(candidates->GetItemText(0, 0).empty());
       EXPECT_TRUE(boundary.m_LunarSolutionValid);
     }
     {
       LunarResultsDialog dialog(&frame, sight);
-      wxChoice* mode = nullptr;
-      wxButton* save = nullptr;
-      FindControls(&dialog, &mode, &save);
-      ASSERT_NE(nullptr, mode);
+      auto* save = FindPlannerControl<wxButton>(&dialog, [](wxButton* button) {
+        return button->GetLabel() == "Save lunar solution";
+      });
       ASSERT_NE(nullptr, save);
       EXPECT_TRUE(save->IsEnabled());
-      EXPECT_TRUE(ContainsStaticText(&dialog, "Saved DR used"));
-      EXPECT_TRUE(ContainsStaticText(&dialog, "ΔZn"));
-      EXPECT_TRUE(ContainsStaticText(&dialog, "effective crossing"));
-      EXPECT_TRUE(ContainsStaticText(&dialog, "not measurements to average"));
+      EXPECT_TRUE(ContainsStaticText(&dialog, "Reference initially from saved DR"));
+      EXPECT_TRUE(ContainsStaticText(&dialog, "Azimuth separation"));
+      EXPECT_TRUE(ContainsStaticText(&dialog, "True LD"));
+      EXPECT_TRUE(ContainsStaticText(&dialog, "Cleared LD (model corrected)"));
+      EXPECT_TRUE(ContainsStaticText(&dialog, "Lunar error (cleared - true)"));
       dialog.Show();
       dialog.Layout();
       for (int i = 0; i < 4; ++i) {
@@ -484,24 +472,44 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       auto* resultCr = cairo_create(resultSurface);
       gtk_widget_draw(GTK_WIDGET(dialog.GetHandle()), resultCr);
       EXPECT_EQ(cairo_surface_write_to_png(
-                    resultSurface, "/tmp/celestial-lunar-results-2.8.5.5.png"),
+                    resultSurface, "/tmp/celnav299-lunar-results-default.png"),
                 CAIRO_STATUS_SUCCESS);
       cairo_destroy(resultCr);
       cairo_surface_destroy(resultSurface);
 #endif
-      for (int selection : {1, 0, 1}) {
-        mode->SetSelection(selection);
-        wxCommandEvent event(wxEVT_CHOICE, mode->GetId());
-        event.SetEventObject(mode);
-        mode->ProcessWindowEvent(event);
-        EXPECT_EQ(selection == 0, save->IsEnabled());
+      auto* pages = dynamic_cast<wxNotebook*>(wxWindow::FindWindowByName("LunarPages", &dialog));
+      auto* calculations = dynamic_cast<wxNotebook*>(wxWindow::FindWindowByName("LunarCalculationPages", &dialog));
+      ASSERT_NE(nullptr, pages);
+      ASSERT_NE(nullptr, calculations);
+      EXPECT_EQ(4u, calculations->GetPageCount());
+      auto* candidates = FindListWithColumn(&dialog, "Derived UTC");
+      ASSERT_NE(nullptr, candidates);
+      const auto retained = sight.m_LunarCalculation;
+      for (long row = 0; row < candidates->GetItemCount(); ++row) {
+        candidates->SetItemState(row, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+        wxTheApp->Yield();
         EXPECT_EQ(snapshot, LunarInputSnapshot(sight));
-        if (selection == 1) {
-          EXPECT_TRUE(ContainsStaticText(&dialog, "True LD:"));
-          EXPECT_TRUE(ContainsStaticText(&dialog, "Cleared LD (model corrected):"));
-          EXPECT_TRUE(ContainsStaticText(&dialog, "Lunar error (cleared - true):"));
-        }
+        EXPECT_EQ(retained, sight.m_LunarCalculation);
+        EXPECT_TRUE(save->IsEnabled());
       }
+      for (std::size_t section = 0; section < calculations->GetPageCount(); ++section) {
+        pages->SetSelection(1);
+        calculations->SetSelection(section);
+        dialog.Layout(); wxTheApp->Yield();
+        EXPECT_EQ(snapshot, LunarInputSnapshot(sight));
+#ifdef __WXGTK3__
+        const auto captureSize = dialog.GetSize();
+        GtkAllocation captureAllocation{0, 0, captureSize.x, captureSize.y};
+        gtk_widget_size_allocate(GTK_WIDGET(dialog.GetHandle()), &captureAllocation);
+        auto* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, captureSize.x, captureSize.y);
+        auto* cr = cairo_create(surface);
+        gtk_widget_draw(GTK_WIDGET(dialog.GetHandle()), cr);
+        const auto path = wxString::Format("/tmp/celnav299-calculations-%zu.png", section);
+        EXPECT_EQ(CAIRO_STATUS_SUCCESS, cairo_surface_write_to_png(surface, path.utf8_str()));
+        cairo_destroy(cr); cairo_surface_destroy(surface);
+#endif
+      }
+      pages->SetSelection(0);
 #ifdef __WXGTK3__
       dialog.SetSize(wxSize(1040, 1100)); dialog.Layout(); wxTheApp->Yield();
       const auto checkSize = dialog.GetSize();
@@ -510,13 +518,13 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       auto* checkSurface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, checkSize.x, checkSize.y);
       auto* checkCr = cairo_create(checkSurface);
       gtk_widget_draw(GTK_WIDGET(dialog.GetHandle()), checkCr);
-      EXPECT_EQ(cairo_surface_write_to_png(checkSurface, "/tmp/celnav297-lunar-check.png"), CAIRO_STATUS_SUCCESS);
+      EXPECT_EQ(cairo_surface_write_to_png(checkSurface, "/tmp/celnav299-lunar-results.png"), CAIRO_STATUS_SUCCESS);
       cairo_destroy(checkCr); cairo_surface_destroy(checkSurface);
 #endif
       auto* knownLatitude = dynamic_cast<wxTextCtrl*>(wxWindow::FindWindowByName("LunarKnownLatitude", &dialog));
       ASSERT_NE(nullptr, knownLatitude);
       knownLatitude->SetValue("invalid");
-      EXPECT_TRUE(ContainsStaticText(&dialog, "enter a valid known latitude"));
+      EXPECT_TRUE(ContainsStaticText(&dialog, "Enter a valid reference latitude"));
       EXPECT_EQ(snapshot, LunarInputSnapshot(sight));
     }
     // Exercise the actual main and Lunar Tools dialogs, with isolated host
@@ -590,10 +598,9 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
         ASSERT_TRUE(bitmap.SaveFile(wxString::Format("/tmp/celestial-advanced-%d.png",size.x),wxBITMAP_TYPE_PNG));
 #endif
       }
-      wxButton* download=nullptr;
-      for (auto* child:page->GetChildren())
-        if (auto* button=dynamic_cast<wxButton*>(child))
-          if (button->GetLabel().StartsWith("Check / download")) download=button;
+      auto* download=FindPlannerControl<wxButton>(page,[](wxButton* button) {
+        return button->GetName()=="Dut1Download";
+      });
       ASSERT_NE(download,nullptr);
       const auto previous=eclipse::GetDut1Update();
       wxCommandEvent event(wxEVT_BUTTON,download->GetId());
@@ -601,10 +608,7 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       EXPECT_EQ(TestDownloadCalls(),calls+1);
       EXPECT_TRUE(download->IsEnabled());
       EXPECT_EQ(eclipse::GetDut1Update(),previous);
-      bool failureShown=false;
-      for (auto* child:page->GetChildren())
-        if (child->GetLabel().Contains("failed or was cancelled")) failureShown=true;
-      EXPECT_TRUE(failureShown);
+      EXPECT_TRUE(ContainsStaticText(page,"failed or was cancelled"));
 
       // The lunar planner reports measurements and a factual geometric
       // horizon flag, without an undisclosed quality ranking.
@@ -759,8 +763,12 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
         ASSERT_NE(text("Latitude"), nullptr); ASSERT_NE(text("Longitude"), nullptr);
         EXPECT_EQ(text("Latitude")->GetPosition().y, text("Longitude")->GetPosition().y);
         ASSERT_NE(text("Display event times as"), nullptr); ASSERT_NE(text("Zone offset (h)"), nullptr);
-        EXPECT_EQ(text("Display event times as")->GetPosition().y,
-                  text("Zone offset (h)")->GetPosition().y);
+        // Native metrics can shift label origins slightly. Keep both labels
+        // on the same visual row rather than requiring identical pixel origins.
+        const auto eventLabel = text("Display event times as")->GetRect();
+        const auto zoneLabel = text("Zone offset (h)")->GetRect();
+        EXPECT_LE(eventLabel.GetTop(), zoneLabel.GetBottom());
+        EXPECT_LE(zoneLabel.GetTop(), eventLabel.GetBottom());
 #ifdef __WXGTK3__
         GtkAllocation requested{0, 0, size.x, size.y};
         gtk_widget_size_allocate(GTK_WIDGET(planner.GetHandle()), &requested);
@@ -834,19 +842,15 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       ASSERT_NE(refresh, nullptr);
       wxCommandEvent refreshed(wxEVT_BUTTON, refresh->GetId());
       refreshed.SetEventObject(refresh); refresh->ProcessWindowEvent(refreshed);
-      wxChoice* planningMode = nullptr;
-      wxCheckBox* showEcliptic = nullptr;
-      wxCheckBox* showMoonPath = nullptr;
-      for (auto* child : bodiesPage->GetChildren()) {
-        if (auto* choice = dynamic_cast<wxChoice*>(child))
-          if (choice->GetCount() == 4 &&
-              choice->GetString(0) == "Practical Fix") planningMode = choice;
-        if (auto* check = dynamic_cast<wxCheckBox*>(child)) {
-          if (check->GetLabel() == "Show ecliptic") showEcliptic = check;
-          if (check->GetLabel() == "Show Moon path") showMoonPath = check;
-        }
-      }
+      auto* planningMode = FindPlannerControl<wxChoice>(bodiesPage,
+          [](wxChoice* c) { return c->GetName() == "PlannerRecommendationMode"; });
+      auto* showEcliptic = FindPlannerControl<wxCheckBox>(bodiesPage,
+          [](wxCheckBox* c) { return c->GetLabel() == "Show ecliptic"; });
+      auto* showMoonPath = FindPlannerControl<wxCheckBox>(bodiesPage,
+          [](wxCheckBox* c) { return c->GetLabel() == "Show Moon path"; });
       ASSERT_NE(planningMode, nullptr);
+      EXPECT_EQ(3, planningMode->GetCount());
+      EXPECT_EQ(wxNOT_FOUND, planningMode->FindString("Show All"));
       ASSERT_NE(showEcliptic, nullptr);
       ASSERT_NE(showMoonPath, nullptr);
       EXPECT_FALSE(showMoonPath->IsEnabled());
@@ -854,7 +858,7 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
       ASSERT_NE(lunarPairs, nullptr);
       EXPECT_EQ(8, lunarPairs->GetColumnCount());
       EXPECT_NE(FindListWithColumn(bodiesPage, "Mag"), nullptr);
-      for (int mode = 0; mode < 4; ++mode) {
+      for (unsigned mode = 0; mode < planningMode->GetCount(); ++mode) {
         planningMode->SetSelection(mode);
         wxCommandEvent changed(wxEVT_CHOICE, planningMode->GetId());
         changed.SetEventObject(planningMode);
@@ -873,7 +877,7 @@ TEST(LunarUiSmoke, TimeEntryAndResultModesPreserveRecordedInputs) {
               wxTheApp->Yield(); wxMilliSleep(20);
             }
           EXPECT_EQ(mode == 2, lunarPairs->IsShown());
-          if (mode == 2) EXPECT_GT(lunarPairs->GetItemCount(), 0);
+          if (mode == 2) { EXPECT_GT(lunarPairs->GetItemCount(), 0); }
 #ifdef __WXGTK3__
           GtkAllocation allocation{0, 0, size.x, size.y};
           gtk_widget_size_allocate(GTK_WIDGET(planner.GetHandle()),

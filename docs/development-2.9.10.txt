@@ -1,0 +1,144 @@
+Local development: Celestial Navigation 2.9.10.0
+===============================================
+
+Branch: development/celnav-2.9.10
+Worktree: /home/paul/src/OpenCPN/.worktrees/celnav-2.9.10
+Base: combined 2.9.8, 635832960cea65406e3536a07a84b7c35f157c60.
+Release candidate for review against Rick's master. Publication of development
+branches and installable test tarballs is authorized; official catalogue
+promotion remains a separate maintainer step. Rick's public 2.9.9 is the
+publication bump of our 2.9.8, while the local 2.9.9 report changes below are
+additional development incorporated in 2.9.10.
+
+Enhanced Accuracy Add-ons (issue 379)
+------------------------------------
+DE440s / DUT1... appears directly below Reference Manual (PDF)... on desktop.
+Android has the same entry below PDF manual on the main Tools page. The
+Enhanced Accuracy Add-ons window combines DE440s installation/verification
+status, verified download (31.2 MiB), offline import and explicit re-verification
+with DUT1 bundled/installed coverage, validation status, IERS installation or
+update (about 4 MB), offline import and cancellable progress. Opening the
+window performs local status checks only. Original Eclipse and Lunar Tools
+entry points remain available. DUT1 explanations now cover ordinary sights
+and lunars, rather than suggesting the data is restricted to Lunar Tools.
+
+The add-ons view reuses the Eclipse installation controller and DUT1 updater;
+there is no second installer or astronomy calculation change. Installed files
+without a current verification record are checked in the existing worker.
+A running installation in the retained Eclipse window must finish before
+opening the additional view. Reopening Eclipse refreshes shared data status.
+The DUT1 content panel is shared between both windows, with one scrolling
+viewport per host. Android preserves source text while wrapping after rotation,
+has touch-sized actions, and uses its normal Close/Back surface.
+
+Linux AccuracyAddonsUi passed: main entry and position, no network on opening,
+failed downloads, valid DE440s import, rejected damaged replacement, explicit
+verification, damaged installed-file status and recovery, smaller/larger layouts,
+unchanged Compact setting and retained original entry points. LunarUiSmoke
+passed with the shared panel. All 13 CTest groups passed again (107.40 seconds).
+Linux and Android archives match current compiled runtime sections and bundled
+guides; the Android package passes the 16 KB ELF alignment gate.
+
+On the attached SM-X210, portrait/landscape wrapping and touch scrolling,
+DE440s re-verification, native import-picker opening/cancellation, Close/Back,
+live DUT1 download/validation, cancellation with the installed table unchanged,
+and shared updated coverage in Lunar Tools Advanced passed. The live download
+reported coverage through 2027-10-04; the original DUT1 file was restored after
+testing. The final local Android build is installed; host APK is unchanged.
+Fresh backup and qualification evidence: output/celnav-2.9.10/addons-tablet.
+Existing sights/astronomy files and other imported libraries were byte-identical
+after restoration, navigation schema/rows were unchanged, and original CelNav
+preferences, plugin enable flags and Android rotation/accessibility settings
+were restored. No new crash entries. macOS/Windows runtime review is pending.
+
+Planner
+-------
+Best Sights and the body catalogue are visible together in a resizable
+desktop split view. Body sorting is independent of recommendation mode.
+Practical Fix, Bright Bodies and Lunar Candidates remain available; old
+Show All preferences migrate to alphabetical display with Practical Fix.
+Active Hc limits and the Polaris preference are reported even while the
+optional settings are collapsed. Empty recommendations explain exclusions.
+
+Full catalogue and Custom are separate display choices. The searchable,
+grouped checklist offers all 66 Sun, Moon, planet and star catalogue bodies.
+Selections apply to both sky plots, the body table and recommendation pool.
+Custom overrides the plot magnitude limit; below-horizon switches retain
+their individual display scopes. Empty custom selections persist. Cancel
+retains the previous selection. Lunar companions can use any selected body;
+the Moon remains the calculation reference even when unchecked for display.
+Unavailable bodies remain grey, including the thin Moon. Planning order
+keeps the daytime Moon near other bright bodies so it remains discoverable.
+
+The Android planner retains touch cards and a section picker. Bodies has a
+direct Best Sights / sky action, a full/custom selector, and collapsible body
+options. Recommendations appear before optional fix settings. Native page
+changes reflow labels after Qt lays out the visible viewport; direct navigation
+also updates the section caption. The custom checklist has its own expanding
+touch viewport and responsive columns, rather than a nested form scroll.
+Search reads the native QLineEdit text because the pinned wxQt getter retained
+an empty value during editing on the tablet. Desktop search remains unchanged.
+Astronomical calculations and scoring weights are unchanged.
+
+The whole desktop planner page scrolls vertically only, so focus on a wide
+toolbar control cannot scroll headings and table edges off the left. Tables
+retain their own horizontal scrolling. The Moon-path checkbox explicitly says
+SHA/Dec: it shows orbital motion relative to stars in that view. Local sky uses
+the -1 h / +1 h context controls to advance the entire horizon-relative sky.
+
+Local 2.9.9 integration
+----------------------
+Merged development/celnav-2.9.9 through 26ea7a2, including 051c4df's revised
+Results/Calculations and independent accuracy check, and 44a9efe's Android
+wrapping and replacement-card touch styling fixes. These production files
+are identical to that local branch. The combined version remains 2.9.10.0.
+This includes the local development changes, not merely the public 2.9.9
+publication version bump. The historical 2.9.9 qualification is retained in
+docs/lunar-results-2.9.9.txt.
+
+Combined validation
+-------------------
+Linux wxGTK Release and pinned Android ARM64 wxQt Release builds passed.
+All 13 CTest groups passed, including four time-zone numerical audits,
+Android numerical branches, package/guide checks and UTF-8 validation.
+PlannerUi passed, including persisted preferences, legacy Show All migration,
+ordering, Custom/Cancel/empty choices and nontraditional lunar companions.
+LunarResultsUi passed at normal and 150% GTK fonts at 1080 and 900 px widths.
+Reference edits and candidate changes preserve the recorded input and fit.
+The broader LunarUiSmoke workflow passed after its planner checks were
+adapted to the three recommendation modes and the controls' new containers.
+ARM64 library and manual-import archive pass the 16 KB ELF alignment gate.
+
+Local build logs, isolated native OpenCPN review captures and import packages
+are under /home/paul/src/OpenCPN/output/celnav-2.9.10. The laptop's normal
+installation was subsequently updated at the user's request, with navigation
+data, sights and other plugins preserved. At the user's request, the SM-X210 tablet's
+CelNav plugin was updated to the final 2.9.10 build on its existing OpenCPN
+5.14.1-pob220-16k-test host; the host APK was not changed.
+
+Physical tablet qualification
+-----------------------------
+Portrait and landscape planner cards, checklist scrolling, native search,
+keyboard Back handling, Save/Cancel, five-body saved choices across a fresh
+host restart, empty Custom persistence, full catalogue restoration and Hc
+body ordering passed. Sorting retained active recommendations. The five-body
+test displayed three above-horizon eligible bodies and one triad/three pairs;
+the plot magnitude control was disabled for Custom as intended. Results and
+all four lunar calculation sections passed touch/rotation review using the
+existing Moon-Saturn sight. A/B selection updated the retained report, and
+the independent accuracy check remained available. The sight editor was
+cancelled without saving. Final source: 024401d9399236d2504ede144c6359d4cc5f2b05.
+
+Original Sights.xml, all protected CelNav files and every other imported
+plugin library were byte-identical after testing. Navigation database schema
+and all rows in its eight tables were unchanged; SQLite storage bytes changed
+during normal host operation. Original CelNav preferences, all plugin enable
+flags and Android rotation/accessibility settings were restored and verified
+after a fresh start. The installed library matches the verified final import
+archive, is freshly mapped without a deleted-library marker, and passes the
+16 KB ELF alignment gate. No new crash-buffer entries appeared. Backups and
+receipts are in the local output directory. Native macOS/Windows review and
+remote CI remain pending.
+Bob's complete absence of recommendations on iMac was not reproduced on
+Linux; the shared visibility/filter problems are addressed, but the iMac
+needs confirmation using this version.
