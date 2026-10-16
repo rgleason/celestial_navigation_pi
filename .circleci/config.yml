@@ -98,10 +98,10 @@ workflows:
                   - build-msvc-2022
           - approve-publication:
               type: approval
-              <<: *std-filters
+              filters: pipeline.parameters.run_workflow_deploy
               requires: [prepare-publication]
           - publish-reviewed:
-              <<: *std-filters
+              filters: pipeline.parameters.run_workflow_deploy
               requires:
                   - approve-publication
 

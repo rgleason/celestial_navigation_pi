@@ -19,6 +19,9 @@ download URLs; there is no need to overwrite packages or move existing tags.
 
    Do not use the WeatherRouting parameter names here. Do not rerun an old
    pipeline: it checks out the old source and can regenerate the same defects.
+   Validation-only pipelines (`run_workflow_deploy=false`) prepare and check
+   packages but do not create approval or publication jobs.
+
 4. Wait for every platform build and `prepare-publication` to pass.
    This new preparation job creates all final tarballs and XML before the
    approval hold. It checks the complete catalogue schema, matching embedded
