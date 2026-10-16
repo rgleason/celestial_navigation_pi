@@ -18,6 +18,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 from windows64_pe import verify
+from plugin_version import source_repository
 
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT / '.windows64'
@@ -101,8 +102,8 @@ def project_versions(cmake_file=ROOT / 'CMakeLists.txt'):
 
 def verify_metadata(xml, plugin_version, api_version):
     values = [(xml.findtext(k) or '').strip() for k in
-              ('target', 'target-version', 'target-arch', 'version', 'api-version')]
-    if values != ['msvc-wx32-x64', '10', 'x86_64', plugin_version, api_version]:
+              ('target', 'target-version', 'target-arch', 'version', 'api-version', 'build-target')]
+    if values != ['msvc-64', '10', 'x86_64', plugin_version, api_version, 'msvc']:
         raise RuntimeError('Incorrect Windows x64 metadata: ' + repr(values))
     return values
 
@@ -150,8 +151,8 @@ def main():
     xml = ET.parse(metadata[0]).getroot()
     plugin_version, api_version = project_versions()
     values = verify_metadata(xml, plugin_version, api_version)
-    xml.find('source').text = 'https://github.com/pob220/celestial_navigation_pi/tree/' + revision
-    xml.find('tarball-url').text = 'https://github.com/pob220/celestial_navigation_pi/releases/download/v' + plugin_version + '-alpha1/' + archives[0].name
+    xml.find('source').text = source_repository() + '/tree/' + revision
+    xml.find('tarball-url').text = source_repository() + '/releases/download/v' + plugin_version + '-alpha1/' + archives[0].name
     raw_xml = ET.tostring(xml, encoding='utf-8', xml_declaration=True)
     metadata[0].write_bytes(raw_xml)
     with tempfile.TemporaryDirectory() as temporary:

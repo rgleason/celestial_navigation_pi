@@ -4,9 +4,11 @@ import argparse
 from pathlib import Path
 from urllib.parse import quote
 import xml.etree.ElementTree as ET
+import re
+from plugin_version import source_repository
 
 
-def prepare(source, output, repository, name, version, filename):
+def prepare(source, output, repository, name, version, filename, revision=None):
     parts = repository.split('/')
     if len(parts) != 2 or any(not p or p in ('.', '..') for p in parts):
         raise ValueError('Expected a Cloudsmith owner/repository')
@@ -26,6 +28,10 @@ def prepare(source, output, repository, name, version, filename):
                 '/raw/names/' + quote(name, safe='') +
                 '/versions/' + quote(version, safe='') + '/' +
                 quote(filename, safe=''))
+    if revision is not None:
+        if not re.fullmatch(r'[0-9a-f]{40}', revision):
+            raise ValueError('Expected a full source commit SHA')
+        root.find('source').text = source_repository() + '/tree/' + revision
     output.write_bytes(ET.tostring(root, encoding='utf-8', xml_declaration=True))
 
 
@@ -35,5 +41,6 @@ if __name__ == '__main__':
     parser.add_argument('output', type=Path)
     for argument in ('repository', 'name', 'version', 'filename'):
         parser.add_argument(argument)
+    parser.add_argument('--revision')
     args = parser.parse_args()
     prepare(**vars(args))

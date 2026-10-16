@@ -1,5 +1,6 @@
 """Read the four-part plugin version from the release's CMake source."""
 import re
+import os
 from pathlib import Path
 
 
@@ -13,6 +14,14 @@ def plugin_version(root):
             raise ValueError('Expected exactly one numeric VERSION_' + field)
         parts.append(matches[0])
     return '.'.join(parts)
+
+
+def source_repository():
+    owner = os.environ.get('CIRCLE_PROJECT_USERNAME', 'rgleason')
+    repository = os.environ.get('CIRCLE_PROJECT_REPONAME', 'celestial_navigation_pi')
+    if not all(re.fullmatch(r'[A-Za-z0-9_.-]+', part) for part in (owner, repository)):
+        raise ValueError('Invalid GitHub source repository')
+    return 'https://github.com/' + owner + '/' + repository
 
 
 if __name__ == '__main__':
