@@ -73,8 +73,7 @@ workflows:
           - build-msvc-2022:
               <<: *std-filters
 
-          - approve-publication:
-              type: approval
+          - prepare-publication:
               <<: *std-filters
               requires:
                   - build-android-arm64
@@ -97,6 +96,10 @@ workflows:
                   - build-debian-x86_64-11-bullseye
                   - build-ubuntu-x86_64-2204-jammy
                   - build-msvc-2022
+          - approve-publication:
+              type: approval
+              <<: *std-filters
+              requires: [prepare-publication]
           - publish-reviewed:
               <<: *std-filters
               requires:
@@ -506,6 +509,29 @@ jobs:
             no_output_timeout: 30m
         - retain-code
 
+    prepare-publication:
+        docker:
+            - image: cimg/python:3.12
+        steps:
+            - checkout
+            - attach_workspace:
+                at: .
+            - run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+            - run:
+                name: Test publication packaging
+                command: python3 test/publication_metadata_test.py "$PWD"
+            - run:
+                name: Prepare and validate every finished publication package
+                command: |
+                    python3 ci/stage-publication.py stage \
+                      --repository "${CELESTIAL_CLOUDSMITH_REPO:-opencpn/celestial-navigation-prod}" \
+                      --revision "$CIRCLE_SHA1" --build-number "$CIRCLE_BUILD_NUM"
+            - store_artifacts:
+                path: reviewed-publication
+            - persist_to_workspace:
+                root: .
+                paths: [reviewed-publication]
+
     publish-reviewed:
         docker:
             - image: cimg/python:3.12
@@ -516,6 +542,7 @@ jobs:
             - when:
                 condition: <<pipeline.parameters.run_workflow_deploy>>
                 steps:
+                    - run: sudo apt-get update && sudo apt-get install -y libxml2-utils
                     - run: python3 -m pip install cloudsmith-cli
                     - run: bash ci/deploy-reviewed-artifacts.sh
             - unless:

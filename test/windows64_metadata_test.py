@@ -29,7 +29,7 @@ class WindowsMetadataTest(unittest.TestCase):
             cmake.write_text(source.replace('set(VERSION_PATCH "3")', 'set(VERSION_PATCH "4")'))
             plugin, api = build.project_versions(cmake)
             self.assertEqual((plugin, api), ('2.9.4.0', '1.18'))
-            xml = ET.fromstring('<plugin><target>msvc-wx32-x64</target>'
+            xml = ET.fromstring('<plugin><target>msvc-64</target><build-target>msvc</build-target>'
                                 '<target-version>10</target-version><target-arch>x86_64</target-arch>'
                                 '<version>2.9.3.0</version><api-version>1.18</api-version></plugin>')
             with self.assertRaisesRegex(RuntimeError, 'Incorrect Windows x64 metadata'):
@@ -39,13 +39,13 @@ class WindowsMetadataTest(unittest.TestCase):
 
     def test_current_metadata_must_match_platform_and_api(self):
         plugin, api = build.project_versions(root / 'CMakeLists.txt')
-        xml = ET.fromstring('<plugin><target>msvc-wx32-x64</target>'
+        xml = ET.fromstring('<plugin><target>msvc-64</target><build-target>msvc</build-target>'
                             '<target-version>10</target-version><target-arch>x86_64</target-arch>'
                             '<version/><api-version/></plugin>')
         xml.find('version').text = plugin
         xml.find('api-version').text = api
         build.verify_metadata(xml, plugin, api)
-        for key, bad in [('target', 'msvc'), ('target-version', '11'),
+        for key, bad in [('build-target', 'msvc-64'), ('target', 'msvc'), ('target-version', '11'),
                          ('target-arch', 'x86'), ('api-version', '1.17'),
                          ('version', '2.9.2.0')]:
             with self.subTest(key=key):

@@ -12,7 +12,7 @@ import tarfile
 import urllib.parse
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from plugin_version import plugin_version
+from plugin_version import plugin_version, source_repository
 
 
 def allocated_sections(binary: bytes) -> dict:
@@ -54,7 +54,7 @@ def package(source: Path, metadata: Path, output: Path, url: str, sha: str,
     if values.get('target') not in ('android-arm64', 'android-armhf') or values.get('api-version') != '1.18':
         raise ValueError('Unexpected Android target/plugin API')
     root.find('tarball-url').text = url
-    root.find('source').text = 'https://github.com/pob220/celestial_navigation_pi/tree/' + sha
+    root.find('source').text = source_repository() + '/tree/' + sha
     xml = ET.tostring(root, encoding='utf-8', xml_declaration=True)
     expected_sections = allocated_sections(library.read_bytes())
     output.parent.mkdir(parents=True, exist_ok=True)
