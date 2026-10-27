@@ -1,3 +1,4 @@
+#include <deque>
 #include "PlatformMessageBox.h"
 /******************************************************************************
  * Horizon event observation entry for the Celestial Navigation plugin.
@@ -39,7 +40,7 @@
 namespace {
 
 #ifndef __OCPN__ANDROID__
-void SizeNumber(wxControl* control, const std::vector<wxString>& samples) {
+void SizeNumber(wxControl* control, const std::deque<wxString>& samples) {
   int textWidth = 0;
   for (const auto& sample : samples)
     textWidth = std::max(textWidth, control->GetTextExtent(sample).x);

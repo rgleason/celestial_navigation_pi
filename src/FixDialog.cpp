@@ -25,6 +25,7 @@
  *
  */
 
+#include <deque>
 #include <wx/wx.h>
 #include "CelestialNavigationDialog.h"
 #include "DialogGeometry.h"
@@ -247,11 +248,11 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
   m_residuals = new wxListCtrl(this, wxID_ANY, wxDefaultPosition,
                                wxSize(-1, 125), wxLC_REPORT | wxLC_HRULES);
   m_residuals->SetName("FixSightDetails");
-  const std::vector<wxString> headings = {
+  const std::deque<wxString> headings = {
       _("UTC"),           _("Body"),        _("Hc"),
       _("Ho-Hc"),         _("DR shift NM"), _("Saved bearing"),
       _("Used bearing T")};
-  const std::vector<wxString> samples = {
+  const std::deque<wxString> samples = {
       "12-31 23:59:59",
       "Menkent",
       wxString::FromUTF8("000\xc2\xb0 00.0000'"),
@@ -412,7 +413,7 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
 
 void FixDialog::RefreshDrSources() {
   std::vector<fix_dr::DrRecord> records;
-  std::vector<wxString> labels;
+  std::deque<wxString> labels;
   std::ostringstream signature;
   signature.imbue(std::locale::classic());
   signature << std::setprecision(17);
@@ -706,7 +707,7 @@ double MinCirclePoints(double& mincx, double& mincy,
   points.pop_back();
   all_points.push_front(cpoints);
 
-  if (isinf(mind)) return NAN;
+  if (std::isinf(mind)) return NAN;
   return mind;
 }
 
@@ -1038,7 +1039,7 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
   m_residuals->DeleteAllItems();
   std::vector<FixObservation> observations;
 #ifdef __OCPN__ANDROID__
-  std::vector<wxString> androidShiftDetails;
+  std::deque<wxString> androidShiftDetails;
 #endif
   for (const Sight& sight : m_workingSights) {
     if (!sight.IsVisible() ||

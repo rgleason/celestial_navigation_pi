@@ -1,5 +1,6 @@
 // Opt-in, offline audit of official USNO reference fixtures. The companion
 // fetch script is run explicitly; ordinary tests never access the network.
+#include <deque>
 #include <gtest/gtest.h>
 
 #include "AlmanacGenerator.h"
@@ -44,7 +45,7 @@ double Angle(const wxString& text) {
   EXPECT_TRUE(minute.ToDouble(&minutes));
   return sign * (whole + minutes / 60.0);
 }
-const std::vector<wxString>* PrintedRow(const AlmanacDocument& document,
+const std::deque<wxString>* PrintedRow(const AlmanacDocument& document,
                                          const wxString& body, int hour,
                                          int* gha, int* dec) {
   for (const auto& page : document.pages) {

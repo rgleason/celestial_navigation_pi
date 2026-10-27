@@ -1,3 +1,4 @@
+#include <deque>
 #include "NavigationAlgorithms.h"
 
 #include "AndroidPlannerCancellation.h"
@@ -1527,7 +1528,7 @@ SequenceStatistics SightSequenceAnalyzer::Analyze(
 }
 
 std::vector<AlmanacRow> BuildAlmanac(const wxDateTime& startUtc, unsigned hours,
-                                     const std::vector<wxString>& bodies,
+                                     const std::deque<wxString>& bodies,
                                      const ObserverMotion& observer) {
   std::vector<AlmanacRow> rows;
   for (unsigned hour = 0; hour <= hours; ++hour) {

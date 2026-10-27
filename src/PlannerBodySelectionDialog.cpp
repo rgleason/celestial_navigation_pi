@@ -1,3 +1,4 @@
+#include <deque>
 #include "PlannerBodySelectionDialog.h"
 #include "BodyCatalog.h"
 #include "AndroidTouch.h"
@@ -13,7 +14,7 @@
 #include <algorithm>
 
 PlannerBodySelectionDialog::PlannerBodySelectionDialog(
-    wxWindow* parent, const std::vector<wxString>& selected)
+    wxWindow* parent, const std::deque<wxString>& selected)
     : wxDialog(parent, wxID_ANY, _("Custom planner bodies"),
                wxDefaultPosition, wxSize(650, 650),
                wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER) {
@@ -138,8 +139,8 @@ void PlannerBodySelectionDialog::Reflow() {
 #endif
 }
 
-std::vector<wxString> PlannerBodySelectionDialog::Selection() const {
-  std::vector<wxString> result;
+std::deque<wxString> PlannerBodySelectionDialog::Selection() const {
+  std::deque<wxString> result;
   for (const auto& entry : m_entries)
     if (entry.checkbox->GetValue()) result.push_back(entry.body);
   return result;

@@ -1,3 +1,4 @@
+#include <deque>
 #include <gtest/gtest.h>
 #include "OcpnApiCompat.h"
 #include "mock_plugin_api.h"
@@ -93,7 +94,7 @@ TEST(LunarResultsUi,
     EXPECT_NEAR(.243, wxAtof(error->GetLabel()), .002);
     const double originalError = wxAtof(error->GetLabel());
     ASSERT_GE(positions->GetItemCount(), 3);
-    std::vector<wxString> originalPositions;
+    std::deque<wxString> originalPositions;
     for (int row = 0; row < positions->GetItemCount(); ++row)
       originalPositions.push_back(positions->GetItemText(row, 1) +
                                   positions->GetItemText(row, 2));

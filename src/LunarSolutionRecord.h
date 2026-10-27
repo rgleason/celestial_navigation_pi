@@ -1,6 +1,7 @@
 #ifndef CELESTIAL_LUNAR_SOLUTION_RECORD_H
 #define CELESTIAL_LUNAR_SOLUTION_RECORD_H
 
+#include <deque>
 #include "Sight.h"
 #include "UtcDateTime.h"
 #include "tinyxml.h"
@@ -34,7 +35,7 @@ struct LunarSolutionRecord {
   double base_correction_seconds = 0;
   double additional_correction_seconds = 0;
   double time_sigma_seconds = 0;
-  std::vector<wxString> inputs;
+  std::deque<wxString> inputs;
 
   double TotalCorrection() const {
     return base_correction_seconds + additional_correction_seconds;

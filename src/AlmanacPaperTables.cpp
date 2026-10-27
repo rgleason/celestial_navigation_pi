@@ -1,3 +1,4 @@
+#include <deque>
 #include "AlmanacPaperTables.h"
 
 #include "BodyCatalog.h"
@@ -146,7 +147,7 @@ void AddIncrementPages(AlmanacDocument* document) {
     base.headings = {"s", "Sun/P", "Aries", "Moon", "s", "Sun/P", "Aries", "Moon"};
     base.relativeWidths = {0.45, 1, 1, 1, 0.45, 1, 1, 1};
     for (unsigned row = 0; row < 30; ++row) {
-      std::vector<wxString> cells;
+      std::deque<wxString> cells;
       for (unsigned block = 0; block < 2; ++block) {
         const unsigned second = row + block * 30;
         const double fraction = (minute * 60.0 + second) / 3600.0;
@@ -168,7 +169,7 @@ void AddIncrementPages(AlmanacDocument* document) {
     const double fraction00 = minute / 60.0;
     const double fraction30 = (minute + 0.5) / 60.0;
     for (unsigned row = 0; row < rows; ++row) {
-      std::vector<wxString> cells;
+      std::deque<wxString> cells;
       for (unsigned block = 0; block < 5; ++block) {
         const unsigned index = row + block * rows;
         if (index < arguments) {
@@ -204,7 +205,7 @@ void AddAgetonPages(AlmanacDocument* document) {
       table.headings.push_back("B");
     }
     for (unsigned row = 0; row < kRowsPerAgetonPage; ++row) {
-      std::vector<wxString> cells;
+      std::deque<wxString> cells;
       for (unsigned block = 0; block < kAgetonBlocks; ++block) {
         const unsigned index = part * perPage + block * kRowsPerAgetonPage + row;
         if (index < kAgetonEntries) {
@@ -232,7 +233,7 @@ AlmanacTable MoonCorrectionTable(bool upperLimb, unsigned firstAltitude,
   for (unsigned hp = 54; hp <= 62; ++hp)
     table.headings.push_back(wxString::Format("HP %u'", hp));
   for (unsigned altitude = firstAltitude; altitude <= lastAltitude; ++altitude) {
-    std::vector<wxString> row;
+    std::deque<wxString> row;
     row.push_back(wxString::Format("%u deg", altitude));
     const double refraction = CelestialEphemeris::RefractionDegrees(
         altitude, 1010.0, 10.0) * 60.0;
@@ -261,7 +262,7 @@ void AddAltitudeCorrectionPages(AlmanacDocument* document) {
     dipTable.headings.push_back("Dip");
   }
   for (unsigned row = 0; row < 61; ++row) {
-    std::vector<wxString> cells;
+    std::deque<wxString> cells;
     for (unsigned block = 0; block < 5; ++block) {
       const unsigned index = row + block * 61;
       if (index <= 300) {
@@ -295,7 +296,7 @@ void AddAltitudeCorrectionPages(AlmanacDocument* document) {
   const unsigned refractionRows =
       static_cast<unsigned>((refractionAltitudes.size() + 4) / 5);
   for (unsigned row = 0; row < refractionRows; ++row) {
-    std::vector<wxString> cells;
+    std::deque<wxString> cells;
     for (unsigned block = 0; block < 5; ++block) {
       const unsigned index = row + block * refractionRows;
       if (index < refractionAltitudes.size()) {
@@ -314,7 +315,7 @@ void AddAltitudeCorrectionPages(AlmanacDocument* document) {
   AlmanacTable atmosphere;
   atmosphere.headings = {"Temp C", "950 hPa", "975", "1000", "1025", "1050"};
   for (int temperature = -10; temperature <= 40; temperature += 10) {
-    std::vector<wxString> row{wxString::Format("%+d", temperature)};
+    std::deque<wxString> row{wxString::Format("%+d", temperature)};
     for (int pressure = 950; pressure <= 1050; pressure += 25)
       row.push_back(wxString::Format("%.3f", (pressure / 1010.0) *
                                                     (283.0 / (273.0 + temperature))));
@@ -330,7 +331,7 @@ void AddAltitudeCorrectionPages(AlmanacDocument* document) {
   AlmanacTable parallaxTable;
   parallaxTable.headings = {"Ha", "HP 0.1'", "0.2'", "0.3'", "0.4'", "0.5'", "0.6'", "0.7'", "0.8'", "0.9'", "1.0'"};
   for (unsigned altitude = 0; altitude <= 90; altitude += 2) {
-    std::vector<wxString> row{wxString::Format("%u", altitude)};
+    std::deque<wxString> row{wxString::Format("%u", altitude)};
     for (unsigned hp = 1; hp <= 10; ++hp)
       row.push_back(wxString::Format("%.1f'", (hp / 10.0) *
                                               std::cos(Rad(altitude))));
@@ -511,7 +512,7 @@ void AddDirectReductionPages(const AlmanacRequest& request,
         const unsigned firstLha = part == 0 ? 0 : (part == 1 ? 61 : 122);
         const unsigned lastLha = part == 0 ? 60 : (part == 1 ? 121 : 180);
         for (unsigned lha = firstLha; lha <= lastLha; ++lha) {
-          std::vector<wxString> row{wxString::Format("%03u", lha)};
+          std::deque<wxString> row{wxString::Format("%03u", lha)};
           for (size_t index = firstDec; index < lastDec; ++index) {
             const AgetonReductionResult reduced =
                 DirectReduction(latitude, declinations[index], lha);
