@@ -1,11 +1,12 @@
 {
-  "archive": "msvc/x64/OpenCPN-Windows-x64-plugin-sdk-94cf6909.zip",
-  "sha256": "936f368d6d4365be721bf3767d3b5bbfe9b3252961618fd32bdee1212ded96fb",
-  "core_revision": "94cf6909107e09df9793444e07ade87ad9816036",
-  "source_build": "https://github.com/pob220/OpenCPN-Chart-Aware/actions/runs/35443540536",
+  "host_version": "5.15.0",
+  "core_revision": "e41f0de5d579310dfd33ad1be36525c3c1a036aa",
+  "host_url": "https://dl.cloudsmith.io/public/david-register/opencpn-unstable/raw/files/opencpn_5.15.0-0+85.e41f0de_setup_x64.exe",
+  "host_sha256": "e9240fd377c538cf4087bc9e09fcde3ee1859bb4ac006602c2e9a039f81117aa",
+  "wx_version": "3.3.4",
   "wx_archives": {
-    "wxMSW-3.2.8_vc14x_x64_Dev.7z": "7eccb9d56902b43bc64693490b59c02a433cca68547b18fdc5d821a07e6883a5",
-    "wxMSW-3.2.8_vc14x_x64_ReleaseDLL.7z": "fbc0ac9416344021650fcac210646984a15acfd4f402772282459c7e090dc922",
-    "wxWidgets-3.2.8-headers.7z": "996041908057574ee3836a5f5e03f40858ffc61011231f19a5e87297b74b74e2"
+    "wxMSW-3.3.4_vc14x_x64_Dev.7z": "11cf9e49ec867063ab9011239d76be2c4c736124e61171c5ce4c983aaa0b549e",
+    "wxMSW-3.3.4_vc14x_x64_ReleaseDLL.7z": "d9bf482cded63f2f5b02603cfe5218cff413e1ff36876c1e9ea5a94286439936",
+    "wxWidgets-3.3.4-headers.7z": "8fd1cf657c3e8999a2e305604383bccb43bd8b766c86c379b411d2174b1402ef"
   }
 }

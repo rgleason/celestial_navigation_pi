@@ -15,7 +15,7 @@ import tarfile
 import tempfile
 import urllib.request
 import xml.etree.ElementTree as ET
-import zipfile
+import windows_host_sdk as host_sdk
 
 from windows64_pe import verify
 from plugin_version import source_repository
@@ -53,32 +53,31 @@ def download(url, path, expected):
 
 def prepare_sdk():
     pin = json.loads((ROOT / 'ci/windows64-sdk.json').read_text())
-    archive = ROOT / pin['archive']
-    if digest(archive) != pin['sha256']:
-        raise RuntimeError('Native host SDK archive checksum mismatch')
+    installer = WORK / 'cache/host.exe'
+    download(pin['host_url'], installer, pin['host_sha256'])
+    host = WORK / 'host'
+    run('7z', 'x', '-y', '-o' + str(host), installer)
+    host_sdk.pe_sections(host / 'opencpn.exe')
     sdk = WORK / 'sdk'
-    with zipfile.ZipFile(archive) as package:
-        for member in package.namelist():
-            if Path(member).is_absolute() or '..' in Path(member).parts:
-                raise RuntimeError('Unsafe SDK archive path')
-        package.extractall(sdk)
-    manifest = json.loads((sdk / 'manifest.json').read_text())
-    if manifest['architecture'] != 'AMD64' or manifest['core_revision'] != pin['core_revision']:
-        raise RuntimeError('Native host SDK provenance mismatch')
-    for relative, expected in manifest['files'].items():
-        if digest(sdk / relative) != expected:
-            raise RuntimeError(f'Native SDK file checksum mismatch: {relative}')
-    verify(sdk)
-    wx = WORK / 'cache/wxWidgets-3.2.8'
+    (sdk / 'lib').mkdir(parents=True)
+    for image, library in [('opencpn.exe', 'opencpn.lib'), ('z.dll', 'z.lib')]:
+        host_sdk.import_library(host / image, sdk / 'lib' / library)
+    (sdk / 'manifest.json').write_text(json.dumps(pin, indent=2))
+    version = pin['wx_version']
+    wx = WORK / ('cache/wxWidgets-' + version)
     for filename, expected in pin['wx_archives'].items():
-        path = WORK / 'cache' / filename
-        download('https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.8/' + filename,
-                 path, expected)
-        run('7z', 'x', '-y', '-o' + str(wx), path)
+        archive = WORK / 'cache' / filename
+        download('https://github.com/wxWidgets/wxWidgets/releases/download/v' +
+                 version + '/' + filename, archive, expected)
+        run('7z', 'x', '-y', '-o' + str(wx), archive)
     wxlib = wx / 'lib/vc14x_x64_dll'
     verify(wxlib)
-    os.environ['PATH'] = str(wxlib) + os.pathsep + str(sdk / 'bin') + os.pathsep + os.environ['PATH']
-    os.environ['WX_VER'] = '32'
+    for library in wxlib.glob('*.dll'):
+        matching = host / library.name
+        if matching.is_file() and digest(library) != digest(matching):
+            raise RuntimeError('Host/toolkit runtime mismatch: ' + library.name)
+    os.environ['PATH'] = str(host) + os.pathsep + str(wxlib) + os.pathsep + os.environ['PATH']
+    os.environ['WX_VER'] = '33'
     os.environ['OCPN_TARGET'] = 'MSVC-x64'
     return sdk, wx, wxlib
 
@@ -128,7 +127,8 @@ def main():
     run('cmake', '-S', ROOT, '-B', work, '-G', 'Visual Studio 17 2022', '-A', 'x64',
         '-DCMAKE_BUILD_TYPE=Release', '-DOCPN_BUILD_TEST=OFF',
         '-DCELESTIAL_WINDOWS_IMPORT_LIBRARY=' + str(sdk / 'lib/opencpn.lib'),
-        '-DZLIB_ROOT=' + str(sdk), '-DZLIB_LIBRARY_RELEASE=' + str(sdk / 'lib/z.lib'),
+        '-DZLIB_LIBRARY=' + str(sdk / 'lib/z.lib'),
+        '-DZLIB_LIBRARY_RELEASE=' + str(sdk / 'lib/z.lib'),
         '-DwxWidgets_ROOT_DIR=' + str(wx), '-DwxWidgets_LIB_DIR=' + str(wxlib),
         '-DwxWidgets_CONFIGURATION=mswu')
     run('cmake', '--build', work, '--config', 'Release', '--parallel', '4')
@@ -141,6 +141,16 @@ def main():
     exports = subprocess.check_output(['dumpbin', '/nologo', '/exports', str(dlls[0])], text=True)
     if 'opencpn.exe' not in imports.lower() or not all(re.search(r'\b' + name + r'\b', exports) for name in ('create_pi', 'destroy_pi')):
         raise RuntimeError('Missing native host imports or plugin entry points')
+    dependencies = host_sdk.imported_symbols(imports)
+    host = WORK / 'host'
+    for image, names in dependencies.items():
+        if image == 'opencpn.exe' or image.startswith('wx'):
+            missing = set(names) - host_sdk.exports(host / image).keys()
+            if missing:
+                raise RuntimeError('Unresolved imports from ' + image + ': ' + str(sorted(missing)))
+    host_sdk.validate_wx_dependencies(
+        {name: symbols for name, symbols in dependencies.items() if name.startswith('wx')},
+        json.loads((ROOT / 'ci/windows64-sdk.json').read_text())['wx_version'])
     (ARTIFACTS / 'plugin-imports.txt').write_text(imports)
     (ARTIFACTS / 'plugin-exports.txt').write_text(exports)
     run('cpack', '-G', 'TGZ', '-C', 'Release', '--config', 'CPackConfig.cmake', cwd=work)
@@ -183,10 +193,12 @@ def main():
     shutil.copy2(ROOT / 'docs/v2/output/Celestial_Navigation_Manual_v2.docx', ARTIFACTS / 'Celestial_Navigation_Manual_v2.docx')
     for pdb in (work / 'Release').glob('celestial_navigation_pi.pdb'):
         shutil.copy2(pdb, ARTIFACTS / pdb.name)
+    run(sys.executable, ROOT / 'ci/test-windows-x64-host.py', WORK / 'host',
+        'celestial_navigation_pi', output, ARTIFACTS / 'installed-host')
     provenance = {'source_revision': revision, 'sdk': json.loads((sdk / 'manifest.json').read_text()),
         'architecture': architecture, 'metadata': values,
         'sha256': {p.name: digest(p) for p in (output, ARTIFACTS / metadata[0].name)},
-        'qualification': 'Native build, link and package verification; desktop GUI runtime not exercised here'}
+        'qualification': 'Native build, package verification, installed host startup, normal shutdown and reinstall'}
     (ARTIFACTS / 'windows-x64-provenance.json').write_text(json.dumps(provenance, indent=2) + '\n')
     print('Verified Windows x64 package:', output.name, flush=True)
 
