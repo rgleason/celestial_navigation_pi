@@ -2,7 +2,7 @@
  * Time-source parsing and monitoring for the Celestial Navigation plugin.
  ******************************************************************************/
 
-#include <deque>
+#include "StringVector.h"
 #include "TimeStatus.h"
 #ifdef __OCPN__ANDROID__
 #include "UtcDateTime.h"
@@ -13,8 +13,8 @@
 
 namespace {
 
-std::deque<wxString> SplitCsv(const wxString& text) {
-  std::deque<wxString> fields;
+celnav::StringVector SplitCsv(const wxString& text) {
+  celnav::StringVector fields;
   size_t begin = 0;
   for (size_t i = 0; i <= text.length(); ++i) {
     if (i == text.length() || text[i] == ',') {
@@ -122,7 +122,7 @@ bool GnssTimeMonitor::ParseNmeaUtc(const wxString& sentence,
   if (!VerifyChecksum(sentence, dollar, star)) return false;
 
   const size_t end = star == wxString::npos ? sentence.length() : star;
-  const std::deque<wxString> fields =
+  const celnav::StringVector fields =
       SplitCsv(sentence.Mid(dollar + 1, end - dollar - 1));
   if (fields.empty() || fields[0].length() < 3) return false;
 
@@ -194,7 +194,7 @@ GnssTimeSnapshot GnssTimeMonitor::Snapshot() const {
 bool ParseChronyTrackingCsv(const wxString& line,
                             ChronyTrackingInfo* result) {
   if (!result) return false;
-  const std::deque<wxString> fields = SplitCsv(line.BeforeFirst('\n'));
+  const celnav::StringVector fields = SplitCsv(line.BeforeFirst('\n'));
   if (fields.size() < 14) return false;
 
   double reference = 0.0, offset = 0.0;

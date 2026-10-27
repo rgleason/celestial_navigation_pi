@@ -25,7 +25,7 @@
  *
  */
 
-#include <deque>
+#include "StringVector.h"
 #include <wx/wx.h>
 #include "CelestialNavigationDialog.h"
 #include "DialogGeometry.h"
@@ -248,11 +248,11 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
   m_residuals = new wxListCtrl(this, wxID_ANY, wxDefaultPosition,
                                wxSize(-1, 125), wxLC_REPORT | wxLC_HRULES);
   m_residuals->SetName("FixSightDetails");
-  const std::deque<wxString> headings = {
+  const celnav::StringVector headings = {
       _("UTC"),           _("Body"),        _("Hc"),
       _("Ho-Hc"),         _("DR shift NM"), _("Saved bearing"),
       _("Used bearing T")};
-  const std::deque<wxString> samples = {
+  const celnav::StringVector samples = {
       "12-31 23:59:59",
       "Menkent",
       wxString::FromUTF8("000\xc2\xb0 00.0000'"),
@@ -413,7 +413,7 @@ FixDialog::FixDialog(CelestialNavigationDialog* parent)
 
 void FixDialog::RefreshDrSources() {
   std::vector<fix_dr::DrRecord> records;
-  std::deque<wxString> labels;
+  celnav::StringVector labels;
   std::ostringstream signature;
   signature.imbue(std::locale::classic());
   signature << std::setprecision(17);
@@ -1039,7 +1039,7 @@ void FixDialog::UpdateRunningFix(double clock_offset) {
   m_residuals->DeleteAllItems();
   std::vector<FixObservation> observations;
 #ifdef __OCPN__ANDROID__
-  std::deque<wxString> androidShiftDetails;
+  celnav::StringVector androidShiftDetails;
 #endif
   for (const Sight& sight : m_workingSights) {
     if (!sight.IsVisible() ||

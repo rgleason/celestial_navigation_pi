@@ -2,7 +2,7 @@
 #define CELESTIAL_REPORT_LIST_LAYOUT_H
 
 #ifndef __OCPN__ANDROID__
-#include <deque>
+#include "StringVector.h"
 #include <wx/event.h>
 #include <wx/string.h>
 #include <vector>
@@ -16,7 +16,7 @@ class ReportListLayout : public wxEvtHandler {
 public:
   ReportListLayout(wxListCtrl* list, const wxString& key, int firstColumn = 0);
   ~ReportListLayout() override;
-  void FitContents(const std::deque<wxString>& samples = {});
+  void FitContents(const celnav::StringVector& samples = {});
   void Save() const;
 
 private:

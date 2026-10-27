@@ -1,7 +1,7 @@
 #ifndef CELESTIAL_NAVIGATION_PLANNER_BODY_SELECTION_DIALOG_H
 #define CELESTIAL_NAVIGATION_PLANNER_BODY_SELECTION_DIALOG_H
 
-#include <deque>
+#include "StringVector.h"
 #include <wx/dialog.h>
 #include <vector>
 
@@ -15,8 +15,8 @@ class wxStaticText;
 class PlannerBodySelectionDialog : public wxDialog {
 public:
   PlannerBodySelectionDialog(wxWindow* parent,
-                             const std::deque<wxString>& selected);
-  std::deque<wxString> Selection() const;
+                             const celnav::StringVector& selected);
+  celnav::StringVector Selection() const;
 
 private:
   void UpdateSearch();

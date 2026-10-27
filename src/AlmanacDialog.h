@@ -1,7 +1,7 @@
 #ifndef CELESTIAL_NAVIGATION_ALMANAC_DIALOG_H
 #define CELESTIAL_NAVIGATION_ALMANAC_DIALOG_H
 
-#include <deque>
+#include "StringVector.h"
 #include "AlmanacGenerator.h"
 
 #include <wx/dialog.h>
@@ -102,7 +102,7 @@ private:
   wxScrolledWindow* m_summaryPanel;
   wxStaticText* m_summary;
   wxStaticText* m_warning;
-  std::deque<wxString> m_routeGuids;
+  celnav::StringVector m_routeGuids;
   wxString m_preferredRouteGuid;
   bool m_applyingPreset;
 };

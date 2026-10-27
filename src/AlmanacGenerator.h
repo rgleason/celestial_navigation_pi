@@ -5,9 +5,7 @@
 #ifndef CELESTIAL_NAVIGATION_ALMANAC_GENERATOR_H
 #define CELESTIAL_NAVIGATION_ALMANAC_GENERATOR_H
 
-// wxWidgets 3.3 exports a vector<wxString> specialization from its DLL.
-// Keep plugin-owned string collections independent of those MSVC internals.
-#include <deque>
+#include "StringVector.h"
 #include <wx/datetime.h>
 #include <wx/string.h>
 
@@ -100,8 +98,8 @@ struct AlmanacRequest {
 };
 
 struct AlmanacTable {
-  std::deque<wxString> headings;
-  std::vector<std::deque<wxString> > rows;
+  celnav::StringVector headings;
+  std::vector<celnav::StringVector > rows;
   std::vector<double> relativeWidths;
 };
 
@@ -132,7 +130,7 @@ struct AlmanacPage {
   wxString section;
   wxString title;
   wxString subtitle;
-  std::deque<wxString> paragraphs;
+  celnav::StringVector paragraphs;
   std::vector<AlmanacTable> tables;
   std::vector<AlmanacChartPoint> chart;
   std::vector<AlmanacPlot> plots;
@@ -144,7 +142,7 @@ struct AlmanacDocument {
   wxString generatedUtc;
   wxString manifest;
   std::vector<AlmanacPage> pages;
-  std::deque<wxString> warnings;
+  celnav::StringVector warnings;
   unsigned sheets = 0;
   size_t estimatedBytes = 0;
   double estimatedSeconds = 0.0;

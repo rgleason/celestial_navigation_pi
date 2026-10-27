@@ -1,4 +1,4 @@
-#include <deque>
+#include "StringVector.h"
 #include <gtest/gtest.h>
 
 #include <cmath>
@@ -12,9 +12,9 @@
 namespace {
 // Independent CSV reader: quoted fields can contain commas, quotes and
 // newlines.
-std::vector<std::deque<wxString>> ReadCsv(const wxString& csv) {
-  std::vector<std::deque<wxString>> rows;
-  std::deque<wxString> row;
+std::vector<celnav::StringVector> ReadCsv(const wxString& csv) {
+  std::vector<celnav::StringVector> rows;
+  celnav::StringVector row;
   wxString field;
   bool quoted = false;
   for (size_t i = 0; i < csv.length(); ++i) {

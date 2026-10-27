@@ -1,4 +1,4 @@
-#include <deque>
+#include "StringVector.h"
 #include "CompactEphemerisProvider.h"
 #include "PlatformMessageBox.h"
 /******************************************************************************
@@ -498,7 +498,7 @@ bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
         [](const std::pair<double, wxString>& a,
            const std::pair<double, wxString>& b) { return a.first < b.first; });
     if (!hits.empty()) {
-      std::deque<wxString> labels;
+      celnav::StringVector labels;
       for (size_t i = 0; i < std::min(size_t(4), hits.size()); ++i)
         labels.push_back(hits[i].second);
       if (hits.size() > 4)

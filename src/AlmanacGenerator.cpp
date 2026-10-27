@@ -1,4 +1,4 @@
-#include <deque>
+#include "StringVector.h"
 #include "AlmanacGenerator.h"
 
 #include "AlmanacPaperTables.h"
@@ -233,7 +233,7 @@ std::vector<AlmanacTable> UniversalTables(const AlmanacRequest& request,
         CelestialEphemeris::Evaluate("Polaris", utc, 0, 0, 1010.0, 10.0, dut1);
     const double aries = sun.valid ? sun.ghaAries :
                          Wrap360(polaris.gha - polaris.sha);
-    std::deque<wxString> sunRow{wxString::Format("%02d", hour)};
+    celnav::StringVector sunRow{wxString::Format("%02d", hour)};
     if (request.includeAries) sunRow.push_back(Angle(aries));
     if (request.includeSun) {
       sunRow.push_back(Angle(sun.gha));
@@ -300,7 +300,7 @@ std::vector<AlmanacTable> PlanetHourlyTables(const AlmanacRequest& request,
       table.headings.push_back("HP/SD");
     }
     for (int hour = 0; hour < 24; ++hour) {
-      std::deque<wxString> row{wxString::Format("%02d", hour)};
+      celnav::StringVector row{wxString::Format("%02d", hour)};
       const wxDateTime utc = AtHour(day, hour);
       const wxDateTime nextUtc = ShiftInstant(utc, 3600.0);
       for (unsigned offset = 0; offset < 2; ++offset) {
@@ -323,8 +323,8 @@ std::vector<AlmanacTable> PlanetHourlyTables(const AlmanacRequest& request,
   return tables;
 }
 
-const std::deque<wxString>& OfficialNavigationalStars() {
-  static const std::deque<wxString> names = {
+const celnav::StringVector& OfficialNavigationalStars() {
+  static const celnav::StringVector names = {
       "Alpheratz", "Ankaa", "Schedar", "Diphda", "Achernar", "Hamal",
       "Acamar", "Menkar", "Mirfak", "Aldebaran", "Rigel", "Capella",
       "Bellatrix", "Elnath", "Alnilam", "Betelgeuse", "Canopus", "Sirius",
@@ -339,7 +339,7 @@ const std::deque<wxString>& OfficialNavigationalStars() {
 }
 
 void AddReferencePage(AlmanacDocument* document, const wxString& title,
-                      const std::deque<wxString>& paragraphs) {
+                      const celnav::StringVector& paragraphs) {
   AlmanacPage page;
   page.section = "Reference";
   page.title = title;
@@ -348,7 +348,7 @@ void AddReferencePage(AlmanacDocument* document, const wxString& title,
 }
 
 void AddFormPages(AlmanacDocument* document, const wxString& title,
-                  unsigned count, const std::deque<wxString>& headings) {
+                  unsigned count, const celnav::StringVector& headings) {
   for (unsigned i = 0; i < count; ++i) {
     AlmanacPage page;
     page.section = "Forms";
@@ -358,7 +358,7 @@ void AddFormPages(AlmanacDocument* document, const wxString& title,
     AlmanacTable table;
     table.headings = headings;
     for (int row = 0; row < 14; ++row) {
-      std::deque<wxString> cells(headings.size(), "");
+      celnav::StringVector cells(headings.size(), "");
       table.rows.push_back(cells);
     }
     page.tables.push_back(table);
@@ -396,8 +396,8 @@ std::string PdfEscape(const wxString& value) {
   return result;
 }
 
-std::deque<wxString> Wrap(const wxString& input, size_t width) {
-  std::deque<wxString> lines;
+celnav::StringVector Wrap(const wxString& input, size_t width) {
+  celnav::StringVector lines;
   wxString remaining = input;
   while (remaining.length() > width) {
     size_t split = width;
@@ -540,7 +540,7 @@ std::string RenderPage(const AlmanacPage& page, double width, double height,
     stream << left << " " << y << " m " << width - left << " " << y
            << " l S\n";
     y -= rowHeight;
-    for (const std::deque<wxString>& row : table.rows) {
+    for (const celnav::StringVector& row : table.rows) {
       if (y - rowHeight < 55) break;
       for (size_t col = 0; col < columns && col < row.size(); ++col)
         PdfText(stream, x[col] + 2, y - 8, tableFont, row[col]);
@@ -1121,7 +1121,7 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
       altitudePlot.xMaximum = 24.0;
       altitudePlot.yMinimum = -20.0;
       altitudePlot.yMaximum = 90.0;
-      std::deque<wxString> curveBodies;
+      celnav::StringVector curveBodies;
       if (request.includeSun) curveBodies.push_back("Sun");
       if (request.includeMoon) curveBodies.push_back("Moon");
       if (request.includePlanets) curveBodies.push_back("Venus");
@@ -1235,7 +1235,7 @@ AlmanacDocument AlmanacGenerator::Build(const AlmanacRequest& input) {
     } else {
       epochs.push_back(DayAt(request, days / 2));
     }
-    const std::deque<wxString>& stars = OfficialNavigationalStars();
+    const celnav::StringVector& stars = OfficialNavigationalStars();
     for (const wxDateTime& epoch : epochs) {
      for (unsigned part = 0; part < 3; ++part) {
       AlmanacPage page;

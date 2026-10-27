@@ -1,4 +1,4 @@
-#include <deque>
+#include "StringVector.h"
 #include "SightLogCsv.h"
 
 #include <cmath>
@@ -83,7 +83,7 @@ wxString Limb(const Sight& sight) {
   }
 }
 
-void AppendRow(wxString* csv, const std::deque<wxString>& fields) {
+void AppendRow(wxString* csv, const celnav::StringVector& fields) {
   bool first = true;
   for (wxString field : fields) {
     if (!first) *csv += ',';

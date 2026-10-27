@@ -1,6 +1,6 @@
 #pragma once
 
-#include <deque>
+#include "StringVector.h"
 #include <wx/datetime.h>
 #include <wx/string.h>
 #include <vector>
@@ -10,8 +10,8 @@ class Sight;
 namespace lunar_presentation {
 struct Table {
   wxString title;
-  std::deque<wxString> columns;
-  std::vector<std::deque<wxString>> rows;
+  celnav::StringVector columns;
+  std::vector<celnav::StringVector> rows;
   wxString note;
 };
 struct Report {

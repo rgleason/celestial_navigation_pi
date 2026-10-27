@@ -1,4 +1,4 @@
-#include <deque>
+#include "StringVector.h"
 #include <gtest/gtest.h>
 #include <wx/wx.h>
 #include <wx/choice.h>
@@ -72,7 +72,7 @@ void Capture(wxWindow* window, const char* name) {
 }
 class EditBodies : public wxModalDialogHook {
 public:
-  std::deque<wxString> selection;
+  celnav::StringVector selection;
   int answer = wxID_OK;
   bool visited = false;
   int Enter(wxDialog* dialog) override {
