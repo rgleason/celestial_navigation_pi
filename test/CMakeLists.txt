@@ -15,7 +15,7 @@ if (MSVC)
     target_link_libraries(win32_libs
         INTERFACE
             setupapi.lib psapi.lib
-            ${CMAKE_SOURCE_DIR}/cache/buildwin/iphlpapi.lib
+            iphlpapi.lib
     )
 endif()
 
