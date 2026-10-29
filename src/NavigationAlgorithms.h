@@ -5,6 +5,7 @@
 #ifndef CELESTIAL_NAVIGATION_ALGORITHMS_H
 #define CELESTIAL_NAVIGATION_ALGORITHMS_H
 
+#include "StringVector.h"
 #include <wx/datetime.h>
 #include <wx/string.h>
 
@@ -175,7 +176,7 @@ struct RankedCombination {
 
 struct PlannerBodySelection {
   bool custom = false;
-  std::vector<wxString> selected;
+  celnav::StringVector selected;
   bool Includes(const wxString& body) const;
   std::vector<RankedBody> Filter(const std::vector<RankedBody>& bodies) const;
   std::vector<RankedBody> ForPlot(const std::vector<RankedBody>& bodies,
@@ -374,7 +375,7 @@ struct AlmanacRow {
 };
 
 std::vector<AlmanacRow> BuildAlmanac(const wxDateTime& startUtc, unsigned hours,
-                                     const std::vector<wxString>& bodies,
+                                     const celnav::StringVector& bodies,
                                      const ObserverMotion& observer);
 wxString AlmanacToCsv(const std::vector<AlmanacRow>& rows);
 

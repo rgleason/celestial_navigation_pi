@@ -5,6 +5,9 @@ if(UNIX)
     add_test(NAME ci_apt_settings COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/ci_apt_settings_test.sh)
 endif()
 set(CMAKE_CXX_STANDARD 17)
+if(MSVC)
+    add_compile_definitions(NOMINMAX _USE_MATH_DEFINES)
+endif()
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 message(STATUS "Building Celestial Navigation plugin tests")
@@ -15,7 +18,7 @@ if (MSVC)
     target_link_libraries(win32_libs
         INTERFACE
             setupapi.lib psapi.lib
-            ${CMAKE_SOURCE_DIR}/cache/buildwin/iphlpapi.lib
+            iphlpapi.lib
     )
 endif()
 

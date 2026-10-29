@@ -56,10 +56,6 @@
 #define INFINITY std::numeric_limits<double>::infinity()
 #endif
 
-#define isnan _isnan
-#define isinf(x) (!_finite(x) && !_isnan(x))
-
-#define trunc(d) (((d) > 0) ? floor(d) : ceil(d))
 #endif
 
 WX_DECLARE_LIST(wxRealPoint, wxRealPointList);

@@ -2,6 +2,7 @@
 #include <wx/app.h>
 #include <wx/log.h>
 #include <wx/frame.h>
+#include <wx/fileconf.h>
 #include <wx/choice.h>
 #include <wx/button.h>
 #include <cstdlib>

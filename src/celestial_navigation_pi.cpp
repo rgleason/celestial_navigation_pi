@@ -1,3 +1,4 @@
+#include "StringVector.h"
 #include "CompactEphemerisProvider.h"
 #include "PlatformMessageBox.h"
 /******************************************************************************
@@ -497,7 +498,7 @@ bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
         [](const std::pair<double, wxString>& a,
            const std::pair<double, wxString>& b) { return a.first < b.first; });
     if (!hits.empty()) {
-      std::vector<wxString> labels;
+      celnav::StringVector labels;
       for (size_t i = 0; i < std::min(size_t(4), hits.size()); ++i)
         labels.push_back(hits[i].second);
       if (hits.size() > 4)
@@ -536,7 +537,7 @@ bool celestial_navigation_pi::RenderOverlayAll(piDC* dc, PlugIn_ViewPort* vp) {
   double lon = m_pCelestialNavigationDialog->m_FixDialog->m_fixlon;
   double err = m_pCelestialNavigationDialog->m_FixDialog->m_fixerror;
 
-  if (!isnan(err)) {
+  if (!std::isnan(err)) {
     wxPoint r;
     GetCanvasPixLL(vp, &r, lat, lon);
     int crosslen = (int)(10.0 * m_pCelestialNavigationDialog->m_pix_per_mm);

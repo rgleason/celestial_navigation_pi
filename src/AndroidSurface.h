@@ -1,6 +1,7 @@
 // Android-only wxQt presentation adapters. GPL-3.0-or-later.
 #pragma once
 #ifdef __OCPN__ANDROID__
+#include "StringVector.h"
 #include "AndroidTouch.h"
 #include "AndroidDialogBack.h"
 #include <QAbstractSpinBox>
@@ -117,7 +118,7 @@ inline void PrepareBook(wxNotebook* book) {
   book->GetHandle()->setProperty("cnBookPrepared", true);
   const int selection = book->GetSelection();
   std::vector<wxWindow*> pages;
-  std::vector<wxString> names;
+  celnav::StringVector names;
   while (book->GetPageCount()) {
     pages.push_back(book->GetPage(0));
     names.push_back(book->GetPageText(0));

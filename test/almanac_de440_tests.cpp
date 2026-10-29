@@ -104,11 +104,11 @@ TEST(AlmanacAccuracy, LunarTableSemidiameterIsGeocentricAndIndependentOfObserver
   ASSERT_TRUE(initializer.IsOk());
   AlmanacKernelScope kernel;
   const auto instant = UtcDateTime::ToInstant(Fields("2026-08-16T12:00:00"));
-  const auto near = CelestialEphemeris::Evaluate("Moon", instant, 0, 0);
-  const auto far = CelestialEphemeris::Evaluate("Moon", instant, 0, 180);
-  ASSERT_TRUE(near.usedDe440 && far.usedDe440);
-  EXPECT_NEAR(near.geocentricSemidiameter, far.geocentricSemidiameter, 1e-12);
-  EXPECT_GT(std::fabs(near.semidiameter - far.semidiameter), 0.0001);
+  const auto nearObserver = CelestialEphemeris::Evaluate("Moon", instant, 0, 0);
+  const auto farObserver = CelestialEphemeris::Evaluate("Moon", instant, 0, 180);
+  ASSERT_TRUE(nearObserver.usedDe440 && farObserver.usedDe440);
+  EXPECT_NEAR(nearObserver.geocentricSemidiameter, farObserver.geocentricSemidiameter, 1e-12);
+  EXPECT_GT(std::fabs(nearObserver.semidiameter - farObserver.semidiameter), 0.0001);
   auto request = Request(1);
   AlmanacGenerator::ApplyPreset(AlmanacPreset::CalculatorFreeVoyage, &request);
   const auto document = AlmanacGenerator::Build(request);
@@ -118,7 +118,7 @@ TEST(AlmanacAccuracy, LunarTableSemidiameterIsGeocentricAndIndependentOfObserver
         page.tables[0].headings[1] != "Aries GHA") continue;
     const auto& moon = page.tables.at(1);
     EXPECT_NEAR(PrintedNumber(moon.rows.at(12).at(6)),
-                near.geocentricSemidiameter * 60, 0.050001);
+                nearObserver.geocentricSemidiameter * 60, 0.050001);
     found = true;
   }
   EXPECT_TRUE(found);

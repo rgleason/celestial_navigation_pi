@@ -7,6 +7,7 @@
 #include "AtomicXmlFile.h"
 #include <wx/file.h>
 #include <wx/filename.h>
+#include <wx/log.h>
 #include <iomanip>
 #include <sstream>
 #include <atomic>
@@ -130,7 +131,10 @@ TEST(Dut1Update, InstallIsAtomicAndPreservesBundleAndLastGoodUpdate) {
   }));
   // A regular file cannot be the parent of a cache file: persistence must fail
   // without activating the newer in-memory table.
-  EXPECT_FALSE(celestial_navigation::InstallDut1Update(input,destination+"/blocked",&message));
+  {
+    wxLogNull quiet;  // Expected filesystem errors must not open a GUI log dialog.
+    EXPECT_FALSE(celestial_navigation::InstallDut1Update(input,destination+"/blocked",&message));
+  }
   EXPECT_EQ(eclipse::GetDut1Update(),installed);
   const auto older=Fixture(61000);
   ASSERT_TRUE(celestial_navigation::ReplaceFileAtomically(input,[&](wxTempFile& file) {

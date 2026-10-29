@@ -1,3 +1,4 @@
+#include "StringVector.h"
 #include "ReportListLayout.h"
 #include "WxDpiCompat.h"
 
@@ -44,7 +45,7 @@ void ReportListLayout::OnColumnResized(wxListEvent& event) {
   event.Skip();
 }
 
-void ReportListLayout::FitContents(const std::vector<wxString>& samples) {
+void ReportListLayout::FitContents(const celnav::StringVector& samples) {
   const int padding = celestial_ui::FromDIP(m_list, 24);  // cell edges and sort indicator
   for (int column = m_firstColumn; column < m_list->GetColumnCount(); ++column) {
     if (m_manualWidths[column]) continue;

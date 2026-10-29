@@ -5,6 +5,7 @@
 #ifndef CELESTIAL_NAVIGATION_ALMANAC_GENERATOR_H
 #define CELESTIAL_NAVIGATION_ALMANAC_GENERATOR_H
 
+#include "StringVector.h"
 #include <wx/datetime.h>
 #include <wx/string.h>
 
@@ -97,8 +98,8 @@ struct AlmanacRequest {
 };
 
 struct AlmanacTable {
-  std::vector<wxString> headings;
-  std::vector<std::vector<wxString> > rows;
+  celnav::StringVector headings;
+  std::vector<celnav::StringVector > rows;
   std::vector<double> relativeWidths;
 };
 
@@ -129,7 +130,7 @@ struct AlmanacPage {
   wxString section;
   wxString title;
   wxString subtitle;
-  std::vector<wxString> paragraphs;
+  celnav::StringVector paragraphs;
   std::vector<AlmanacTable> tables;
   std::vector<AlmanacChartPoint> chart;
   std::vector<AlmanacPlot> plots;
@@ -141,7 +142,7 @@ struct AlmanacDocument {
   wxString generatedUtc;
   wxString manifest;
   std::vector<AlmanacPage> pages;
-  std::vector<wxString> warnings;
+  celnav::StringVector warnings;
   unsigned sheets = 0;
   size_t estimatedBytes = 0;
   double estimatedSeconds = 0.0;

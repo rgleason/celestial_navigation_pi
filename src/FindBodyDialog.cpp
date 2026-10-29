@@ -505,7 +505,7 @@ void FindBodyDialog::Update() {
 
   double estimatedHs, estimatedError;
   m_Sight.EstimateHs(hc, &estimatedHs, &estimatedError);
-  if (!isnan(estimatedHs)) {
+  if (!std::isnan(estimatedHs)) {
     m_tEstimatedHs->SetValue(toSDMM_PlugIn(0, estimatedHs, true));
     m_copyHsButton->Enable(static_cast<bool>(m_copyHs));
   } else {
