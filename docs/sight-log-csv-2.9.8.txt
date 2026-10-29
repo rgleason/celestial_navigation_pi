@@ -14,9 +14,9 @@ The report includes every sight, including hidden ones, in the current log
 order. Its 17 columns follow Bob's requested sight number, UTC date/time, type,
 body or pair, limb, observed Hs/uncleared LD, bearing, horizon, height of eye,
 index error, temperature, pressure, saved DR position, zone and remarks.
-Angles use the OpenCPN display preference. Index error is converted from the
-internal degrees to arcminutes. Numeric fields use a decimal point, independent
-of locale. CSV headers and type labels are stable English.
+Angles use the OpenCPN display preference. Index error is already stored in
+arcminutes and is exported without conversion. Numeric fields use a decimal
+point, independent of locale. CSV headers and type labels are stable English.
 
 Lunar rows identify Moon / companion and Near / Far. Their bearing is the
 Moon's true bearing at the saved DR position and report UTC; the other

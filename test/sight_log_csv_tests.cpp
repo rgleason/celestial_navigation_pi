@@ -71,7 +71,7 @@ TEST(SightLogCsv, CorrectsUtcAndExportsUnitsAndPreferredAngles) {
   Sight sight = Observation();
   sight.m_DRLat = 43.95;
   sight.m_DRLon = -78.15;
-  sight.m_IndexError = -2.5 / 60.0;
+  sight.m_IndexError = -2.5;  // Parameters and saved sights use arcminutes.
   sight.m_EyeHeight = 3.2;
   sight.m_Temperature = 12.5;
   sight.m_Pressure = 1013.25;
@@ -101,6 +101,35 @@ TEST(SightLogCsv, CorrectsUtcAndExportsUnitsAndPreferredAngles) {
   EXPECT_EQ("UTC-5", row[15]);
   EXPECT_EQ(42.25, sight.m_Measurement);
   EXPECT_FALSE(sight.m_CorrectedDateTime.IsValid());
+}
+
+TEST(SightLogCsv, PreservesIndexErrorArcminutesForEverySightType) {
+  struct IndexErrorCase {
+    double arcminutes;
+    const char* expected;
+  };
+  for (const auto& input :
+       {IndexErrorCase{-0.15, "-0.15"}, IndexErrorCase{0.0, "0"},
+        IndexErrorCase{0.15, "0.15"}, IndexErrorCase{-2.5, "-2.5"},
+        IndexErrorCase{2.5, "2.5"}}) {
+    SCOPED_TRACE(input.arcminutes);
+    std::vector<Sight> sights;
+    for (const auto type :
+         {Sight::ALTITUDE, Sight::AZIMUTH, Sight::LUNAR, Sight::HORIZON}) {
+      sights.push_back(Observation(type));
+      sights.back().m_IndexError = input.arcminutes;
+    }
+    sights.push_back(sights.back());
+    sights.back().m_HorizonEvent = Sight::SUNSET;
+    const auto rows = ReadCsv(SightLogCsv(sights, 0));
+    ASSERT_EQ(sights.size() + 1, rows.size());
+    EXPECT_EQ("Index error (arcmin)", rows[0][10]);
+    for (size_t index = 0; index < sights.size(); ++index) {
+      SCOPED_TRACE(index);
+      EXPECT_EQ(input.expected, rows[index + 1][10]);
+      EXPECT_DOUBLE_EQ(input.arcminutes, sights[index].m_IndexError);
+    }
+  }
 }
 
 TEST(SightLogCsv, LunarReportsObservedDistanceMoonBearingAndSelectedUtc) {

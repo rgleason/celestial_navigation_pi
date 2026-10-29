@@ -68,6 +68,7 @@ wxString OldFile(const char* body, int clockCorrection = 0) {
       "<ClockError Seconds=\"%d\"/>"
       "<Sight Visible=\"0\" Type=\"0\" Body=\"%s\" BodyLimb=\"0\" "
       "Date=\"2026-09-18\" Time=\"12:00:00\" Measurement=\"42\" "
+      "IndexError=\"-0.15\" "
       "ColourName=\"red\" Colour=\"RED\"/>"
       "</OpenCPNCelestialNavigation>", clockCorrection,
       wxString::FromUTF8(body).c_str());
@@ -113,6 +114,7 @@ TEST(SightLogUi, RemarksAndManagerRoundTripOldAndNewXml) {
     CelestialNavigationDialog main(&host, &plugin);
     ASSERT_EQ(1u, main.m_Sights.size());
     EXPECT_TRUE(main.m_Sights[0].m_Remarks.empty());
+    EXPECT_DOUBLE_EQ(-0.15, main.m_Sights[0].m_IndexError);
     auto* list = SightList(&main);
     ASSERT_NE(nullptr, list);
     ASSERT_EQ(1, list->GetItemCount());
@@ -136,6 +138,8 @@ TEST(SightLogUi, RemarksAndManagerRoundTripOldAndNewXml) {
     sightEditor.Recompute();
     EXPECT_EQ("red", ordinary.m_ColourName);
     EXPECT_TRUE(HasTextValue(&sightEditor, remark));
+    EXPECT_TRUE(HasTextValue(&sightEditor, "-0.15000"));
+    EXPECT_DOUBLE_EQ(-0.15, ordinary.m_IndexError);
     auto* book = Notebook(&sightEditor);
     ASSERT_NE(nullptr, book);
     for (size_t page = 0; page < book->GetPageCount(); ++page)
@@ -176,6 +180,7 @@ TEST(SightLogUi, RemarksAndManagerRoundTripOldAndNewXml) {
     wxString exported = ReadFile(csvPath);
     if (exported.StartsWith(wxString(wxUniChar(0xfeff)))) exported.Remove(0, 1);
     EXPECT_EQ(SightLogCsv(main.m_Sights, main.GetClockCorrection()), exported);
+    EXPECT_TRUE(exported.Contains(",\"-0.15\","));
     EXPECT_EQ(beforeExport, ReadFile(active));
     EXPECT_EQ(remark, main.m_Sights[0].m_Remarks);
     EXPECT_FALSE(main.ExportSightsCsvTo(active, &error));
@@ -188,6 +193,7 @@ TEST(SightLogUi, RemarksAndManagerRoundTripOldAndNewXml) {
     EXPECT_TRUE(main.ImportSightsFile(backup, true, &safety, &error)) << error;
     ASSERT_EQ(1u, main.m_Sights.size());
     EXPECT_EQ(remark, main.m_Sights[0].m_Remarks);
+    EXPECT_DOUBLE_EQ(-0.15, main.m_Sights[0].m_IndexError);
     EXPECT_TRUE(main.ImportSightsFile(incoming, false, &safety, &error)) << error;
     ASSERT_EQ(2u, main.m_Sights.size());
     EXPECT_TRUE(wxFileExists(safety));

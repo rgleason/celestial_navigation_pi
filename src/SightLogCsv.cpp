@@ -147,7 +147,7 @@ wxString SightLogCsv(const std::vector<Sight>& sights, int clockCorrection) {
          sight.m_ArtificialHorizon ? wxString("AH")
          : sight.m_DipShort        ? wxString("Dip short")
                                    : wxString("Natural"),
-         Number(sight.m_EyeHeight), Number(sight.m_IndexError * 60.0),
+         Number(sight.m_EyeHeight), Number(sight.m_IndexError),
          Number(sight.m_Temperature), Number(sight.m_Pressure),
          validLat ? FormatNavigationAngle(sight.m_DRLat,
                                           NavigationAngleKind::Latitude)
