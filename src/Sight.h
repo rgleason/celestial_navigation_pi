@@ -185,7 +185,7 @@ public:
   double m_EyeHeight;         // Height above sea in meters
   double m_Temperature;       // Temperature in degrees celcius
   double m_Pressure;          // Pressure in millibars
-  double m_IndexError;        // Error of measurement in degrees
+  double m_IndexError;        // Sextant index error in arcminutes
   // Defaults to production's automatic DE440s/analytical selection.  The
   // standalone validation lab can disable DE440s for an A/B calculation.
   bool m_AllowDe440 = true;
